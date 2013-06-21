@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -54,6 +55,13 @@ import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
 public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
 {
     public ServerHTTPSPDYTest(short version)
@@ -61,6 +69,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
         super(version);
     }
 
+    @Test
     public void testSimpleGET() throws Exception
     {
         final String path = "/foo";
@@ -72,29 +81,31 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                     throws IOException, ServletException
             {
                 request.setHandled(true);
-                Assert.assertEquals("GET", httpRequest.getMethod());
-                Assert.assertEquals(path, target);
-                Assert.assertEquals(path, httpRequest.getRequestURI());
-                Assert.assertEquals("localhost:" + connector.getLocalPort(), httpRequest.getHeader("host"));
+                assertEquals("GET", httpRequest.getMethod());
+                assertEquals(path, target);
+                assertEquals(path, httpRequest.getRequestURI());
+                assertThat("accept-encoding is set to gzip, even if client didn't set it",
+                        httpRequest.getHeader("accept-encoding"), containsString("gzip"));
+                assertThat(httpRequest.getHeader("host"), is("localhost:" + connector.getLocalPort()));
                 handlerLatch.countDown();
             }
         }), null);
 
-        Fields headers = SPDYTestUtils.createHeaders("localhost", connector.getPort(), version, "GET", path);
+        Fields headers = SPDYTestUtils.createHeaders("localhost", connector.getLocalPort(), version, "GET", path);
         final CountDownLatch replyLatch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
         {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
-                Assert.assertTrue(replyInfo.isClose());
+                assertTrue(replyInfo.isClose());
                 Fields replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
                 replyLatch.countDown();
             }
         });
-        Assert.assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -111,10 +122,10 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                     throws IOException, ServletException
             {
                 request.setHandled(true);
-                Assert.assertEquals("GET", httpRequest.getMethod());
-                Assert.assertEquals(path, target);
-                Assert.assertEquals(path, httpRequest.getRequestURI());
-                Assert.assertEquals(query, httpRequest.getQueryString());
+                assertEquals("GET", httpRequest.getMethod());
+                assertEquals(path, target);
+                assertEquals(path, httpRequest.getRequestURI());
+                assertEquals(query, httpRequest.getQueryString());
                 handlerLatch.countDown();
             }
         }), null);
@@ -126,14 +137,62 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
-                Assert.assertTrue(replyInfo.isClose());
+                assertTrue(replyInfo.isClose());
                 Fields replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
                 replyLatch.countDown();
             }
         });
-        Assert.assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testGETWithCookies() throws Exception
+    {
+        final String path = "/foo";
+        final String uri = path;
+        final String cookie1 = "cookie1";
+        final String cookie2 = "cookie2";
+        final String cookie1Value = "cookie 1 value";
+        final String cookie2Value = "cookie 2 value";
+        final CountDownLatch handlerLatch = new CountDownLatch(1);
+        Session session = startClient(version, startHTTPServer(version, new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
+                    throws IOException, ServletException
+            {
+                request.setHandled(true);
+                httpResponse.addCookie(new Cookie(cookie1, cookie1Value));
+                httpResponse.addCookie(new Cookie(cookie2, cookie2Value));
+                assertThat("method is GET", httpRequest.getMethod(), is("GET"));
+                assertThat("target is /foo", target, is(path));
+                assertThat("requestUri is /foo", httpRequest.getRequestURI(), is(path));
+                handlerLatch.countDown();
+            }
+        }), null);
+
+        Fields headers = SPDYTestUtils.createHeaders("localhost", connector.getPort(), version, "GET", uri);
+        final CountDownLatch replyLatch = new CountDownLatch(1);
+        session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
+        {
+            @Override
+            public void onReply(Stream stream, ReplyInfo replyInfo)
+            {
+                assertThat("isClose is true", replyInfo.isClose(), is(true));
+                Fields replyHeaders = replyInfo.getHeaders();
+                assertThat("response code is 200 OK", replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value()
+                        .contains("200"), is(true));
+                assertThat(replyInfo.getHeaders().get("Set-Cookie").values()[0], is(cookie1 + "=\"" + cookie1Value +
+                        "\""));
+                assertThat(replyInfo.getHeaders().get("Set-Cookie").values()[1], is(cookie2 + "=\"" + cookie2Value +
+                        "\""));
+                replyLatch.countDown();
+            }
+        });
+        assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -148,9 +207,9 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                     throws IOException, ServletException
             {
                 request.setHandled(true);
-                Assert.assertEquals("HEAD", httpRequest.getMethod());
-                Assert.assertEquals(path, target);
-                Assert.assertEquals(path, httpRequest.getRequestURI());
+                assertEquals("HEAD", httpRequest.getMethod());
+                assertEquals(path, target);
+                assertEquals(path, httpRequest.getRequestURI());
                 handlerLatch.countDown();
             }
         }), null);
@@ -162,14 +221,14 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
-                Assert.assertTrue(replyInfo.isClose());
+                assertTrue(replyInfo.isClose());
                 Fields replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
                 replyLatch.countDown();
             }
         });
-        Assert.assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -185,17 +244,17 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                     throws IOException, ServletException
             {
                 request.setHandled(true);
-                Assert.assertEquals("POST", httpRequest.getMethod());
-                Assert.assertEquals("1", httpRequest.getParameter("a"));
-                Assert.assertEquals("2", httpRequest.getParameter("b"));
-                Assert.assertNotNull(httpRequest.getRemoteHost());
-                Assert.assertNotNull(httpRequest.getRemotePort());
-                Assert.assertNotNull(httpRequest.getRemoteAddr());
-                Assert.assertNotNull(httpRequest.getLocalPort());
-                Assert.assertNotNull(httpRequest.getLocalName());
-                Assert.assertNotNull(httpRequest.getLocalAddr());
-                Assert.assertNotNull(httpRequest.getServerPort());
-                Assert.assertNotNull(httpRequest.getServerName());
+                assertEquals("POST", httpRequest.getMethod());
+                assertEquals("1", httpRequest.getParameter("a"));
+                assertEquals("2", httpRequest.getParameter("b"));
+                assertNotNull(httpRequest.getRemoteHost());
+                assertNotNull(httpRequest.getRemotePort());
+                assertNotNull(httpRequest.getRemoteAddr());
+                assertNotNull(httpRequest.getLocalPort());
+                assertNotNull(httpRequest.getLocalName());
+                assertNotNull(httpRequest.getLocalAddr());
+                assertNotNull(httpRequest.getServerPort());
+                assertNotNull(httpRequest.getServerName());
                 handlerLatch.countDown();
             }
         }), null);
@@ -205,20 +264,20 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
         final CountDownLatch replyLatch = new CountDownLatch(1);
         Stream stream = session.syn(new SynInfo(5, TimeUnit.SECONDS, headers, false, (byte)0),
                 new StreamFrameListener.Adapter()
-        {
-            @Override
-            public void onReply(Stream stream, ReplyInfo replyInfo)
-            {
-                Assert.assertTrue(replyInfo.isClose());
-                Fields replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
-                replyLatch.countDown();
-            }
-        });
+                {
+                    @Override
+                    public void onReply(Stream stream, ReplyInfo replyInfo)
+                    {
+                        assertTrue(replyInfo.isClose());
+                        Fields replyHeaders = replyInfo.getHeaders();
+                        assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                        replyLatch.countDown();
+                    }
+                });
         stream.data(new StringDataInfo(data, true));
 
-        Assert.assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -235,9 +294,9 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                     throws IOException, ServletException
             {
                 request.setHandled(true);
-                Assert.assertEquals("POST", httpRequest.getMethod());
-                Assert.assertEquals("1", httpRequest.getParameter("a"));
-                Assert.assertEquals("2", httpRequest.getParameter("b"));
+                assertEquals("POST", httpRequest.getMethod());
+                assertEquals("1", httpRequest.getParameter("a"));
+                assertEquals("2", httpRequest.getParameter("b"));
                 handlerLatch.countDown();
             }
         }), null);
@@ -247,23 +306,23 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
         final CountDownLatch replyLatch = new CountDownLatch(1);
         Stream stream = session.syn(new SynInfo(5, TimeUnit.SECONDS, headers, false, (byte)0),
                 new StreamFrameListener.Adapter()
-        {
-            @Override
-            public void onReply(Stream stream, ReplyInfo replyInfo)
-            {
-                Assert.assertTrue(replyInfo.isClose());
-                Fields replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
-                replyLatch.countDown();
-            }
-        });
+                {
+                    @Override
+                    public void onReply(Stream stream, ReplyInfo replyInfo)
+                    {
+                        assertTrue(replyInfo.isClose());
+                        Fields replyHeaders = replyInfo.getHeaders();
+                        assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                        replyLatch.countDown();
+                    }
+                });
         // Sleep between the data frames so that they will be read in 2 reads
         stream.data(new StringDataInfo(data1, false));
         Thread.sleep(1000);
         stream.data(new StringDataInfo(data2, true));
 
-        Assert.assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -280,9 +339,9 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                     throws IOException, ServletException
             {
                 request.setHandled(true);
-                Assert.assertEquals("POST", httpRequest.getMethod());
-                Assert.assertEquals("1", httpRequest.getParameter("a"));
-                Assert.assertEquals("2", httpRequest.getParameter("b"));
+                assertEquals("POST", httpRequest.getMethod());
+                assertEquals("1", httpRequest.getParameter("a"));
+                assertEquals("2", httpRequest.getParameter("b"));
                 handlerLatch.countDown();
             }
         }), null);
@@ -295,9 +354,9 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
-                Assert.assertTrue(replyInfo.isClose());
+                assertTrue(replyInfo.isClose());
                 Fields replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.toString(), replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                assertTrue(replyHeaders.toString(), replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
                 replyLatch.countDown();
             }
         });
@@ -306,8 +365,8 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
         stream.data(new StringDataInfo(data1, false));
         stream.data(new StringDataInfo(data2, true));
 
-        Assert.assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -339,21 +398,21 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             {
                 Assert.assertFalse(replyInfo.isClose());
                 Fields replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
                 replyLatch.countDown();
             }
 
             @Override
             public void onData(Stream stream, DataInfo dataInfo)
             {
-                Assert.assertTrue(dataInfo.isClose());
-                Assert.assertEquals(data, dataInfo.asString("UTF-8", true));
+                assertTrue(dataInfo.isClose());
+                assertEquals(data, dataInfo.asString("UTF-8", true));
                 dataLatch.countDown();
             }
         });
-        Assert.assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -385,23 +444,23 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             {
                 Assert.assertFalse(replyInfo.isClose());
                 Fields replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
                 replyLatch.countDown();
             }
 
             @Override
             public void onData(Stream stream, DataInfo dataInfo)
             {
-                Assert.assertTrue(dataInfo.isClose());
+                assertTrue(dataInfo.isClose());
                 byte[] bytes = dataInfo.asBytes(true);
-                Assert.assertEquals(1, bytes.length);
-                Assert.assertEquals(data, bytes[0]);
+                assertEquals(1, bytes.length);
+                assertEquals(data, bytes[0]);
                 dataLatch.countDown();
             }
         });
-        Assert.assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -437,10 +496,10 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
-                Assert.assertEquals(1, replyFrames.incrementAndGet());
+                assertEquals(1, replyFrames.incrementAndGet());
                 Assert.assertFalse(replyInfo.isClose());
                 Fields replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
                 replyLatch.countDown();
             }
 
@@ -448,17 +507,17 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             public void onData(Stream stream, DataInfo dataInfo)
             {
                 int data = dataFrames.incrementAndGet();
-                Assert.assertTrue(data >= 1 && data <= 2);
+                assertTrue(data >= 1 && data <= 2);
                 if (data == 1)
-                    Assert.assertEquals(data1, dataInfo.asString("UTF8", true));
+                    assertEquals(data1, dataInfo.asString("UTF8", true));
                 else
-                    Assert.assertEquals(data2, dataInfo.asString("UTF8", true));
+                    assertEquals(data2, dataInfo.asString("UTF8", true));
                 dataLatch.countDown();
             }
         });
-        Assert.assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -493,7 +552,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             {
                 Assert.assertFalse(replyInfo.isClose());
                 Fields replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
                 replyLatch.countDown();
             }
 
@@ -503,14 +562,70 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 contentBytes.addAndGet(dataInfo.asByteBuffer(true).remaining());
                 if (dataInfo.isClose())
                 {
-                    Assert.assertEquals(data.length, contentBytes.get());
+                    assertEquals(data.length, contentBytes.get());
                     dataLatch.countDown();
                 }
             }
         });
-        Assert.assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testGETWithBigResponseContentInMultipleWrites() throws Exception
+    {
+        final byte[] data = new byte[4 * 1024];
+        Arrays.fill(data, (byte)'x');
+        final int writeTimes = 16;
+        final CountDownLatch handlerLatch = new CountDownLatch(1);
+        Session session = startClient(version, startHTTPServer(version, new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
+                    throws IOException, ServletException
+            {
+                request.setHandled(true);
+                httpResponse.setStatus(HttpServletResponse.SC_OK);
+                ServletOutputStream output = httpResponse.getOutputStream();
+                for (int i = 0; i < writeTimes; i++)
+                {
+                    output.write(data);
+                }
+                handlerLatch.countDown();
+            }
+        }), null);
+
+        Fields headers = SPDYTestUtils.createHeaders("localhost", connector.getPort(), version, "GET", "/foo");
+        final CountDownLatch replyLatch = new CountDownLatch(1);
+        final CountDownLatch dataLatch = new CountDownLatch(1);
+        session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
+        {
+            private final AtomicInteger contentBytes = new AtomicInteger();
+
+            @Override
+            public void onReply(Stream stream, ReplyInfo replyInfo)
+            {
+                Assert.assertFalse(replyInfo.isClose());
+                Fields replyHeaders = replyInfo.getHeaders();
+                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                replyLatch.countDown();
+            }
+
+            @Override
+            public void onData(Stream stream, DataInfo dataInfo)
+            {
+                contentBytes.addAndGet(dataInfo.asByteBuffer(true).remaining());
+                if (dataInfo.isClose())
+                {
+                    assertEquals(data.length * writeTimes, contentBytes.get());
+                    dataLatch.countDown();
+                }
+            }
+        });
+        assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -546,7 +661,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             {
                 Assert.assertFalse(replyInfo.isClose());
                 Fields replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
                 replyLatch.countDown();
             }
 
@@ -556,14 +671,14 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 contentBytes.addAndGet(dataInfo.asByteBuffer(true).remaining());
                 if (dataInfo.isClose())
                 {
-                    Assert.assertEquals(2 * data.length, contentBytes.get());
+                    assertEquals(2 * data.length, contentBytes.get());
                     dataLatch.countDown();
                 }
             }
         });
-        Assert.assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -599,7 +714,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             {
                 Assert.assertFalse(replyInfo.isClose());
                 Fields replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
                 replyLatch.countDown();
             }
 
@@ -611,14 +726,14 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                     buffer.write(byteBuffer.get());
                 if (dataInfo.isClose())
                 {
-                    Assert.assertEquals(data, new String(buffer.toByteArray(), Charset.forName("UTF-8")));
+                    assertEquals(data, new String(buffer.toByteArray(), Charset.forName("UTF-8")));
                     dataLatch.countDown();
                 }
             }
         });
-        Assert.assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -657,7 +772,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             {
                 Assert.assertFalse(replyInfo.isClose());
                 Fields replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
                 replyLatch.countDown();
             }
 
@@ -669,14 +784,14 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                     buffer.write(byteBuffer.get());
                 if (dataInfo.isClose())
                 {
-                    Assert.assertEquals(data2, new String(buffer.toByteArray(), Charset.forName("UTF-8")));
+                    assertEquals(data2, new String(buffer.toByteArray(), Charset.forName("UTF-8")));
                     dataLatch.countDown();
                 }
             }
         });
-        Assert.assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -707,16 +822,16 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
-                Assert.assertEquals(1, replies.incrementAndGet());
-                Assert.assertTrue(replyInfo.isClose());
+                assertEquals(1, replies.incrementAndGet());
+                assertTrue(replyInfo.isClose());
                 Fields replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("302"));
-                Assert.assertTrue(replyHeaders.get("location").value().endsWith(suffix));
+                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("302"));
+                assertTrue(replyHeaders.get("location").value().endsWith(suffix));
                 replyLatch.countDown();
             }
         });
-        Assert.assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -745,10 +860,10 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
-                Assert.assertEquals(1, replies.incrementAndGet());
+                assertEquals(1, replies.incrementAndGet());
                 Assert.assertFalse(replyInfo.isClose());
                 Fields replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("404"));
+                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("404"));
                 replyLatch.countDown();
             }
 
@@ -759,9 +874,9 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                     dataLatch.countDown();
             }
         });
-        Assert.assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -790,9 +905,9 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
-                Assert.assertEquals(1, replies.incrementAndGet());
+                assertEquals(1, replies.incrementAndGet());
                 Fields replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("500"));
+                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("500"));
                 replyLatch.countDown();
                 if (replyInfo.isClose())
                     latch.countDown();
@@ -805,8 +920,8 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                     latch.countDown();
             }
         });
-        Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         log.setHideStacks(false);
     }
@@ -845,11 +960,11 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
-                Assert.assertEquals(1, replyFrames.incrementAndGet());
+                assertEquals(1, replyFrames.incrementAndGet());
                 Assert.assertFalse(replyInfo.isClose());
                 Fields replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
-                Assert.assertTrue(replyHeaders.get("extra").value().contains("X"));
+                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                assertTrue(replyHeaders.get("extra").value().contains("X"));
                 replyLatch.countDown();
             }
 
@@ -860,19 +975,19 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 if (count == 1)
                 {
                     Assert.assertFalse(dataInfo.isClose());
-                    Assert.assertEquals(pangram1, dataInfo.asString("UTF-8", true));
+                    assertEquals(pangram1, dataInfo.asString("UTF-8", true));
                 }
                 else if (count == 2)
                 {
-                    Assert.assertTrue(dataInfo.isClose());
-                    Assert.assertEquals(pangram2, dataInfo.asString("UTF-8", true));
+                    assertTrue(dataInfo.isClose());
+                    assertEquals(pangram2, dataInfo.asString("UTF-8", true));
                 }
                 dataLatch.countDown();
             }
         });
-        Assert.assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Ignore("The correspondent functionality in HttpOutput is not yet implemented")
@@ -927,10 +1042,10 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
-                Assert.assertEquals(1, replyFrames.incrementAndGet());
+                assertEquals(1, replyFrames.incrementAndGet());
                 Assert.assertFalse(replyInfo.isClose());
                 Fields replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
                 replyLatch.countDown();
             }
 
@@ -940,14 +1055,14 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 contentLength.addAndGet(dataInfo.asBytes(true).length);
                 if (dataInfo.isClose())
                 {
-                    Assert.assertEquals(length, contentLength.get());
+                    assertEquals(length, contentLength.get());
                     dataLatch.countDown();
                 }
             }
         });
-        Assert.assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -983,7 +1098,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             {
                 Assert.assertFalse(replyInfo.isClose());
                 Fields replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
                 replyLatch.countDown();
             }
 
@@ -996,8 +1111,8 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                     dataLatch.countDown();
             }
         });
-        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertEquals(3 * data.length, contentLength.get());
+        assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
+        assertEquals(3 * data.length, contentLength.get());
     }
 
     @Test
@@ -1044,14 +1159,14 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
                 Fields replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
                 replyLatch.countDown();
             }
         });
         stream.data(new BytesDataInfo(data, true));
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -1087,14 +1202,14 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
                 Fields replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
                 replyLatch.countDown();
             }
         });
 
-        Assert.assertTrue("Not dispatched again after expire", dispatchedAgainAfterExpire.await(5,
+        assertTrue("Not dispatched again after expire", dispatchedAgainAfterExpire.await(5,
                 TimeUnit.SECONDS));
-        Assert.assertTrue("Reply not sent", replyLatch.await(5, TimeUnit.SECONDS));
+        assertTrue("Reply not sent", replyLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -1132,15 +1247,15 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
                 Fields replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
                 replyLatch.countDown();
             }
         });
         stream.data(new BytesDataInfo(data, true));
 
-        Assert.assertTrue("Not dispatched again after expire", dispatchedAgainAfterExpire.await(5,
+        assertTrue("Not dispatched again after expire", dispatchedAgainAfterExpire.await(5,
                 TimeUnit.SECONDS));
-        Assert.assertTrue("Reply not sent", replyLatch.await(5, TimeUnit.SECONDS));
+        assertTrue("Reply not sent", replyLatch.await(5, TimeUnit.SECONDS));
     }
 
     private void readRequestData(Request request, int expectedDataLength) throws IOException
@@ -1200,15 +1315,15 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
                 Fields replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
                 replyLatch.countDown();
             }
         });
         stream.data(new BytesDataInfo(data, false));
         stream.data(new BytesDataInfo(data, true));
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -1268,7 +1383,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
                 Fields replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
                 responseLatch.countDown();
             }
 
@@ -1281,8 +1396,8 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
         });
         stream.data(new BytesDataInfo(data, true));
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -1309,15 +1424,15 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
                 Fields replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
                 responseLatch.countDown();
             }
         });
         stream.data(new BytesDataInfo(data, false));
         stream.data(new BytesDataInfo(5, TimeUnit.SECONDS, data, true));
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }
 
 }

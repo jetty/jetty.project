@@ -62,7 +62,7 @@ public class TestJettyOSGiBootCore
     }
      
     public static List<Option> provisionCoreJetty()
-    {
+    { 
         List<Option> res = new ArrayList<Option>();
         // get the jetty home config from the osgi boot bundle.
         res.add(CoreOptions.systemProperty("jetty.port").value(String.valueOf(DEFAULT_JETTY_HTTP_PORT)));
@@ -95,7 +95,6 @@ public class TestJettyOSGiBootCore
         res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "websocket-common" ).versionAsInProject().noStart());
         res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "websocket-servlet" ).versionAsInProject().noStart());
         res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "websocket-server" ).versionAsInProject().noStart());
-       
         return res;
     }
      

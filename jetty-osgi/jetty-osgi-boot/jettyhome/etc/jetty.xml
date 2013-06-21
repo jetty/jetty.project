@@ -14,13 +14,10 @@
     <!-- =========================================================== -->
     <!-- Server Thread Pool                                          -->
     <!-- =========================================================== -->
-    <Arg name="threadPool">
-      <!-- Default queued blocking threadpool -->
-      <New class="org.eclipse.jetty.util.thread.QueuedThreadPool">
-        <Set name="minThreads">10</Set>
-        <Set name="maxThreads">200</Set>
-      </New>
-    </Arg>
+    <Get name="ThreadPool">
+      <Set name="minThreads">10</Set>
+      <Set name="maxThreads">200</Set>
+    </Get>
 
 
     <!-- =========================================================== -->
@@ -43,6 +40,17 @@
         </Set>
       </New>
     </Set>
+
+    <New id="httpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
+      <Set name="secureScheme">https</Set>
+      <Set name="securePort"><Property name="jetty.secure.port" default="8443" /></Set>
+      <Set name="outputBufferSize">32768</Set>
+      <Set name="requestHeaderSize">8192</Set>
+      <Set name="responseHeaderSize">8192</Set>
+      <Set name="sendServerVersion">true</Set>
+      <Set name="sendDateHeader">false</Set>
+      <Set name="headerCacheSize">512</Set>
+    </New>
 
 
     <!-- =========================================================== -->

@@ -79,6 +79,10 @@ public class OSGiWebappConstants
     public static final String JETTY_WAR_PATCH_FRAGMENT_FOLDER_PATH = "Jetty-WarPatchFragmentFolderPath";
 
   
+    /** installation path of webapp bundle
+     *
+     */
+    public static final String JETTY_BUNDLE_ROOT = "bundle.root";
     /** 
      * web app context path 
      * @deprecated see RFC66_WEB_CONTEXTPATH

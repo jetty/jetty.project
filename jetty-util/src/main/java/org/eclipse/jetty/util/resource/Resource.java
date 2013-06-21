@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.util.resource;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -26,7 +27,6 @@ import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
-import java.net.URLConnection;
 import java.nio.channels.ReadableByteChannel;
 import java.text.DateFormat;
 import java.util.Arrays;
@@ -45,7 +45,7 @@ import org.eclipse.jetty.util.log.Logger;
 /** 
  * Abstract resource class.
  */
-public abstract class Resource implements ResourceFactory
+public abstract class Resource implements ResourceFactory, Closeable
 {
     private static final Logger LOG = Log.getLogger(Resource.class);
     public static boolean __defaultUseCaches = true;
@@ -149,7 +149,7 @@ public abstract class Resource implements ResourceFactory
      * @param useCaches controls URLConnection caching
      * @return A Resource object.
      */
-    public static Resource newResource (String resource, boolean useCaches)       
+    public static Resource newResource(String resource, boolean useCaches)       
     throws MalformedURLException, IOException
     {
         URL url=null;
@@ -171,11 +171,7 @@ public abstract class Resource implements ResourceFactory
                         resource=resource.substring(2);
                     
                     File file=new File(resource).getCanonicalFile();
-                    url=Resource.toURL(file);            
-                    
-                    URLConnection connection=url.openConnection();
-                    connection.setUseCaches(useCaches);
-                    return new FileResource(url,connection,file);
+                    return new FileResource(file);
                 }
                 catch(Exception e2)
                 {
@@ -194,15 +190,9 @@ public abstract class Resource implements ResourceFactory
     }
 
     /* ------------------------------------------------------------ */
-    public static Resource newResource (File file)
-    throws MalformedURLException, IOException
+    public static Resource newResource(File file)
     {
-        file = file.getCanonicalFile();
-        URL url = Resource.toURL(file);
-
-        URLConnection connection = url.openConnection();
-        FileResource fileResource = new FileResource(url, connection, file);
-        return fileResource;
+        return new FileResource(file);
     }
 
     /* ------------------------------------------------------------ */
@@ -300,7 +290,7 @@ public abstract class Resource implements ResourceFactory
     @Override
     protected void finalize()
     {
-        release();
+        close();
     }
     
     /* ------------------------------------------------------------ */
@@ -309,9 +299,18 @@ public abstract class Resource implements ResourceFactory
     
     /* ------------------------------------------------------------ */
     /** Release any temporary resources held by the resource.
+     * @deprecated use {@link #close()}
      */
-    public abstract void release();
-    
+    public final void release()
+    {
+        close();
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Release any temporary resources held by the resource.
+     */
+    @Override
+    public abstract void close();
 
     /* ------------------------------------------------------------ */
     /**
@@ -420,19 +419,19 @@ public abstract class Resource implements ResourceFactory
     /**
      * Returns the resource contained inside the current resource with the
      * given name.
-     * @param path The path segment to add, which should be encoded by the
-     * encode method. 
+     * @param path The path segment to add, which is not encoded
      */
     public abstract Resource addPath(String path)
         throws IOException,MalformedURLException;
 
     /* ------------------------------------------------------------ */
-    /** Get a resource from withing this resource.
+    /** Get a resource from within this resource.
      * <p>
      * This method is essentially an alias for {@link #addPath(String)}, but without checked exceptions.
      * This method satisfied the {@link ResourceFactory} interface.
      * @see org.eclipse.jetty.util.resource.ResourceFactory#getResource(java.lang.String)
      */
+    @Override
     public Resource getResource(String path)
     {
         try
@@ -447,14 +446,12 @@ public abstract class Resource implements ResourceFactory
     }
 
     /* ------------------------------------------------------------ */
-    /** Encode according to this resource type.
-     * The default implementation calls URI.encodePath(uri)
-     * @param uri 
-     * @return String encoded for this resource type.
+    /** 
+     * @deprecated
      */
     public String encode(String uri)
     {
-        return URIUtil.encodePath(uri);
+        return null;
     }
         
     /* ------------------------------------------------------------ */

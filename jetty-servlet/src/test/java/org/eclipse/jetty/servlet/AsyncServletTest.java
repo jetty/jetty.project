@@ -18,14 +18,11 @@
 
 package org.eclipse.jetty.servlet;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
 import java.util.Timer;
 import java.util.TimerTask;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -45,9 +42,11 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
 
-public class AsyncServletTest 
-{    
+
+public class AsyncServletTest
+{
     protected AsyncServlet _servlet=new AsyncServlet();
     protected int _port;
 
@@ -60,7 +59,7 @@ public class AsyncServletTest
     {
         _connector = new ServerConnector(_server);
         _server.setConnectors(new Connector[]{ _connector });
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SECURITY|ServletContextHandler.NO_SESSIONS);
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
         context.setContextPath("/ctx");
         _server.setHandler(context);
         _servletHandler=context.getServletHandler();
@@ -76,7 +75,7 @@ public class AsyncServletTest
     {
         _server.stop();
     }
-    
+
     @Test
     public void testNormal() throws Exception
     {
@@ -116,10 +115,10 @@ public class AsyncServletTest
             "history: ERROR\r\n"+
             "history: !initial\r\n"+
             "history: onComplete\r\n",response);
-                    
+
         assertContains("ERROR: /ctx/path/info",response);
     }
-    
+
     @Test
     public void testSuspendOnTimeoutDispatch() throws Exception
     {
@@ -134,10 +133,10 @@ public class AsyncServletTest
             "history: ASYNC\r\n"+
             "history: !initial\r\n"+
             "history: onComplete\r\n",response);
-                    
+
         assertContains("DISPATCHED",response);
     }
-    
+
     @Test
     public void testSuspendOnTimeoutComplete() throws Exception
     {
@@ -150,7 +149,7 @@ public class AsyncServletTest
             "history: onTimeout\r\n"+
             "history: complete\r\n"+
             "history: onComplete\r\n",response);
-                    
+
         assertContains("COMPLETED",response);
     }
 
@@ -333,18 +332,6 @@ public class AsyncServletTest
         assertContains("ERROR: /ctx/path/info",response);
     }
 
-    
-    protected void assertContains(String content,String response)
-    {
-        Assert.assertThat(response,Matchers.containsString(content));
-    }
-    
-    protected void assertNotContains(String content,String response)
-    {
-        Assert.assertThat(response,Matchers.not(Matchers.containsString(content)));
-    }
-    
-
     @Test
     public void testAsyncRead() throws Exception
     {
@@ -358,7 +345,7 @@ public class AsyncServletTest
             "Connection: close\r\n"+
             "\r\n";
 
-        try (Socket socket = new Socket("localhost",_port);)
+        try (Socket socket = new Socket("localhost",_port))
         {
             socket.setSoTimeout(10000);
             socket.getOutputStream().write(header.getBytes("ISO-8859-1"));
@@ -367,7 +354,7 @@ public class AsyncServletTest
             Thread.sleep(500);
             socket.getOutputStream().write(body.getBytes("ISO-8859-1"),2,8);
             socket.getOutputStream().write(close.getBytes("ISO-8859-1"));
-            
+
             String response = IO.toString(socket.getInputStream());
             assertEquals("HTTP/1.1 200 OK",response.substring(0,15));
             assertContains(
@@ -381,12 +368,11 @@ public class AsyncServletTest
                 "history: onComplete\r\n",response);
         }
     }
-    
-    
+
     public synchronized String process(String query,String content) throws Exception
     {
         String request = "GET /ctx/path/info";
-        
+
         if (query!=null)
             request+="?"+query;
         request+=" HTTP/1.1\r\n"+
@@ -399,44 +385,43 @@ public class AsyncServletTest
             request+="Content-Length: "+content.length()+"\r\n";
             request+="\r\n" + content;
         }
-        
+
         int port=_port;
-        String response=null;
-        try (Socket socket = new Socket("localhost",port);)
+        try (Socket socket = new Socket("localhost",port))
         {
             socket.setSoTimeout(1000000);
             socket.getOutputStream().write(request.getBytes("UTF-8"));
-
-            response = IO.toString(socket.getInputStream());
+            return IO.toString(socket.getInputStream());
         }
         catch(Exception e)
         {
             System.err.println("failed on port "+port);
             e.printStackTrace();
             throw e;
-        }        
-        
-        return response;
+        }
     }
 
+    protected void assertContains(String content,String response)
+    {
+        Assert.assertThat(response,Matchers.containsString(content));
+    }
 
-       
-    
+    protected void assertNotContains(String content,String response)
+    {
+        Assert.assertThat(response,Matchers.not(Matchers.containsString(content)));
+    }
+
     private static class AsyncServlet extends HttpServlet
     {
         private static final long serialVersionUID = -8161977157098646562L;
-        private Timer _timer=new Timer();
-        
-        public AsyncServlet()
-        {}
-        
-        /* ------------------------------------------------------------ */
+        private final Timer _timer=new Timer();
+
         @Override
         public void doGet(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
         {
             // System.err.println(request.getDispatcherType()+" "+request.getRequestURI());
             response.addHeader("history",request.getDispatcherType().toString());
-            
+
             int read_before=0;
             long sleep_for=-1;
             long suspend_for=-1;
@@ -445,7 +430,7 @@ public class AsyncServletTest
             long resume2_after=-1;
             long complete_after=-1;
             long complete2_after=-1;
-            
+
             if (request.getParameter("read")!=null)
                 read_before=Integer.parseInt(request.getParameter("read"));
             if (request.getParameter("sleep")!=null)
@@ -462,7 +447,7 @@ public class AsyncServletTest
                 complete_after=Integer.parseInt(request.getParameter("complete"));
             if (request.getParameter("complete2")!=null)
                 complete2_after=Integer.parseInt(request.getParameter("complete2"));
-            
+
             if (request.getDispatcherType()==DispatcherType.REQUEST)
             {
                 response.addHeader("history","initial");
@@ -510,7 +495,7 @@ public class AsyncServletTest
                         async.setTimeout(suspend_for);
                     async.addListener(__listener);
                     response.addHeader("history","suspend");
-                    
+
                     if (complete_after>0)
                     {
                         TimerTask complete = new TimerTask()
@@ -564,7 +549,7 @@ public class AsyncServletTest
                         ((HttpServletResponse)async.getResponse()).addHeader("history","resume");
                         async.dispatch();
                     }
-                    
+
                 }
                 else if (sleep_for>=0)
                 {
@@ -668,15 +653,15 @@ public class AsyncServletTest
             }
         }
     }
-    
-    
+
+
     private static AsyncListener __listener = new AsyncListener()
     {
         @Override
         public void onTimeout(AsyncEvent event) throws IOException
-        {            
+        {
             ((HttpServletResponse)event.getSuppliedResponse()).addHeader("history","onTimeout");
-            String action=((HttpServletRequest)event.getSuppliedRequest()).getParameter("timeout");
+            String action=event.getSuppliedRequest().getParameter("timeout");
             if (action!=null)
             {
                 ((HttpServletResponse)event.getSuppliedResponse()).addHeader("history",action);
@@ -684,27 +669,26 @@ public class AsyncServletTest
                     event.getAsyncContext().dispatch();
                 if ("complete".equals(action))
                 {
-                    ((HttpServletResponse)event.getSuppliedResponse()).getOutputStream().println("COMPLETED\n");
+                    event.getSuppliedResponse().getOutputStream().println("COMPLETED\n");
                     event.getAsyncContext().complete();
                 }
             }
         }
-        
+
         @Override
         public void onStartAsync(AsyncEvent event) throws IOException
         {
         }
-        
+
         @Override
         public void onError(AsyncEvent event) throws IOException
         {
         }
-        
+
         @Override
         public void onComplete(AsyncEvent event) throws IOException
         {
             ((HttpServletResponse)event.getSuppliedResponse()).addHeader("history","onComplete");
         }
     };
-
 }

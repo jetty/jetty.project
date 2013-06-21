@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.Executor;
+
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -87,7 +88,6 @@ public class WebSocketClientSelectorManager extends SelectorManager
                     Connection connection = newUpgradeConnection(channel,sslEndPoint,connectPromise);
                     sslEndPoint.setIdleTimeout(connectPromise.getClient().getMaxIdleTimeout());
                     sslEndPoint.setConnection(connection);
-                    connectionOpened(connection);
                     return sslConnection;
                 }
                 else
@@ -104,7 +104,7 @@ public class WebSocketClientSelectorManager extends SelectorManager
         }
         catch (IOException e)
         {
-            LOG.debug(e);
+            LOG.ignore(e);
             connectPromise.failed(e);
             // rethrow
             throw e;
@@ -120,7 +120,7 @@ public class WebSocketClientSelectorManager extends SelectorManager
 
     public SSLEngine newSSLEngine(SslContextFactory sslContextFactory, SocketChannel channel)
     {
-        String peerHost = channel.socket().getInetAddress().getHostAddress();
+        String peerHost = channel.socket().getInetAddress().getHostName();
         int peerPort = channel.socket().getPort();
         SSLEngine engine = sslContextFactory.newSSLEngine(peerHost,peerPort);
         engine.setUseClientMode(true);

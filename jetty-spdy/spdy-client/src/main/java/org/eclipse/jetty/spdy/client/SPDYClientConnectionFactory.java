@@ -45,7 +45,7 @@ public class SPDYClientConnectionFactory
         Parser parser = new Parser(compressionFactory.newDecompressor());
         Generator generator = new Generator(bufferPool, compressionFactory.newCompressor());
 
-        SPDYConnection connection = new ClientSPDYConnection(endPoint, bufferPool, parser, factory);
+        SPDYConnection connection = new ClientSPDYConnection(endPoint, bufferPool, parser, factory, client.isExecuteOnFillable());
 
         FlowControlStrategy flowControlStrategy = client.newFlowControlStrategy();
 
@@ -66,9 +66,10 @@ public class SPDYClientConnectionFactory
     {
         private final Factory factory;
 
-        public ClientSPDYConnection(EndPoint endPoint, ByteBufferPool bufferPool, Parser parser, Factory factory)
+        public ClientSPDYConnection(EndPoint endPoint, ByteBufferPool bufferPool, Parser parser, Factory factory,
+                                    boolean executeOnFillable)
         {
-            super(endPoint, bufferPool, parser, factory.getExecutor());
+            super(endPoint, bufferPool, parser, factory.getExecutor(), executeOnFillable);
             this.factory = factory;
         }
 

@@ -937,6 +937,33 @@ public class HttpClient extends ContainerLifeCycle
         dump(out, indent, getBeans(), destinations.values());
     }
 
+    protected Connection tunnel(Connection connection)
+    {
+        HttpConnection httpConnection = (HttpConnection)connection;
+        HttpDestination destination = httpConnection.getDestination();
+        SslConnection sslConnection = createSslConnection(destination, httpConnection.getEndPoint());
+        Connection result = (Connection)sslConnection.getDecryptedEndPoint().getConnection();
+        selectorManager.connectionClosed(httpConnection);
+        selectorManager.connectionOpened(sslConnection);
+        LOG.debug("Tunnelled {} over {}", connection, result);
+        return result;
+    }
+
+    private SslConnection createSslConnection(HttpDestination destination, EndPoint endPoint)
+    {
+        SSLEngine engine = sslContextFactory.newSSLEngine(destination.getHost(), destination.getPort());
+        engine.setUseClientMode(true);
+
+        SslConnection sslConnection = newSslConnection(HttpClient.this, endPoint, engine);
+        sslConnection.setRenegotiationAllowed(sslContextFactory.isRenegotiationAllowed());
+        endPoint.setConnection(sslConnection);
+        EndPoint appEndPoint = sslConnection.getDecryptedEndPoint();
+        HttpConnection connection = newHttpConnection(this, appEndPoint, destination);
+        appEndPoint.setConnection(connection);
+
+        return sslConnection;
+    }
+
     protected class ClientSelectorManager extends SelectorManager
     {
         public ClientSelectorManager(Executor executor, Scheduler scheduler)
@@ -962,7 +989,7 @@ public class HttpClient extends ContainerLifeCycle
             HttpDestination destination = callback.destination;
 
             SslContextFactory sslContextFactory = getSslContextFactory();
-            if (HttpScheme.HTTPS.is(destination.getScheme()))
+            if (!destination.isProxied() && HttpScheme.HTTPS.is(destination.getScheme()))
             {
                 if (sslContextFactory == null)
                 {
@@ -972,17 +999,8 @@ public class HttpClient extends ContainerLifeCycle
                 }
                 else
                 {
-                    SSLEngine engine = sslContextFactory.newSSLEngine(destination.getHost(), destination.getPort());
-                    engine.setUseClientMode(true);
-
-                    SslConnection sslConnection = newSslConnection(HttpClient.this, endPoint, engine);
-                    sslConnection.setRenegotiationAllowed(sslContextFactory.isRenegotiationAllowed());
-                    EndPoint appEndPoint = sslConnection.getDecryptedEndPoint();
-                    HttpConnection connection = newHttpConnection(HttpClient.this, appEndPoint, destination);
-
-                    appEndPoint.setConnection(connection);
-                    callback.succeeded(connection);
-
+                    SslConnection sslConnection = createSslConnection(destination, endPoint);
+                    callback.succeeded((Connection)sslConnection.getDecryptedEndPoint().getConnection());
                     return sslConnection;
                 }
             }

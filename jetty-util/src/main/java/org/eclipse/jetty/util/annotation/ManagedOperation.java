@@ -36,6 +36,11 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+/**
+ * The @ManagedOperation annotation is used to indicate that a given method 
+ * should be considered a JMX operation.
+ *
+ */
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @Target( { ElementType.METHOD } )

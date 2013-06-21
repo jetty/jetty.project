@@ -311,7 +311,6 @@ public class HttpChannelState
         boolean dispatch;
         synchronized (this)
         {
-            
             switch(_state)
             {
                 case ASYNCSTARTED:
@@ -326,11 +325,7 @@ public class HttpChannelState
                     _event.setDispatchTarget(context,path);
                     _dispatched=true;
                     break;
-
-                case REDISPATCH:
-                    _event.setDispatchTarget(context,path);
-                    return;
-
+                    
                 default:
                     throw new IllegalStateException(this.getStatusString());
             }
@@ -452,7 +447,6 @@ public class HttpChannelState
                     _state=State.COMPLETED;
                     aListeners=_asyncListeners;
                     event=_event;
-                    _event=null;
                     break;
 
                 default:
@@ -566,6 +560,22 @@ public class HttpChannelState
         synchronized (this)
         {
             return _state==State.COMPLETING;
+        }
+    }
+
+    public boolean isAsyncStarted()
+    {
+        synchronized (this)
+        {
+            switch(_state)
+            {
+                case ASYNCSTARTED:
+                case ASYNCWAIT:
+                    return true;
+
+                default:
+                    return false;
+            }
         }
     }
 

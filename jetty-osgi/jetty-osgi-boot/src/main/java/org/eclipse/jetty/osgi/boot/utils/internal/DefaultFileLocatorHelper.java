@@ -19,6 +19,7 @@
 package org.eclipse.jetty.osgi.boot.utils.internal;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.URI;
@@ -301,25 +302,19 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
      * @return a URL to the bundle entry that uses a common protocol
      */
     public URL getLocalURL(URL url)
+    throws Exception
     {
         if ("bundleresource".equals(url.getProtocol()) || "bundleentry".equals(url.getProtocol()))
         {
-            try
+
+            URLConnection conn = url.openConnection();
+            conn.setDefaultUseCaches(Resource.getDefaultUseCaches());
+            if (BUNDLE_URL_CONNECTION_getLocalURL == null && conn.getClass().getName().equals("org.eclipse.osgi.framework.internal.core.BundleURLConnection"))
             {
-                URLConnection conn = url.openConnection();
-                conn.setDefaultUseCaches(Resource.getDefaultUseCaches());
-                if (BUNDLE_URL_CONNECTION_getLocalURL == null && conn.getClass().getName().equals("org.eclipse.osgi.framework.internal.core.BundleURLConnection"))
-                {
-                    BUNDLE_URL_CONNECTION_getLocalURL = conn.getClass().getMethod("getLocalURL", null);
-                    BUNDLE_URL_CONNECTION_getLocalURL.setAccessible(true);
-                }
-                if (BUNDLE_URL_CONNECTION_getLocalURL != null) { return (URL) BUNDLE_URL_CONNECTION_getLocalURL.invoke(conn, null); }
+                BUNDLE_URL_CONNECTION_getLocalURL = conn.getClass().getMethod("getLocalURL", null);
+                BUNDLE_URL_CONNECTION_getLocalURL.setAccessible(true);
             }
-            catch (Throwable t)
-            {
-                System.err.println("Unable to locate the OSGi url: '" + url + "'.");
-                t.printStackTrace();
-            }
+            if (BUNDLE_URL_CONNECTION_getLocalURL != null) { return (URL) BUNDLE_URL_CONNECTION_getLocalURL.invoke(conn, null); }
         }
         return url;
     }
@@ -335,26 +330,23 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
      * @return a URL to the content of the bundle entry that uses the file:
      *         protocol
      *         </p>
+     * @throws IOException 
      */
-    public URL getFileURL(URL url)
+    public URL getFileURL(URL url) throws Exception
+ 
     {
         if ("bundleresource".equals(url.getProtocol()) || "bundleentry".equals(url.getProtocol()))
         {
-            try
+
+            URLConnection conn = url.openConnection();
+            conn.setDefaultUseCaches(Resource.getDefaultUseCaches());
+            if (BUNDLE_URL_CONNECTION_getFileURL == null && conn.getClass().getName().equals("org.eclipse.osgi.framework.internal.core.BundleURLConnection"))
             {
-                URLConnection conn = url.openConnection();
-                conn.setDefaultUseCaches(Resource.getDefaultUseCaches());
-                if (BUNDLE_URL_CONNECTION_getFileURL == null && conn.getClass().getName().equals("org.eclipse.osgi.framework.internal.core.BundleURLConnection"))
-                {
-                    BUNDLE_URL_CONNECTION_getFileURL = conn.getClass().getMethod("getFileURL", null);
-                    BUNDLE_URL_CONNECTION_getFileURL.setAccessible(true);
-                }
-                if (BUNDLE_URL_CONNECTION_getFileURL != null) { return (URL) BUNDLE_URL_CONNECTION_getFileURL.invoke(conn, null); }
+                BUNDLE_URL_CONNECTION_getFileURL = conn.getClass().getMethod("getFileURL", null);
+                BUNDLE_URL_CONNECTION_getFileURL.setAccessible(true);
             }
-            catch (Throwable t)
-            {
-                t.printStackTrace();
-            }
+            if (BUNDLE_URL_CONNECTION_getFileURL != null) { return (URL) BUNDLE_URL_CONNECTION_getFileURL.invoke(conn, null); }
+
         }
         return url;
     }

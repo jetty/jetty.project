@@ -23,7 +23,6 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
 
@@ -45,6 +44,8 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.HttpChannelState.Next;
 import org.eclipse.jetty.server.handler.ErrorHandler;
+import org.eclipse.jetty.util.BlockingCallback;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -88,6 +89,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     private final HttpChannelState _state;
     private final Request _request;
     private final Response _response;
+    private final BlockingCallback _writeblock=new BlockingCallback();
     private HttpVersion _version = HttpVersion.HTTP_1_1;
     private boolean _expect = false;
     private boolean _expect100Continue = false;
@@ -114,6 +116,11 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     public HttpVersion getHttpVersion()
     {
         return _version;
+    }
+
+    BlockingCallback getWriteBlockingCallback()
+    {
+        return _writeblock;
     }
 
     /**
@@ -174,7 +181,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     {
         return _configuration.getHeaderCacheSize();
     }
-    
+
     /**
      * If the associated response has the Expect header set to 100 Continue,
      * then accessing the input stream indicates that the handler/servlet
@@ -197,7 +204,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
                     throw new IOException("Committed before 100 Continues");
 
                 // TODO: break this dependency with HttpGenerator
-                boolean committed = commitResponse(HttpGenerator.CONTINUE_100_INFO, null, false);
+                boolean committed = sendResponse(HttpGenerator.CONTINUE_100_INFO, null, false);
                 if (!committed)
                     throw new IOException("Concurrent commit while trying to send 100-Continue");
             }
@@ -220,7 +227,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     {
         handle();
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return True if the channel is ready to continue handling (ie it is not suspended)
@@ -278,7 +285,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
             {
                 if ("ContinuationThrowable".equals(e.getClass().getSimpleName()))
                     LOG.ignore(e);
-                else 
+                else
                     throw e;
             }
             catch (Exception e)
@@ -309,9 +316,9 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
 
                 if (!_response.isCommitted() && !_request.isHandled())
                     _response.sendError(404);
-
-                // Complete generating the response
-                _response.complete();
+                else
+                    // Complete generating the response
+                    _response.closeOutput();
             }
             catch(EofException e)
             {
@@ -333,7 +340,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
             _transport.completed();
         }
 
-        LOG.debug("{} handle exit", this);
+        LOG.debug("{} handle exit, result {}", this, next);
 
         return next!=Next.WAIT;
     }
@@ -355,7 +362,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
             {
                 HttpFields fields = new HttpFields();
                 ResponseInfo info = new ResponseInfo(_request.getHttpVersion(), fields, 0, HttpStatus.INTERNAL_SERVER_ERROR_500, null, _request.isHead());
-                boolean committed = commitResponse(info, null, true);
+                boolean committed = sendResponse(info, null, true);
                 if (!committed)
                     LOG.warn("Could not send response error 500: "+x);
             }
@@ -428,12 +435,21 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
             LOG.ignore(e);
             path = _uri.getDecodedPath(StringUtil.__ISO_8859_1);
         }
+        
         String info = URIUtil.canonicalPath(path);
 
         if (info == null)
         {
-            info = "/";
-            _request.setRequestURI("");
+            if( path==null && _uri.getScheme()!=null &&_uri.getHost()!=null)
+            {
+                info = "/";
+                _request.setRequestURI("");
+            }
+            else
+            {
+                badMessage(400,null);
+                return true;
+            }
         }
         _request.setPathInfo(info);
         _version = version == null ? HttpVersion.HTTP_0_9 : version;
@@ -499,9 +515,10 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
                     if (charset != null)
                         _request.setCharacterEncodingUnchecked(charset);
                     break;
+                default:
             }
         }
-        
+
         if (field.getName()!=null)
             _request.getHttpFields().add(field);
         return false;
@@ -545,8 +562,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
                 throw new IllegalStateException();
         }
 
-        // Either handle now or wait for first content/message complete
-        return _expect100Continue;
+        return true;
     }
 
     @Override
@@ -557,7 +573,8 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
         @SuppressWarnings("unchecked")
         HttpInput<T> input = (HttpInput<T>)_request.getHttpInput();
         input.content(item);
-        return true;
+
+        return false;
     }
 
     @Override
@@ -582,61 +599,53 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
         try
         {
             if (_state.handling()==Next.CONTINUE)
-            {
-                commitResponse(new ResponseInfo(HttpVersion.HTTP_1_1,new HttpFields(),0,status,reason,false),null,true);
-            }
+                sendResponse(new ResponseInfo(HttpVersion.HTTP_1_1,new HttpFields(),0,status,reason,false),null,true);
         }
         catch (IOException e)
         {
             LOG.warn(e);
         }
         finally
-        { 
+        {
             if (_state.unhandle()==Next.COMPLETE)
                 _state.completed();
         }
     }
 
-    protected boolean commitResponse(ResponseInfo info, ByteBuffer content, boolean complete) throws IOException
+    protected boolean sendResponse(ResponseInfo info, ByteBuffer content, boolean complete, final Callback callback)
     {
-        boolean committed = _committed.compareAndSet(false, true);
-        if (committed)
+        // TODO check that complete only set true once by changing _committed to AtomicRef<Enum>
+        boolean committing = _committed.compareAndSet(false, true);
+        if (committing)
         {
-            try
-            {
-                // Try to commit with the passed info
-                _transport.send(info, content, complete);
+            // We need an info to commit
+            if (info==null)
+                info = _response.newResponseInfo();
 
-                // If we are committing a 1xx response, we need to reset the commit
-                // status so that the "real" response can be committed again.
-                if (info.getStatus() < 200)
-                    _committed.set(false);
-            }
-            catch (EofException e)
-            {
-                LOG.debug(e);
-                // TODO is it worthwhile sending if we are at EoF?
-                // "application" info failed to commit, commit with a failsafe 500 info
-                _transport.send(HttpGenerator.RESPONSE_500_INFO,null,true);
-                complete=true;
-                throw e;
-            }
-            catch (Exception e)
-            {
-                LOG.warn(e);
-                // "application" info failed to commit, commit with a failsafe 500 info
-                _transport.send(HttpGenerator.RESPONSE_500_INFO,null,true);
-                complete=true;
-                throw e;
-            }
-            finally
-            {
-                // TODO this indicates the relationship with HttpOutput is not exactly correct
-                if (complete)
-                    _response.getHttpOutput().closed();
-            }
+            // wrap callback to process 100 or 500 responses
+            final int status=info.getStatus();
+            final Callback committed = (status<200&&status>=100)?new Commit100Callback(callback):new CommitCallback(callback);
+
+            // committing write
+            _transport.send(info, content, complete, committed);
         }
-        return committed;
+        else if (info==null)
+        {
+            // This is a normal write
+            _transport.send(content, complete, callback);
+        }
+        else
+        {
+            callback.failed(new IllegalStateException("committed"));
+        }
+        return committing;
+    }
+
+    protected boolean sendResponse(ResponseInfo info, ByteBuffer content, boolean complete) throws IOException
+    {
+        boolean committing=sendResponse(info,content,complete,_writeblock);
+        _writeblock.block();
+        return committing;
     }
 
     protected boolean isCommitted()
@@ -645,8 +654,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     }
 
     /**
-     * <p>Requests to write (in a blocking way) the given response content buffer,
-     * committing the response if needed.</p>
+     * <p>Blocking write, committing the response if needed.</p>
      *
      * @param content  the content buffer to write
      * @param complete whether the content is complete for the response
@@ -654,17 +662,20 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
      */
     protected void write(ByteBuffer content, boolean complete) throws IOException
     {
-        if (isCommitted())
-        {
-            _transport.send(null, content, complete);
-        }
-        else
-        {
-            ResponseInfo info = _response.newResponseInfo();
-            boolean committed = commitResponse(info, content, complete);
-            if (!committed)
-                throw new IOException("Concurrent commit");
-        }
+        sendResponse(null,content,complete,_writeblock);
+        _writeblock.block();
+    }
+
+    /**
+     * <p>Non-Blocking write, committing the response if needed.</p>
+     *
+     * @param content  the content buffer to write
+     * @param complete whether the content is complete for the response
+     * @param callback Callback when complete or failed
+     */
+    protected void write(ByteBuffer content, boolean complete, Callback callback)
+    {
+        sendResponse(null,content,complete,callback);
     }
 
     protected void execute(Runnable task)
@@ -676,7 +687,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     {
         return _connector.getScheduler();
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return true if the HttpChannel can efficiently use direct buffer (typically this means it is not over SSL or a multiplexed protocol)
@@ -684,5 +695,77 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     public boolean useDirectBuffers()
     {
         return getEndPoint() instanceof ChannelEndPoint;
+    }
+
+    /**
+     * If a write or similar to this channel fails this method should be called. The standard implementation
+     * of {@link #failed()} is a noop. But the different implementations of HttpChannel might want to take actions.
+     */
+    public void failed()
+    {
+    }
+
+    private class CommitCallback implements Callback
+    {
+        private final Callback _callback;
+
+        private CommitCallback(Callback callback)
+        {
+            _callback = callback;
+        }
+
+        @Override
+        public void succeeded()
+        {
+            _callback.succeeded();
+        }
+
+        @Override
+        public void failed(final Throwable x)
+        {
+            if (x instanceof EofException)
+            {
+                LOG.debug(x);
+                _response.getHttpOutput().closed();
+                _callback.failed(x);
+            }
+            else
+            {
+                LOG.warn(x);
+                _transport.send(HttpGenerator.RESPONSE_500_INFO,null,true,new Callback()
+                {
+                    @Override
+                    public void succeeded()
+                    {
+                        _response.getHttpOutput().closed();
+                        _callback.failed(x);
+                    }
+
+                    @Override
+                    public void failed(Throwable th)
+                    {
+                        LOG.ignore(th);
+                        _response.getHttpOutput().closed();
+                        _callback.failed(x);
+                    }
+                });
+            }
+        }
+    }
+
+    private class Commit100Callback extends CommitCallback
+    {
+        private Commit100Callback(Callback callback)
+        {
+            super(callback);
+        }
+
+        @Override
+        public void succeeded()
+        {
+             _committed.set(false);
+             super.succeeded();
+        }
+
     }
 }

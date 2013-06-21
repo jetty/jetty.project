@@ -60,6 +60,7 @@ public class SPDYClient
     private volatile SocketAddress bindAddress;
     private volatile long idleTimeout = -1;
     private volatile int initialWindowSize;
+    private volatile boolean executeOnFillable;
 
     protected SPDYClient(short version, Factory factory)
     {
@@ -125,6 +126,16 @@ public class SPDYClient
         this.initialWindowSize = initialWindowSize;
     }
 
+    public boolean isExecuteOnFillable()
+    {
+        return executeOnFillable;
+    }
+
+    public void setExecuteOnFillable(boolean executeOnFillable)
+    {
+        this.executeOnFillable = executeOnFillable;
+    }
+
     protected String selectProtocol(List<String> serverProtocols)
     {
         String protocol = "spdy/" + version;
@@ -143,7 +154,7 @@ public class SPDYClient
 
     protected SSLEngine newSSLEngine(SslContextFactory sslContextFactory, SocketChannel channel)
     {
-        String peerHost = channel.socket().getInetAddress().getHostAddress();
+        String peerHost = channel.socket().getInetAddress().getHostName();
         int peerPort = channel.socket().getPort();
         SSLEngine engine = sslContextFactory.newSSLEngine(peerHost, peerPort);
         engine.setUseClientMode(true);

@@ -81,7 +81,7 @@ public class URLResource extends Resource
     /** Release any resources held by the resource.
      */
     @Override
-    public synchronized void release()
+    public synchronized void close()
     {
         if (_in!=null)
         {

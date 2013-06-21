@@ -11,7 +11,7 @@
     <artifactId>spdy-parent</artifactId>
     <packaging>pom</packaging>
     <name>Jetty :: SPDY :: Parent</name>
-
+    <url>http://www.eclipse.org/jetty</url>
     <properties>
         <npn.api.version>1.1.0.v20120525</npn.api.version>
     </properties>
@@ -95,6 +95,18 @@
                 <property>
                     <name>java.version</name>
                     <value>1.7.0_21</value>
+                </property>
+            </activation>
+            <properties>
+                <npn.version>1.1.5.v20130313</npn.version>
+            </properties>
+        </profile>
+        <profile>
+           <id>7u25</id>
+            <activation>
+                <property>
+                    <name>java.version</name>
+                    <value>1.7.0_25</value>
                 </property>
             </activation>
             <properties>

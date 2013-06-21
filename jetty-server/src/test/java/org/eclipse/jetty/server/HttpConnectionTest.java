@@ -138,6 +138,66 @@ public class HttpConnectionTest
         checkContains(response,offset,"pathInfo=/");
     }
 
+    @Test
+    public void testBadNoPath() throws Exception
+    {
+        String response=connector.getResponses("GET http://localhost:80/../cheat HTTP/1.1\n"+
+                "Host: localhost:80\n"+
+                "\n");
+        int offset=0;
+        offset = checkContains(response,offset,"HTTP/1.1 400");
+    }
+
+    @Test
+    public void testOKPathDotDotPath() throws Exception
+    {
+        String response=connector.getResponses("GET /ooops/../path HTTP/1.0\nHost: localhost:80\n\n");
+        checkContains(response,0,"HTTP/1.1 200 OK");
+        checkContains(response,0,"pathInfo=/path");
+    }
+    
+    @Test
+    public void testBadPathDotDotPath() throws Exception
+    {
+        String response=connector.getResponses("GET /ooops/../../path HTTP/1.0\nHost: localhost:80\n\n");
+        checkContains(response,0,"HTTP/1.1 400 Bad Request");
+    }
+    
+    @Test
+    public void testOKPathEncodedDotDotPath() throws Exception
+    {
+        String response=connector.getResponses("GET /ooops/%2e%2e/path HTTP/1.0\nHost: localhost:80\n\n");
+        checkContains(response,0,"HTTP/1.1 200 OK");
+        checkContains(response,0,"pathInfo=/path");
+    }
+    
+    @Test
+    public void testBadPathEncodedDotDotPath() throws Exception
+    {
+        String response=connector.getResponses("GET /ooops/%2e%2e/%2e%2e/path HTTP/1.0\nHost: localhost:80\n\n");
+        checkContains(response,0,"HTTP/1.1 400 Bad Request");
+    }
+    
+    @Test
+    public void testBadDotDotPath() throws Exception
+    {
+        String response=connector.getResponses("GET ../path HTTP/1.0\nHost: localhost:80\n\n");
+        checkContains(response,0,"HTTP/1.1 400 Bad Request");
+    }
+    
+    @Test
+    public void testBadSlashDotDotPath() throws Exception
+    {
+        String response=connector.getResponses("GET /../path HTTP/1.0\nHost: localhost:80\n\n");
+        checkContains(response,0,"HTTP/1.1 400 Bad Request");
+    }
+
+    @Test
+    public void testEncodedBadDotDotPath() throws Exception
+    {
+        String response=connector.getResponses("GET %2e%2e/path HTTP/1.0\nHost: localhost:80\n\n");
+        checkContains(response,0,"HTTP/1.1 400 Bad Request");
+    }
 
     @Test
     public void testEmpty() throws Exception
@@ -158,15 +218,15 @@ public class HttpConnectionTest
     @Test
     public void testHead() throws Exception
     {
-        String responseHEAD=connector.getResponses("HEAD /R1 HTTP/1.1\015\012"+
-                "Host: localhost\015\012"+
-                "Connection: close\015\012"+
-                "\015\012");
-
         String responsePOST=connector.getResponses("POST /R1 HTTP/1.1\015\012"+
                 "Host: localhost\015\012"+
                 "Connection: close\015\012"+
                 "\015\012");
+        
+        String responseHEAD=connector.getResponses("HEAD /R1 HTTP/1.1\015\012"+
+            "Host: localhost\015\012"+
+            "Connection: close\015\012"+
+            "\015\012");
 
         assertThat(responsePOST,startsWith(responseHEAD.substring(0,responseHEAD.length()-2)));
         assertThat(responsePOST.length(),greaterThan(responseHEAD.length()));

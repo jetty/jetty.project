@@ -615,7 +615,12 @@ public class ProxyServlet extends HttpServlet
             if (!path.startsWith(_prefix))
                 return null;
 
-            URI rewrittenURI = URI.create(_proxyTo + path.substring(_prefix.length())).normalize();
+            StringBuilder uri = new StringBuilder(_proxyTo);
+            uri.append(path.substring(_prefix.length()));
+            String query = request.getQueryString();
+            if (query != null)
+                uri.append("?").append(query);
+            URI rewrittenURI = URI.create(uri.toString()).normalize();
 
             if (!validateDestination(rewrittenURI.getHost(), rewrittenURI.getPort()))
                 return null;

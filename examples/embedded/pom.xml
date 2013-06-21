@@ -10,6 +10,7 @@
   <artifactId>example-jetty-embedded</artifactId>
   <name>Example :: Jetty Embedded</name>
   <description>Jetty Embedded Examples</description>
+  <url>http://www.eclipse.org/jetty</url>
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -54,6 +55,21 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-plus</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-annotations</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.tests</groupId>
+      <artifactId>test-mock-resources</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-proxy</artifactId>
       <version>${project.version}</version>
     </dependency>
      <dependency>

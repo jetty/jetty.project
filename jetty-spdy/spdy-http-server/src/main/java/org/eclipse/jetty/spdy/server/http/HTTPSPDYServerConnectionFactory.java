@@ -97,6 +97,14 @@ public class HTTPSPDYServerConnectionFactory extends SPDYServerConnectionFactory
             logger.debug("Received {} on {}", synInfo, stream);
 
             Fields headers = synInfo.getHeaders();
+            // According to SPDY/3 spec section 3.2.1 user-agents MUST support gzip compression. Firefox omits the
+            // accept-encoding header as it is redundant to negotiate gzip compression support with the server,
+            // if clients have to accept it.
+            // So we inject the accept-encoding header here, even if not set by the client. This will enforce SPDY
+            // clients to follow the spec and enable gzip compression if GzipFilter or the like is enabled.
+            if (!(headers.get("accept-encoding") != null && headers.get("accept-encoding").value().contains
+                    ("gzip")))
+                headers.add("accept-encoding", "gzip");
             HttpTransportOverSPDY transport = new HttpTransportOverSPDY(connector, httpConfiguration, endPoint, pushStrategy, stream, headers);
             HttpInputOverSPDY input = new HttpInputOverSPDY();
             HttpChannelOverSPDY channel = new HttpChannelOverSPDY(connector, httpConfiguration, endPoint, transport, input, stream);

@@ -68,6 +68,7 @@ import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
@@ -233,6 +234,17 @@ public class ProxyServletTest
     public void testProxyWithResponseContent() throws Exception
     {
         prepareProxy(new ProxyServlet());
+
+        HttpClient result = new HttpClient();
+        result.setProxyConfiguration(new ProxyConfiguration("localhost", proxyConnector.getLocalPort()));
+        QueuedThreadPool threadPool = new QueuedThreadPool();
+        threadPool.setName("foo");
+        threadPool.setMaxThreads(2);
+        result.setExecutor(threadPool);
+        result.start();
+
+        ContentResponse[] responses = new ContentResponse[10];
+
         final byte[] content = new byte[1024];
         Arrays.fill(content, (byte)'A');
         prepareServer(new HttpServlet()
@@ -246,14 +258,22 @@ public class ProxyServletTest
             }
         });
 
-        // Request is for the target server
-        ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+        for ( int i = 0; i < 10; ++i )
+        {
+         // Request is for the target server
+            responses[i] = result.newRequest("localhost", serverConnector.getLocalPort())
+                    .timeout(5, TimeUnit.SECONDS)
+                    .send();
+        }
 
-        Assert.assertEquals(200, response.getStatus());
-        Assert.assertTrue(response.getHeaders().containsKey(PROXIED_HEADER));
-        Assert.assertArrayEquals(content, response.getContent());
+
+        for ( int i = 0; i < 10; ++i )
+        {
+
+        Assert.assertEquals(200, responses[i].getStatus());
+        Assert.assertTrue(responses[i].getHeaders().containsKey(PROXIED_HEADER));
+        Assert.assertArrayEquals(content, responses[i].getContent());
+        }
     }
 
     @Test
@@ -652,6 +672,45 @@ public class ProxyServletTest
         // Make the request to the proxy, it should transparently forward to the server
         ContentResponse response = client.newRequest("localhost", proxyConnector.getLocalPort())
                 .path(prefix + target)
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertTrue(response.getHeaders().containsKey(PROXIED_HEADER));
+    }
+
+    @Test
+    public void testTransparentProxyWithQuery() throws Exception
+    {
+        final String target = "/test";
+        final String query = "a=1&b=2";
+        prepareServer(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                if (req.getHeader("Via") != null)
+                    resp.addHeader(PROXIED_HEADER, "true");
+
+                if (target.equals(req.getRequestURI()))
+                {
+                    if (query.equals(req.getQueryString()))
+                    {
+                        resp.setStatus(200);
+                        return;
+                    }
+                }
+                resp.setStatus(404);
+            }
+        });
+
+        String proxyTo = "http://localhost:" + serverConnector.getLocalPort();
+        String prefix = "/proxy";
+        ProxyServlet.Transparent proxyServlet = new ProxyServlet.Transparent(proxyTo, prefix);
+        prepareProxy(proxyServlet);
+
+        // Make the request to the proxy, it should transparently forward to the server
+        ContentResponse response = client.newRequest("localhost", proxyConnector.getLocalPort())
+                .path(prefix + target + "?" + query)
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
         Assert.assertEquals(200, response.getStatus());

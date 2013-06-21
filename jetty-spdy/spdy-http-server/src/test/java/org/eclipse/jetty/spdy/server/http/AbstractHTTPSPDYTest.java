@@ -31,6 +31,8 @@ import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
 import org.eclipse.jetty.spdy.client.SPDYClient;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
 import org.junit.Rule;
@@ -89,6 +91,11 @@ public abstract class AbstractHTTPSPDYTest
         return new InetSocketAddress("localhost", connector.getLocalPort());
     }
 
+    protected Server getServer()
+    {
+        return server;
+    }
+
     protected HTTPSPDYServerConnector newHTTPSPDYServerConnector(short version)
     {
         // For these tests, we need the connector to speak HTTP over SPDY even in non-SSL
@@ -121,6 +128,7 @@ public abstract class AbstractHTTPSPDYTest
     @After
     public void destroy() throws Exception
     {
+        ((StdErrLog)Log.getLogger(HTTPSPDYServerConnector.class)).setHideStacks(true);
         if (clientFactory != null)
         {
             clientFactory.stop();
@@ -130,5 +138,6 @@ public abstract class AbstractHTTPSPDYTest
             server.stop();
             server.join();
         }
+        ((StdErrLog)Log.getLogger(HTTPSPDYServerConnector.class)).setHideStacks(false);
     }
 }

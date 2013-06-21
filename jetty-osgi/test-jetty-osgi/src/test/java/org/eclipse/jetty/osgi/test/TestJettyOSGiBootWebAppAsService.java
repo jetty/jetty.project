@@ -148,7 +148,6 @@ public class TestJettyOSGiBootWebAppAsService
     @Test
     public void testBundle() throws Exception
     {
-
         // now test the jsp/dump.jsp
         HttpClient client = new HttpClient();
         try

@@ -27,6 +27,7 @@
   <groupId>org.eclipse.jetty.tests</groupId>
   <artifactId>tests-parent</artifactId>
   <name>Jetty Tests :: Parent</name>
+  <url>http://www.eclipse.org/jetty</url>
   <packaging>pom</packaging>
   <build>
     <plugins>

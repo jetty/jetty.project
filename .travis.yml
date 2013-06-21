@@ -1,8 +1,0 @@
-branches:
-  only:
-    - /^release-.*$/
-language: java
-script: mvn install
-jdk:
-  - openjdk7
-  - oraclejdk7

@@ -8,12 +8,12 @@
   <artifactId>jetty-project</artifactId>
   <version>9.0.4-SNAPSHOT</version>
   <name>Jetty :: Project</name>
-  <url>${jetty.url}</url>
+  <url>http://www.eclipse.org/jetty</url>
   <packaging>pom</packaging>
   <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <jetty.url>http://www.eclipse.org/jetty</jetty.url>
     <orbit-servlet-api-version>3.0.0.v201112011016</orbit-servlet-api-version>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <build-support-version>1.1</build-support-version>
     <slf4j-version>1.6.1</slf4j-version>
     <jetty-test-policy-version>1.2</jetty-test-policy-version>
@@ -446,8 +446,8 @@
     <module>jetty-osgi</module>
     <module>jetty-rewrite</module>
     <module>jetty-nosql</module>
-    <module>examples</module>
     <module>tests</module>
+    <module>examples</module>
     <module>jetty-distribution</module>
     <module>jetty-runner</module>
     <module>jetty-monitor</module>
@@ -456,6 +456,7 @@
     <module>jetty-rhttp</module>
     <module>jetty-http-spi</module>
     -->
+    <module>jetty-overlay-deployer</module>
   </modules>
   <dependencyManagement>
     <dependencies>
@@ -542,7 +543,7 @@
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
         <artifactId>jetty-test-helper</artifactId>
-        <version>2.2</version>
+        <version>2.3</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
@@ -678,7 +679,7 @@
             <configuration>
               <excludePackageNames>com.acme</excludePackageNames>
               <links>
-                <link>http://docs.oracle.com/javase/6/docs/api/</link>
+                <link>http://docs.oracle.com/javase/7/docs/api/</link>
                 <link>http://docs.oracle.com/javaee/6/api</link>
                 <link>http://junit.sourceforge.net/javadoc/</link>
               </links>
@@ -708,5 +709,31 @@
         </plugins>
       </build>
     </profile>
+    <profile>
+      <id>api-change</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>clirr-maven-plugin</artifactId>
+            <version>2.5</version>
+            <executions>
+              <execution>
+                <id>compare-api</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>clirr</goal>
+                </goals>
+              </execution>
+            </executions>
+            <configuration>
+              <minSeverity>info</minSeverity>
+              <comparisonVersion>9.0.3.v20130506</comparisonVersion>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
   </profiles>
 </project>
+

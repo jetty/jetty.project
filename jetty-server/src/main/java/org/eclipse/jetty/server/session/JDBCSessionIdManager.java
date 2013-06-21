@@ -580,11 +580,11 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
     @Override
     public void doStart()
     throws Exception
-    {
+    {           
         initializeDatabase();
-        prepareTables();
+        prepareTables();   
         super.doStart();
-        if (LOG.isDebugEnabled())
+        if (LOG.isDebugEnabled()) 
             LOG.debug("Scavenging interval = "+getScavengeInterval()+" sec");
         _timer=new Timer("JDBCSessionScavenger", true);
         setScavengeInterval(getScavengeInterval());

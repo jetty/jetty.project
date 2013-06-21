@@ -19,9 +19,9 @@
 package org.eclipse.jetty.util;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /* ------------------------------------------------------------ */
@@ -55,7 +55,7 @@ public class BlockingCallback implements Callback
 {
     private static Throwable COMPLETED=new Throwable();
     private final AtomicBoolean _done=new AtomicBoolean(false);
-    private final Semaphore _semaphone = new Semaphore(0);
+    private final Semaphore _semaphore = new Semaphore(0);
     private Throwable _cause;
     
     public BlockingCallback()
@@ -67,7 +67,7 @@ public class BlockingCallback implements Callback
         if (_done.compareAndSet(false,true))
         {
             _cause=COMPLETED;
-            _semaphone.release();
+            _semaphore.release();
         }
     }
 
@@ -77,7 +77,7 @@ public class BlockingCallback implements Callback
         if (_done.compareAndSet(false,true))
         {
             _cause=cause;
-            _semaphone.release();
+            _semaphore.release();
         }
     }
 
@@ -87,24 +87,24 @@ public class BlockingCallback implements Callback
      * This is useful for code that wants to repeatable use a FutureCallback to convert
      * an asynchronous API to a blocking API. 
      * @return
-     * @throws InterruptedException
      * @throws IOException
-     * @throws TimeoutException
      */
-    public void block() throws InterruptedException, IOException, TimeoutException
+    public void block() throws IOException
     {
-        _semaphone.acquire();
         try
         {
+            _semaphore.acquire();
             if (_cause==COMPLETED)
                 return;
             if (_cause instanceof IOException)
                 throw (IOException) _cause;
             if (_cause instanceof CancellationException)
                 throw (CancellationException) _cause;
-            if (_cause instanceof TimeoutException)
-                throw (TimeoutException) _cause;
             throw new IOException(_cause);
+        }
+        catch (final InterruptedException e)
+        {
+            throw new InterruptedIOException(){{initCause(e);}};
         }
         finally
         {

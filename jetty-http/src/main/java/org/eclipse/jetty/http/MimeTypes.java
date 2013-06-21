@@ -22,10 +22,12 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
+import java.util.Set;
 
 import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.BufferUtil;
@@ -194,7 +196,7 @@ public class MimeTypes
                 _mimeMap.put(StringUtil.asciiToLowerCase(ext),normalizeMimeType(mimeMap.get(ext)));
         }
     }
-
+    
     /* ------------------------------------------------------------ */
     /** Get the MIME type by filename extension.
      * @param filename A file name
@@ -244,6 +246,12 @@ public class MimeTypes
         _mimeMap.put(StringUtil.asciiToLowerCase(extension),normalizeMimeType(type));
     }
 
+    /* ------------------------------------------------------------ */
+    public static Set<String> getKnownMimeTypes()
+    {
+        return new HashSet<>(__dftMimeMap.values());
+    }
+    
     /* ------------------------------------------------------------ */
     private static String normalizeMimeType(String type)
     {

@@ -43,8 +43,8 @@ public abstract class HttpInput<T> extends ServletInputStream
 {
     private final static Logger LOG = Log.getLogger(HttpInput.class);
     private final ArrayQueue<T> _inputQ = new ArrayQueue<>();
-    private boolean _earlyEOF;
-    private boolean _inputEOF;
+    protected boolean _earlyEOF;
+    protected boolean _inputEOF;
 
     public Object lock()
     {

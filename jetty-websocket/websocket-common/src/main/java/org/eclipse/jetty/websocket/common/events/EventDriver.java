@@ -163,7 +163,14 @@ public abstract class EventDriver implements IncomingFrames
     {
         LOG.debug("openSession({})",session);
         this.session = session;
-        this.onConnect();
+        try
+        {
+            this.onConnect();
+        }
+        catch (Throwable t)
+        {
+            unhandled(t);
+        }
     }
 
     protected void terminateConnection(int statusCode, String rawreason)
@@ -177,6 +184,7 @@ public abstract class EventDriver implements IncomingFrames
     private void unhandled(Throwable t)
     {
         LOG.warn("Unhandled Error (closing connection)",t);
+        onError(t);
 
         // Unhandled Error, close the connection.
         switch (policy.getBehavior())

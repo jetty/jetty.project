@@ -244,8 +244,7 @@ public class JDBCSessionManager extends AbstractSessionManager
         @Override
         public void setAttribute (String name, Object value)
         {
-            super.setAttribute(name, value);
-            _dirty=true;
+            _dirty=updateAttribute(name, value);
         }
 
         @Override

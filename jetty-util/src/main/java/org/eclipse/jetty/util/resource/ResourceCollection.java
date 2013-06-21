@@ -21,7 +21,6 @@ package org.eclipse.jetty.util.resource;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.channels.ReadableByteChannel;
@@ -32,7 +31,6 @@ import java.util.List;
 import java.util.StringTokenizer;
 
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -228,12 +226,15 @@ public class ResourceCollection extends Resource
             Resource r = _resources[i].addPath(path); 
             if (r.exists() && r.isDirectory())
             {
+                if (resources==null)
+                    resources = new ArrayList<Resource>();
+                    
                 if (resource!=null)
                 {
-                    resources = new ArrayList<Resource>();
                     resources.add(resource);
                     resource=null;
                 }
+                
                 resources.add(r);
             }
         }
@@ -443,13 +444,13 @@ public class ResourceCollection extends Resource
     
     /* ------------------------------------------------------------ */
     @Override
-    public void release()
+    public void close()
     {
         if(_resources==null)
             throw new IllegalStateException("*resources* not set.");
         
         for(Resource r : _resources)
-            r.release();
+            r.close();
     }
     
     /* ------------------------------------------------------------ */

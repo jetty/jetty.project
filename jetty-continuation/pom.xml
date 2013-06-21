@@ -8,6 +8,7 @@
   <artifactId>jetty-continuation</artifactId>
   <name>Jetty :: Continuation</name>
   <description>Asynchronous API</description>
+  <url>http://www.eclipse.org/jetty</url>
   <properties>
     <bundle-symbolic-name>${project.groupId}.continuation</bundle-symbolic-name>
   </properties>

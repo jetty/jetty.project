@@ -169,6 +169,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     private final List<ServletContextAttributeListener> _contextAttributeListeners=new CopyOnWriteArrayList<>();
     private final List<ServletRequestListener> _requestListeners=new CopyOnWriteArrayList<>();
     private final List<ServletRequestAttributeListener> _requestAttributeListeners=new CopyOnWriteArrayList<>();
+    private final List<EventListener> _durableListeners = new CopyOnWriteArrayList<>();
     private Map<String, Object> _managedAttributes;
     private String[] _protectedTargets;
     private final CopyOnWriteArrayList<AliasCheck> _aliasChecks = new CopyOnWriteArrayList<ContextHandler.AliasCheck>();
@@ -547,7 +548,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         _contextAttributeListeners.clear();
         _requestListeners.clear();
         _requestAttributeListeners.clear();
-
+        _eventListeners.clear();
+        
         if (eventListeners!=null)
             for (EventListener listener : eventListeners)
                 addEventListener(listener);
@@ -565,6 +567,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     public void addEventListener(EventListener listener)
     {
         _eventListeners.add(listener);
+
+        if (!(isStarted() || isStarting()))
+            _durableListeners.add(listener);
 
         if (listener instanceof ServletContextListener)
             _contextListeners.add((ServletContextListener)listener);
@@ -621,6 +626,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     {
         return _programmaticListeners.contains(listener);
     }
+
+    
 
     /* ------------------------------------------------------------ */
     /**
@@ -820,6 +827,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 for (int i = _contextListeners.size(); i-->0;)
                     callContextDestroyed(_contextListeners.get(i),event);
             }
+            
+            //retain only durable listeners
+            setEventListeners(_durableListeners.toArray(new EventListener[_durableListeners.size()]));
+            _durableListeners.clear();
 
             if (_errorHandler != null)
                 _errorHandler.stop();
@@ -1820,13 +1831,14 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                     query = uriInContext.substring(q + 1);
                     uriInContext = uriInContext.substring(0,q);
                 }
-                // if ((q = uriInContext.indexOf(';')) > 0)
-                //     uriInContext = uriInContext.substring(0,q);
 
                 String pathInContext = URIUtil.canonicalPath(URIUtil.decodePath(uriInContext));
-                String uri = URIUtil.addPaths(getContextPath(),uriInContext);
-                ContextHandler context = ContextHandler.this;
-                return new Dispatcher(context,uri,pathInContext,query);
+                if (pathInContext!=null)
+                {
+                    String uri = URIUtil.addPaths(getContextPath(),uriInContext);
+                    ContextHandler context = ContextHandler.this;
+                    return new Dispatcher(context,uri,pathInContext,query);
+                }
             }
             catch (Exception e)
             {

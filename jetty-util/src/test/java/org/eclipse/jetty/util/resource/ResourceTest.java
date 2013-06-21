@@ -33,11 +33,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-import java.util.TimeZone;
-import java.util.jar.JarFile;
 import java.util.zip.ZipFile;
-
-import junit.framework.Assert;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.OS;
@@ -329,13 +325,13 @@ public class ResourceTest
     {
         String s = "jar:"+__userURL+"TestData/test.zip!/subdir/numbers";
 
-        
-        ZipFile zf = new ZipFile(MavenTestingUtils.getTestResourceFile("TestData/test.zip"));
-        
-        long last = zf.getEntry("subdir/numbers").getTime();
+        try(ZipFile zf = new ZipFile(MavenTestingUtils.getTestResourceFile("TestData/test.zip")))
+        {
+            long last = zf.getEntry("subdir/numbers").getTime();
 
-        Resource r = Resource.newResource(s);
-        assertEquals(last,r.lastModified());
+            Resource r = Resource.newResource(s);
+            assertEquals(last,r.lastModified());
+        }
     }
     
     /* ------------------------------------------------------------ */
@@ -367,6 +363,7 @@ public class ResourceTest
         assertEquals(1, dest.getParentFile().listFiles().length);
 
         FilenameFilter dotdotFilenameFilter = new FilenameFilter() {
+            @Override
             public boolean accept(File directory, String name)
             {
                 return name.equals("dotdot.txt");
@@ -376,6 +373,7 @@ public class ResourceTest
         assertEquals(0, dest.getParentFile().listFiles(dotdotFilenameFilter).length);
 
         FilenameFilter extractfileFilenameFilter = new FilenameFilter() {
+            @Override
             public boolean accept(File directory, String name)
             {
                 return name.equals("extract-filenotdir");
@@ -385,6 +383,7 @@ public class ResourceTest
         assertEquals(0, dest.getParentFile().listFiles(extractfileFilenameFilter).length);
 
         FilenameFilter currentDirectoryFilenameFilter = new FilenameFilter() {
+            @Override
             public boolean accept(File directory, String name)
             {
                 return name.equals("current.txt");
@@ -405,15 +404,14 @@ public class ResourceTest
     {
         final String classPathName="Resource.class";
 
-        Resource resource=Resource.newClassPathResource(classPathName);
+        try(Resource resource=Resource.newClassPathResource(classPathName);)
+        {
+            // A class path cannot be a directory
+            assertFalse("Class path cannot be a directory.",resource.isDirectory());
 
-        assertTrue(resource!=null);
-
-        // A class path cannot be a directory
-        assertFalse("Class path cannot be a directory.",resource.isDirectory());
-
-        // A class path must exist
-        assertTrue("Class path resource does not exist.",resource.exists());
+            // A class path must exist
+            assertTrue("Class path resource does not exist.",resource.exists());
+        }
     }
 
     /**
@@ -425,8 +423,6 @@ public class ResourceTest
         final String classPathName="/org/eclipse/jetty/util/resource/Resource.class";
 
         Resource resource=Resource.newClassPathResource(classPathName);
-
-        assertTrue(resource!=null);
 
         // A class path cannot be a directory
         assertFalse("Class path cannot be a directory.",resource.isDirectory());
@@ -444,9 +440,6 @@ public class ResourceTest
         final String classPathName="/";
 
         Resource resource=Resource.newClassPathResource(classPathName);
-
-
-        assertTrue(resource!=null);
 
         // A class path must be a directory
         assertTrue("Class path must be a directory.",resource.isDirectory());
@@ -469,8 +462,6 @@ public class ResourceTest
         // Will locate a resource in the class path
         Resource resource=Resource.newClassPathResource(classPathName);
 
-        assertTrue(resource!=null);
-
         // A class path cannot be a directory
         assertFalse("Class path must be a directory.",resource.isDirectory());
 
@@ -478,7 +469,6 @@ public class ResourceTest
 
         File file=resource.getFile();
 
-        assertTrue("File returned from class path should not be null.",file!=null);
         assertEquals("File name from class path is not equal.",fileName,file.getName());
         assertTrue("File returned from class path should be a file.",file.isFile());
 
@@ -492,7 +482,7 @@ public class ResourceTest
         // This test is intended to run only on Windows platform
         assumeTrue(OS.IS_WINDOWS);
 
-        String path = __userURL.toURI().getPath().replace('/','\\')+"ResourceTest.java";
+        String path = __userURL.toURI().getPath().replace('/','\\')+"resource.txt";
         System.err.println(path);
 
         Resource resource = Resource.newResource(path, false);

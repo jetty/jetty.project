@@ -1303,6 +1303,15 @@ public class SslContextFactory extends AbstractLifeCycle
         return socket;
     }
 
+    /**
+     * Factory method for "scratch" {@link SSLEngine}s, usually only used for retrieving configuration
+     * information such as the application buffer size or the list of protocols/ciphers.
+     * <p />
+     * This method should not be used for creating {@link SSLEngine}s that are used in actual socket
+     * communication.
+     *
+     * @return a new, "scratch" {@link SSLEngine}
+     */
     public SSLEngine newSSLEngine()
     {
         if (!isRunning())
@@ -1312,6 +1321,14 @@ public class SslContextFactory extends AbstractLifeCycle
         return sslEngine;
     }
 
+    /**
+     * General purpose factory method for creating {@link SSLEngine}s, although creation of
+     * {@link SSLEngine}s on the server-side should prefer {@link #newSSLEngine(InetSocketAddress)}.
+     *
+     * @param host the remote host
+     * @param port the remote port
+     * @return a new {@link SSLEngine}
+     */
     public SSLEngine newSSLEngine(String host, int port)
     {
         if (!isRunning())
@@ -1323,10 +1340,32 @@ public class SslContextFactory extends AbstractLifeCycle
         return sslEngine;
     }
 
+    /**
+     * Server-side only factory method for creating {@link SSLEngine}s.
+     * <p />
+     * If the given {@code address} is null, it is equivalent to {@link #newSSLEngine()}, otherwise
+     * {@link #newSSLEngine(String, int)} is called.
+     * <p />
+     * If {@link #getNeedClientAuth()} is {@code true}, then the host name is passed to
+     * {@link #newSSLEngine(String, int)}, possibly incurring in a reverse DNS lookup, which takes time
+     * and may hang the selector (since this method is usually called by the selector thread).
+     * <p />
+     * Otherwise, the host address is passed to {@link #newSSLEngine(String, int)} without DNS lookup
+     * penalties.
+     * <p />
+     * Clients that wish to create {@link SSLEngine} instances must use {@link #newSSLEngine(String, int)}.
+     *
+     * @param address the remote peer address
+     * @return a new {@link SSLEngine}
+     */
     public SSLEngine newSSLEngine(InetSocketAddress address)
     {
-        // Must use the hostName, not the hostAddress, to allow correct host name verification
-        return address != null ? newSSLEngine(address.getAddress().getHostName(), address.getPort()) : newSSLEngine();
+        if (address == null)
+            return newSSLEngine();
+
+        boolean useHostName = getNeedClientAuth();
+        String hostName = useHostName ? address.getHostName() : address.getAddress().getHostAddress();
+        return newSSLEngine(hostName, address.getPort());
     }
 
     public void customize(SSLEngine sslEngine)

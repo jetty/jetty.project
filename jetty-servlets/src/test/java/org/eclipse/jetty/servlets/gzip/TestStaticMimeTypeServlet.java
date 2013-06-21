@@ -67,6 +67,7 @@ public class TestStaticMimeTypeServlet extends TestDirContentServlet
         byte[] dataBytes = loadContentFileBytes(fileName);
 
         response.setContentLength(dataBytes.length);
+        response.setHeader("ETag","W/etag-"+fileName);
 
         String mime = mimeTypes.getMimeByExtension(fileName);
         if (mime == null)

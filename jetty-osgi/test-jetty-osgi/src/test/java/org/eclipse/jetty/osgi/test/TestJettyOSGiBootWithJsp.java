@@ -118,9 +118,14 @@ public class TestJettyOSGiBootWithJsp
                 + jettySelectorFileName
                 + ";"
                 + etc
+                + "/jetty-ssl.xml;"
+                + etc
+                + "/jetty-https.xml;"
+                + etc
                 + "/jetty-deployer.xml;"
                 + etc
                 + "/jetty-testrealm.xml";
+
         options.add(systemProperty(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS).value(xmlConfigs));
         options.add(systemProperty("jetty.port").value(String.valueOf(TestJettyOSGiBootCore.DEFAULT_JETTY_HTTP_PORT)));
         options.add(systemProperty("jetty.home").value(etcFolder.getParentFile().getAbsolutePath()));

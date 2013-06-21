@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.server;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -27,6 +28,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -51,6 +53,8 @@ import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
 import org.eclipse.jetty.websocket.common.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionFactory;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 
@@ -134,38 +138,49 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     @Override
     public boolean acceptWebSocket(HttpServletRequest request, HttpServletResponse response) throws IOException
     {
-        ServletWebSocketRequest sockreq = new ServletWebSocketRequest(request);
-        ServletWebSocketResponse sockresp = new ServletWebSocketResponse(response);
-
-        WebSocketCreator creator = getCreator();
-
-        UpgradeContext context = getActiveUpgradeContext();
-        if (context == null)
+        try
         {
-            context = new UpgradeContext();
-            setActiveUpgradeContext(context);
+            // TODO: use ServletUpgradeRequest in Jetty 9.1
+            @SuppressWarnings("deprecation")
+            ServletWebSocketRequest sockreq = new ServletWebSocketRequest(request);
+            // TODO: use ServletUpgradeResponse in Jetty 9.1
+            @SuppressWarnings("deprecation")
+            ServletWebSocketResponse sockresp = new ServletWebSocketResponse(response);
+
+            WebSocketCreator creator = getCreator();
+
+            UpgradeContext context = getActiveUpgradeContext();
+            if (context == null)
+            {
+                context = new UpgradeContext();
+                setActiveUpgradeContext(context);
+            }
+            context.setRequest(sockreq);
+            context.setResponse(sockresp);
+
+            Object websocketPojo = creator.createWebSocket(sockreq,sockresp);
+
+            // Handle response forbidden (and similar paths)
+            if (sockresp.isCommitted())
+            {
+                return false;
+            }
+
+            if (websocketPojo == null)
+            {
+                // no creation, sorry
+                response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+                return false;
+            }
+
+            // Send the upgrade
+            EventDriver driver = eventDriverFactory.wrap(websocketPojo);
+            return upgrade(sockreq,sockresp,driver);
         }
-        context.setRequest(sockreq);
-        context.setResponse(sockresp);
-
-        Object websocketPojo = creator.createWebSocket(sockreq,sockresp);
-
-        // Handle response forbidden (and similar paths)
-        if (sockresp.isCommitted())
+        catch (URISyntaxException e)
         {
-            return false;
+            throw new IOException("Unable to accept websocket due to mangled URI",e);
         }
-
-        if (websocketPojo == null)
-        {
-            // no creation, sorry
-            response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
-            return false;
-        }
-
-        // Send the upgrade
-        EventDriver driver = eventDriverFactory.wrap(websocketPojo);
-        return upgrade(sockreq,sockresp,driver);
     }
 
     @Override
@@ -307,7 +322,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
 
     /*
      * (non-Javadoc)
-     *
+     * 
      * @see org.eclipse.jetty.websocket.server.WebSocketServletFactory#register(java.lang.Class)
      */
     @Override
@@ -348,7 +363,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
      * <p>
      * This method will not normally return, but will instead throw a UpgradeConnectionException, to exit HTTP handling and initiate WebSocket handling of the
      * connection.
-     *
+     * 
      * @param request
      *            The request to upgrade
      * @param response
@@ -357,7 +372,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
      *            The websocket handler implementation to use
      * @throws IOException
      */
-    public boolean upgrade(ServletWebSocketRequest request, ServletWebSocketResponse response, EventDriver driver) throws IOException
+    public boolean upgrade(ServletUpgradeRequest request, ServletUpgradeResponse response, EventDriver driver) throws IOException
     {
         if (!"websocket".equalsIgnoreCase(request.getHeader("Upgrade")))
         {

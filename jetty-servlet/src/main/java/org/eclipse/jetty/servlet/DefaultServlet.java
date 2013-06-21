@@ -28,6 +28,7 @@ import java.nio.ByteBuffer;
 import java.util.Enumeration;
 import java.util.List;
 
+import javax.servlet.AsyncContext;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -49,6 +50,7 @@ import org.eclipse.jetty.server.ResourceCache;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiPartOutputStream;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
@@ -565,7 +567,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             if (content!=null)
                 content.release();
             else if (resource!=null)
-                resource.release();
+                resource.close();
         }
 
     }
@@ -656,7 +658,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                     if (ifm!=null)
                     {
                         boolean match=false;
-                        if (content!=null && content.getETag()!=null)
+                        if (content.getETag()!=null)
                         {
                             QuotedStringTokenizer quoted = new QuotedStringTokenizer(ifm,", ",false,true);
                             while (!match && quoted.hasMoreTokens())
@@ -669,48 +671,39 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
 
                         if (!match)
                         {
-                            Response r = Response.getResponse(response);
-                            r.reset(true);
-                            r.setStatus(HttpServletResponse.SC_PRECONDITION_FAILED);
+                            response.setStatus(HttpServletResponse.SC_PRECONDITION_FAILED);
                             return false;
                         }
                     }
                     
-                    String ifnm=request.getHeader(HttpHeader.IF_NONE_MATCH.asString());
-                    if (ifnm!=null && content!=null && content.getETag()!=null)
+                    String if_non_match_etag=request.getHeader(HttpHeader.IF_NONE_MATCH.asString());
+                    if (if_non_match_etag!=null && content.getETag()!=null)
                     {
                         // Look for GzipFiltered version of etag
                         if (content.getETag().toString().equals(request.getAttribute("o.e.j.s.GzipFilter.ETag")))
                         {
-                            Response r = Response.getResponse(response);
-                            r.reset(true);
-                            r.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
-                            r.getHttpFields().put(HttpHeader.ETAG,ifnm);
+                            response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
+                            response.setHeader(HttpHeader.ETAG.asString(),if_non_match_etag);
                             return false;
                         }
                         
-                        
                         // Handle special case of exact match.
-                        if (content.getETag().toString().equals(ifnm))
+                        if (content.getETag().toString().equals(if_non_match_etag))
                         {
-                            Response r = Response.getResponse(response);
-                            r.reset(true);
-                            r.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
-                            r.getHttpFields().put(HttpHeader.ETAG,content.getETag());
+                            response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
+                            response.setHeader(HttpHeader.ETAG.asString(),content.getETag());
                             return false;
                         }
 
                         // Handle list of tags
-                        QuotedStringTokenizer quoted = new QuotedStringTokenizer(ifnm,", ",false,true);
+                        QuotedStringTokenizer quoted = new QuotedStringTokenizer(if_non_match_etag,", ",false,true);
                         while (quoted.hasMoreTokens())
                         {
                             String tag = quoted.nextToken();
                             if (content.getETag().toString().equals(tag))
                             {
-                                Response r = Response.getResponse(response);
-                                r.reset(true);
-                                r.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
-                                r.getHttpFields().put(HttpHeader.ETAG,content.getETag());
+                                response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
+                                response.setHeader(HttpHeader.ETAG.asString(),content.getETag());
                                 return false;
                             }
                         }
@@ -725,46 +718,33 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 if (ifms!=null)
                 {
                     //Get jetty's Response impl
-                    Response r = Response.getResponse(response);
-                                       
-                    if (content!=null)
+                    String mdlm=content.getLastModified();
+                    if (mdlm!=null && ifms.equals(mdlm))
                     {
-                        String mdlm=content.getLastModified();
-                        if (mdlm!=null)
-                        {
-                            if (ifms.equals(mdlm))
-                            {
-                                r.reset(true);
-                                r.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
-                                r.flushBuffer();
-                                return false;
-                            }
-                        }
+                        response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
+                        if (_etags)
+                            response.setHeader(HttpHeader.ETAG.asString(),content.getETag());
+                        response.flushBuffer();
+                        return false;
                     }
 
                     long ifmsl=request.getDateHeader(HttpHeader.IF_MODIFIED_SINCE.asString());
-                    if (ifmsl!=-1)
-                    {
-                        if (resource.lastModified()/1000 <= ifmsl/1000)
-                        { 
-                            r.reset(true);
-                            r.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
-                            r.flushBuffer();
-                            return false;
-                        }
+                    if (ifmsl!=-1 && resource.lastModified()/1000 <= ifmsl/1000)
+                    { 
+                        response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
+                        if (_etags)
+                            response.setHeader(HttpHeader.ETAG.asString(),content.getETag());
+                        response.flushBuffer();
+                        return false;
                     }
                 }
 
                 // Parse the if[un]modified dates and compare to resource
                 long date=request.getDateHeader(HttpHeader.IF_UNMODIFIED_SINCE.asString());
-
-                if (date!=-1)
+                if (date!=-1 && resource.lastModified()/1000 > date/1000)
                 {
-                    if (resource.lastModified()/1000 > date/1000)
-                    {
-                        response.sendError(HttpServletResponse.SC_PRECONDITION_FAILED);
-                        return false;
-                    }
+                    response.sendError(HttpServletResponse.SC_PRECONDITION_FAILED);
+                    return false;
                 }
 
             }
@@ -856,33 +836,55 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             {
                 resource.writeTo(out,0,content_length);
             }
+            // else if we can't do a bypass write because of wrapping
+            else if (content==null || written || !(out instanceof HttpOutput))
+            {
+                // write normally
+                writeHeaders(response,content,written?-1:content_length);
+                ByteBuffer buffer = (content==null)?null:content.getIndirectBuffer();
+                if (buffer!=null)
+                    BufferUtil.writeTo(buffer,out);
+                else
+                    resource.writeTo(out,0,content_length);
+            }
+            // else do a bypass write
             else
             {
-                // See if a direct methods can be used?
-                if (content!=null && !written && out instanceof HttpOutput)
+                // write the headers
+                if (response instanceof Response)
                 {
-                    if (response instanceof Response)
-                    {
-                        writeOptionHeaders(((Response)response).getHttpFields());
-                        ((HttpOutput)out).sendContent(content);
-                    }
-                    else
-                    {
-                        writeHeaders(response,content,content_length);
-                        ((HttpOutput)out).sendContent(content.getResource());
-                    }
+                    Response r = (Response)response;
+                    writeOptionHeaders(r.getHttpFields());
+                    r.setHeaders(content);
                 }
                 else
-                {
-                    // Write headers normally
-                    writeHeaders(response,content,written?-1:content_length);
+                    writeHeaders(response,content,content_length);
 
-                    // Write content normally
-                    ByteBuffer buffer = (content==null)?null:content.getIndirectBuffer();
-                    if (buffer!=null)
-                        BufferUtil.writeTo(buffer,out);
-                    else
-                        resource.writeTo(out,0,content_length);
+                // write the content asynchronously if supported
+                if (request.isAsyncSupported())
+                {
+                    final AsyncContext context = request.startAsync();
+
+                    ((HttpOutput)out).sendContent(content,new Callback()
+                    {
+                        @Override
+                        public void succeeded()
+                        {   
+                            context.complete();
+                        }
+
+                        @Override
+                        public void failed(Throwable x)
+                        {
+                            LOG.debug(x);
+                            context.complete();
+                        }
+                    });
+                }
+                // otherwise write content blocking
+                else
+                {
+                    ((HttpOutput)out).sendContent(content);
                 }
             }
         }

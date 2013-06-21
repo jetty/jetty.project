@@ -157,9 +157,9 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
         int size = _threads.size();
         if (size > 0)
         {
-            LOG.warn("{} threads could not be stopped", size);
-
-            if ((size <= Runtime.getRuntime().availableProcessors()) || LOG.isDebugEnabled())
+            Thread.yield();
+            
+            if (LOG.isDebugEnabled())
             {
                 for (Thread unstopped : _threads)
                 {
@@ -170,6 +170,11 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
                     }
                     LOG.warn("Couldn't stop {}{}", unstopped, dmp.toString());
                 }
+            }
+            else
+            {
+                for (Thread unstopped : _threads)
+                    LOG.warn("{} Couldn't stop {}",this,unstopped);
             }
         }
 

@@ -42,14 +42,15 @@
     <!-- Consult the javadoc of o.e.j.util.thread.QueuedThreadPool   -->
     <!-- for all configuration that may be set here.                 -->
     <!-- =========================================================== -->
-    <Arg name="threadpool">
-      <New id="threadpool" class="org.eclipse.jetty.util.thread.QueuedThreadPool">
-        <Arg name="minThreads" type="int"><Property name="threads.min" default="10"/></Arg>
-        <Arg name="maxThreads" type="int"><Property name="threads.max" default="200"/></Arg>
-        <Arg name="idleTimeout" type="int"><Property name="threads.timeout" default="60000"/></Arg>
-        <Set name="detailedDump">false</Set>
-      </New>
-    </Arg>
+    <!-- uncomment to change type of threadpool
+    <Arg name="threadpool"><New id="threadpool" class="org.eclipse.jetty.util.thread.QueuedThreadPool"/></Arg>
+    -->
+    <Get name="ThreadPool">
+      <Set name="minThreads" type="int"><Property name="threads.min" default="10"/></Set>
+      <Set name="maxThreads" type="int"><Property name="threads.max" default="200"/></Set>
+      <Set name="idleTimeout" type="int"><Property name="threads.timeout" default="60000"/></Set>
+      <Set name="detailedDump">false</Set>
+    </Get>
 
     <!-- =========================================================== -->
     <!-- Add shared Scheduler instance                               -->

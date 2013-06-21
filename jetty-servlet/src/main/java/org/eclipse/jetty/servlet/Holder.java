@@ -57,7 +57,7 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
     protected String _className;
     protected String _displayName;
     protected boolean _extInstance;
-    protected boolean _asyncSupported=true;
+    protected boolean _asyncSupported;
 
     /* ---------------------------------------------------------------- */
     protected String _name;
@@ -67,8 +67,19 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
     protected Holder(Source source)
     {
         _source=source;
+        switch(_source)
+        {
+            case JAVAX_API:
+            case DESCRIPTOR:
+            case ANNOTATION:
+                _asyncSupported=false;
+                break;
+            default:
+                _asyncSupported=true;
+        }
     }
 
+    /* ------------------------------------------------------------ */
     public Source getSource()
     {
         return _source;
@@ -104,8 +115,8 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
     {
         //if no class already loaded and no classname, make servlet permanently unavailable
         if (_class==null && (_className==null || _className.equals("")))
-            throw new UnavailableException("No class for Servlet or Filter for "+_name, -1);
-
+            throw new UnavailableException("No class for Servlet or Filter for "+_name);
+        
         //try to load class
         if (_class==null)
         {
@@ -118,7 +129,7 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
             catch (Exception e)
             {
                 LOG.warn(e);
-                throw new UnavailableException(e.getMessage(), -1);
+                throw new UnavailableException(e.getMessage());
             }
         }
     }

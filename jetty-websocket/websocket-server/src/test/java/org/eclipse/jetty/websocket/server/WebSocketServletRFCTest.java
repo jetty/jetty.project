@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
 import org.eclipse.jetty.util.Utf8StringBuilder;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
@@ -36,6 +37,7 @@ import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
 import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.server.helper.RFCServlet;
@@ -163,7 +165,7 @@ public class WebSocketServletRFCTest
     }
 
     /**
-     * Test the requirement of issuing
+     * Test the requirement of issuing socket and receiving echo response
      */
     @Test
     public void testEcho() throws Exception
@@ -204,14 +206,17 @@ public class WebSocketServletRFCTest
             client.sendStandardRequest();
             client.expectUpgradeResponse();
 
-            // Generate text frame
-            client.write(WebSocketFrame.text("CRASH"));
+            try (StacklessLogging context = new StacklessLogging(EventDriver.class))
+            {
+                // Generate text frame
+                client.write(WebSocketFrame.text("CRASH"));
 
-            // Read frame (hopefully close frame)
-            IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            Frame cf = capture.getFrames().poll();
-            CloseInfo close = new CloseInfo(cf);
-            Assert.assertThat("Close Frame.status code",close.getStatusCode(),is(StatusCode.SERVER_ERROR));
+                // Read frame (hopefully close frame)
+                IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
+                Frame cf = capture.getFrames().poll();
+                CloseInfo close = new CloseInfo(cf);
+                Assert.assertThat("Close Frame.status code",close.getStatusCode(),is(StatusCode.SERVER_ERROR));
+            }
         }
         finally
         {

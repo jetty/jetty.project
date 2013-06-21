@@ -48,9 +48,13 @@ public class EncodingHttpWriter extends HttpWriter
     @Override
     public void write (char[] s,int offset, int length) throws IOException
     {
+        HttpOutput out = _out;
         if (length==0)
-            _out.closeIfAllContentWritten();
-
+        {
+            if (_out.isAllContentWritten())
+                close();
+        }
+            
         while (length > 0)
         {
             _bytes.reset();
@@ -58,7 +62,7 @@ public class EncodingHttpWriter extends HttpWriter
 
             _converter.write(s, offset, chars);
             _converter.flush();
-            _bytes.writeTo(_out);
+            _bytes.writeTo(out);
             length-=chars;
             offset+=chars;
         }

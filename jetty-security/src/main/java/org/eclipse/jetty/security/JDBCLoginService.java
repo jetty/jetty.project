@@ -61,19 +61,19 @@ public class JDBCLoginService extends MappedLoginService
 {
     private static final Logger LOG = Log.getLogger(JDBCLoginService.class);
 
-    private String _config;
-    private String _jdbcDriver;
-    private String _url;
-    private String _userName;
-    private String _password;
-    private String _userTableKey;
-    private String _userTablePasswordField;
-    private String _roleTableRoleField;
-    private int _cacheTime;
-    private long _lastHashPurge;
-    private Connection _con;
-    private String _userSql;
-    private String _roleSql;
+    protected String _config;
+    protected String _jdbcDriver;
+    protected String _url;
+    protected String _userName;
+    protected String _password;
+    protected String _userTableKey;
+    protected String _userTablePasswordField;
+    protected String _roleTableRoleField;
+    protected int _cacheTime;
+    protected long _lastHashPurge;
+    protected Connection _con;
+    protected String _userSql;
+    protected String _roleSql;
 
 
     /* ------------------------------------------------------------ */

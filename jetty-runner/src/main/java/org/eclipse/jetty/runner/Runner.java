@@ -118,17 +118,18 @@ public class Runner
                 if (".".equals(path) || "..".equals(path))
                     continue;
 
-                Resource item = lib.addPath(path);
-
-                if (item.isDirectory())
-                    addJars(item);
-                else
+                try(Resource item = lib.addPath(path);)
                 {
-                    if (path.toLowerCase().endsWith(".jar") ||
-                        path.toLowerCase().endsWith(".zip"))
+                    if (item.isDirectory())
+                        addJars(item);
+                    else
                     {
-                        URL url = item.getURL();
-                        _classpath.add(url);
+                        if (path.toLowerCase().endsWith(".jar") ||
+                            path.toLowerCase().endsWith(".zip"))
+                        {
+                            URL url = item.getURL();
+                            _classpath.add(url);
+                        }
                     }
                 }
             }
@@ -214,24 +215,30 @@ public class Runner
         {
             if ("--lib".equals(args[i]))
             {
-                Resource lib = Resource.newResource(args[++i]);
-                if (!lib.exists() || !lib.isDirectory())
-                    usage("No such lib directory "+lib);
-                _classpath.addJars(lib);
+                try(Resource lib = Resource.newResource(args[++i]);)
+                {
+                    if (!lib.exists() || !lib.isDirectory())
+                        usage("No such lib directory "+lib);
+                    _classpath.addJars(lib);
+                }
             }
             else if ("--jar".equals(args[i]))
             {
-                Resource jar = Resource.newResource(args[++i]);
-                if (!jar.exists() || jar.isDirectory())
-                    usage("No such jar "+jar);
-                _classpath.addPath(jar);
+                try(Resource jar = Resource.newResource(args[++i]);)
+                {
+                    if (!jar.exists() || jar.isDirectory())
+                        usage("No such jar "+jar);
+                    _classpath.addPath(jar);
+                }
             }
             else if ("--classes".equals(args[i]))
             {
-                Resource classes = Resource.newResource(args[++i]);
-                if (!classes.exists() || !classes.isDirectory())
-                    usage("No such classes directory "+classes);
-                _classpath.addPath(classes);
+                try(Resource classes = Resource.newResource(args[++i]);)
+                {
+                    if (!classes.exists() || !classes.isDirectory())
+                        usage("No such classes directory "+classes);
+                    _classpath.addPath(classes);
+                }
             }
             else if (args[i].startsWith("--"))
                 i++;
@@ -315,8 +322,11 @@ public class Runner
                     {
                         for (String cfg:_configFiles)
                         {
-                            XmlConfiguration xmlConfiguration = new XmlConfiguration(Resource.newResource(cfg).getURL());
-                            xmlConfiguration.configure(_server);
+                            try (Resource resource=Resource.newResource(cfg))
+                            {
+                                XmlConfiguration xmlConfiguration = new XmlConfiguration(resource.getURL());
+                                xmlConfiguration.configure(_server);
+                            }
                         }
                     }
 
@@ -416,34 +426,35 @@ public class Runner
                 }
 
                 // Create a context
-                Resource ctx = Resource.newResource(args[i]);
-                if (!ctx.exists())
-                    usage("Context '"+ctx+"' does not exist");
-                
-                if (contextPathSet && !(contextPath.startsWith("/")))
-                    contextPath = "/"+contextPath;
+                try(Resource ctx = Resource.newResource(args[i]);)
+                {
+                    if (!ctx.exists())
+                        usage("Context '"+ctx+"' does not exist");
 
-                // Configure the context
-                if (!ctx.isDirectory() && ctx.toString().toLowerCase().endsWith(".xml"))
-                {
-                    // It is a context config file
-                    XmlConfiguration xmlConfiguration=new XmlConfiguration(ctx.getURL());
-                    xmlConfiguration.getIdMap().put("Server",_server);
-                    ContextHandler handler=(ContextHandler)xmlConfiguration.configure();
-                    if (contextPathSet)
-                        handler.setContextPath(contextPath);
-                    _contexts.addHandler(handler);                   
-                    handler.setAttribute("org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern", __containerIncludeJarPattern); 
+                    if (contextPathSet && !(contextPath.startsWith("/")))
+                        contextPath = "/"+contextPath;
+
+                    // Configure the context
+                    if (!ctx.isDirectory() && ctx.toString().toLowerCase().endsWith(".xml"))
+                    {
+                        // It is a context config file
+                        XmlConfiguration xmlConfiguration=new XmlConfiguration(ctx.getURL());
+                        xmlConfiguration.getIdMap().put("Server",_server);
+                        ContextHandler handler=(ContextHandler)xmlConfiguration.configure();
+                        if (contextPathSet)
+                            handler.setContextPath(contextPath);
+                        _contexts.addHandler(handler);                   
+                        handler.setAttribute("org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern", __containerIncludeJarPattern); 
+                    }
+                    else
+                    {
+                        // assume it is a WAR file
+                        WebAppContext webapp = new WebAppContext(_contexts,ctx.toString(),contextPath);
+                        webapp.setConfigurationClasses(__plusConfigurationClasses);
+                        webapp.setAttribute("org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
+                            __containerIncludeJarPattern);
+                    }
                 }
-                else
-                {
-                    // assume it is a WAR file
-                    WebAppContext webapp = new WebAppContext(_contexts,ctx.toString(),contextPath);
-                    webapp.setConfigurationClasses(__plusConfigurationClasses);
-                    webapp.setAttribute("org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
-                                        __containerIncludeJarPattern);
-                }
-                
                 //reset
                 contextPathSet = false;
                 contextPath = __defaultContextPath;

@@ -23,7 +23,6 @@ import java.nio.ByteBuffer;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.http.HttpField;
@@ -86,6 +85,14 @@ public class HttpTransportOverSPDY implements HttpTransport
         return requestHeaders;
     }
 
+
+    @Override
+    public void send(ByteBuffer responseBodyContent, boolean lastContent, Callback callback)
+    {
+        // TODO can this be more efficient?
+        send(null, responseBodyContent, lastContent, callback);
+    }
+
     @Override
     public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent, Callback callback)
     {
@@ -145,7 +152,7 @@ public class HttpTransportOverSPDY implements HttpTransport
                     HttpField field = fields.getField(i);
                     String name = field.getName();
                     String value = field.getValue();
-                    headers.put(name, value);
+                    headers.add(name, value);
                     LOG.debug("HTTP < {}: {}", name, value);
                 }
             }
@@ -185,14 +192,14 @@ public class HttpTransportOverSPDY implements HttpTransport
     }
 
     @Override
-    public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent) throws EofException
+    public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent) throws IOException
     {
         send(info, content, lastContent, streamBlocker);
         try
         {
             streamBlocker.block();
         }
-        catch (InterruptedException | TimeoutException | IOException e)
+        catch (Exception e)
         {
             LOG.debug(e);
         }
@@ -298,7 +305,7 @@ public class HttpTransportOverSPDY implements HttpTransport
             final Fields pushHeaders = createPushHeaders(scheme, host, pushResource);
             final Fields pushRequestHeaders = createRequestHeaders(scheme, host, uri, pushResource);
 
-            stream.push(new PushInfo(pushHeaders, false), new Promise.Adapter<Stream>()
+            stream.push(new PushInfo(pushHeaders, false), new Promise<Stream>()
             {
                 @Override
                 public void succeeded(Stream pushStream)
@@ -306,6 +313,12 @@ public class HttpTransportOverSPDY implements HttpTransport
                     LOG.debug("Headers pushed for {} on {}", pushHeaders.get(HTTPSPDYHeader.URI.name(version)), pushStream);
                     queue.offer(new PushResource(pushStream, pushRequestHeaders));
                     sendNextResourceData();
+                }
+
+                @Override
+                public void failed(Throwable x)
+                {
+                    LOG.debug("Creating push stream failed.", x);
                 }
             });
         }

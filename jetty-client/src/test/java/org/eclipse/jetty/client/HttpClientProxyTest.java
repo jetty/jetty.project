@@ -57,8 +57,12 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
-                if (serverHost.equals(request.getServerName()))
+                if (!URI.create(baseRequest.getUri().toString()).isAbsolute())
+                    response.setStatus(HttpServletResponse.SC_USE_PROXY);
+                else if (serverHost.equals(request.getServerName()))
                     response.setStatus(status);
+                else
+                    response.setStatus(HttpServletResponse.SC_NOT_ACCEPTABLE);
             }
         });
 
@@ -115,7 +119,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
 
         ContentResponse response1 = client.newRequest(serverHost, serverPort)
                 .scheme(scheme)
-                .timeout(555, TimeUnit.SECONDS)
+                .timeout(5, TimeUnit.SECONDS)
                 .send();
 
         // No Authentication available => 407
@@ -136,7 +140,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         // ...and perform the request again => 407 + 204
         ContentResponse response2 = client.newRequest(serverHost, serverPort)
                 .scheme(scheme)
-                .timeout(555, TimeUnit.SECONDS)
+                .timeout(5, TimeUnit.SECONDS)
                 .send();
 
         Assert.assertEquals(status, response2.getStatus());
@@ -146,7 +150,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         requests.set(0);
         ContentResponse response3 = client.newRequest(serverHost, serverPort)
                 .scheme(scheme)
-                .timeout(555, TimeUnit.SECONDS)
+                .timeout(5, TimeUnit.SECONDS)
                 .send();
 
         Assert.assertEquals(status, response3.getStatus());
