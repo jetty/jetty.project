@@ -499,6 +499,27 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         }
 
         @Override
+        public void earlyEOF()
+        {
+            synchronized (lock())
+            {
+                _inputEOF=true;
+                _earlyEOF = true;
+                LOG.debug("{} early EOF", this);
+            }
+        }
+
+        @Override
+        public void shutdown()
+        {
+            synchronized (lock())
+            {
+                _inputEOF=true;
+                LOG.debug("{} shutdown", this);
+            }
+        }
+        
+        @Override
         protected void onAllContentConsumed()
         {
             /* This callback tells the connection that all content that has
