@@ -140,8 +140,12 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     {
         try
         {
-            ServletUpgradeRequest sockreq = new ServletUpgradeRequest(request);
-            ServletUpgradeResponse sockresp = new ServletUpgradeResponse(response);
+            // TODO: use ServletUpgradeRequest in Jetty 9.1
+            @SuppressWarnings("deprecation")
+            ServletWebSocketRequest sockreq = new ServletWebSocketRequest(request);
+            // TODO: use ServletUpgradeResponse in Jetty 9.1
+            @SuppressWarnings("deprecation")
+            ServletWebSocketResponse sockresp = new ServletWebSocketResponse(response);
 
             WebSocketCreator creator = getCreator();
 

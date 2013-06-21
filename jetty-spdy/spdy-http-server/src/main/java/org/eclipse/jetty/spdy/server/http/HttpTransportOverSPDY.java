@@ -152,7 +152,7 @@ public class HttpTransportOverSPDY implements HttpTransport
                     HttpField field = fields.getField(i);
                     String name = field.getName();
                     String value = field.getValue();
-                    headers.put(name, value);
+                    headers.add(name, value);
                     LOG.debug("HTTP < {}: {}", name, value);
                 }
             }

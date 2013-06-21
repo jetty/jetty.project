@@ -33,6 +33,18 @@ import org.eclipse.jetty.util.Trie;
  */
 public class HttpField
 {
+    /**
+     * Cache of common {@link HttpField}s including: <UL>
+     * <LI>Common static combinations such as:<UL>
+     *   <li>Connection: close
+     *   <li>Accept-Encoding: gzip
+     *   <li>Content-Length: 0
+     * </ul>
+     * <li>Combinations of Content-Type header for common mime types by common charsets
+     * <li>Most common headers with null values so that a lookup will at least
+     * determine the header name even if the name:value combination is not cached
+     * </ul>
+     */
     public final static Trie<HttpField> CACHE = new ArrayTrie<>(2048);
     public final static Trie<HttpField> CONTENT_TYPE = new ArrayTrie<>(512);
     

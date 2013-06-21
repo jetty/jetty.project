@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
@@ -77,7 +78,14 @@ public class ABSocket
             }
         }
 
-        // echo the message back.
-        this.session.getRemote().sendStringByFuture(message);
+        try
+        {
+            // echo the message back.
+            this.session.getRemote().sendStringByFuture(message);
+        }
+        catch (WebSocketException e)
+        {
+            LOG.warn("Unable to echo TEXT message",e);
+        }
     }
 }
