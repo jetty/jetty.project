@@ -53,11 +53,16 @@ public class SPDYConnection extends AbstractConnection implements Controller, Id
     public SPDYConnection(EndPoint endPoint, ByteBufferPool bufferPool, Parser parser, Executor executor,
                           boolean executeOnFillable, int bufferSize)
     {
-        // Since SPDY is multiplexed, onFillable() must never block
-        // while calling application code. In fact, onFillable()
-        // always dispatches to a new thread when calling application
-        // code, so here we can safely pass false as last parameter,
-        // and avoid to dispatch to onFillable().
+        // Since SPDY is multiplexed, onFillable() must never block while calling application code. In fact,
+        // the SPDY code always dispatches to a new thread when calling application code,
+        // so here we can safely pass false as last parameter, and avoid to dispatch to onFillable(). The IO
+        // operation (read, parse, etc.) will not block and will be fast in almost all cases. Big uploads to a server
+        // however might block the Selector thread for a long time and therefore block other connections to be read.
+        // This might be a good reason to set executeOnFillable to true.
+        //
+        // Due to a jvm bug we've had a Selector thread being stuck at
+        // sun.nio.ch.FileDispatcherImpl.preClose0(Native Method). That's why we now default executeOnFillable to
+        // true even if for most use cases it is faster to not dispatch the IO events.  
         super(endPoint, executor, executeOnFillable);
         this.bufferPool = bufferPool;
         this.parser = parser;
