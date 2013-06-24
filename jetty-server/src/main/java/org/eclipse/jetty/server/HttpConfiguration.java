@@ -48,6 +48,7 @@ public class HttpConfiguration
     private int _securePort;
     private String _secureScheme = HttpScheme.HTTPS.asString();
     private boolean _sendServerVersion = true; //send Server: header
+    private boolean _sendXPoweredBy = false; //send X-Powered-By: header
     private boolean _sendDateHeader = false; //send Date: header
     
 
@@ -150,10 +151,21 @@ public class HttpConfiguration
         _sendServerVersion = sendServerVersion;
     }
 
-    @ManagedAttribute("if true, include the server version in HTTP headers")
+    @ManagedAttribute("if true, send the Server header in responses")
     public boolean getSendServerVersion()
     {
         return _sendServerVersion;
+    }
+    
+    public void setSendXPoweredBy (boolean sendXPoweredBy)
+    {
+        _sendXPoweredBy=sendXPoweredBy;
+    }
+
+    @ManagedAttribute("if true, send the X-Powered-By header in responses")
+    public boolean getSendXPoweredBy()
+    {
+        return _sendXPoweredBy;
     }
 
     public void setSendDateHeader(boolean sendDateHeader)

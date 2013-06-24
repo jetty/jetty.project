@@ -34,6 +34,7 @@ import java.util.List;
 
 import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
 import org.eclipse.jetty.util.BufferUtil;
+import org.hamcrest.Matchers;
 import org.junit.Test;
 
 public class HttpGeneratorServerTest
@@ -308,6 +309,54 @@ public class HttpGeneratorServerTest
                 }
             }
         }
+    }
+    
+    @Test
+    public void testSendServerXPoweredBy() throws Exception
+    {
+        ByteBuffer header = BufferUtil.allocate(8096);
+        ResponseInfo info = new ResponseInfo(HttpVersion.HTTP_1_1, new HttpFields(), -1, 200, null, false);
+        HttpFields fields = new HttpFields();
+        fields.add(HttpHeader.SERVER,"SomeServer");
+        fields.add(HttpHeader.X_POWERED_BY,"SomePower");
+        ResponseInfo infoF = new ResponseInfo(HttpVersion.HTTP_1_1, fields, -1, 200, null, false);
+        String head;
+        
+        HttpGenerator gen = new HttpGenerator(true,true);
+        gen.generateResponse(info, header, null, null, true);
+        head = BufferUtil.toString(header);
+        BufferUtil.clear(header);
+        assertThat(head, containsString("HTTP/1.1 200 OK"));
+        assertThat(head, containsString("Server: Jetty(9.x.x)"));
+        assertThat(head, containsString("X-Powered-By: Jetty(9.x.x)"));
+        gen.reset();
+        gen.generateResponse(infoF, header, null, null, true);
+        head = BufferUtil.toString(header);
+        BufferUtil.clear(header);
+        assertThat(head, containsString("HTTP/1.1 200 OK"));
+        assertThat(head, not(containsString("Server: Jetty(9.x.x)")));
+        assertThat(head, containsString("Server: SomeServer"));
+        assertThat(head, containsString("X-Powered-By: Jetty(9.x.x)"));
+        assertThat(head, containsString("X-Powered-By: SomePower"));
+        gen.reset();
+        
+        gen = new HttpGenerator(false,false);
+        gen.generateResponse(info, header, null, null, true);
+        head = BufferUtil.toString(header);
+        BufferUtil.clear(header);
+        assertThat(head, containsString("HTTP/1.1 200 OK"));
+        assertThat(head, not(containsString("Server: Jetty(9.x.x)")));
+        assertThat(head, not(containsString("X-Powered-By: Jetty(9.x.x)")));
+        gen.reset();
+        gen.generateResponse(infoF, header, null, null, true);
+        head = BufferUtil.toString(header);
+        BufferUtil.clear(header);
+        assertThat(head, containsString("HTTP/1.1 200 OK"));
+        assertThat(head, not(containsString("Server: Jetty(9.x.x)")));
+        assertThat(head, containsString("Server: SomeServer"));
+        assertThat(head, not(containsString("X-Powered-By: Jetty(9.x.x)")));
+        assertThat(head, containsString("X-Powered-By: SomePower"));
+        gen.reset(); 
     }
 
     @Test

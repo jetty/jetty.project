@@ -55,13 +55,18 @@ public class HttpGenerator
     private long _contentPrepared = 0;
     private boolean _noContent = false;
     private Boolean _persistent = null;
-    private boolean _sendServerVersion;
+    
+    private final int _send;
+    private final static int SEND_SERVER=0x01;
+    private final static int SEND_XPOWEREDBY=0x02;
 
 
     /* ------------------------------------------------------------------------------- */
     public static void setServerVersion(String version)
     {
-        SERVER=StringUtil.getBytes("Server: Jetty("+version+")\015\012");
+        SEND[SEND_SERVER]=StringUtil.getBytes("Server: Jetty("+version+")\015\012");
+        SEND[SEND_XPOWEREDBY]=StringUtil.getBytes("X-Powered-By: Jetty("+version+")\015\012");
+        SEND[SEND_SERVER|SEND_XPOWEREDBY]=StringUtil.getBytes("Server: Jetty("+version+")\015\012X-Powered-By: Jetty("+version+")\015\012");
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -71,6 +76,13 @@ public class HttpGenerator
     /* ------------------------------------------------------------------------------- */
     public HttpGenerator()
     {
+        this(false,false);
+    }
+    
+    /* ------------------------------------------------------------------------------- */
+    public HttpGenerator(boolean sendServerVersion,boolean sendXPoweredBy)
+    {
+        _send=(sendServerVersion?SEND_SERVER:0) | (sendXPoweredBy?SEND_XPOWEREDBY:0);
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -86,15 +98,17 @@ public class HttpGenerator
     }
 
     /* ------------------------------------------------------------ */
+    @Deprecated
     public boolean getSendServerVersion ()
     {
-        return _sendServerVersion;
+        return (_send&SEND_SERVER)!=0;
     }
 
     /* ------------------------------------------------------------ */
+    @Deprecated
     public void setSendServerVersion (boolean sendServerVersion)
     {
-        _sendServerVersion = sendServerVersion;
+        throw new UnsupportedOperationException();
     }
 
     /* ------------------------------------------------------------ */
@@ -537,11 +551,11 @@ public class HttpGenerator
     /* ------------------------------------------------------------ */
     private void generateHeaders(Info _info,ByteBuffer header,ByteBuffer content,boolean last)
     {
-        final RequestInfo _request=(_info instanceof RequestInfo)?(RequestInfo)_info:null;
-        final ResponseInfo _response=(_info instanceof ResponseInfo)?(ResponseInfo)_info:null;
+        final RequestInfo request=(_info instanceof RequestInfo)?(RequestInfo)_info:null;
+        final ResponseInfo response=(_info instanceof ResponseInfo)?(ResponseInfo)_info:null;
 
         // default field values
-        boolean has_server = false;
+        int send=_send;
         HttpField transfer_encoding=null;
         boolean keep_alive=false;
         boolean close=false;
@@ -584,7 +598,7 @@ public class HttpGenerator
 
                     case CONNECTION:
                     {
-                        if (_request!=null)
+                        if (request!=null)
                             field.putTo(header);
 
                         // Lookup and/or split connection value field
@@ -619,7 +633,7 @@ public class HttpGenerator
                                 case CLOSE:
                                 {
                                     close=true;
-                                    if (_response!=null)
+                                    if (response!=null)
                                     {
                                         _persistent=false;
                                         if (_endOfContent == EndOfContent.UNKNOWN_CONTENT)
@@ -633,7 +647,7 @@ public class HttpGenerator
                                     if (_info.getHttpVersion() == HttpVersion.HTTP_1_0)
                                     {
                                         keep_alive = true;
-                                        if (_response!=null)
+                                        if (response!=null)
                                             _persistent=true;
                                     }
                                     break;
@@ -656,11 +670,8 @@ public class HttpGenerator
 
                     case SERVER:
                     {
-                        if (getSendServerVersion())
-                        {
-                            has_server=true;
-                            field.putTo(header);
-                        }
+                        send=send&~SEND_SERVER;
+                        field.putTo(header);
                         break;
                     }
 
@@ -680,7 +691,7 @@ public class HttpGenerator
         // 4. Content-Length
         // 5. multipart/byteranges
         // 6. close
-        int status=_response!=null?_response.getStatus():-1;
+        int status=response!=null?response.getStatus():-1;
         switch (_endOfContent)
         {
             case UNKNOWN_CONTENT:
@@ -688,14 +699,14 @@ public class HttpGenerator
                 // written yet?
 
                 // Response known not to have a body
-                if (_contentPrepared == 0 && _response!=null && (status < 200 || status == 204 || status == 304))
+                if (_contentPrepared == 0 && response!=null && (status < 200 || status == 204 || status == 304))
                     _endOfContent=EndOfContent.NO_CONTENT;
                 else if (_info.getContentLength()>0)
                 {
                     // we have been given a content length
                     _endOfContent=EndOfContent.CONTENT_LENGTH;
                     long content_length = _info.getContentLength();
-                    if ((_response!=null || content_length>0 || content_type ) && !_noContent)
+                    if ((response!=null || content_length>0 || content_type ) && !_noContent)
                     {
                         // known length but not actually set.
                         header.put(HttpHeader.CONTENT_LENGTH.getBytesColonSpace());
@@ -710,7 +721,7 @@ public class HttpGenerator
                     long content_length = _contentPrepared+BufferUtil.length(content);
 
                     // Do we need to tell the headers about it
-                    if ((_response!=null || content_length>0 || content_type ) && !_noContent)
+                    if ((response!=null || content_length>0 || content_type ) && !_noContent)
                     {
                         header.put(HttpHeader.CONTENT_LENGTH.getBytesColonSpace());
                         BufferUtil.putDecLong(header, content_length);
@@ -721,7 +732,7 @@ public class HttpGenerator
                 {
                     // No idea, so we must assume that a body is coming
                     _endOfContent = (!isPersistent() || _info.getHttpVersion().ordinal() < HttpVersion.HTTP_1_1.ordinal() ) ? EndOfContent.EOF_CONTENT : EndOfContent.CHUNKED_CONTENT;
-                    if (_response!=null && _endOfContent==EndOfContent.EOF_CONTENT)
+                    if (response!=null && _endOfContent==EndOfContent.EOF_CONTENT)
                     {
                         _endOfContent=EndOfContent.NO_CONTENT;
                         _noContent=true;
@@ -731,7 +742,7 @@ public class HttpGenerator
 
             case CONTENT_LENGTH:
                 long content_length = _info.getContentLength();
-                if ((_response!=null || content_length>0 || content_type ) && !_noContent)
+                if ((response!=null || content_length>0 || content_type ) && !_noContent)
                 {
                     // known length but not actually set.
                     header.put(HttpHeader.CONTENT_LENGTH.getBytesColonSpace());
@@ -741,12 +752,12 @@ public class HttpGenerator
                 break;
 
             case NO_CONTENT:
-                if (_response!=null && status >= 200 && status != 204 && status != 304)
+                if (response!=null && status >= 200 && status != 204 && status != 304)
                     header.put(CONTENT_LENGTH_0);
                 break;
 
             case EOF_CONTENT:
-                _persistent = _request!=null;
+                _persistent = request!=null;
                 break;
 
             case CHUNKED_CONTENT:
@@ -780,7 +791,7 @@ public class HttpGenerator
         }
 
         // If this is a response, work out persistence
-        if (_response!=null)
+        if (response!=null)
         {
             if (!isPersistent() && (close || _info.getHttpVersion().ordinal() > HttpVersion.HTTP_1_0.ordinal()))
             {
@@ -814,8 +825,8 @@ public class HttpGenerator
             }
         }
 
-        if (!has_server && status>199 && getSendServerVersion())
-            header.put(SERVER);
+        if (status>199)
+            header.put(SEND[send]);
 
         // end the header.
         header.put(HttpTokens.CRLF);
@@ -851,7 +862,12 @@ public class HttpGenerator
     private static final byte[] HTTP_1_1_SPACE = StringUtil.getBytes(HttpVersion.HTTP_1_1+" ");
     private static final byte[] CRLF = StringUtil.getBytes("\015\012");
     private static final byte[] TRANSFER_ENCODING_CHUNKED = StringUtil.getBytes("Transfer-Encoding: chunked\015\012");
-    private static byte[] SERVER = StringUtil.getBytes("Server: Jetty(7.0.x)\015\012");
+    private static final byte[][] SEND = new byte[][]{ 
+        new byte[0],
+        StringUtil.getBytes("Server: Jetty(9.x.x)\015\012"),
+        StringUtil.getBytes("X-Powered-By: Jetty(9.x.x)\015\012"),
+        StringUtil.getBytes("Server: Jetty(9.x.x)\015\012X-Powered-By: Jetty(9.x.x)\015\012")
+    };
 
     /* ------------------------------------------------------------------------------- */
     /* ------------------------------------------------------------------------------- */
