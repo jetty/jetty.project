@@ -24,7 +24,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.util.BlockingCallback;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -43,7 +42,7 @@ public abstract class AbstractConnection implements Connection
     public static final boolean EXECUTE_ONFILLABLE=true;
 
     private final List<Listener> listeners = new CopyOnWriteArrayList<>();
-    private final AtomicReference<State> _state = new AtomicReference<>(State.IDLE);
+    private final AtomicReference<State> _state = new AtomicReference<>(IDLE);
     private final long _created=System.currentTimeMillis();
     private final EndPoint _endPoint;
     private final Executor _executor;
@@ -64,6 +63,7 @@ public abstract class AbstractConnection implements Connection
         _executor = executor;
         _readCallback = new ReadCallback();
         _executeOnfillable=executeOnfillable;
+        _state.set(IDLE);
     }
 
     @Override
@@ -97,147 +97,27 @@ public abstract class AbstractConnection implements Connection
     {
         LOG.debug("fillInterested {}",this);
 
-        loop:while(true)
+        while(true)
         {
-            switch(_state.get())
-            {
-                case IDLE:
-                    if (_state.compareAndSet(State.IDLE,State.INTERESTED))
-                    {
-                        getEndPoint().fillInterested(_readCallback);
-                        break loop;
-                    }
-                    break;
-
-                case FILLING:
-                    if (_state.compareAndSet(State.FILLING,State.FILLING_INTERESTED))
-                        break loop;
-                    break;
-                    
-                case FILLING_BLOCKED:
-                    if (_state.compareAndSet(State.FILLING_BLOCKED,State.FILLING_BLOCKED_INTERESTED))
-                        break loop;
-                    break;
-                    
-                case BLOCKED:
-                    if (_state.compareAndSet(State.BLOCKED,State.BLOCKED_INTERESTED))
-                        break loop;
-                    break;
-
-                case FILLING_BLOCKED_INTERESTED:
-                case FILLING_INTERESTED:
-                case BLOCKED_INTERESTED:
-                case INTERESTED:
-                    break loop;
-            }
+            State state=_state.get();
+            if (next(state,state.fillInterested()))
+                break;
         }
     }
     
-
-    private void unblock()
+    public void fillInterested(Callback callback)
     {
-        LOG.debug("unblock {}",this);
+        LOG.debug("fillInterested {}",this);
 
-        loop:while(true)
+        while(true)
         {
-            switch(_state.get())
-            {
-                case FILLING_BLOCKED:
-                    if (_state.compareAndSet(State.FILLING_BLOCKED,State.FILLING))
-                        break loop;
-                    break;
-                    
-                case FILLING_BLOCKED_INTERESTED:
-                    if (_state.compareAndSet(State.FILLING_BLOCKED_INTERESTED,State.FILLING_INTERESTED))
-                        break loop;
-                    break;
-                    
-                case BLOCKED_INTERESTED:
-                    if (_state.compareAndSet(State.BLOCKED_INTERESTED,State.INTERESTED))
-                    {
-                        getEndPoint().fillInterested(_readCallback);
-                        break loop;
-                    }
-                    break;
-                    
-                case BLOCKED:
-                    if (_state.compareAndSet(State.BLOCKED,State.IDLE))
-                        break loop;
-                    break;
-
-                case FILLING:
-                case IDLE:
-                case FILLING_INTERESTED:
-                case INTERESTED:
-                    break loop;
-            }
+            State state=_state.get();
+            State next=new FillingInterestedCallback(callback,state);
+            if (next(state,next))
+                break;
         }
     }
     
-    
-    /**
-     */
-    protected void block(final BlockingCallback callback)
-    {
-        LOG.debug("block {}",this);
-        
-        final Callback blocked=new Callback()
-        {
-            @Override
-            public void succeeded()
-            {
-                unblock();
-                callback.succeeded();
-            }
-
-            @Override
-            public void failed(Throwable x)
-            {
-                unblock();
-                callback.failed(x);                
-            }
-        };
-
-        loop:while(true)
-        {
-            switch(_state.get())
-            {
-                case IDLE:
-                    if (_state.compareAndSet(State.IDLE,State.BLOCKED))
-                    {
-                        getEndPoint().fillInterested(blocked);
-                        break loop;
-                    }
-                    break;
-
-                case FILLING:
-                    if (_state.compareAndSet(State.FILLING,State.FILLING_BLOCKED))
-                    {
-                        getEndPoint().fillInterested(blocked);
-                        break loop;
-                    }
-                    break;
-                    
-                case FILLING_INTERESTED:
-                    if (_state.compareAndSet(State.FILLING_INTERESTED,State.FILLING_BLOCKED_INTERESTED))
-                    {
-                        getEndPoint().fillInterested(blocked);
-                        break loop;
-                    }
-                    break;
-
-                case BLOCKED:
-                case BLOCKED_INTERESTED:
-                case FILLING_BLOCKED:
-                case FILLING_BLOCKED_INTERESTED:
-                    throw new IllegalStateException("Already Blocked");
-                    
-                case INTERESTED:
-                    throw new IllegalStateException();
-            }
-        }
-    }
-
     /**
      * <p>Callback method invoked when the endpoint is ready to be read.</p>
      * @see #fillInterested()
@@ -340,73 +220,260 @@ public abstract class AbstractConnection implements Connection
     {
         return String.format("%s@%x{%s}", getClass().getSimpleName(), hashCode(), _state.get());
     }
-
-    private enum State
+    
+    private boolean next(State state, State next)
     {
-        IDLE, INTERESTED, FILLING, FILLING_INTERESTED, FILLING_BLOCKED, BLOCKED, FILLING_BLOCKED_INTERESTED, BLOCKED_INTERESTED
+        if (next==null)
+            return true;
+        if(_state.compareAndSet(state,next))
+        {
+            LOG.debug("{}-->{} {}",state,next,this);
+            if (next!=state)
+                next.onEnter(AbstractConnection.this);
+            return true;
+        }
+        return false;
     }
     
-    private class ReadCallback implements Callback, Runnable
+    public static class State
+    {
+        private final String _name;
+        State(String name)
+        {
+            _name=name;
+        }
+
+        @Override
+        public String toString()
+        {
+            return _name;
+        }
+        
+        void onEnter(AbstractConnection connection)
+        {
+        }
+        
+        State fillInterested()
+        {
+            throw new IllegalStateException(this.toString());
+        }
+
+        State onFillable()
+        {
+            throw new IllegalStateException(this.toString());
+        }
+
+        State onFilled()
+        {
+            throw new IllegalStateException(this.toString());
+        }
+    }
+    
+
+    public static final State IDLE=new State("IDLE")
+    {
+        @Override
+        State fillInterested()
+        {
+            return FILL_INTERESTED;
+        }
+    };
+    
+    public static final State FILL_INTERESTED=new State("FILL_INTERESTED")
+    {
+        @Override
+        public void onEnter(AbstractConnection connection)
+        {
+            connection.getEndPoint().fillInterested(connection._readCallback);
+        }
+        
+        @Override
+        State fillInterested()
+        {
+            return this;
+        }
+
+        @Override
+        public State onFillable()
+        {
+            return FILLING;
+        }
+    };
+    
+    public static final State FILLING=new State("FILLING")
+    {
+        @Override
+        public void onEnter(AbstractConnection connection)
+        {
+            if (connection._executeOnfillable)
+                connection.getExecutor().execute(connection._runOnFillable);
+            else
+                connection._runOnFillable.run();
+        }
+        
+        @Override
+        State fillInterested()
+        {
+            return FILLING_FILL_INTERESTED;
+        }
+
+        @Override
+        public State onFilled()
+        {
+            return IDLE;
+        }
+    };
+    
+    public static final State REFILLING=new State("REFILLING")
+    {
+        @Override
+        State fillInterested()
+        {
+            return FILLING_FILL_INTERESTED;
+        }
+
+        @Override
+        public State onFilled()
+        {
+            return IDLE;
+        }
+    };
+
+    public static final State FILLING_FILL_INTERESTED=new State("FILLING_FILL_INTERESTED")
+    {
+        @Override
+        State fillInterested()
+        {
+            return this;
+        }
+        
+        State onFilled()
+        {
+            return FILL_INTERESTED;
+        }
+    };
+    
+    public class NestedState extends State
+    {
+        private final State _nested;
+        
+        NestedState(State nested)
+        {
+            super("NESTED("+nested+")");
+            _nested=nested;
+        }
+        NestedState(String name,State nested)
+        {
+            super(name+"("+nested+")");
+            _nested=nested;
+        }
+
+        @Override
+        State fillInterested()
+        {
+            return new NestedState(_nested.fillInterested());
+        }
+
+        @Override
+        State onFillable()
+        {
+            return new NestedState(_nested.onFillable());
+        }
+
+        @Override
+        State onFilled()
+        {
+            return new NestedState(_nested.onFilled());
+        }
+    }
+    
+    
+    public class FillingInterestedCallback extends NestedState
+    {
+        private final Callback _callback;
+        
+        FillingInterestedCallback(Callback callback,State nested)
+        {
+            super("FILLING_INTERESTED_CALLBACK",nested==FILLING?REFILLING:nested);
+            _callback=callback;
+        }
+
+        @Override
+        void onEnter(final AbstractConnection connection)
+        {
+            Callback callback=new Callback()
+            {
+                @Override
+                public void succeeded()
+                {
+                    while(true)
+                    {
+                        State state = connection._state.get();
+                        if (!(state instanceof NestedState))
+                            break;
+                        State nested=((NestedState)state)._nested;
+                        if (connection.next(state,nested))
+                            break;
+                    }
+                    _callback.succeeded();
+                }
+
+                @Override
+                public void failed(Throwable x)
+                {
+                    while(true)
+                    {
+                        State state = connection._state.get();
+                        if (!(state instanceof NestedState))
+                            break;
+                        State nested=((NestedState)state)._nested;
+                        if (connection.next(state,nested))
+                            break;
+                    }
+                    _callback.failed(x);
+                }  
+            };
+            
+            connection.getEndPoint().fillInterested(callback);
+        }
+
+        
+        
+    }
+    
+    private final Runnable _runOnFillable = new Runnable()
     {
         @Override
         public void run()
         {
-            if (_state.compareAndSet(State.INTERESTED,State.FILLING))
+            try
             {
-                try
+                onFillable();
+            }
+            finally
+            {
+                while(true)
                 {
-                    onFillable();
-                }
-                finally
-                {
-                    loop:while(true)
-                    {
-                        switch(_state.get())
-                        {
-                            case IDLE:
-                            case INTERESTED:
-                            case BLOCKED:
-                            case BLOCKED_INTERESTED:
-                                LOG.warn(new IllegalStateException());
-                                return;
-
-                            case FILLING:
-                                if (_state.compareAndSet(State.FILLING,State.IDLE))
-                                    break loop;
-                                break;
-                                
-                            case FILLING_BLOCKED:
-                                if (_state.compareAndSet(State.FILLING_BLOCKED,State.BLOCKED))
-                                    break loop;
-                                break;
-                                
-                            case FILLING_BLOCKED_INTERESTED:
-                                if (_state.compareAndSet(State.FILLING_BLOCKED_INTERESTED,State.BLOCKED_INTERESTED))
-                                    break loop;
-                                break;
-
-                            case FILLING_INTERESTED:
-                                if (_state.compareAndSet(State.FILLING_INTERESTED,State.INTERESTED))
-                                {
-                                    getEndPoint().fillInterested(_readCallback);
-                                    break loop;
-                                }
-                                break;
-                        }
-                    }
+                    State state=_state.get();
+                    if (next(state,state.onFilled()))
+                        break;
                 }
             }
-            else
-                LOG.warn(new IllegalStateException());
         }
-        
+    };
+    
+    
+    private class ReadCallback implements Callback
+    {   
         @Override
         public void succeeded()
         {
-            if (_executeOnfillable)
-                _executor.execute(this);
-            else
-                run();
+            while(true)
+            {
+                State state=_state.get();
+                if (next(state,state.onFillable()))
+                    break;
+            }
         }
 
         @Override

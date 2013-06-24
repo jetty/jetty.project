@@ -452,7 +452,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     }
 
                     // Wait until we can read
-                    block(_readBlocker);
+                    fillInterested(_readBlocker);
                     LOG.debug("{} block readable on {}",this,_readBlocker);
                     _readBlocker.block();
 
