@@ -38,6 +38,7 @@ import javax.servlet.AsyncContext;
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
+import javax.servlet.RequestDispatcher;
 import javax.servlet.Servlet;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -562,8 +563,8 @@ public class ServletHandler extends ScopedHandler
 
             if (!response.isCommitted())
             {
-                request.setAttribute(Dispatcher.ERROR_EXCEPTION_TYPE,th.getClass());
-                request.setAttribute(Dispatcher.ERROR_EXCEPTION,th);
+                request.setAttribute(RequestDispatcher.ERROR_EXCEPTION_TYPE,th.getClass());
+                request.setAttribute(RequestDispatcher.ERROR_EXCEPTION,th);
                 if (th instanceof UnavailableException)
                 {
                     UnavailableException ue = (UnavailableException)th;
@@ -588,8 +589,8 @@ public class ServletHandler extends ScopedHandler
             // TODO httpResponse.getHttpConnection().forceClose();
             if (!response.isCommitted())
             {
-                request.setAttribute(Dispatcher.ERROR_EXCEPTION_TYPE,e.getClass());
-                request.setAttribute(Dispatcher.ERROR_EXCEPTION,e);
+                request.setAttribute(RequestDispatcher.ERROR_EXCEPTION_TYPE,e.getClass());
+                request.setAttribute(RequestDispatcher.ERROR_EXCEPTION,e);
                 response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             }
             else
