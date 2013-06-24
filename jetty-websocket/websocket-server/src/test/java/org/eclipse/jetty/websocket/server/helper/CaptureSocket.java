@@ -24,6 +24,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.toolchain.test.EventQueue;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 
 public class CaptureSocket extends WebSocketAdapter
@@ -53,12 +54,10 @@ public class CaptureSocket extends WebSocketAdapter
         }
     }
 
-    public void onClose(int closeCode, String message)
+    @Override
+    public void onWebSocketConnect(Session sess)
     {
-    }
-
-    public void onOpen(Connection connection)
-    {
+        super.onWebSocketConnect(sess);
         latch.countDown();
     }
 
