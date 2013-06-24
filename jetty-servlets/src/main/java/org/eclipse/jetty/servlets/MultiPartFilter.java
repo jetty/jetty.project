@@ -48,12 +48,15 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 
+import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.ReadLineInputStream;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -513,12 +516,11 @@ public class MultiPartFilter implements Filter
             {
                 try
                 {
-                    String s=new String((byte[])o,_encoding);
-                    return s;
+                   return getParameterBytesAsString(name, (byte[])o);
                 }
                 catch(Exception e)
                 {
-                    e.printStackTrace();
+                    LOG.warn(e);
                 }
             }
             else if (o!=null)
@@ -533,11 +535,11 @@ public class MultiPartFilter implements Filter
         @Override
         public Map getParameterMap()
         {
-            Map<String, String> cmap = new HashMap<String,String>();
+            Map<String, String[]> cmap = new HashMap<String,String[]>();
             
             for ( Object key : _params.keySet() )
             {
-                cmap.put((String)key,getParameter((String)key));
+                cmap.put((String)key,getParameterValues((String)key));
             }
             
             return Collections.unmodifiableMap(cmap);
@@ -571,7 +573,7 @@ public class MultiPartFilter implements Filter
                 {
                     try
                     {
-                        v[i]=new String((byte[])o,_encoding);
+                        v[i]=getParameterBytesAsString(name, (byte[])o);
                     }
                     catch(Exception e)
                     {
@@ -593,6 +595,24 @@ public class MultiPartFilter implements Filter
             throws UnsupportedEncodingException
         {
             _encoding=enc;
+        }
+        
+        
+        /* ------------------------------------------------------------------------------- */
+        private String getParameterBytesAsString (String name, byte[] bytes) 
+        throws UnsupportedEncodingException
+        {
+            //check if there is a specific encoding for the parameter
+            Object ct = _params.get(name+CONTENT_TYPE_SUFFIX);
+            //use default if not
+            String contentType = _encoding;
+            if (ct != null)
+            {
+                String tmp = MimeTypes.getCharsetFromContentType(new ByteArrayBuffer((String)ct));
+                contentType = (tmp == null?_encoding:tmp);
+            }
+            
+            return new String(bytes,contentType);
         }
     }
     
