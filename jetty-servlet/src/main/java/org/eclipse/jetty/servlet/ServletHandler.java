@@ -24,20 +24,19 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.ListIterator;
-import java.util.Set;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 
-import javax.servlet.AsyncContext;
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
+import javax.servlet.RequestDispatcher;
 import javax.servlet.Servlet;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -58,7 +57,6 @@ import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.Dispatcher;
-import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServletRequestHttpWrapper;
@@ -393,8 +391,8 @@ public class ServletHandler extends ScopedHandler
                 
                 if (DispatcherType.INCLUDE.equals(type))
                 {
-                    baseRequest.setAttribute(Dispatcher.INCLUDE_SERVLET_PATH,servlet_path);
-                    baseRequest.setAttribute(Dispatcher.INCLUDE_PATH_INFO, path_info);
+                    baseRequest.setAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH,servlet_path);
+                    baseRequest.setAttribute(RequestDispatcher.INCLUDE_PATH_INFO, path_info);
                 }
                 else
                 {
@@ -562,8 +560,8 @@ public class ServletHandler extends ScopedHandler
 
             if (!response.isCommitted())
             {
-                request.setAttribute(Dispatcher.ERROR_EXCEPTION_TYPE,th.getClass());
-                request.setAttribute(Dispatcher.ERROR_EXCEPTION,th);
+                request.setAttribute(RequestDispatcher.ERROR_EXCEPTION_TYPE,th.getClass());
+                request.setAttribute(RequestDispatcher.ERROR_EXCEPTION,th);
                 if (th instanceof UnavailableException)
                 {
                     UnavailableException ue = (UnavailableException)th;
