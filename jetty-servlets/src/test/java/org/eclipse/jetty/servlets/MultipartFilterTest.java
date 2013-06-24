@@ -21,6 +21,7 @@ package org.eclipse.jetty.servlets;
 import static org.junit.Assert.*;
 import static org.hamcrest.Matchers.*;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -38,12 +39,13 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.testing.HttpTester;
 import org.eclipse.jetty.testing.ServletTester;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.QuotedStringTokenizer;
+import org.eclipse.jetty.util.StringUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -755,7 +757,7 @@ public class MultipartFilterTest
         assertTrue(response.getContent().contains("aaaa,bbbbb"));
     }
     
-
+ 
     /*
      * see the testParameterMap test
      *
@@ -768,7 +770,7 @@ public class MultipartFilterTest
             String[] content = req.getParameterMap().get("\"strup\"Content-Type: application/octet-stream");           
             assertThat (content[0], containsString("How now brown cow."));
             super.doPost(req, resp);
-        }        
+        } 
     }
     
     /** 
@@ -812,6 +814,66 @@ public class MultipartFilterTest
         assertEquals(HttpServletResponse.SC_OK,response.getStatus());
         assertTrue(response.getContent().indexOf("brown cow")>=0);
     }
+    
+    
+    public static class TestServletCharSet extends HttpServlet
+    {
+
+        @Override
+        protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        {
+            //test that the multipart content bytes were converted correctly from their charset to unicode
+            String content = (String)req.getParameter("ttt");
+            assertNotNull(content);
+            assertEquals("ttt\u01FCzzz",content);       
+            assertEquals("application/octet-stream; charset=UTF-8",req.getParameter("ttt"+MultiPartFilter.CONTENT_TYPE_SUFFIX));
+                  
+            
+            //test that the parameter map retrieves values as String[]
+            Map map = req.getParameterMap();
+            Object o = map.get("ttt");
+            assertTrue(o.getClass().isArray());
+            super.doPost(req, resp);
+        } 
+    }
+    
+    
+    @Test
+    public void testWithCharSet()
+    throws Exception
+    {
+        // generated and parsed test
+        HttpTester request = new HttpTester() {
+            
+        };
+        HttpTester response = new HttpTester();
+
+        tester.addServlet(TestServletCharSet.class,"/test2");
+        
+        // test GET
+        request.setMethod("POST");
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host","tester");
+        request.setURI("/context/test2");
+        
+        String boundary="XyXyXy";
+        request.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
+        
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        
+        baos.write(("--" + boundary + "\r\n"+
+                "Content-Disposition: form-data; name=\"ttt\"\r\n"+
+                "Content-Type: application/octet-stream; charset=UTF-8\r\n\r\n").getBytes());
+        baos.write("ttt\u01FCzzz".getBytes(StringUtil.__UTF8));
+        baos.write(("\r\n--" + boundary + "--\r\n\r\n").getBytes());
+  
+        request.setContentBytes(baos.toByteArray());   
+
+        response.parse(tester.getResponses(new ByteArrayBuffer(request.generate().getBytes(StringUtil.__UTF8))).toString());
+    }
+
+    
+    
     
     public static class DumpServlet extends HttpServlet
     {

@@ -531,6 +531,15 @@ public class HttpTester
             _genContent=null;
         }
     }
+    
+    /* ------------------------------------------------------------ */
+    public void setContentBytes(byte[] bytes)
+    {
+        _parsedContent = null;
+        _genContent = bytes;
+        setLongHeader(HttpHeaders.CONTENT_LENGTH, bytes.length);
+        
+    }
 
     /* ------------------------------------------------------------ */
     private class PH extends HttpParser.EventHandler
