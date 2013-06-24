@@ -62,7 +62,7 @@ public class SPDYConnection extends AbstractConnection implements Controller, Id
         //
         // Due to a jvm bug we've had a Selector thread being stuck at
         // sun.nio.ch.FileDispatcherImpl.preClose0(Native Method). That's why we now default executeOnFillable to
-        // true even if for most use cases it is faster to not dispatch the IO events.  
+        // true even if for most use cases it is faster to not dispatch the IO events.
         super(endPoint, executor, executeOnFillable);
         this.bufferPool = bufferPool;
         this.parser = parser;
