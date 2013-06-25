@@ -106,6 +106,7 @@ jetty-9.0.4.v20130625 - 25 June 2013
  + 410405 Avoid NPE for requestDispatcher(../)
  + 410469 UpgradeRequest is sent twice when using SSL, one fails warning about
    WritePendingException
+ + 410498 ignore type of exception in GoAwayTest.testDataNotProcessedAfterGoAway
  + 410522 jetty start broken for command line options
  + 410537 Exceptions during @OnWebSocketConnect not reported to
    @OnWebSocketError
