@@ -182,11 +182,13 @@ public class IOState
      */
     public void onCloseLocal(CloseInfo close)
     {
+        LOG.debug("onCloseLocal({})",close);
         ConnectionState event = null;
         ConnectionState initialState = this.state;
         if (initialState == ConnectionState.CLOSED)
         {
             // already closed
+            LOG.debug("already closed");
             return;
         }
 
@@ -224,15 +226,19 @@ public class IOState
                 event = this.state;
             }
         }
+        
+        LOG.debug("event = {}",event);
 
         // Only notify on state change events
         if (event != null)
         {
+            LOG.debug("notifying state listeners: {}",event);
             notifyStateListeners(event);
 
-            // if SHUTDOWN, we don't expect an answer.
-            if (close.getStatusCode() == StatusCode.SHUTDOWN)
+            // if harsh, we don't expect an answer.
+            if (close.isHarsh())
             {
+                LOG.debug("Harsh close, disconnecting");
                 synchronized (this.state)
                 {
                     this.state = ConnectionState.CLOSED;
@@ -253,6 +259,7 @@ public class IOState
      */
     public void onCloseRemote(CloseInfo close)
     {
+        LOG.debug("onCloseRemote({})",close);
         ConnectionState event = null;
         synchronized (this.state)
         {

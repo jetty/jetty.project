@@ -108,6 +108,8 @@ public enum HttpHeader
     SET_COOKIE2("Set-Cookie2"),
     MIME_VERSION("MIME-Version"),
     IDENTITY("identity"),
+    
+    X_POWERED_BY("X-Powered-By"),
 
     UNKNOWN("::UNKNOWN::");
 

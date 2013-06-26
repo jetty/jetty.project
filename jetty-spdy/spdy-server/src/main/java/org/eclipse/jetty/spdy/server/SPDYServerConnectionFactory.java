@@ -69,6 +69,7 @@ public class SPDYServerConnectionFactory extends AbstractConnectionFactory
     private final short version;
     private final ServerSessionFrameListener listener;
     private int initialWindowSize;
+    private boolean executeOnFillable = true;
     private final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
 
     public SPDYServerConnectionFactory(int version)
@@ -103,14 +104,15 @@ public class SPDYServerConnectionFactory extends AbstractConnectionFactory
         Generator generator = new Generator(connector.getByteBufferPool(), compressionFactory.newCompressor());
 
         ServerSessionFrameListener listener = provideServerSessionFrameListener(connector, endPoint);
-        SPDYConnection connection = new ServerSPDYConnection(connector, endPoint, parser, listener, getInputBufferSize());
+        SPDYConnection connection = new ServerSPDYConnection(connector, endPoint, parser, listener,
+                executeOnFillable, getInputBufferSize());
 
         FlowControlStrategy flowControlStrategy = newFlowControlStrategy(version);
 
         StandardSession session = new StandardSession(getVersion(), connector.getByteBufferPool(),
                 connector.getExecutor(), connector.getScheduler(), connection, endPoint, connection, 2, listener,
                 generator, flowControlStrategy);
-        session.setWindowSize(getInitialWindowSize());
+        session.setWindowSize(initialWindowSize);
         parser.addListener(session);
         connection.setSession(session);
 
@@ -138,6 +140,17 @@ public class SPDYServerConnectionFactory extends AbstractConnectionFactory
     public void setInitialWindowSize(int initialWindowSize)
     {
         this.initialWindowSize = initialWindowSize;
+    }
+
+    @ManagedAttribute("Execute onFillable")
+    public boolean isExecuteOnFillable()
+    {
+        return executeOnFillable;
+    }
+
+    public void setExecuteOnFillable(boolean executeOnFillable)
+    {
+        this.executeOnFillable = executeOnFillable;
     }
 
     protected boolean sessionOpened(Session session)
@@ -177,9 +190,11 @@ public class SPDYServerConnectionFactory extends AbstractConnectionFactory
         private final ServerSessionFrameListener listener;
         private final AtomicBoolean connected = new AtomicBoolean();
 
-        private ServerSPDYConnection(Connector connector, EndPoint endPoint, Parser parser, ServerSessionFrameListener listener, int bufferSize)
+        private ServerSPDYConnection(Connector connector, EndPoint endPoint, Parser parser,
+                                     ServerSessionFrameListener listener, boolean executeOnFillable, int bufferSize)
         {
-            super(endPoint, connector.getByteBufferPool(), parser, connector.getExecutor(), bufferSize);
+            super(endPoint, connector.getByteBufferPool(), parser, connector.getExecutor(),
+                    executeOnFillable, bufferSize);
             this.listener = listener;
         }
 

@@ -54,32 +54,32 @@
     <!-- for all configuration that may be set here.                 -->
     <!-- =========================================================== -->
     <New id="pushStrategy" class="org.eclipse.jetty.spdy.server.http.ReferrerPushStrategy">
-      <!-- Uncomment to blacklist browsers for this push strategy. If one of the blacklisted Strings occurs in the
-           user-agent header sent by the client, push will be disabled for this browser. This is case insensitive" -->
-      <!--
-      <Set name="UserAgentBlacklist">
-          <Array type="String">
-              <Item>.*(?i)firefox/14.*</Item>
-              <Item>.*(?i)firefox/15.*</Item>
-              <Item>.*(?i)firefox/16.*</Item>
-          </Array>
-      </Set>
-      -->
+        <!-- Uncomment to blacklist browsers for this push strategy. If one of the blacklisted Strings occurs in the
+             user-agent header sent by the client, push will be disabled for this browser. This is case insensitive" -->
+        <!--
+        <Set name="UserAgentBlacklist">
+            <Array type="String">
+                <Item>.*(?i)firefox/14.*</Item>
+                <Item>.*(?i)firefox/15.*</Item>
+                <Item>.*(?i)firefox/16.*</Item>
+            </Array>
+        </Set>
+        -->
 
-      <!-- Uncomment to override default file extensions to push -->
-      <!--
-      <Set name="PushRegexps">
-          <Array type="String">
-              <Item>.*\.css</Item>
-              <Item>.*\.js</Item>
-              <Item>.*\.png</Item>
-              <Item>.*\.jpg</Item>
-              <Item>.*\.gif</Item>
-          </Array>
-      </Set>
-      -->
-      <Set name="referrerPushPeriod">5000</Set>
-      <Set name="maxAssociatedResources">32</Set>
+        <!-- Uncomment to override default file extensions to push -->
+        <!--
+        <Set name="PushRegexps">
+            <Array type="String">
+                <Item>.*\.css</Item>
+                <Item>.*\.js</Item>
+                <Item>.*\.png</Item>
+                <Item>.*\.jpg</Item>
+                <Item>.*\.gif</Item>
+            </Array>
+        </Set>
+        -->
+        <Set name="referrerPushPeriod">5000</Set>
+        <Set name="maxAssociatedResources">32</Set>
     </New>
 
     <!-- =========================================================== -->
@@ -121,6 +121,10 @@
                                 <Arg name="config">
                                     <Ref refid="httpConfig"/>
                                 </Arg>
+                                <!-- Set the initial window size for this SPDY connector. -->
+                                <!-- See: http://www.chromium.org/spdy/spdy-protocol/spdy-protocol-draft3#TOC-2.6.8-WINDOW_UPDATE -->
+                                <Set name="initialWindowSize">65536</Set>
+                                <!-- Uncomment to enable the push strategy with id "pushStrategy" -->
                                 <!-- <Arg name="pushStrategy"><Ref refid="pushStrategy"/></Arg> -->
                             </New>
                         </Item>
@@ -131,6 +135,9 @@
                                 <Arg name="config">
                                     <Ref refid="httpConfig"/>
                                 </Arg>
+                                <!-- Set the initial window size for this SPDY connector. -->
+                                <!-- See: http://www.chromium.org/spdy/spdy-protocol/spdy-protocol-draft3#TOC-2.6.8-WINDOW_UPDATE -->
+                                <Set name="initialWindowSize">65536</Set>
                             </New>
                         </Item>
 

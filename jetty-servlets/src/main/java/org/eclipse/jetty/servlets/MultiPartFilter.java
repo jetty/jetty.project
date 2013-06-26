@@ -45,10 +45,12 @@ import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.Part;
 
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.MultiPartInputStreamParser;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -259,11 +261,11 @@ public class MultiPartFilter implements Filter
             {
                 try
                 {
-                    return new String((byte[])o,_encoding);
+                    return getParameterBytesAsString(name, (byte[])o);
                 }
                 catch(Exception e)
                 {
-                    e.printStackTrace();
+                    LOG.warn(e);
                 }
             }
             else if (o!=null)
@@ -282,9 +284,7 @@ public class MultiPartFilter implements Filter
             
             for ( Object key : _params.keySet() )
             {
-                String[] a = LazyList.toStringArray(getParameter((String)key));
-                cmap.put((String)key,a);
-
+                cmap.put((String)key,getParameterValues((String)key));
             }
 
             return Collections.unmodifiableMap(cmap);
@@ -318,7 +318,7 @@ public class MultiPartFilter implements Filter
                 {
                     try
                     {
-                        v[i]=new String((byte[])o,_encoding);
+                        v[i]=getParameterBytesAsString(name, (byte[])o);
                     }
                     catch(Exception e)
                     {
@@ -340,6 +340,24 @@ public class MultiPartFilter implements Filter
             throws UnsupportedEncodingException
         {
             _encoding=enc;
+        }
+        
+        
+        /* ------------------------------------------------------------------------------- */
+        private String getParameterBytesAsString (String name, byte[] bytes) 
+        throws UnsupportedEncodingException
+        {
+            //check if there is a specific encoding for the parameter
+            Object ct = _params.getValue(name+CONTENT_TYPE_SUFFIX,0);
+            //use default if not
+            String contentType = _encoding;
+            if (ct != null)
+            {
+                String tmp = MimeTypes.getCharsetFromContentType((String)ct);
+                contentType = (tmp == null?_encoding:tmp);
+            }
+            
+            return new String(bytes,contentType);
         }
     }
 }

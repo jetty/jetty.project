@@ -24,7 +24,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.GoAwayInfo;
 import org.eclipse.jetty.spdy.api.GoAwayResultInfo;
@@ -41,7 +40,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.FuturePromise;
-import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -223,7 +221,8 @@ public class GoAwayTest extends AbstractTest
         }
         catch (ExecutionException x)
         {
-            Assert.assertThat(x.getCause(), CoreMatchers.instanceOf(EofException.class));
+            // doesn't matter which exception we get, it's important that the data is not been written and the
+            // previous assertion is true
         }
 
         // The last good stream is the second, because it was received by the server

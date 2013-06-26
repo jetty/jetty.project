@@ -25,6 +25,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.toolchain.test.EventQueue;
+import org.eclipse.jetty.toolchain.test.TestTracker;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.server.helper.CaptureSocket;
@@ -32,10 +35,14 @@ import org.eclipse.jetty.websocket.server.helper.SessionServlet;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class WebSocketOverSSLTest
 {
+    @Rule
+    public TestTracker tracker = new TestTracker();
+    
     private static SimpleServletServer server;
 
     @BeforeClass
@@ -65,7 +72,9 @@ public class WebSocketOverSSLTest
             client.start();
 
             CaptureSocket clientSocket = new CaptureSocket();
-            Future<Session> fut = client.connect(clientSocket,server.getServerUri());
+            URI requestUri = server.getServerUri();
+            System.err.printf("Request URI: %s%n",requestUri.toASCIIString());
+            Future<Session> fut = client.connect(clientSocket,requestUri);
 
             // wait for connect
             Session session = fut.get(3,TimeUnit.SECONDS);
@@ -142,13 +151,13 @@ public class WebSocketOverSSLTest
             CaptureSocket clientSocket = new CaptureSocket();
             URI requestUri = server.getServerUri().resolve("/deep?a=b");
             System.err.printf("Request URI: %s%n",requestUri.toASCIIString());
-            client.connect(clientSocket,requestUri);
+            Future<Session> fut = client.connect(clientSocket,requestUri);
 
             // wait for connect
-            clientSocket.awaitConnected(5000);
+            Session session = fut.get(5,TimeUnit.SECONDS);
 
             // Generate text frame
-            clientSocket.getRemote().sendString("session.upgradeRequest.requestURI");
+            session.getRemote().sendString("session.upgradeRequest.requestURI");
 
             // Read frame (hopefully text frame)
             clientSocket.messages.awaitEventCount(1,500,TimeUnit.MILLISECONDS);

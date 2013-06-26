@@ -23,8 +23,12 @@ import static org.hamcrest.Matchers.*;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.common.CloseInfo;
+import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
+import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.server.helper.RFCSocket;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
@@ -69,7 +73,7 @@ public class IdleTimeoutTest
     {
         BlockheadClient client = new BlockheadClient(server.getServerUri());
         client.setProtocols("onConnect");
-        client.setTimeout(TimeUnit.MILLISECONDS,1500);
+        client.setTimeout(TimeUnit.MILLISECONDS,2500);
         try
         {
             client.connect();
@@ -83,13 +87,15 @@ public class IdleTimeoutTest
             // Write to server (the server should be timed out and disconnect now)
             client.write(WebSocketFrame.text("Hello"));
 
-            // now attempt to read 2 echoed frames from server (shouldn't work)
-            client.readFrames(2,TimeUnit.MILLISECONDS,1500);
-            Assert.fail("Should have resulted in IOException");
-        }
-        catch (IOException e)
-        {
-            Assert.assertThat("IOException",e.getMessage(),anyOf(containsString("closed"),containsString("disconnected")));
+            // now read 1 frame from server (should be close frame)
+            IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,1500);
+            WebSocketFrame frame = capture.getFrames().poll();
+            Assert.assertThat("Was close frame", frame.getOpCode(), is(OpCode.CLOSE));
+            CloseInfo close = new CloseInfo(frame);
+            Assert.assertThat("Close.code", close.getStatusCode(), is(StatusCode.SHUTDOWN));
+            Assert.assertThat("Close.reason", close.getReason(), containsString("Idle Timeout"));
+            
+            client.expectServerDisconnect();
         }
         finally
         {

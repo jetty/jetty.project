@@ -60,6 +60,7 @@ public class SPDYClient
     private volatile SocketAddress bindAddress;
     private volatile long idleTimeout = -1;
     private volatile int initialWindowSize;
+    private volatile boolean executeOnFillable;
 
     protected SPDYClient(short version, Factory factory)
     {
@@ -123,6 +124,16 @@ public class SPDYClient
     public void setInitialWindowSize(int initialWindowSize)
     {
         this.initialWindowSize = initialWindowSize;
+    }
+
+    public boolean isExecuteOnFillable()
+    {
+        return executeOnFillable;
+    }
+
+    public void setExecuteOnFillable(boolean executeOnFillable)
+    {
+        this.executeOnFillable = executeOnFillable;
     }
 
     protected String selectProtocol(List<String> serverProtocols)

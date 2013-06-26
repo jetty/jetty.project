@@ -618,6 +618,13 @@ public class SslConnection extends AbstractConnection
                                     }
                                     else
                                     {
+                                        if (_encryptedInput.hasRemaining())
+                                        {
+                                            // if there are more encrypted bytes,
+                                            // then we need to unwrap more, we don't
+                                            // care if net_filled is zero
+                                            continue;
+                                        }
                                         // we need to wait for more net data
                                         return 0;
                                     }
