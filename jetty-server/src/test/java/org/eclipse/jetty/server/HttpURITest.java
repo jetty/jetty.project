@@ -33,6 +33,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.Utf8Appendable;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -322,29 +323,15 @@ public class HttpURITest
         {
         }
 
-        try
-        {
-            HttpURI huri=new HttpURI(uri);
-            MultiMap<String> params = new MultiMap<>();
-            huri.decodeQueryTo(params);
-            System.err.println(params);
-            Assert.assertTrue(false);
-        }
-        catch (IllegalArgumentException e)
-        {
-        }
+        HttpURI huri=new HttpURI(uri);
+        MultiMap<String> params = new MultiMap<>();
+        huri.decodeQueryTo(params);
+        assertEquals("data"+Utf8Appendable.REPLACEMENT+"here"+Utf8Appendable.REPLACEMENT,params.getValue("invalid",0));
 
-        try
-        {
-            HttpURI huri=new HttpURI(uri);
-            MultiMap<String> params = new MultiMap<>();
-            huri.decodeQueryTo(params,"UTF-8");
-            System.err.println(params);
-            Assert.assertTrue(false);
-        }
-        catch (IllegalArgumentException e)
-        {
-        }
+        huri=new HttpURI(uri);
+        params = new MultiMap<>();
+        huri.decodeQueryTo(params,"UTF-8");
+        assertEquals("data"+Utf8Appendable.REPLACEMENT+"here"+Utf8Appendable.REPLACEMENT,params.getValue("invalid",0));
 
     }
 

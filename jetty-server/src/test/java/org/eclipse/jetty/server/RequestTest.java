@@ -52,6 +52,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiPartInputStreamParser;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
@@ -100,24 +101,11 @@ public class RequestTest
             @Override
             public boolean check(HttpServletRequest request,HttpServletResponse response)
             {
-                Map map = null;
-                try
-                {
-                    //do the parse
-                    request.getParameterMap();
-                    Assert.fail("Expected parsing failure");
-                    return false;
-                }
-                catch (Exception e)
-                {
-                    //catch the error and check the param map is not null
-                    map = request.getParameterMap();
-                    assertFalse(map == null);
-                    assertTrue(map.isEmpty());
-
-                    Enumeration names = request.getParameterNames();
-                    assertFalse(names.hasMoreElements());
-                }
+                Map<String,String[]> map = null;
+                //do the parse
+                map = request.getParameterMap();
+                assertEquals("aaa"+Utf8Appendable.REPLACEMENT+"bbb",map.get("param")[0]);
+                assertEquals("value",map.get("other")[0]);
 
                 return true;
             }
@@ -125,7 +113,7 @@ public class RequestTest
 
         //Send a request with query string with illegal hex code to cause
         //an exception parsing the params
-        String request="GET /?param=%ZZaaa HTTP/1.1\r\n"+
+        String request="GET /?param=aaa%ZZbbb&other=value HTTP/1.1\r\n"+
         "Host: whatever\r\n"+
         "Content-Type: text/html;charset=utf8\n"+
         "Connection: close\n"+
