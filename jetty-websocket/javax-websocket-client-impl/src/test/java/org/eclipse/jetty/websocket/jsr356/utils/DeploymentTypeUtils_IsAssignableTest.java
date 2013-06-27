@@ -23,7 +23,6 @@ import static org.hamcrest.Matchers.*;
 import java.io.BufferedReader;
 import java.io.FilterReader;
 import java.io.Reader;
-import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.util.ArrayList;
@@ -43,11 +42,11 @@ public class DeploymentTypeUtils_IsAssignableTest
 {
     private static class Case
     {
-        Type type;
-        Type targetType;
+        Class<?> type;
+        Class<?> targetType;
         boolean expectedResult;
 
-        public Case(Type type, Type targetType)
+        public Case(Class<?> type, Class<?> targetType)
         {
             this.type = type;
             this.targetType = targetType;
@@ -126,7 +125,7 @@ public class DeploymentTypeUtils_IsAssignableTest
     @Test
     public void testIsAssignable() throws DeploymentException
     {
-        boolean actual = DeploymentTypeUtils.isAssignable(testcase.type,testcase.targetType);
+        boolean actual = DeploymentTypeUtils.isAssignableClass(testcase.type,testcase.targetType);
         Assert.assertThat("isAssignable(" + testcase.type + ", " + testcase.targetType + ")",actual,is(testcase.expectedResult));
     }
 }

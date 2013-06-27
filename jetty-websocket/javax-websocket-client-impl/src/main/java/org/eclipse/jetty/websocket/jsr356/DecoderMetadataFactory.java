@@ -42,7 +42,7 @@ import org.eclipse.jetty.websocket.jsr356.decoders.IntegerDecoder;
 import org.eclipse.jetty.websocket.jsr356.decoders.LongDecoder;
 import org.eclipse.jetty.websocket.jsr356.decoders.ShortDecoder;
 import org.eclipse.jetty.websocket.jsr356.decoders.StringDecoder;
-import org.eclipse.jetty.websocket.jsr356.utils.DeploymentTypeUtils;
+import org.eclipse.jetty.websocket.jsr356.utils.ReflectUtils;
 
 /**
  * Global Factory for all declared Decoders in all endpoints.
@@ -107,17 +107,17 @@ public class DecoderMetadataFactory
 
     private Class<?> getDecoderMessageClass(Class<? extends Decoder> decoder, Class<?> interfaceClass)
     {
-        Type genericType = DeploymentTypeUtils.getGenericType(decoder,interfaceClass);
-        if (genericType instanceof Class<?>)
+        Class<?> decoderClass = ReflectUtils.findGenericClassFor(decoder,interfaceClass);
+        if (decoderClass == null)
         {
-            return (Class<?>)genericType;
+            StringBuilder err = new StringBuilder();
+            err.append("Invalid type declared for interface ");
+            err.append(interfaceClass.getName());
+            err.append(" on class ");
+            err.append(decoder);
+            throw new IllegalArgumentException(err.toString());
         }
-        StringBuilder err = new StringBuilder();
-        err.append("Invalid type declared for interface ");
-        err.append(interfaceClass.getName());
-        err.append(" on class ");
-        err.append(decoder);
-        throw new IllegalArgumentException(err.toString());
+        return decoderClass;
     }
 
     public List<DecoderMetadata> getMetadata(Class<? extends Decoder> decoder)

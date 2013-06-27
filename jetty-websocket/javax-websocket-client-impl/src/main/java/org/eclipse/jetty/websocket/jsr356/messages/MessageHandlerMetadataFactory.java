@@ -18,10 +18,8 @@
 
 package org.eclipse.jetty.websocket.jsr356.messages;
 
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 import javax.websocket.MessageHandler;
 
@@ -30,6 +28,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.jsr356.DecoderWrapper;
 import org.eclipse.jetty.websocket.jsr356.Decoders;
 import org.eclipse.jetty.websocket.jsr356.MessageType;
+import org.eclipse.jetty.websocket.jsr356.utils.ReflectUtils;
 
 /**
  * Creates {@link MessageHandlerMetadata} objects from a provided {@link MessageHandler} classes.
@@ -42,33 +41,6 @@ public class MessageHandlerMetadataFactory
     public MessageHandlerMetadataFactory(Decoders decoders)
     {
         this.decoders = decoders;
-    }
-
-    private Class<?> findOnMessageType(Class<? extends MessageHandler> handlerClass, int paramCount)
-    {
-        LOG.debug("findOnMessageType({}, {})",handlerClass,paramCount);
-        for (Method method : handlerClass.getMethods())
-        {
-            if ("onMessage".equals(method.getName()))
-            {
-                LOG.debug("found {}",method);
-                // make sure we only look for the onMessage method that is relevant
-                Class<?> paramTypes[] = method.getParameterTypes();
-                if (paramTypes == null)
-                {
-                    // skip
-                    continue;
-                }
-
-                if (paramTypes.length == paramCount)
-                {
-                    // found the method we are interested in
-                    return paramTypes[0];
-                }
-            }
-        }
-
-        return null;
     }
 
     public DecoderWrapper getDecoderWrapper(Class<?> onMessageClass)
@@ -84,7 +56,7 @@ public class MessageHandlerMetadataFactory
         {
             LOG.debug("supports Partial: {}",handler);
             partial = true;
-            Class<?> onMessageClass = getOnMessagePartialType(handler);
+            Class<?> onMessageClass = ReflectUtils.findGenericClassFor(handler,MessageHandler.Partial.class);
             LOG.debug("Partial message class: {}",onMessageClass);
             MessageType onMessageType = identifyMessageType(onMessageClass);
             LOG.debug("Partial message type: {}",onMessageType);
@@ -94,7 +66,7 @@ public class MessageHandlerMetadataFactory
         {
             LOG.debug("supports Whole: {}",handler.getName());
             partial = false;
-            Class<?> onMessageClass = getOnMessageType(handler);
+            Class<?> onMessageClass = ReflectUtils.findGenericClassFor(handler,MessageHandler.Whole.class);
             LOG.debug("Whole message class: {}",onMessageClass);
             MessageType onMessageType = identifyMessageType(onMessageClass);
             LOG.debug("Whole message type: {}",onMessageType);
@@ -102,30 +74,6 @@ public class MessageHandlerMetadataFactory
             ret.add(metadata);
         }
         return ret;
-    }
-
-    private Class<?> getOnMessagePartialType(Class<? extends MessageHandler> handlerClass)
-    {
-        Objects.requireNonNull(handlerClass);
-
-        if (MessageHandler.Partial.class.isAssignableFrom(handlerClass))
-        {
-            return findOnMessageType(handlerClass,2);
-        }
-
-        return null;
-    }
-
-    private Class<?> getOnMessageType(Class<? extends MessageHandler> handlerClass)
-    {
-        Objects.requireNonNull(handlerClass);
-
-        if (MessageHandler.Whole.class.isAssignableFrom(handlerClass))
-        {
-            return findOnMessageType(handlerClass,1);
-        }
-
-        return null;
     }
 
     private MessageType identifyMessageType(Class<?> onMessageClass) throws IllegalStateException

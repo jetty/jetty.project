@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.encoders;
 
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,9 +26,20 @@ import javax.websocket.Encoder;
 import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
 import org.eclipse.jetty.websocket.jsr356.ConfigurationException;
 import org.eclipse.jetty.websocket.jsr356.utils.DeploymentTypeUtils;
+import org.eclipse.jetty.websocket.jsr356.utils.ReflectUtils;
 
 public class Encoders
 {
+    private static final List<Class<?>> TYPES = new ArrayList<>();
+
+    static
+    {
+        TYPES.add(Encoder.Text.class);
+        TYPES.add(Encoder.TextStream.class);
+        TYPES.add(Encoder.Binary.class);
+        TYPES.add(Encoder.BinaryStream.class);
+    }
+
     private static class EncoderRef
     {
         Class<?> type;
@@ -41,26 +50,6 @@ public class Encoders
             this.type = type;
             this.encoder = encoder;
         }
-    }
-
-    public static List<ParameterizedType> getEncoderInterfaces(Class<? extends Encoder> encoder)
-    {
-        List<ParameterizedType> ret = new ArrayList<>();
-        for (Type type : encoder.getGenericInterfaces())
-        {
-            if (!(type instanceof ParameterizedType))
-            {
-                continue; // skip
-            }
-
-            ParameterizedType ptype = (ParameterizedType)type;
-            if (DeploymentTypeUtils.isAssignable(type,Encoder.Text.class) || DeploymentTypeUtils.isAssignable(type,Encoder.TextStream.class)
-                    || DeploymentTypeUtils.isAssignable(type,Encoder.Binary.class) || DeploymentTypeUtils.isAssignable(type,Encoder.BinaryStream.class))
-            {
-                ret.add(ptype);
-            }
-        }
-        return ret;
     }
 
     private final List<EncoderRef> encoders;
@@ -109,26 +98,12 @@ public class Encoders
 
     public void add(Class<? extends Encoder> encoder)
     {
-        for (ParameterizedType iencoder : getEncoderInterfaces(encoder))
+        for (Class<?> type : TYPES)
         {
-            Type handledTypes[] = iencoder.getActualTypeArguments();
-            if (handledTypes == null)
+            Class<?> encoderClass = ReflectUtils.findGenericClassFor(encoder,type);
+            if (encoderClass != null)
             {
-                throw new InvalidSignatureException(encoder + " has invalid signature for " + iencoder + " Generic type is null");
-            }
-            if (handledTypes.length != 1)
-            {
-                throw new InvalidSignatureException(encoder + " has invalid signature for " + iencoder + " - multi-value generic types not supported");
-            }
-            Type handledType = handledTypes[0];
-            if (handledType instanceof Class<?>)
-            {
-                Class<?> handler = (Class<?>)handledType;
-                add(handler,encoder);
-            }
-            else
-            {
-                throw new InvalidSignatureException(encoder + " has invalid signature for " + iencoder + " - only java.lang.Class based generics supported");
+                add(encoderClass,encoder);
             }
         }
     }
@@ -162,7 +137,7 @@ public class Encoders
 
         for (EncoderRef ref : encoders)
         {
-            if (DeploymentTypeUtils.isAssignable(targetType,ref.type))
+            if (ref.type.isAssignableFrom(type))
             {
                 return instantiate(ref.encoder);
             }

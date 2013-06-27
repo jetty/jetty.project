@@ -23,7 +23,6 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-import javax.websocket.EndpointConfig;
 import javax.websocket.MessageHandler;
 
 import org.eclipse.jetty.util.log.Log;
