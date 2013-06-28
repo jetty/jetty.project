@@ -54,7 +54,8 @@ public class TestServletStreamLengthTypeWriteWithFlush extends TestDirContentSer
         ServletOutputStream out = response.getOutputStream();
 
         response.setContentLength(dataBytes.length);
-
+        response.setHeader("X-Testing-Skip-Content-Length","true");
+        
         if (fileName.endsWith("txt"))
             response.setContentType("text/plain");
         else if (fileName.endsWith("mp3"))

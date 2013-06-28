@@ -117,7 +117,11 @@ public class GzipTester
         // Assert the response headers
         Assert.assertThat("Response.method",response.getMethod(),nullValue());
         //        Assert.assertThat("Response.status",response.getStatus(),is(HttpServletResponse.SC_OK));
-        Assert.assertThat("Response.header[Content-Length]",response.getHeader("Content-Length"),notNullValue());
+        if ( response.getHeader("X-Testing-Skip-Content-Length") == null )
+        {
+            Assert.assertThat("Response.header[Content-Length]",response.getHeader("Content-Length"),notNullValue());
+        }
+        
         int qindex = compressionType.indexOf(";");
         if (qindex < 0)
             Assert.assertThat("Response.header[Content-Encoding]",response.getHeader("Content-Encoding"),containsString(compressionType));
