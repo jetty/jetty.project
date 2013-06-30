@@ -53,8 +53,8 @@ public class TestServletStreamLengthTypeWriteWithFlush extends TestDirContentSer
 
         ServletOutputStream out = response.getOutputStream();
 
+        // set content-length of uncompressed content (GzipFilter should handle this)
         response.setContentLength(dataBytes.length);
-        response.setHeader("X-Testing-Skip-Content-Length","true");
         
         if (fileName.endsWith("txt"))
             response.setContentType("text/plain");
@@ -65,6 +65,7 @@ public class TestServletStreamLengthTypeWriteWithFlush extends TestDirContentSer
         for ( int i = 0 ; i < dataBytes.length ; i++)
         {
             out.write(dataBytes[i]);
+            // flush using response object (not the stream itself)
             response.flushBuffer();
         }
     }

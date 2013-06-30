@@ -18,13 +18,8 @@
 
 package org.eclipse.jetty.servlets.gzip;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -56,7 +51,6 @@ import org.eclipse.jetty.testing.ServletTester;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.TestingDir;
-import org.eclipse.jetty.util.DateCache;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 
@@ -116,10 +110,15 @@ public class GzipTester
         
         // Assert the response headers
         Assert.assertThat("Response.method",response.getMethod(),nullValue());
-        //        Assert.assertThat("Response.status",response.getStatus(),is(HttpServletResponse.SC_OK));
-        if ( response.getHeader("X-Testing-Skip-Content-Length") == null )
-        {
-            Assert.assertThat("Response.header[Content-Length]",response.getHeader("Content-Length"),notNullValue());
+        
+        // Response headers should have either a Transfer-Encoding indicating chunked OR a Content-Length
+        String contentLength = response.getHeader("Content-Length");
+        String transferEncoding = response.getHeader("Transfer-Encoding");
+        boolean chunked = (transferEncoding != null) && (transferEncoding.indexOf("chunk") >= 0);
+        if(!chunked) {
+            Assert.assertThat("Response.header[Content-Length]",contentLength,notNullValue());
+        } else {
+            Assert.assertThat("Response.header[Transfer-Encoding]",transferEncoding,notNullValue());
         }
         
         int qindex = compressionType.indexOf(";");
