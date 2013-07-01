@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
@@ -40,6 +41,8 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 @ManagedObject("HTTP Configuration")
 public class HttpConfiguration
 {
+    public static final String SERVER_VERSION = "Jetty(" + Jetty.VERSION + ")";
+
     private List<Customizer> _customizers=new CopyOnWriteArrayList<>();
     private int _outputBufferSize=32*1024;
     private int _requestHeaderSize=8*1024;
@@ -50,7 +53,6 @@ public class HttpConfiguration
     private boolean _sendServerVersion = true; //send Server: header
     private boolean _sendXPoweredBy = false; //send X-Powered-By: header
     private boolean _sendDateHeader = false; //send Date: header
-    
 
     public interface Customizer
     {
