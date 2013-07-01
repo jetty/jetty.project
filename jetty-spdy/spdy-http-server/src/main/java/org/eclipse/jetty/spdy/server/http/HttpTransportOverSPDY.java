@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.EndPoint;
@@ -157,6 +158,10 @@ public class HttpTransportOverSPDY implements HttpTransport
                 }
             }
 
+            if (configuration.getSendServerVersion())
+                headers.add(HttpHeader.SERVER.asString(), new String(HttpGenerator.SEND[HttpGenerator.SEND_SERVER]));
+            if(configuration.getSendXPoweredBy())
+                headers.add(HttpHeader.X_POWERED_BY.asString(), new String(HttpGenerator.SEND[HttpGenerator.SEND_XPOWEREDBY]));
             boolean close = !hasContent && lastContent;
             ReplyInfo reply = new ReplyInfo(headers, close);
             reply(stream, reply);

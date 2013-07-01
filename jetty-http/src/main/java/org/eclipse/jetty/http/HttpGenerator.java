@@ -56,9 +56,9 @@ public class HttpGenerator
     private boolean _noContent = false;
     private Boolean _persistent = null;
     
-    private final int _send;
-    private final static int SEND_SERVER=0x01;
-    private final static int SEND_XPOWEREDBY=0x02;
+    public final int _send;
+    public final static int SEND_SERVER=0x01;
+    public final static int SEND_XPOWEREDBY=0x02;
 
 
     /* ------------------------------------------------------------------------------- */
@@ -862,7 +862,7 @@ public class HttpGenerator
     private static final byte[] HTTP_1_1_SPACE = StringUtil.getBytes(HttpVersion.HTTP_1_1+" ");
     private static final byte[] CRLF = StringUtil.getBytes("\015\012");
     private static final byte[] TRANSFER_ENCODING_CHUNKED = StringUtil.getBytes("Transfer-Encoding: chunked\015\012");
-    private static final byte[][] SEND = new byte[][]{ 
+    public static final byte[][] SEND = new byte[][]{
         new byte[0],
         StringUtil.getBytes("Server: Jetty(9.x.x)\015\012"),
         StringUtil.getBytes("X-Powered-By: Jetty(9.x.x)\015\012"),

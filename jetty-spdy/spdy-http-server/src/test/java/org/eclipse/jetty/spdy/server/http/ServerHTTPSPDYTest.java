@@ -29,7 +29,6 @@ import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
@@ -38,6 +37,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationSupport;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -57,6 +57,7 @@ import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
@@ -100,7 +101,9 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             {
                 assertTrue(replyInfo.isClose());
                 Fields replyHeaders = replyInfo.getHeaders();
-                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                assertThat(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"), is(true));
+                assertThat(replyHeaders.get(HttpHeader.SERVER.asString()), is(notNullValue()));
+                assertThat(replyHeaders.get(HttpHeader.X_POWERED_BY.asString()), is(notNullValue()));
                 replyLatch.countDown();
             }
         });
