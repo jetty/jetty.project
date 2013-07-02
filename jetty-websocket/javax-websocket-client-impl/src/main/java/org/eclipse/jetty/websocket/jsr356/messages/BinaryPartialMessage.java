@@ -26,6 +26,7 @@ import javax.websocket.MessageHandler.Partial;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.common.message.MessageAppender;
+import org.eclipse.jetty.websocket.jsr356.MessageHandlerWrapper;
 
 public class BinaryPartialMessage implements MessageAppender
 {

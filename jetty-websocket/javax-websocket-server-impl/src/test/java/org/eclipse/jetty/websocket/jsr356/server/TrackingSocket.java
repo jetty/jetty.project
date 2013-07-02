@@ -20,14 +20,13 @@ package org.eclipse.jetty.websocket.jsr356.server;
 
 import static org.hamcrest.Matchers.*;
 
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import javax.websocket.CloseReason;
 import javax.websocket.CloseReason.CloseCode;
 
-import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.junit.Assert;
@@ -40,8 +39,8 @@ public abstract class TrackingSocket
     private static final Logger LOG = Log.getLogger(TrackingSocket.class);
     
     public CloseReason closeReason;
-    public BlockingQueue<String> eventQueue = new BlockingArrayQueue<String>();
-    public BlockingQueue<Throwable> errorQueue = new BlockingArrayQueue<>();
+    public EventQueue<String> eventQueue = new EventQueue<String>();
+    public EventQueue<Throwable> errorQueue = new EventQueue<>();
     public CountDownLatch openLatch = new CountDownLatch(1);
     public CountDownLatch closeLatch = new CountDownLatch(1);
     public CountDownLatch dataLatch = new CountDownLatch(1);

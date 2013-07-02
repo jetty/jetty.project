@@ -22,9 +22,9 @@ import java.lang.reflect.Method;
 import java.util.Map;
 
 import javax.websocket.Decoder;
-import javax.websocket.Session;
 
 import org.eclipse.jetty.websocket.common.events.annotated.CallableMethod;
+import org.eclipse.jetty.websocket.jsr356.JsrSession;
 import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
 
 public abstract class JsrCallable extends CallableMethod
@@ -32,8 +32,6 @@ public abstract class JsrCallable extends CallableMethod
     protected final Param[] params;
     protected final Object[] args;
     protected int idxSession = -1;
-    // Optional decoder (used for OnMessage)
-    protected Decoder decoder;
 
     public JsrCallable(Class<?> pojo, Method method)
     {
@@ -56,7 +54,6 @@ public abstract class JsrCallable extends CallableMethod
     public JsrCallable(JsrCallable copy)
     {
         this(copy.getPojo(),copy.getMethod());
-        this.decoder = copy.decoder;
         this.idxSession = copy.idxSession;
         System.arraycopy(copy.params,0,this.params,0,params.length);
         System.arraycopy(copy.args,0,this.args,0,args.length);
@@ -98,17 +95,12 @@ public abstract class JsrCallable extends CallableMethod
         return null;
     }
 
-    public Decoder getDecoder()
-    {
-        return decoder;
-    }
-
     public Param[] getParams()
     {
         return params;
     }
 
-    public void init(Session session)
+    public void init(JsrSession session)
     {
         // Default the session.
         // Session is an optional parameter (always)
@@ -135,8 +127,5 @@ public abstract class JsrCallable extends CallableMethod
         }
     }
 
-    public void setDecoder(Decoder decoder)
-    {
-        this.decoder = decoder;
-    }
+    public abstract void setDecoderClass(Class<? extends Decoder> decoderClass);
 }

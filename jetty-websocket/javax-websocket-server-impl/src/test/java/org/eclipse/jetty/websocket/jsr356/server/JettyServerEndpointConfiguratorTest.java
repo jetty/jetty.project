@@ -46,6 +46,6 @@ public class JettyServerEndpointConfiguratorTest
 
         ServerEndpointConfig.Configurator configr = iter.next();
         assertThat("Configurator",configr,notNullValue());
-        assertThat("COnfigurator type",configr,instanceOf(JettyServerEndpointConfigurator.class));
+        assertThat("COnfigurator type",configr,instanceOf(BasicServerEndpointConfigurator.class));
     }
 }

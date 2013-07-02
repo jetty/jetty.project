@@ -18,43 +18,39 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import javax.websocket.Decoder;
+import java.util.List;
+
+import javax.websocket.Encoder;
 
 /**
- * Metadata for a {@link Decoder}
+ * Represents all of the declared {@link Encoder}s that the Container is aware of.
  */
-public class DecoderMetadata
+public class EncoderFactory
 {
-    private final Class<?> objType;
-    private final Class<? extends Decoder> decoder;
-    private final MessageType messageType;
-    private final boolean streamed;
-
-    public DecoderMetadata(Class<?> objType, Class<? extends Decoder> decoder, MessageType messageType, boolean streamed)
+    public EncoderFactory()
     {
-        this.objType = objType;
-        this.decoder = decoder;
-        this.messageType = messageType;
-        this.streamed = streamed;
+        // TODO Auto-generated constructor stub
     }
 
-    public Class<? extends Decoder> getDecoder()
+    public EncoderFactory(EncoderFactory encoderFactory)
     {
-        return decoder;
+        // TODO Auto-generated constructor stub
     }
 
-    public MessageType getMessageType()
+    public Encoder getEncoder(Class<?> targetType)
     {
-        return messageType;
+        // TODO Auto-generated method stub
+        return null;
     }
 
-    public Class<?> getObjectType()
+    public List<Class<? extends Encoder>> getList()
     {
-        return objType;
+        // TODO Auto-generated method stub
+        return null;
     }
 
-    public boolean isStreamed()
+    public void registerAll(Class<? extends Encoder>[] encoders)
     {
-        return streamed;
+        // TODO Auto-generated method stub
     }
 }

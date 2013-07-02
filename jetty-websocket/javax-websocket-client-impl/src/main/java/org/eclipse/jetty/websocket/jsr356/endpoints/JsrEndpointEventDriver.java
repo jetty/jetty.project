@@ -24,65 +24,38 @@ import java.io.Reader;
 import java.nio.ByteBuffer;
 
 import javax.websocket.CloseReason;
-import javax.websocket.CloseReason.CloseCode;
-import javax.websocket.CloseReason.CloseCodes;
-import javax.websocket.DeploymentException;
 import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
 import javax.websocket.MessageHandler;
 import javax.websocket.MessageHandler.Whole;
-import javax.websocket.Session;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.common.CloseInfo;
-import org.eclipse.jetty.websocket.common.WebSocketSession;
-import org.eclipse.jetty.websocket.common.events.AbstractEventDriver;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.message.MessageInputStream;
 import org.eclipse.jetty.websocket.common.message.MessageReader;
-import org.eclipse.jetty.websocket.jsr356.ContainerService;
-import org.eclipse.jetty.websocket.jsr356.Decoders;
-import org.eclipse.jetty.websocket.jsr356.JsrSession;
-import org.eclipse.jetty.websocket.jsr356.MessageHandlers;
+import org.eclipse.jetty.websocket.jsr356.MessageHandlerWrapper;
 import org.eclipse.jetty.websocket.jsr356.MessageType;
 import org.eclipse.jetty.websocket.jsr356.messages.BinaryPartialMessage;
 import org.eclipse.jetty.websocket.jsr356.messages.BinaryWholeMessage;
-import org.eclipse.jetty.websocket.jsr356.messages.MessageHandlerMetadataFactory;
-import org.eclipse.jetty.websocket.jsr356.messages.MessageHandlerWrapper;
 import org.eclipse.jetty.websocket.jsr356.messages.TextPartialMessage;
 import org.eclipse.jetty.websocket.jsr356.messages.TextWholeMessage;
 
 /**
  * EventDriver for websocket that extend from {@link javax.websocket.Endpoint}
  */
-public class JsrEndpointEventDriver extends AbstractEventDriver implements EventDriver
+public class JsrEndpointEventDriver extends AbstractJsrEventDriver implements EventDriver
 {
     private static final Logger LOG = Log.getLogger(JsrEndpointEventDriver.class);
 
     private final Endpoint endpoint;
-    private JsrSession jsrsession;
-    private EndpointConfig endpointconfig;
-    private boolean hasCloseBeenCalled = false;
 
     public JsrEndpointEventDriver(WebSocketPolicy policy, Endpoint endpoint, EndpointConfig config)
     {
-        super(policy,endpoint);
+        super(policy,endpoint,config);
         this.endpoint = endpoint;
-        this.endpointconfig = config;
-    }
-
-    public EndpointConfig getEndpointconfig()
-    {
-        return endpointconfig;
-    }
-
-    public Session getJsrSession()
-    {
-        return this.jsrsession;
     }
 
     @Override
@@ -137,27 +110,18 @@ public class JsrEndpointEventDriver extends AbstractEventDriver implements Event
     }
 
     @Override
-    public void onClose(CloseInfo close)
+    protected void onClose(CloseReason closereason)
     {
-        if (hasCloseBeenCalled)
-        {
-            // avoid duplicate close events (possible when using harsh Session.disconnect())
-            return;
-        }
-        hasCloseBeenCalled = true;
-
-        CloseCode closecode = CloseCodes.getCloseCode(close.getStatusCode());
-        CloseReason closereason = new CloseReason(closecode,close.getReason());
         endpoint.onClose(this.jsrsession,closereason);
     }
 
     @Override
     public void onConnect()
     {
-        LOG.debug("onConnect({}, {})",jsrsession,endpointconfig);
+        LOG.debug("onConnect({}, {})",jsrsession,config);
         try
         {
-            endpoint.onOpen(jsrsession,endpointconfig);
+            endpoint.onOpen(jsrsession,config);
         }
         catch (Throwable t)
         {
@@ -239,41 +203,6 @@ public class JsrEndpointEventDriver extends AbstractEventDriver implements Event
     public void onTextMessage(String message)
     {
         /* Ignored, handled by TextWholeMessage */
-    }
-
-    @Override
-    public void openSession(WebSocketSession session)
-    {
-        // Cast should be safe, as it was created by JsrSessionFactory
-        this.jsrsession = (JsrSession)session;
-
-        try
-        {
-            // Create Decoders
-            ContainerService container = (ContainerService)jsrsession.getContainer();
-            Decoders decoders = new Decoders(container.getDecoderMetadataFactory(),endpointconfig);
-            jsrsession.setDecodersFacade(decoders);
-
-            // Create MessageHandlers
-            MessageHandlerMetadataFactory metadataFactory = new MessageHandlerMetadataFactory(decoders);
-            MessageHandlers messageHandlers = new MessageHandlers(metadataFactory);
-            jsrsession.setMessageHandlerFacade(messageHandlers);
-        }
-        catch (DeploymentException e)
-        {
-            throw new WebSocketException(e);
-        }
-
-        // Allow end-user socket to adjust configuration
-        super.openSession(session);
-
-        // Initialize Decoders
-        jsrsession.getDecodersFacade().init(endpointconfig);
-    }
-
-    public void setEndpointconfig(EndpointConfig endpointconfig)
-    {
-        this.endpointconfig = endpointconfig;
     }
 
     @Override

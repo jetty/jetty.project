@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356.annotations;
 
-import org.eclipse.jetty.websocket.jsr356.utils.MethodUtils;
+import org.eclipse.jetty.websocket.jsr356.utils.ReflectUtils;
 
 public class Param
 {
@@ -93,7 +93,7 @@ public class Param
         StringBuilder str = new StringBuilder();
         str.append("Param[");
         str.append("index=").append(index);
-        str.append(",type=").append(MethodUtils.toString(type));
+        str.append(",type=").append(ReflectUtils.toShortName(type));
         str.append(",role=").append(role);
         if (pathParamName != null)
         {

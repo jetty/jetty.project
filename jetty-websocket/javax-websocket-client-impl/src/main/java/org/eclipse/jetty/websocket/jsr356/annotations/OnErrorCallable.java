@@ -20,8 +20,10 @@ package org.eclipse.jetty.websocket.jsr356.annotations;
 
 import java.lang.reflect.Method;
 
+import javax.websocket.Decoder;
 import javax.websocket.OnError;
-import javax.websocket.Session;
+
+import org.eclipse.jetty.websocket.jsr356.JsrSession;
 
 /**
  * Callable for {@link OnError} annotated methods
@@ -49,9 +51,16 @@ public class OnErrorCallable extends JsrCallable
     }
 
     @Override
-    public void init(Session session)
+    public void init(JsrSession session)
     {
         idxThrowable = findIndexForRole(Param.Role.ERROR_CAUSE);
         super.init(session);
     }
+
+    @Override
+    public void setDecoderClass(Class<? extends Decoder> decoderClass)
+    {
+        /* ignore, not relevant for onClose */
+    }
+
 }

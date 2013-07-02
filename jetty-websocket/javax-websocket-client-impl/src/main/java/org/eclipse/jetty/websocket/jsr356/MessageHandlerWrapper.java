@@ -16,15 +16,17 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.messages;
+package org.eclipse.jetty.websocket.jsr356;
 
 import javax.websocket.Decoder;
 import javax.websocket.MessageHandler;
+import javax.websocket.MessageHandler.Partial;
+import javax.websocket.MessageHandler.Whole;
 
-import org.eclipse.jetty.websocket.jsr356.DecoderWrapper;
+import org.eclipse.jetty.websocket.jsr356.metadata.MessageHandlerMetadata;
 
 /**
- * Expose a {@link MessageHandler} instance along with its associated {@link MessageHandlerMetadata}
+ * Expose a {@link MessageHandler} instance along with its associated {@link MessageHandlerMetadata} and {@link DecoderWrapper}
  */
 public class MessageHandlerWrapper
 {

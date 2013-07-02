@@ -19,25 +19,24 @@
 package org.eclipse.jetty.websocket.jsr356.server;
 
 import java.util.LinkedList;
+import java.util.List;
 
 import javax.websocket.Decoder;
 import javax.websocket.DeploymentException;
 import javax.websocket.server.ServerEndpoint;
-import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
-import org.eclipse.jetty.websocket.jsr356.DecoderWrapper;
-import org.eclipse.jetty.websocket.jsr356.Decoders;
+import org.eclipse.jetty.websocket.jsr356.DecoderFactory;
+import org.eclipse.jetty.websocket.jsr356.EncoderFactory;
 import org.eclipse.jetty.websocket.jsr356.annotations.IJsrParamId;
 import org.eclipse.jetty.websocket.jsr356.annotations.JsrMetadata;
-import org.eclipse.jetty.websocket.jsr356.annotations.JsrParamIdBinaryDecoder;
-import org.eclipse.jetty.websocket.jsr356.annotations.JsrParamIdTextDecoder;
 
 public class JsrServerMetadata extends JsrMetadata<ServerEndpoint>
 {
     private final ServerEndpoint endpoint;
-    private final JettyServerEndpointConfig config;
-    private final Decoders decoders;
+    private final AnnotatedServerEndpointConfig config;
+    private final DecoderFactory decoders;
+    private final EncoderFactory encoders;
 
     protected JsrServerMetadata(ServerContainer container, Class<?> websocket) throws DeploymentException
     {
@@ -50,8 +49,12 @@ public class JsrServerMetadata extends JsrMetadata<ServerEndpoint>
         }
 
         this.endpoint = anno;
-        this.config = new JettyServerEndpointConfig(websocket,anno);
-        this.decoders = new Decoders(container.getDecoderMetadataFactory(),config);
+        this.config = new AnnotatedServerEndpointConfig(websocket,anno);
+        this.decoders = new DecoderFactory(container.getDecoderFactory());
+        this.encoders = new EncoderFactory(container.getEncoderFactory());
+        
+        this.decoders.registerAll(anno.decoders());
+        this.encoders.registerAll(anno.encoders());
     }
 
     @Override
@@ -65,28 +68,11 @@ public class JsrServerMetadata extends JsrMetadata<ServerEndpoint>
     {
         params.addFirst(JsrParamPath.INSTANCE);
     }
-
+    
     @Override
-    public void customizeParamsOnMessage(LinkedList<IJsrParamId> params)
+    protected List<Class<? extends Decoder>> getConfiguredDecoders()
     {
-        for (DecoderWrapper wrapper : decoders.wrapperSet())
-        {
-            Class<? extends Decoder> decoder = wrapper.getMetadata().getDecoder();
-
-            if (Decoder.Text.class.isAssignableFrom(decoder) || Decoder.TextStream.class.isAssignableFrom(decoder))
-            {
-                params.add(new JsrParamIdTextDecoder(wrapper));
-                continue;
-            }
-
-            if (Decoder.Binary.class.isAssignableFrom(decoder) || Decoder.BinaryStream.class.isAssignableFrom(decoder))
-            {
-                params.add(new JsrParamIdBinaryDecoder(wrapper));
-                continue;
-            }
-
-            throw new IllegalStateException("Invalid Decoder: " + decoder);
-        }
+        return config.getDecoders();
     }
 
     @Override
@@ -101,10 +87,9 @@ public class JsrServerMetadata extends JsrMetadata<ServerEndpoint>
         return endpoint;
     }
 
-    public ServerEndpointConfig getEndpointConfigCopy() throws DeploymentException
+    public AnnotatedServerEndpointConfig getConfig()
     {
-        // Copy constructor
-        return new JettyServerEndpointConfig(config);
+        return config;
     }
 
     public String getPath()

@@ -16,69 +16,71 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.messages;
+package org.eclipse.jetty.websocket.jsr356;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.websocket.MessageHandler;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.jsr356.DecoderWrapper;
-import org.eclipse.jetty.websocket.jsr356.Decoders;
-import org.eclipse.jetty.websocket.jsr356.MessageType;
+import org.eclipse.jetty.websocket.jsr356.metadata.MessageHandlerMetadata;
 import org.eclipse.jetty.websocket.jsr356.utils.ReflectUtils;
 
 /**
- * Creates {@link MessageHandlerMetadata} objects from a provided {@link MessageHandler} classes.
+ * Factory for {@link MessageHandlerMetadata}
  */
-public class MessageHandlerMetadataFactory
+public class MessageHandlerFactory
 {
-    private static final Logger LOG = Log.getLogger(MessageHandlerMetadataFactory.class);
-    private final Decoders decoders;
+    private static final Logger LOG = Log.getLogger(MessageHandlerFactory.class);
+    /** Registered MessageHandlers at this level */
+    private Map<Class<? extends MessageHandler>, List<MessageHandlerMetadata>> registered;
 
-    public MessageHandlerMetadataFactory(Decoders decoders)
+    public MessageHandlerFactory()
     {
-        this.decoders = decoders;
-    }
-
-    public DecoderWrapper getDecoderWrapper(Class<?> onMessageClass)
-    {
-        return decoders.getDecoderWrapper(onMessageClass);
+        registered = new ConcurrentHashMap<>();
     }
 
     public List<MessageHandlerMetadata> getMetadata(Class<? extends MessageHandler> handler) throws IllegalStateException
     {
-        List<MessageHandlerMetadata> ret = new ArrayList<>();
+        LOG.debug("getMetadata({})",handler);
+        List<MessageHandlerMetadata> ret = registered.get(handler);
+        if (ret != null)
+        {
+            return ret;
+        }
+
+        return register(handler);
+    }
+
+    public List<MessageHandlerMetadata> register(Class<? extends MessageHandler> handler)
+    {
+        List<MessageHandlerMetadata> metadatas = new ArrayList<>();
+
         boolean partial = false;
+
         if (MessageHandler.Partial.class.isAssignableFrom(handler))
         {
             LOG.debug("supports Partial: {}",handler);
             partial = true;
             Class<?> onMessageClass = ReflectUtils.findGenericClassFor(handler,MessageHandler.Partial.class);
             LOG.debug("Partial message class: {}",onMessageClass);
-            MessageType onMessageType = identifyMessageType(onMessageClass);
-            LOG.debug("Partial message type: {}",onMessageType);
-            ret.add(new MessageHandlerMetadata(handler,onMessageType,onMessageClass,partial));
+            metadatas.add(new MessageHandlerMetadata(handler,onMessageClass,partial));
         }
+
         if (MessageHandler.Whole.class.isAssignableFrom(handler))
         {
             LOG.debug("supports Whole: {}",handler.getName());
             partial = false;
             Class<?> onMessageClass = ReflectUtils.findGenericClassFor(handler,MessageHandler.Whole.class);
             LOG.debug("Whole message class: {}",onMessageClass);
-            MessageType onMessageType = identifyMessageType(onMessageClass);
-            LOG.debug("Whole message type: {}",onMessageType);
-            MessageHandlerMetadata metadata = new MessageHandlerMetadata(handler,onMessageType,onMessageClass,partial);
-            ret.add(metadata);
+            metadatas.add(new MessageHandlerMetadata(handler,onMessageClass,partial));
         }
-        return ret;
-    }
 
-    private MessageType identifyMessageType(Class<?> onMessageClass) throws IllegalStateException
-    {
-        DecoderWrapper wrapper = getDecoderWrapper(onMessageClass);
-        return wrapper.getMetadata().getMessageType();
+        registered.put(handler,metadatas);
+        return metadatas;
     }
 }

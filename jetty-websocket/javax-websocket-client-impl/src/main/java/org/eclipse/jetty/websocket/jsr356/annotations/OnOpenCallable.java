@@ -20,10 +20,11 @@ package org.eclipse.jetty.websocket.jsr356.annotations;
 
 import java.lang.reflect.Method;
 
+import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
 import javax.websocket.OnOpen;
-import javax.websocket.Session;
 
+import org.eclipse.jetty.websocket.jsr356.JsrSession;
 import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
 
 /**
@@ -55,9 +56,15 @@ public class OnOpenCallable extends JsrCallable
     }
 
     @Override
-    public void init(Session session)
+    public void init(JsrSession session)
     {
         idxEndpointConfig = findIndexForRole(Role.ENDPOINT_CONFIG);
         super.init(session);
+    }
+
+    @Override
+    public void setDecoderClass(Class<? extends Decoder> decoderClass)
+    {
+        /* ignore, not relevant for onClose */
     }
 }

@@ -54,7 +54,7 @@ public class JsrParamIdText extends JsrParamIdOnMessage implements IJsrParamId
         if (param.type.isAssignableFrom(String.class))
         {
             param.bind(Role.MESSAGE_TEXT);
-            callable.setDecoder(StringDecoder.INSTANCE);
+            callable.setDecoderClass(StringDecoder.class);
             return true;
         }
 
@@ -63,56 +63,56 @@ public class JsrParamIdText extends JsrParamIdOnMessage implements IJsrParamId
         {
             assertPartialMessageSupportDisabled(param,callable);
             param.bind(Role.MESSAGE_TEXT);
-            callable.setDecoder(BooleanDecoder.INSTANCE);
+            callable.setDecoderClass(BooleanDecoder.class);
             return true;
         }
         if (param.type.isAssignableFrom(Byte.class))
         {
             assertPartialMessageSupportDisabled(param,callable);
             param.bind(Role.MESSAGE_TEXT);
-            callable.setDecoder(ByteDecoder.INSTANCE);
+            callable.setDecoderClass(ByteDecoder.class);
             return true;
         }
         if (param.type.isAssignableFrom(Character.class))
         {
             assertPartialMessageSupportDisabled(param,callable);
             param.bind(Role.MESSAGE_TEXT);
-            callable.setDecoder(CharacterDecoder.INSTANCE);
+            callable.setDecoderClass(CharacterDecoder.class);
             return true;
         }
         if (param.type.isAssignableFrom(Double.class))
         {
             assertPartialMessageSupportDisabled(param,callable);
             param.bind(Role.MESSAGE_TEXT);
-            callable.setDecoder(DoubleDecoder.INSTANCE);
+            callable.setDecoderClass(DoubleDecoder.class);
             return true;
         }
         if (param.type.isAssignableFrom(Float.class))
         {
             assertPartialMessageSupportDisabled(param,callable);
             param.bind(Role.MESSAGE_TEXT);
-            callable.setDecoder(FloatDecoder.INSTANCE);
+            callable.setDecoderClass(FloatDecoder.class);
             return true;
         }
         if (param.type.isAssignableFrom(Integer.class))
         {
             assertPartialMessageSupportDisabled(param,callable);
             param.bind(Role.MESSAGE_TEXT);
-            callable.setDecoder(IntegerDecoder.INSTANCE);
+            callable.setDecoderClass(IntegerDecoder.class);
             return true;
         }
         if (param.type.isAssignableFrom(Long.class))
         {
             assertPartialMessageSupportDisabled(param,callable);
             param.bind(Role.MESSAGE_TEXT);
-            callable.setDecoder(LongDecoder.INSTANCE);
+            callable.setDecoderClass(LongDecoder.class);
             return true;
         }
         if (param.type.isAssignableFrom(Short.class))
         {
             assertPartialMessageSupportDisabled(param,callable);
             param.bind(Role.MESSAGE_TEXT);
-            callable.setDecoder(ShortDecoder.INSTANCE);
+            callable.setDecoderClass(ShortDecoder.class);
             return true;
         }
 

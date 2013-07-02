@@ -20,11 +20,15 @@ package org.eclipse.jetty.websocket.jsr356.annotations;
 
 import java.lang.annotation.Annotation;
 import java.util.LinkedList;
+import java.util.List;
 
+import javax.websocket.Decoder;
 import javax.websocket.OnClose;
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
+
+import org.eclipse.jetty.websocket.jsr356.utils.ReflectUtils;
 
 /**
  * Static reference to a specific annotated classes metadata.
@@ -96,7 +100,38 @@ public abstract class JsrMetadata<T extends Annotation>
 
     public void customizeParamsOnMessage(LinkedList<IJsrParamId> params)
     {
-        /* do nothing */
+        for (Class<? extends Decoder> decoder : getConfiguredDecoders())
+        {
+            if (Decoder.Text.class.isAssignableFrom(decoder))
+            {
+                Class<?> type = ReflectUtils.findGenericClassFor(decoder,Decoder.Text.class);
+                params.add(new JsrParamIdTextDecoder(decoder,type));
+                continue;
+            }
+
+            if (Decoder.TextStream.class.isAssignableFrom(decoder))
+            {
+                Class<?> type = ReflectUtils.findGenericClassFor(decoder,Decoder.TextStream.class);
+                params.add(new JsrParamIdTextDecoder(decoder,type));
+                continue;
+            }
+
+            if (Decoder.Binary.class.isAssignableFrom(decoder))
+            {
+                Class<?> type = ReflectUtils.findGenericClassFor(decoder,Decoder.Binary.class);
+                params.add(new JsrParamIdBinaryDecoder(decoder,type));
+                continue;
+            }
+
+            if (Decoder.BinaryStream.class.isAssignableFrom(decoder))
+            {
+                Class<?> type = ReflectUtils.findGenericClassFor(decoder,Decoder.BinaryStream.class);
+                params.add(new JsrParamIdBinaryDecoder(decoder,type));
+                continue;
+            }
+
+            throw new IllegalStateException("Invalid Decoder: " + decoder);
+        }
     }
 
     public void customizeParamsOnOpen(LinkedList<IJsrParamId> params)
@@ -105,4 +140,6 @@ public abstract class JsrMetadata<T extends Annotation>
     }
 
     public abstract T getAnnotation();
+
+    protected abstract List<Class<? extends Decoder>> getConfiguredDecoders();
 }

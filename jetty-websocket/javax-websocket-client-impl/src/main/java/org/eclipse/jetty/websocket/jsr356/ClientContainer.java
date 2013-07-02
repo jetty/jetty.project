@@ -35,26 +35,34 @@ import javax.websocket.Session;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.client.io.UpgradeListener;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
+import org.eclipse.jetty.websocket.jsr356.client.EmptyClientEndpointConfig;
+import org.eclipse.jetty.websocket.jsr356.client.JsrClientMetadata;
 import org.eclipse.jetty.websocket.jsr356.endpoints.ConfiguredEndpoint;
-import org.eclipse.jetty.websocket.jsr356.endpoints.JsrClientMetadata;
 import org.eclipse.jetty.websocket.jsr356.endpoints.JsrEventDriverFactory;
 
-public class ClientContainer implements ContainerService
+/**
+ * Container for Client use of the javax.websocket API.
+ * <p>
+ * This should be specific to a JVM if run in a standalone mode. or specific to a WebAppContext if running on the Jetty server.
+ */
+public class ClientContainer extends CommonContainer
 {
     private static final Logger LOG = Log.getLogger(ClientContainer.class);
-    private final DecoderMetadataFactory decoderMetadataFactory;
-    private ConcurrentHashMap<Class<?>, JsrClientMetadata> endpointClientMetadataCache = new ConcurrentHashMap<>();
+
+    /** Tracking for all declared Client endpoints */
+    private final ConcurrentHashMap<Class<?>, JsrClientMetadata> endpointClientMetadataCache;
+    /** The jetty websocket client in use for this container */
     private WebSocketClient client;
 
     public ClientContainer()
     {
-        decoderMetadataFactory = new DecoderMetadataFactory();
+        super();
+        endpointClientMetadataCache = new ConcurrentHashMap<>();
     }
 
     private Session connect(Object websocket, ClientEndpointConfig config, URI path) throws IOException
@@ -123,13 +131,13 @@ public class ClientContainer implements ContainerService
                 // Annotated takes precedence here
                 JsrClientMetadata metadata = new JsrClientMetadata(this,annotatedEndpointClass);
                 Object websocket = annotatedEndpointClass.newInstance();
-                return connect(websocket,metadata.getEndpointConfigCopy(),path);
+                return connect(websocket,metadata.getConfig(),path);
             }
             else if (Endpoint.class.isAssignableFrom(annotatedEndpointClass))
             {
                 // Try if extends Endpoint (alternate use)
                 Object websocket = annotatedEndpointClass.newInstance();
-                ClientEndpointConfig cec = new JettyClientEndpointConfig();
+                ClientEndpointConfig cec = new EmptyClientEndpointConfig();
                 return connect(websocket,cec,path);
             }
             else
@@ -175,12 +183,6 @@ public class ClientContainer implements ContainerService
     }
 
     @Override
-    public DecoderMetadataFactory getDecoderMetadataFactory()
-    {
-        return decoderMetadataFactory;
-    }
-
-    @Override
     public long getDefaultAsyncSendTimeout()
     {
         return client.getAsyncWriteTimeout();
@@ -218,6 +220,7 @@ public class ClientContainer implements ContainerService
         return ret;
     }
 
+    @Override
     public Set<Session> getOpenSessions()
     {
         // TODO Auto-generated method stub

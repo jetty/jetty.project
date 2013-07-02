@@ -16,15 +16,12 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.messages;
+package org.eclipse.jetty.websocket.jsr356.metadata;
 
 import javax.websocket.MessageHandler;
-import javax.websocket.Session;
-
-import org.eclipse.jetty.websocket.jsr356.MessageType;
 
 /**
- * An immutable holder for {@link MessageHandler} metadata, representing a single interface on a message handling class.
+ * An immutable metadata for a {@link MessageHandler}, representing a single interface on a message handling class.
  * <p>
  * A message handling class can contain more than 1 valid {@link MessageHandler} interface, this will result in multiple {@link MessageHandlerMetadata}
  * instances, each tracking one of the {@link MessageHandler} interfaces declared.
@@ -49,43 +46,12 @@ public class MessageHandlerMetadata
      * Or said another way, the first parameter type on this interface's onMessage() method.
      */
     private final Class<?> messageClass;
-    /**
-     * The 'websocket message type' used for registration limits per JSR-356 / PFD1 section 2.1.3 Receiving Messages
-     */
-    private final MessageType messageType;
 
-    protected MessageHandlerMetadata(Class<? extends MessageHandler> handlerClass, MessageType messageType, Class<?> messageClass, boolean partial)
+    public MessageHandlerMetadata(Class<? extends MessageHandler> handlerClass, Class<?> messageClass, boolean partial)
     {
         this.handlerClass = handlerClass;
         this.isPartialSupported = partial;
         this.messageClass = messageClass;
-        this.messageType = messageType;
-    }
-
-    /**
-     * Make equals/hashcode only use messageType (for best result with {@link Session#getMessageHandlers()})
-     */
-    @Override
-    public boolean equals(Object obj)
-    {
-        if (this == obj)
-        {
-            return true;
-        }
-        if (obj == null)
-        {
-            return false;
-        }
-        if (getClass() != obj.getClass())
-        {
-            return false;
-        }
-        MessageHandlerMetadata other = (MessageHandlerMetadata)obj;
-        if (messageType != other.messageType)
-        {
-            return false;
-        }
-        return true;
     }
 
     public Class<? extends MessageHandler> getHandlerClass()
@@ -96,23 +62,6 @@ public class MessageHandlerMetadata
     public Class<?> getMessageClass()
     {
         return messageClass;
-    }
-
-    public MessageType getMessageType()
-    {
-        return messageType;
-    }
-
-    /**
-     * Make equals/hashcode only use messageType (for best result with {@link Session#getMessageHandlers()})
-     */
-    @Override
-    public int hashCode()
-    {
-        final int prime = 31;
-        int result = 1;
-        result = (prime * result) + ((messageType == null)?0:messageType.hashCode());
-        return result;
     }
 
     public boolean isPartialSupported()

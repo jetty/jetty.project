@@ -29,6 +29,7 @@ import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.message.SimpleBinaryMessage;
 import org.eclipse.jetty.websocket.jsr356.DecoderWrapper;
+import org.eclipse.jetty.websocket.jsr356.MessageHandlerWrapper;
 
 public class BinaryWholeMessage extends SimpleBinaryMessage
 {

@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.messages;
+package org.eclipse.jetty.websocket.jsr356;
 
 import static org.hamcrest.Matchers.*;
 
@@ -25,30 +25,25 @@ import java.util.List;
 
 import javax.websocket.DeploymentException;
 
-import org.eclipse.jetty.websocket.jsr356.DecoderMetadataFactory;
-import org.eclipse.jetty.websocket.jsr356.Decoders;
-import org.eclipse.jetty.websocket.jsr356.MessageType;
-import org.eclipse.jetty.websocket.jsr356.SimpleClientEndpointConfig;
 import org.eclipse.jetty.websocket.jsr356.handlers.ByteArrayPartialHandler;
 import org.eclipse.jetty.websocket.jsr356.handlers.StringPartialHandler;
-import org.eclipse.jetty.websocket.jsr356.messages.MessageHandlerMetadata;
-import org.eclipse.jetty.websocket.jsr356.messages.MessageHandlerMetadataFactory;
+import org.eclipse.jetty.websocket.jsr356.metadata.DecoderMetadata;
+import org.eclipse.jetty.websocket.jsr356.metadata.MessageHandlerMetadata;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class MessageHandlerMetadataFactoryTest
+public class MessageHandlerFactoryTest
 {
-    private MessageHandlerMetadataFactory factory;
-    private Decoders decoders;
+    private MessageHandlerFactory factory;
+    private DecoderFactory decoders;
 
     @Before
     public void init() throws DeploymentException
     {
-        SimpleClientEndpointConfig config = new SimpleClientEndpointConfig();
-        DecoderMetadataFactory metadataFactory = new DecoderMetadataFactory();
-        decoders = new Decoders(metadataFactory,config);
-        factory = new MessageHandlerMetadataFactory(decoders);
+        ClientContainer container = new ClientContainer();
+        decoders = new DecoderFactory(container.getDecoderFactory());
+        factory = new MessageHandlerFactory();
     }
 
     @Test
@@ -57,9 +52,10 @@ public class MessageHandlerMetadataFactoryTest
         List<MessageHandlerMetadata> metadatas = factory.getMetadata(ByteArrayPartialHandler.class);
         Assert.assertThat("Metadata.list.size",metadatas.size(),is(1));
 
-        MessageHandlerMetadata metadata = metadatas.get(0);
-        Assert.assertThat("Message Type",metadata.getMessageType(),is(MessageType.BINARY));
-        Assert.assertThat("Message Class",metadata.getMessageClass(),is((Type)byte[].class));
+        MessageHandlerMetadata handlerMetadata = metadatas.get(0);
+        DecoderMetadata decoderMetadata = decoders.getMetadataFor(handlerMetadata.getMessageClass());
+        Assert.assertThat("Message Type",decoderMetadata.getMessageType(),is(MessageType.BINARY));
+        Assert.assertThat("Message Class",handlerMetadata.getMessageClass(),is((Type)byte[].class));
     }
 
     @Test
@@ -68,8 +64,9 @@ public class MessageHandlerMetadataFactoryTest
         List<MessageHandlerMetadata> metadatas = factory.getMetadata(StringPartialHandler.class);
         Assert.assertThat("Metadata.list.size",metadatas.size(),is(1));
 
-        MessageHandlerMetadata metadata = metadatas.get(0);
-        Assert.assertThat("Message Type",metadata.getMessageType(),is(MessageType.TEXT));
-        Assert.assertThat("Message Class",metadata.getMessageClass(),is((Type)String.class));
+        MessageHandlerMetadata handlerMetadata = metadatas.get(0);
+        DecoderMetadata decoderMetadata = decoders.getMetadataFor(handlerMetadata.getMessageClass());
+        Assert.assertThat("Message Type",decoderMetadata.getMessageType(),is(MessageType.TEXT));
+        Assert.assertThat("Message Class",handlerMetadata.getMessageClass(),is((Type)String.class));
     }
 }

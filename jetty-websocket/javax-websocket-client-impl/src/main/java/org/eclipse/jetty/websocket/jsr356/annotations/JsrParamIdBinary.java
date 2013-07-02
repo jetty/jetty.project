@@ -48,14 +48,14 @@ public class JsrParamIdBinary extends JsrParamIdOnMessage implements IJsrParamId
         if (param.type.isAssignableFrom(ByteBuffer.class))
         {
             param.bind(Role.MESSAGE_BINARY);
-            callable.setDecoder(ByteBufferDecoder.INSTANCE);
+            callable.setDecoderClass(ByteBufferDecoder.class);
             return true;
         }
 
         if (param.type.isAssignableFrom(byte[].class))
         {
             param.bind(Role.MESSAGE_BINARY);
-            callable.setDecoder(ByteArrayDecoder.INSTANCE);
+            callable.setDecoderClass(ByteArrayDecoder.class);
             return true;
         }
 

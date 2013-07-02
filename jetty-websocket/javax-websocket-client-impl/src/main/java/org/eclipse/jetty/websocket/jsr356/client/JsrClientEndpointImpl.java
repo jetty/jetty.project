@@ -16,10 +16,9 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.endpoints;
+package org.eclipse.jetty.websocket.jsr356.client;
 
 import javax.websocket.ClientEndpoint;
-import javax.websocket.ClientEndpointConfig;
 import javax.websocket.DeploymentException;
 
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -27,6 +26,8 @@ import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.events.EventDriverImpl;
 import org.eclipse.jetty.websocket.jsr356.ClientContainer;
 import org.eclipse.jetty.websocket.jsr356.annotations.JsrEvents;
+import org.eclipse.jetty.websocket.jsr356.endpoints.ConfiguredEndpoint;
+import org.eclipse.jetty.websocket.jsr356.endpoints.JsrAnnotatedEventDriver;
 
 /**
  * Event Driver for classes annotated with &#064;{@link ClientEndpoint}
@@ -62,7 +63,7 @@ public class JsrClientEndpointImpl implements EventDriverImpl
         JsrEvents events = new JsrEvents(basemetadata); // copy constructor.
 
         // Create copy of base config
-        ClientEndpointConfig config = basemetadata.getEndpointConfigCopy();
+        AnnotatedClientEndpointConfig config = basemetadata.getConfig();
         return new JsrAnnotatedEventDriver(policy,endpoint,events,config);
     }
 

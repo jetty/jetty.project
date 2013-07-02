@@ -29,9 +29,10 @@ import javax.websocket.server.ServerEndpointConfig.Configurator;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class JettyServerEndpointConfigurator extends Configurator
+public class BasicServerEndpointConfigurator extends Configurator
 {
-    private static final Logger LOG = Log.getLogger(JettyServerEndpointConfigurator.class);
+    private static final Logger LOG = Log.getLogger(BasicServerEndpointConfigurator.class);
+    public static final Configurator INSTANCE = new BasicServerEndpointConfigurator();
 
     @Override
     public boolean checkOrigin(String originHeaderValue)

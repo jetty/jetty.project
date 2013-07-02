@@ -22,7 +22,6 @@ import javax.websocket.Decoder;
 import javax.websocket.OnMessage;
 
 import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
-import org.eclipse.jetty.websocket.jsr356.DecoderWrapper;
 import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
 
 /**
@@ -30,12 +29,13 @@ import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
  */
 public class JsrParamIdBinaryDecoder extends JsrParamIdOnMessage implements IJsrParamId
 {
-    private final DecoderWrapper ref;
-    private Class<?> supportedType;
+    private final Class<? extends Decoder> decoder;
+    private final Class<?> supportedType;
 
-    public JsrParamIdBinaryDecoder(DecoderWrapper ref)
+    public JsrParamIdBinaryDecoder(Class<? extends Decoder> decoder, Class<?> supportedType)
     {
-        this.ref = ref;
+        this.decoder = decoder;
+        this.supportedType = supportedType;
     }
 
     @Override
@@ -45,7 +45,7 @@ public class JsrParamIdBinaryDecoder extends JsrParamIdOnMessage implements IJsr
         {
             assertPartialMessageSupportDisabled(param,callable);
             param.bind(Role.MESSAGE_BINARY);
-            callable.setDecoder(ref.getDecoder());
+            callable.setDecoderClass(decoder);
             return true;
         }
         return false;

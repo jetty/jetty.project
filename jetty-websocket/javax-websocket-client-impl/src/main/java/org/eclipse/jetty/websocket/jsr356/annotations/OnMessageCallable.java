@@ -21,12 +21,19 @@ package org.eclipse.jetty.websocket.jsr356.annotations;
 import java.lang.reflect.Method;
 
 import javax.websocket.Decoder;
+import javax.websocket.Encoder;
 
 import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
+import org.eclipse.jetty.websocket.jsr356.InitException;
+import org.eclipse.jetty.websocket.jsr356.JsrSession;
 import org.eclipse.jetty.websocket.jsr356.utils.MethodUtils;
 
 public class OnMessageCallable extends JsrCallable
 {
+    protected final Class<?> returnType;
+    protected Encoder returnEncoder;
+    protected Class<? extends Decoder> decoderClass;
+    protected Decoder decoder;
     protected int idxPartialMessageFlag = -1;
     protected int idxMessageObject = -1;
     protected Param.Role messageRole;
@@ -34,11 +41,15 @@ public class OnMessageCallable extends JsrCallable
     public OnMessageCallable(Class<?> pojo, Method method)
     {
         super(pojo,method);
+        this.returnType = method.getReturnType();
     }
 
     public OnMessageCallable(OnMessageCallable copy)
     {
         super(copy);
+        this.returnType = copy.returnType;
+        this.decoderClass = copy.decoderClass;
+        this.decoder = copy.decoder;
         this.idxPartialMessageFlag = copy.idxPartialMessageFlag;
         this.idxMessageObject = copy.idxMessageObject;
         this.messageRole = copy.messageRole;
@@ -88,6 +99,16 @@ public class OnMessageCallable extends JsrCallable
         return -1;
     }
 
+    public Decoder getDecoder()
+    {
+        return decoder;
+    }
+
+    public Class<? extends Decoder> getDecoderClass()
+    {
+        return decoderClass;
+    }
+
     public Param getMessageObjectParam()
     {
         if (idxMessageObject < 0)
@@ -105,9 +126,44 @@ public class OnMessageCallable extends JsrCallable
         return super.params[idxMessageObject];
     }
 
+    public Encoder getReturnEncoder()
+    {
+        return returnEncoder;
+    }
+
+    public Class<?> getReturnType()
+    {
+        return returnType;
+    }
+
+    @Override
+    public void init(JsrSession session)
+    {
+        super.init(session);
+        this.returnEncoder = session.getEncoderFactory().getEncoder(returnType);
+
+        if (decoderClass != null)
+        {
+            try
+            {
+                this.decoder = decoderClass.newInstance();
+            }
+            catch (InstantiationException | IllegalAccessException e)
+            {
+                throw new InitException("Unable to create decoder: " + decoderClass.getName(),e);
+            }
+        }
+    }
+
     public boolean isPartialMessageSupported()
     {
         return (idxPartialMessageFlag >= 0);
+    }
+
+    @Override
+    public void setDecoderClass(Class<? extends Decoder> decoderClass)
+    {
+        this.decoderClass = decoderClass;
     }
 
     public void setPartialMessageFlag(Param param)

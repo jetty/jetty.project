@@ -34,6 +34,7 @@ import org.eclipse.jetty.websocket.jsr356.ClientContainer;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
 import org.eclipse.jetty.websocket.jsr356.annotations.JsrCallable;
 import org.eclipse.jetty.websocket.jsr356.annotations.JsrMetadata;
+import org.eclipse.jetty.websocket.jsr356.client.JsrClientMetadata;
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicBinaryMessageByteBufferSocket;
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicCloseReasonSessionSocket;
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicCloseReasonSocket;

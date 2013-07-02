@@ -42,18 +42,18 @@ public class CallableMethod
         this.paramTypes = method.getParameterTypes();
     }
 
-    public void call(Object obj, Object... args)
+    public Object call(Object obj, Object... args)
     {
         if ((this.pojo == null) || (this.method == null))
         {
             LOG.warn("Cannot execute call: pojo={}, method={}",pojo,method);
-            return; // no call event method determined
+            return null; // no call event method determined
         }
 
         if (obj == null)
         {
             LOG.warn("Cannot call {} on null object",this.method);
-            return;
+            return null;
         }
 
         if (args.length < paramTypes.length)
@@ -64,7 +64,7 @@ public class CallableMethod
 
         try
         {
-            this.method.invoke(obj,args);
+            return this.method.invoke(obj,args);
         }
         catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e)
         {

@@ -24,8 +24,8 @@ import java.nio.ByteBuffer;
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
 import javax.websocket.OnMessage;
-import javax.websocket.Session;
 
+import org.eclipse.jetty.websocket.jsr356.JsrSession;
 import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
 
 /**
@@ -52,23 +52,23 @@ public class OnMessageBinaryCallable extends OnMessageCallable
         super(copy);
     }
 
-    public void call(Object endpoint, ByteBuffer buf, boolean partialFlag) throws DecodeException
+    public Object call(Object endpoint, ByteBuffer buf, boolean partialFlag) throws DecodeException
     {
         super.args[idxMessageObject] = binaryDecoder.decode(buf);
         if (idxPartialMessageFlag >= 0)
         {
             super.args[idxPartialMessageFlag] = partialFlag;
         }
-        super.call(endpoint,super.args);
+        return super.call(endpoint,super.args);
     }
 
     @Override
-    public void init(Session session)
+    public void init(JsrSession session)
     {
         idxMessageObject = findIndexForRole(Role.MESSAGE_BINARY);
         assertRoleRequired(idxMessageObject,"Binary Message Object");
+        super.init(session);
         assertDecoderRequired();
         binaryDecoder = (Decoder.Binary<?>)getDecoder();
-        super.init(session);
     }
 }

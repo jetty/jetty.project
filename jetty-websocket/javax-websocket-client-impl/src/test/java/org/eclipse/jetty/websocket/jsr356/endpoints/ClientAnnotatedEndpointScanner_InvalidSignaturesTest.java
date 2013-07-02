@@ -35,6 +35,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
 import org.eclipse.jetty.websocket.jsr356.ClientContainer;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
+import org.eclipse.jetty.websocket.jsr356.client.JsrClientMetadata;
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.InvalidCloseIntSocket;
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.InvalidErrorErrorSocket;
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.InvalidErrorExceptionSocket;

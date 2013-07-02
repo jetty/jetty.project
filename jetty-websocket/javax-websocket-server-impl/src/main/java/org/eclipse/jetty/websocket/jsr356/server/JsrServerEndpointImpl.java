@@ -67,7 +67,7 @@ public class JsrServerEndpointImpl implements EventDriverImpl
         JsrEvents events = new JsrEvents(basemetadata); // copy constructor.
 
         // Create copy of base config
-        ServerEndpointConfig config = basemetadata.getEndpointConfigCopy();
+        ServerEndpointConfig config = basemetadata.getConfig();
         return new JsrAnnotatedEventDriver(policy,endpoint,events,config);
     }
 

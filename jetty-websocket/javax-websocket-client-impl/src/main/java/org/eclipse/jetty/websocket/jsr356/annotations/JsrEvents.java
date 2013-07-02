@@ -22,17 +22,17 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.nio.ByteBuffer;
-import java.util.Map;
 
+import javax.websocket.CloseReason;
 import javax.websocket.DecodeException;
 import javax.websocket.EndpointConfig;
 import javax.websocket.OnClose;
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
-import javax.websocket.Session;
+import javax.websocket.RemoteEndpoint;
 
-import org.eclipse.jetty.websocket.common.CloseInfo;
+import org.eclipse.jetty.websocket.jsr356.JsrSession;
 
 /**
  * The live event methods found for a specific Annotated Endpoint
@@ -94,25 +94,35 @@ public class JsrEvents
         this.onPong = (metadata.onPong == null)?null:new OnMessagePongCallable(metadata.onPong);
     }
 
-    public void callBinary(Object websocket, ByteBuffer buf, boolean fin) throws DecodeException
+    public void callBinary(RemoteEndpoint.Async endpoint, Object websocket, ByteBuffer buf, boolean fin) throws DecodeException
     {
         if (onBinary == null)
         {
             return;
         }
-        onBinary.call(websocket,buf,fin);
+
+        Object ret = onBinary.call(websocket,buf,fin);
+        if (ret != null)
+        {
+            endpoint.sendObject(ret);
+        }
     }
 
-    public void callBinaryStream(Object websocket, InputStream stream) throws DecodeException, IOException
+    public void callBinaryStream(RemoteEndpoint.Async endpoint, Object websocket, InputStream stream) throws DecodeException, IOException
     {
         if (onBinaryStream == null)
         {
             return;
         }
-        onBinaryStream.call(websocket,stream);
+
+        Object ret = onBinaryStream.call(websocket,stream);
+        if (ret != null)
+        {
+            endpoint.sendObject(ret);
+        }
     }
 
-    public void callClose(Object websocket, CloseInfo close)
+    public void callClose(Object websocket, CloseReason close)
     {
         if (onClose == null)
         {
@@ -139,22 +149,35 @@ public class JsrEvents
         onOpen.call(websocket,config);
     }
 
-    public void callText(Object websocket, String text, boolean fin) throws DecodeException
+    public void callText(RemoteEndpoint.Async endpoint, Object websocket, String text, boolean fin) throws DecodeException
     {
         if (onText == null)
         {
             return;
         }
-        onText.call(websocket,text,fin);
+        Object ret = onText.call(websocket,text,fin);
+        if (ret != null)
+        {
+            endpoint.sendObject(ret);
+        }
     }
 
-    public void callTextStream(Object websocket, Reader reader) throws DecodeException, IOException
+    public void callTextStream(RemoteEndpoint.Async endpoint, Object websocket, Reader reader) throws DecodeException, IOException
     {
         if (onTextStream == null)
         {
             return;
         }
-        onTextStream.call(websocket,reader);
+        Object ret = onTextStream.call(websocket,reader);
+        if (ret != null)
+        {
+            endpoint.sendObject(ret);
+        }
+    }
+
+    public JsrMetadata<?> getMetadata()
+    {
+        return metadata;
     }
 
     public boolean hasBinary()
@@ -177,10 +200,8 @@ public class JsrEvents
         return (onTextStream != null);
     }
 
-    public void init(Session session)
+    public void init(JsrSession session)
     {
-        Map<String, String> pathParams = session.getPathParameters();
-
         if (onOpen != null)
         {
             onOpen.init(session);

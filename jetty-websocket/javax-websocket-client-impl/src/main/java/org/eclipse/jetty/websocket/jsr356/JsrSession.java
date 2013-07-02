@@ -19,16 +19,20 @@
 package org.eclipse.jetty.websocket.jsr356;
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.net.URI;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import javax.websocket.CloseReason;
+import javax.websocket.EndpointConfig;
 import javax.websocket.Extension;
 import javax.websocket.MessageHandler;
 import javax.websocket.RemoteEndpoint.Async;
@@ -36,36 +40,107 @@ import javax.websocket.RemoteEndpoint.Basic;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
-import org.eclipse.jetty.websocket.jsr356.messages.MessageHandlerWrapper;
+import org.eclipse.jetty.websocket.jsr356.endpoints.AbstractJsrEventDriver;
+import org.eclipse.jetty.websocket.jsr356.metadata.DecoderMetadata;
+import org.eclipse.jetty.websocket.jsr356.metadata.MessageHandlerMetadata;
 
-public class JsrSession extends WebSocketSession implements javax.websocket.Session
+public class JsrSession extends WebSocketSession implements javax.websocket.Session, Configurable
 {
-    private final ClientContainer container;
+    private static final Logger LOG = Log.getLogger(JsrSession.class);
+    private final CommonContainer container;
     private final String id;
+    private final EndpointConfig config;
+    /** Factory for Decoders */
+    private final DecoderFactory decoderFactory;
+    private Map<Type, DecoderWrapper> activeDecoders;
+    /** Factory for Encoders */
+    private final EncoderFactory encoderFactory;
+    private Map<Type, EncoderWrapper> activeEncoders;
+    /** Factory for MessageHandlers */
+    private final MessageHandlerFactory messageHandlerFactory;
+    /** Array of MessageHandlerWrappers, indexed by {@link MessageType#ordinal()} */
+    private final MessageHandlerWrapper wrappers[];
+    private Set<MessageHandler> messageHandlerSet;
     private List<Extension> negotiatedExtensions;
     private Map<String, List<String>> jsrParameterMap;
     private Map<String, String> pathParameters = new HashMap<>();
-    private Map<String, Object> userProperties;
-    private Decoders decoders;
-    private MessageHandlers messageHandlers;
     private JsrAsyncRemote asyncRemote;
     private JsrBasicRemote basicRemote;
 
     public JsrSession(URI requestURI, EventDriver websocket, LogicalConnection connection, ClientContainer container, String id)
     {
         super(requestURI,websocket,connection);
+        if (websocket instanceof AbstractJsrEventDriver)
+        {
+            this.config = ((AbstractJsrEventDriver)websocket).getConfig();
+        }
+        else
+        {
+            this.config = new BasicEndpointConfig();
+        }
         this.container = container;
         this.id = id;
+        this.decoderFactory = new DecoderFactory(container.getDecoderFactory());
+        this.encoderFactory = new EncoderFactory(container.getEncoderFactory());
+        this.activeDecoders = new HashMap<>();
+        this.activeEncoders = new HashMap<>();
+        this.messageHandlerFactory = new MessageHandlerFactory();
+        this.wrappers = new MessageHandlerWrapper[MessageType.values().length];
+        this.messageHandlerSet = new HashSet<>();
     }
 
     @Override
-    public void addMessageHandler(MessageHandler listener) throws IllegalStateException
+    public void addMessageHandler(MessageHandler handler) throws IllegalStateException
     {
-        this.messageHandlers.add(listener);
+        Objects.requireNonNull(handler,"MessageHandler cannot be null");
+
+        synchronized (wrappers)
+        {
+            for (MessageHandlerMetadata metadata : messageHandlerFactory.getMetadata(handler.getClass()))
+            {
+                DecoderWrapper decoder = decoderFactory.getWrapperFor(metadata.getMessageClass());
+                MessageType key = decoder.getMetadata().getMessageType();
+                MessageHandlerWrapper other = wrappers[key.ordinal()];
+                if (other != null)
+                {
+                    StringBuilder err = new StringBuilder();
+                    err.append("Encountered duplicate MessageHandler handling message type <");
+                    err.append(key.name());
+                    err.append(">, ").append(metadata.getHandlerClass().getName());
+                    err.append("<");
+                    err.append(metadata.getMessageClass().getName());
+                    err.append("> and ");
+                    err.append(other.getMetadata().getHandlerClass().getName());
+                    err.append("<");
+                    err.append(other.getMetadata().getMessageClass().getName());
+                    err.append("> both implement this message type");
+                    throw new IllegalStateException(err.toString());
+                }
+                else
+                {
+                    MessageHandlerWrapper wrapper = new MessageHandlerWrapper(handler,metadata,decoder);
+                    wrappers[key.ordinal()] = wrapper;
+                }
+            }
+
+            // Update handlerSet
+            messageHandlerSet.clear();
+            for (MessageHandlerWrapper wrapper : wrappers)
+            {
+                if (wrapper == null)
+                {
+                    // skip empty
+                    continue;
+                }
+                messageHandlerSet.add(wrapper.getHandler());
+            }
+        }
     }
 
     @Override
@@ -79,7 +154,7 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
     {
         if (asyncRemote == null)
         {
-            asyncRemote = new JsrAsyncRemote(getRemote());
+            asyncRemote = new JsrAsyncRemote(this);
         }
         return asyncRemote;
     }
@@ -100,9 +175,14 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
         return this.container;
     }
 
-    public Decoders getDecodersFacade()
+    public DecoderFactory getDecoderFactory()
     {
-        return this.decoders;
+        return decoderFactory;
+    }
+
+    public EncoderFactory getEncoderFactory()
+    {
+        return encoderFactory;
     }
 
     @Override
@@ -129,20 +209,23 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
         return getPolicy().getMaxTextMessageSize();
     }
 
-    public MessageHandlers getMessageHandlerFacade()
+    public MessageHandlerFactory getMessageHandlerFactory()
     {
-        return messageHandlers;
+        return messageHandlerFactory;
     }
 
     @Override
     public Set<MessageHandler> getMessageHandlers()
     {
-        return messageHandlers.getUnmodifiableHandlerSet();
+        return Collections.unmodifiableSet(messageHandlerSet);
     }
 
-    public MessageHandlerWrapper getMessageHandlerWrapper(MessageType msgType)
+    public MessageHandlerWrapper getMessageHandlerWrapper(MessageType type)
     {
-        return messageHandlers.getWrapper(msgType);
+        synchronized (wrappers)
+        {
+            return wrappers[type.ordinal()];
+        }
     }
 
     @Override
@@ -211,18 +294,50 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
     @Override
     public Map<String, Object> getUserProperties()
     {
-        return userProperties;
+        return config.getUserProperties();
+    }
+
+    @Override
+    public void init(EndpointConfig endpointconfig)
+    {
+        // Initialize encoders
+        for (EncoderWrapper wrapper : activeEncoders.values())
+        {
+            wrapper.getEncoder().init(config);
+        }
+
+        // Initialize decoders
+        for (DecoderWrapper wrapper : activeDecoders.values())
+        {
+            wrapper.getDecoder().init(config);
+        }
+
+        // Init message handlers
+        for (MessageHandlerWrapper wrapper : wrappers)
+        {
+            if (wrapper != null)
+            {
+                // TODO wrapper.init(config);
+            }
+        }
     }
 
     @Override
     public void removeMessageHandler(MessageHandler handler)
     {
-        messageHandlers.remove(handler);
-    }
-
-    public void setDecodersFacade(Decoders decoders)
-    {
-        this.decoders = decoders;
+        try
+        {
+            for (MessageHandlerMetadata metadata : messageHandlerFactory.getMetadata(handler.getClass()))
+            {
+                DecoderMetadata decoder = decoderFactory.getMetadataFor(metadata.getMessageClass());
+                MessageType key = decoder.getMessageType();
+                wrappers[key.ordinal()] = null;
+            }
+        }
+        catch (IllegalStateException e)
+        {
+            LOG.warn("Unable to identify MessageHandler: " + handler.getClass().getName(),e);
+        }
     }
 
     @Override
@@ -241,10 +356,5 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
     public void setMaxTextMessageBufferSize(int length)
     {
         getPolicy().setMaxTextMessageBufferSize(length);
-    }
-
-    public void setMessageHandlerFacade(MessageHandlers messageHandlers)
-    {
-        this.messageHandlers = messageHandlers;
     }
 }

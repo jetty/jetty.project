@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.jsr356.endpoints;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
 import org.eclipse.jetty.websocket.jsr356.ClientContainer;
+import org.eclipse.jetty.websocket.jsr356.client.JsrClientEndpointImpl;
 
 public class JsrEventDriverFactory extends EventDriverFactory
 {

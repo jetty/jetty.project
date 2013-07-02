@@ -30,16 +30,6 @@ import org.eclipse.jetty.websocket.jsr356.utils.ReflectUtils;
 
 public class Encoders
 {
-    private static final List<Class<?>> TYPES = new ArrayList<>();
-
-    static
-    {
-        TYPES.add(Encoder.Text.class);
-        TYPES.add(Encoder.TextStream.class);
-        TYPES.add(Encoder.Binary.class);
-        TYPES.add(Encoder.BinaryStream.class);
-    }
-
     private static class EncoderRef
     {
         Class<?> type;
@@ -50,6 +40,16 @@ public class Encoders
             this.type = type;
             this.encoder = encoder;
         }
+    }
+
+    private static final List<Class<?>> TYPES = new ArrayList<>();
+
+    static
+    {
+        TYPES.add(Encoder.Text.class);
+        TYPES.add(Encoder.TextStream.class);
+        TYPES.add(Encoder.Binary.class);
+        TYPES.add(Encoder.BinaryStream.class);
     }
 
     private final List<EncoderRef> encoders;
@@ -125,6 +125,12 @@ public class Encoders
     private void add(EncoderRef ref)
     {
         this.encoders.add(ref);
+    }
+
+    public void addAll(Class<? extends Encoder>[] encoderArr)
+    {
+        // TODO Auto-generated method stub
+
     }
 
     public Encoder getEncoder(Class<?> type)

@@ -25,8 +25,8 @@ import java.lang.reflect.Method;
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
 import javax.websocket.OnMessage;
-import javax.websocket.Session;
 
+import org.eclipse.jetty.websocket.jsr356.JsrSession;
 import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
 
 /**
@@ -51,19 +51,19 @@ public class OnMessageTextStreamCallable extends OnMessageCallable
         super(copy);
     }
 
-    public void call(Object endpoint, Reader reader) throws DecodeException, IOException
+    public Object call(Object endpoint, Reader reader) throws DecodeException, IOException
     {
         super.args[idxMessageObject] = textDecoder.decode(reader);
-        super.call(endpoint,super.args);
+        return super.call(endpoint,super.args);
     }
 
     @Override
-    public void init(Session session)
+    public void init(JsrSession session)
     {
         idxMessageObject = findIndexForRole(Role.MESSAGE_TEXT_STREAM);
         assertRoleRequired(idxMessageObject,"Text Reader Message Object");
+        super.init(session);
         assertDecoderRequired();
         textDecoder = (Decoder.TextStream<?>)getDecoder();
-        super.init(session);
     }
 }

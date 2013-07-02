@@ -124,7 +124,7 @@ public class AnnotatedEndpointScanner extends AbstractMethodAnnotationScanner<Js
         if (isAnnotation(annotation,OnMessage.class))
         {
             assertIsPublicNonStatic(method);
-            assertIsReturn(method,Void.TYPE);
+            // assertIsReturn(method,Void.TYPE); // no validation, it can be any return type
             OnMessageCallable onmessage = new OnMessageCallable(pojo,method);
             visitMethod(onmessage,pojo,method,paramsOnMessage,OnMessage.class);
 
@@ -187,6 +187,7 @@ public class AnnotatedEndpointScanner extends AbstractMethodAnnotationScanner<Js
     {
         for (IJsrParamId paramId : paramIds)
         {
+            LOG.debug("{}.process()",paramId);
             if (paramId.process(param,callable))
             {
                 // Successfully identified

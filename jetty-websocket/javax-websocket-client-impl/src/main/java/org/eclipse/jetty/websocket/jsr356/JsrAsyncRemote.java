@@ -27,19 +27,17 @@ import javax.websocket.SendHandler;
 
 public class JsrAsyncRemote implements RemoteEndpoint.Async
 {
-
     private final org.eclipse.jetty.websocket.api.RemoteEndpoint jettyRemote;
 
-    protected JsrAsyncRemote(org.eclipse.jetty.websocket.api.RemoteEndpoint endpoint)
+    protected JsrAsyncRemote(JsrSession session)
     {
-        this.jettyRemote = endpoint;
+        this.jettyRemote = session.getRemote();
     }
 
     @Override
     public void flushBatch() throws IOException
     {
         // TODO Auto-generated method stub
-
     }
 
     @Override
@@ -65,8 +63,8 @@ public class JsrAsyncRemote implements RemoteEndpoint.Async
     @Override
     public void sendBinary(ByteBuffer data, SendHandler handler)
     {
-        // TODO Auto-generated method stub
-
+        // TODO: wrap the send handler?
+        jettyRemote.sendBytesByFuture(data);
     }
 
     @Override

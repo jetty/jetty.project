@@ -24,9 +24,9 @@ import java.nio.ByteBuffer;
 import javax.websocket.DecodeException;
 import javax.websocket.OnMessage;
 import javax.websocket.PongMessage;
-import javax.websocket.Session;
 
 import org.eclipse.jetty.websocket.jsr356.JsrPongMessage;
+import org.eclipse.jetty.websocket.jsr356.JsrSession;
 import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
 
 /**
@@ -47,14 +47,14 @@ public class OnMessagePongCallable extends OnMessageCallable
         super(copy);
     }
 
-    public void call(Object endpoint, ByteBuffer buf) throws DecodeException
+    public Object call(Object endpoint, ByteBuffer buf) throws DecodeException
     {
         super.args[idxMessageObject] = new JsrPongMessage(buf);
-        super.call(endpoint,super.args);
+        return super.call(endpoint,super.args);
     }
 
     @Override
-    public void init(Session session)
+    public void init(JsrSession session)
     {
         idxMessageObject = findIndexForRole(Role.MESSAGE_PONG);
         assertRoleRequired(idxMessageObject,"Pong Message Object");

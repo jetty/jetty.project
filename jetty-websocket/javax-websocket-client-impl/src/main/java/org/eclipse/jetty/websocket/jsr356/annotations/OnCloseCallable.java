@@ -22,10 +22,11 @@ import java.lang.reflect.Method;
 
 import javax.websocket.CloseReason;
 import javax.websocket.CloseReason.CloseCodes;
+import javax.websocket.Decoder;
 import javax.websocket.OnClose;
-import javax.websocket.Session;
 
 import org.eclipse.jetty.websocket.common.CloseInfo;
+import org.eclipse.jetty.websocket.jsr356.JsrSession;
 import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
 
 /**
@@ -64,9 +65,15 @@ public class OnCloseCallable extends JsrCallable
     }
 
     @Override
-    public void init(Session session)
+    public void init(JsrSession session)
     {
         idxCloseReason = findIndexForRole(Role.CLOSE_REASON);
         super.init(session);
+    }
+
+    @Override
+    public void setDecoderClass(Class<? extends Decoder> decoderClass)
+    {
+        /* ignore, not relevant for onClose */
     }
 }

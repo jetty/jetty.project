@@ -16,24 +16,17 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356;
+package org.eclipse.jetty.websocket.jsr356.samples;
 
-import javax.websocket.WebSocketContainer;
+import javax.websocket.Endpoint;
+import javax.websocket.EndpointConfig;
+import javax.websocket.Session;
 
-/**
- * Service Interface for working with Jetty Internal Container.
- */
-public interface ContainerService extends WebSocketContainer
+public class DummyEndpoint extends Endpoint
 {
-    public DecoderMetadataFactory getDecoderMetadataFactory();
-
-    /**
-     * Start the service
-     */
-    public void start();
-
-    /**
-     * Stop the service
-     */
-    public void stop();
+    @Override
+    public void onOpen(Session session, EndpointConfig config)
+    {
+        /* do nothing */
+    }
 }

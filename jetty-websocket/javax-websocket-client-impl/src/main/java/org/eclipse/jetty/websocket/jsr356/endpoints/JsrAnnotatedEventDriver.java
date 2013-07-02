@@ -23,19 +23,16 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.nio.ByteBuffer;
 
+import javax.websocket.CloseReason;
 import javax.websocket.DecodeException;
 import javax.websocket.EndpointConfig;
 import javax.websocket.MessageHandler;
-import javax.websocket.Session;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.common.CloseInfo;
-import org.eclipse.jetty.websocket.common.WebSocketSession;
-import org.eclipse.jetty.websocket.common.events.AbstractEventDriver;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.message.MessageInputStream;
 import org.eclipse.jetty.websocket.common.message.MessageReader;
@@ -47,24 +44,21 @@ import org.eclipse.jetty.websocket.jsr356.annotations.JsrEvents;
 /**
  * Base implementation for JSR-356 Annotated event drivers.
  */
-public class JsrAnnotatedEventDriver extends AbstractEventDriver implements EventDriver
+public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver implements EventDriver
 {
     private static final Logger LOG = Log.getLogger(JsrAnnotatedEventDriver.class);
     private final JsrEvents events;
-    private final EndpointConfig endpointconfig;
-    private boolean hasCloseBeenCalled = false;
-    private JsrSession jsrsession;
 
-    public JsrAnnotatedEventDriver(WebSocketPolicy policy, Object websocket, JsrEvents events, EndpointConfig endpointconfig)
+    public JsrAnnotatedEventDriver(WebSocketPolicy policy, Object websocket, JsrEvents events, EndpointConfig config)
     {
-        super(policy,websocket);
+        super(policy,websocket,config);
         this.events = events;
-        this.endpointconfig = endpointconfig;
     }
 
-    public Session getJsrSession()
+    @Override
+    protected void init(JsrSession jsrsession)
     {
-        return this.jsrsession;
+        this.events.init(jsrsession);
     }
 
     /**
@@ -90,7 +84,7 @@ public class JsrAnnotatedEventDriver extends AbstractEventDriver implements Even
                 // Partial Message Support (does not use messageAppender)
                 try
                 {
-                    events.callBinary(websocket,buffer,fin);
+                    events.callBinary(jsrsession.getAsyncRemote(),websocket,buffer,fin);
                 }
                 catch (DecodeException e)
                 {
@@ -125,7 +119,7 @@ public class JsrAnnotatedEventDriver extends AbstractEventDriver implements Even
                     {
                         try
                         {
-                            events.callBinaryStream(websocket,stream);
+                            events.callBinaryStream(jsrsession.getAsyncRemote(),websocket,stream);
                         }
                         catch (DecodeException | IOException e)
                         {
@@ -159,7 +153,7 @@ public class JsrAnnotatedEventDriver extends AbstractEventDriver implements Even
         try
         {
             // FIN is always true here
-            events.callBinary(websocket,ByteBuffer.wrap(data),true);
+            events.callBinary(jsrsession.getAsyncRemote(),websocket,ByteBuffer.wrap(data),true);
         }
         catch (DecodeException e)
         {
@@ -168,21 +162,15 @@ public class JsrAnnotatedEventDriver extends AbstractEventDriver implements Even
     }
 
     @Override
-    public void onClose(CloseInfo close)
+    protected void onClose(CloseReason closereason)
     {
-        if (hasCloseBeenCalled)
-        {
-            // avoid duplicate close events (possible when using harsh Session.disconnect())
-            return;
-        }
-        hasCloseBeenCalled = true;
-        events.callClose(websocket,close);
+        events.callClose(websocket,closereason);
     }
 
     @Override
     public void onConnect()
     {
-        events.callOpen(websocket,endpointconfig);
+        events.callOpen(websocket,config);
     }
 
     @Override
@@ -208,7 +196,7 @@ public class JsrAnnotatedEventDriver extends AbstractEventDriver implements Even
     {
         try
         {
-            events.callBinaryStream(websocket,stream);
+            events.callBinaryStream(jsrsession.getAsyncRemote(),websocket,stream);
         }
         catch (DecodeException | IOException e)
         {
@@ -221,7 +209,7 @@ public class JsrAnnotatedEventDriver extends AbstractEventDriver implements Even
     {
         try
         {
-            events.callTextStream(websocket,reader);
+            events.callTextStream(jsrsession.getAsyncRemote(),websocket,reader);
         }
         catch (DecodeException | IOException e)
         {
@@ -254,7 +242,7 @@ public class JsrAnnotatedEventDriver extends AbstractEventDriver implements Even
                 try
                 {
                     String text = BufferUtil.toUTF8String(buffer);
-                    events.callText(websocket,text,fin);
+                    events.callText(jsrsession.getAsyncRemote(),websocket,text,fin);
                 }
                 catch (DecodeException e)
                 {
@@ -291,7 +279,7 @@ public class JsrAnnotatedEventDriver extends AbstractEventDriver implements Even
                     {
                         try
                         {
-                            events.callTextStream(websocket,stream);
+                            events.callTextStream(jsrsession.getAsyncRemote(),websocket,stream);
                         }
                         catch (DecodeException | IOException e)
                         {
@@ -322,23 +310,12 @@ public class JsrAnnotatedEventDriver extends AbstractEventDriver implements Even
         try
         {
             // FIN is always true here
-            events.callText(websocket,message,true);
+            events.callText(jsrsession.getAsyncRemote(),websocket,message,true);
         }
         catch (DecodeException e)
         {
             onFatalError(e);
         }
-    }
-
-    @Override
-    public void openSession(WebSocketSession session)
-    {
-        // Cast should be safe, as it was created by JsrSessionFactory
-        this.jsrsession = (JsrSession)session;
-        // Initialize the events
-        this.events.init(jsrsession);
-        // TODO: Initialize the decoders
-        super.openSession(session);
     }
 
     @Override

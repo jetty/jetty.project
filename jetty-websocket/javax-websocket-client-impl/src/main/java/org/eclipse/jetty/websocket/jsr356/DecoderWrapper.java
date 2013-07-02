@@ -19,11 +19,14 @@
 package org.eclipse.jetty.websocket.jsr356;
 
 import javax.websocket.Decoder;
+import javax.websocket.EndpointConfig;
+
+import org.eclipse.jetty.websocket.jsr356.metadata.DecoderMetadata;
 
 /**
- * Expose a {@link Decoder} instance along with its associated {@link DecoderMetadata}
+ * Expose a configured {@link Decoder} instance along with its associated {@link DecoderMetadata}
  */
-public class DecoderWrapper
+public class DecoderWrapper implements Configurable
 {
     private final Decoder decoder;
     private final DecoderMetadata metadata;
@@ -42,5 +45,11 @@ public class DecoderWrapper
     public DecoderMetadata getMetadata()
     {
         return metadata;
+    }
+
+    @Override
+    public void init(EndpointConfig config)
+    {
+        this.decoder.init(config);
     }
 }

@@ -26,6 +26,7 @@ import javax.websocket.DeploymentException;
 import org.eclipse.jetty.websocket.common.events.annotated.CallableMethod;
 import org.eclipse.jetty.websocket.jsr356.ClientContainer;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
+import org.eclipse.jetty.websocket.jsr356.client.JsrClientMetadata;
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicOpenCloseSessionSocket;
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicOpenCloseSocket;
 import org.junit.Assert;

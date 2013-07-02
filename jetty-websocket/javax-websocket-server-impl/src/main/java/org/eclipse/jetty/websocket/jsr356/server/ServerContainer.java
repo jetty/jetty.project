@@ -60,7 +60,7 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
 
     public void addEndpoint(JsrServerMetadata metadata) throws DeploymentException
     {
-        addEndpoint(metadata.getEndpointConfigCopy());
+        addEndpoint(metadata.getConfig());
     }
 
     @Override
