@@ -162,6 +162,7 @@ public class HttpTransportOverSPDY implements HttpTransport
                 headers.add(HttpHeader.SERVER.asString(), HttpConfiguration.SERVER_VERSION);
             if(configuration.getSendXPoweredBy())
                 headers.add(HttpHeader.X_POWERED_BY.asString(), HttpConfiguration.SERVER_VERSION);
+            
             boolean close = !hasContent && lastContent;
             ReplyInfo reply = new ReplyInfo(headers, close);
             reply(stream, reply);
