@@ -214,7 +214,7 @@ public class HttpTransportOverSPDY implements HttpTransport
     @Override
     public void completed()
     {
-        LOG.debug("Completed {}", this);
+        LOG.debug("Completed");
     }
 
     private void reply(Stream stream, ReplyInfo replyInfo)
@@ -263,7 +263,7 @@ public class HttpTransportOverSPDY implements HttpTransport
     {
         private final Queue<PushResource> queue = new ConcurrentArrayQueue<>();
         private final Set<String> resources;
-        private AtomicBoolean active = new AtomicBoolean(false);
+        private boolean active;
 
         private PushResourceCoordinator(Set<String> resources)
         {
@@ -272,7 +272,6 @@ public class HttpTransportOverSPDY implements HttpTransport
 
         private void coordinate()
         {
-            LOG.debug("Pushing resources: {}", resources);
             // Must send all push frames to the client at once before we
             // return from this method and send the main resource data
             for (String pushResource : resources)
@@ -282,15 +281,17 @@ public class HttpTransportOverSPDY implements HttpTransport
         private void sendNextResourceData()
         {
             PushResource resource;
-            if(active.compareAndSet(false, true))
+            synchronized (this)
             {
+                if (active)
+                    return;
                 resource = queue.poll();
                 if (resource == null)
                     return;
-                LOG.debug("Opening new push channel for: {}", resource);
-                HttpChannelOverSPDY pushChannel = newHttpChannelOverSPDY(resource.getPushStream(), resource.getPushRequestHeaders());
-                pushChannel.requestStart(resource.getPushRequestHeaders(), true);
+                active = true;
             }
+            HttpChannelOverSPDY pushChannel = newHttpChannelOverSPDY(resource.getPushStream(), resource.getPushRequestHeaders());
+            pushChannel.requestStart(resource.getPushRequestHeaders(), true);
         }
 
         private HttpChannelOverSPDY newHttpChannelOverSPDY(Stream pushStream, Fields pushRequestHeaders)
@@ -328,13 +329,6 @@ public class HttpTransportOverSPDY implements HttpTransport
             });
         }
 
-        private void complete()
-        {
-            if(!active.compareAndSet(true, false))
-                LOG.warn("complete() called and active==false? That smells like a concurrency bug!", new IllegalStateException());
-            sendNextResourceData();
-        }
-
         private Fields createRequestHeaders(Fields.Field scheme, Fields.Field host, Fields.Field uri, String pushResourcePath)
         {
             final Fields newRequestHeaders = new Fields(requestHeaders, false);
@@ -364,6 +358,15 @@ public class HttpTransportOverSPDY implements HttpTransport
             }
             return pushHeaders;
         }
+
+        private void complete()
+        {
+            synchronized (this)
+            {
+                active = false;
+            }
+            sendNextResourceData();
+        }
     }
 
     private static class PushResource
@@ -385,15 +388,6 @@ public class HttpTransportOverSPDY implements HttpTransport
         public Fields getPushRequestHeaders()
         {
             return pushRequestHeaders;
-        }
-
-        @Override
-        public String toString()
-        {
-            return "PushResource{" +
-                    "pushStream=" + pushStream +
-                    ", pushRequestHeaders=" + pushRequestHeaders +
-                    '}';
         }
     }
 }

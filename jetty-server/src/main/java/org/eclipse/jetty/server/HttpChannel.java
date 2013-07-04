@@ -235,8 +235,6 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     public boolean handle()
     {
         LOG.debug("{} handle enter", this);
-        if(_state.isCompleted())
-            return false;
 
         setCurrentHttpChannel(this);
 

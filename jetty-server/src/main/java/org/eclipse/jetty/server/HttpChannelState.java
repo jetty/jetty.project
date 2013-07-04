@@ -563,14 +563,6 @@ public class HttpChannelState
         }
     }
 
-    boolean isCompleted()
-    {
-        synchronized (this)
-        {
-            return _state == State.COMPLETED;
-        }
-    }
-
     public boolean isAsyncStarted()
     {
         synchronized (this)
