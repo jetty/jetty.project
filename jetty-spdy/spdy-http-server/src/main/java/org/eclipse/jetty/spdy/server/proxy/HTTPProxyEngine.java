@@ -141,6 +141,7 @@ public class HTTPProxyEngine extends ProxyEngine
             {
                 LOG.debug("onHeaders called with response: {}. Sending replyInfo to client.", response);
                 Fields responseHeaders = createResponseHeaders(clientStream, response);
+                removeHopHeaders(responseHeaders);
                 ReplyInfo replyInfo = new ReplyInfo(responseHeaders, false);
                 clientStream.reply(replyInfo, new Callback.Adapter()
                 {

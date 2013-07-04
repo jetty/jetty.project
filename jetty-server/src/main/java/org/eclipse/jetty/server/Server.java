@@ -281,8 +281,8 @@ public class Server extends HandlerWrapper implements Attributes
 
         ShutdownMonitor.getInstance().start(); // initialize
 
-        LOG.info("jetty-"+getVersion());
-        HttpGenerator.setServerVersion(getVersion());
+        LOG.info("jetty-" + getVersion());
+        HttpGenerator.setJettyVersion(HttpConfiguration.SERVER_VERSION);
         MultiException mex=new MultiException();
 
         try

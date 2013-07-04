@@ -353,7 +353,7 @@ public class TypeUtil
     {
         byte b = (byte)((c & 0x1f) + ((c >> 6) * 0x19) - 0x10);
         if (b<0 || b>15)
-            throw new IllegalArgumentException("!hex "+c);
+            throw new NumberFormatException("!hex "+c);
         return b;
     }
     

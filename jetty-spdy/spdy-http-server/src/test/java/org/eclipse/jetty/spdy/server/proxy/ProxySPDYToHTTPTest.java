@@ -219,6 +219,8 @@ public class ProxySPDYToHTTPTest
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
                 Fields headers = replyInfo.getHeaders();
+                assertThat("Trailer header has been filtered by proxy", headers.get("trailer"),
+                        is(nullValue()));
                 assertThat("custom header exists in response", headers.get(header), is(notNullValue()));
                 replyLatch.countDown();
             }
@@ -545,6 +547,8 @@ public class ProxySPDYToHTTPTest
             while ((read = bufferedReader.read()) != -1)
                 response.getOutputStream().write(read);
 
+            // add some hop header to be removed on the proxy
+            response.addHeader("Trailer", "bla");
             if (responseHeader != null)
                 response.addHeader(responseHeader, "bar");
             if (responseData != null)

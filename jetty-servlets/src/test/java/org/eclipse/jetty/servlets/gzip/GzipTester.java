@@ -18,13 +18,8 @@
 
 package org.eclipse.jetty.servlets.gzip;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -113,7 +108,20 @@ public class GzipTester
         
         // Assert the response headers
         // Assert.assertThat("Response.status",response.getStatus(),is(HttpServletResponse.SC_OK));
-        Assert.assertThat("Response.header[Content-Length]",response.get("Content-Length"),notNullValue());
+        
+        // Response headers should have either a Transfer-Encoding indicating chunked OR a Content-Length
+        String contentLength = response.get("Content-Length");
+        String transferEncoding = response.get("Transfer-Encoding");
+        
+        /* TODO need to check for the 3rd option of EOF content.  To do this properly you might need to look at both HTTP/1.1 and HTTP/1.0 requests
+        boolean chunked = (transferEncoding != null) && (transferEncoding.indexOf("chunk") >= 0);
+        if(!chunked) {
+            Assert.assertThat("Response.header[Content-Length]",contentLength,notNullValue());
+        } else {
+            Assert.assertThat("Response.header[Transfer-Encoding]",transferEncoding,notNullValue());
+        }
+        */
+        
         int qindex = compressionType.indexOf(";");
         if (qindex < 0)
             Assert.assertThat("Response.header[Content-Encoding]",response.get("Content-Encoding"),containsString(compressionType));

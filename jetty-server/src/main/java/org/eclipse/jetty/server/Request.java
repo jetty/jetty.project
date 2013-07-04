@@ -204,7 +204,6 @@ public class Request implements HttpServletRequest
     private HttpSession _session;
     private SessionManager _sessionManager;
     private long _timeStamp;
-    private long _dispatchTime;
     private HttpURI _uri;
     private MultiPartInputStreamParser _multiPartInputStream; //if the request is a multi-part mime
     private AsyncContextState _async;
@@ -1406,16 +1405,6 @@ public class Request implements HttpServletRequest
         return null;
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * Get timestamp of the request dispatch
-     *
-     * @return timestamp
-     */
-    public long getDispatchTime()
-    {
-        return _dispatchTime;
-    }
 
     /* ------------------------------------------------------------ */
     public boolean isHandled()
@@ -1979,18 +1968,6 @@ public class Request implements HttpServletRequest
     public void setUserIdentityScope(UserIdentity.Scope scope)
     {
         _scope = scope;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Set timetstamp of request dispatch
-     *
-     * @param value
-     *            timestamp
-     */
-    public void setDispatchTime(long value)
-    {
-        _dispatchTime = value;
     }
 
     /* ------------------------------------------------------------ */

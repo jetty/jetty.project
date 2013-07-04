@@ -21,6 +21,8 @@ package org.eclipse.jetty.servlet;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 import javax.servlet.AsyncContext;
@@ -33,9 +35,14 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.RequestLog;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
@@ -53,15 +60,28 @@ public class AsyncServletTest
     protected Server _server = new Server();
     protected ServletHandler _servletHandler;
     protected ServerConnector _connector;
+    protected List<String> _log;
+    protected int _expectedLogs;
+    protected String _expectedCode;
 
     @Before
     public void setUp() throws Exception
     {
         _connector = new ServerConnector(_server);
         _server.setConnectors(new Connector[]{ _connector });
+        
+        _log=new ArrayList<>();
+        RequestLog log=new Log();
+        RequestLogHandler logHandler = new RequestLogHandler();
+        logHandler.setRequestLog(log);
+        _server.setHandler(logHandler);
+        _expectedLogs=1;
+        _expectedCode="200 ";
+
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
         context.setContextPath("/ctx");
-        _server.setHandler(context);
+        logHandler.setHandler(context);
+        
         _servletHandler=context.getServletHandler();
         ServletHolder holder=new ServletHolder(_servlet);
         holder.setAsyncSupported(true);
@@ -73,6 +93,8 @@ public class AsyncServletTest
     @After
     public void tearDown() throws Exception
     {
+        assertEquals(_expectedLogs,_log.size());
+        Assert.assertThat(_log.get(0),Matchers.containsString(_expectedCode));
         _server.stop();
     }
 
@@ -105,6 +127,7 @@ public class AsyncServletTest
     @Test
     public void testSuspend() throws Exception
     {
+        _expectedCode="500 ";
         String response=process("suspend=200",null);
         assertEquals("HTTP/1.1 500 Async Timeout",response.substring(0,26));
         assertContains(
@@ -258,6 +281,7 @@ public class AsyncServletTest
     @Test
     public void testSuspendWaitResumeSuspend() throws Exception
     {
+        _expectedCode="500 ";
         String response=process("suspend=1000&resume=10&suspend2=10",null);
         assertEquals("HTTP/1.1 500 Async Timeout",response.substring(0,26));
         assertContains(
@@ -316,6 +340,7 @@ public class AsyncServletTest
     @Test
     public void testSuspendTimeoutSuspend() throws Exception
     {
+        _expectedCode="500 ";
         String response=process("suspend=10&suspend2=10",null);
         assertContains(
             "history: REQUEST\r\n"+
@@ -335,6 +360,7 @@ public class AsyncServletTest
     @Test
     public void testAsyncRead() throws Exception
     {
+        _expectedLogs=2;
         String header="GET /ctx/path/info?suspend=2000&resume=1500 HTTP/1.1\r\n"+
             "Host: localhost\r\n"+
             "Content-Length: 10\r\n"+
@@ -691,4 +717,13 @@ public class AsyncServletTest
             ((HttpServletResponse)event.getSuppliedResponse()).addHeader("history","onComplete");
         }
     };
+
+    class Log extends AbstractLifeCycle implements RequestLog
+    {
+        @Override
+        public void log(Request request, Response response)
+        {            
+            _log.add(response.getStatus()+" "+response.getContentCount()+" "+request.getRequestURI());
+        }
+    }
 }

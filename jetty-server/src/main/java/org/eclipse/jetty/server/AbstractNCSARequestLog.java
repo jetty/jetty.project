@@ -25,6 +25,7 @@ import javax.servlet.http.Cookie;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.PathMap;
+import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -59,7 +60,6 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
     private boolean _logLatency = false;
     private boolean _logCookies = false;
     private boolean _logServer = false;
-    private boolean _logDispatch = false;
     private boolean _preferProxiedForAddress;
     private transient DateCache _logDateCache;
     private String _logDateFormat = "dd/MMM/yyyy:HH:mm:ss Z";
@@ -193,16 +193,9 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
                 }
             }
 
-            if (_logDispatch || _logLatency)
+            if (_logLatency)
             {
                 long now = System.currentTimeMillis();
-
-                if (_logDispatch)
-                {
-                    long d = request.getDispatchTime();
-                    buf.append(' ');
-                    buf.append(now - (d==0 ? request.getTimeStamp():d));
-                }
 
                 if (_logLatency)
                 {
@@ -340,24 +333,18 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
     }
 
     /**
-     * Controls logging of the request dispatch time
-     *
-     * @param value true - request dispatch time will be logged
-     *              false - request dispatch time will not be logged
+     * @deprecated use {@link StatisticsHandler}
      */
     public void setLogDispatch(boolean value)
     {
-        _logDispatch = value;
     }
 
     /**
-     * Retrieve request dispatch time logging flag
-     *
-     * @return value of the flag
+     * @deprecated use {@link StatisticsHandler}
      */
     public boolean isLogDispatch()
     {
-        return _logDispatch;
+        return false;
     }
 
     /**

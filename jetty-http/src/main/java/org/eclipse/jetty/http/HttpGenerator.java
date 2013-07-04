@@ -55,18 +55,19 @@ public class HttpGenerator
     private long _contentPrepared = 0;
     private boolean _noContent = false;
     private Boolean _persistent = null;
-    
+
     private final int _send;
-    private final static int SEND_SERVER=0x01;
-    private final static int SEND_XPOWEREDBY=0x02;
+    private final static int SEND_SERVER = 0x01;
+    private final static int SEND_XPOWEREDBY = 0x02;
 
 
     /* ------------------------------------------------------------------------------- */
-    public static void setServerVersion(String version)
+    public static void setJettyVersion(String serverVersion)
     {
-        SEND[SEND_SERVER]=StringUtil.getBytes("Server: Jetty("+version+")\015\012");
-        SEND[SEND_XPOWEREDBY]=StringUtil.getBytes("X-Powered-By: Jetty("+version+")\015\012");
-        SEND[SEND_SERVER|SEND_XPOWEREDBY]=StringUtil.getBytes("Server: Jetty("+version+")\015\012X-Powered-By: Jetty("+version+")\015\012");
+        SEND[SEND_SERVER] = StringUtil.getBytes("Server: " + serverVersion + "\015\012");
+        SEND[SEND_XPOWEREDBY] = StringUtil.getBytes("X-Powered-By: " + serverVersion + "\015\012");
+        SEND[SEND_SERVER | SEND_XPOWEREDBY] = StringUtil.getBytes("Server: " + serverVersion + "\015\012X-Powered-By: " +
+                serverVersion + "\015\012");
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -862,9 +863,9 @@ public class HttpGenerator
     private static final byte[] HTTP_1_1_SPACE = StringUtil.getBytes(HttpVersion.HTTP_1_1+" ");
     private static final byte[] CRLF = StringUtil.getBytes("\015\012");
     private static final byte[] TRANSFER_ENCODING_CHUNKED = StringUtil.getBytes("Transfer-Encoding: chunked\015\012");
-    private static final byte[][] SEND = new byte[][]{ 
-        new byte[0],
-        StringUtil.getBytes("Server: Jetty(9.x.x)\015\012"),
+    private static final byte[][] SEND = new byte[][]{
+            new byte[0],
+            StringUtil.getBytes("Server: Jetty(9.x.x)\015\012"),
         StringUtil.getBytes("X-Powered-By: Jetty(9.x.x)\015\012"),
         StringUtil.getBytes("Server: Jetty(9.x.x)\015\012X-Powered-By: Jetty(9.x.x)\015\012")
     };

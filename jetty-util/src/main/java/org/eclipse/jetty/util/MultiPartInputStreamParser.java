@@ -20,15 +20,14 @@ package org.eclipse.jetty.util;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -512,11 +511,13 @@ public class MultiPartInputStreamParser
 
         // Read each part
         boolean lastPart=false;
-        String contentDisposition=null;
-        String contentType=null;
-        String contentTransferEncoding=null;
+
         outer:while(!lastPart)
         {
+            String contentDisposition=null;
+            String contentType=null;
+            String contentTransferEncoding=null;
+            
             MultiMap headers = new MultiMap();
             while(true)
             {
@@ -587,13 +588,21 @@ public class MultiPartInputStreamParser
                 continue;
             }
 
+            //Have a new Part
+            MultiPart part = new MultiPart(name, filename);
+            part.setHeaders(headers);
+            part.setContentType(contentType);
+            _parts.add(name, part);
+            part.open();
+            
+            InputStream partInput = null;
             if ("base64".equalsIgnoreCase(contentTransferEncoding))
             {
-                _in = new Base64InputStream(_in);
+                partInput = new Base64InputStream((ReadLineInputStream)_in);
             }
             else if ("quoted-printable".equalsIgnoreCase(contentTransferEncoding))
             {
-                _in = new FilterInputStream(_in)
+                partInput = new FilterInputStream(_in)
                 {
                     @Override
                     public int read() throws IOException
@@ -614,17 +623,10 @@ public class MultiPartInputStreamParser
                     }
                 };
             }
+            else
+                partInput = _in;
 
-
-
-            //Have a new Part
-            MultiPart part = new MultiPart(name, filename);
-            part.setHeaders(headers);
-            part.setContentType(contentType);
-            _parts.add(name, part);
-
-            part.open();
-
+            
             try
             {
                 int state=-2;
@@ -636,33 +638,38 @@ public class MultiPartInputStreamParser
                 while(true)
                 {
                     int b=0;
-                    while((c=(state!=-2)?state:_in.read())!=-1)
+                    while((c=(state!=-2)?state:partInput.read())!=-1)
                     {
                         total ++;
                         if (_config.getMaxRequestSize() > 0 && total > _config.getMaxRequestSize())
                             throw new IllegalStateException("Request exceeds maxRequestSize ("+_config.getMaxRequestSize()+")");
 
                         state=-2;
+                        
                         // look for CR and/or LF
                         if(c==13||c==10)
                         {
                             if(c==13)
                             {
-                                _in.mark(1);
-                                int tmp=_in.read();
+                                partInput.mark(1);
+                                int tmp=partInput.read();
                                 if (tmp!=10)
-                                    _in.reset();
+                                    partInput.reset();
                                 else
                                     state=tmp;
                             }
                             break;
                         }
-                        // look for boundary
+                        
+                        // Look for boundary
                         if(b>=0&&b<byteBoundary.length&&c==byteBoundary[b])
+                        {
                             b++;
+                        }
                         else
                         {
-                            // this is not a boundary
+                            // Got a character not part of the boundary, so we don't have the boundary marker.
+                            // Write out as many chars as we matched, then the char we're looking at.
                             if(cr)
                                 part.write(13);
 
@@ -677,7 +684,8 @@ public class MultiPartInputStreamParser
                             part.write(c);
                         }
                     }
-                    // check partial boundary
+                    
+                    // Check for incomplete boundary match, writing out the chars we matched along the way
                     if((b>0&&b<byteBoundary.length-2)||(b==byteBoundary.length-1))
                     {
                         if(cr)
@@ -690,15 +698,18 @@ public class MultiPartInputStreamParser
                         part.write(byteBoundary,0,b);
                         b=-1;
                     }
-                    // boundary match
+                    
+                    // Boundary match. If we've run out of input or we matched the entire final boundary marker, then this is the last part.
                     if(b>0||c==-1)
                     {
+                       
                         if(b==byteBoundary.length)
                             lastPart=true;
                         if(state==10)
                             state=-2;
                         break;
                     }
+                    
                     // handle CR LF
                     if(cr)
                         part.write(13);
@@ -774,14 +785,15 @@ public class MultiPartInputStreamParser
 
     private static class Base64InputStream extends InputStream
     {
-        BufferedReader _in;
+        ReadLineInputStream _in;
         String _line;
         byte[] _buffer;
         int _pos;
 
-        public Base64InputStream (InputStream in)
+    
+        public Base64InputStream(ReadLineInputStream rlis)
         {
-            _in = new BufferedReader(new InputStreamReader(in));
+            _in = rlis;
         }
 
         @Override
@@ -789,18 +801,29 @@ public class MultiPartInputStreamParser
         {
             if (_buffer==null || _pos>= _buffer.length)
             {
-                _line = _in.readLine();
+                //Any CR and LF will be consumed by the readLine() call.
+                //We need to put them back into the bytes returned from this
+                //method because the parsing of the multipart content uses them
+                //as markers to determine when we've reached the end of a part.
+                _line = _in.readLine(); 
                 if (_line==null)
-                    return -1;
+                    return -1;  //nothing left
                 if (_line.startsWith("--"))
-                    _buffer=(_line+"\r\n").getBytes();
+                    _buffer=(_line+"\r\n").getBytes(); //boundary marking end of part
                 else if (_line.length()==0)
-                    _buffer="\r\n".getBytes();
+                    _buffer="\r\n".getBytes(); //blank line
                 else
-                    _buffer=B64Code.decode(_line);
+                {
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream((4*_line.length()/3)+2);
+                    B64Code.decode(_line, baos);
+                    baos.write(13);
+                    baos.write(10);
+                    _buffer = baos.toByteArray();
+                }
 
                 _pos=0;
             }
+            
             return _buffer[_pos++];
         }
     }

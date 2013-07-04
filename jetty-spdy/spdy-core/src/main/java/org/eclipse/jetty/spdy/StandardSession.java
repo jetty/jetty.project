@@ -218,8 +218,19 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
             if (stream != null)
             {
                 stream.process(frame);
+                removeFrameBytesFromQueue(stream);
                 removeStream(stream);
             }
+        }
+    }
+
+    private void removeFrameBytesFromQueue(Stream stream)
+    {
+        synchronized (queue)
+        {
+            for (FrameBytes frameBytes : queue)
+                if (frameBytes.getStream() == stream)
+                    queue.remove(frameBytes);
         }
     }
 
@@ -492,7 +503,8 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
 
     private void onSyn(final SynStreamFrame frame)
     {
-        IStream stream = createStream(frame, null, false, new Promise.Adapter<Stream>(){
+        IStream stream = createStream(frame, null, false, new Promise.Adapter<Stream>()
+        {
             @Override
             public void failed(Throwable x)
             {
@@ -1054,7 +1066,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         }
     }
 
-    private void append(FrameBytes frameBytes)
+    void append(FrameBytes frameBytes)
     {
         Throwable failure;
         synchronized (queue)
@@ -1215,7 +1227,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         public abstract void fail(Throwable throwable);
     }
 
-    private abstract class AbstractFrameBytes implements FrameBytes, Runnable
+    abstract class AbstractFrameBytes implements FrameBytes, Runnable
     {
         private final IStream stream;
         private final Callback callback;
