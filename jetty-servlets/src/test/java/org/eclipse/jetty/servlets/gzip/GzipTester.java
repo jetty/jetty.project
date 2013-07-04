@@ -110,8 +110,8 @@ public class GzipTester
         // Assert.assertThat("Response.status",response.getStatus(),is(HttpServletResponse.SC_OK));
         
         // Response headers should have either a Transfer-Encoding indicating chunked OR a Content-Length
-        String contentLength = response.getHeader("Content-Length");
-        String transferEncoding = response.getHeader("Transfer-Encoding");
+        String contentLength = response.get("Content-Length");
+        String transferEncoding = response.get("Transfer-Encoding");
         
         /* TODO need to check for the 3rd option of EOF content.  To do this properly you might need to look at both HTTP/1.1 and HTTP/1.0 requests
         boolean chunked = (transferEncoding != null) && (transferEncoding.indexOf("chunk") >= 0);

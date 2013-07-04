@@ -22,16 +22,15 @@ import java.io.IOException;
 
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
-import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.AsyncContextState;
-import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -46,6 +45,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class RequestLogHandler extends HandlerWrapper
 {
+    private static final Logger LOG = Log.getLogger(RequestLogHandler.class);
     private RequestLog _requestLog;
     private final AsyncListener _listener = new AsyncListener()
     {
@@ -114,5 +114,36 @@ public class RequestLogHandler extends HandlerWrapper
     {
         return _requestLog;
     }
+    
+    /* ------------------------------------------------------------ */
+    @Override
+    protected void doStart() throws Exception
+    {
+        if (_requestLog==null)
+        {
+            LOG.warn("!RequestLog");
+            _requestLog=new NullRequestLog();
+        }
+        super.doStart();
+    }
+    
+    /* ------------------------------------------------------------ */
+    @Override
+    protected void doStop() throws Exception
+    {
+        super.doStop();
+        if (_requestLog instanceof NullRequestLog)
+            _requestLog=null;
+    }
 
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    private static class NullRequestLog extends AbstractLifeCycle implements RequestLog
+    {
+        @Override
+        public void log(Request request, Response response)
+        {            
+        }
+    }
 }
