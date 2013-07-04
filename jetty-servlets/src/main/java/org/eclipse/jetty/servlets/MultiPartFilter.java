@@ -177,13 +177,12 @@ public class MultiPartFilter implements Filter
             
             // Read each part
             boolean lastPart=false;
-            String content_disposition=null;
-            String content_transfer_encoding=null;
-            
-            
+      
             outer:while(!lastPart && params.size()<_maxFormKeys)
             {
                 String type_content=null;
+                String content_disposition=null;
+                String content_transfer_encoding=null;
                 
                 while(true)
                 {
@@ -286,7 +285,7 @@ public class MultiPartFilter implements Filter
                     
                     if ("base64".equalsIgnoreCase(content_transfer_encoding))
                     {
-                        in = new Base64InputStream(in);   
+                        in = new Base64InputStream((ReadLineInputStream)in);   
                     }
                     else if ("quoted-printable".equalsIgnoreCase(content_transfer_encoding))
                     {
@@ -618,14 +617,14 @@ public class MultiPartFilter implements Filter
     
     private static class Base64InputStream extends InputStream
     {
-        BufferedReader _in;
+        ReadLineInputStream _in;
         String _line;
         byte[] _buffer;
         int _pos;
         
-        public Base64InputStream (InputStream in)
+        public Base64InputStream (ReadLineInputStream in)
         {
-            _in = new BufferedReader(new InputStreamReader(in));
+            _in = in;
         }
 
         @Override
@@ -634,6 +633,7 @@ public class MultiPartFilter implements Filter
             if (_buffer==null || _pos>= _buffer.length)
             {
                 _line = _in.readLine();
+                System.err.println("LINE: "+_line);
                 if (_line==null)
                     return -1;
                 if (_line.startsWith("--"))
@@ -641,7 +641,13 @@ public class MultiPartFilter implements Filter
                 else if (_line.length()==0)
                     _buffer="\r\n".getBytes();
                 else
-                    _buffer=B64Code.decode(_line);
+                {
+                    ByteArrayOutputStream bout = new ByteArrayOutputStream(4*_line.length()/3);  
+                    B64Code.decode(_line, bout);    
+                    bout.write(13);
+                    bout.write(10);
+                    _buffer = bout.toByteArray();
+                }
                 
                 _pos=0;
             }
