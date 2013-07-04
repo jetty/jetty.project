@@ -32,6 +32,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -154,7 +155,10 @@ public class RequestLogHandler extends HandlerWrapper
     protected void doStart() throws Exception
     {
         if (_requestLog==null)
-            throw new IllegalStateException("!RequestLog");
+        {
+            LOG.warn("!RequestLog");
+            _requestLog=new NullRequestLog();
+        }
         super.doStart();
         _requestLog.start();
     }
@@ -168,6 +172,18 @@ public class RequestLogHandler extends HandlerWrapper
     {
         super.doStop();
         _requestLog.stop();
+        if (_requestLog instanceof NullRequestLog)
+            _requestLog=null;
+    }
+
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    private static class NullRequestLog extends AbstractLifeCycle implements RequestLog
+    {
+        public void log(Request request, Response response)
+        {            
+        }
     }
     
 }
