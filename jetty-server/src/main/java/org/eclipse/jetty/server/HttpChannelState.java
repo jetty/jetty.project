@@ -71,13 +71,12 @@ public class HttpChannelState
         COMPLETING,    // Request is completable
         COMPLETED      // Request is complete
     }
-    
+
     public enum Next
     {
         CONTINUE,       // Continue handling the channel        
         WAIT,           // Wait for further events 
-        COMPLETE,       // Complete the channel
-        RECYCLE,        // Channel is completed
+        COMPLETE        // Complete the channel
     }
 
     private final HttpChannel<?> _channel;
@@ -190,12 +189,12 @@ public class HttpChannelState
 
                 case COMPLETING:
                     return Next.COMPLETE;
-                    
+
                 case ASYNCWAIT:
                     return Next.WAIT;
-                    
+
                 case COMPLETED:
-                    return Next.RECYCLE;
+                    return Next.WAIT;
 
                 case REDISPATCH:
                     _state=State.REDISPATCHED;
@@ -325,7 +324,7 @@ public class HttpChannelState
                     _event.setDispatchTarget(context,path);
                     _dispatched=true;
                     break;
-                    
+
                 default:
                     throw new IllegalStateException(this.getStatusString());
             }
@@ -393,7 +392,7 @@ public class HttpChannelState
                     break;
             }
         }
-        
+
         scheduleDispatch();
     }
 
@@ -528,7 +527,7 @@ public class HttpChannelState
             return _expired;
         }
     }
-    
+
     public boolean isInitial()
     {
         synchronized(this)

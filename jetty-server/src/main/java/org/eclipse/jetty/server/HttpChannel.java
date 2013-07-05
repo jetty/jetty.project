@@ -235,8 +235,6 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     public boolean handle()
     {
         LOG.debug("{} handle enter", this);
-        if(_state.isCompleted())
-            return false;
 
         setCurrentHttpChannel(this);
 
@@ -332,14 +330,9 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
             }
             finally
             {
-                next=Next.RECYCLE;
+                _request.setHandled(true);
+                _transport.completed();
             }
-        }
-
-        if (next==Next.RECYCLE)
-        {
-            _request.setHandled(true);
-            _transport.completed();
         }
 
         LOG.debug("{} handle exit, result {}", this, next);
