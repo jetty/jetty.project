@@ -98,6 +98,24 @@ public class ServerConnector extends AbstractNetworkConnector
     {
         this(server,null,null,null,0,0,new HttpConnectionFactory());
     }
+    
+    /* ------------------------------------------------------------ */
+    /** HTTP Server Connection.
+     * <p>Construct a ServerConnector with a private instance of {@link HttpConnectionFactory} as the only factory.</p>
+     * @param server The {@link Server} this connector will accept connection for. 
+     * @param acceptors 
+     *          the number of acceptor threads to use, or 0 for a default value. Acceptors accept new TCP/IP connections.
+     * @param selectors
+     *          the number of selector threads, or 0 for a default value. Selectors notice and schedule established connection that can make IO progress.
+     */
+    public ServerConnector(
+        @Name("server") Server server,
+        @Name("acceptors") int acceptors,
+        @Name("selectors") int selectors)
+    {
+        this(server,null,null,null,acceptors,selectors,new HttpConnectionFactory());
+    }
+
 
     /* ------------------------------------------------------------ */
     /** Generic Server Connection with default configuration.

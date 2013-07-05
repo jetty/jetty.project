@@ -18,10 +18,13 @@
 
 package org.eclipse.jetty.spdy.server.http;
 
-import org.eclipse.jetty.server.HttpInput;
+import java.nio.ByteBuffer;
+
+import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.QueuedHttpInput;
 import org.eclipse.jetty.spdy.api.DataInfo;
 
-public class HttpInputOverSPDY extends HttpInput<DataInfo>
+public class HttpInputOverSPDY extends QueuedHttpInput<DataInfo>
 {
     @Override
     protected int remaining(DataInfo item)

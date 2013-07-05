@@ -74,7 +74,8 @@ public class HttpChannelState
         REQUEST_DISPATCH, // handle a normal request dispatch  
         ASYNC_DISPATCH,   // handle an async request dispatch
         ASYNC_EXPIRED,    // handle an async timeout
-        IO_CALLBACK,      // handle an IO callback
+        WRITE_CALLBACK,   // handle an IO write callback
+        READ_CALLBACK,    // handle an IO read callback
         WAIT,             // Wait for further events 
         COMPLETE,         // Complete the channel
         RECYCLE,          // Channel is completed
@@ -89,6 +90,7 @@ public class HttpChannelState
         EXPIRED
     }
 
+    private final boolean DEBUG=LOG.isDebugEnabled();
     private final HttpChannel<?> _channel;
     private List<AsyncListener> _lastAsyncListeners;
     private List<AsyncListener> _asyncListeners;
@@ -96,7 +98,8 @@ public class HttpChannelState
     private State _state;
     private Async _async;
     private boolean _initial;
-    private boolean _asyncIO;
+    private boolean _asyncRead;
+    private boolean _asyncWrite;
     private long _timeoutMs=DEFAULT_TIMEOUT;
     private AsyncContextEvent _event;
 
@@ -155,7 +158,7 @@ public class HttpChannelState
     {
         synchronized (this)
         {
-            return super.toString()+"@"+getStatusString();
+            return String.format("%s@%x{s=%s i=%b a=%s}",getClass().getSimpleName(),hashCode(),_state,_initial,_async);
         }
     }
 
@@ -174,6 +177,8 @@ public class HttpChannelState
     {
         synchronized (this)
         {
+            if(DEBUG)
+                LOG.debug("{} handling {}",this,_state);
             switch(_state)
             {
                 case IDLE:
@@ -197,11 +202,17 @@ public class HttpChannelState
                     return Action.RECYCLE;
 
                 case ASYNCWAIT:
-                    if (_asyncIO)
+                    if (_asyncRead)
                     {
                         _state=State.ASYNCIO;
-                        _asyncIO=false;
-                        return Action.IO_CALLBACK;
+                        _asyncRead=false;
+                        return Action.READ_CALLBACK;
+                    }
+                    if (_asyncWrite)
+                    {
+                        _state=State.ASYNCIO;
+                        _asyncWrite=false;
+                        return Action.WRITE_CALLBACK;
                     }
                     
                     if (_async!=null)
@@ -289,6 +300,9 @@ public class HttpChannelState
     {
         synchronized (this)
         {
+            if(DEBUG)
+                LOG.debug("{} unhandle {}",this,_state);
+            
             switch(_state)
             {
                 case DISPATCHED:
@@ -298,11 +312,18 @@ public class HttpChannelState
                     throw new IllegalStateException(this.getStatusString());
             }
 
-            if (_asyncIO)
+            if (_asyncRead)
             {
-                _asyncIO=false;
                 _state=State.ASYNCIO;
-                return Action.IO_CALLBACK;
+                _asyncRead=false;
+                return Action.READ_CALLBACK;
+            }
+            
+            if (_asyncWrite)
+            {
+                _asyncWrite=false;
+                _state=State.ASYNCIO;
+                return Action.WRITE_CALLBACK;
             }
 
             if (_async!=null)
@@ -491,7 +512,7 @@ public class HttpChannelState
             cancelTimeout();
             _timeoutMs=DEFAULT_TIMEOUT;
             _event=null;
-            _asyncIO=false;
+            _asyncWrite=false;
         }
     }
 
@@ -608,6 +629,16 @@ public class HttpChannelState
 
     public void onReadPossible()
     {
+        boolean handle;
+
+        synchronized (this)
+        {
+            _asyncRead=true;
+            handle=_state==State.ASYNCWAIT;
+        }
+
+        if (handle)
+            _channel.handle();
     }
     
     public void onWritePossible()
@@ -616,19 +647,12 @@ public class HttpChannelState
 
         synchronized (this)
         {
-           
-            _asyncIO=true;
+            _asyncWrite=true;
             handle=_state==State.ASYNCWAIT;
         }
 
         if (handle)
-        {
-            ContextHandler handler=getContextHandler();
-            if (handler!=null)
-                handler.handle(_channel);
-            else
-                _channel.handle();
-        }
+            _channel.handle();
     }
     
     public class AsyncTimeout implements Runnable

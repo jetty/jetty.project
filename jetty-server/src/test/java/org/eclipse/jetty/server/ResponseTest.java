@@ -82,7 +82,7 @@ public class ResponseTest
 
         AbstractEndPoint endp = new ByteArrayEndPoint(_scheduler, 5000);
         ByteBufferHttpInput input = new ByteBufferHttpInput();
-        _channel = new HttpChannel<>(connector, new HttpConfiguration(), endp, new HttpTransport()
+        _channel = new HttpChannel<ByteBuffer>(connector, new HttpConfiguration(), endp, new HttpTransport()
         {
             @Override
             public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent) throws IOException

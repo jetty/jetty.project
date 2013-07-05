@@ -41,6 +41,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -117,8 +118,8 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
 
     private void shutdown()
     {
-        // Shutting down the parser may invoke messageComplete() or fail()
-        parser.shutdownInput();
+        parser.atEOF();
+        parser.parseNext(BufferUtil.EMPTY_BUFFER);
         State state = this.state.get();
         if (state == State.IDLE || state == State.RECEIVE)
         {

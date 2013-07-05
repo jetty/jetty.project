@@ -93,14 +93,14 @@ public class HttpServerTestFixture
 
     protected static class EchoHandler extends AbstractHandler
     {
-        boolean musthavecontent=true;
+        boolean _musthavecontent=true;
 
         public EchoHandler()
         {}
 
         public EchoHandler(boolean content)
         {
-            musthavecontent=false;
+            _musthavecontent=false;
         }
 
         @Override
@@ -134,7 +134,7 @@ public class HttpServerTestFixture
 
             if (count==0)
             {
-                if (musthavecontent)
+                if (_musthavecontent)
                     throw new IllegalStateException("no input recieved");
 
                 writer.println("No content");

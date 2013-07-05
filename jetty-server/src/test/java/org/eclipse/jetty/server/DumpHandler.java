@@ -175,7 +175,7 @@ public class DumpHandler extends AbstractHandler
         }
 
         writer.write("</pre>\n<h3>Attributes:</h3>\n<pre>");
-        Enumeration attributes=request.getAttributeNames();
+        Enumeration<String> attributes=request.getAttributeNames();
         if (attributes!=null && attributes.hasMoreElements())
         {
             while(attributes.hasMoreElements())

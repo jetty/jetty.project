@@ -23,6 +23,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.RejectedExecutionException;
 
+import javax.servlet.ReadListener;
+
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
 import org.eclipse.jetty.http.HttpHeader;
@@ -63,7 +65,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     private final HttpParser _parser;
     private volatile ByteBuffer _requestBuffer = null;
     private volatile ByteBuffer _chunk = null;
-    private BlockingCallback _readBlocker = new BlockingCallback();
     private BlockingCallback _writeBlocker = new BlockingCallback();
 
 
@@ -92,9 +93,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         _connector = connector;
         _bufferPool = _connector.getByteBufferPool();
         _generator = new HttpGenerator(_config.getSendServerVersion(),_config.getSendXPoweredBy());
-        _channel = new HttpChannelOverHttp(connector, config, endPoint, this, new Input());
+        _channel = new HttpChannelOverHttp(connector, config, endPoint, this, new HttpInputOverHTTP(this));
         _parser = newHttpParser();
-
         LOG.debug("New HTTP Connection {}", this);
     }
 
@@ -123,27 +123,29 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         return _channel;
     }
 
+    public HttpParser getParser()
+    {
+        return _parser;
+    }
+    
     public void reset()
     {
         // If we are still expecting
         if (_channel.isExpecting100Continue())
-        {
-            // reset to avoid seeking remaining content
-            _parser.reset();
             // close to seek EOF
             _parser.close();
-        }
-        // else if we are persistent
-        else if (_generator.isPersistent())
+        
+        _channel.reset();
+
+        if (_generator.isPersistent() && !_parser.isClosed())
             // reset to seek next request
             _parser.reset();
         else
             // else seek EOF
             _parser.close();
-
+        
         _generator.reset();
-        _channel.reset();
-
+        
         releaseRequestBuffer();
         if (_chunk!=null)
         {
@@ -165,16 +167,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         return getHttpChannel().getRequests();
     }
 
-    @Override
-    public String toString()
-    {
-        return String.format("%s,g=%s,p=%s",
-                super.toString(),
-                _generator,
-                _parser);
-    }
-
-    private void releaseRequestBuffer()
+    void releaseRequestBuffer()
     {
         if (_requestBuffer != null && !_requestBuffer.hasRemaining())
         {
@@ -182,6 +175,13 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             _requestBuffer=null;
             _bufferPool.release(buffer);
         }
+    }
+    
+    public ByteBuffer getRequestBuffer()
+    {
+        if (_requestBuffer == null)
+            _requestBuffer = _bufferPool.acquire(getInputBufferSize(), REQUEST_BUFFER_DIRECT);
+        return _requestBuffer;
     }
 
     /**
@@ -198,77 +198,53 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         LOG.debug("{} onFillable {}", this, _channel.getState());
 
         setCurrentConnection(this);
+        int filled=Integer.MAX_VALUE;
+        boolean suspended=false;
         try
         {
-            while (true)
+            // while not suspended and not upgraded
+            while (!suspended && getEndPoint().getConnection()==this)
             {
-                // Can the parser progress (even with an empty buffer)
-                boolean call_channel=_parser.parseNext(_requestBuffer==null?BufferUtil.EMPTY_BUFFER:_requestBuffer);
-
-                // Parse the buffer
-                if (call_channel)
+                // Do we need some data to parse
+                if (BufferUtil.isEmpty(_requestBuffer))
                 {
-                    // Parse as much content as there is available before calling the channel
-                    // this is both efficient (may queue many chunks), will correctly set available for 100 continues
-                    // and will drive the parser to completion if all content is available.
-                    while (_parser.inContentState())
+                    // If the previous iteration filled 0 bytes or saw a close, then break here 
+                    if (filled<=0)
+                        break;
+                        
+                    // Can we fill?
+                    if(getEndPoint().isInputShutdown())
                     {
-                        if (!_parser.parseNext(_requestBuffer==null?BufferUtil.EMPTY_BUFFER:_requestBuffer))
-                            break;
+                        // No pretend we read -1
+                        filled=-1;
+                        _parser.atEOF();
                     }
+                    else
+                    {
+                        // Get a buffer
+                        if (_requestBuffer == null)
+                            _requestBuffer = _bufferPool.acquire(getInputBufferSize(), REQUEST_BUFFER_DIRECT);
 
+                        // fill
+                        filled = getEndPoint().fill(_requestBuffer);
+                        if (filled==0) // Do a retry on fill 0 (optimization for SSL connections)
+                            filled = getEndPoint().fill(_requestBuffer);
+                        
+                        // tell parser
+                        if (filled < 0)
+                            _parser.atEOF();
+                    }
+                }
+                
+                // Parse the buffer
+                if (_parser.parseNext(_requestBuffer==null?BufferUtil.EMPTY_BUFFER:_requestBuffer))
+                {
                     // The parser returned true, which indicates the channel is ready to handle a request.
                     // Call the channel and this will either handle the request/response to completion OR,
                     // if the request suspends, the request/response will be incomplete so the outer loop will exit.
-                    boolean handle=_channel.handle();
-
-                    // Return if suspended or upgraded
-                    if (!handle || getEndPoint().getConnection()!=this)
-                        return;
+                    suspended = !_channel.handle();
                 }
-                else if (BufferUtil.isEmpty(_requestBuffer))
-                {
-                    if (_requestBuffer == null)
-                        _requestBuffer = _bufferPool.acquire(getInputBufferSize(), REQUEST_BUFFER_DIRECT);
-
-                    int filled = getEndPoint().fill(_requestBuffer);
-                    if (filled==0) // Do a retry on fill 0 (optimisation for SSL connections)
-                        filled = getEndPoint().fill(_requestBuffer);
-
-                    LOG.debug("{} filled {}", this, filled);
-
-                    // If we failed to fill
-                    if (filled == 0)
-                    {
-                        // Somebody wanted to read, we didn't so schedule another attempt
-                        releaseRequestBuffer();
-                        fillInterested();
-                        return;
-                    }
-                    else if (filled < 0)
-                    {
-                        _parser.shutdownInput();
-                        // We were only filling if fully consumed, so if we have
-                        // read -1 then we have nothing to parse and thus nothing that
-                        // will generate a response.  If we had a suspended request pending
-                        // a response or a request waiting in the buffer, we would not be here.
-                        if (getEndPoint().isOutputShutdown())
-                            getEndPoint().close();
-                        else
-                            getEndPoint().shutdownOutput();
-                        // buffer must be empty and the channel must be idle, so we can release.
-                        releaseRequestBuffer();
-                        return;
-                    }
-                }
-                else
-                {
-                    // TODO work out how we can get here and a better way to handle it
-                    LOG.warn("Unexpected state: "+this+ " "+_channel+" "+_channel.getRequest());
-                    if (!_channel.getState().isSuspended())
-                        getEndPoint().close();
-                    return;
-                }
+                
             }
         }
         catch (EofException e)
@@ -284,9 +260,21 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             close();
         }
         finally
-        {
+        {                        
             setCurrentConnection(null);
+            if (!suspended && getEndPoint().isOpen())
+            {
+                fillInterested();
+            }
         }
+    }
+    
+
+    @Override
+    protected void onFillInterestedFailed(Throwable cause)
+    {
+        _parser.close();
+        super.onFillInterestedFailed(cause);
     }
 
     @Override
@@ -354,7 +342,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     public void completed()
     {
         // Finish consuming the request
-        if (_parser.isInContent() && _generator.isPersistent() && !_channel.isExpecting100Continue())
+        if (_parser.inContentState() && _generator.isPersistent() && !_channel.isExpecting100Continue())
             // Complete reading the request
             _channel.getRequest().getHttpInput().consumeAll();
 
@@ -380,6 +368,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         {
             if (_parser.isStart())
             {
+                // TODO ???
                 // it wants to eat more
                 if (_requestBuffer == null)
                 {
@@ -410,136 +399,18 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         }
     }
 
-    public ByteBuffer getRequestBuffer()
-    {
-        return _requestBuffer;
-    }
-
-    private class Input extends ByteBufferHttpInput
-    {
-        @Override
-        protected void blockForContent() throws IOException
-        {
-            /* We extend the blockForContent method to replace the
-            default implementation of a blocking queue with an implementation
-            that uses the calling thread to block on a readable callback and
-            then to do the parsing before before attempting the read.
-             */
-            while (!_parser.isComplete())
-            {
-                // Can the parser progress (even with an empty buffer)
-                boolean event=_parser.parseNext(_requestBuffer==null?BufferUtil.EMPTY_BUFFER:_requestBuffer);
-
-                // If there is more content to parse, loop so we can queue all content from this buffer now without the
-                // need to call blockForContent again
-                while (!event && BufferUtil.hasContent(_requestBuffer) && _parser.inContentState())
-                    event=_parser.parseNext(_requestBuffer);
-
-                // If we have content, return
-                if (_parser.isComplete() || available()>0)
-                    return;
-
-                // Do we have content ready to parse?
-                if (BufferUtil.isEmpty(_requestBuffer))
-                {
-                    // If no more input
-                    if (getEndPoint().isInputShutdown())
-                    {
-                        _parser.shutdownInput();
-                        shutdown();
-                        return;
-                    }
-
-                    // Wait until we can read
-                    fillInterested(_readBlocker);
-                    LOG.debug("{} block readable on {}",this,_readBlocker);
-                    _readBlocker.block();
-
-                    // We will need a buffer to read into
-                    if (_requestBuffer==null)
-                    {
-                        long content_length=_channel.getRequest().getContentLength();
-                        int size=getInputBufferSize();
-                        if (size<content_length)
-                            size=size*4; // TODO tune this
-                        _requestBuffer=_bufferPool.acquire(size,REQUEST_BUFFER_DIRECT);
-                    }
-
-                    // read some data
-                    int filled=getEndPoint().fill(_requestBuffer);
-                    LOG.debug("{} block filled {}",this,filled);
-                    if (filled<0)
-                    {
-                        _parser.shutdownInput();
-                        return;
-                    }
-                }
-            }
-        }
-
-        @Override
-        protected void onContentQueued(ByteBuffer ref)
-        {
-            /* This callback could be used to tell the connection
-             * that the request did contain content and thus the request
-             * buffer needs to be held until a call to #onAllContentConsumed
-             *
-             * However it turns out that nothing is needed here because either a
-             * request will have content, in which case the request buffer will be
-             * released by a call to onAllContentConsumed; or it will not have content.
-             * If it does not have content, either it will complete quickly and the
-             * buffers will be released in completed() or it will be suspended and
-             * onReadable() contains explicit handling to release if it is suspended.
-             *
-             * We extend this method anyway, to turn off the notify done by the
-             * default implementation as this is not needed by our implementation
-             * of blockForContent
-             */
-        }
-
-        @Override
-        public void earlyEOF()
-        {
-            synchronized (lock())
-            {
-                _inputEOF=true;
-                _earlyEOF = true;
-                LOG.debug("{} early EOF", this);
-            }
-        }
-
-        @Override
-        public void shutdown()
-        {
-            synchronized (lock())
-            {
-                _inputEOF=true;
-                LOG.debug("{} shutdown", this);
-            }
-        }
-        
-        @Override
-        protected void onAllContentConsumed()
-        {
-            /* This callback tells the connection that all content that has
-             * been parsed has been consumed. Thus the request buffer may be
-             * released if it is empty.
-             */
-            releaseRequestBuffer();
-        }
-
-        @Override
-        public String toString()
-        {
-            return super.toString()+"{"+_channel+","+HttpConnection.this+"}";
-        }
-    }
-
     private class HttpChannelOverHttp extends HttpChannel<ByteBuffer>
     {
         public HttpChannelOverHttp(Connector connector, HttpConfiguration config, EndPoint endPoint, HttpTransport transport, HttpInput<ByteBuffer> input)
         {
             super(connector,config,endPoint,transport,input);
+        }
+        
+        @Override
+        public boolean content(ByteBuffer item)
+        {
+            super.content(item);
+            return true;
         }
 
         @Override
@@ -808,4 +679,5 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             }
         }
     }
+
 }

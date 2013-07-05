@@ -20,12 +20,14 @@ package org.eclipse.jetty.websocket.server.mux;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpInput;
+import org.eclipse.jetty.server.QueuedHttpInput;
 
 /**
  * HttpInput for Empty Http body sections.
  */
-public class EmptyHttpInput extends HttpInput<ByteBuffer>
+public class EmptyHttpInput extends QueuedHttpInput<ByteBuffer>
 {
     @Override
     protected int get(ByteBuffer item, byte[] buffer, int offset, int length)

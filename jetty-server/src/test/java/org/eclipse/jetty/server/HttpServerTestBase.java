@@ -18,8 +18,10 @@
 
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -48,12 +50,14 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.matchers.JUnitMatchers;
 /**
@@ -348,17 +352,19 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                     "Connection: close\015\012" +
                     "\015\012").getBytes());
             os.flush();
-            Thread.sleep(PAUSE);
-            os.write(("5\015\012").getBytes());
+            Thread.sleep(1000);
+            os.write(("5").getBytes());
+            Thread.sleep(1000);
+            os.write(("\015\012").getBytes());
             os.flush();
-            Thread.sleep(PAUSE);
+            Thread.sleep(1000);
             os.write(("ABCDE\015\012" +
                     "0;\015\012\015\012").getBytes());
             os.flush();
 
             // Read the response.
             String response = readResponse(client);
-            assertTrue(response.indexOf("200") > 0);
+            assertThat(response,containsString("200"));
         }
     }
 
@@ -448,59 +454,53 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
     }
 
+
     @Test
-    public void testRequest2Fragments() throws Exception
+    @Slow
+    public void testRequest2Sliced2() throws Exception
     {
         configureServer(new EchoHandler());
 
         byte[] bytes = REQUEST2.getBytes();
-        final int pointCount = 2;
-        // TODO random unit tests suck!
-        Random random = new Random(System.currentTimeMillis());
-        for (int i = 0; i < LOOPS; i++)
-        {
-            int[] points = new int[pointCount];
-            StringBuilder message = new StringBuilder();
-
-            message.append("iteration #").append(i + 1);
-
-            // Pick fragment points at random
-            for (int j = 0; j < points.length; ++j)
-                points[j] = random.nextInt(bytes.length);
-
-            // Sort the list
-            Arrays.sort(points);
-
-            try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
-            {
-                OutputStream os = client.getOutputStream();
-
-                writeFragments(bytes, points, message, os);
-
-                // Read the response
-                String response = readResponse(client);
-
-                // Check the response
-                assertEquals("response for " + i + " " + message.toString(), RESPONSE2, response);
-            }
-        }
-    }
-
-    @Test
-    public void testRequest2Iterate() throws Exception
-    {
-        configureServer(new EchoHandler());
-
-        byte[] bytes = REQUEST2.getBytes();
-        for (int i = 0; i < bytes.length; i += 3)
+        int splits = bytes.length-REQUEST2_CONTENT.length()+5;
+        for (int i = 0; i < splits; i += 1)
         {
             int[] points = new int[]{i};
             StringBuilder message = new StringBuilder();
 
             message.append("iteration #").append(i + 1);
 
-            // Sort the list
-            Arrays.sort(points);
+            try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
+            {
+                OutputStream os = client.getOutputStream();
+
+                writeFragments(bytes, points, message, os);
+
+                // Read the response
+                String response = readResponse(client);
+
+                // Check the response
+                assertEquals("response for " + i + " " + message.toString(), RESPONSE2, response);
+                
+                Thread.sleep(100);
+            }
+        }
+    }
+    
+    @Test
+    @Slow
+    public void testRequest2Sliced3() throws Exception
+    {
+        configureServer(new EchoHandler());
+
+        byte[] bytes = REQUEST2.getBytes();
+        int splits = bytes.length-REQUEST2_CONTENT.length()+5;
+        for (int i = 0; i < splits; i += 1)
+        {
+            int[] points = new int[]{i,i+1};
+            StringBuilder message = new StringBuilder();
+
+            message.append("iteration #").append(i + 1);
 
             try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
             {
@@ -513,9 +513,14 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
                 // Check the response
                 assertEquals("response for " + i + " " + message.toString(), RESPONSE2, response);
+                
+                Thread.sleep(100);
             }
         }
     }
+    
+    
+    
 
     @Test
     public void testFlush() throws Exception
@@ -938,33 +943,28 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                             "\015\012" +
                             "123456789\n" +
 
-                            "HEAD /R1 HTTP/1.1\015\012" +
+                            "HEAD /R2 HTTP/1.1\015\012" +
                             "Host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\015\012" +
                             "content-type: text/plain; charset=utf-8\r\n" +
                             "content-length: 10\r\n" +
                             "\015\012" +
-                            "123456789\n" +
+                            "ABCDEFGHI\n" +
 
-                            "POST /R1 HTTP/1.1\015\012" +
+                            "POST /R3 HTTP/1.1\015\012" +
                             "Host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\015\012" +
                             "content-type: text/plain; charset=utf-8\r\n" +
                             "content-length: 10\r\n" +
                             "Connection: close\015\012" +
                             "\015\012" +
-                            "123456789\n"
+                            "abcdefghi\n"
 
             ).getBytes("iso-8859-1"));
 
 
             String in = IO.toString(is);
-            // System.err.println(in);
-
-            int index = in.indexOf("123456789");
-            assertTrue(index > 0);
-            index = in.indexOf("123456789", index + 1);
-            assertTrue(index > 0);
-            index = in.indexOf("123456789", index + 1);
-            assertTrue(index == -1);
+            Assert.assertThat(in,containsString("123456789"));
+            Assert.assertThat(in,not(containsString("ABCDEFGHI")));
+            Assert.assertThat(in,containsString("abcdefghi"));
         }
     }
 
@@ -1304,7 +1304,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
     }
 
-    private void writeFragments(byte[] bytes, int[] points, StringBuilder message, OutputStream os) throws IOException, InterruptedException
+    protected void writeFragments(byte[] bytes, int[] points, StringBuilder message, OutputStream os) throws IOException, InterruptedException
     {
         int last = 0;
 

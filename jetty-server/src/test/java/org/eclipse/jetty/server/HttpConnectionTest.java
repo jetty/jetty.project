@@ -200,7 +200,20 @@ public class HttpConnectionTest
     }
 
     @Test
-    public void testEmpty() throws Exception
+    public void testSimple() throws Exception
+    {
+        String response=connector.getResponses("GET /R1 HTTP/1.1\n"+
+                "Host: localhost\n"+
+                "Connection: close\n"+
+                "\n");
+
+        int offset=0;
+        offset = checkContains(response,offset,"HTTP/1.1 200");
+        checkContains(response,offset,"/R1");
+    }
+
+    @Test
+    public void testEmptyChunk() throws Exception
     {
         String response=connector.getResponses("GET /R1 HTTP/1.1\n"+
                 "Host: localhost\n"+
@@ -372,7 +385,7 @@ public class HttpConnectionTest
     }
 
     @Test
-    public void testUnconsumedError() throws Exception
+    public void testUnconsumedErrorRead() throws Exception
     {
         String response=null;
         String requests=null;
@@ -380,7 +393,7 @@ public class HttpConnectionTest
 
         offset=0;
         requests=
-        "GET /R1?read=1&error=500 HTTP/1.1\n"+
+        "GET /R1?read=1&error=599 HTTP/1.1\n"+
         "Host: localhost\n"+
         "Transfer-Encoding: chunked\n"+
         "Content-Type: text/plain; charset=utf-8\n"+
@@ -400,7 +413,43 @@ public class HttpConnectionTest
 
         response=connector.getResponses(requests);
 
-        offset = checkContains(response,offset,"HTTP/1.1 500");
+        offset = checkContains(response,offset,"HTTP/1.1 599");
+        offset = checkContains(response,offset,"HTTP/1.1 200");
+        offset = checkContains(response,offset,"/R2");
+        offset = checkContains(response,offset,"encoding=UTF-8");
+        offset = checkContains(response,offset,"abcdefghij");
+    }
+    
+    @Test
+    public void testUnconsumedErrorStream() throws Exception
+    {
+        String response=null;
+        String requests=null;
+        int offset=0;
+
+        offset=0;
+        requests=
+        "GET /R1?error=599 HTTP/1.1\n"+
+        "Host: localhost\n"+
+        "Transfer-Encoding: chunked\n"+
+        "Content-Type: application/data; charset=utf-8\n"+
+        "\015\012"+
+        "5;\015\012"+
+        "12345\015\012"+
+        "5;\015\012"+
+        "67890\015\012"+
+        "0;\015\012\015\012"+
+        "GET /R2 HTTP/1.1\n"+
+        "Host: localhost\n"+
+        "Content-Type: text/plain; charset=utf-8\n"+
+        "Content-Length: 10\n"+
+        "Connection: close\n"+
+        "\n"+
+        "abcdefghij\n";
+
+        response=connector.getResponses(requests);
+
+        offset = checkContains(response,offset,"HTTP/1.1 599");
         offset = checkContains(response,offset,"HTTP/1.1 200");
         offset = checkContains(response,offset,"/R2");
         offset = checkContains(response,offset,"encoding=UTF-8");

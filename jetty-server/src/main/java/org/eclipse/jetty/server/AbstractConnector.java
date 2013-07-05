@@ -464,7 +464,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
                         if (isAccepting())
                             LOG.warn(e);
                         else
-                            LOG.debug(e);
+                            LOG.ignore(e);
                     }
                 }
             }

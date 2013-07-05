@@ -432,9 +432,6 @@ abstract public class WriteFlusher
 
     public void onFail(Throwable cause)
     {
-        if (DEBUG)
-            LOG.debug("failed: {} {}", this, cause);
-
         // Keep trying to handle the failure until we get to IDLE or FAILED state
         while(true)
         {
@@ -443,9 +440,14 @@ abstract public class WriteFlusher
             {
                 case IDLE:
                 case FAILED:
+                    if (DEBUG)
+                        LOG.debug("ignored: {} {}", this, cause);
                     return;
 
                 case PENDING:
+                    if (DEBUG)
+                        LOG.debug("failed: {} {}", this, cause);
+
                     PendingState pending = (PendingState)current;
                     if (updateState(pending,__IDLE))
                     {
@@ -455,6 +457,9 @@ abstract public class WriteFlusher
                     break;
 
                 default:
+                    if (DEBUG)
+                        LOG.debug("failed: {} {}", this, cause);
+
                     if (updateState(current,new FailedState(cause)))
                         return;
                     break;

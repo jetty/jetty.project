@@ -215,8 +215,8 @@ public class ProxySPDYToHTTPLoadTest
                 }
                 catch (InterruptedException | ExecutionException | TimeoutException | IOException e)
                 {
-                    fail();
                     e.printStackTrace();
+                    fail();
                 }
             }
         };

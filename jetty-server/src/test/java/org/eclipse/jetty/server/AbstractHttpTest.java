@@ -57,8 +57,9 @@ public abstract class AbstractHttpTest
     public void setUp() throws Exception
     {
         server = new Server();
-        connector = new ServerConnector(server);
+        connector = new ServerConnector(server,1,1);
         connector.setIdleTimeout(10000);
+        
         server.addConnector(connector);
         httpParser = new SimpleHttpParser();
         ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);

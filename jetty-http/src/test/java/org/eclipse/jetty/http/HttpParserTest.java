@@ -74,7 +74,7 @@ public class HttpParserTest
         assertEquals("POST", _methodOrVersion);
         assertEquals("/foo", _uriOrStatus);
         assertEquals("HTTP/1.0", _versionOrReason);
-        assertEquals(-1, _h);
+        assertEquals(-1, _headers);
     }
 
     @Test
@@ -89,7 +89,7 @@ public class HttpParserTest
         assertEquals("GET", _methodOrVersion);
         assertEquals("/999", _uriOrStatus);
         assertEquals(null, _versionOrReason);
-        assertEquals(-1, _h);
+        assertEquals(-1, _headers);
     }
 
     @Test
@@ -104,7 +104,7 @@ public class HttpParserTest
         assertEquals("POST", _methodOrVersion);
         assertEquals("/222", _uriOrStatus);
         assertEquals(null, _versionOrReason);
-        assertEquals(-1, _h);
+        assertEquals(-1, _headers);
     }
 
     @Test
@@ -118,7 +118,7 @@ public class HttpParserTest
         assertEquals("POST", _methodOrVersion);
         assertEquals("/fo\u0690", _uriOrStatus);
         assertEquals("HTTP/1.0", _versionOrReason);
-        assertEquals(-1, _h);
+        assertEquals(-1, _headers);
     }
 
     @Test
@@ -132,7 +132,7 @@ public class HttpParserTest
         assertEquals("POST", _methodOrVersion);
         assertEquals("/foo?param=\u0690", _uriOrStatus);
         assertEquals("HTTP/1.0", _versionOrReason);
-        assertEquals(-1, _h);
+        assertEquals(-1, _headers);
     }
 
     @Test
@@ -146,7 +146,7 @@ public class HttpParserTest
         assertEquals("POST", _methodOrVersion);
         assertEquals("/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/", _uriOrStatus);
         assertEquals("HTTP/1.0", _versionOrReason);
-        assertEquals(-1, _h);
+        assertEquals(-1, _headers);
     }
     
     @Test
@@ -159,7 +159,32 @@ public class HttpParserTest
         assertEquals("CONNECT", _methodOrVersion);
         assertEquals("192.168.1.2:80", _uriOrStatus);
         assertEquals("HTTP/1.1", _versionOrReason);
-        assertEquals(-1, _h);
+        assertEquals(-1, _headers);
+    }
+
+    @Test
+    public void testSimple() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer(
+                "GET / HTTP/1.0\015\012" +
+                "Host: localhost\015\012" +
+                "Connection: close\015\012" +
+                "\015\012");
+        
+        HttpParser.RequestHandler<ByteBuffer> handler  = new Handler();
+        HttpParser parser= new HttpParser(handler);
+        parseAll(parser,buffer);
+
+        assertTrue(_headerCompleted);
+        assertTrue(_messageCompleted);
+        assertEquals("GET", _methodOrVersion);
+        assertEquals("/", _uriOrStatus);
+        assertEquals("HTTP/1.0", _versionOrReason);
+        assertEquals("Host", _hdr[0]);
+        assertEquals("localhost", _val[0]);
+        assertEquals("Connection", _hdr[1]);
+        assertEquals("close", _val[1]);
+        assertEquals(1, _headers);
     }
 
     @Test
@@ -212,7 +237,7 @@ public class HttpParserTest
         assertEquals("gzip, deflated", _val[8]);
         assertEquals("Accept", _hdr[9]);
         assertEquals("unknown", _val[9]);
-        assertEquals(9, _h);
+        assertEquals(9, _headers);
     }
     
     @Test
@@ -260,7 +285,7 @@ public class HttpParserTest
         assertEquals("gzip, deflated", _val[8]);
         assertEquals("Accept", _hdr[9]);
         assertEquals("unknown", _val[9]);
-        assertEquals(9, _h);
+        assertEquals(9, _headers);
     }
 
     
@@ -310,7 +335,7 @@ public class HttpParserTest
         assertEquals("gzip, deflated", _val[8]);
         assertEquals("Accept", _hdr[9]);
         assertEquals("unknown", _val[9]);
-        assertEquals(9, _h);
+        assertEquals(9, _headers);
     }
 
     @Test
@@ -365,7 +390,7 @@ public class HttpParserTest
             assertEquals("value4", _val[4]);
             assertEquals("Server5", _hdr[5]);
             assertEquals("notServer", _val[5]);
-            assertEquals(5, _h);
+            assertEquals(5, _headers);
         }
     }
 
@@ -390,12 +415,72 @@ public class HttpParserTest
         assertEquals("GET", _methodOrVersion);
         assertEquals("/chunk", _uriOrStatus);
         assertEquals("HTTP/1.0", _versionOrReason);
-        assertEquals(1, _h);
+        assertEquals(1, _headers);
         assertEquals("Header1", _hdr[0]);
         assertEquals("value1", _val[0]);
         assertEquals("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ", _content);
     }
 
+    @Test
+    public void testStartEOF() throws Exception
+    {
+        HttpParser.RequestHandler<ByteBuffer> handler  = new Handler();
+        HttpParser parser= new HttpParser(handler);
+        parser.atEOF();
+        parser.parseNext(BufferUtil.EMPTY_BUFFER);
+
+        assertEquals("400",_bad);
+    }
+
+    @Test
+    public void testEarlyEOF() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer(
+                "GET /uri HTTP/1.0\015\012"
+                        + "Content-Length: 20\015\012"
+                        + "\015\012"
+                        + "0123456789");
+        HttpParser.RequestHandler<ByteBuffer> handler  = new Handler();
+        HttpParser parser= new HttpParser(handler);
+        parser.atEOF();
+        parseAll(parser,buffer);
+
+        assertEquals("GET", _methodOrVersion);
+        assertEquals("/uri", _uriOrStatus);
+        assertEquals("HTTP/1.0", _versionOrReason);
+        assertEquals("0123456789", _content);
+        
+        assertTrue(_early);
+    }
+
+    @Test
+    public void testChunkEarlyEOF() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer(
+                "GET /chunk HTTP/1.0\015\012"
+                        + "Header1: value1\015\012"
+                        + "Transfer-Encoding: chunked\015\012"
+                        + "\015\012"
+                        + "a;\015\012"
+                        + "0123456789\015\012");
+        HttpParser.RequestHandler<ByteBuffer> handler  = new Handler();
+        HttpParser parser= new HttpParser(handler);
+        parser.atEOF();
+        parseAll(parser,buffer);
+
+        assertEquals("GET", _methodOrVersion);
+        assertEquals("/chunk", _uriOrStatus);
+        assertEquals("HTTP/1.0", _versionOrReason);
+        assertEquals(1, _headers);
+        assertEquals("Header1", _hdr[0]);
+        assertEquals("value1", _val[0]);
+        assertEquals("0123456789", _content);
+        
+        assertTrue(_early);
+        
+    }
+
+    
     @Test
     public void testMultiParse() throws Exception
     {
@@ -433,7 +518,7 @@ public class HttpParserTest
         assertEquals("GET", _methodOrVersion);
         assertEquals("/mp", _uriOrStatus);
         assertEquals("HTTP/1.0", _versionOrReason);
-        assertEquals(2, _h);
+        assertEquals(2, _headers);
         assertEquals("Header1", _hdr[1]);
         assertEquals("value1", _val[1]);
         assertEquals("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ", _content);
@@ -444,7 +529,7 @@ public class HttpParserTest
         assertEquals("POST", _methodOrVersion);
         assertEquals("/foo", _uriOrStatus);
         assertEquals("HTTP/1.0", _versionOrReason);
-        assertEquals(2, _h);
+        assertEquals(2, _headers);
         assertEquals("Header2", _hdr[1]);
         assertEquals("value2", _val[1]);
         assertEquals(null, _content);
@@ -452,16 +537,85 @@ public class HttpParserTest
         parser.reset();
         init();
         parser.parseNext(buffer);
-        parser.shutdownInput();
+        parser.atEOF();
         assertEquals("PUT", _methodOrVersion);
         assertEquals("/doodle", _uriOrStatus);
         assertEquals("HTTP/1.0", _versionOrReason);
-        assertEquals(2, _h);
+        assertEquals(2, _headers);
         assertEquals("Header3", _hdr[1]);
         assertEquals("value3", _val[1]);
         assertEquals("0123456789", _content);
     }
+    
 
+    @Test
+    public void testMultiParseEarlyEOF() throws Exception
+    {
+        ByteBuffer buffer0= BufferUtil.toBuffer(
+                          "GET /mp HTTP/1.0\015\012"
+                        + "Connection: Keep-Alive\015\012");
+
+        ByteBuffer buffer1= BufferUtil.toBuffer("Header1: value1\015\012"
+                        + "Transfer-Encoding: chunked\015\012"
+                        + "\015\012"
+                        + "a;\015\012"
+                        + "0123456789\015\012"
+                        + "1a\015\012"
+                        + "ABCDEFGHIJKLMNOPQRSTUVWXYZ\015\012"
+                        + "0\015\012"
+
+                        + "\015\012"
+
+                        + "POST /foo HTTP/1.0\015\012"
+                        + "Connection: Keep-Alive\015\012"
+                        + "Header2: value2\015\012"
+                        + "Content-Length: 0\015\012"
+                        + "\015\012"
+
+                        + "PUT /doodle HTTP/1.0\015\012"
+                        + "Connection: close\015\012"
+                        + "Header3: value3\015\012"
+                        + "Content-Length: 10\015\012"
+                        + "\015\012"
+                        + "0123456789\015\012");
+
+
+        HttpParser.RequestHandler<ByteBuffer> handler  = new Handler();
+        HttpParser parser= new HttpParser(handler);
+        parser.parseNext(buffer0);
+        parser.atEOF();
+        parser.parseNext(buffer1);
+        assertEquals("GET", _methodOrVersion);
+        assertEquals("/mp", _uriOrStatus);
+        assertEquals("HTTP/1.0", _versionOrReason);
+        assertEquals(2, _headers);
+        assertEquals("Header1", _hdr[1]);
+        assertEquals("value1", _val[1]);
+        assertEquals("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ", _content);
+
+        parser.reset();
+        init();
+        parser.parseNext(buffer1);
+        assertEquals("POST", _methodOrVersion);
+        assertEquals("/foo", _uriOrStatus);
+        assertEquals("HTTP/1.0", _versionOrReason);
+        assertEquals(2, _headers);
+        assertEquals("Header2", _hdr[1]);
+        assertEquals("value2", _val[1]);
+        assertEquals(null, _content);
+
+        parser.reset();
+        init();
+        parser.parseNext(buffer1);
+        assertEquals("PUT", _methodOrVersion);
+        assertEquals("/doodle", _uriOrStatus);
+        assertEquals("HTTP/1.0", _versionOrReason);
+        assertEquals(2, _headers);
+        assertEquals("Header3", _hdr[1]);
+        assertEquals("value3", _val[1]);
+        assertEquals("0123456789", _content);
+    }
+    
     @Test
     public void testResponseParse0() throws Exception
     {
@@ -528,7 +682,7 @@ public class HttpParserTest
         init();
 
         parser.parseNext(buffer);
-        parser.shutdownInput();
+        parser.atEOF();
         assertEquals("HTTP/1.1", _methodOrVersion);
         assertEquals("200", _uriOrStatus);
         assertEquals("Correct", _versionOrReason);
@@ -581,6 +735,29 @@ public class HttpParserTest
     }
 
     @Test
+    public void testResponseEOFContent() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer(
+                "HTTP/1.1 200 \015\012"
+                        + "Content-Type: text/plain\015\012"
+                        + "\015\012"
+                        + "0123456789\015\012");
+
+        HttpParser.ResponseHandler<ByteBuffer> handler  = new Handler();
+        HttpParser parser= new HttpParser(handler);
+        parser.atEOF();
+        parser.parseNext(buffer);
+        
+        assertEquals("HTTP/1.1", _methodOrVersion);
+        assertEquals("200", _uriOrStatus);
+        assertEquals(null, _versionOrReason);
+        assertEquals(12,_content.length());
+        assertEquals("0123456789\015\012",_content);
+        assertTrue(_headerCompleted);
+        assertTrue(_messageCompleted);
+    }    
+    
+    @Test
     public void testResponse304WithContentLength() throws Exception
     {
         ByteBuffer buffer= BufferUtil.toBuffer(
@@ -627,7 +804,7 @@ public class HttpParserTest
                         + "Connection: close\015\012"
                         + "\015\012"
                         + "\015\012" // extra CRLF ignored
-                        + "HTTP/1.1 400 OK\015\012");  // extra data causes close
+                        + "HTTP/1.1 400 OK\015\012");  // extra data causes close ??
 
 
         HttpParser.ResponseHandler<ByteBuffer> handler  = new Handler();
@@ -641,8 +818,13 @@ public class HttpParserTest
         assertTrue(_headerCompleted);
         assertTrue(_messageCompleted);
 
-
+        parser.reset();
+        parser.parseNext(buffer);
+        assertFalse(buffer.hasRemaining());
+        assertTrue(parser.isClosed());
     }
+    
+    
 
     @Test
     public void testNoURI() throws Exception
@@ -1025,7 +1207,7 @@ public class HttpParserTest
         _versionOrReason=null;
         _hdr=null;
         _val=null;
-        _h=0;
+        _headers=0;
         _headerCompleted=false;
         _messageCompleted=false;
     }
@@ -1040,15 +1222,15 @@ public class HttpParserTest
     private List<HttpField> _fields=new ArrayList<>();
     private String[] _hdr;
     private String[] _val;
-    private int _h;
-
+    private int _headers;
+    
+    private boolean _early;
     private boolean _headerCompleted;
     private boolean _messageCompleted;
 
     private class Handler implements HttpParser.RequestHandler<ByteBuffer>, HttpParser.ResponseHandler<ByteBuffer>
     {
         private HttpFields fields;
-        private boolean request;
 
         @Override
         public boolean content(ByteBuffer ref)
@@ -1066,8 +1248,7 @@ public class HttpParserTest
         public boolean startRequest(HttpMethod httpMethod, String method, ByteBuffer uri, HttpVersion version)
         {
             _fields.clear();
-            request=true;
-            _h= -1;
+            _headers= -1;
             _hdr= new String[10];
             _val= new String[10];
             _methodOrVersion= method;
@@ -1077,6 +1258,7 @@ public class HttpParserTest
             fields=new HttpFields();
             _messageCompleted = false;
             _headerCompleted = false;
+            _early=false;
             return false;
         }
 
@@ -1085,8 +1267,8 @@ public class HttpParserTest
         {
             _fields.add(field);
             //System.err.println("header "+name+": "+value);
-            _hdr[++_h]= field.getName();
-            _val[_h]= field.getValue();
+            _hdr[++_headers]= field.getName();
+            _val[_headers]= field.getValue();
             return false;
         }
 
@@ -1125,14 +1307,13 @@ public class HttpParserTest
         @Override
         public void badMessage(int status, String reason)
         {
-            _bad=reason;
+            _bad=reason==null?(""+status):reason;
         }
 
         @Override
         public boolean startResponse(HttpVersion version, int status, String reason)
         {
             _fields.clear();
-            request=false;
             _methodOrVersion = version.asString();
             _uriOrStatus = Integer.toString(status);
             _versionOrReason = reason==null?null:reason.toString();
@@ -1149,6 +1330,7 @@ public class HttpParserTest
         @Override
         public void earlyEOF()
         {
+            _early=true;
         }
 
         @Override

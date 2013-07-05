@@ -20,6 +20,7 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
+import java.nio.ByteBuffer;
 
 import javax.servlet.ServletInputStream;
 import javax.servlet.ReadListener;
@@ -27,6 +28,7 @@ import javax.servlet.ReadListener;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.ArrayQueue;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -40,37 +42,60 @@ import org.eclipse.jetty.util.log.Logger;
  * {@link #onContentConsumed(T)} and {@link #onAllContentConsumed()} that can be implemented so that the
  * caller will know when buffers are queued and consumed.</p>
  */
-public abstract class HttpInput<T> extends ServletInputStream
+public abstract class HttpInput<T> extends ServletInputStream implements Runnable
 {
     private final static Logger LOG = Log.getLogger(HttpInput.class);
-    private final ArrayQueue<T> _inputQ = new ArrayQueue<>();
-    protected boolean _earlyEOF;
-    protected boolean _inputEOF;
-
-    public Object lock()
+    
+    private HttpChannelState _channelState;
+    private Throwable _onError;
+    private ReadListener _listener;
+    private boolean _notReady;
+    
+    protected State _state = BLOCKING;
+    private State _eof=null;
+    
+    
+    protected HttpInput()
     {
-        return _inputQ.lock();
     }
+    
+    public abstract Object lock();
 
     public void recycle()
     {
         synchronized (lock())
         {
-            T item = _inputQ.peekUnsafe();
-            while (item != null)
-            {
-                _inputQ.pollUnsafe();
-                onContentConsumed(item);
-
-                item = _inputQ.peekUnsafe();
-                if (item == null)
-                    onAllContentConsumed();
-            }
-            _inputEOF = false;
-            _earlyEOF = false;
+            _state = BLOCKING;
+            _eof=null;
+            _onError=null;
         }
     }
 
+    protected abstract T nextContent() throws IOException;
+    
+    protected void checkEOF()
+    {
+        if (_eof!=null)   
+        {
+            LOG.debug("{} eof {}",this,_eof);
+            _state=_eof;
+            _eof=null;
+            if (_listener!=null)
+            {
+                try
+                {
+                    _listener.onAllDataRead();
+                }
+                catch(Exception e)
+                {
+                    LOG.warn(e.toString());
+                    LOG.debug(e);
+                    _listener.onError(e);
+                }
+            }
+        }
+    }
+    
     @Override
     public int read() throws IOException
     {
@@ -82,12 +107,22 @@ public abstract class HttpInput<T> extends ServletInputStream
     @Override
     public int available()
     {
-        synchronized (lock())
+        try
         {
-            T item = _inputQ.peekUnsafe();
-            if (item == null)
-                return 0;
-            return remaining(item);
+            synchronized (lock())
+            {
+                T item = nextContent();
+                if (item==null)
+                {
+                    checkEOF();
+                    return 0;
+                }
+                return remaining(item);
+            }
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeIOException(e);
         }
     }
 
@@ -97,122 +132,47 @@ public abstract class HttpInput<T> extends ServletInputStream
         T item = null;
         synchronized (lock())
         {
-            // Get the current head of the input Q
-            item = _inputQ.peekUnsafe();
-            
-            // Skip empty items at the head of the queue
-            while (item != null && remaining(item) == 0)
-            {
-                _inputQ.pollUnsafe();
-                onContentConsumed(item);
-                LOG.debug("{} consumed {}", this, item);
-                item = _inputQ.peekUnsafe();
-                
-                // If that was the last item then notify
-                if (item==null)
-                    onAllContentConsumed();
-            }
+            // System.err.printf("read s=%s q=%d e=%s%n",_state,_inputQ.size(),_eof);
 
+            // Get the current head of the input Q
+            item = nextContent();
+            
             // If we have no item
             if (item == null)
             {
-                // Was it unexpectedly EOF'd?
-                if (isEarlyEOF())
-                    throw new EofException();
-
-                // check for EOF
-                if (isShutdown())
-                {
-                    onEOF();
-                    return -1;
-                }
-
-                // OK then block for some more content
-                blockForContent();
-                
-                // If still not content, we must be closed
-                item = _inputQ.peekUnsafe();
+                checkEOF();
+                _state.waitForContent(this);
+                item=nextContent();
                 if (item==null)
                 {
-                    if (isEarlyEOF())
-                        throw new EofException();
-                    
-                    // blockForContent will only return with no 
-                    // content if it is closed.
-                    if (!isShutdown())
-                        LOG.warn("Unexpected !EOF: "+this);
-
-                    onEOF();
-                    return -1;
+                    checkEOF();
+                    return _state.noContent();
                 }
             }
         }
+
         return get(item, b, off, len);
     }
     protected abstract int remaining(T item);
 
     protected abstract int get(T item, byte[] buffer, int offset, int length);
 
-    protected abstract void onContentConsumed(T item);
-
-    protected void blockForContent() throws IOException
+    protected abstract void blockForContent() throws IOException;
+    
+    protected boolean onAsyncRead()
     {
-        synchronized (lock())
-        {
-            while (_inputQ.isEmpty() && !isShutdown() && !isEarlyEOF())
-            {
-                try
-                {
-                    LOG.debug("{} waiting for content", this);
-                    lock().wait();
-                }
-                catch (InterruptedException e)
-                {
-                    throw (IOException)new InterruptedIOException().initCause(e);
-                }
-            }
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Called by this HttpInput to signal new content has been queued
-     * @param item
-     */
-    protected void onContentQueued(T item)
-    {
-        lock().notify();
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Called by this HttpInput to signal all available content has been consumed
-     */
-    protected void onAllContentConsumed()
-    {
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Called by this HttpInput to signal it has reached EOF
-     */
-    protected void onEOF()
-    {
+        if (_listener==null)
+            return false;
+        _channelState.onReadPossible();
+        return true;
     }
 
     /* ------------------------------------------------------------ */
     /** Add some content to the input stream
      * @param item
      */
-    public void content(T item)
-    {
-        synchronized (lock())
-        {
-            // The buffer is not copied here.  This relies on the caller not recycling the buffer
-            // until the it is consumed.  The onAllContentConsumed() callback is the signal to the
-            // caller that the buffers can be recycled.
-            _inputQ.add(item);
-            onContentQueued(item);
-            LOG.debug("{} queued {}", this, item);
-        }
-    }
+    public abstract void content(T item);
+    
 
     /* ------------------------------------------------------------ */
     /** This method should be called to signal to the HttpInput
@@ -224,93 +184,221 @@ public abstract class HttpInput<T> extends ServletInputStream
     {
         synchronized (lock())
         {
-            _earlyEOF = true;
-            _inputEOF = true;
-            lock().notify();
-            LOG.debug("{} early EOF", this);
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    public boolean isEarlyEOF()
-    {
-        synchronized (lock())
-        {
-            return _earlyEOF;
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    public void shutdown()
-    {
-        synchronized (lock())
-        {
-            _inputEOF = true;
-            lock().notify();
-            LOG.debug("{} shutdown", this);
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    public boolean isShutdown()
-    {
-        synchronized (lock())
-        {
-            return _inputEOF;
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    public void consumeAll()
-    {
-        synchronized (lock())
-        {
-            T item = _inputQ.peekUnsafe();
-            while (!isShutdown() && !isEarlyEOF())
+            if (_eof==null || !_eof.isEOF())
             {
-                while (item != null)
-                {
-                    _inputQ.pollUnsafe();
-                    onContentConsumed(item);
-
-                    item = _inputQ.peekUnsafe();
-                    if (item == null)
-                        onAllContentConsumed();
-                }
-
-                try
-                {
-                    blockForContent();
-                    item = _inputQ.peekUnsafe();
-                    if (item==null)
-                        break;
-                }
-                catch (IOException e)
-                {
-                    throw new RuntimeIOException(e);
-                }
+                LOG.debug("{} early EOF", this);
+                _eof=EARLY_EOF;
+                if (_listener!=null)
+                    _channelState.onReadPossible();
             }
         }
     }
 
-   @Override
+    /* ------------------------------------------------------------ */
+    public void messageComplete()
+    {
+        synchronized (lock())
+        {
+            if (_eof==null || !_eof.isEOF())
+            {
+                LOG.debug("{} EOF", this);
+                _eof=EOF;
+                if (_listener!=null)
+                    _channelState.onReadPossible();
+            }
+        }
+    }
+
+    public abstract void consumeAll();
+
+    @Override
     public boolean isFinished()
     {
-        // TODO Auto-generated method stub
-        return false;
+        synchronized (lock())
+        {
+            return _state.isEOF();
+        }
     }
 
     @Override
     public boolean isReady()
     {
-        // TODO Auto-generated method stub
-        return false;
+        synchronized (lock())
+        {
+            if (_listener==null)
+                return true;
+            int available = available();
+            if (available>0)
+                return true;
+            if (!_notReady)
+            {
+                _notReady=true;
+                if (_state.isEOF())
+                    _channelState.onReadPossible();
+                else
+                    unready();
+            }
+            return false;
+        }
     }
 
+    protected void unready()
+    {
+    }
+    
     @Override
     public void setReadListener(ReadListener readListener)
     {
-        // TODO Auto-generated method stub
+        synchronized (lock())
+        {
+            if (_state!=BLOCKING)
+                throw new IllegalStateException("state="+_state);
+            _state=ASYNC;
+            _listener=readListener;
+            _notReady=true;
 
+            _channelState.onReadPossible();
+        }
     }
+
+    public void failed(Throwable x)
+    {
+        synchronized (lock())
+        {
+            if (_onError==null)
+                LOG.warn(x);
+            else
+                _onError=x; 
+        }
+    }
+    
+    @Override
+    public void run()
+    {
+        final boolean available;
+        final boolean eof;
+        final Throwable x;
+        
+        synchronized (lock())
+        {
+            if (!_notReady || _listener==null)
+                return;
+
+            x=_onError;
+            T item;
+            try
+            {
+                item = nextContent();
+            }
+            catch(Exception e)
+            {
+                item=null;
+                failed(e);
+            }
+            available= item!=null && remaining(item)>0;
+
+            eof = !available && _state.isEOF();
+            _notReady=!available&&!eof;
+        }
+
+        try
+        {
+            if (x!=null)
+                _listener.onError(_onError);
+            else if (available)
+                _listener.onDataAvailable();
+            else if (!eof)
+                unready();
+        }
+        catch(Exception e)
+        {
+            LOG.warn(e.toString());
+            LOG.debug(e);
+            _listener.onError(e);
+        }
+    }  
+    
+
+    protected static class State
+    {
+        public void waitForContent(HttpInput<?> in) throws IOException
+        {
+        }
+        
+        public int noContent() throws IOException
+        {
+            return -1;
+        }
+        
+        public boolean isEOF()
+        {
+            return false;
+        }
+    }
+
+    protected static final State BLOCKING= new State()
+    {
+        @Override
+        public void waitForContent(HttpInput<?> in) throws IOException
+        {
+            in.blockForContent();
+        }
+        public String toString()
+        {
+            return "OPEN";
+        }
+    };
+    
+    protected static final State ASYNC= new State()
+    {
+        @Override
+        public int noContent() throws IOException
+        {
+            return 0;
+        }
+        @Override 
+        public String toString()
+        {
+            return "ASYNC";
+        }
+    };
+    
+    protected static final State EARLY_EOF= new State()
+    {
+        @Override        
+        public int noContent() throws IOException
+        {
+            throw new EofException();
+        }
+        @Override
+        public boolean isEOF()
+        {
+            return true;
+        }
+        public String toString()
+        {
+            return "EARLY_EOF";
+        }
+    };
+
+    protected static final State EOF= new State()
+    {
+        @Override
+        public boolean isEOF()
+        {
+            return true;
+        }
+
+        public String toString()
+        {
+            return "EOF";
+        }
+    };
+
+
+    public void init(HttpChannelState state)
+    {
+        _channelState=state;
+    }
+
 }

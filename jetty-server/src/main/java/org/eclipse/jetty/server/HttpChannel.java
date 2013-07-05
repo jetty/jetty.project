@@ -44,6 +44,7 @@ import org.eclipse.jetty.io.ChannelEndPoint;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.HttpChannelState.Action;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.BlockingCallback;
 import org.eclipse.jetty.util.Callback;
@@ -105,6 +106,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
 
         _uri = new HttpURI(URIUtil.__CHARSET);
         _state = new HttpChannelState(this);
+        input.init(_state);
         _request = new Request(this, input);
         _response = new Response(this, new HttpOutput(this));
     }
@@ -255,6 +257,8 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
         {
             try
             {
+                LOG.debug("{} action {}",this,action);
+                
                 switch(action)
                 {
                     case REQUEST_DISPATCH:
@@ -286,11 +290,28 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
 
                         getServer().handleAsync(this);
                         break;
-                        
-                    case IO_CALLBACK:
-                        _response.getHttpOutput().handle();
-                        
+
+                    case READ_CALLBACK:
+                    {
+                        ContextHandler handler=_state.getContextHandler();
+                        if (handler!=null)
+                            handler.handle(_request.getHttpInput());
+                        else
+                            _request.getHttpInput().run();
                         break;
+                    }
+                        
+                    case WRITE_CALLBACK:
+                    {
+                        ContextHandler handler=_state.getContextHandler();
+                    
+                        if (handler!=null)
+                            handler.handle(_response.getHttpOutput());
+                        else
+                            _response.getHttpOutput().run();
+                        break;
+                    }   
+                        
                     default:
                         break loop;
                         
@@ -595,7 +616,8 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     @Override
     public boolean messageComplete()
     {
-        _request.getHttpInput().shutdown();
+        LOG.debug("{} messageComplete", this);
+        _request.getHttpInput().messageComplete();
         return true;
     }
 

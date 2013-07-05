@@ -172,7 +172,6 @@ public class LocalConnector extends AbstractConnector
         Connection connection = getDefaultConnectionFactory().newConnection(this, endPoint);
         endPoint.setConnection(connection);
 
-//        connectionOpened(connection);
         connection.onOpen();
     }
 

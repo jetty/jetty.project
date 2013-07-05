@@ -192,6 +192,6 @@ public class LowResourcesMonitorTest
         Thread.sleep(1200);
         Assert.assertTrue(_lowResourcesMonitor.isLowOnResources());
         Assert.assertEquals(-1,socket1.getInputStream().read());
-        
+
     }
 }

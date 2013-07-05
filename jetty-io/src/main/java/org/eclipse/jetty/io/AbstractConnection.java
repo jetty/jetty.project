@@ -96,7 +96,6 @@ public abstract class AbstractConnection implements Connection
     public void fillInterested()
     {
         LOG.debug("fillInterested {}",this);
-
         while(true)
         {
             State state=_state.get();
@@ -112,6 +111,9 @@ public abstract class AbstractConnection implements Connection
         while(true)
         {
             State state=_state.get();
+            // TODO yuck
+            if (state instanceof FillingInterestedCallback && ((FillingInterestedCallback)state)._callback==callback)
+                break;
             State next=new FillingInterestedCallback(callback,state);
             if (next(state,next))
                 break;
@@ -144,6 +146,9 @@ public abstract class AbstractConnection implements Connection
                     _endPoint.shutdownOutput();
             }
         }
+
+        if (_endPoint.isOpen())
+            fillInterested();        
     }
 
     /**
@@ -267,6 +272,11 @@ public abstract class AbstractConnection implements Connection
         {
             throw new IllegalStateException(this.toString());
         }
+        
+        State onFailed()
+        {
+            throw new IllegalStateException(this.toString());
+        }
     }
     
 
@@ -297,6 +307,12 @@ public abstract class AbstractConnection implements Connection
         public State onFillable()
         {
             return FILLING;
+        }
+
+        @Override
+        State onFailed()
+        {
+            return IDLE;
         }
     };
     
@@ -379,7 +395,7 @@ public abstract class AbstractConnection implements Connection
         {
             return new NestedState(_nested.onFillable());
         }
-
+        
         @Override
         State onFilled()
         {
@@ -436,9 +452,6 @@ public abstract class AbstractConnection implements Connection
             
             connection.getEndPoint().fillInterested(callback);
         }
-
-        
-        
     }
     
     private final Runnable _runOnFillable = new Runnable()
@@ -479,6 +492,12 @@ public abstract class AbstractConnection implements Connection
         @Override
         public void failed(Throwable x)
         {
+            while(true)
+            {
+                State state=_state.get();
+                if (next(state,state.onFailed()))
+                    break;
+            }
             onFillInterestedFailed(x);
         }
         

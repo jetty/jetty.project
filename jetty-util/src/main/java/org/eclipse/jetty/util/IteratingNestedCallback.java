@@ -53,11 +53,15 @@ public abstract class IteratingNestedCallback extends IteratingCallback
         _callback.succeeded();
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public void failed(Throwable x)
     {
         _callback.failed(x);
     }
 
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x",getClass().getSimpleName(),hashCode());
+    }
 }

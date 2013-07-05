@@ -23,6 +23,7 @@ import static org.junit.Assert.assertEquals;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,7 +31,9 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.AsyncContext;
+import javax.servlet.ReadListener;
 import javax.servlet.ServletException;
+import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.WriteListener;
 import javax.servlet.http.HttpServlet;
@@ -48,7 +51,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-
+// TODO need  these on SPDY as well!
 public class AsyncServletIOTest 
 {    
     protected AsyncIOServlet _servlet=new AsyncIOServlet();
@@ -75,6 +78,10 @@ public class AsyncServletIOTest
         _servletHandler.addServletWithMapping(holder,"/path/*");
         _server.start();
         _port=_connector.getLocalPort();
+
+        _owp.set(0);
+        _oda.set(0);
+        _read.set(0);
     }
 
     @After
@@ -116,11 +123,30 @@ public class AsyncServletIOTest
     @Test
     public void testBigWrites() throws Exception
     {
-        _count.set(0);
         process(102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400);
-        Assert.assertThat(_count.get(),Matchers.greaterThan(1));
+        Assert.assertThat(_owp.get(),Matchers.greaterThan(1));
     }
 
+
+
+    @Test
+    public void testRead() throws Exception
+    {
+        process("Hello!!!\r\n");
+    }
+
+    @Test
+    public void testBigRead() throws Exception
+    {
+        process("Now is the time for all good men to come to the aid of the party. How now Brown Cow. The quick brown fox jumped over the lazy dog. The moon is blue to a fish in love.\r\n");
+    }
+
+    @Test
+    public void testReadWrite() throws Exception
+    {
+        process("Hello!!!\r\n",10);
+    }
+    
     
     protected void assertContains(String content,String response)
     {
@@ -131,9 +157,18 @@ public class AsyncServletIOTest
     {
         Assert.assertThat(response,Matchers.not(Matchers.containsString(content)));
     }
-    
-    
+
+    public synchronized List<String> process(String content,int... writes) throws Exception
+    {
+        return process(content.getBytes("ISO-8859-1"),writes);
+    }
+
     public synchronized List<String> process(int... writes) throws Exception
+    {
+        return process((byte[])null,writes);
+    }
+    
+    public synchronized List<String> process(byte[] content, int... writes) throws Exception
     {
         StringBuilder request = new StringBuilder(512);
         request.append("GET /ctx/path/info");
@@ -146,17 +181,34 @@ public class AsyncServletIOTest
         
         request.append(" HTTP/1.1\r\n")
         .append("Host: localhost\r\n")
-        .append("Connection: close\r\n")
-        .append("\r\n");
+        .append("Connection: close\r\n");
         
+        if (content!=null)
+            request.append("Content-Length: "+content.length+"\r\n")
+            .append("Content-Type: text/plain\r\n");
+        
+        request.append("\r\n");
         
         int port=_port;
         List<String> list = new ArrayList<>();
         try (Socket socket = new Socket("localhost",port);)
         {
             socket.setSoTimeout(1000000);
-            socket.getOutputStream().write(request.toString().getBytes("ISO-8859-1"));
+            OutputStream out = socket.getOutputStream();
+            out.write(request.toString().getBytes("ISO-8859-1"));
 
+            if (content!=null && content.length>0)
+            {
+                Thread.sleep(100);
+                out.write(content[0]);
+                Thread.sleep(100);
+                int half=(content.length-1)/2;
+                out.write(content,1,half);
+                Thread.sleep(100);
+                out.write(content,1+half,content.length-half-1);
+            }
+            
+            
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()),102400);
             
             // response line
@@ -198,12 +250,17 @@ public class AsyncServletIOTest
                 w++;
         }
         
+        if (content!=null)
+            Assert.assertEquals(content.length,_read.get());
+        
         return list;
     }
 
 
     
-    static AtomicInteger _count = new AtomicInteger();
+    static AtomicInteger _owp = new AtomicInteger();
+    static AtomicInteger _oda = new AtomicInteger();
+    static AtomicInteger _read = new AtomicInteger();
     
     private static class AsyncIOServlet extends HttpServlet
     {
@@ -216,8 +273,53 @@ public class AsyncServletIOTest
         @Override
         public void doGet(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
         {
-            final String[] writes = request.getParameterValues("w");
             final AsyncContext async = request.startAsync();
+            final AtomicInteger complete = new AtomicInteger(2);
+            
+            // Asynchronous Read
+            if (request.getContentLength()>0)
+            {
+                // System.err.println("reading "+request.getContentLength());
+                final ServletInputStream in=request.getInputStream();
+                in.setReadListener(new ReadListener()
+                {
+                    byte[] _buf=new byte[32];
+                    @Override
+                    public void onError(Throwable t)
+                    {      
+                        if (complete.decrementAndGet()==0)
+                            async.complete();                  
+                    }
+                    
+                    @Override
+                    public void onDataAvailable() throws IOException
+                    {                 
+                        // System.err.println("ODA");
+                        while (in.isReady())
+                        {
+                            _oda.incrementAndGet();
+                            int len=in.read(_buf);
+                            // System.err.println("read "+len);
+                            if (len>0)
+                                _read.addAndGet(len);
+                        }
+                    }
+                    
+                    @Override
+                    public void onAllDataRead() throws IOException
+                    {    
+                        // System.err.println("OADR");
+                        if (complete.decrementAndGet()==0)
+                            async.complete();
+                    }
+                });
+            }
+            else
+                complete.decrementAndGet();
+            
+            
+            // Asynchronous Write
+            final String[] writes = request.getParameterValues("w");
             final ServletOutputStream out = response.getOutputStream();
             out.setWriteListener(new WriteListener()
             {
@@ -227,7 +329,7 @@ public class AsyncServletIOTest
                 public void onWritePossible() throws IOException
                 {
                     //System.err.println("OWP");
-                    _count.incrementAndGet();
+                    _owp.incrementAndGet();
 
                     while (writes!=null && _w< writes.length)
                     {
@@ -247,8 +349,8 @@ public class AsyncServletIOTest
                             return;
                     }
                     
-                    //System.err.println("COMPLETE!!!");
-                    async.complete();
+                    if (complete.decrementAndGet()==0)
+                        async.complete();
                 }
 
                 @Override

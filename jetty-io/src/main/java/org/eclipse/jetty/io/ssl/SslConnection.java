@@ -188,7 +188,7 @@ public class SslConnection extends AbstractConnection
         // filling.
 
         if (DEBUG)
-            LOG.debug("onFillable enter {}", getEndPoint());
+            LOG.debug("onFillable enter {}", _decryptedEndPoint);
 
         // We have received a close handshake, close the end point to send FIN.
         if (_decryptedEndPoint.isInputShutdown())
@@ -209,7 +209,7 @@ public class SslConnection extends AbstractConnection
         }
 
         if (DEBUG)
-            LOG.debug("onFillable exit {}", getEndPoint());
+            LOG.debug("onFillable exit {}", _decryptedEndPoint);
     }
 
     @Override

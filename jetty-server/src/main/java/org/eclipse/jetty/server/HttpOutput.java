@@ -51,7 +51,7 @@ import org.eclipse.jetty.util.log.Logger;
  * via {@link RequestDispatcher#include(ServletRequest, ServletResponse)} to
  * close the stream, to be reopened after the inclusion ends.</p>
  */
-public class HttpOutput extends ServletOutputStream
+public class HttpOutput extends ServletOutputStream implements Runnable
 {
     private static Logger LOG = Log.getLogger(HttpOutput.class);
     private final HttpChannel<?> _channel;
@@ -555,6 +555,9 @@ write completed    -          -          -          ASYNC         READY->owp
     @Override
     public void setWriteListener(WriteListener writeListener)
     {
+        if (!_channel.getState().isAsync())
+            throw new IllegalStateException("!ASYNC");
+        
         if (_state.compareAndSet(State.OPEN, State.READY))
         {
             _writeListener = writeListener;
@@ -594,7 +597,8 @@ write completed    -          -          -          ASYNC         READY->owp
         }
     }
 
-    public void handle()
+    @Override
+    public void run()
     {
         if(_onError!=null)
         {
@@ -738,7 +742,6 @@ write completed    -          -          -          ASYNC         READY->owp
         @Override
         public void failed(Throwable e)
         {
-            e.printStackTrace();
             _onError=e;
             _channel.getState().onWritePossible();
         }
