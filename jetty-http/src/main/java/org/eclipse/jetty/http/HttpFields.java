@@ -826,6 +826,8 @@ public class HttpFields implements Iterable<HttpField>
         if (value != null && value.length() > 0)
             QuotedStringTokenizer.quoteIfNeeded(buf, value, delim);
 
+        if (version!=0)
+            buf.append(";Version=").append(version);
 
         if (path != null && path.length() > 0)
         {

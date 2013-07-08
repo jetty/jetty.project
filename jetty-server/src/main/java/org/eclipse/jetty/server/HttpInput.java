@@ -80,19 +80,6 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
             LOG.debug("{} eof {}",this,_eof);
             _state=_eof;
             _eof=null;
-            if (_listener!=null)
-            {
-                try
-                {
-                    _listener.onAllDataRead();
-                }
-                catch(Exception e)
-                {
-                    LOG.warn(e.toString());
-                    LOG.debug(e);
-                    _listener.onError(e);
-                }
-            }
         }
     }
     
@@ -249,6 +236,8 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
     @Override
     public void setReadListener(ReadListener readListener)
     {
+        if (readListener==null)
+            throw new NullPointerException("readListener==null");
         synchronized (lock())
         {
             if (_state!=BLOCKING)
@@ -307,7 +296,9 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
                 _listener.onError(_onError);
             else if (available)
                 _listener.onDataAvailable();
-            else if (!eof)
+            else if (eof)
+                _listener.onAllDataRead();
+            else
                 unready();
         }
         catch(Exception e)

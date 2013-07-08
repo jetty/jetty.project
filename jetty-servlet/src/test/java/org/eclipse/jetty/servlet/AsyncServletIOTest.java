@@ -28,6 +28,7 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.AsyncContext;
@@ -275,6 +276,7 @@ public class AsyncServletIOTest
         {
             final AsyncContext async = request.startAsync();
             final AtomicInteger complete = new AtomicInteger(2);
+            final AtomicBoolean onDataAvailable = new AtomicBoolean(false);
             
             // Asynchronous Read
             if (request.getContentLength()>0)
@@ -293,7 +295,10 @@ public class AsyncServletIOTest
                     
                     @Override
                     public void onDataAvailable() throws IOException
-                    {                 
+                    {                
+                        if (!onDataAvailable.compareAndSet(false,true))
+                            throw new IllegalStateException();
+                        
                         // System.err.println("ODA");
                         while (in.isReady())
                         {
@@ -303,11 +308,21 @@ public class AsyncServletIOTest
                             if (len>0)
                                 _read.addAndGet(len);
                         }
+
+                        if (!onDataAvailable.compareAndSet(true,false))
+                            throw new IllegalStateException();
+                        
                     }
                     
                     @Override
                     public void onAllDataRead() throws IOException
                     {    
+                        if (onDataAvailable.get())
+                        {
+                            System.err.println("OADR too early!");
+                            _read.set(-1);
+                        }
+                        
                         // System.err.println("OADR");
                         if (complete.decrementAndGet()==0)
                             async.complete();
