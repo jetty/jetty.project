@@ -128,31 +128,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         return _parser;
     }
     
-    public void reset()
-    {
-        // If we are still expecting
-        if (_channel.isExpecting100Continue())
-            // close to seek EOF
-            _parser.close();
-        
-        _channel.reset();
-
-        if (_generator.isPersistent() && !_parser.isClosed())
-            // reset to seek next request
-            _parser.reset();
-        else
-            // else seek EOF
-            _parser.close();
-        
-        _generator.reset();
-        
-        releaseRequestBuffer();
-        if (_chunk!=null)
-        {
-            _bufferPool.release(_chunk);
-            _chunk=null;
-        }
-    }
 
 
     @Override
@@ -341,11 +316,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     @Override
     public void completed()
     {
-        // Finish consuming the request
-        if (_parser.inContentState() && _generator.isPersistent() && !_channel.isExpecting100Continue())
-            // Complete reading the request
-            _channel.getRequest().getHttpInput().consumeAll();
-
         // Handle connection upgrades
         if (_channel.getResponse().getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101)
         {
@@ -356,35 +326,58 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 onClose();
                 getEndPoint().setConnection(connection);
                 connection.onOpen();
-                reset();
+                _channel.reset();
+                _parser.reset();
+                _generator.reset();
+                releaseRequestBuffer();
                 return;
             }
         }
+        
+        // Finish consuming the request
+        // If we are still expecting
+        if (_channel.isExpecting100Continue())
+            // close to seek EOF
+            _parser.close();
+        else if (_parser.inContentState() && _generator.isPersistent())
+            // Complete reading the request
+            _channel.getRequest().getHttpInput().consumeAll();
 
-        reset();
+        // Reset the channel, parsers and generator
+        _channel.reset();
+        if (_generator.isPersistent() && !_parser.isClosed())
+            _parser.reset();
+        else
+            _parser.close();
+        releaseRequestBuffer();
+        if (_chunk!=null)
+            _bufferPool.release(_chunk);
+        _chunk=null;
+        _generator.reset();
 
         // if we are not called from the onfillable thread, schedule completion
         if (getCurrentConnection()!=this)
         {
+            // If we are looking for the next request
             if (_parser.isStart())
             {
-                // TODO ???
-                // it wants to eat more
+                // if the buffer is empty
                 if (_requestBuffer == null)
                 {
+                    // look for more data
                     fillInterested();
                 }
-                else if (getConnector().isStarted())
+                // else if we are still running
+                else if (getConnector().isRunning())
                 {
-                    LOG.debug("{} pipelined", this);
-
+                    // Dispatched to handle a pipelined request
                     try
                     {
                         getExecutor().execute(this);
                     }
                     catch (RejectedExecutionException e)
                     {
-                        if (getConnector().isStarted())
+                        if (getConnector().isRunning())
                             LOG.warn(e);
                         else
                             LOG.ignore(e);
@@ -396,6 +389,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     getEndPoint().close();
                 }
             }
+            // else the parser must be closed, so seek the EOF if we are still open 
+            else if (getEndPoint().isOpen())
+                fillInterested();
         }
     }
 

@@ -125,8 +125,8 @@ write completed    -          -          -          ASYNC         READY->owp
                 }
                 catch(IOException e)
                 {
-                _channel.failed();
-                    LOG.ignore(e);
+                    LOG.debug(e);
+                    _channel.failed();
                 }
                 releaseBuffer();
                 return;
@@ -149,8 +149,8 @@ write completed    -          -          -          ASYNC         READY->owp
                 }
                 catch(IOException e)
                 {
-                _channel.failed();
-                    LOG.ignore(e);
+                    LOG.debug(e);
+                    _channel.failed();
                 }
                 releaseBuffer();
                 return;

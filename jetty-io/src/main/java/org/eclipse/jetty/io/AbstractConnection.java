@@ -95,7 +95,8 @@ public abstract class AbstractConnection implements Connection
      */
     public void fillInterested()
     {
-        LOG.debug("fillInterested {}",this);
+        LOG.debug("fillInterested {}",this);           
+        
         while(true)
         {
             State state=_state.get();

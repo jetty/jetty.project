@@ -362,7 +362,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
             }
             catch(Exception e)
             {
-                LOG.warn(e);
+                LOG.warn("handle complete",e);
             }
             finally
             {
@@ -635,7 +635,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
         }
         catch (IOException e)
         {
-            LOG.warn(e);
+            LOG.debug(e);
         }
         finally
         {
@@ -765,7 +765,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
             }
             else
             {
-                LOG.warn(x);
+                LOG.warn("Commit failed",x);
                 _transport.send(HttpGenerator.RESPONSE_500_INFO,null,true,new Callback()
                 {
                     @Override

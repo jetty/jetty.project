@@ -97,6 +97,7 @@ public class HttpParser
         CLOSED
     };
 
+    private final boolean DEBUG=LOG.isDebugEnabled(); // Cache debug to help branch prediction
     private final HttpHandler<ByteBuffer> _handler;
     private final RequestHandler<ByteBuffer> _requestHandler;
     private final ResponseHandler<ByteBuffer> _responseHandler;
@@ -719,7 +720,8 @@ public class HttpParser
                             }
                             catch (NumberFormatException e)
                             {
-                                LOG.debug(e);
+                                if (DEBUG)
+                                    LOG.debug(e);
                                 throw new BadMessage(HttpStatus.BAD_REQUEST_400,"Bad Host header");
                             }
                             break loop;
@@ -1140,7 +1142,7 @@ public class HttpParser
      */
     public boolean parseNext(ByteBuffer buffer)
     {
-        if (LOG.isDebugEnabled())
+        if (DEBUG)
             LOG.debug("parseNext s={} {}",_state,BufferUtil.toDetailString(buffer));
         try
         {
@@ -1227,6 +1229,8 @@ public class HttpParser
                         break;
 
                     default:
+                        if (DEBUG)
+                            LOG.debug("{} EOF in {}",this,_state);
                         _handler.badMessage(400,null);
                         setState(State.CLOSED);
                         break;
@@ -1240,7 +1244,8 @@ public class HttpParser
             BufferUtil.clear(buffer);
 
             LOG.warn("badMessage: "+e._code+(e._message!=null?" "+e._message:"")+" for "+_handler);
-            LOG.debug(e);
+            if (DEBUG)
+                LOG.debug(e);
             setState(State.CLOSED);
             _handler.badMessage(e._code, e._message);
             return false;
@@ -1250,7 +1255,8 @@ public class HttpParser
             BufferUtil.clear(buffer);
 
             LOG.warn("badMessage: "+e.toString()+" for "+_handler);
-            LOG.debug(e);
+            if (DEBUG)
+                LOG.debug(e);
             
             if (_state.ordinal()<=State.END.ordinal())
             {
@@ -1412,27 +1418,33 @@ public class HttpParser
 
     /* ------------------------------------------------------------------------------- */
     public boolean isAtEOF()
+ 
     {
         return _eof;
     }
     
     /* ------------------------------------------------------------------------------- */
     public void atEOF()
-    {
-        LOG.debug("atEOF {}", this);
+
+    {        
+        if (DEBUG)
+            LOG.debug("atEOF {}", this);
         _eof=true;
     }
 
     /* ------------------------------------------------------------------------------- */
     public void close()
     {
-        LOG.debug("close {}", this);
+        if (DEBUG)
+            LOG.debug("close {}", this);
         setState(State.CLOSED);
     }
     
     /* ------------------------------------------------------------------------------- */
     public void reset()
     {
+        if (DEBUG)
+            LOG.debug("reset {}", this);
         // reset state
         if (_state==State.CLOSED)
             return;
@@ -1455,7 +1467,8 @@ public class HttpParser
     /* ------------------------------------------------------------------------------- */
     private void setState(State state)
     {
-        // LOG.debug("{} --> {}",_state,state);
+        if (DEBUG)
+            LOG.debug("{} --> {}",_state,state);
         _state=state;
     }
 
