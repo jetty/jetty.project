@@ -96,6 +96,7 @@ public class HttpParser
         CLOSED
     };
 
+    private final boolean DEBUG=LOG.isDebugEnabled();
     private final HttpHandler<ByteBuffer> _handler;
     private final RequestHandler<ByteBuffer> _requestHandler;
     private final ResponseHandler<ByteBuffer> _responseHandler;
@@ -741,7 +742,8 @@ public class HttpParser
                             }
                             catch (NumberFormatException e)
                             {
-                                LOG.debug(e);
+                                if (DEBUG)
+                                    LOG.debug(e);
                                 throw new BadMessage(HttpStatus.BAD_REQUEST_400,"Bad Host header");
                             }
                             break loop;
@@ -1369,7 +1371,8 @@ public class HttpParser
             BufferUtil.clear(buffer);
 
             LOG.warn("badMessage: "+e._code+(e._message!=null?" "+e._message:"")+" for "+_handler);
-            LOG.debug(e);
+            if (DEBUG)
+                LOG.debug(e);
             setState(State.CLOSED);
             _handler.badMessage(e._code, e._message);
             return false;
@@ -1379,7 +1382,8 @@ public class HttpParser
             BufferUtil.clear(buffer);
 
             LOG.warn("badMessage: "+e.toString()+" for "+_handler);
-            LOG.debug(e);
+            if (DEBUG) 
+                LOG.debug(e);
             
             if (_state.ordinal()<=State.END.ordinal())
             {
@@ -1408,7 +1412,8 @@ public class HttpParser
      */
     public boolean shutdownInput()
     {
-        LOG.debug("shutdownInput {}", this);
+        if (DEBUG)
+            LOG.debug("shutdownInput {}", this);
 
         // was this unexpected?
         switch(_state)
@@ -1437,6 +1442,8 @@ public class HttpParser
     /* ------------------------------------------------------------------------------- */
     public void close()
     {
+        if (DEBUG)
+            LOG.debug("close {}", this);
         switch(_state)
         {
             case START:
@@ -1469,6 +1476,8 @@ public class HttpParser
     /* ------------------------------------------------------------------------------- */
     public void reset()
     {
+        if (DEBUG)
+            LOG.debug("reset {}", this);
         // reset state
         setState(State.START);
         _endOfContent=EndOfContent.UNKNOWN_CONTENT;
@@ -1483,7 +1492,8 @@ public class HttpParser
     /* ------------------------------------------------------------------------------- */
     private void setState(State state)
     {
-        // LOG.debug("{} --> {}",_state,state);
+        if (DEBUG)
+            LOG.debug("{} --> {}",_state,state);
         _state=state;
     }
 
