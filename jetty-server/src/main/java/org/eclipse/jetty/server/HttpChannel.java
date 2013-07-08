@@ -366,14 +366,9 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
             }
             finally
             {
-                action=Action.RECYCLE;
+                _request.setHandled(true);
+                _transport.completed();
             }
-        }
-
-        if (action==Action.RECYCLE)
-        {
-            _request.setHandled(true);
-            _transport.completed();
         }
 
         LOG.debug("{} handle exit, result {}", this, action);

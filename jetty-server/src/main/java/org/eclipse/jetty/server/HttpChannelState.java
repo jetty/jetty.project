@@ -68,7 +68,7 @@ public class HttpChannelState
         COMPLETING,    // Request is completable
         COMPLETED      // Request is complete
     }
-    
+
     public enum Action
     {
         REQUEST_DISPATCH, // handle a normal request dispatch  
@@ -77,8 +77,7 @@ public class HttpChannelState
         WRITE_CALLBACK,   // handle an IO write callback
         READ_CALLBACK,    // handle an IO read callback
         WAIT,             // Wait for further events 
-        COMPLETE,         // Complete the channel
-        RECYCLE,          // Channel is completed
+        COMPLETE          // Complete the channel
     }
     
     public enum Async
@@ -199,7 +198,7 @@ public class HttpChannelState
                     return Action.COMPLETE;
 
                 case COMPLETED:
-                    return Action.RECYCLE;
+                    return Action.WAIT;
 
                 case ASYNCWAIT:
                     if (_asyncRead)
@@ -542,7 +541,7 @@ public class HttpChannelState
             return _async==Async.EXPIRED;
         }
     }
-    
+
     public boolean isInitial()
     {
         synchronized(this)
@@ -564,6 +563,14 @@ public class HttpChannelState
         synchronized (this)
         {
             return _state==State.COMPLETING;
+        }
+    }
+
+    boolean isCompleted()
+    {
+        synchronized (this)
+        {
+            return _state == State.COMPLETED;
         }
     }
 
