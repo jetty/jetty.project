@@ -344,7 +344,7 @@ public class HttpFieldsTest
         fields.clear();
         fields.addSetCookie("ev erything","va lue","do main","pa th",1,"co mment",true,true,2);
         String setCookie=fields.getStringField("Set-Cookie");
-        assertThat(setCookie,Matchers.startsWith("\"ev erything\"=\"va lue\";Path=\"pa th\";Domain=\"do main\";Expires="));
+        assertThat(setCookie,Matchers.startsWith("\"ev erything\"=\"va lue\";Version=2;Path=\"pa th\";Domain=\"do main\";Expires="));
         assertThat(setCookie,Matchers.endsWith(" GMT;Max-Age=1;Secure;HttpOnly;Comment=\"co mment\""));
 
         fields.clear();
