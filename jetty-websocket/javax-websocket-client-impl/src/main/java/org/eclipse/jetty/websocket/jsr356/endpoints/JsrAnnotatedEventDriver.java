@@ -25,7 +25,6 @@ import java.nio.ByteBuffer;
 
 import javax.websocket.CloseReason;
 import javax.websocket.DecodeException;
-import javax.websocket.EndpointConfig;
 import javax.websocket.MessageHandler;
 
 import org.eclipse.jetty.util.BufferUtil;
@@ -49,9 +48,9 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver implements E
     private static final Logger LOG = Log.getLogger(JsrAnnotatedEventDriver.class);
     private final JsrEvents events;
 
-    public JsrAnnotatedEventDriver(WebSocketPolicy policy, Object websocket, JsrEvents events, EndpointConfig config)
+    public JsrAnnotatedEventDriver(WebSocketPolicy policy, EndpointInstance endpointInstance, JsrEvents events)
     {
-        super(policy,websocket,config);
+        super(policy,endpointInstance);
         this.events = events;
     }
 

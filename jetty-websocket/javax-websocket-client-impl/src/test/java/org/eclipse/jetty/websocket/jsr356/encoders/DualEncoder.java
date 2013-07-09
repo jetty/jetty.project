@@ -16,31 +16,43 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.samples;
+package org.eclipse.jetty.websocket.jsr356.encoders;
 
 import java.io.IOException;
+import java.io.Writer;
 
-import javax.websocket.ClientEndpoint;
 import javax.websocket.EncodeException;
-import javax.websocket.OnMessage;
-import javax.websocket.Session;
+import javax.websocket.Encoder;
+import javax.websocket.EndpointConfig;
 
-import org.eclipse.jetty.websocket.jsr356.decoders.BadDualDecoder;
+import org.eclipse.jetty.websocket.jsr356.samples.Fruit;
 
-@ClientEndpoint(decoders =
-{ BadDualDecoder.class })
-public class IntSocket
+/**
+ * Intentionally bad example of attempting to decode the same object to different message formats.
+ */
+public class DualEncoder implements Encoder.Text<Fruit>, Encoder.TextStream<Fruit>
 {
-    @OnMessage
-    public void onInt(Session session, int value)
+    @Override
+    public void destroy()
     {
-        try
-        {
-            session.getBasicRemote().sendObject(value);
-        }
-        catch (IOException | EncodeException e)
-        {
-            e.printStackTrace();
-        }
+    }
+
+    @Override
+    public String encode(Fruit fruit) throws EncodeException
+    {
+        return String.format("%s|%s",fruit.name,fruit.color);
+    }
+
+    @Override
+    public void encode(Fruit fruit, Writer writer) throws EncodeException, IOException
+    {
+        writer.write(fruit.name);
+        writer.write('|');
+        writer.write(fruit.color);
+    }
+
+    @Override
+    public void init(EndpointConfig config)
+    {
     }
 }

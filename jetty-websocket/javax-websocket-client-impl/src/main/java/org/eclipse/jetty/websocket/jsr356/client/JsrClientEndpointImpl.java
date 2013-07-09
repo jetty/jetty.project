@@ -19,14 +19,14 @@
 package org.eclipse.jetty.websocket.jsr356.client;
 
 import javax.websocket.ClientEndpoint;
+import javax.websocket.ClientEndpointConfig;
 import javax.websocket.DeploymentException;
 
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.events.EventDriverImpl;
-import org.eclipse.jetty.websocket.jsr356.ClientContainer;
 import org.eclipse.jetty.websocket.jsr356.annotations.JsrEvents;
-import org.eclipse.jetty.websocket.jsr356.endpoints.ConfiguredEndpoint;
+import org.eclipse.jetty.websocket.jsr356.endpoints.EndpointInstance;
 import org.eclipse.jetty.websocket.jsr356.endpoints.JsrAnnotatedEventDriver;
 
 /**
@@ -34,37 +34,19 @@ import org.eclipse.jetty.websocket.jsr356.endpoints.JsrAnnotatedEventDriver;
  */
 public class JsrClientEndpointImpl implements EventDriverImpl
 {
-    private ClientContainer container;
-
-    public JsrClientEndpointImpl(ClientContainer container)
-    {
-        this.container = container;
-    }
-
     @Override
     public EventDriver create(Object websocket, WebSocketPolicy policy) throws DeploymentException
     {
-        Object endpoint = websocket;
-        if (websocket instanceof ConfiguredEndpoint)
+        if (!(websocket instanceof EndpointInstance))
         {
-            ConfiguredEndpoint ce = (ConfiguredEndpoint)websocket;
-            endpoint = ce.getEndpoint();
-            // Classes annotated with @ClientEndpoint will have their ClientEndpointConfig
-            // built up from the information present in the annotations, any provided config will be ignored
+            throw new IllegalStateException(String.format("Websocket %s must be an %s",websocket.getClass().getName(),EndpointInstance.class.getName()));
         }
 
-        Class<?> endpointClass = endpoint.getClass();
-        // Get the base metadata for this class
-        JsrClientMetadata basemetadata = container.getClientEndpointMetadata(endpointClass);
+        EndpointInstance ei = (EndpointInstance)websocket;
+        AnnotatedClientEndpointMetadata metadata = (AnnotatedClientEndpointMetadata)ei.getMetadata();
+        JsrEvents<ClientEndpoint, ClientEndpointConfig> events = new JsrEvents<>(metadata);
 
-        // At this point we have a base metadata, now we need to copy it for
-        // this specific instance of the WebSocket Endpoint (as we will be
-        // modifying the metadata)
-        JsrEvents events = new JsrEvents(basemetadata); // copy constructor.
-
-        // Create copy of base config
-        AnnotatedClientEndpointConfig config = basemetadata.getConfig();
-        return new JsrAnnotatedEventDriver(policy,endpoint,events,config);
+        return new JsrAnnotatedEventDriver(policy,ei,events);
     }
 
     @Override
@@ -76,14 +58,13 @@ public class JsrClientEndpointImpl implements EventDriverImpl
     @Override
     public boolean supports(Object websocket)
     {
-        Object endpoint = websocket;
-
-        if (endpoint instanceof ConfiguredEndpoint)
+        if (!(websocket instanceof EndpointInstance))
         {
-            // unwrap
-            ConfiguredEndpoint ce = (ConfiguredEndpoint)websocket;
-            endpoint = ce.getEndpoint();
+            return false;
         }
+
+        EndpointInstance ei = (EndpointInstance)websocket;
+        Object endpoint = ei.getEndpoint();
 
         ClientEndpoint anno = endpoint.getClass().getAnnotation(ClientEndpoint.class);
         return (anno != null);

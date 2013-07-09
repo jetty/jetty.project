@@ -16,52 +16,46 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356;
+package org.eclipse.jetty.websocket.jsr356.server;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.websocket.ClientEndpointConfig;
 import javax.websocket.Decoder;
 import javax.websocket.Encoder;
 import javax.websocket.Extension;
+import javax.websocket.server.ServerEndpointConfig;
 
-public class SimpleClientEndpointConfig implements ClientEndpointConfig
+public class EmptyServerEndpointConfig implements ServerEndpointConfig
 {
-    public static class DummyConfigurator extends ClientEndpointConfig.Configurator
-    {
-        public static final DummyConfigurator INSTANCE = new DummyConfigurator();
-        /* do nothing */
-    }
-
-    private Configurator configurator;
-    private List<Class<? extends Decoder>> decoders;
-    private List<Class<? extends Encoder>> encoders;
-    private List<Extension> extensions;
-    private List<String> preferredSubprotocols;
+    private final List<Class<? extends Decoder>> decoders;
+    private final List<Class<? extends Encoder>> encoders;
+    private final List<Extension> extensions;
+    private final List<String> subprotocols;
+    private final Configurator configurator;
+    private final Class<?> endpointClass;
+    private final String path;
     private Map<String, Object> userProperties;
 
-    public SimpleClientEndpointConfig()
+    public EmptyServerEndpointConfig(Class<?> endpointClass, String path)
     {
-        this.configurator = DummyConfigurator.INSTANCE;
+        this.endpointClass = endpointClass;
+        this.path = path;
+        
         this.decoders = new ArrayList<>();
         this.encoders = new ArrayList<>();
+        this.subprotocols = new ArrayList<>();
         this.extensions = new ArrayList<>();
-        this.preferredSubprotocols = new ArrayList<>();
         this.userProperties = new HashMap<>();
+        this.configurator = BasicServerEndpointConfigurator.INSTANCE;
     }
-
-    public void addDecoder(Class<? extends Decoder> decoderClass)
-    {
-        this.decoders.add(decoderClass);
-    }
-
+    
     @Override
-    public Configurator getConfigurator()
+    public List<Class<? extends Encoder>> getEncoders()
     {
-        return configurator;
+        return encoders;
     }
 
     @Override
@@ -71,9 +65,27 @@ public class SimpleClientEndpointConfig implements ClientEndpointConfig
     }
 
     @Override
-    public List<Class<? extends Encoder>> getEncoders()
+    public Map<String, Object> getUserProperties()
     {
-        return encoders;
+        return userProperties;
+    }
+
+    @Override
+    public Class<?> getEndpointClass()
+    {
+        return endpointClass;
+    }
+
+    @Override
+    public String getPath()
+    {
+        return path;
+    }
+
+    @Override
+    public List<String> getSubprotocols()
+    {
+        return subprotocols;
     }
 
     @Override
@@ -83,14 +95,8 @@ public class SimpleClientEndpointConfig implements ClientEndpointConfig
     }
 
     @Override
-    public List<String> getPreferredSubprotocols()
+    public Configurator getConfigurator()
     {
-        return preferredSubprotocols;
-    }
-
-    @Override
-    public Map<String, Object> getUserProperties()
-    {
-        return userProperties;
+        return configurator;
     }
 }

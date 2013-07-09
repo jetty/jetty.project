@@ -31,17 +31,20 @@ import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.events.AbstractEventDriver;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.jsr356.JsrSession;
+import org.eclipse.jetty.websocket.jsr356.metadata.EndpointMetadata;
 
 public abstract class AbstractJsrEventDriver extends AbstractEventDriver implements EventDriver
 {
+    protected final EndpointMetadata metadata;
     protected final EndpointConfig config;
     protected JsrSession jsrsession;
     private boolean hasCloseBeenCalled = false;
 
-    public AbstractJsrEventDriver(WebSocketPolicy policy, Object websocket, EndpointConfig config)
+    public AbstractJsrEventDriver(WebSocketPolicy policy, EndpointInstance endpointInstance)
     {
-        super(policy,websocket);
-        this.config = config;
+        super(policy,endpointInstance.getEndpoint());
+        this.config = endpointInstance.getConfig();
+        this.metadata = endpointInstance.getMetadata();
     }
 
     public EndpointConfig getConfig()
@@ -52,6 +55,11 @@ public abstract class AbstractJsrEventDriver extends AbstractEventDriver impleme
     public Session getJsrSession()
     {
         return this.jsrsession;
+    }
+
+    public EndpointMetadata getMetadata()
+    {
+        return metadata;
     }
 
     protected void init(JsrSession jsrsession)

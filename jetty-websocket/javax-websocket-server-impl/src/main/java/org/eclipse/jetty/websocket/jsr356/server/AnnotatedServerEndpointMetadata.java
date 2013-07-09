@@ -19,26 +19,21 @@
 package org.eclipse.jetty.websocket.jsr356.server;
 
 import java.util.LinkedList;
-import java.util.List;
 
-import javax.websocket.Decoder;
 import javax.websocket.DeploymentException;
 import javax.websocket.server.ServerEndpoint;
+import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
-import org.eclipse.jetty.websocket.jsr356.DecoderFactory;
-import org.eclipse.jetty.websocket.jsr356.EncoderFactory;
 import org.eclipse.jetty.websocket.jsr356.annotations.IJsrParamId;
-import org.eclipse.jetty.websocket.jsr356.annotations.JsrMetadata;
+import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointMetadata;
 
-public class JsrServerMetadata extends JsrMetadata<ServerEndpoint>
+public class AnnotatedServerEndpointMetadata extends AnnotatedEndpointMetadata<ServerEndpoint,ServerEndpointConfig> implements ServerEndpointMetadata
 {
     private final ServerEndpoint endpoint;
     private final AnnotatedServerEndpointConfig config;
-    private final DecoderFactory decoders;
-    private final EncoderFactory encoders;
 
-    protected JsrServerMetadata(ServerContainer container, Class<?> websocket) throws DeploymentException
+    protected AnnotatedServerEndpointMetadata(ServerContainer container, Class<?> websocket) throws DeploymentException
     {
         super(websocket);
 
@@ -50,11 +45,6 @@ public class JsrServerMetadata extends JsrMetadata<ServerEndpoint>
 
         this.endpoint = anno;
         this.config = new AnnotatedServerEndpointConfig(websocket,anno);
-        this.decoders = new DecoderFactory(container.getDecoderFactory());
-        this.encoders = new EncoderFactory(container.getEncoderFactory());
-        
-        this.decoders.registerAll(anno.decoders());
-        this.encoders.registerAll(anno.encoders());
     }
 
     @Override
@@ -69,12 +59,6 @@ public class JsrServerMetadata extends JsrMetadata<ServerEndpoint>
         params.addFirst(JsrParamPath.INSTANCE);
     }
     
-    @Override
-    protected List<Class<? extends Decoder>> getConfiguredDecoders()
-    {
-        return config.getDecoders();
-    }
-
     @Override
     public void customizeParamsOnOpen(LinkedList<IJsrParamId> params)
     {

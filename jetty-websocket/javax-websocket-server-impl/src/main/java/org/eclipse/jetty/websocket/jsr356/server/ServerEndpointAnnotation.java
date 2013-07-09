@@ -58,11 +58,9 @@ public class ServerEndpointAnnotation extends DiscoveredAnnotation
         LOG.info("Got path: \"{}\"",path);
 
         ServerContainer container = ServerContainer.get(_context);
-
         try
         {
-            JsrServerMetadata metadata = container.getServerEndpointMetadata(clazz);
-            container.addEndpoint(metadata);
+            container.addEndpoint(clazz);
         }
         catch (DeploymentException e)
         {

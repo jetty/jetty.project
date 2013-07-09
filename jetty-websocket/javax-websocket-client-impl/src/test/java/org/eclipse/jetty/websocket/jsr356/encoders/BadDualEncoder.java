@@ -16,19 +16,39 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.metadata;
+package org.eclipse.jetty.websocket.jsr356.encoders;
 
-import javax.websocket.Decoder;
+import java.io.IOException;
+import java.io.Writer;
 
-import org.eclipse.jetty.websocket.jsr356.MessageType;
+import javax.websocket.EncodeException;
+import javax.websocket.Encoder;
+import javax.websocket.EndpointConfig;
 
 /**
- * Immutable Metadata for a {@link Decoder}
+ * Intentionally bad example of attempting to encode the same object for different message types.
  */
-public class DecoderMetadata extends CoderMetadata<Decoder>
+public class BadDualEncoder implements Encoder.Text<Integer>, Encoder.TextStream<Integer>
 {
-    public DecoderMetadata(Class<? extends Decoder> coderClass, Class<?> objType, MessageType messageType, boolean streamed)
+    @Override
+    public void destroy()
     {
-        super(coderClass,objType,messageType,streamed);
+    }
+
+    @Override
+    public String encode(Integer object) throws EncodeException
+    {
+        return Integer.toString(object);
+    }
+
+    @Override
+    public void encode(Integer object, Writer writer) throws EncodeException, IOException
+    {
+        writer.write(Integer.toString(object));
+    }
+
+    @Override
+    public void init(EndpointConfig config)
+    {
     }
 }

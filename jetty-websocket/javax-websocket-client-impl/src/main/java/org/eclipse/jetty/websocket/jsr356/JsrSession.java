@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.jsr356;
 
 import java.io.IOException;
-import java.lang.reflect.Type;
 import java.net.URI;
 import java.security.Principal;
 import java.util.ArrayList;
@@ -48,20 +47,21 @@ import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.jsr356.endpoints.AbstractJsrEventDriver;
 import org.eclipse.jetty.websocket.jsr356.metadata.DecoderMetadata;
+import org.eclipse.jetty.websocket.jsr356.metadata.EndpointMetadata;
 import org.eclipse.jetty.websocket.jsr356.metadata.MessageHandlerMetadata;
 
+/**
+ * Session for the JSR.
+ */
 public class JsrSession extends WebSocketSession implements javax.websocket.Session, Configurable
 {
     private static final Logger LOG = Log.getLogger(JsrSession.class);
-    private final CommonContainer container;
+    private final ClientContainer container;
     private final String id;
     private final EndpointConfig config;
-    /** Factory for Decoders */
+    private final EndpointMetadata metadata;
     private final DecoderFactory decoderFactory;
-    private Map<Type, DecoderWrapper> activeDecoders;
-    /** Factory for Encoders */
     private final EncoderFactory encoderFactory;
-    private Map<Type, EncoderWrapper> activeEncoders;
     /** Factory for MessageHandlers */
     private final MessageHandlerFactory messageHandlerFactory;
     /** Array of MessageHandlerWrappers, indexed by {@link MessageType#ordinal()} */
@@ -76,20 +76,17 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
     public JsrSession(URI requestURI, EventDriver websocket, LogicalConnection connection, ClientContainer container, String id)
     {
         super(requestURI,websocket,connection);
-        if (websocket instanceof AbstractJsrEventDriver)
+        if (!(websocket instanceof AbstractJsrEventDriver))
         {
-            this.config = ((AbstractJsrEventDriver)websocket).getConfig();
+            throw new IllegalArgumentException("Cannot non JSR WebSocket: " + websocket);
         }
-        else
-        {
-            this.config = new BasicEndpointConfig();
-        }
+        AbstractJsrEventDriver jsr = (AbstractJsrEventDriver)websocket;
+        this.config = jsr.getConfig();
+        this.metadata = jsr.getMetadata();
         this.container = container;
         this.id = id;
-        this.decoderFactory = new DecoderFactory(container.getDecoderFactory());
-        this.encoderFactory = new EncoderFactory(container.getEncoderFactory());
-        this.activeDecoders = new HashMap<>();
-        this.activeEncoders = new HashMap<>();
+        this.decoderFactory = new DecoderFactory(metadata.getDecoders(),container.getDecoderFactory());
+        this.encoderFactory = new EncoderFactory(metadata.getEncoders(),container.getEncoderFactory());
         this.messageHandlerFactory = new MessageHandlerFactory();
         this.wrappers = new MessageHandlerWrapper[MessageType.values().length];
         this.messageHandlerSet = new HashSet<>();
@@ -104,8 +101,19 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
         {
             for (MessageHandlerMetadata metadata : messageHandlerFactory.getMetadata(handler.getClass()))
             {
-                DecoderWrapper decoder = decoderFactory.getWrapperFor(metadata.getMessageClass());
-                MessageType key = decoder.getMetadata().getMessageType();
+                DecoderFactory.Wrapper wrapper = decoderFactory.getWrapperFor(metadata.getMessageClass());
+                if (wrapper == null)
+                {
+                    StringBuilder err = new StringBuilder();
+                    err.append("Unable to find decoder for type <");
+                    err.append(metadata.getMessageClass().getName());
+                    err.append("> used in <");
+                    err.append(metadata.getHandlerClass().getName());
+                    err.append(">");
+                    throw new IllegalStateException(err.toString());
+                }
+
+                MessageType key = wrapper.getMetadata().getMessageType();
                 MessageHandlerWrapper other = wrappers[key.ordinal()];
                 if (other != null)
                 {
@@ -124,8 +132,8 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
                 }
                 else
                 {
-                    MessageHandlerWrapper wrapper = new MessageHandlerWrapper(handler,metadata,decoder);
-                    wrappers[key.ordinal()] = wrapper;
+                    MessageHandlerWrapper handlerWrapper = new MessageHandlerWrapper(handler,metadata,wrapper);
+                    wrappers[key.ordinal()] = handlerWrapper;
                 }
             }
 
@@ -183,6 +191,11 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
     public EncoderFactory getEncoderFactory()
     {
         return encoderFactory;
+    }
+
+    public EndpointMetadata getEndpointMetadata()
+    {
+        return metadata;
     }
 
     @Override
@@ -298,28 +311,12 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
     }
 
     @Override
-    public void init(EndpointConfig endpointconfig)
+    public void init(EndpointConfig config)
     {
         // Initialize encoders
-        for (EncoderWrapper wrapper : activeEncoders.values())
-        {
-            wrapper.getEncoder().init(config);
-        }
-
+        encoderFactory.init(config);
         // Initialize decoders
-        for (DecoderWrapper wrapper : activeDecoders.values())
-        {
-            wrapper.getDecoder().init(config);
-        }
-
-        // Init message handlers
-        for (MessageHandlerWrapper wrapper : wrappers)
-        {
-            if (wrapper != null)
-            {
-                // TODO wrapper.init(config);
-            }
-        }
+        decoderFactory.init(config);
     }
 
     @Override

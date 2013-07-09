@@ -18,229 +18,161 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.websocket.Decoder;
+import javax.websocket.EndpointConfig;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
 import org.eclipse.jetty.websocket.jsr356.metadata.DecoderMetadata;
-import org.eclipse.jetty.websocket.jsr356.utils.ReflectUtils;
+import org.eclipse.jetty.websocket.jsr356.metadata.DecoderMetadataSet;
 
 /**
  * Factory for {@link DecoderMetadata}
  * <p>
  * Relies on search order of parent {@link DecoderFactory} instances as such.
  * <ul>
- * <li>Endpoint declared decoders</li>
- * <li>EndpointConfig declared decoders</li>
- * <li>Container declared decoders (primitives)</li>
+ * <li>From Static DecoderMetadataSet (based on data in annotations and static EndpointConfig)</li>
+ * <li>From Composite DecoderMetadataSet (based static and instance specific EndpointConfig)</li>
+ * <li>Container declared DecoderMetadataSet (primitives)</li>
  * </ul>
  */
-public class DecoderFactory
+public class DecoderFactory implements Configurable
 {
-    private static final Logger LOG = Log.getLogger(DecoderFactory.class);
-    /** Decoders by Type */
-    private final Map<Class<?>, DecoderMetadata> typeMap;
-    /** Registered Decoders at this level */
-    private Map<Class<? extends Decoder>, List<DecoderMetadata>> registered;
-    /** Parent Factory */
-    private DecoderFactory parentFactory;
-
-    public DecoderFactory()
+    public static class Wrapper implements Configurable
     {
-        this.typeMap = new ConcurrentHashMap<>();
-        this.registered = new ConcurrentHashMap<>();
+        private final Decoder decoder;
+        private final DecoderMetadata metadata;
+
+        private Wrapper(Decoder decoder, DecoderMetadata metadata)
+        {
+            this.decoder = decoder;
+            this.metadata = metadata;
+        }
+
+        public Decoder getDecoder()
+        {
+            return decoder;
+        }
+
+        public DecoderMetadata getMetadata()
+        {
+            return metadata;
+        }
+
+        @Override
+        public void init(EndpointConfig config)
+        {
+            this.decoder.init(config);
+        }
     }
 
-    public DecoderFactory(DecoderFactory parentFactory)
+    private static final Logger LOG = Log.getLogger(DecoderFactory.class);
+
+    private final DecoderMetadataSet metadatas;
+    private DecoderFactory parentFactory;
+    private Map<Class<?>, Wrapper> activeWrappers;
+
+    public DecoderFactory(DecoderMetadataSet metadatas)
     {
-        this();
+        this.metadatas = metadatas;
+        this.activeWrappers = new ConcurrentHashMap<>();
+    }
+
+    public DecoderFactory(DecoderMetadataSet metadatas, DecoderFactory parentFactory)
+    {
+        this(metadatas);
         this.parentFactory = parentFactory;
     }
 
-    private Class<?> getDecoderMessageClass(Class<? extends Decoder> decoder, Class<?> interfaceClass)
+    public Decoder getDecoderFor(Class<?> type)
     {
-        Class<?> decoderClass = ReflectUtils.findGenericClassFor(decoder,interfaceClass);
-        if (decoderClass == null)
+        Wrapper wrapper = getWrapperFor(type);
+        if (wrapper == null)
         {
-            StringBuilder err = new StringBuilder();
-            err.append("Invalid type declared for interface ");
-            err.append(interfaceClass.getName());
-            err.append(" on class ");
-            err.append(decoder);
-            throw new IllegalArgumentException(err.toString());
+            return null;
         }
-        return decoderClass;
-    }
-
-    /**
-     * Get the list of registered decoder classes.
-     * <p>
-     * Includes all decoders at this level and above.
-     * 
-     * @return the list of registered decoder classes.
-     */
-    public List<Class<? extends Decoder>> getList()
-    {
-        List<Class<? extends Decoder>> decoders = new ArrayList<>();
-        decoders.addAll(registered.keySet());
-        if (parentFactory != null)
-        {
-            decoders.addAll(parentFactory.getList());
-        }
-        return decoders;
-    }
-
-    public List<DecoderMetadata> getMetadata(Class<? extends Decoder> decoder)
-    {
-        LOG.debug("getMetadata({})",decoder);
-        List<DecoderMetadata> ret = registered.get(decoder);
-
-        if (ret != null)
-        {
-            return ret;
-        }
-
-        // Not found, Try parent factory (if declared)
-        if (parentFactory != null)
-        {
-            ret = parentFactory.registered.get(decoder);
-            if (ret != null)
-            {
-                return ret;
-            }
-        }
-
-        return register(decoder);
+        return wrapper.decoder;
     }
 
     public DecoderMetadata getMetadataFor(Class<?> type)
     {
-        DecoderMetadata metadata = typeMap.get(type);
-        if (metadata == null)
-        {
-            if (parentFactory != null)
-            {
-                return parentFactory.getMetadataFor(type);
-            }
-        }
-        return metadata;
-    }
+        LOG.debug("getMetadataFor({})",type);
+        DecoderMetadata metadata = metadatas.getMetadataByType(type);
 
-    public DecoderWrapper getWrapperFor(Class<?> type)
-    {
-        DecoderMetadata metadata = getMetadataFor(type);
         if (metadata != null)
         {
-            return newWrapper(metadata);
+            return metadata;
         }
+
+        if (parentFactory != null)
+        {
+            return parentFactory.getMetadataFor(type);
+        }
+
         return null;
     }
 
-    public DecoderWrapper newWrapper(DecoderMetadata metadata)
+    public Wrapper getWrapperFor(Class<?> type)
     {
-        Class<? extends Decoder> decoderClass = metadata.getDecoderClass();
+        synchronized (activeWrappers)
+        {
+            Wrapper wrapper = activeWrappers.get(type);
+
+            // Try parent (if needed)
+            if ((wrapper == null) && (parentFactory != null))
+            {
+                wrapper = parentFactory.getWrapperFor(type);
+            }
+
+            if (wrapper == null)
+            {
+                // Attempt to create Wrapper on demand
+                DecoderMetadata metadata = metadatas.getMetadataByType(type);
+                if (metadata == null)
+                {
+                    return null;
+                }
+                wrapper = newWrapper(metadata);
+                // track wrapper
+                activeWrappers.put(type,wrapper);
+            }
+
+            return wrapper;
+        }
+    }
+
+    @Override
+    public void init(EndpointConfig config)
+    {
+        LOG.debug("init({})",config);
+        // Instantiate all declared decoders
+        for (DecoderMetadata metadata : metadatas)
+        {
+            Wrapper wrapper = newWrapper(metadata);
+            activeWrappers.put(metadata.getObjectType(),wrapper);
+        }
+
+        // Initialize all decoders
+        for (Wrapper wrapper : activeWrappers.values())
+        {
+            wrapper.decoder.init(config);
+        }
+    }
+
+    public Wrapper newWrapper(DecoderMetadata metadata)
+    {
+        Class<? extends Decoder> decoderClass = metadata.getCoderClass();
         try
         {
             Decoder decoder = decoderClass.newInstance();
-            return new DecoderWrapper(decoder,metadata);
+            return new Wrapper(decoder,metadata);
         }
         catch (InstantiationException | IllegalAccessException e)
         {
             throw new IllegalStateException("Unable to instantiate Decoder: " + decoderClass.getName());
         }
-    }
-
-    public List<DecoderMetadata> register(Class<? extends Decoder> decoder)
-    {
-        List<DecoderMetadata> metadatas = new ArrayList<>();
-
-        if (Decoder.Binary.class.isAssignableFrom(decoder))
-        {
-            Class<?> objType = getDecoderMessageClass(decoder,Decoder.Binary.class);
-            metadatas.add(new DecoderMetadata(objType,decoder,MessageType.BINARY,false));
-        }
-        if (Decoder.BinaryStream.class.isAssignableFrom(decoder))
-        {
-            Class<?> objType = getDecoderMessageClass(decoder,Decoder.BinaryStream.class);
-            metadatas.add(new DecoderMetadata(objType,decoder,MessageType.BINARY,true));
-        }
-        if (Decoder.Text.class.isAssignableFrom(decoder))
-        {
-            Class<?> objType = getDecoderMessageClass(decoder,Decoder.Text.class);
-            metadatas.add(new DecoderMetadata(objType,decoder,MessageType.TEXT,false));
-        }
-        if (Decoder.TextStream.class.isAssignableFrom(decoder))
-        {
-            Class<?> objType = getDecoderMessageClass(decoder,Decoder.TextStream.class);
-            metadatas.add(new DecoderMetadata(objType,decoder,MessageType.TEXT,true));
-        }
-
-        if (!ReflectUtils.isDefaultConstructable(decoder))
-        {
-            throw new InvalidSignatureException("Decoder must have public, no-args constructor: " + decoder.getName());
-        }
-
-        if (metadatas.size() <= 0)
-        {
-            throw new InvalidSignatureException("Not a valid Decoder class: " + decoder.getName());
-        }
-
-        return trackMetadata(decoder,metadatas);
-    }
-
-    public void register(Class<?> typeClass, Class<? extends Decoder> decoderClass, MessageType msgType, boolean streamed)
-    {
-        List<DecoderMetadata> metadatas = new ArrayList<>();
-        metadatas.add(new DecoderMetadata(typeClass,decoderClass,msgType,streamed));
-        trackMetadata(decoderClass,metadatas);
-    }
-
-    public List<DecoderMetadata> registerAll(Class<? extends Decoder>[] decoders)
-    {
-        List<DecoderMetadata> metadatas = new ArrayList<>();
-
-        for (Class<? extends Decoder> decoder : decoders)
-        {
-            metadatas.addAll(register(decoder));
-        }
-
-        return metadatas;
-    }
-
-    private List<DecoderMetadata> trackMetadata(Class<? extends Decoder> decoder, List<DecoderMetadata> metadatas)
-    {
-        for (DecoderMetadata metadata : metadatas)
-        {
-            trackType(metadata);
-        }
-
-        LOG.debug("Registered {} with [{} entries]",decoder.getName(),metadatas.size());
-        registered.put(decoder,metadatas);
-        return metadatas;
-    }
-
-    private void trackType(DecoderMetadata metadata)
-    {
-        Class<?> type = metadata.getObjectType();
-        if (typeMap.containsKey(type))
-        {
-            StringBuilder err = new StringBuilder();
-            err.append("Duplicate decoder for type: ");
-            err.append(type);
-            err.append(" (class ").append(metadata.getDecoderClass().getName());
-            DecoderMetadata dup = typeMap.get(type);
-            err.append(" duplicates ");
-            err.append(dup.getDecoderClass().getName());
-            err.append(")");
-            throw new IllegalStateException(err.toString());
-        }
-
-        typeMap.put(type,metadata);
     }
 }

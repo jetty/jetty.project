@@ -16,19 +16,33 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.metadata;
+package org.eclipse.jetty.websocket.jsr356.encoders;
 
-import javax.websocket.Decoder;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
-import org.eclipse.jetty.websocket.jsr356.MessageType;
+import javax.websocket.EncodeException;
+import javax.websocket.Encoder;
+import javax.websocket.EndpointConfig;
 
 /**
- * Immutable Metadata for a {@link Decoder}
+ * Encode Date
  */
-public class DecoderMetadata extends CoderMetadata<Decoder>
+public class DateEncoder implements Encoder.Text<Date>
 {
-    public DecoderMetadata(Class<? extends Decoder> coderClass, Class<?> objType, MessageType messageType, boolean streamed)
+    @Override
+    public void destroy()
     {
-        super(coderClass,objType,messageType,streamed);
+    }
+
+    @Override
+    public String encode(Date object) throws EncodeException
+    {
+        return new SimpleDateFormat("yyyy.MM.dd").format(object);
+    }
+
+    @Override
+    public void init(EndpointConfig config)
+    {
     }
 }

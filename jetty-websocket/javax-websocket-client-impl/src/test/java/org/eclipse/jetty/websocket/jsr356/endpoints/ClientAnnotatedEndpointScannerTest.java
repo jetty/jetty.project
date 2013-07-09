@@ -26,7 +26,7 @@ import javax.websocket.DeploymentException;
 import org.eclipse.jetty.websocket.common.events.annotated.CallableMethod;
 import org.eclipse.jetty.websocket.jsr356.ClientContainer;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
-import org.eclipse.jetty.websocket.jsr356.client.JsrClientMetadata;
+import org.eclipse.jetty.websocket.jsr356.client.AnnotatedClientEndpointMetadata;
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicOpenCloseSessionSocket;
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicOpenCloseSocket;
 import org.junit.Assert;
@@ -52,7 +52,7 @@ public class ClientAnnotatedEndpointScannerTest
     @Test
     public void testScan_BasicOpenClose() throws DeploymentException
     {
-        JsrClientMetadata metadata = new JsrClientMetadata(container,BasicOpenCloseSocket.class);
+        AnnotatedClientEndpointMetadata metadata = new AnnotatedClientEndpointMetadata(container,BasicOpenCloseSocket.class);
         AnnotatedEndpointScanner scanner = new AnnotatedEndpointScanner(metadata);
         scanner.scan();
 
@@ -65,7 +65,7 @@ public class ClientAnnotatedEndpointScannerTest
     @Test
     public void testScan_BasicSessionOpenClose() throws DeploymentException
     {
-        JsrClientMetadata metadata = new JsrClientMetadata(container,BasicOpenCloseSessionSocket.class);
+        AnnotatedClientEndpointMetadata metadata = new AnnotatedClientEndpointMetadata(container,BasicOpenCloseSessionSocket.class);
         AnnotatedEndpointScanner scanner = new AnnotatedEndpointScanner(metadata);
         scanner.scan();
 

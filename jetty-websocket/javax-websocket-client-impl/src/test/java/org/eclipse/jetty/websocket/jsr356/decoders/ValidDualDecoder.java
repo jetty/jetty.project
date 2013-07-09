@@ -16,40 +16,50 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356;
+package org.eclipse.jetty.websocket.jsr356.decoders;
 
+import java.nio.ByteBuffer;
+
+import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
 
-import org.eclipse.jetty.websocket.jsr356.metadata.DecoderMetadata;
-
 /**
- * Expose a configured {@link Decoder} instance along with its associated {@link DecoderMetadata}
+ * Example of a valid decoder impl declaring 2 decoders.
  */
-public class DecoderWrapper implements Configurable
+public class ValidDualDecoder implements Decoder.Text<Integer>, Decoder.Binary<Long>
 {
-    private final Decoder decoder;
-    private final DecoderMetadata metadata;
-
-    public DecoderWrapper(Decoder decoder, DecoderMetadata metadata)
+    @Override
+    public Long decode(ByteBuffer bytes) throws DecodeException
     {
-        this.decoder = decoder;
-        this.metadata = metadata;
+        return bytes.getLong();
     }
 
-    public Decoder getDecoder()
+    @Override
+    public Integer decode(String s) throws DecodeException
     {
-        return decoder;
+        return Integer.parseInt(s);
     }
 
-    public DecoderMetadata getMetadata()
+    @Override
+    public void destroy()
     {
-        return metadata;
     }
 
     @Override
     public void init(EndpointConfig config)
     {
-        this.decoder.init(config);
+    }
+
+    @Override
+    public boolean willDecode(ByteBuffer bytes)
+    {
+        return true;
+    }
+
+    @Override
+    public boolean willDecode(String s)
+    {
+        return true;
     }
 }

@@ -133,6 +133,10 @@ public class WSServer
     {
         contexts.addHandler(webapp);
         webapp.start();
+        if (LOG.isDebugEnabled())
+        {
+            webapp.dump(System.err);
+        }
     }
 
     public void dump()
@@ -171,6 +175,7 @@ public class WSServer
         int port = connector.getLocalPort();
         serverUri = new URI(String.format("ws://%s:%d%s/",host,port,contextPath));
         LOG.debug("Server started on {}",serverUri);
+
     }
 
     public void stop()

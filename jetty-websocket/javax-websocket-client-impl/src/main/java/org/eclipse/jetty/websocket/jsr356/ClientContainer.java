@@ -21,6 +21,8 @@ package org.eclipse.jetty.websocket.jsr356;
 import java.io.IOException;
 import java.net.URI;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -32,70 +34,80 @@ import javax.websocket.DeploymentException;
 import javax.websocket.Endpoint;
 import javax.websocket.Extension;
 import javax.websocket.Session;
+import javax.websocket.WebSocketContainer;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.client.io.UpgradeListener;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
+import org.eclipse.jetty.websocket.jsr356.client.AnnotatedClientEndpointMetadata;
 import org.eclipse.jetty.websocket.jsr356.client.EmptyClientEndpointConfig;
-import org.eclipse.jetty.websocket.jsr356.client.JsrClientMetadata;
-import org.eclipse.jetty.websocket.jsr356.endpoints.ConfiguredEndpoint;
+import org.eclipse.jetty.websocket.jsr356.client.SimpleEndpointMetadata;
+import org.eclipse.jetty.websocket.jsr356.decoders.PrimitiveDecoderMetadataSet;
+import org.eclipse.jetty.websocket.jsr356.encoders.PrimitiveEncoderMetadataSet;
+import org.eclipse.jetty.websocket.jsr356.endpoints.EndpointInstance;
 import org.eclipse.jetty.websocket.jsr356.endpoints.JsrEventDriverFactory;
+import org.eclipse.jetty.websocket.jsr356.metadata.EndpointMetadata;
 
 /**
  * Container for Client use of the javax.websocket API.
  * <p>
  * This should be specific to a JVM if run in a standalone mode. or specific to a WebAppContext if running on the Jetty server.
  */
-public class ClientContainer extends CommonContainer
+public class ClientContainer implements WebSocketContainer
 {
     private static final Logger LOG = Log.getLogger(ClientContainer.class);
 
+    /** Tracking all primitive decoders for the container */
+    private final DecoderFactory decoderFactory;
+    /** Tracking all primitive encoders for the container */
+    private final EncoderFactory encoderFactory;
+
     /** Tracking for all declared Client endpoints */
-    private final ConcurrentHashMap<Class<?>, JsrClientMetadata> endpointClientMetadataCache;
+    private final Map<Class<?>, EndpointMetadata> endpointClientMetadataCache;
     /** The jetty websocket client in use for this container */
     private WebSocketClient client;
 
     public ClientContainer()
     {
-        super();
         endpointClientMetadataCache = new ConcurrentHashMap<>();
+        decoderFactory = new DecoderFactory(PrimitiveDecoderMetadataSet.INSTANCE);
+        encoderFactory = new EncoderFactory(PrimitiveEncoderMetadataSet.INSTANCE);
+
+        EmptyClientEndpointConfig empty = new EmptyClientEndpointConfig();
+        decoderFactory.init(empty);
+        encoderFactory.init(empty);
     }
 
-    private Session connect(Object websocket, ClientEndpointConfig config, URI path) throws IOException
+    private Session connect(EndpointInstance instance, URI path) throws IOException
     {
-        ClientEndpointConfig cec = config;
-        if (cec == null)
-        {
-            // Create default config
-            cec = ClientEndpointConfig.Builder.create().build();
-        }
-        ConfiguredEndpoint endpoint = new ConfiguredEndpoint(websocket,cec);
+        Objects.requireNonNull(instance,"EndpointInstance cannot be null");
+        Objects.requireNonNull(path,"Path cannot be null");
+
+        ClientEndpointConfig config = (ClientEndpointConfig)instance.getConfig();
         ClientUpgradeRequest req = new ClientUpgradeRequest();
         UpgradeListener upgradeListener = null;
 
-        if (cec != null)
+        for (Extension ext : config.getExtensions())
         {
-            for (Extension ext : cec.getExtensions())
-            {
-                req.addExtensions(new JsrExtensionConfig(ext));
-            }
-
-            if (cec.getPreferredSubprotocols().size() > 0)
-            {
-                req.setSubProtocols(config.getPreferredSubprotocols());
-            }
-
-            if (cec.getConfigurator() != null)
-            {
-                upgradeListener = new JsrUpgradeListener(cec.getConfigurator());
-            }
+            req.addExtensions(new JsrExtensionConfig(ext));
         }
 
-        Future<org.eclipse.jetty.websocket.api.Session> futSess = client.connect(endpoint,path,req,upgradeListener);
+        if (config.getPreferredSubprotocols().size() > 0)
+        {
+            req.setSubProtocols(config.getPreferredSubprotocols());
+        }
+
+        if (config.getConfigurator() != null)
+        {
+            upgradeListener = new JsrUpgradeListener(config.getConfigurator());
+        }
+
+        Future<org.eclipse.jetty.websocket.api.Session> futSess = client.connect(instance,path,req,upgradeListener);
         try
         {
             return (JsrSession)futSess.get();
@@ -107,79 +119,80 @@ public class ClientContainer extends CommonContainer
     }
 
     @Override
-    public Session connectToServer(Class<? extends Endpoint> endpointClass, ClientEndpointConfig cec, URI path) throws DeploymentException, IOException
+    public Session connectToServer(Class<? extends Endpoint> endpointClass, ClientEndpointConfig config, URI path) throws DeploymentException, IOException
     {
-        try
-        {
-            Object websocket = endpointClass.newInstance();
-            return connect(websocket,cec,path);
-        }
-        catch (InstantiationException | IllegalAccessException e)
-        {
-            throw new DeploymentException("Unable to instantiate websocket: " + endpointClass,e);
-        }
+        EndpointInstance instance = newClientEndpointInstance(endpointClass,config);
+        return connect(instance,path);
     }
 
     @Override
     public Session connectToServer(Class<?> annotatedEndpointClass, URI path) throws DeploymentException, IOException
     {
-        try
+        EndpointInstance instance = newClientEndpointInstance(annotatedEndpointClass,null);
+        return connect(instance,path);
+    }
+
+    @Override
+    public Session connectToServer(Endpoint endpoint, ClientEndpointConfig config, URI path) throws DeploymentException, IOException
+    {
+        EndpointInstance instance = newClientEndpointInstance(endpoint,config);
+        return connect(instance,path);
+    }
+
+    @Override
+    public Session connectToServer(Object endpoint, URI path) throws DeploymentException, IOException
+    {
+        EndpointInstance instance = newClientEndpointInstance(endpoint,null);
+        return connect(instance,path);
+    }
+
+    public EndpointMetadata getClientEndpointMetadata(Class<?> endpoint)
+    {
+        EndpointMetadata metadata = null;
+
+        synchronized (endpointClientMetadataCache)
         {
-            ClientEndpoint anno = annotatedEndpointClass.getAnnotation(ClientEndpoint.class);
+            metadata = endpointClientMetadataCache.get(endpoint);
+
+            if (metadata != null)
+            {
+                return metadata;
+            }
+
+            ClientEndpoint anno = endpoint.getAnnotation(ClientEndpoint.class);
             if (anno != null)
             {
                 // Annotated takes precedence here
-                JsrClientMetadata metadata = new JsrClientMetadata(this,annotatedEndpointClass);
-                Object websocket = annotatedEndpointClass.newInstance();
-                return connect(websocket,metadata.getConfig(),path);
+                AnnotatedClientEndpointMetadata annoMetadata = new AnnotatedClientEndpointMetadata(this,endpoint);
+                AnnotatedEndpointScanner<ClientEndpoint, ClientEndpointConfig> scanner = new AnnotatedEndpointScanner<>(annoMetadata);
+                scanner.scan();
+                metadata = annoMetadata;
             }
-            else if (Endpoint.class.isAssignableFrom(annotatedEndpointClass))
+            else if (Endpoint.class.isAssignableFrom(endpoint))
             {
-                // Try if extends Endpoint (alternate use)
-                Object websocket = annotatedEndpointClass.newInstance();
-                ClientEndpointConfig cec = new EmptyClientEndpointConfig();
-                return connect(websocket,cec,path);
+                // extends Endpoint
+                @SuppressWarnings("unchecked")
+                Class<? extends Endpoint> eendpoint = (Class<? extends Endpoint>)endpoint;
+                metadata = new SimpleEndpointMetadata(eendpoint);
             }
             else
             {
                 StringBuilder err = new StringBuilder();
                 err.append("Not a recognized websocket [");
-                err.append(annotatedEndpointClass.getName());
+                err.append(endpoint.getName());
                 err.append("] does not extend @").append(ClientEndpoint.class.getName());
                 err.append(" or extend from ").append(Endpoint.class.getName());
-                throw new DeploymentException(err.toString());
+                throw new InvalidWebSocketException("Unable to identify as valid Endpoint: " + endpoint);
             }
-        }
-        catch (InstantiationException | IllegalAccessException e)
-        {
-            throw new DeploymentException("Unable to instantiate websocket: " + annotatedEndpointClass,e);
+
+            endpointClientMetadataCache.put(endpoint,metadata);
+            return metadata;
         }
     }
 
-    @Override
-    public Session connectToServer(Endpoint endpointInstance, ClientEndpointConfig cec, URI path) throws DeploymentException, IOException
+    public DecoderFactory getDecoderFactory()
     {
-        return connect(endpointInstance,cec,path);
-    }
-
-    @Override
-    public Session connectToServer(Object annotatedEndpointInstance, URI path) throws DeploymentException, IOException
-    {
-        return connect(annotatedEndpointInstance,null,path);
-    }
-
-    public JsrClientMetadata getClientEndpointMetadata(Class<?> endpointClass) throws DeploymentException
-    {
-        JsrClientMetadata basemetadata = endpointClientMetadataCache.get(endpointClass);
-        if (basemetadata == null)
-        {
-            basemetadata = new JsrClientMetadata(this,endpointClass);
-            AnnotatedEndpointScanner scanner = new AnnotatedEndpointScanner(basemetadata);
-            scanner.scan();
-            endpointClientMetadataCache.put(endpointClass,basemetadata);
-        }
-
-        return basemetadata;
+        return decoderFactory;
     }
 
     @Override
@@ -206,6 +219,11 @@ public class ClientContainer extends CommonContainer
         return client.getMaxTextMessageBufferSize();
     }
 
+    public EncoderFactory getEncoderFactory()
+    {
+        return encoderFactory;
+    }
+
     @Override
     public Set<Extension> getInstalledExtensions()
     {
@@ -220,11 +238,45 @@ public class ClientContainer extends CommonContainer
         return ret;
     }
 
-    @Override
+    /**
+     * Used in {@link Session#getOpenSessions()}
+     * 
+     * @return
+     */
     public Set<Session> getOpenSessions()
     {
         // TODO Auto-generated method stub
         return null;
+    }
+
+    private EndpointInstance newClientEndpointInstance(Class<?> endpointClass, ClientEndpointConfig config)
+    {
+        try
+        {
+            return newClientEndpointInstance(endpointClass.newInstance(),config);
+        }
+        catch (InstantiationException | IllegalAccessException e)
+        {
+            throw new InvalidWebSocketException("Unable to instantiate websocket: " + endpointClass.getClass());
+        }
+    }
+
+    public EndpointInstance newClientEndpointInstance(Object endpoint, ClientEndpointConfig config)
+    {
+        EndpointMetadata metadata = getClientEndpointMetadata(endpoint.getClass());
+        ClientEndpointConfig cec = config;
+        if (config == null)
+        {
+            if (metadata instanceof AnnotatedClientEndpointMetadata)
+            {
+                cec = ((AnnotatedClientEndpointMetadata)metadata).getConfig();
+            }
+            else
+            {
+                cec = new EmptyClientEndpointConfig();
+            }
+        }
+        return new EndpointInstance(endpoint,cec,metadata);
     }
 
     @Override
@@ -253,11 +305,13 @@ public class ClientContainer extends CommonContainer
         client.setMaxTextMessageBufferSize(max);
     }
 
-    @Override
+    /**
+     * Start the container
+     */
     public void start()
     {
         client = new WebSocketClient();
-        client.setEventDriverFactory(new JsrEventDriverFactory(client.getPolicy(),this));
+        client.setEventDriverFactory(new JsrEventDriverFactory(client.getPolicy()));
         client.setSessionFactory(new JsrSessionFactory(this));
 
         try
@@ -270,7 +324,9 @@ public class ClientContainer extends CommonContainer
         }
     }
 
-    @Override
+    /**
+     * Stop the container
+     */
     public void stop()
     {
         try

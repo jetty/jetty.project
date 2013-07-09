@@ -32,16 +32,16 @@ public class MessageHandlerWrapper
 {
     private final MessageHandler handler;
     private final MessageHandlerMetadata metadata;
-    private final DecoderWrapper decoder;
+    private final DecoderFactory.Wrapper decoder;
 
-    public MessageHandlerWrapper(MessageHandler handler, MessageHandlerMetadata metadata, DecoderWrapper decoder)
+    public MessageHandlerWrapper(MessageHandler handler, MessageHandlerMetadata metadata, DecoderFactory.Wrapper decoder)
     {
         this.handler = handler;
         this.metadata = metadata;
         this.decoder = decoder;
     }
 
-    public DecoderWrapper getDecoder()
+    public DecoderFactory.Wrapper getDecoder()
     {
         return decoder;
     }

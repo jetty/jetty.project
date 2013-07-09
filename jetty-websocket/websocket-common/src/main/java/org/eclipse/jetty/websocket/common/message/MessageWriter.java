@@ -27,6 +27,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
@@ -48,6 +49,7 @@ public class MessageWriter extends Writer
     private ByteBuffer buffer;
     private Utf8CharBuffer utf;
     private FutureWriteCallback blocker;
+    private WriteCallback callback;
     private boolean closed = false;
 
     public MessageWriter(OutgoingFrames outgoing, int bufferSize, ByteBufferPool bufferPool)
@@ -69,7 +71,9 @@ public class MessageWriter extends Writer
     {
         if (closed)
         {
-            throw new IOException("Stream is closed");
+            IOException e = new IOException("Stream is closed");
+            notifyFailure(e);
+            throw e;
         }
     }
 
@@ -83,6 +87,10 @@ public class MessageWriter extends Writer
 
         // close stream
         closed = true;
+        if (callback != null)
+        {
+            callback.writeSuccess();
+        }
         bufferPool.release(buffer);
         LOG.debug("closed (frame count={})",frameCount);
     }
@@ -109,44 +117,73 @@ public class MessageWriter extends Writer
         frame.setPayload(data);
         frame.setFin(fin);
 
-        blocker = new FutureWriteCallback();
-        outgoing.outgoingFrame(frame,blocker);
         try
         {
-            // block on write
-            blocker.get();
-            // write success
-            // clear utf buffer
-            utf.clear();
-            frameCount++;
-            frame.setOpCode(OpCode.CONTINUATION);
-        }
-        catch (ExecutionException e)
-        {
-            Throwable cause = e.getCause();
-            if (cause != null)
+            blocker = new FutureWriteCallback();
+            outgoing.outgoingFrame(frame,blocker);
+            try
             {
-                if (cause instanceof IOException)
-                {
-                    throw (IOException)cause;
-                }
-                else
-                {
-                    throw new IOException(cause);
-                }
+                // block on write
+                blocker.get();
+                // write success
+                // clear utf buffer
+                utf.clear();
+                frameCount++;
+                frame.setOpCode(OpCode.CONTINUATION);
             }
-            throw new IOException("Failed to flush",e);
+            catch (ExecutionException e)
+            {
+                Throwable cause = e.getCause();
+                if (cause != null)
+                {
+                    if (cause instanceof IOException)
+                    {
+                        throw (IOException)cause;
+                    }
+                    else
+                    {
+                        throw new IOException(cause);
+                    }
+                }
+                throw new IOException("Failed to flush",e);
+            }
+            catch (InterruptedException e)
+            {
+                throw new IOException("Failed to flush",e);
+            }
         }
-        catch (InterruptedException e)
+        catch (IOException e)
         {
-            throw new IOException("Failed to flush",e);
+            notifyFailure(e);
+            throw e;
         }
+    }
+
+    private void notifyFailure(IOException e)
+    {
+        if (callback != null)
+        {
+            callback.writeFailed(e);
+        }
+    }
+
+    public void setCallback(WriteCallback callback)
+    {
+        this.callback = callback;
     }
 
     @Override
     public void write(char[] cbuf) throws IOException
     {
-        this.write(cbuf,0,cbuf.length);
+        try
+        {
+            this.write(cbuf,0,cbuf.length);
+        }
+        catch (IOException e)
+        {
+            notifyFailure(e);
+            throw e;
+        }
     }
 
     @Override

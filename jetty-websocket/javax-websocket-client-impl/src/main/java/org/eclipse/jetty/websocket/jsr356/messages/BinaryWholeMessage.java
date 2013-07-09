@@ -28,7 +28,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.message.SimpleBinaryMessage;
-import org.eclipse.jetty.websocket.jsr356.DecoderWrapper;
+import org.eclipse.jetty.websocket.jsr356.DecoderFactory;
 import org.eclipse.jetty.websocket.jsr356.MessageHandlerWrapper;
 
 public class BinaryWholeMessage extends SimpleBinaryMessage
@@ -52,7 +52,7 @@ public class BinaryWholeMessage extends SimpleBinaryMessage
 
         byte data[] = out.toByteArray();
 
-        DecoderWrapper decoder = msgWrapper.getDecoder();
+        DecoderFactory.Wrapper decoder = msgWrapper.getDecoder();
         Decoder.Binary<Object> binaryDecoder = (Binary<Object>)decoder.getDecoder();
         try
         {

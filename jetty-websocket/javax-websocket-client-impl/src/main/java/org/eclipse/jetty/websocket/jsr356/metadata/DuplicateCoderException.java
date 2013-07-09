@@ -16,31 +16,27 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.endpoints;
+package org.eclipse.jetty.websocket.jsr356.metadata;
 
-import javax.websocket.EndpointConfig;
+import javax.websocket.Decoder;
+import javax.websocket.Encoder;
+
+import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 
 /**
- * Associate a JSR Endpoint with its optional {@link EndpointConfig}
+ * Thrown when a duplicate coder is encountered when attempting to identify a Endpoint's metadata ( {@link Decoder} or {@link Encoder})
  */
-public class ConfiguredEndpoint
+public class DuplicateCoderException extends InvalidWebSocketException
 {
-    private Object endpoint;
-    private EndpointConfig config;
+    private static final long serialVersionUID = -3049181444035417170L;
 
-    public ConfiguredEndpoint(Object endpoint, EndpointConfig config)
+    public DuplicateCoderException(String message)
     {
-        this.endpoint = endpoint;
-        this.config = config;
+        super(message);
     }
 
-    public EndpointConfig getConfig()
+    public DuplicateCoderException(String message, Throwable cause)
     {
-        return config;
-    }
-
-    public Object getEndpoint()
-    {
-        return endpoint;
+        super(message,cause);
     }
 }

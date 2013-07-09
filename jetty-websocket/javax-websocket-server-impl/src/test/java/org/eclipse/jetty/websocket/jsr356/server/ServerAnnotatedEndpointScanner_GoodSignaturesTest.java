@@ -88,12 +88,12 @@ public class ServerAnnotatedEndpointScanner_GoodSignaturesTest
     public static Collection<Case[]> data() throws Exception
     {
         List<Case[]> data = new ArrayList<>();
-        Field fOpen = findFieldRef(JsrServerMetadata.class,"onOpen");
-        Field fClose = findFieldRef(JsrServerMetadata.class,"onClose");
-        Field fError = findFieldRef(JsrServerMetadata.class,"onError");
-        Field fText = findFieldRef(JsrServerMetadata.class,"onText");
-        Field fBinary = findFieldRef(JsrServerMetadata.class,"onBinary");
-        Field fPong = findFieldRef(JsrServerMetadata.class,"onPong");
+        Field fOpen = findFieldRef(AnnotatedServerEndpointMetadata.class,"onOpen");
+        Field fClose = findFieldRef(AnnotatedServerEndpointMetadata.class,"onClose");
+        Field fError = findFieldRef(AnnotatedServerEndpointMetadata.class,"onError");
+        Field fText = findFieldRef(AnnotatedServerEndpointMetadata.class,"onText");
+        Field fBinary = findFieldRef(AnnotatedServerEndpointMetadata.class,"onBinary");
+        Field fPong = findFieldRef(AnnotatedServerEndpointMetadata.class,"onPong");
 
         // @formatter:off
         // -- Open Events
@@ -139,7 +139,7 @@ public class ServerAnnotatedEndpointScanner_GoodSignaturesTest
     @Test
     public void testScan_Basic() throws Exception
     {
-        JsrServerMetadata metadata = new JsrServerMetadata(container,testcase.pojo);
+        AnnotatedServerEndpointMetadata metadata = new AnnotatedServerEndpointMetadata(container,testcase.pojo);
         AnnotatedEndpointScanner scanner = new AnnotatedEndpointScanner(metadata);
         scanner.scan();
 

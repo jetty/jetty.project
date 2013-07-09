@@ -16,19 +16,31 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.metadata;
+package org.eclipse.jetty.websocket.jsr356.messages;
 
-import javax.websocket.Decoder;
+import javax.websocket.SendHandler;
+import javax.websocket.SendResult;
 
-import org.eclipse.jetty.websocket.jsr356.MessageType;
+import org.eclipse.jetty.websocket.api.WriteCallback;
 
-/**
- * Immutable Metadata for a {@link Decoder}
- */
-public class DecoderMetadata extends CoderMetadata<Decoder>
+public class SendHandlerWriteCallback implements WriteCallback
 {
-    public DecoderMetadata(Class<? extends Decoder> coderClass, Class<?> objType, MessageType messageType, boolean streamed)
+    private final SendHandler sendHandler;
+
+    public SendHandlerWriteCallback(SendHandler sendHandler)
     {
-        super(coderClass,objType,messageType,streamed);
+        this.sendHandler = sendHandler;
+    }
+
+    @Override
+    public void writeFailed(Throwable x)
+    {
+        sendHandler.onResult(new SendResult(x));
+    }
+
+    @Override
+    public void writeSuccess()
+    {
+        sendHandler.onResult(new SendResult());
     }
 }

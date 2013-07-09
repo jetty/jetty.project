@@ -94,7 +94,7 @@ public class ServerAnnotatedEndpointScanner_InvalidSignaturesTest
     @Test
     public void testScan_InvalidSignature() throws DeploymentException
     {
-        JsrServerMetadata metadata = new JsrServerMetadata(container,pojo);
+        AnnotatedServerEndpointMetadata metadata = new AnnotatedServerEndpointMetadata(container,pojo);
         AnnotatedEndpointScanner scanner = new AnnotatedEndpointScanner(metadata);
 
         try

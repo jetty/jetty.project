@@ -24,6 +24,7 @@ import javax.websocket.Decoder;
 import javax.websocket.Encoder;
 
 import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
+import org.eclipse.jetty.websocket.jsr356.EncoderFactory;
 import org.eclipse.jetty.websocket.jsr356.InitException;
 import org.eclipse.jetty.websocket.jsr356.JsrSession;
 import org.eclipse.jetty.websocket.jsr356.utils.MethodUtils;
@@ -140,7 +141,11 @@ public class OnMessageCallable extends JsrCallable
     public void init(JsrSession session)
     {
         super.init(session);
-        this.returnEncoder = session.getEncoderFactory().getEncoder(returnType);
+        EncoderFactory.Wrapper encoderWrapper = session.getEncoderFactory().getWrapperFor(returnType);
+        if (encoderWrapper != null)
+        {
+            this.returnEncoder = encoderWrapper.getEncoder();
+        }
 
         if (decoderClass != null)
         {

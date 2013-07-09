@@ -27,9 +27,10 @@ import java.util.Map;
 import javax.websocket.ClientEndpoint;
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.Decoder;
-import javax.websocket.DeploymentException;
 import javax.websocket.Encoder;
 import javax.websocket.Extension;
+
+import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 
 public class AnnotatedClientEndpointConfig implements ClientEndpointConfig
 {
@@ -40,7 +41,7 @@ public class AnnotatedClientEndpointConfig implements ClientEndpointConfig
     private final Configurator configurator;
     private Map<String, Object> userProperties;
 
-    public AnnotatedClientEndpointConfig(ClientEndpoint anno) throws DeploymentException
+    public AnnotatedClientEndpointConfig(ClientEndpoint anno)
     {
         this.decoders = Collections.unmodifiableList(Arrays.asList(anno.decoders()));
         this.encoders = Collections.unmodifiableList(Arrays.asList(anno.encoders()));
@@ -68,7 +69,7 @@ public class AnnotatedClientEndpointConfig implements ClientEndpointConfig
                 err.append(anno.configurator().getName());
                 err.append(" defined as annotation in ");
                 err.append(anno.getClass().getName());
-                throw new DeploymentException(err.toString(),e);
+                throw new InvalidWebSocketException(err.toString(),e);
             }
         }
     }

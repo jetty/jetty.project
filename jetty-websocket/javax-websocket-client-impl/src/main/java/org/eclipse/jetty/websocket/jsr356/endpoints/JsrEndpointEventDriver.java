@@ -25,7 +25,6 @@ import java.nio.ByteBuffer;
 
 import javax.websocket.CloseReason;
 import javax.websocket.Endpoint;
-import javax.websocket.EndpointConfig;
 import javax.websocket.MessageHandler;
 import javax.websocket.MessageHandler.Whole;
 
@@ -52,10 +51,10 @@ public class JsrEndpointEventDriver extends AbstractJsrEventDriver implements Ev
 
     private final Endpoint endpoint;
 
-    public JsrEndpointEventDriver(WebSocketPolicy policy, Endpoint endpoint, EndpointConfig config)
+    public JsrEndpointEventDriver(WebSocketPolicy policy, EndpointInstance endpointInstance)
     {
-        super(policy,endpoint,config);
-        this.endpoint = endpoint;
+        super(policy,endpointInstance);
+        this.endpoint = (Endpoint)endpointInstance.getEndpoint();
     }
 
     @Override

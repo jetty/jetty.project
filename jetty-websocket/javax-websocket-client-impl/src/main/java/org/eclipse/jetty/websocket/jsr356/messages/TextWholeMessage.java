@@ -26,7 +26,7 @@ import javax.websocket.MessageHandler.Whole;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.message.SimpleTextMessage;
-import org.eclipse.jetty.websocket.jsr356.DecoderWrapper;
+import org.eclipse.jetty.websocket.jsr356.DecoderFactory;
 import org.eclipse.jetty.websocket.jsr356.MessageHandlerWrapper;
 
 public class TextWholeMessage extends SimpleTextMessage
@@ -48,7 +48,7 @@ public class TextWholeMessage extends SimpleTextMessage
     {
         finished = true;
 
-        DecoderWrapper decoder = msgWrapper.getDecoder();
+        DecoderFactory.Wrapper decoder = msgWrapper.getDecoder();
         Decoder.Text<Object> textDecoder = (Decoder.Text<Object>)decoder.getDecoder();
         try
         {

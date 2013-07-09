@@ -20,14 +20,17 @@ package org.eclipse.jetty.websocket.jsr356.annotations;
 
 import java.lang.annotation.Annotation;
 import java.util.LinkedList;
-import java.util.List;
 
 import javax.websocket.Decoder;
+import javax.websocket.EndpointConfig;
 import javax.websocket.OnClose;
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 
+import org.eclipse.jetty.websocket.jsr356.metadata.DecoderMetadataSet;
+import org.eclipse.jetty.websocket.jsr356.metadata.EncoderMetadataSet;
+import org.eclipse.jetty.websocket.jsr356.metadata.EndpointMetadata;
 import org.eclipse.jetty.websocket.jsr356.utils.ReflectUtils;
 
 /**
@@ -36,13 +39,8 @@ import org.eclipse.jetty.websocket.jsr356.utils.ReflectUtils;
  * @param <T>
  *            the annotation this metadata is based off of
  */
-public abstract class JsrMetadata<T extends Annotation>
+public abstract class AnnotatedEndpointMetadata<T extends Annotation, C extends EndpointConfig> implements EndpointMetadata
 {
-    /**
-     * The actual class that this metadata belongs to
-     */
-    public final Class<?> pojo;
-
     /**
      * Callable for &#064;{@link OnOpen} annotation.
      */
@@ -83,9 +81,15 @@ public abstract class JsrMetadata<T extends Annotation>
      */
     public OnMessagePongCallable onPong;
 
-    protected JsrMetadata(Class<?> websocket)
+    private final Class<?> endpointClass;
+    private DecoderMetadataSet decoders;
+    private EncoderMetadataSet encoders;
+
+    protected AnnotatedEndpointMetadata(Class<?> endpointClass)
     {
-        this.pojo = websocket;
+        this.endpointClass = endpointClass;
+        this.decoders = new DecoderMetadataSet();
+        this.encoders = new EncoderMetadataSet();
     }
 
     public void customizeParamsOnClose(LinkedList<IJsrParamId> params)
@@ -100,7 +104,7 @@ public abstract class JsrMetadata<T extends Annotation>
 
     public void customizeParamsOnMessage(LinkedList<IJsrParamId> params)
     {
-        for (Class<? extends Decoder> decoder : getConfiguredDecoders())
+        for (Class<? extends Decoder> decoder : getDecoders().getList())
         {
             if (Decoder.Text.class.isAssignableFrom(decoder))
             {
@@ -141,5 +145,23 @@ public abstract class JsrMetadata<T extends Annotation>
 
     public abstract T getAnnotation();
 
-    protected abstract List<Class<? extends Decoder>> getConfiguredDecoders();
+    public abstract C getConfig();
+
+    @Override
+    public DecoderMetadataSet getDecoders()
+    {
+        return decoders;
+    }
+
+    @Override
+    public EncoderMetadataSet getEncoders()
+    {
+        return encoders;
+    }
+
+    @Override
+    public Class<?> getEndpointClass()
+    {
+        return endpointClass;
+    }
 }

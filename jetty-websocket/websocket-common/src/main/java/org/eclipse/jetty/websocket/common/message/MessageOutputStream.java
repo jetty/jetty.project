@@ -27,6 +27,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
@@ -45,6 +46,7 @@ public class MessageOutputStream extends OutputStream
     private WebSocketFrame frame;
     private ByteBuffer buffer;
     private FutureWriteCallback blocker;
+    private WriteCallback callback;
     private boolean closed = false;
 
     public MessageOutputStream(OutgoingFrames outgoing, int bufferSize, ByteBufferPool bufferPool)
@@ -65,7 +67,9 @@ public class MessageOutputStream extends OutputStream
     {
         if (closed)
         {
-            throw new IOException("Stream is closed");
+            IOException e = new IOException("Stream is closed");
+            notifyFailure(e);
+            throw e;
         }
     }
 
@@ -81,9 +85,21 @@ public class MessageOutputStream extends OutputStream
         // close stream
         LOG.debug("Sent Frame Count: {}",frameCount);
         closed = true;
-        super.close();
-        bufferPool.release(buffer);
-        LOG.debug("closed");
+        try
+        {
+            if (callback != null)
+            {
+                callback.writeSuccess();
+            }
+            super.close();
+            bufferPool.release(buffer);
+            LOG.debug("closed");
+        }
+        catch (IOException e)
+        {
+            notifyFailure(e);
+            throw e;
+        }
     }
 
     @Override
@@ -94,8 +110,16 @@ public class MessageOutputStream extends OutputStream
 
         // flush whatever is in the buffer with FIN=false
         flush(false);
-        super.flush();
-        LOG.debug("flushed");
+        try
+        {
+            super.flush();
+            LOG.debug("flushed");
+        }
+        catch (IOException e)
+        {
+            notifyFailure(e);
+            throw e;
+        }
     }
 
     /**
@@ -112,42 +136,71 @@ public class MessageOutputStream extends OutputStream
         frame.setPayload(buffer);
         frame.setFin(fin);
 
-        blocker = new FutureWriteCallback();
-        outgoing.outgoingFrame(frame,blocker);
         try
         {
-            // block on write
-            blocker.get();
-            // block success
-            frameCount++;
-            frame.setOpCode(OpCode.CONTINUATION);
-        }
-        catch (ExecutionException e)
-        {
-            Throwable cause = e.getCause();
-            if (cause != null)
+            blocker = new FutureWriteCallback();
+            outgoing.outgoingFrame(frame,blocker);
+            try
             {
-                if (cause instanceof IOException)
-                {
-                    throw (IOException)cause;
-                }
-                else
-                {
-                    throw new IOException(cause);
-                }
+                // block on write
+                blocker.get();
+                // block success
+                frameCount++;
+                frame.setOpCode(OpCode.CONTINUATION);
             }
-            throw new IOException("Failed to flush",e);
+            catch (ExecutionException e)
+            {
+                Throwable cause = e.getCause();
+                if (cause != null)
+                {
+                    if (cause instanceof IOException)
+                    {
+                        throw (IOException)cause;
+                    }
+                    else
+                    {
+                        throw new IOException(cause);
+                    }
+                }
+                throw new IOException("Failed to flush",e);
+            }
+            catch (InterruptedException e)
+            {
+                throw new IOException("Failed to flush",e);
+            }
         }
-        catch (InterruptedException e)
+        catch (IOException e)
         {
-            throw new IOException("Failed to flush",e);
+            notifyFailure(e);
+            throw e;
         }
+    }
+
+    private void notifyFailure(IOException e)
+    {
+        if (callback != null)
+        {
+            callback.writeFailed(e);
+        }
+    }
+
+    public void setCallback(WriteCallback callback)
+    {
+        this.callback = callback;
     }
 
     @Override
     public synchronized void write(byte[] b) throws IOException
     {
-        this.write(b,0,b.length);
+        try
+        {
+            this.write(b,0,b.length);
+        }
+        catch (IOException e)
+        {
+            notifyFailure(e);
+            throw e;
+        }
     }
 
     @Override

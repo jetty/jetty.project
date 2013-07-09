@@ -25,42 +25,10 @@ import org.eclipse.jetty.websocket.jsr356.MessageType;
 /**
  * Immutable Metadata for a {@link Encoder}
  */
-public class EncoderMetadata
+public class EncoderMetadata extends CoderMetadata<Encoder>
 {
-    /** The Class for the Encoder itself */
-    private final Class<? extends Encoder> encoderClass;
-    /** The Class that the Encoder declares it encodes */
-    private final Class<?> objType;
-    /** The Basic type of message the encoder handles */
-    private final MessageType messageType;
-    /** Flag indicating if Encoder is for streaming (or not) */
-    private final boolean streamed;
-
-    public EncoderMetadata(Class<?> objType, Class<? extends Encoder> encoderClass, MessageType messageType, boolean streamed)
+    public EncoderMetadata(Class<? extends Encoder> coderClass, Class<?> objType, MessageType messageType, boolean streamed)
     {
-        this.objType = objType;
-        this.encoderClass = encoderClass;
-        this.messageType = messageType;
-        this.streamed = streamed;
-    }
-
-    public Class<? extends Encoder> getEncoderClass()
-    {
-        return encoderClass;
-    }
-
-    public MessageType getMessageType()
-    {
-        return messageType;
-    }
-
-    public Class<?> getObjectType()
-    {
-        return objType;
-    }
-
-    public boolean isStreamed()
-    {
-        return streamed;
+        super(coderClass,objType,messageType,streamed);
     }
 }

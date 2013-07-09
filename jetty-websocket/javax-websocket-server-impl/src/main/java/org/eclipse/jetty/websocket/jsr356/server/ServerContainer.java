@@ -18,9 +18,12 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.websocket.DeploymentException;
+import javax.websocket.Endpoint;
+import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -28,7 +31,9 @@ import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
 import org.eclipse.jetty.websocket.jsr356.ClientContainer;
 import org.eclipse.jetty.websocket.jsr356.JsrSessionFactory;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
+import org.eclipse.jetty.websocket.jsr356.endpoints.EndpointInstance;
 import org.eclipse.jetty.websocket.jsr356.endpoints.JsrEndpointImpl;
+import org.eclipse.jetty.websocket.jsr356.metadata.EndpointMetadata;
 import org.eclipse.jetty.websocket.jsr356.server.pathmap.WebSocketPathSpec;
 import org.eclipse.jetty.websocket.server.MappedWebSocketCreator;
 import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
@@ -43,7 +48,7 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
 
     private final MappedWebSocketCreator mappedCreator;
     private WebSocketServerFactory webSocketServletFactory;
-    private ConcurrentHashMap<Class<?>, JsrServerMetadata> endpointServerMetadataCache = new ConcurrentHashMap<>();
+    private Map<Class<?>, ServerEndpointMetadata> endpointServerMetadataCache = new ConcurrentHashMap<>();
 
     public ServerContainer(MappedWebSocketCreator creator)
     {
@@ -51,37 +56,84 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
         this.mappedCreator = creator;
     }
 
+    public EndpointInstance newClientEndpointInstance(Object endpoint, ServerEndpointConfig config, String path)
+    {
+        EndpointMetadata metadata = getClientEndpointMetadata(endpoint.getClass());
+        ServerEndpointConfig cec = config;
+        if (config == null)
+        {
+            if (metadata instanceof AnnotatedServerEndpointMetadata)
+            {
+                cec = ((AnnotatedServerEndpointMetadata)metadata).getConfig();
+            }
+            else
+            {
+                cec = new EmptyServerEndpointConfig(endpoint.getClass(),path);
+            }
+        }
+        return new EndpointInstance(endpoint,cec,metadata);
+    }
+
     @Override
     public void addEndpoint(Class<?> endpointClass) throws DeploymentException
     {
-        JsrServerMetadata metadata = getServerEndpointMetadata(endpointClass);
+        ServerEndpointMetadata metadata = getServerEndpointMetadata(endpointClass,null);
         addEndpoint(metadata);
     }
 
-    public void addEndpoint(JsrServerMetadata metadata) throws DeploymentException
+    public void addEndpoint(ServerEndpointMetadata metadata) throws DeploymentException
     {
-        addEndpoint(metadata.getConfig());
+        JsrCreator creator = new JsrCreator(metadata);
+        mappedCreator.addMapping(new WebSocketPathSpec(metadata.getPath()),creator);
     }
 
     @Override
     public void addEndpoint(ServerEndpointConfig config) throws DeploymentException
     {
-        JsrCreator creator = new JsrCreator(config);
-        mappedCreator.addMapping(new WebSocketPathSpec(config.getPath()),creator);
+        ServerEndpointMetadata metadata = getServerEndpointMetadata(config.getEndpointClass(),config);
+        addEndpoint(metadata);
     }
 
-    public JsrServerMetadata getServerEndpointMetadata(Class<?> endpointClass) throws DeploymentException
+    public ServerEndpointMetadata getServerEndpointMetadata(Class<?> endpoint, ServerEndpointConfig config) throws DeploymentException
     {
-        JsrServerMetadata basemetadata = endpointServerMetadataCache.get(endpointClass);
-        if (basemetadata == null)
+        synchronized (endpointServerMetadataCache)
         {
-            basemetadata = new JsrServerMetadata(this,endpointClass);
-            AnnotatedEndpointScanner scanner = new AnnotatedEndpointScanner(basemetadata);
-            scanner.scan();
-            endpointServerMetadataCache.put(endpointClass,basemetadata);
-        }
+            ServerEndpointMetadata metadata = endpointServerMetadataCache.get(endpoint);
+            if (metadata != null)
+            {
+                return metadata;
+            }
 
-        return basemetadata;
+            ServerEndpoint anno = endpoint.getAnnotation(ServerEndpoint.class);
+            if (anno != null)
+            {
+                // Annotated takes precedence here
+                AnnotatedServerEndpointMetadata ametadata = new AnnotatedServerEndpointMetadata(this,endpoint);
+                AnnotatedEndpointScanner<ServerEndpoint,ServerEndpointConfig> scanner = new AnnotatedEndpointScanner<>(ametadata);
+                metadata = ametadata;
+                scanner.scan();
+            }
+            else if (Endpoint.class.isAssignableFrom(endpoint))
+            {
+                // extends Endpoint
+                @SuppressWarnings("unchecked")
+                Class<? extends Endpoint> eendpoint = (Class<? extends Endpoint>)endpoint;
+                metadata = new SimpleServerEndpointMetadata(eendpoint,config);
+            }
+            else
+            {
+                StringBuilder err = new StringBuilder();
+                err.append("Not a recognized websocket [");
+                err.append(endpoint.getName());
+                err.append("] does not extend @").append(ServerEndpoint.class.getName());
+                err.append(" or extend from ").append(Endpoint.class.getName());
+                throw new DeploymentException("Unable to identify as valid Endpoint: " + endpoint);
+            }
+
+            endpointServerMetadataCache.put(endpoint,metadata);
+
+            return metadata;
+        }
     }
 
     public WebSocketServletFactory getWebSocketServletFactory()
@@ -94,7 +146,7 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     {
         this.webSocketServletFactory = factory;
         EventDriverFactory eventDriverFactory = this.webSocketServletFactory.getEventDriverFactory();
-        eventDriverFactory.addImplementation(new JsrServerEndpointImpl(this));
+        eventDriverFactory.addImplementation(new JsrServerEndpointImpl());
         eventDriverFactory.addImplementation(new JsrEndpointImpl());
         this.webSocketServletFactory.setSessionFactory(new JsrSessionFactory(this));
     }

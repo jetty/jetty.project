@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.samples;
+package org.eclipse.jetty.websocket.jsr356.decoders;
 
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
@@ -28,11 +28,13 @@ import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.websocket.jsr356.samples.Fruit;
+import org.eclipse.jetty.websocket.jsr356.samples.FruitBinaryEncoder;
 
 /**
  * Intentionally bad example of attempting to decode the same object to different message formats.
  */
-public class DualDecoder implements Decoder.Text<Fruit>, Decoder.Binary<Fruit>
+public class BadDualDecoder implements Decoder.Text<Fruit>, Decoder.Binary<Fruit>
 {
     @Override
     public Fruit decode(ByteBuffer bytes) throws DecodeException

@@ -23,6 +23,7 @@ import java.lang.reflect.Method;
 import java.util.LinkedList;
 import java.util.List;
 
+import javax.websocket.EndpointConfig;
 import javax.websocket.OnClose;
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
@@ -34,7 +35,7 @@ import org.eclipse.jetty.websocket.common.events.annotated.AbstractMethodAnnotat
 import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
 import org.eclipse.jetty.websocket.jsr356.utils.MethodUtils;
 
-public class AnnotatedEndpointScanner extends AbstractMethodAnnotationScanner<JsrMetadata<?>>
+public class AnnotatedEndpointScanner<T extends Annotation, C extends EndpointConfig> extends AbstractMethodAnnotationScanner<AnnotatedEndpointMetadata<T, C>>
 {
     private static final Logger LOG = Log.getLogger(AnnotatedEndpointScanner.class);
 
@@ -42,9 +43,9 @@ public class AnnotatedEndpointScanner extends AbstractMethodAnnotationScanner<Js
     private final LinkedList<IJsrParamId> paramsOnClose;
     private final LinkedList<IJsrParamId> paramsOnError;
     private final LinkedList<IJsrParamId> paramsOnMessage;
-    private final JsrMetadata<?> metadata;
+    private final AnnotatedEndpointMetadata<T, C> metadata;
 
-    public AnnotatedEndpointScanner(JsrMetadata<?> metadata)
+    public AnnotatedEndpointScanner(AnnotatedEndpointMetadata<T, C> metadata)
     {
         this.metadata = metadata;
 
@@ -84,7 +85,7 @@ public class AnnotatedEndpointScanner extends AbstractMethodAnnotationScanner<Js
     }
 
     @Override
-    public void onMethodAnnotation(JsrMetadata<?> metadata, Class<?> pojo, Method method, Annotation annotation)
+    public void onMethodAnnotation(AnnotatedEndpointMetadata<T, C> metadata, Class<?> pojo, Method method, Annotation annotation)
     {
         LOG.debug("onMethodAnnotation({}, {}, {}, {})",metadata,pojo,method,annotation);
 
@@ -156,9 +157,9 @@ public class AnnotatedEndpointScanner extends AbstractMethodAnnotationScanner<Js
         }
     }
 
-    public JsrMetadata<?> scan()
+    public AnnotatedEndpointMetadata<T, C> scan()
     {
-        scanMethodAnnotations(metadata,metadata.pojo);
+        scanMethodAnnotations(metadata,metadata.getEndpointClass());
         return metadata;
     }
 

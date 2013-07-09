@@ -18,17 +18,11 @@
 
 package org.eclipse.jetty.websocket.jsr356.metadata;
 
-import javax.websocket.Decoder;
-
-import org.eclipse.jetty.websocket.jsr356.MessageType;
-
-/**
- * Immutable Metadata for a {@link Decoder}
- */
-public class DecoderMetadata extends CoderMetadata<Decoder>
+public interface EndpointMetadata
 {
-    public DecoderMetadata(Class<? extends Decoder> coderClass, Class<?> objType, MessageType messageType, boolean streamed)
-    {
-        super(coderClass,objType,messageType,streamed);
-    }
+    public DecoderMetadataSet getDecoders();
+
+    public EncoderMetadataSet getEncoders();
+
+    public Class<?> getEndpointClass();
 }

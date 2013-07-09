@@ -16,40 +16,43 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356;
+package org.eclipse.jetty.websocket.jsr356.endpoints;
 
-import javax.websocket.Encoder;
 import javax.websocket.EndpointConfig;
 
-import org.eclipse.jetty.websocket.jsr356.metadata.EncoderMetadata;
+import org.eclipse.jetty.websocket.jsr356.metadata.EndpointMetadata;
 
 /**
- * Expose a configured {@link Encoder} instance along with its associated {@link EncoderMetadata}
+ * Associate a JSR Endpoint with its optional {@link EndpointConfig}
  */
-public class EncoderWrapper implements Configurable
+public class EndpointInstance
 {
-    private final Encoder encoder;
-    private final EncoderMetadata metadata;
+    /** The instance of the Endpoint */
+    private final Object endpoint;
+    /** The instance specific configuration for the Endpoint */
+    private final EndpointConfig config;
+    /** The metadata for this endpoint */
+    private final EndpointMetadata metadata;
 
-    public EncoderWrapper(Encoder encoder, EncoderMetadata metadata)
+    public EndpointInstance(Object endpoint, EndpointConfig config, EndpointMetadata metadata)
     {
-        this.encoder = encoder;
+        this.endpoint = endpoint;
+        this.config = config;
         this.metadata = metadata;
     }
 
-    public Encoder getEncoder()
+    public EndpointConfig getConfig()
     {
-        return encoder;
+        return config;
     }
 
-    public EncoderMetadata getMetadata()
+    public Object getEndpoint()
+    {
+        return endpoint;
+    }
+
+    public EndpointMetadata getMetadata()
     {
         return metadata;
-    }
-
-    @Override
-    public void init(EndpointConfig config)
-    {
-        this.encoder.init(config);
     }
 }

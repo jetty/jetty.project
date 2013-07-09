@@ -27,16 +27,17 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
+import org.eclipse.jetty.websocket.jsr356.endpoints.EndpointInstance;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 
 public class JsrCreator implements WebSocketCreator
 {
     private static final Logger LOG = Log.getLogger(JsrCreator.class);
-    private final ServerEndpointConfig config;
+    private final ServerEndpointMetadata metadata;
 
-    public JsrCreator(ServerEndpointConfig config)
+    public JsrCreator(ServerEndpointMetadata metadata)
     {
-        this.config = config;
+        this.metadata = metadata;
     }
 
     @Override
@@ -44,6 +45,8 @@ public class JsrCreator implements WebSocketCreator
     {
         JsrHandshakeRequest hsreq = new JsrHandshakeRequest(req);
         JsrHandshakeResponse hsresp = new JsrHandshakeResponse(resp);
+        
+        ServerEndpointConfig config = metadata.getConfig();
 
         ServerEndpointConfig.Configurator configurator = config.getConfigurator();
 
@@ -77,7 +80,8 @@ public class JsrCreator implements WebSocketCreator
         try
         {
             Class<?> endpointClass = config.getEndpointClass();
-            return config.getConfigurator().getEndpointInstance(endpointClass);
+            Object endpoint = config.getConfigurator().getEndpointInstance(endpointClass);
+            return new EndpointInstance(endpoint,config,metadata);
         }
         catch (InstantiationException e)
         {
@@ -89,6 +93,6 @@ public class JsrCreator implements WebSocketCreator
     @Override
     public String toString()
     {
-        return String.format("%s[config=%s]",this.getClass().getName(),config);
+        return String.format("%s[metadata=%s]",this.getClass().getName(),metadata);
     }
 }

@@ -25,9 +25,11 @@ import java.util.List;
 
 import javax.websocket.DeploymentException;
 
+import org.eclipse.jetty.websocket.jsr356.decoders.PrimitiveDecoderMetadataSet;
 import org.eclipse.jetty.websocket.jsr356.handlers.ByteArrayPartialHandler;
 import org.eclipse.jetty.websocket.jsr356.handlers.StringPartialHandler;
 import org.eclipse.jetty.websocket.jsr356.metadata.DecoderMetadata;
+import org.eclipse.jetty.websocket.jsr356.metadata.DecoderMetadataSet;
 import org.eclipse.jetty.websocket.jsr356.metadata.MessageHandlerMetadata;
 import org.junit.Assert;
 import org.junit.Before;
@@ -36,13 +38,15 @@ import org.junit.Test;
 public class MessageHandlerFactoryTest
 {
     private MessageHandlerFactory factory;
+    private DecoderMetadataSet metadatas;
     private DecoderFactory decoders;
 
     @Before
     public void init() throws DeploymentException
     {
-        ClientContainer container = new ClientContainer();
-        decoders = new DecoderFactory(container.getDecoderFactory());
+        DecoderFactory primitivesFactory = new DecoderFactory(PrimitiveDecoderMetadataSet.INSTANCE);
+        metadatas = new DecoderMetadataSet();
+        decoders = new DecoderFactory(metadatas,primitivesFactory);
         factory = new MessageHandlerFactory();
     }
 

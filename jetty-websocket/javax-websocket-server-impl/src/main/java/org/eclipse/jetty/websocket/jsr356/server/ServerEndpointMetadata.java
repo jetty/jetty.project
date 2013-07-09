@@ -16,31 +16,15 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356;
+package org.eclipse.jetty.websocket.jsr356.server;
 
-import java.util.HashMap;
-import java.util.Map;
+import javax.websocket.server.ServerEndpointConfig;
 
-import javax.websocket.EndpointConfig;
+import org.eclipse.jetty.websocket.jsr356.metadata.EndpointMetadata;
 
-public abstract class CommonConfig implements EndpointConfig
+public interface ServerEndpointMetadata extends EndpointMetadata
 {
-    /** User Properties for the Endpoint */
-    private Map<String, Object> userProperties;
-
-    public CommonConfig(CommonConfig copy)
-    {
-        userProperties = copy.userProperties;
-    }
-
-    protected CommonConfig(CommonContainer container)
-    {
-        userProperties = new HashMap<>();
-    }
-
-    @Override
-    public Map<String, Object> getUserProperties()
-    {
-        return userProperties;
-    }
+    ServerEndpointConfig getConfig();
+    
+    public String getPath();
 }

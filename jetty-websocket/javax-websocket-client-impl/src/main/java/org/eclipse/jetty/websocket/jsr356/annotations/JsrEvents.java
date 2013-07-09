@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.jsr356.annotations;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
+import java.lang.annotation.Annotation;
 import java.nio.ByteBuffer;
 
 import javax.websocket.CloseReason;
@@ -37,9 +38,9 @@ import org.eclipse.jetty.websocket.jsr356.JsrSession;
 /**
  * The live event methods found for a specific Annotated Endpoint
  */
-public class JsrEvents
+public class JsrEvents<T extends Annotation, C extends EndpointConfig>
 {
-    private final JsrMetadata<?> metadata;
+    private final AnnotatedEndpointMetadata<T, C> metadata;
 
     /**
      * Callable for &#064;{@link OnOpen} annotation.
@@ -81,7 +82,7 @@ public class JsrEvents
      */
     private OnMessagePongCallable onPong;
 
-    public JsrEvents(JsrMetadata<?> metadata)
+    public JsrEvents(AnnotatedEndpointMetadata<T, C> metadata)
     {
         this.metadata = metadata;
         this.onOpen = (metadata.onOpen == null)?null:new OnOpenCallable(metadata.onOpen);
@@ -175,7 +176,7 @@ public class JsrEvents
         }
     }
 
-    public JsrMetadata<?> getMetadata()
+    public AnnotatedEndpointMetadata<T, C> getMetadata()
     {
         return metadata;
     }

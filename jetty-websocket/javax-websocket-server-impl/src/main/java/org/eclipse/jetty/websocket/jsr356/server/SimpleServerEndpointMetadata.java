@@ -16,19 +16,32 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.metadata;
+package org.eclipse.jetty.websocket.jsr356.server;
 
-import javax.websocket.Decoder;
+import javax.websocket.Endpoint;
+import javax.websocket.server.ServerEndpointConfig;
 
-import org.eclipse.jetty.websocket.jsr356.MessageType;
+import org.eclipse.jetty.websocket.jsr356.client.SimpleEndpointMetadata;
 
-/**
- * Immutable Metadata for a {@link Decoder}
- */
-public class DecoderMetadata extends CoderMetadata<Decoder>
+public class SimpleServerEndpointMetadata extends SimpleEndpointMetadata implements ServerEndpointMetadata
 {
-    public DecoderMetadata(Class<? extends Decoder> coderClass, Class<?> objType, MessageType messageType, boolean streamed)
+    private final ServerEndpointConfig config;
+    
+    public SimpleServerEndpointMetadata(Class<? extends Endpoint> endpointClass, ServerEndpointConfig config)
     {
-        super(coderClass,objType,messageType,streamed);
+        super(endpointClass);
+        this.config = config;
+    }
+
+    @Override
+    public ServerEndpointConfig getConfig()
+    {
+        return config;
+    }
+
+    @Override
+    public String getPath()
+    {
+        return config.getPath();
     }
 }

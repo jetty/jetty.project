@@ -18,22 +18,19 @@
 
 package org.eclipse.jetty.websocket.jsr356.client;
 
-import java.util.List;
-
 import javax.websocket.ClientEndpoint;
-import javax.websocket.Decoder;
-import javax.websocket.DeploymentException;
+import javax.websocket.ClientEndpointConfig;
 
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.jsr356.ClientContainer;
-import org.eclipse.jetty.websocket.jsr356.annotations.JsrMetadata;
+import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointMetadata;
 
-public class JsrClientMetadata extends JsrMetadata<ClientEndpoint>
+public class AnnotatedClientEndpointMetadata extends AnnotatedEndpointMetadata<ClientEndpoint, ClientEndpointConfig>
 {
     private final ClientEndpoint endpoint;
     private final AnnotatedClientEndpointConfig config;
 
-    public JsrClientMetadata(ClientContainer container, Class<?> websocket) throws DeploymentException
+    public AnnotatedClientEndpointMetadata(ClientContainer container, Class<?> websocket)
     {
         super(websocket);
 
@@ -54,14 +51,9 @@ public class JsrClientMetadata extends JsrMetadata<ClientEndpoint>
         return endpoint;
     }
 
-    public AnnotatedClientEndpointConfig getConfig()
+    @Override
+    public ClientEndpointConfig getConfig()
     {
         return config;
-    }
-
-    @Override
-    protected List<Class<? extends Decoder>> getConfiguredDecoders()
-    {
-        return config.getDecoders();
     }
 }

@@ -30,6 +30,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
+import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.io.FutureWriteCallback;
 
@@ -93,15 +94,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
     private Future<Void> sendAsyncFrame(WebSocketFrame frame)
     {
         FutureWriteCallback future = new FutureWriteCallback();
-        try
-        {
-            connection.getIOState().assertOutputOpen();
-            outgoing.outgoingFrame(frame,future);
-        }
-        catch (IOException e)
-        {
-            future.writeFailed(e);
-        }
+        sendFrame(frame,future);
         return future;
     }
 
@@ -139,27 +132,25 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
     @Override
     public Future<Void> sendBytesByFuture(ByteBuffer data)
     {
-        if (msgLock.tryLock())
+        msgType.set(BINARY);
+        if (LOG.isDebugEnabled())
         {
-            try
-            {
-                msgType.set(BINARY);
-                if (LOG.isDebugEnabled())
-                {
-                    LOG.debug("sendBytesByFuture with {}",BufferUtil.toDetailString(data));
-                }
-                WebSocketFrame frame = WebSocketFrame.binary().setPayload(data);
-                return sendAsyncFrame(frame);
-            }
-            finally
-            {
-                msgType.set(NONE);
-                msgLock.unlock();
-            }
+            LOG.debug("sendBytesByFuture with {}",BufferUtil.toDetailString(data));
         }
-        else
+        WebSocketFrame frame = WebSocketFrame.binary().setPayload(data);
+        return sendAsyncFrame(frame);
+    }
+
+    public void sendFrame(WebSocketFrame frame, WriteCallback callback)
+    {
+        try
         {
-            throw new IllegalStateException(PRIORMSG_ERROR);
+            connection.getIOState().assertOutputOpen();
+            outgoing.outgoingFrame(frame,callback);
+        }
+        catch (IOException e)
+        {
+            callback.writeFailed(e);
         }
     }
 
@@ -318,27 +309,12 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
     @Override
     public Future<Void> sendStringByFuture(String text)
     {
-        if (msgLock.tryLock())
+        msgType.set(BINARY);
+        WebSocketFrame frame = WebSocketFrame.text(text);
+        if (LOG.isDebugEnabled())
         {
-            try
-            {
-                msgType.set(BINARY);
-                WebSocketFrame frame = WebSocketFrame.text(text);
-                if (LOG.isDebugEnabled())
-                {
-                    LOG.debug("sendStringByFuture with {}",BufferUtil.toDetailString(frame.getPayload()));
-                }
-                return sendAsyncFrame(frame);
-            }
-            finally
-            {
-                msgType.set(NONE);
-                msgLock.unlock();
-            }
+            LOG.debug("sendStringByFuture with {}",BufferUtil.toDetailString(frame.getPayload()));
         }
-        else
-        {
-            throw new IllegalStateException(PRIORMSG_ERROR);
-        }
+        return sendAsyncFrame(frame);
     }
 }

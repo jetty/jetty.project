@@ -33,8 +33,8 @@ import javax.websocket.Session;
 import org.eclipse.jetty.websocket.jsr356.ClientContainer;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
 import org.eclipse.jetty.websocket.jsr356.annotations.JsrCallable;
-import org.eclipse.jetty.websocket.jsr356.annotations.JsrMetadata;
-import org.eclipse.jetty.websocket.jsr356.client.JsrClientMetadata;
+import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointMetadata;
+import org.eclipse.jetty.websocket.jsr356.client.AnnotatedClientEndpointMetadata;
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicBinaryMessageByteBufferSocket;
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicCloseReasonSessionSocket;
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicCloseReasonSocket;
@@ -90,12 +90,12 @@ public class ClientAnnotatedEndpointScanner_GoodSignaturesTest
     public static Collection<Case[]> data() throws Exception
     {
         List<Case[]> data = new ArrayList<>();
-        Field fOpen = findFieldRef(JsrMetadata.class,"onOpen");
-        Field fClose = findFieldRef(JsrMetadata.class,"onClose");
-        Field fError = findFieldRef(JsrMetadata.class,"onError");
-        Field fText = findFieldRef(JsrMetadata.class,"onText");
-        Field fBinary = findFieldRef(JsrMetadata.class,"onBinary");
-        Field fPong = findFieldRef(JsrMetadata.class,"onPong");
+        Field fOpen = findFieldRef(AnnotatedEndpointMetadata.class,"onOpen");
+        Field fClose = findFieldRef(AnnotatedEndpointMetadata.class,"onClose");
+        Field fError = findFieldRef(AnnotatedEndpointMetadata.class,"onError");
+        Field fText = findFieldRef(AnnotatedEndpointMetadata.class,"onText");
+        Field fBinary = findFieldRef(AnnotatedEndpointMetadata.class,"onBinary");
+        Field fPong = findFieldRef(AnnotatedEndpointMetadata.class,"onPong");
 
         // @formatter:off
         // -- Open Events
@@ -140,7 +140,7 @@ public class ClientAnnotatedEndpointScanner_GoodSignaturesTest
     @Test
     public void testScan_Basic() throws Exception
     {
-        JsrClientMetadata metadata = new JsrClientMetadata(container,testcase.pojo);
+        AnnotatedClientEndpointMetadata metadata = new AnnotatedClientEndpointMetadata(container,testcase.pojo);
         AnnotatedEndpointScanner scanner = new AnnotatedEndpointScanner(metadata);
         scanner.scan();
 
