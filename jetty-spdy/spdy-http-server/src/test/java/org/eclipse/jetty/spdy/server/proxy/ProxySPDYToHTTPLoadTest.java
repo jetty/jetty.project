@@ -56,6 +56,8 @@ import org.eclipse.jetty.spdy.server.http.SPDYTestUtils;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.After;
 import org.junit.Before;
@@ -74,6 +76,7 @@ import static org.junit.Assert.assertThat;
 @RunWith(value = Parameterized.class)
 public class ProxySPDYToHTTPLoadTest
 {
+    private static final Logger LOG = Log.getLogger(ProxySPDYToHTTPLoadTest.class);
     @Rule
     public final TestWatcher testName = new TestWatcher()
     {
@@ -239,6 +242,7 @@ public class ProxySPDYToHTTPLoadTest
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
+                LOG.debug("Got reply: {}", replyInfo );
                 Fields headers = replyInfo.getHeaders();
                 assertThat("response comes from the given server", headers.get(serverIdentificationString),
                         is(notNullValue()));
@@ -251,6 +255,7 @@ public class ProxySPDYToHTTPLoadTest
                 result.write(dataInfo.asBytes(true), 0, dataInfo.length());
                 if (dataInfo.isClose())
                 {
+                    LOG.debug("Got last dataFrame: {}", dataInfo);
                     assertThat("received data matches send data", data, is(result.toString()));
                     dataLatch.countDown();
                 }
@@ -261,6 +266,7 @@ public class ProxySPDYToHTTPLoadTest
 
         assertThat("reply has been received", replyLatch.await(5, TimeUnit.SECONDS), is(true));
         assertThat("data has been received", dataLatch.await(5, TimeUnit.SECONDS), is(true));
+        LOG.debug("Successfully received response");
     }
 
     private class TestServerHandler extends DefaultHandler
