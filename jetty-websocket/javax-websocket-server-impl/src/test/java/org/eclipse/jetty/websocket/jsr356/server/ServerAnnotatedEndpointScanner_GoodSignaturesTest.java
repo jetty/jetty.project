@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.jsr356.server;
 
 import static org.hamcrest.Matchers.*;
 
+import java.io.Reader;
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -29,6 +30,8 @@ import java.util.List;
 import javax.websocket.CloseReason;
 import javax.websocket.PongMessage;
 import javax.websocket.Session;
+import javax.websocket.server.ServerEndpoint;
+import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
 import org.eclipse.jetty.websocket.jsr356.annotations.JsrCallable;
@@ -47,6 +50,18 @@ import org.eclipse.jetty.websocket.jsr356.server.samples.BasicOpenSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.BasicPongMessageSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.BasicTextMessageStringSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.StatelessTextMessageStringSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.primitives.ByteObjectTextSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.primitives.ByteTextSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.primitives.CharTextSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.primitives.CharacterObjectTextSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.primitives.DoubleObjectTextSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.primitives.DoubleTextSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.primitives.FloatObjectTextSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.primitives.FloatTextSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.primitives.IntTextSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.primitives.IntegerObjectTextSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.streaming.ReaderParamSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.streaming.StringReturnReaderParamSocket;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -113,6 +128,20 @@ public class ServerAnnotatedEndpointScanner_GoodSignaturesTest
         // -- Text Events
         Case.add(data, BasicTextMessageStringSocket.class, fText, String.class);
         Case.add(data, StatelessTextMessageStringSocket.class, fText, Session.class, String.class);
+        // -- Primitives
+        Case.add(data, ByteTextSocket.class, fText, Byte.TYPE);
+        Case.add(data, ByteObjectTextSocket.class, fText, Byte.class);
+        Case.add(data, CharTextSocket.class, fText, Character.TYPE);
+        Case.add(data, CharacterObjectTextSocket.class, fText, Character.class);
+        Case.add(data, DoubleTextSocket.class, fText, Double.TYPE);
+        Case.add(data, DoubleObjectTextSocket.class, fText, Double.class);
+        Case.add(data, FloatTextSocket.class, fText, Float.TYPE);
+        Case.add(data, FloatObjectTextSocket.class, fText, Float.class);
+        Case.add(data, IntTextSocket.class, fText, Integer.TYPE);
+        Case.add(data, IntegerObjectTextSocket.class, fText, Integer.class);
+        // -- Reader Events
+        Case.add(data, ReaderParamSocket.class, fText, Reader.class, String.class);
+        Case.add(data, StringReturnReaderParamSocket.class, fText, Reader.class, String.class);
         // -- Binary Events
         Case.add(data, BasicBinaryMessageByteBufferSocket.class, fBinary, ByteBuffer.class);
         // -- Pong Events
@@ -140,7 +169,7 @@ public class ServerAnnotatedEndpointScanner_GoodSignaturesTest
     public void testScan_Basic() throws Exception
     {
         AnnotatedServerEndpointMetadata metadata = new AnnotatedServerEndpointMetadata(container,testcase.pojo);
-        AnnotatedEndpointScanner scanner = new AnnotatedEndpointScanner(metadata);
+        AnnotatedEndpointScanner<ServerEndpoint,ServerEndpointConfig> scanner = new AnnotatedEndpointScanner<>(metadata);
         scanner.scan();
 
         Assert.assertThat("Metadata",metadata,notNullValue());

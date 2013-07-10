@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356.annotations;
 
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 
 import javax.websocket.OnMessage;
@@ -56,6 +57,15 @@ public class JsrParamIdBinary extends JsrParamIdOnMessage implements IJsrParamId
         {
             param.bind(Role.MESSAGE_BINARY);
             callable.setDecoderClass(ByteArrayDecoder.class);
+            return true;
+        }
+
+        // Streaming
+        if (param.type.isAssignableFrom(InputStream.class))
+        {
+            assertPartialMessageSupportDisabled(param,callable);
+            param.bind(Role.MESSAGE_BINARY_STREAM);
+            // Streaming have no decoder
             return true;
         }
 
