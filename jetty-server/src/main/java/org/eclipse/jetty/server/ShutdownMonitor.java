@@ -102,6 +102,13 @@ public class ShutdownMonitor
                         // Graceful Shutdown
                         debug("Issuing graceful shutdown..");
                         ShutdownThread.getInstance().run();
+                        
+                        //Stop accepting any more
+                        close(serverSocket);
+                        serverSocket = null;
+                        
+                        //Shutdown input from client
+                        shutdownInput(socket);
 
                         // Reply to client
                         debug("Informing client that we are stopped.");
@@ -109,11 +116,10 @@ public class ShutdownMonitor
                         out.flush();
 
                         // Shutdown Monitor
-                        debug("Shutting down monitor");
+                        socket.shutdownOutput();
                         close(socket);
-                        socket = null;
-                        close(serverSocket);
-                        serverSocket = null;
+                        socket = null;                        
+                        debug("Shutting down monitor");
 
                         if (exitVm)
                         {
@@ -248,7 +254,7 @@ public class ShutdownMonitor
         }
         catch (IOException ignore)
         {
-            /* ignore */
+            debug(ignore);
         }
     }
 
@@ -265,10 +271,27 @@ public class ShutdownMonitor
         }
         catch (IOException ignore)
         {
-            /* ignore */
+            debug(ignore);
         }
     }
 
+    
+    private void shutdownInput(Socket socket)
+    {
+        if (socket == null)
+            return;
+        
+        try
+        {
+            socket.shutdownInput();
+        }   
+        catch (IOException ignore)
+        {
+            debug(ignore);
+        }
+    }
+    
+    
     private void debug(String format, Object... args)
     {
         if (DEBUG)
