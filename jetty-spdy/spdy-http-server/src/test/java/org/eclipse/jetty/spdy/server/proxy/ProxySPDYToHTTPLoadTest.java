@@ -59,6 +59,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -92,6 +93,8 @@ public class ProxySPDYToHTTPLoadTest
     };
 
     private final short version;
+    private final String server1String = "server1";
+    private final String server2String = "server2";
 
     @Parameterized.Parameters
     public static Collection<Short[]> parameters()
@@ -100,7 +103,8 @@ public class ProxySPDYToHTTPLoadTest
     }
 
     private SPDYClient.Factory factory;
-    private Server server;
+    private Server server1;
+    private Server server2;
     private Server proxy;
     private ServerConnector proxyConnector;
     private SslContextFactory sslContextFactory = SPDYTestUtils.newSslContextFactory();
@@ -110,20 +114,62 @@ public class ProxySPDYToHTTPLoadTest
         this.version = version;
     }
 
-    protected InetSocketAddress startServer(Handler handler) throws Exception
+    @Before
+    public void init() throws Exception
     {
-        server = new Server();
+        // change the ports if you want to trace the network traffic
+        server1 = startServer(new TestServerHandler(server1String, null), 0);
+        server2 = startServer(new TestServerHandler(server2String, null), 0);
+        factory = new SPDYClient.Factory(sslContextFactory);
+        factory.start();
+    }
+
+    @After
+    public void destroy() throws Exception
+    {
+        stopServer(server1);
+        stopServer(server2);
+        if (proxy != null)
+        {
+            proxy.stop();
+            proxy.join();
+        }
+        factory.stop();
+    }
+
+    private void stopServer(Server server) throws Exception
+    {
+        if (server != null)
+        {
+            server.stop();
+            server.join();
+        }
+    }
+
+    protected Server startServer(Handler handler, int port) throws Exception
+    {
+        QueuedThreadPool threadPool = new QueuedThreadPool(256);
+        threadPool.setName("upstreamServerQTP");
+        Server server = new Server(threadPool);
         ServerConnector connector = new ServerConnector(server);
+        connector.setPort(port);
         server.setHandler(handler);
         server.addConnector(connector);
         server.start();
-        return new InetSocketAddress("localhost", connector.getLocalPort());
+        return server;
+    }
+
+    private InetSocketAddress getServerAddress(Server server)
+    {
+        return new InetSocketAddress("localhost", ((ServerConnector)server.getConnectors()[0]).getLocalPort());
     }
 
     protected InetSocketAddress startProxy(InetSocketAddress server1, InetSocketAddress server2,
                                            long proxyConnectorTimeout, long proxyEngineTimeout) throws Exception
     {
-        proxy = new Server();
+        QueuedThreadPool threadPool = new QueuedThreadPool(256);
+        threadPool.setName("proxyQTP");
+        proxy = new Server(threadPool);
         ProxyEngineSelector proxyEngineSelector = new ProxyEngineSelector();
         HttpClient httpClient = new HttpClient();
         httpClient.start();
@@ -147,38 +193,11 @@ public class ProxySPDYToHTTPLoadTest
         return new InetSocketAddress("localhost", proxyConnector.getLocalPort());
     }
 
-    @Before
-    public void init() throws Exception
-    {
-        factory = new SPDYClient.Factory(sslContextFactory);
-        factory.start();
-    }
-
-    @After
-    public void destroy() throws Exception
-    {
-        if (server != null)
-        {
-            server.stop();
-            server.join();
-        }
-        if (proxy != null)
-        {
-            proxy.stop();
-            proxy.join();
-        }
-        factory.stop();
-    }
-
     @Test
     public void testSimpleLoadTest() throws Exception
     {
-        String server1String = "server1";
-        String server2String = "server2";
-
-        InetSocketAddress server1 = startServer(new TestServerHandler(server1String, null));
-        InetSocketAddress server2 = startServer(new TestServerHandler(server2String, null));
-        final InetSocketAddress proxyAddress = startProxy(server1, server2, 30000, 30000);
+        final InetSocketAddress proxyAddress = startProxy(getServerAddress(server1), getServerAddress(server2), 30000,
+                30000);
 
         final int requestsPerClient = 50;
 
@@ -201,7 +220,7 @@ public class ProxySPDYToHTTPLoadTest
     }
 
     private Runnable createClientRunnable(final InetSocketAddress proxyAddress, final int requestsPerClient,
-                                   final String serverIdentificationString, final String serverHost)
+                                          final String serverIdentificationString, final String serverHost)
     {
         Runnable client = new Runnable()
         {
@@ -210,7 +229,7 @@ public class ProxySPDYToHTTPLoadTest
             {
                 try
                 {
-                    Session client = factory.newSPDYClient(version).connect(proxyAddress, null).get(5, TimeUnit.SECONDS);
+                    Session client = factory.newSPDYClient(version).connect(proxyAddress, null).get(15, TimeUnit.SECONDS);
                     for (int i = 0; i < requestsPerClient; i++)
                     {
                         sendSingleClientRequest(proxyAddress, client, serverIdentificationString, serverHost);
@@ -242,7 +261,7 @@ public class ProxySPDYToHTTPLoadTest
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
-                LOG.debug("Got reply: {}", replyInfo );
+                LOG.debug("Got reply: {}", replyInfo);
                 Fields headers = replyInfo.getHeaders();
                 assertThat("response comes from the given server", headers.get(serverIdentificationString),
                         is(notNullValue()));
@@ -256,7 +275,7 @@ public class ProxySPDYToHTTPLoadTest
                 if (dataInfo.isClose())
                 {
                     LOG.debug("Got last dataFrame: {}", dataInfo);
-                    assertThat("received data matches send data", data, is(result.toString()));
+                    assertThat("received data matches send data", result.toString(), is(data));
                     dataLatch.countDown();
                 }
             }
@@ -264,8 +283,8 @@ public class ProxySPDYToHTTPLoadTest
 
         stream.data(new StringDataInfo(data, true), new Callback.Adapter());
 
-        assertThat("reply has been received", replyLatch.await(5, TimeUnit.SECONDS), is(true));
-        assertThat("data has been received", dataLatch.await(5, TimeUnit.SECONDS), is(true));
+        assertThat("reply has been received", replyLatch.await(15, TimeUnit.SECONDS), is(true));
+        assertThat("data has been received", dataLatch.await(15, TimeUnit.SECONDS), is(true));
         LOG.debug("Successfully received response");
     }
 
