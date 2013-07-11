@@ -227,7 +227,7 @@ public abstract class AbstractConnection implements Connection
         return String.format("%s@%x{%s}", getClass().getSimpleName(), hashCode(), _state.get());
     }
     
-    private boolean next(State state, State next)
+    public boolean next(State state, State next)
     {
         if (next==null)
             return true;
@@ -241,6 +241,125 @@ public abstract class AbstractConnection implements Connection
         return false;
     }
     
+    private static final class IdleState extends State
+    {
+        private IdleState()
+        {
+            super("IDLE");
+        }
+
+        @Override
+        State fillInterested()
+        {
+            return FILL_INTERESTED;
+        }
+    }
+
+
+    private static final class FillInterestedState extends State
+    {
+        private FillInterestedState()
+        {
+            super("FILL_INTERESTED");
+        }
+
+        @Override
+        public void onEnter(AbstractConnection connection)
+        {
+            connection.getEndPoint().fillInterested(connection._readCallback);
+        }
+
+        @Override
+        State fillInterested()
+        {
+            return this;
+        }
+
+        @Override
+        public State onFillable()
+        {
+            return FILLING;
+        }
+
+        @Override
+        State onFailed()
+        {
+            return IDLE;
+        }
+    }
+
+
+    private static final class RefillingState extends State
+    {
+        private RefillingState()
+        {
+            super("REFILLING");
+        }
+
+        @Override
+        State fillInterested()
+        {
+            return FILLING_FILL_INTERESTED;
+        }
+
+        @Override
+        public State onFilled()
+        {
+            return IDLE;
+        }
+    }
+
+
+    private static final class FillingFillInterestedState extends State
+    {
+        private FillingFillInterestedState(String name)
+        {
+            super(name);
+        }
+
+        @Override
+        State fillInterested()
+        {
+            return this;
+        }
+
+        State onFilled()
+        {
+            return FILL_INTERESTED;
+        }
+    }
+
+
+    private static final class FillingState extends State
+    {
+        private FillingState()
+        {
+            super("FILLING");
+        }
+
+        @Override
+        public void onEnter(AbstractConnection connection)
+        {
+            if (connection._executeOnfillable)
+                connection.getExecutor().execute(connection._runOnFillable);
+            else
+                connection._runOnFillable.run();
+        }
+
+        @Override
+        State fillInterested()
+        {
+            return FILLING_FILL_INTERESTED;
+        }
+
+        @Override
+        public State onFilled()
+        {
+            return IDLE;
+        }
+    }
+
+
     public static class State
     {
         private final String _name;
@@ -281,94 +400,15 @@ public abstract class AbstractConnection implements Connection
     }
     
 
-    public static final State IDLE=new State("IDLE")
-    {
-        @Override
-        State fillInterested()
-        {
-            return FILL_INTERESTED;
-        }
-    };
+    public static final State IDLE=new IdleState();
     
-    public static final State FILL_INTERESTED=new State("FILL_INTERESTED")
-    {
-        @Override
-        public void onEnter(AbstractConnection connection)
-        {
-            connection.getEndPoint().fillInterested(connection._readCallback);
-        }
-        
-        @Override
-        State fillInterested()
-        {
-            return this;
-        }
-
-        @Override
-        public State onFillable()
-        {
-            return FILLING;
-        }
-
-        @Override
-        State onFailed()
-        {
-            return IDLE;
-        }
-    };
+    public static final State FILL_INTERESTED=new FillInterestedState();
     
-    public static final State FILLING=new State("FILLING")
-    {
-        @Override
-        public void onEnter(AbstractConnection connection)
-        {
-            if (connection._executeOnfillable)
-                connection.getExecutor().execute(connection._runOnFillable);
-            else
-                connection._runOnFillable.run();
-        }
-        
-        @Override
-        State fillInterested()
-        {
-            return FILLING_FILL_INTERESTED;
-        }
-
-        @Override
-        public State onFilled()
-        {
-            return IDLE;
-        }
-    };
+    public static final State FILLING=new FillingState();
     
-    public static final State REFILLING=new State("REFILLING")
-    {
-        @Override
-        State fillInterested()
-        {
-            return FILLING_FILL_INTERESTED;
-        }
+    public static final State REFILLING=new RefillingState();
 
-        @Override
-        public State onFilled()
-        {
-            return IDLE;
-        }
-    };
-
-    public static final State FILLING_FILL_INTERESTED=new State("FILLING_FILL_INTERESTED")
-    {
-        @Override
-        State fillInterested()
-        {
-            return this;
-        }
-        
-        State onFilled()
-        {
-            return FILL_INTERESTED;
-        }
-    };
+    public static final State FILLING_FILL_INTERESTED=new FillingFillInterestedState("FILLING_FILL_INTERESTED");
     
     public class NestedState extends State
     {
