@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.maven.plugin;
 
+import java.io.InputStreamReader;
+import java.io.LineNumberReader;
 import java.io.OutputStream;
 import java.net.ConnectException;
 import java.net.InetAddress;
@@ -54,6 +56,13 @@ public class JettyStopMojo extends AbstractMojo
      * @required
      */
     protected String stopKey;
+    
+    /**
+     * Max time in seconds that the plugin will wait for confirmation that jetty has stopped.
+     * @parameter
+     */
+    protected int stopWait;
+    
 
     public void execute() throws MojoExecutionException, MojoFailureException 
     {
@@ -66,10 +75,29 @@ public class JettyStopMojo extends AbstractMojo
         {        
             Socket s=new Socket(InetAddress.getByName("127.0.0.1"),stopPort);
             s.setSoLinger(false, 0);
-            
+
             OutputStream out=s.getOutputStream();
             out.write((stopKey+"\r\nstop\r\n").getBytes());
             out.flush();
+
+            if (stopWait > 0)
+            {      
+                s.setSoTimeout(stopWait * 1000);
+                s.getInputStream();
+
+                System.err.printf("Waiting %d seconds for jetty to stop%n",stopWait);
+                LineNumberReader lin = new LineNumberReader(new InputStreamReader(s.getInputStream()));
+                String response;
+                boolean stopped = false;
+                while (!stopped && ((response = lin.readLine()) != null))
+                {
+                    if ("Stopped".equals(response))
+                    {
+                        stopped = true;
+                        System.err.println("Server reports itself as Stopped");
+                    }                
+                }
+            }
             s.close();
         }
         catch (ConnectException e)

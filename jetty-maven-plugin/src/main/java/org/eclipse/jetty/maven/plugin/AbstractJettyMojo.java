@@ -203,6 +203,12 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      */
     protected String stopKey;
 
+    /**
+     * Use the dump() facility of jetty to print out the server configuration to logging
+     * 
+     * @parameter expression"${dumponStart}" default-value="false"
+     */
+    protected boolean dumpOnStart;
     
     /**
      * <p>
@@ -271,6 +277,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      * @readonly
      */
     protected List pluginArtifacts;
+    
     
 
     /**
@@ -557,6 +564,11 @@ public abstract class AbstractJettyMojo extends AbstractMojo
 
             getLog().info("Started Jetty Server");
            
+            
+            if ( dumpOnStart )
+            {
+                getLog().info(this.server.dump());
+            }
             
             // start the scanner thread (if necessary) on the main webapp
             configureScanner ();

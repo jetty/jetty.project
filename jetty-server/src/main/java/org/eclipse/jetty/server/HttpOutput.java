@@ -773,28 +773,37 @@ write completed    -          -          -          ASYNC         READY->owp
         @Override
         protected boolean process() throws Exception
         {
-            int len=_in.read(_buffer.array(),0,_buffer.capacity());
-            if (len==-1)
-            {
-                closed();
-                _channel.getByteBufferPool().release(_buffer);
-                return true;
-            }
             boolean eof=false;
-
-            // if we read less than a buffer, are we at EOF?
-            if (len<_buffer.capacity())
+            int len=_in.read(_buffer.array(),0,_buffer.capacity());
+            
+            if (len<0)
             {
+                eof=true;
+                len=0;
+            }
+            else if (len<_buffer.capacity())
+            {
+                // read ahead for EOF to try for single commit
                 int len2=_in.read(_buffer.array(),len,_buffer.capacity()-len);
                 if (len2<0)
                     eof=true;
                 else
                     len+=len2;
             }
-
+            
+            // write what we have
             _buffer.position(0);
             _buffer.limit(len);
             _channel.write(_buffer,eof,this);
+            
+            // Handle EOF
+            if (eof)
+            {
+                closed();
+                _channel.getByteBufferPool().release(_buffer);
+                return true;
+            }
+
             return false;
         }
 
@@ -832,28 +841,36 @@ write completed    -          -          -          ASYNC         READY->owp
         protected boolean process() throws Exception
         {
             _buffer.clear();
-            int len=_in.read(_buffer);
-            if (len==-1)
-            {
-                closed();
-                _channel.getByteBufferPool().release(_buffer);
-                return true;
-            }
-
             boolean eof=false;
-
-            // if we read less than a buffer, are we at EOF?
-            if (len<_buffer.capacity())
+            int len=_in.read(_buffer);
+            
+            if (len<0)
             {
+                eof=true;
+                len=0;
+            }
+            else if (len<_buffer.capacity())
+            {
+                // read ahead for EOF to try for single commit
                 int len2=_in.read(_buffer);
                 if (len2<0)
                     eof=true;
                 else
                     len+=len2;
             }
-
+            
+            // write what we have
             _buffer.flip();
             _channel.write(_buffer,eof,this);
+            
+            // Handle EOF
+            if (eof)
+            {
+                closed();
+                _channel.getByteBufferPool().release(_buffer);
+                return true;
+            }
+
             return false;
         }
 
