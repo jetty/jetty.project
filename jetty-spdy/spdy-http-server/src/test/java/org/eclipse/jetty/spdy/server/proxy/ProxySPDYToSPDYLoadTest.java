@@ -19,7 +19,6 @@
 package org.eclipse.jetty.spdy.server.proxy;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -209,7 +208,7 @@ public class ProxySPDYToSPDYLoadTest
                         sendSingleClientRequest(proxyAddress, client, serverIdentificationString, serverHost);
                     }
                 }
-                catch (InterruptedException | ExecutionException | TimeoutException | IOException e)
+                catch (InterruptedException | ExecutionException | TimeoutException e)
                 {
                     fail();
                     e.printStackTrace();
