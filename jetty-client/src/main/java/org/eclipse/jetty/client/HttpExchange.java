@@ -125,10 +125,10 @@ public class HttpExchange
 
     protected void expire(HttpDestination destination)
     {
+        AbstractHttpConnection connection = _connection;
         if (getStatus() < HttpExchange.STATUS_COMPLETED)
             setStatus(HttpExchange.STATUS_EXPIRED);
         destination.exchangeExpired(this);
-        AbstractHttpConnection connection = _connection;
         if (connection != null)
             connection.exchangeExpired(this);
     }
