@@ -32,6 +32,7 @@ import org.eclipse.jetty.websocket.jsr356.decoders.DoubleDecoder;
 import org.eclipse.jetty.websocket.jsr356.decoders.FloatDecoder;
 import org.eclipse.jetty.websocket.jsr356.decoders.IntegerDecoder;
 import org.eclipse.jetty.websocket.jsr356.decoders.LongDecoder;
+import org.eclipse.jetty.websocket.jsr356.decoders.ReaderDecoder;
 import org.eclipse.jetty.websocket.jsr356.decoders.ShortDecoder;
 import org.eclipse.jetty.websocket.jsr356.decoders.StringDecoder;
 
@@ -41,6 +42,16 @@ import org.eclipse.jetty.websocket.jsr356.decoders.StringDecoder;
 public class JsrParamIdText extends JsrParamIdOnMessage implements IJsrParamId
 {
     public static final IJsrParamId INSTANCE = new JsrParamIdText();
+
+    private boolean isMessageRoleAssigned(JsrCallable callable)
+    {
+        if (callable instanceof OnMessageCallable)
+        {
+            OnMessageCallable onmessage = (OnMessageCallable)callable;
+            return onmessage.isMessageRoleAssigned();
+        }
+        return false;
+    }
 
     @Override
     public boolean process(Param param, JsrCallable callable) throws InvalidSignatureException
@@ -123,14 +134,26 @@ public class JsrParamIdText extends JsrParamIdOnMessage implements IJsrParamId
         {
             assertPartialMessageSupportDisabled(param,callable);
             param.bind(Role.MESSAGE_TEXT_STREAM);
-            // Streaming have no decoder
+            callable.setDecoderClass(ReaderDecoder.class);
             return true;
         }
 
-        // Boolean (for indicating partial message support)
-        if (param.type.isAssignableFrom(Boolean.TYPE))
+        /*
+         * boolean primitive.
+         * 
+         * can be used for either: 1) a boolean message type 2) a partial message indicator flag
+         */
+        if (param.type == Boolean.TYPE)
         {
-            param.bind(Role.MESSAGE_PARTIAL_FLAG);
+            if (isMessageRoleAssigned(callable))
+            {
+                param.bind(Role.MESSAGE_PARTIAL_FLAG);
+            }
+            else
+            {
+                param.bind(Role.MESSAGE_TEXT);
+                callable.setDecoderClass(BooleanDecoder.class);
+            }
             return true;
         }
 

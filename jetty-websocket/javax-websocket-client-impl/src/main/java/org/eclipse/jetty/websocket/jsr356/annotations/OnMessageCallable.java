@@ -38,7 +38,7 @@ public class OnMessageCallable extends JsrCallable
     protected Decoder decoder;
     protected int idxPartialMessageFlag = -1;
     protected int idxMessageObject = -1;
-    protected Param.Role messageRole;
+    protected boolean messageRoleAssigned = false;
 
     public OnMessageCallable(Class<?> pojo, Method method)
     {
@@ -54,7 +54,6 @@ public class OnMessageCallable extends JsrCallable
         this.decoder = copy.decoder;
         this.idxPartialMessageFlag = copy.idxPartialMessageFlag;
         this.idxMessageObject = copy.idxMessageObject;
-        this.messageRole = copy.messageRole;
     }
 
     protected void assertDecoderRequired()
@@ -162,6 +161,11 @@ public class OnMessageCallable extends JsrCallable
         }
     }
 
+    public boolean isMessageRoleAssigned()
+    {
+        return messageRoleAssigned;
+    }
+
     public boolean isPartialMessageSupported()
     {
         return (idxPartialMessageFlag >= 0);
@@ -171,6 +175,7 @@ public class OnMessageCallable extends JsrCallable
     public void setDecoderClass(Class<? extends Decoder> decoderClass)
     {
         this.decoderClass = decoderClass;
+        messageRoleAssigned = true;
     }
 
     public void setPartialMessageFlag(Param param)

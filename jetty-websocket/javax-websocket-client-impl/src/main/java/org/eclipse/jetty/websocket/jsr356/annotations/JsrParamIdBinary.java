@@ -69,12 +69,6 @@ public class JsrParamIdBinary extends JsrParamIdOnMessage implements IJsrParamId
             return true;
         }
 
-        // Boolean (for indicating partial message support)
-        if (param.type.isAssignableFrom(Boolean.TYPE))
-        {
-            param.bind(Role.MESSAGE_PARTIAL_FLAG);
-            return true;
-        }
         return false;
     }
 }

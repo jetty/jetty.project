@@ -52,6 +52,8 @@ import org.eclipse.jetty.websocket.jsr356.server.samples.BasicPongMessageSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.BasicTextMessageStringSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.StatelessTextMessageStringSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.beans.DateTextSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.primitives.BooleanObjectTextSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.primitives.BooleanTextSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.primitives.ByteObjectTextSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.primitives.ByteTextSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.primitives.CharTextSocket;
@@ -133,6 +135,8 @@ public class ServerAnnotatedEndpointScanner_GoodSignaturesTest
         Case.add(data, BasicTextMessageStringSocket.class, fText, String.class);
         Case.add(data, StatelessTextMessageStringSocket.class, fText, Session.class, String.class);
         // -- Primitives
+        Case.add(data, BooleanTextSocket.class, fText, Boolean.TYPE);
+        Case.add(data, BooleanObjectTextSocket.class, fText, Boolean.class);
         Case.add(data, ByteTextSocket.class, fText, Byte.TYPE);
         Case.add(data, ByteObjectTextSocket.class, fText, Byte.class);
         Case.add(data, CharTextSocket.class, fText, Character.TYPE);
