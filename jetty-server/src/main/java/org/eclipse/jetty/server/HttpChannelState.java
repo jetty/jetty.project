@@ -645,7 +645,7 @@ public class HttpChannelState
         }
 
         if (handle)
-            _channel.handle();
+            _channel.execute(_channel);
     }
     
     public void onWritePossible()
@@ -659,7 +659,7 @@ public class HttpChannelState
         }
 
         if (handle)
-            _channel.handle();
+            _channel.execute(_channel);
     }
     
     public class AsyncTimeout implements Runnable

@@ -94,7 +94,7 @@ public class ConnectionOpenCloseTest extends AbstractHttpTest
             socket.shutdownOutput();
             Assert.assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
             String response=IO.toString(socket.getInputStream());
-            Assert.assertThat(response,Matchers.containsString("400 Bad"));
+            Assert.assertEquals(0,response.length());
 
             // Wait some time to see if the callbacks are called too many times
             TimeUnit.MILLISECONDS.sleep(200);

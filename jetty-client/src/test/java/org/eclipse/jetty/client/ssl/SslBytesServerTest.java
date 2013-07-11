@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.client.ssl;
 
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+
 import java.io.BufferedReader;
 import java.io.EOFException;
 import java.io.File;
@@ -68,7 +71,6 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
@@ -1868,6 +1870,11 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Socket close
         record = proxy.readFromServer();
-        Assert.assertThat(record,Matchers.notNullValue());
+        if (record!=null)
+        {
+            Assert.assertEquals(record.getType(),Type.ALERT);
+            record = proxy.readFromServer();
+        }
+        Assert.assertThat(record,nullValue());
     }
 }

@@ -403,6 +403,16 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         }
         
         @Override
+        public void earlyEOF()
+        {
+            // If we have no request yet, just close
+            if (getRequest().getMethod()==null)
+                close();
+            else
+                super.earlyEOF();
+        }
+
+        @Override
         public boolean content(ByteBuffer item)
         {
             super.content(item);

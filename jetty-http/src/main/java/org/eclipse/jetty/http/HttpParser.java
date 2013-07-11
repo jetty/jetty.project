@@ -1210,6 +1210,11 @@ public class HttpParser
                     case CLOSED:
                         break;
                         
+                    case START:
+                        _handler.earlyEOF();
+                        setState(State.CLOSED);
+                        break;
+                        
                     case END:
                         setState(State.CLOSED);
                         break;
