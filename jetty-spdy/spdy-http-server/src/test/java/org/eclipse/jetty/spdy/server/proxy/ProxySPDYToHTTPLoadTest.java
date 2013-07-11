@@ -213,7 +213,7 @@ public class ProxySPDYToHTTPLoadTest
                         sendSingleClientRequest(proxyAddress, client, serverIdentificationString, serverHost);
                     }
                 }
-                catch (InterruptedException | ExecutionException | TimeoutException | IOException e)
+                catch (InterruptedException | ExecutionException | TimeoutException e)
                 {
                     e.printStackTrace();
                     fail();

@@ -19,7 +19,6 @@
 package org.eclipse.jetty.spdy.client;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
@@ -46,12 +45,29 @@ import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 
+/**
+ * A {@link SPDYClient} allows applications to connect to one or more SPDY servers,
+ * obtaining {@link Session} objects that can be used to send/receive SPDY frames.
+ * <p />
+ * {@link SPDYClient} instances are created through a {@link Factory}:
+ * <pre>
+ * SPDYClient.Factory factory = new SPDYClient.Factory();
+ * SPDYClient client = factory.newSPDYClient(SPDY.V3);
+ * </pre>
+ * and then used to connect to the server:
+ * <pre>
+ * FuturePromise&lt;Session&gt; promise = new FuturePromise&lt;&gt;();
+ * client.connect("server.com", null, promise);
+ * Session session = promise.get();
+ * </pre>
+ */
 public class SPDYClient
 {
     private final SPDYClientConnectionFactory connectionFactory = new SPDYClientConnectionFactory();
@@ -87,23 +103,57 @@ public class SPDYClient
         this.bindAddress = bindAddress;
     }
 
-    public Future<Session> connect(InetSocketAddress address, SessionFrameListener listener) throws IOException
+    /**
+     * Equivalent to:
+     * <pre>
+     * Future&lt;Session&gt; promise = new FuturePromise&lt;&gt;();
+     * connect(address, listener, promise);
+     * </pre>
+     *
+     * @param address the address to connect to
+     * @param listener the session listener that will be notified of session events
+     * @return a {@link Future} that provides a {@link Session} when connected
+     */
+    public Future<Session> connect(SocketAddress address, SessionFrameListener listener)
+    {
+        FuturePromise<Session> promise = new FuturePromise<>();
+        connect(address, listener, promise);
+        return promise;
+    }
+
+    /**
+     * Connects to the given {@code address}, binding the given {@code listener} to session events,
+     * and notified the given {@code promise} of the connect result.
+     * <p />
+     * If the connect operation is successful, the {@code promise} will be invoked with the {@link Session}
+     * object that applications can use to perform SPDY requests.
+     *
+     * @param address the address to connect to
+     * @param listener the session listener that will be notified of session events
+     * @param promise the promise notified of connection success/failure
+     */
+    public void connect(SocketAddress address, SessionFrameListener listener, Promise<Session> promise)
     {
         if (!factory.isStarted())
             throw new IllegalStateException(Factory.class.getSimpleName() + " is not started");
 
-        SocketChannel channel = SocketChannel.open();
-        if (bindAddress != null)
-            channel.bind(bindAddress);
-        channel.socket().setTcpNoDelay(true);
-        channel.configureBlocking(false);
+        try
+        {
+            SocketChannel channel = SocketChannel.open();
+            if (bindAddress != null)
+                channel.bind(bindAddress);
+            channel.socket().setTcpNoDelay(true);
+            channel.configureBlocking(false);
 
-        SessionPromise result = new SessionPromise(channel, this, listener);
+            SessionPromise result = new SessionPromise(channel, this, listener);
 
-        channel.connect(address);
-        factory.selector.connect(channel, result);
-
-        return result;
+            channel.connect(address);
+            factory.selector.connect(channel, result);
+        }
+        catch (IOException x)
+        {
+            promise.failed(x);
+        }
     }
 
     public long getIdleTimeout()
