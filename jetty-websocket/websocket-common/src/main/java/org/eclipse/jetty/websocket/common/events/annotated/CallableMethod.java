@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.common.events.annotated;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Objects;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -37,6 +38,8 @@ public class CallableMethod
 
     public CallableMethod(Class<?> pojo, Method method)
     {
+        Objects.requireNonNull(pojo, "Pojo cannot be null");
+        Objects.requireNonNull(method, "Method cannot be null");
         this.pojo = pojo;
         this.method = method;
         this.paramTypes = method.getParameterTypes();

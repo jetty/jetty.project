@@ -25,6 +25,7 @@ import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 
 import javax.websocket.CloseReason;
@@ -50,6 +51,7 @@ import org.eclipse.jetty.websocket.jsr356.server.samples.BasicOpenSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.BasicPongMessageSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.BasicTextMessageStringSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.StatelessTextMessageStringSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.beans.DateTextSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.primitives.ByteObjectTextSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.primitives.ByteTextSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.primitives.CharTextSocket;
@@ -60,6 +62,8 @@ import org.eclipse.jetty.websocket.jsr356.server.samples.primitives.FloatObjectT
 import org.eclipse.jetty.websocket.jsr356.server.samples.primitives.FloatTextSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.primitives.IntTextSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.primitives.IntegerObjectTextSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.primitives.ShortObjectTextSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.primitives.ShortTextSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.streaming.ReaderParamSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.streaming.StringReturnReaderParamSocket;
 import org.junit.Assert;
@@ -139,6 +143,10 @@ public class ServerAnnotatedEndpointScanner_GoodSignaturesTest
         Case.add(data, FloatObjectTextSocket.class, fText, Float.class);
         Case.add(data, IntTextSocket.class, fText, Integer.TYPE);
         Case.add(data, IntegerObjectTextSocket.class, fText, Integer.class);
+        Case.add(data, ShortTextSocket.class, fText, Short.TYPE);
+        Case.add(data, ShortObjectTextSocket.class, fText, Short.class);
+        // -- Beans
+        Case.add(data, DateTextSocket.class, fText, Date.class);
         // -- Reader Events
         Case.add(data, ReaderParamSocket.class, fText, Reader.class, String.class);
         Case.add(data, StringReturnReaderParamSocket.class, fText, Reader.class, String.class);
@@ -163,24 +171,25 @@ public class ServerAnnotatedEndpointScanner_GoodSignaturesTest
     public ServerAnnotatedEndpointScanner_GoodSignaturesTest(Case testcase)
     {
         this.testcase = testcase;
+        System.err.printf("Testing signature of %s%n",testcase.pojo.getName());
     }
 
     @Test
     public void testScan_Basic() throws Exception
     {
         AnnotatedServerEndpointMetadata metadata = new AnnotatedServerEndpointMetadata(container,testcase.pojo);
-        AnnotatedEndpointScanner<ServerEndpoint,ServerEndpointConfig> scanner = new AnnotatedEndpointScanner<>(metadata);
+        AnnotatedEndpointScanner<ServerEndpoint, ServerEndpointConfig> scanner = new AnnotatedEndpointScanner<>(metadata);
         scanner.scan();
 
         Assert.assertThat("Metadata",metadata,notNullValue());
 
-        JsrCallable cm = (JsrCallable)testcase.metadataField.get(metadata);
-        Assert.assertThat(testcase.metadataField.toString(),cm,notNullValue());
+        JsrCallable method = (JsrCallable)testcase.metadataField.get(metadata);
+        Assert.assertThat(testcase.metadataField.toString(),method,notNullValue());
         int len = testcase.expectedParameters.length;
         for (int i = 0; i < len; i++)
         {
             Class<?> expectedParam = testcase.expectedParameters[i];
-            Class<?> actualParam = cm.getParamTypes()[i];
+            Class<?> actualParam = method.getParamTypes()[i];
 
             Assert.assertTrue("Parameter[" + i + "] - expected:[" + expectedParam + "], actual:[" + actualParam + "]",actualParam.equals(expectedParam));
         }

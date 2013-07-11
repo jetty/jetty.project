@@ -43,6 +43,9 @@ public class AnnotatedClientEndpointMetadata extends AnnotatedEndpointMetadata<C
 
         this.endpoint = anno;
         this.config = new AnnotatedClientEndpointConfig(anno);
+
+        getDecoders().addAll(anno.decoders());
+        getEncoders().addAll(anno.encoders());
     }
 
     @Override

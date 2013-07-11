@@ -28,6 +28,7 @@ import org.eclipse.jetty.websocket.jsr356.EncoderFactory;
 import org.eclipse.jetty.websocket.jsr356.InitException;
 import org.eclipse.jetty.websocket.jsr356.JsrSession;
 import org.eclipse.jetty.websocket.jsr356.utils.MethodUtils;
+import org.eclipse.jetty.websocket.jsr356.utils.ReflectUtils;
 
 public class OnMessageCallable extends JsrCallable
 {
@@ -119,7 +120,8 @@ public class OnMessageCallable extends JsrCallable
             if (idxMessageObject < 0)
             {
                 StringBuilder err = new StringBuilder();
-                err.append("A message type must be specified [TEXT, BINARY, DECODER, or PONG]");
+                err.append("A message type must be specified [TEXT, BINARY, DECODER, or PONG] : ");
+                err.append(ReflectUtils.toString(pojo,method));
                 throw new InvalidSignatureException(err.toString());
             }
         }

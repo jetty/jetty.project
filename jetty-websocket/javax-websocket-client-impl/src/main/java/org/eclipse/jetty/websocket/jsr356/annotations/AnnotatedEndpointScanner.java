@@ -54,17 +54,19 @@ public class AnnotatedEndpointScanner<T extends Annotation, C extends EndpointCo
         paramsOnError = new LinkedList<>();
         paramsOnMessage = new LinkedList<>();
 
-        paramsOnOpen.add(JsrParamIdOnOpen.INSTANCE);
         metadata.customizeParamsOnOpen(paramsOnOpen);
-        paramsOnClose.add(JsrParamIdOnClose.INSTANCE);
-        metadata.customizeParamsOnClose(paramsOnClose);
-        paramsOnError.add(JsrParamIdOnError.INSTANCE);
-        metadata.customizeParamsOnError(paramsOnError);
+        paramsOnOpen.add(JsrParamIdOnOpen.INSTANCE);
 
+        metadata.customizeParamsOnClose(paramsOnClose);
+        paramsOnClose.add(JsrParamIdOnClose.INSTANCE);
+
+        metadata.customizeParamsOnError(paramsOnError);
+        paramsOnError.add(JsrParamIdOnError.INSTANCE);
+
+        metadata.customizeParamsOnMessage(paramsOnMessage);
         paramsOnMessage.add(JsrParamIdBinary.INSTANCE);
         paramsOnMessage.add(JsrParamIdText.INSTANCE);
         paramsOnMessage.add(JsrParamIdPong.INSTANCE);
-        metadata.customizeParamsOnMessage(paramsOnMessage);
     }
 
     private void assertNotDuplicate(JsrCallable callable, Class<? extends Annotation> methodAnnotationClass, Class<?> pojo, Method method)
