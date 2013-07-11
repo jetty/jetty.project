@@ -420,6 +420,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
                         @Override
                         public void onComplete(Result result)
                         {
+                            Assert.assertEquals(1, latch.getCount());
                             Assert.assertEquals(0, idleConnections.size());
                             Assert.assertEquals(0, activeConnections.size());
                             latch.countDown();
@@ -430,6 +431,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
 
             Assert.assertEquals(0, idleConnections.size());
             Assert.assertEquals(0, activeConnections.size());
+            
             server.stop();
         }
         finally

@@ -429,7 +429,8 @@ public class HttpParserTest
         parser.atEOF();
         parser.parseNext(BufferUtil.EMPTY_BUFFER);
 
-        assertEquals("400",_bad);
+        assertTrue(_early);
+        assertEquals(null,_bad);
     }
 
     @Test
