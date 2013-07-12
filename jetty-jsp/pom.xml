@@ -13,6 +13,18 @@
   </build>
 
   <dependencies>
+    <!-- Schemas -->
+    <dependency>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-schemas</artifactId>
+    </dependency>
+
+    <!-- servlet api -->
+    <dependency>
+       <groupId>javax.servlet</groupId>
+       <artifactId>javax.servlet-api</artifactId>
+    </dependency>
+
     <!-- JSP Api -->
     <dependency>
       <groupId>javax.servlet.jsp</groupId>
@@ -28,32 +40,20 @@
     <dependency>
        <groupId>org.eclipse.jetty.orbit</groupId>
        <artifactId>javax.servlet.jsp.jstl</artifactId>
-       <version>1.2.0.v201105211821</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.eclipse.jetty.orbit</groupId>
-          <artifactId>javax.servlet</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.eclipse.jetty.orbit</groupId>
-          <artifactId>javax.servlet.jsp</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <!-- JSTL Impl -->
     <dependency>
        <groupId>org.eclipse.jetty.orbit</groupId>
        <artifactId>org.apache.taglibs.standard.glassfish</artifactId>
-       <version>1.2.0.v201112081803</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.eclipse.jetty.orbit</groupId>
-          <artifactId>javax.servlet</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
 
     <!-- EL Api -->
+    <!-- Not needed as glassfish impl jars contain also the api classes
+    <dependency>
+      <groupId>javax.el</groupId>
+      <artifactId>javax.el-api</artifactId>
+    </dependency>
+    -->
 
     <!-- EL Impl -->
     <dependency>
@@ -62,26 +62,10 @@
     </dependency>
 
 
-    <dependency>
-      <groupId>javax.el</groupId>
-      <artifactId>javax.el-api</artifactId>
-    </dependency>
-
     <!-- Eclipse Java Compiler (for JSP Compilation) -->
     <dependency>
       <groupId>org.eclipse.jetty.orbit</groupId>
       <artifactId>org.eclipse.jdt.core</artifactId>
-      <version>3.8.2.v20130121</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.eclipse.jetty.orbit</groupId>
-          <artifactId>javax.servlet</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-       <groupId>javax.servlet</groupId>
-       <artifactId>javax.servlet-api</artifactId>
     </dependency>
   </dependencies>
 </project>

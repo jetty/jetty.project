@@ -93,7 +93,7 @@
  com.sun.el.parser;resolution:=optional,
  com.sun.el.util;resolution:=optional,
  javax.el;version="[3.0,3.1)";resolution:=optional,
- javax.servlet;version="(2.6.0,3.2)",
+ javax.servlet;version="[2.6.0,3.2)",
  javax.servlet.jsp;version="2.3",
  javax.servlet.jsp.el;version="2.3",
  javax.servlet.jsp.jstl.core;version="1.2.0";resolution:=optional,

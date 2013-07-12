@@ -335,7 +335,7 @@
             </configuration>
           </execution>
           <execution>
-            <id>copy-orbit-servlet-api-deps</id>
+            <id>copy-servlet-api-deps</id>
             <phase>generate-resources</phase>
             <goals>
               <goal>copy</goal>
@@ -346,14 +346,17 @@
                  <groupId>javax.servlet</groupId>
                  <artifactId>javax.servlet-api</artifactId>
                  <version>3.1.0</version>
-<!--
-                  <groupId>org.eclipse.jetty.orbit</groupId>
-                  <artifactId>javax.servlet</artifactId>
-                  <version>${orbit-servlet-api-version}</version>
--->
                   <overWrite>true</overWrite>
                   <outputDirectory>${assembly-directory}/lib</outputDirectory>
                   <destFileName>servlet-api-3.1.jar</destFileName>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty.toolchain</groupId>
+                  <artifactId>jetty-schemas</artifactId>
+                  <version>3.1-SNAPSHOT</version>
+                  <overWrite>true</overWrite>
+                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
+                  <destFileName>jetty-schemas-3.1.jar</destFileName>
                 </artifactItem>
               </artifactItems>
             </configuration>
@@ -385,47 +388,47 @@
             </configuration>
           </execution>
           <execution>
-            <id>copy-orbit-lib-annotations-deps</id>
+            <id>copy-annotations-deps</id>
             <phase>generate-resources</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <includeGroupIds>org.eclipse.jetty.orbit</includeGroupIds>
-              <includeArtifactIds>javax.annotation,org.objectweb.asm</includeArtifactIds>
+              <includeGroupIds>javax.annotation,org.eclipse.jetty.orbit</includeGroupIds>
+              <includeArtifactIds>javax.annotation-api,org.objectweb.asm</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/annotations</outputDirectory>
             </configuration>
           </execution>
 
           <execution>
-            <id>copy-orbit-lib-jta-deps</id>
+            <id>copy-jta-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>javax.transaction</includeGroupIds>
+              <includeArtifactIds>javax.transaction-api</includeArtifactIds>
+              <includeTypes>jar</includeTypes>
+              <outputDirectory>${assembly-directory}/lib/jndi</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-jndi-deps</id>
             <phase>generate-resources</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
               <includeGroupIds>org.eclipse.jetty.orbit</includeGroupIds>
-              <includeArtifactIds>javax.transaction</includeArtifactIds>
+              <includeArtifactIds>javax.activation</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/jndi</outputDirectory>
             </configuration>
           </execution>
           <execution>
-            <id>copy-orbit-lib-jndi-deps</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <configuration>
-              <includeGroupIds>org.eclipse.jetty.orbit</includeGroupIds>
-              <includeArtifactIds>javax.mail.glassfish,javax.activation</includeArtifactIds>
-              <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/jndi</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-orbit-lib-jsp-deps</id>
+            <id>copy-jsp-deps</id>
             <phase>generate-resources</phase>
             <goals>
               <goal>copy-dependencies</goal>
@@ -493,8 +496,8 @@
   <dependencies>
     <!-- Orbit Deps -->
     <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>javax.annotation</artifactId>
+      <groupId>javax.annotation</groupId>
+      <artifactId>javax.annotation-api</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.orbit</groupId>
@@ -505,12 +508,8 @@
       <artifactId>javax.activation</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>javax.mail.glassfish</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>javax.transaction</artifactId>
+      <groupId>javax.transaction</groupId>
+      <artifactId>javax.transaction-api</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.orbit</groupId>

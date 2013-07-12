@@ -49,8 +49,8 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>javax.transaction</artifactId>
+      <groupId>javax.transaction</groupId>
+      <artifactId>javax.transaction-api</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

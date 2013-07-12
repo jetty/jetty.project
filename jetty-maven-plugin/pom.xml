@@ -120,6 +120,16 @@
       <artifactId>jetty-jsp</artifactId>
       <version>${project.version}</version>
     </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.orbit</groupId>
+        <artifactId>javax.activation</artifactId>
+        <scope>compile</scope>
+      </dependency>
+      <dependency>
+        <groupId>javax.transaction</groupId>
+        <artifactId>javax.transaction-api</artifactId>
+        <scope>compile</scope>
+      </dependency>
   </dependencies>
   <reporting>
   <plugins>

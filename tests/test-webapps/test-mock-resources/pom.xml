@@ -22,21 +22,26 @@
   </build>
   <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>javax.transaction</artifactId>
-      <version>1.1.1.v201105210645</version>
+      <groupId>javax.transaction</groupId>
+      <artifactId>javax.transaction-api</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>
-         <groupId>javax.servlet</groupId>
-         <artifactId>javax.servlet-api</artifactId>
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
     </dependency>
-
 <!--
     <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>javax.servlet</artifactId>
+      <groupId>javax.mail</groupId>
+      <artifactId>javax.mail-api</artifactId>
     </dependency>
 -->
+    <dependency>
+      <groupId>org.eclipse.jetty.orbit</groupId>
+      <artifactId>javax.mail.glassfish</artifactId>
+      <version>1.4.1.v201005082020</version>
+      <scope>provided</scope>
+    </dependency>
+
   </dependencies>
 </project>

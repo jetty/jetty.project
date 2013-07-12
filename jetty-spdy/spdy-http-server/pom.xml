@@ -74,8 +74,8 @@
                         </goals>
                         <configuration>
                             <instructions>
-                                <Export-Package>org.eclipse.jetty.spdy.server.http;version="9.0",
-                                    org.eclipse.jetty.spdy.server.proxy;version="9.0"
+                                <Export-Package>org.eclipse.jetty.spdy.server.http;version="9.1",
+                                    org.eclipse.jetty.spdy.server.proxy;version="9.1"
                                 </Export-Package>
                                 <Import-Package>!org.eclipse.jetty.npn,org.eclipse.jetty.*;version="[9.0,10.0)",*
                                 </Import-Package>
