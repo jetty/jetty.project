@@ -545,7 +545,7 @@ public abstract class AbstractConnection implements Connection
         @Override
         public String toString()
         {
-            return String.format("AC.ExReadCB@%x", AbstractConnection.this.hashCode());
+            return String.format("AC.ReadCB@%x{%s}", AbstractConnection.this.hashCode(),AbstractConnection.this);
         }
     };
 }

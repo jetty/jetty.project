@@ -237,7 +237,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         finally
         {                        
             setCurrentConnection(null);
-            if (!suspended && getEndPoint().isOpen())
+            if (!suspended && getEndPoint().isOpen() && getEndPoint().getConnection()==this)
             {
                 fillInterested();
             }

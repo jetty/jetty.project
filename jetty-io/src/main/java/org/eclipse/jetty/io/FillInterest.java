@@ -25,6 +25,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 /* ------------------------------------------------------------ */
@@ -35,6 +37,7 @@ import org.eclipse.jetty.util.Callback;
  */
 public abstract class FillInterest
 {
+    private final static Logger LOG = Log.getLogger(FillInterest.class);
     private final AtomicReference<Callback> _interested = new AtomicReference<>(null);
 
     /* ------------------------------------------------------------ */
@@ -56,7 +59,10 @@ public abstract class FillInterest
             throw new IllegalArgumentException();
         
         if (!_interested.compareAndSet(null,callback))
+        {
+            LOG.warn("Read pending for "+_interested.get()+" pervented "+callback);
             throw new ReadPendingException();
+        }
         try
         {
             if (needsFill())
