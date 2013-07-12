@@ -145,7 +145,7 @@ public class SPDYClient
             channel.socket().setTcpNoDelay(true);
             channel.configureBlocking(false);
 
-            SessionPromise result = new SessionPromise(channel, this, listener);
+            SessionPromise result = new SessionPromise(promise, channel, this, listener);
 
             channel.connect(address);
             factory.selector.connect(channel, result);
@@ -390,14 +390,31 @@ public class SPDYClient
     static class SessionPromise extends FuturePromise<Session>
     {
         private final SocketChannel channel;
+        private final Promise wrappedPromise;
         final SPDYClient client;
         final SessionFrameListener listener;
 
-        private SessionPromise(SocketChannel channel, SPDYClient client, SessionFrameListener listener)
+        private SessionPromise(Promise<Session> promise, SocketChannel channel, SPDYClient client,
+                               SessionFrameListener listener)
         {
             this.channel = channel;
             this.client = client;
             this.listener = listener;
+            this.wrappedPromise = promise;
+        }
+
+        @Override
+        public void succeeded(Session result)
+        {
+            wrappedPromise.succeeded(result);
+            super.succeeded(result);
+        }
+
+        @Override
+        public void failed(Throwable cause)
+        {
+            wrappedPromise.failed(cause);
+            super.failed(cause);
         }
 
         @Override

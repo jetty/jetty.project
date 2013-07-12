@@ -81,7 +81,9 @@ public abstract class AbstractHTTPSPDYTest
 
     protected InetSocketAddress startHTTPServer(short version, Handler handler) throws Exception
     {
-        server = new Server();
+        QueuedThreadPool threadPool = new QueuedThreadPool(256);
+        threadPool.setName("serverQTP");
+        server = new Server(threadPool);
         connector = newHTTPSPDYServerConnector(version);
         connector.setPort(0);
         connector.setIdleTimeout(30000);
