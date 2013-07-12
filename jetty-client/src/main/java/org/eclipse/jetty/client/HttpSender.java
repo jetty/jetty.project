@@ -29,6 +29,7 @@ import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -564,7 +565,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
             anyToFailure(failure);
         }
 
-        private class Delegate extends IteratingCallback
+        private class Delegate extends IteratingNestedCallback
         {
             private Delegate(Callback callback)
             {

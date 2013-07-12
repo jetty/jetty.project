@@ -86,7 +86,7 @@ public class HttpClientContinueTest extends AbstractHttpClientServerTest
                 .scheme(scheme)
                 .header(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString())
                 .content(new BytesContentProvider(contents))
-                .timeout(555, TimeUnit.SECONDS)
+                .timeout(5, TimeUnit.SECONDS)
                 .send();
 
         Assert.assertNotNull(response);
@@ -133,7 +133,7 @@ public class HttpClientContinueTest extends AbstractHttpClientServerTest
                         return -1;
                     }
                 })
-                .timeout(555, TimeUnit.SECONDS)
+                .timeout(5, TimeUnit.SECONDS)
                 .send();
 
         Assert.assertNotNull(response);
@@ -590,7 +590,7 @@ public class HttpClientContinueTest extends AbstractHttpClientServerTest
                     }
                 });
 
-        Assert.assertTrue(latch.await(555, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     @Test

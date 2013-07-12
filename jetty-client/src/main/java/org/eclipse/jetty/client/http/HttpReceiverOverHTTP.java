@@ -33,6 +33,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.util.BufferUtil;
 
 public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
 {
@@ -108,7 +109,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     private void shutdown()
     {
         // Shutting down the parser may invoke messageComplete() or earlyEOF()
-        parser.shutdownInput();
+        parser.atEOF();
+        parser.parseNext(BufferUtil.EMPTY_BUFFER);
         if (!onResponseFailure(new EOFException()))
         {
             // TODO: just shutdown here, or full close ?
