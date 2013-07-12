@@ -26,73 +26,78 @@ import javax.websocket.EncodeException;
 import javax.websocket.Encoder;
 import javax.websocket.RemoteEndpoint;
 import javax.websocket.SendHandler;
-import javax.websocket.SendResult;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.WebSocketRemoteEndpoint;
+import org.eclipse.jetty.websocket.common.io.FutureWriteCallback;
 import org.eclipse.jetty.websocket.common.message.MessageOutputStream;
 import org.eclipse.jetty.websocket.common.message.MessageWriter;
-import org.eclipse.jetty.websocket.common.util.TextUtil;
-import org.eclipse.jetty.websocket.jsr356.messages.SendHandlerWriteCallback;
+import org.eclipse.jetty.websocket.jsr356.encoders.EncodeFailedFuture;
 
-public class JsrAsyncRemote extends AbstractJsrRemote implements RemoteEndpoint.Async
+public abstract class AbstractJsrRemote implements RemoteEndpoint
 {
-    static final Logger LOG = Log.getLogger(JsrAsyncRemote.class);
+    private static final Logger LOG = Log.getLogger(AbstractJsrRemote.class);
 
-    protected JsrAsyncRemote(JsrSession session)
+    protected final JsrSession session;
+    protected final WebSocketRemoteEndpoint jettyRemote;
+    protected final EncoderFactory encoders;
+
+    protected AbstractJsrRemote(JsrSession session)
     {
-        super(session);
+        this.session = session;
+        if (!(session.getRemote() instanceof WebSocketRemoteEndpoint))
+        {
+            StringBuilder err = new StringBuilder();
+            err.append("Unexpected implementation [");
+            err.append(session.getRemote().getClass().getName());
+            err.append("].  Expected an instanceof [");
+            err.append(WebSocketRemoteEndpoint.class.getName());
+            err.append("]");
+            throw new IllegalStateException(err.toString());
+        }
+        this.jettyRemote = (WebSocketRemoteEndpoint)session.getRemote();
+        this.encoders = session.getEncoderFactory();
+    }
+
+    protected void assertMessageNotNull(Object data)
+    {
+        if (data == null)
+        {
+            throw new IllegalArgumentException("message cannot be null");
+        }
+    }
+
+    protected void assertSendHandlerNotNull(SendHandler handler)
+    {
+        if (handler == null)
+        {
+            throw new IllegalArgumentException("SendHandler cannot be null");
+        }
     }
 
     @Override
-    public long getSendTimeout()
+    public void flushBatch() throws IOException
     {
         // TODO Auto-generated method stub
-        return 0;
     }
 
     @Override
-    public Future<Void> sendBinary(ByteBuffer data)
+    public boolean getBatchingAllowed()
     {
-        assertMessageNotNull(data);
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("sendBinary({})",BufferUtil.toDetailString(data));
-        }
-        return jettyRemote.sendBytesByFuture(data);
-    }
-
-    @Override
-    public void sendBinary(ByteBuffer data, SendHandler handler)
-    {
-        assertMessageNotNull(data);
-        assertSendHandlerNotNull(handler);
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("sendBinary({},{})",BufferUtil.toDetailString(data),handler);
-        }
-        WebSocketFrame frame = WebSocketFrame.binary().setPayload(data).setFin(true);
-        jettyRemote.sendFrame(frame,new SendHandlerWriteCallback(handler));
-    }
-
-    @Override
-    public Future<Void> sendObject(Object data)
-    {
-        return sendObjectViaFuture(data);
+        // TODO Auto-generated method stub
+        return false;
     }
 
     @SuppressWarnings(
     { "rawtypes", "unchecked" })
-    @Override
-    public void sendObject(Object data, SendHandler handler)
+    public Future<Void> sendObjectViaFuture(Object data)
     {
         assertMessageNotNull(data);
-        assertSendHandlerNotNull(handler);
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("sendObject({},{})",data,handler);
+            LOG.debug("sendObject({})",data);
         }
 
         Encoder encoder = encoders.getEncoderFor(data.getClass());
@@ -107,27 +112,26 @@ public class JsrAsyncRemote extends AbstractJsrRemote implements RemoteEndpoint.
             try
             {
                 String msg = etxt.encode(data);
-                sendText(msg,handler);
-                return;
+                return jettyRemote.sendStringByFuture(msg);
             }
             catch (EncodeException e)
             {
-                handler.onResult(new SendResult(e));
+                return new EncodeFailedFuture(data,etxt,Encoder.Text.class,e);
             }
         }
         else if (encoder instanceof Encoder.TextStream)
         {
             Encoder.TextStream etxt = (Encoder.TextStream)encoder;
-            SendHandlerWriteCallback callback = new SendHandlerWriteCallback(handler);
+            FutureWriteCallback callback = new FutureWriteCallback();
             try (MessageWriter writer = new MessageWriter(session))
             {
                 writer.setCallback(callback);
                 etxt.encode(data,writer);
-                return;
+                return callback;
             }
             catch (EncodeException | IOException e)
             {
-                handler.onResult(new SendResult(e));
+                return new EncodeFailedFuture(data,etxt,Encoder.Text.class,e);
             }
         }
         else if (encoder instanceof Encoder.Binary)
@@ -136,27 +140,26 @@ public class JsrAsyncRemote extends AbstractJsrRemote implements RemoteEndpoint.
             try
             {
                 ByteBuffer buf = ebin.encode(data);
-                sendBinary(buf,handler);
-                return;
+                return jettyRemote.sendBytesByFuture(buf);
             }
             catch (EncodeException e)
             {
-                handler.onResult(new SendResult(e));
+                return new EncodeFailedFuture(data,ebin,Encoder.Binary.class,e);
             }
         }
         else if (encoder instanceof Encoder.BinaryStream)
         {
             Encoder.BinaryStream ebin = (Encoder.BinaryStream)encoder;
-            SendHandlerWriteCallback callback = new SendHandlerWriteCallback(handler);
+            FutureWriteCallback callback = new FutureWriteCallback();
             try (MessageOutputStream out = new MessageOutputStream(session))
             {
                 out.setCallback(callback);
                 ebin.encode(data,out);
-                return;
+                return callback;
             }
             catch (EncodeException | IOException e)
             {
-                handler.onResult(new SendResult(e));
+                return new EncodeFailedFuture(data,ebin,Encoder.Binary.class,e);
             }
         }
 
@@ -164,31 +167,27 @@ public class JsrAsyncRemote extends AbstractJsrRemote implements RemoteEndpoint.
     }
 
     @Override
-    public Future<Void> sendText(String text)
+    public void sendPing(ByteBuffer data) throws IOException, IllegalArgumentException
     {
-        assertMessageNotNull(text);
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("sendText({})",TextUtil.hint(text));
+            LOG.debug("sendPing({})",BufferUtil.toDetailString(data));
         }
-        return jettyRemote.sendStringByFuture(text);
+        jettyRemote.sendPing(data);
     }
 
     @Override
-    public void sendText(String text, SendHandler handler)
+    public void sendPong(ByteBuffer data) throws IOException, IllegalArgumentException
     {
-        assertMessageNotNull(text);
-        assertSendHandlerNotNull(handler);
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("sendText({},{})",TextUtil.hint(text),handler);
+            LOG.debug("sendPong({})",BufferUtil.toDetailString(data));
         }
-        WebSocketFrame frame = WebSocketFrame.text(text).setFin(true);
-        jettyRemote.sendFrame(frame,new SendHandlerWriteCallback(handler));
+        jettyRemote.sendPong(data);
     }
 
     @Override
-    public void setSendTimeout(long timeoutmillis)
+    public void setBatchingAllowed(boolean allowed) throws IOException
     {
         // TODO Auto-generated method stub
     }

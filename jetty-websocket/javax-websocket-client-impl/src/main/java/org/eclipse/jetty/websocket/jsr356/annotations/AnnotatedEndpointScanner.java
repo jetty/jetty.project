@@ -33,7 +33,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.events.annotated.AbstractMethodAnnotationScanner;
 import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
-import org.eclipse.jetty.websocket.jsr356.utils.MethodUtils;
+import org.eclipse.jetty.websocket.jsr356.utils.ReflectUtils;
 
 public class AnnotatedEndpointScanner<T extends Annotation, C extends EndpointConfig> extends AbstractMethodAnnotationScanner<AnnotatedEndpointMetadata<T, C>>
 {
@@ -78,9 +78,9 @@ public class AnnotatedEndpointScanner<T extends Annotation, C extends EndpointCo
             err.append("Encountered duplicate method annotations @");
             err.append(methodAnnotationClass.getSimpleName());
             err.append(" on ");
-            err.append(MethodUtils.toString(pojo,callable.getMethod()));
+            err.append(ReflectUtils.toString(pojo,callable.getMethod()));
             err.append(" and ");
-            err.append(MethodUtils.toString(pojo,method));
+            err.append(ReflectUtils.toString(pojo,method));
 
             throw new InvalidSignatureException(err.toString());
         }
@@ -179,7 +179,7 @@ public class AnnotatedEndpointScanner<T extends Annotation, C extends EndpointCo
                 err.append("> on @");
                 err.append(methodAnnotationClass.getSimpleName());
                 err.append(" annotated method: ");
-                err.append(MethodUtils.toString(pojo,method));
+                err.append(ReflectUtils.toString(pojo,method));
 
                 throw new InvalidSignatureException(err.toString());
             }

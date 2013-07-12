@@ -27,7 +27,6 @@ import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureExcep
 import org.eclipse.jetty.websocket.jsr356.EncoderFactory;
 import org.eclipse.jetty.websocket.jsr356.InitException;
 import org.eclipse.jetty.websocket.jsr356.JsrSession;
-import org.eclipse.jetty.websocket.jsr356.utils.MethodUtils;
 import org.eclipse.jetty.websocket.jsr356.utils.ReflectUtils;
 
 public class OnMessageCallable extends JsrCallable
@@ -67,7 +66,7 @@ public class OnMessageCallable extends JsrCallable
             Param param = params[idxMessageObject];
             err.append(param.index);
             err.append(" [").append(param.type).append("] in method: ");
-            err.append(MethodUtils.toString(pojo,method));
+            err.append(ReflectUtils.toString(pojo,method));
             throw new InvalidSignatureException(err.toString());
         }
     }
@@ -79,7 +78,7 @@ public class OnMessageCallable extends JsrCallable
             StringBuilder err = new StringBuilder();
             err.append("Unable to find parameter with role [");
             err.append(description).append("] in method: ");
-            err.append(MethodUtils.toString(pojo,method));
+            err.append(ReflectUtils.toString(pojo,method));
             throw new InvalidSignatureException(err.toString());
         }
     }

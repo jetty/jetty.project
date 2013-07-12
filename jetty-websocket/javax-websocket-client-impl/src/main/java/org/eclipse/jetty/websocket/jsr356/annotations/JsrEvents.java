@@ -33,6 +33,8 @@ import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 import javax.websocket.RemoteEndpoint;
 
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.jsr356.JsrSession;
 
 /**
@@ -40,6 +42,7 @@ import org.eclipse.jetty.websocket.jsr356.JsrSession;
  */
 public class JsrEvents<T extends Annotation, C extends EndpointConfig>
 {
+    private static final Logger LOG = Log.getLogger(JsrEvents.class);
     private final AnnotatedEndpointMetadata<T, C> metadata;
 
     /**
@@ -105,6 +108,7 @@ public class JsrEvents<T extends Annotation, C extends EndpointConfig>
         Object ret = onBinary.call(websocket,buf,fin);
         if (ret != null)
         {
+            LOG.debug("returning: {}",ret);
             endpoint.sendObject(ret);
         }
     }
@@ -119,6 +123,7 @@ public class JsrEvents<T extends Annotation, C extends EndpointConfig>
         Object ret = onBinaryStream.call(websocket,stream);
         if (ret != null)
         {
+            LOG.debug("returning: {}",ret);
             endpoint.sendObject(ret);
         }
     }
@@ -159,6 +164,7 @@ public class JsrEvents<T extends Annotation, C extends EndpointConfig>
         Object ret = onText.call(websocket,text,fin);
         if (ret != null)
         {
+            LOG.debug("returning: {}",ret);
             endpoint.sendObject(ret);
         }
     }
@@ -172,6 +178,7 @@ public class JsrEvents<T extends Annotation, C extends EndpointConfig>
         Object ret = onTextStream.call(websocket,reader);
         if (ret != null)
         {
+            LOG.debug("returning: {}",ret);
             endpoint.sendObject(ret);
         }
     }
