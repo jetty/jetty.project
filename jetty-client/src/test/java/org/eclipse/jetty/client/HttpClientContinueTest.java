@@ -20,6 +20,8 @@ package org.eclipse.jetty.client;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.List;
@@ -466,7 +468,18 @@ public class HttpClientContinueTest extends AbstractHttpClientServerTest
             {
                 baseRequest.setHandled(true);
                 // Send 100-Continue and echo the content
-                IO.copy(request.getInputStream(), response.getOutputStream());
+//                IO.copy(request.getInputStream(), response.getOutputStream());
+                // TODO: DEBUG CODE, REMOVE WHEN FIXED
+                InputStream input = request.getInputStream();
+                OutputStream output = response.getOutputStream();
+                while (true)
+                {
+                    int value = input.read();
+                    Log.getLogger(getClass()).info("copy {}", value);
+                    if (value < 0)
+                        break;
+                    output.write(value);
+                }
             }
         });
 
