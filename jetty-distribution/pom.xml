@@ -353,7 +353,7 @@
                 <artifactItem>
                   <groupId>org.eclipse.jetty.toolchain</groupId>
                   <artifactId>jetty-schemas</artifactId>
-                  <version>3.1-SNAPSHOT</version>
+                  <version>3.1.RC0</version>
                   <overWrite>true</overWrite>
                   <outputDirectory>${assembly-directory}/lib</outputDirectory>
                   <destFileName>jetty-schemas-3.1.jar</destFileName>
