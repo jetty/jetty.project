@@ -86,7 +86,7 @@ public class HttpClientContinueTest extends AbstractHttpClientServerTest
                 .scheme(scheme)
                 .header(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString())
                 .content(new BytesContentProvider(contents))
-                .timeout(5, TimeUnit.SECONDS)
+                .timeout(555, TimeUnit.SECONDS)
                 .send();
 
         Assert.assertNotNull(response);
@@ -133,7 +133,7 @@ public class HttpClientContinueTest extends AbstractHttpClientServerTest
                         return -1;
                     }
                 })
-                .timeout(5, TimeUnit.SECONDS)
+                .timeout(555, TimeUnit.SECONDS)
                 .send();
 
         Assert.assertNotNull(response);
@@ -564,40 +564,7 @@ public class HttpClientContinueTest extends AbstractHttpClientServerTest
         });
 
         final byte[] data = new byte[]{0, 1, 2, 3, 4, 5, 6, 7};
-        final DeferredContentProvider content = new DeferredContentProvider()
-        {
-            @Override
-            public Iterator<ByteBuffer> iterator()
-            {
-                final Iterator<ByteBuffer> delegate = super.iterator();
-                return new Iterator<ByteBuffer>()
-                {
-                    private int count;
-
-                    @Override
-                    public boolean hasNext()
-                    {
-                        return delegate.hasNext();
-                    }
-
-                    @Override
-                    public ByteBuffer next()
-                    {
-                        // Fake that it returns null for two times,
-                        // to trigger particular branches in HttpSender
-                        if (++count <= 2)
-                            return null;
-                        return delegate.next();
-                    }
-
-                    @Override
-                    public void remove()
-                    {
-                        delegate.remove();
-                    }
-                };
-            }
-        };
+        final DeferredContentProvider content = new DeferredContentProvider();
 
         final CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
@@ -623,7 +590,7 @@ public class HttpClientContinueTest extends AbstractHttpClientServerTest
                     }
                 });
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(555, TimeUnit.SECONDS));
     }
 
     @Test

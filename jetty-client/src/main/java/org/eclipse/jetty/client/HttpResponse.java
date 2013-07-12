@@ -106,6 +106,6 @@ public class HttpResponse implements Response
     @Override
     public String toString()
     {
-        return String.format("%s[%s %d %s]", HttpResponse.class.getSimpleName(), getVersion(), getStatus(), getReason());
+        return String.format("%s[%s %d %s]@%x", HttpResponse.class.getSimpleName(), getVersion(), getStatus(), getReason(), hashCode());
     }
 }

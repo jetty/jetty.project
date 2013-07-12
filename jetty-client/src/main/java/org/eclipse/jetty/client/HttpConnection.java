@@ -21,10 +21,8 @@ package org.eclipse.jetty.client;
 import java.net.HttpCookie;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.api.Authentication;
 import org.eclipse.jetty.client.api.Connection;
@@ -37,31 +35,18 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
-public class HttpConnection extends AbstractConnection implements Connection
+public abstract class HttpConnection implements Connection
 {
-    private static final Logger LOG = Log.getLogger(HttpConnection.class);
     private static final HttpField CHUNKED_FIELD = new HttpField(HttpHeader.TRANSFER_ENCODING, HttpHeaderValue.CHUNKED);
 
-    private final AtomicReference<HttpExchange> exchange = new AtomicReference<>();
     private final HttpClient client;
     private final HttpDestination destination;
-    private final HttpSender sender;
-    private final HttpReceiver receiver;
-    private long idleTimeout;
-    private volatile boolean closed;
 
-    public HttpConnection(HttpClient client, EndPoint endPoint, HttpDestination destination)
+    protected HttpConnection(HttpClient client, HttpDestination destination)
     {
-        super(endPoint, client.getExecutor(), client.isDispatchIO());
         this.client = client;
         this.destination = destination;
-        this.sender = new HttpSender(this);
-        this.receiver = new HttpReceiver(this);
     }
 
     public HttpClient getHttpClient()
@@ -69,53 +54,9 @@ public class HttpConnection extends AbstractConnection implements Connection
         return client;
     }
 
-    public HttpDestination getDestination()
+    public HttpDestination getHttpDestination()
     {
         return destination;
-    }
-
-    @Override
-    public void onOpen()
-    {
-        super.onOpen();
-        fillInterested();
-    }
-
-    @Override
-    public void onClose()
-    {
-        closed = true;
-        super.onClose();
-    }
-
-    @Override
-    public void fillInterested()
-    {
-        // This is necessary when "upgrading" the connection for example after proxied
-        // CONNECT requests, because the old connection will read the CONNECT response
-        // and then set the read interest, while the new connection attached to the same
-        // EndPoint also will set the read interest, causing a ReadPendingException.
-        if (!closed)
-            super.fillInterested();
-    }
-
-    @Override
-    protected boolean onReadTimeout()
-    {
-        LOG.debug("{} idle timeout", this);
-
-        HttpExchange exchange = getExchange();
-        if (exchange != null)
-            idleTimeout();
-        else
-            destination.remove(this);
-
-        return true;
-    }
-
-    protected void idleTimeout()
-    {
-        receiver.idleTimeout();
     }
 
     @Override
@@ -132,27 +73,14 @@ public class HttpConnection extends AbstractConnection implements Connection
             listeners.add(listener);
 
         HttpConversation conversation = client.getConversation(request.getConversationID(), true);
-        HttpExchange exchange = new HttpExchange(conversation, getDestination(), request, listeners);
+        HttpExchange exchange = new HttpExchange(conversation, getHttpDestination(), request, listeners);
+
         send(exchange);
     }
 
-    public void send(HttpExchange exchange)
-    {
-        Request request = exchange.getRequest();
-        normalizeRequest(request);
+    protected abstract void send(HttpExchange exchange);
 
-        // Save the old idle timeout to restore it
-        EndPoint endPoint = getEndPoint();
-        idleTimeout = endPoint.getIdleTimeout();
-        endPoint.setIdleTimeout(request.getIdleTimeout());
-
-        // Associate the exchange to the connection
-        associate(exchange);
-
-        sender.send(exchange);
-    }
-
-    private void normalizeRequest(Request request)
+    protected void normalizeRequest(Request request)
     {
         if (request.getMethod() == null)
             request.method(HttpMethod.GET);
@@ -188,7 +116,7 @@ public class HttpConnection extends AbstractConnection implements Connection
         if (version.getVersion() > 10)
         {
             if (!headers.containsKey(HttpHeader.HOST.asString()))
-                headers.put(getDestination().getHostField());
+                headers.put(getHttpDestination().getHostField());
         }
 
         // Add content headers
@@ -234,130 +162,5 @@ public class HttpConnection extends AbstractConnection implements Connection
             if (acceptEncodingField != null)
                 headers.put(acceptEncodingField);
         }
-    }
-
-    public HttpExchange getExchange()
-    {
-        return exchange.get();
-    }
-
-    protected void associate(HttpExchange exchange)
-    {
-        if (!this.exchange.compareAndSet(null, exchange))
-            throw new UnsupportedOperationException("Pipelined requests not supported");
-        exchange.setConnection(this);
-        LOG.debug("{} associated to {}", exchange, this);
-    }
-
-    protected HttpExchange disassociate()
-    {
-        HttpExchange exchange = this.exchange.getAndSet(null);
-        if (exchange != null)
-            exchange.setConnection(null);
-        LOG.debug("{} disassociated from {}", exchange, this);
-        return exchange;
-    }
-
-    @Override
-    public void onFillable()
-    {
-        HttpExchange exchange = getExchange();
-        if (exchange != null)
-        {
-            receive();
-        }
-        else
-        {
-            // If there is no exchange, then could be either a remote close,
-            // or garbage bytes; in both cases we close the connection
-            close();
-        }
-    }
-
-    protected void receive()
-    {
-        receiver.receive();
-    }
-
-    public void complete(HttpExchange exchange, boolean success)
-    {
-        HttpExchange existing = disassociate();
-        if (existing == exchange)
-        {
-            exchange.awaitTermination();
-
-            // Restore idle timeout
-            getEndPoint().setIdleTimeout(idleTimeout);
-
-            LOG.debug("{} disassociated from {}", exchange, this);
-            if (success)
-            {
-                HttpFields responseHeaders = exchange.getResponse().getHeaders();
-                Enumeration<String> values = responseHeaders.getValues(HttpHeader.CONNECTION.asString(), ",");
-                if (values != null)
-                {
-                    while (values.hasMoreElements())
-                    {
-                        if ("close".equalsIgnoreCase(values.nextElement()))
-                        {
-                            close();
-                            return;
-                        }
-                    }
-                }
-                destination.release(this);
-            }
-            else
-            {
-                close();
-            }
-        }
-        else if (existing == null)
-        {
-            // It is possible that the exchange has already been disassociated,
-            // for example if the connection idle timeouts: this will fail
-            // the response, but the request may still be under processing.
-            // Eventually the request will also fail as the connection is closed
-            // and will arrive here without an exchange being present.
-            // We just ignore this fact, as the exchange has already been processed
-        }
-        else
-        {
-            throw new IllegalStateException();
-        }
-    }
-
-    public boolean abort(Throwable cause)
-    {
-        // We want the return value to be that of the response
-        // because if the response has already successfully
-        // arrived then we failed to abort the exchange
-        sender.abort(cause);
-        return receiver.abort(cause);
-    }
-
-    public void proceed(boolean proceed)
-    {
-        sender.proceed(proceed);
-    }
-
-    @Override
-    public void close()
-    {
-        destination.remove(this);
-        getEndPoint().shutdownOutput();
-        LOG.debug("{} oshut", this);
-        getEndPoint().close();
-        LOG.debug("{} closed", this);
-    }
-
-    @Override
-    public String toString()
-    {
-        return String.format("%s@%x(l:%s <-> r:%s)",
-                HttpConnection.class.getSimpleName(),
-                hashCode(),
-                getEndPoint().getLocalAddress(),
-                getEndPoint().getRemoteAddress());
     }
 }

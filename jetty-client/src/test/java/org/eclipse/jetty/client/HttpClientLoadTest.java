@@ -37,6 +37,9 @@ import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
+import org.eclipse.jetty.client.http.HttpConnectionPool;
+import org.eclipse.jetty.client.http.HttpDestinationOverHTTP;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -89,11 +92,12 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
                 logger.warn("Interrupting test, it is taking too long");
                 for (String host : Arrays.asList("localhost", "127.0.0.1"))
                 {
-                    HttpDestination destination = (HttpDestination)client.getDestination(scheme, host, connector.getLocalPort());
-                    for (Connection connection : new ArrayList<>(destination.getActiveConnections()))
+                    HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, connector.getLocalPort());
+                    HttpConnectionPool connectionPool = destination.getHttpConnectionPool();
+                    for (Connection connection : new ArrayList<>(connectionPool.getActiveConnections()))
                     {
-                        HttpConnection active = (HttpConnection)connection;
-                        logger.warn(active.getEndPoint() + " exchange " + active.getExchange());
+                        HttpConnectionOverHTTP active = (HttpConnectionOverHTTP)connection;
+                        logger.warn(active.getEndPoint() + " exchange " + active.getHttpChannel().getHttpExchange());
                     }
                 }
                 testThread.interrupt();

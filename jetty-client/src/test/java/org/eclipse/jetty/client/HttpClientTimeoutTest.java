@@ -34,6 +34,7 @@ import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.InputStreamContentProvider;
 import org.eclipse.jetty.io.EndPoint;
@@ -240,7 +241,7 @@ public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
         start(new TimeoutHandler(2 * timeout));
         client.stop();
         final AtomicBoolean sslIdle = new AtomicBoolean();
-        client = new HttpClient(sslContextFactory)
+        client = new HttpClient(new HttpClientTransportOverHTTP()
         {
             @Override
             protected SslConnection newSslConnection(HttpClient httpClient, EndPoint endPoint, SSLEngine engine)
@@ -255,7 +256,7 @@ public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
                     }
                 };
             }
-        };
+        }, sslContextFactory);
         client.setIdleTimeout(timeout);
         client.start();
 

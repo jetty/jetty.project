@@ -50,6 +50,9 @@ import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
+import org.eclipse.jetty.client.http.HttpConnectionPool;
+import org.eclipse.jetty.client.http.HttpDestinationOverHTTP;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpMethod;
@@ -81,13 +84,14 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         Response response = client.GET(scheme + "://" + host + ":" + port + path);
         Assert.assertEquals(200, response.getStatus());
 
-        HttpDestination destination = (HttpDestination)client.getDestination(scheme, host, port);
+        HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
+        HttpConnectionPool connectionPool = destination.getHttpConnectionPool();
 
         long start = System.nanoTime();
-        HttpConnection connection = null;
+        HttpConnectionOverHTTP connection = null;
         while (connection == null && TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - start) < 5)
         {
-            connection = (HttpConnection)destination.getIdleConnections().peek();
+            connection = (HttpConnectionOverHTTP)connectionPool.getIdleConnections().peek();
             TimeUnit.MILLISECONDS.sleep(10);
         }
         Assert.assertNotNull(connection);
@@ -98,8 +102,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         client.stop();
 
         Assert.assertEquals(0, client.getDestinations().size());
-        Assert.assertEquals(0, destination.getIdleConnections().size());
-        Assert.assertEquals(0, destination.getActiveConnections().size());
+        Assert.assertEquals(0, connectionPool.getIdleConnections().size());
+        Assert.assertEquals(0, connectionPool.getActiveConnections().size());
         Assert.assertFalse(connection.getEndPoint().isOpen());
     }
 
@@ -632,8 +636,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                     @Override
                     public void onBegin(Request request)
                     {
-                        HttpDestination destination = (HttpDestination)client.getDestination(scheme, host, port);
-                        destination.getActiveConnections().peek().close();
+                        HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
+                        destination.getHttpConnectionPool().getActiveConnections().peek().close();
                     }
                 })
                 .send(new Response.Listener.Empty()

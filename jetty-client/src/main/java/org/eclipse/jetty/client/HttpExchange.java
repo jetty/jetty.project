@@ -20,8 +20,9 @@ package org.eclipse.jetty.client;
 
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicMarkableReference;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
@@ -33,14 +34,16 @@ public class HttpExchange
 {
     private static final Logger LOG = Log.getLogger(HttpExchange.class);
 
+    private final AtomicBoolean requestComplete = new AtomicBoolean();
+    private final AtomicBoolean responseComplete = new AtomicBoolean();
     private final AtomicInteger complete = new AtomicInteger();
     private final CountDownLatch terminate = new CountDownLatch(2);
+    private final AtomicReference<HttpChannel> channel = new AtomicReference<>();
     private final HttpConversation conversation;
     private final HttpDestination destination;
     private final Request request;
     private final List<Response.ResponseListener> listeners;
     private final HttpResponse response;
-    private volatile HttpConnection connection;
     private volatile Throwable requestFailure;
     private volatile Throwable responseFailure;
 
@@ -85,30 +88,47 @@ public class HttpExchange
         return responseFailure;
     }
 
-    public void setConnection(HttpConnection connection)
+    public void associate(HttpChannel channel)
     {
-        this.connection = connection;
+        if (!this.channel.compareAndSet(null, channel))
+            throw new IllegalStateException();
     }
 
-    public AtomicMarkableReference<Result> requestComplete(Throwable failure)
+    public void disassociate(HttpChannel channel)
+    {
+        if (!this.channel.compareAndSet(channel, null))
+            throw new IllegalStateException();
+    }
+
+    public boolean requestComplete()
+    {
+        return requestComplete.compareAndSet(false, true);
+    }
+
+    public boolean responseComplete()
+    {
+        return responseComplete.compareAndSet(false, true);
+    }
+
+    public Result terminateRequest(Throwable failure)
     {
         int requestSuccess = 0b0011;
         int requestFailure = 0b0001;
-        return complete(failure == null ? requestSuccess : requestFailure, failure);
+        return terminate(failure == null ? requestSuccess : requestFailure, failure);
     }
 
-    public AtomicMarkableReference<Result> responseComplete(Throwable failure)
+    public Result terminateResponse(Throwable failure)
     {
         if (failure == null)
         {
             int responseSuccess = 0b1100;
-            return complete(responseSuccess, failure);
+            return terminate(responseSuccess, failure);
         }
         else
         {
             proceed(false);
             int responseFailure = 0b0100;
-            return complete(responseFailure, failure);
+            return terminate(responseFailure, failure);
         }
     }
 
@@ -125,16 +145,10 @@ public class HttpExchange
      * By using {@link AtomicInteger} to atomically sum these codes we can know
      * whether the exchange is completed and whether is successful.
      *
-     * @param code the bits representing the status code for either the request or the response
-     * @param failure the failure - if any - associated with the status code for either the request or the response
-     * @return an AtomicMarkableReference holding whether the operation modified the
-     * completion status and the {@link Result} - if any - associated with the status
+     * @return the {@link Result} - if any - associated with the status
      */
-    private AtomicMarkableReference<Result> complete(int code, Throwable failure)
+    private Result terminate(int code, Throwable failure)
     {
-        Result result = null;
-        boolean modified = false;
-
         int current;
         while (true)
         {
@@ -146,7 +160,6 @@ public class HttpExchange
                 if (!complete.compareAndSet(current, candidate))
                     continue;
                 current = candidate;
-                modified = true;
                 if ((code & 0b01) == 0b01)
                     requestFailure = failure;
                 else
@@ -156,19 +169,16 @@ public class HttpExchange
             break;
         }
 
-        int completed = 0b0101;
-        if ((current & completed) == completed)
+        int terminated = 0b0101;
+        if ((current & terminated) == terminated)
         {
-            if (modified)
-            {
-                // Request and response completed
-                LOG.debug("{} complete", this);
-                conversation.complete();
-            }
-            result = new Result(getRequest(), getRequestFailure(), getResponse(), getResponseFailure());
+            // Request and response terminated
+            LOG.debug("{} terminated", this);
+            conversation.complete();
+            return new Result(getRequest(), getRequestFailure(), getResponse(), getResponseFailure());
         }
 
-        return new AtomicMarkableReference<>(result, modified);
+        return null;
     }
 
     public boolean abort(Throwable cause)
@@ -181,12 +191,12 @@ public class HttpExchange
         }
         else
         {
-            HttpConnection connection = this.connection;
-            // If there is no connection, this exchange is already completed
-            if (connection == null)
+            HttpChannel channel = this.channel.get();
+            // If there is no channel, this exchange is already completed
+            if (channel == null)
                 return false;
 
-            boolean aborted = connection.abort(cause);
+            boolean aborted = channel.abort(cause);
             LOG.debug("Aborted while active ({}) {}: {}", aborted, this, cause);
             return aborted;
         }
@@ -194,6 +204,7 @@ public class HttpExchange
 
     public void resetResponse(boolean success)
     {
+        responseComplete.set(false);
         int responseSuccess = 0b1100;
         int responseFailure = 0b0100;
         int code = success ? responseSuccess : responseFailure;
@@ -202,9 +213,9 @@ public class HttpExchange
 
     public void proceed(boolean proceed)
     {
-        HttpConnection connection = this.connection;
-        if (connection != null)
-            connection.proceed(proceed);
+        HttpChannel channel = this.channel.get();
+        if (channel != null)
+            channel.proceed(this, proceed);
     }
 
     public void terminateRequest()
@@ -229,15 +240,20 @@ public class HttpExchange
         }
     }
 
-    @Override
-    public String toString()
+    private String toString(int code)
     {
         String padding = "0000";
-        String status = Integer.toBinaryString(complete.get());
+        String status = Integer.toBinaryString(code);
         return String.format("%s@%x status=%s%s",
                 HttpExchange.class.getSimpleName(),
                 hashCode(),
                 padding.substring(status.length()),
                 status);
+    }
+
+    @Override
+    public String toString()
+    {
+        return toString(complete.get());
     }
 }
