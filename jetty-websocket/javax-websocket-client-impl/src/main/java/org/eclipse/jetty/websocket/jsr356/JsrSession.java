@@ -274,12 +274,6 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
     }
 
     @Override
-    public String getProtocolVersion()
-    {
-        return getProtocolVersion();
-    }
-
-    @Override
     public String getQueryString()
     {
         return getUpgradeRequest().getRequestURI().getQuery();
@@ -300,7 +294,7 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
     @Override
     public Principal getUserPrincipal()
     {
-        // TODO Auto-generated method stub
+        // FIXME return getUpgradeRequest().getUserPrincipal();
         return null;
     }
 
