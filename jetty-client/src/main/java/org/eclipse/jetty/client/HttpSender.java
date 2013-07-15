@@ -463,6 +463,18 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
         @Override
         public void succeeded()
         {
+            try
+            {
+                process();
+            }
+            catch (Exception x)
+            {
+                anyToFailure(x);
+            }
+        }
+
+        private void process() throws Exception
+        {
             HttpExchange exchange = getHttpExchange();
             if (exchange == null)
                 return;

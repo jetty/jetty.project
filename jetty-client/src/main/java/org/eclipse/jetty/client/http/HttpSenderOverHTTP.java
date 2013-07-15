@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.client.http;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -115,7 +114,7 @@ public class HttpSenderOverHTTP extends HttpSender
                 }
             }
         }
-        catch (Throwable x)
+        catch (Exception x)
         {
             LOG.debug(x);
             content.failed(x);
@@ -173,7 +172,7 @@ public class HttpSenderOverHTTP extends HttpSender
                 }
             }
         }
-        catch (IOException x)
+        catch (Exception x)
         {
             LOG.debug(x);
             content.failed(x);
