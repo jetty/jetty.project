@@ -334,6 +334,9 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
 
     public void proceed(HttpExchange exchange, boolean proceed)
     {
+        if (!expects100Continue(exchange.getRequest()))
+            return;
+
         if (proceed)
         {
             while (true)
