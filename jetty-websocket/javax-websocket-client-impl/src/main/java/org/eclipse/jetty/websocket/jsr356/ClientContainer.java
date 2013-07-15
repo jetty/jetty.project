@@ -282,13 +282,14 @@ public class ClientContainer implements WebSocketContainer
     @Override
     public void setAsyncSendTimeout(long timeoutmillis)
     {
+        client.setMaxIdleTimeout(timeoutmillis);
         client.setAsyncWriteTimeout(timeoutmillis);
     }
 
     @Override
     public void setDefaultMaxBinaryMessageBufferSize(int max)
     {
-        // TODO: add safety net for policy assertions
+        client.getPolicy().setMaxBinaryMessageSize(max);
         client.setMaxBinaryMessageBufferSize(max);
     }
 
@@ -301,7 +302,7 @@ public class ClientContainer implements WebSocketContainer
     @Override
     public void setDefaultMaxTextMessageBufferSize(int max)
     {
-        // TODO: add safety net for policy assertions
+        client.getPolicy().setMaxTextMessageSize(max);
         client.setMaxTextMessageBufferSize(max);
     }
 
