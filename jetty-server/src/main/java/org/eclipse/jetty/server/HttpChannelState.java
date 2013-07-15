@@ -91,7 +91,6 @@ public class HttpChannelState
 
     private final boolean DEBUG=LOG.isDebugEnabled();
     private final HttpChannel<?> _channel;
-    private List<AsyncListener> _lastAsyncListeners;
     private List<AsyncListener> _asyncListeners;
 
     private State _state;
@@ -183,15 +182,6 @@ public class HttpChannelState
                 case IDLE:
                     _initial=true;
                     _state=State.DISPATCHED;
-                    if (_lastAsyncListeners!=null)
-                        _lastAsyncListeners.clear();
-                    if (_asyncListeners!=null)
-                        _asyncListeners.clear();
-                    else
-                    {
-                        _asyncListeners=_lastAsyncListeners;
-                        _lastAsyncListeners=null;
-                    }
                     return Action.REQUEST_DISPATCH;
 
                 case COMPLETING:
@@ -249,6 +239,8 @@ public class HttpChannelState
 
     public void startAsync(AsyncContextEvent event)
     {
+        final List<AsyncListener> lastAsyncListeners;
+        
         synchronized (this)
         {
             if (_state!=State.DISPATCHED || _async!=null)
@@ -256,20 +248,17 @@ public class HttpChannelState
             
             _async=Async.STARTED;
             _event=event;
-            List<AsyncListener> listeners=_lastAsyncListeners;
-            _lastAsyncListeners=_asyncListeners;
-            if (listeners!=null)
-                listeners.clear();
-            _asyncListeners=listeners;
+            lastAsyncListeners=_asyncListeners;
+            _asyncListeners=null;
         }
 
-        if (_lastAsyncListeners!=null)
+        if (lastAsyncListeners!=null)
         {
-            for (AsyncListener listener : _lastAsyncListeners)
+            for (AsyncListener listener : lastAsyncListeners)
             {
                 try
                 {
-                    listener.onStartAsync(_event);
+                    listener.onStartAsync(event);
                 }
                 catch(Exception e)
                 {
@@ -529,7 +518,11 @@ public class HttpChannelState
 
     protected void cancelTimeout()
     {
-        AsyncContextEvent event=_event;
+        final AsyncContextEvent event;
+        synchronized (this)
+        { 
+            event=_event;
+        }
         if (event!=null)
             event.cancelTimeoutTask();
     }
@@ -602,7 +595,12 @@ public class HttpChannelState
 
     public ContextHandler getContextHandler()
     {
-        final AsyncContextEvent event=_event;
+        final AsyncContextEvent event;
+        synchronized (this)
+        { 
+            event=_event;
+        }
+       
         if (event!=null)
         {
             Context context=((Context)event.getServletContext());
@@ -614,8 +612,13 @@ public class HttpChannelState
 
     public ServletResponse getServletResponse()
     {
-        if (_event!=null && _event.getSuppliedResponse()!=null)
-            return _event.getSuppliedResponse();
+        final AsyncContextEvent event;
+        synchronized (this)
+        { 
+            event=_event;
+        }
+        if (event!=null && event.getSuppliedResponse()!=null)
+            return event.getSuppliedResponse();
         return _channel.getResponse();
     }
 
