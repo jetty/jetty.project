@@ -268,10 +268,13 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
 
     protected void interruptAcceptors()
     {
-        for (Thread thread : _acceptors)
+        synchronized (this)
         {
-            if (thread != null)
-                thread.interrupt();
+            for (Thread thread : _acceptors)
+            {
+                if (thread != null)
+                    thread.interrupt();
+            }
         }
     }
 
@@ -306,9 +309,12 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
 
     public void join(long timeout) throws InterruptedException
     {
-        for (Thread thread : _acceptors)
-            if (thread != null)
-                thread.join(timeout);
+        synchronized (this)
+        {
+            for (Thread thread : _acceptors)
+                if (thread != null)
+                    thread.join(timeout);
+        }
     }
 
     protected abstract void accept(int acceptorID) throws IOException, InterruptedException;
