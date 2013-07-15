@@ -14,7 +14,6 @@
         <bundle-symbolic-name>${project.groupId}.core</bundle-symbolic-name>
     </properties>
 
-  <url>http://www.eclipse.org/jetty</url>
     <dependencies>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>

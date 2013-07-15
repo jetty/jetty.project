@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.spdy.server.http;
+package org.eclipse.jetty.spdy.http;
 
 import java.util.HashMap;
 import java.util.Map;

@@ -19,6 +19,7 @@
 
 package org.eclipse.jetty.spdy.server.http;
 
+import org.eclipse.jetty.spdy.http.HTTPSPDYHeader;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 

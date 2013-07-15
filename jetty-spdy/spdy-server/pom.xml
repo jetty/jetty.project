@@ -8,7 +8,7 @@
 
     <modelVersion>4.0.0</modelVersion>
     <artifactId>spdy-server</artifactId>
-    <name>Jetty :: SPDY :: Jetty Server Binding</name>
+    <name>Jetty :: SPDY :: Server Binding</name>
 
     <properties>
         <bundle-symbolic-name>${project.groupId}.server</bundle-symbolic-name>

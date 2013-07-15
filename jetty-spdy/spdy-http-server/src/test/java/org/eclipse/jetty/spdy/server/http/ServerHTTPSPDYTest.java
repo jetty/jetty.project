@@ -48,6 +48,7 @@ import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.StringDataInfo;
 import org.eclipse.jetty.spdy.api.SynInfo;
+import org.eclipse.jetty.spdy.http.HTTPSPDYHeader;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.Assert;
@@ -1036,12 +1037,12 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
         assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
         assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
     }
-    
+
     @Test
     public void testGETWithMediumContentAsBufferByPassed() throws Exception
     {
         final byte[] data = new byte[2048];
-        
+
         final CountDownLatch handlerLatch = new CountDownLatch(1);
         Session session = startClient(version, startHTTPServer(version, new AbstractHandler()
         {

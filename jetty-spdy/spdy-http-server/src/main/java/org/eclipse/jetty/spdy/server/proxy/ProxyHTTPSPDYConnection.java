@@ -51,7 +51,7 @@ import org.eclipse.jetty.spdy.api.SessionStatus;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.SynInfo;
-import org.eclipse.jetty.spdy.server.http.HTTPSPDYHeader;
+import org.eclipse.jetty.spdy.http.HTTPSPDYHeader;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
@@ -264,8 +264,8 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
                 long contentLength = fields.getLongField(HttpHeader.CONTENT_LENGTH.asString());
                 HttpGenerator.ResponseInfo info = new HttpGenerator.ResponseInfo(httpVersion, fields, contentLength, code,
                         reason, false);
-                
-                // TODO use the async send 
+
+                // TODO use the async send
                 send(info, null, replyInfo.isClose());
 
                 if (replyInfo.isClose())

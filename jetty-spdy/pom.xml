@@ -119,6 +119,7 @@
         <module>spdy-core</module>
         <module>spdy-client</module>
         <module>spdy-server</module>
+        <module>spdy-http-common</module>
         <module>spdy-http-server</module>
         <module>spdy-http-client-transport</module>
         <module>spdy-example-webapp</module>
