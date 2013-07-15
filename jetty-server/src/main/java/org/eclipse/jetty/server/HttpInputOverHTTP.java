@@ -53,7 +53,6 @@ class HttpInputOverHTTP extends HttpInput<ByteBuffer> implements Callback
         }
     }
 
-
     @Override
     protected void blockForContent() throws IOException
     {
@@ -73,12 +72,6 @@ class HttpInputOverHTTP extends HttpInput<ByteBuffer> implements Callback
     public String toString()
     {
         return String.format("%s@%x",getClass().getSimpleName(),hashCode());
-    }
-    
-    @Override
-    public Object lock()
-    {
-        return this;
     }
 
     @Override
@@ -120,7 +113,6 @@ class HttpInputOverHTTP extends HttpInput<ByteBuffer> implements Callback
                 }
                 return null;
             }
-            
         }
             
         return null; 

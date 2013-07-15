@@ -42,16 +42,10 @@ public abstract class QueuedHttpInput<T> extends HttpInput<T>
 {
     private final static Logger LOG = Log.getLogger(QueuedHttpInput.class);
 
-    private final ArrayQueue<T> _inputQ = new ArrayQueue<>();
+    private final ArrayQueue<T> _inputQ = new ArrayQueue<>(lock());
     
     public QueuedHttpInput()
-    {
-    }
-    
-    public Object lock()
-    {
-        return _inputQ.lock();
-    }
+    {}
 
     public void recycle()
     {

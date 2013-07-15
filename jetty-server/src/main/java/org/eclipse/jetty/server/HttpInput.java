@@ -63,13 +63,22 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
     
     protected State _state = BLOCKING;
     private State _eof=null;
-    
-    
+    private final Object _lock;
+
     protected HttpInput()
     {
+        this(null);
     }
     
-    public abstract Object lock();
+    protected HttpInput(Object lock)
+    {
+        _lock=lock==null?this:lock;
+    }
+    
+    public final Object lock()
+    {
+        return _lock;
+    }
 
     public void recycle()
     {
@@ -431,7 +440,10 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
 
     public void init(HttpChannelState state)
     {
-        _channelState=state;
+        synchronized (lock())
+        {
+            _channelState=state;
+        }
     }
 
 }

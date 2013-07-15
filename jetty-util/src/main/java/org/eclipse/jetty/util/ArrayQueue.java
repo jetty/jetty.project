@@ -48,6 +48,12 @@ public class ArrayQueue<E> extends AbstractList<E> implements Queue<E>
     {
         this(DEFAULT_CAPACITY, -1);
     }
+    
+    /* ------------------------------------------------------------ */
+    public ArrayQueue(Object lock)
+    {
+        this(DEFAULT_CAPACITY, -1,lock);
+    }
 
     /* ------------------------------------------------------------ */
     public ArrayQueue(int capacity)
