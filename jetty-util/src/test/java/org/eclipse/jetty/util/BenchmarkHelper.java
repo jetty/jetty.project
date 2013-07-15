@@ -39,14 +39,14 @@ public class BenchmarkHelper implements Runnable
     private final CompilationMXBean jitCompiler;
     private final MemoryMXBean heapMemory;
     private final AtomicInteger starts = new AtomicInteger();
-    private volatile MemoryPoolMXBean youngMemoryPool;
-    private volatile MemoryPoolMXBean survivorMemoryPool;
-    private volatile MemoryPoolMXBean oldMemoryPool;
-    private volatile boolean hasMemoryPools;
+    private final MemoryPoolMXBean youngMemoryPool;
+    private final MemoryPoolMXBean survivorMemoryPool;
+    private final MemoryPoolMXBean oldMemoryPool;
+    private final boolean hasMemoryPools;
+    private final GarbageCollectorMXBean youngCollector;
+    private final GarbageCollectorMXBean oldCollector;
+    private final boolean hasCollectors;
     private volatile ScheduledFuture<?> memoryPoller;
-    private volatile GarbageCollectorMXBean youngCollector;
-    private volatile GarbageCollectorMXBean oldCollector;
-    private volatile boolean hasCollectors;
     private volatile ScheduledExecutorService scheduler;
     private volatile boolean polling;
     private volatile long lastYoungUsed;
@@ -70,35 +70,47 @@ public class BenchmarkHelper implements Runnable
         this.heapMemory = ManagementFactory.getMemoryMXBean();
 
         List<MemoryPoolMXBean> memoryPools = ManagementFactory.getMemoryPoolMXBeans();
+        MemoryPoolMXBean ymp=null;
+        MemoryPoolMXBean smp=null;
+        MemoryPoolMXBean omp=null;
+        
         for (MemoryPoolMXBean memoryPool : memoryPools)
         {
             if ("PS Eden Space".equals(memoryPool.getName()) ||
                     "Par Eden Space".equals(memoryPool.getName()) ||
                     "G1 Eden".equals(memoryPool.getName()))
-                youngMemoryPool = memoryPool;
+                ymp = memoryPool;
             else if ("PS Survivor Space".equals(memoryPool.getName()) ||
                     "Par Survivor Space".equals(memoryPool.getName()) ||
                     "G1 Survivor".equals(memoryPool.getName()))
-                survivorMemoryPool = memoryPool;
+                smp = memoryPool;
             else if ("PS Old Gen".equals(memoryPool.getName()) ||
                     "CMS Old Gen".equals(memoryPool.getName()) ||
                     "G1 Old Gen".equals(memoryPool.getName()))
-                oldMemoryPool = memoryPool;
+                omp = memoryPool;
         }
+        youngMemoryPool=ymp;
+        survivorMemoryPool=smp;
+        oldMemoryPool=omp;
+        
         hasMemoryPools = youngMemoryPool != null && survivorMemoryPool != null && oldMemoryPool != null;
 
         List<GarbageCollectorMXBean> garbageCollectors = ManagementFactory.getGarbageCollectorMXBeans();
+        GarbageCollectorMXBean yc=null;
+        GarbageCollectorMXBean oc=null;
         for (GarbageCollectorMXBean garbageCollector : garbageCollectors)
         {
             if ("PS Scavenge".equals(garbageCollector.getName()) ||
                     "ParNew".equals(garbageCollector.getName()) ||
                     "G1 Young Generation".equals(garbageCollector.getName()))
-                youngCollector = garbageCollector;
+                yc = garbageCollector;
             else if ("PS MarkSweep".equals(garbageCollector.getName()) ||
                     "ConcurrentMarkSweep".equals(garbageCollector.getName()) ||
                     "G1 Old Generation".equals(garbageCollector.getName()))
-                oldCollector = garbageCollector;
+                oc = garbageCollector;
         }
+        youngCollector=yc;
+        oldCollector=oc;
         hasCollectors = youngCollector != null && oldCollector != null;
     }
 
