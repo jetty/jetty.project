@@ -119,7 +119,7 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
                 {
                     StringBuilder err = new StringBuilder();
                     err.append("Encountered duplicate MessageHandler handling message type <");
-                    err.append(key.name());
+                    err.append(wrapper.getMetadata().getObjectType().getName());
                     err.append(">, ").append(metadata.getHandlerClass().getName());
                     err.append("<");
                     err.append(metadata.getMessageClass().getName());
@@ -138,16 +138,7 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
             }
 
             // Update handlerSet
-            messageHandlerSet.clear();
-            for (MessageHandlerWrapper wrapper : wrappers)
-            {
-                if (wrapper == null)
-                {
-                    // skip empty
-                    continue;
-                }
-                messageHandlerSet.add(wrapper.getHandler());
-            }
+            updateMessageHandlerSet();
         }
     }
 
@@ -230,7 +221,8 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
     @Override
     public Set<MessageHandler> getMessageHandlers()
     {
-        return Collections.unmodifiableSet(messageHandlerSet);
+        // Always return copy of set, as it is common to iterate and remove from the real set.
+        return new HashSet<MessageHandler>(messageHandlerSet);
     }
 
     public MessageHandlerWrapper getMessageHandlerWrapper(MessageType type)
@@ -315,18 +307,22 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
     @Override
     public void removeMessageHandler(MessageHandler handler)
     {
-        try
+        synchronized (wrappers)
         {
-            for (MessageHandlerMetadata metadata : messageHandlerFactory.getMetadata(handler.getClass()))
+            try
             {
-                DecoderMetadata decoder = decoderFactory.getMetadataFor(metadata.getMessageClass());
-                MessageType key = decoder.getMessageType();
-                wrappers[key.ordinal()] = null;
+                for (MessageHandlerMetadata metadata : messageHandlerFactory.getMetadata(handler.getClass()))
+                {
+                    DecoderMetadata decoder = decoderFactory.getMetadataFor(metadata.getMessageClass());
+                    MessageType key = decoder.getMessageType();
+                    wrappers[key.ordinal()] = null;
+                }
+                updateMessageHandlerSet();
             }
-        }
-        catch (IllegalStateException e)
-        {
-            LOG.warn("Unable to identify MessageHandler: " + handler.getClass().getName(),e);
+            catch (IllegalStateException e)
+            {
+                LOG.warn("Unable to identify MessageHandler: " + handler.getClass().getName(),e);
+            }
         }
     }
 
@@ -346,5 +342,19 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
     public void setMaxTextMessageBufferSize(int length)
     {
         getPolicy().setMaxTextMessageBufferSize(length);
+    }
+
+    private void updateMessageHandlerSet()
+    {
+        messageHandlerSet.clear();
+        for (MessageHandlerWrapper wrapper : wrappers)
+        {
+            if (wrapper == null)
+            {
+                // skip empty
+                continue;
+            }
+            messageHandlerSet.add(wrapper.getHandler());
+        }
     }
 }
