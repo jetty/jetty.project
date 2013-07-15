@@ -53,7 +53,7 @@ public class JsrExtension implements Extension
     }
 
     private final String name;
-    private List<Parameter> parameters;
+    private List<Parameter> parameters = new ArrayList<>();
 
     /**
      * A configured extension
@@ -61,7 +61,6 @@ public class JsrExtension implements Extension
     public JsrExtension(ExtensionConfig cfg)
     {
         this.name = cfg.getName();
-        this.parameters = new ArrayList<>();
         if (cfg.getParameters() != null)
         {
             for (Map.Entry<String, String> entry : cfg.getParameters().entrySet())
