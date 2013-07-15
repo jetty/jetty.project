@@ -294,8 +294,7 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
     @Override
     public Principal getUserPrincipal()
     {
-        // FIXME return getUpgradeRequest().getUserPrincipal();
-        return null;
+        return getUpgradeRequest().getUserPrincipal();
     }
 
     @Override

@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.api;
 
 import java.net.HttpCookie;
 import java.net.URI;
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -74,6 +75,19 @@ public class UpgradeRequest
         {
             extensions.add(ExtensionConfig.parse(config));
         }
+    }
+    
+    /**
+     * Get the User Principal for this request.
+     * <p>
+     * Only applicable when using UpgradeRequest from server side.
+     * 
+     * @return the user principal
+     */
+    public Principal getUserPrincipal()
+    {
+        // Server side should override to implement
+        return null;
     }
 
     public void clearHeaders()
