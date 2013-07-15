@@ -170,35 +170,21 @@ public abstract class QueuedHttpInput<T> extends HttpInput<T>
     {
         synchronized (lock())
         {
-            T item = _inputQ.peekUnsafe();
-            
-            while (!_state.isEOF())
+            try
             {
-                while (item != null)
+                while (!isFinished())
                 {
-                    _inputQ.pollUnsafe();
-                    onContentConsumed(item);
-
-                    item = _inputQ.peekUnsafe();
-                    if (item == null)
-                        onAllContentConsumed();
-                }
-
-                try
-                {
-                    blockForContent();
-                    item = _inputQ.peekUnsafe();
-                    
+                    T item = getNextContent();
                     if (item==null)
-                        checkEOF();
+                        blockForContent();
+                    else
+                        consume(item,remaining(item));
                 }
-                catch (IOException e)
-                {
-                    throw new RuntimeIOException(e);
-                }
+            }
+            catch (IOException e)
+            {
+                throw new RuntimeIOException(e);
             }
         }
     }
-
-
 }

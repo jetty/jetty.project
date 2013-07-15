@@ -63,7 +63,8 @@ class HttpInputOverHTTP extends HttpInput<ByteBuffer> implements Callback
             LOG.debug("{} block readable on {}",this,_readBlocker);
             _readBlocker.block();
             
-            if (nextContent()!=null || isFinished())
+            Object content=getNextContent();
+            if (content!=null || isFinished())
                 break;
         }
     }
@@ -138,6 +139,12 @@ class HttpInputOverHTTP extends HttpInput<ByteBuffer> implements Callback
         int l = Math.min(item.remaining(), length);
         item.get(buffer, offset, l);
         return l;
+    }
+    
+    @Override
+    protected void consume(ByteBuffer item, int length)
+    {
+        item.position(item.position()+length);
     }
 
     @Override

@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.spdy.server.http;
 
-import java.nio.ByteBuffer;
-
-import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.QueuedHttpInput;
 import org.eclipse.jetty.spdy.api.DataInfo;
 
@@ -36,6 +33,12 @@ public class HttpInputOverSPDY extends QueuedHttpInput<DataInfo>
     protected int get(DataInfo item, byte[] buffer, int offset, int length)
     {
         return item.readInto(buffer, offset, length);
+    }
+    
+    @Override
+    protected void consume(DataInfo item, int length)
+    {
+        item.consume(length);
     }
 
     @Override

@@ -42,6 +42,16 @@ import org.eclipse.jetty.util.log.Logger;
  * {@link #onContentConsumed(T)} and {@link #onAllContentConsumed()} that can be implemented so that the
  * caller will know when buffers are queued and consumed.</p>
  */
+/**
+ * @author gregw
+ *
+ * @param <T>
+ */
+/**
+ * @author gregw
+ *
+ * @param <T>
+ */
 public abstract class HttpInput<T> extends ServletInputStream implements Runnable
 {
     private final static Logger LOG = Log.getLogger(HttpInput.class);
@@ -71,16 +81,34 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
         }
     }
 
+    /**
+     * Access the next content to be consumed from.   Returning the next item does not consume it 
+     * and it may be returned multiple times until it is consumed.   Calls to {@link #get(Object, byte[], int, int)}
+     * or {@link #consume(Object, int)} are required to consume data from the content.
+     * @return Content or null if none available.
+     * @throws IOException
+     */
     protected abstract T nextContent() throws IOException;
     
-    protected void checkEOF()
+    /**
+     * A convenience method to call nextContent and to check the return value, which if null then the 
+     * a check is made for EOF and the state changed accordingly.
+     * @see #nextContent()
+     * @return Content or null if none available.
+     * @throws IOException
+     */
+    protected T getNextContent() throws IOException
     {
-        if (_eof!=null)   
+        T content=nextContent();
+        
+        if (content==null && _eof!=null)   
         {
             LOG.debug("{} eof {}",this,_eof);
             _state=_eof;
             _eof=null;
         }
+        
+        return content;
     }
     
     @Override
@@ -98,13 +126,8 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
         {
             synchronized (lock())
             {
-                T item = nextContent();
-                if (item==null)
-                {
-                    checkEOF();
-                    return 0;
-                }
-                return remaining(item);
+                T item = getNextContent();
+                return item==null?0:remaining(item);
             }
         }
         catch (IOException e)
@@ -122,19 +145,15 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
             // System.err.printf("read s=%s q=%d e=%s%n",_state,_inputQ.size(),_eof);
 
             // Get the current head of the input Q
-            item = nextContent();
+            item = getNextContent();
             
             // If we have no item
             if (item == null)
             {
-                checkEOF();
                 _state.waitForContent(this);
-                item=nextContent();
+                item=getNextContent();
                 if (item==null)
-                {
-                    checkEOF();
                     return _state.noContent();
-                }
             }
         }
 
@@ -143,6 +162,8 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
     protected abstract int remaining(T item);
 
     protected abstract int get(T item, byte[] buffer, int offset, int length);
+    
+    protected abstract void consume(T item, int length);
 
     protected abstract void blockForContent() throws IOException;
     
@@ -277,7 +298,7 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
             T item;
             try
             {
-                item = nextContent();
+                item = getNextContent();
             }
             catch(Exception e)
             {
@@ -293,7 +314,7 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
         try
         {
             if (x!=null)
-                _listener.onError(_onError);
+                _listener.onError(x);
             else if (available)
                 _listener.onDataAvailable();
             else if (eof)

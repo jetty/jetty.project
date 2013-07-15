@@ -43,7 +43,7 @@ public class HttpWriterTest
         _bytes = BufferUtil.allocate(2048);
 
         final ByteBufferPool bufferPool = new MappedByteBufferPool();
-        HttpChannel<?> channel = new HttpChannel<ByteBuffer>(null,new HttpConfiguration(),null,null,new ByteBufferHttpInput())
+        HttpChannel<?> channel = new HttpChannel<ByteBuffer>(null,new HttpConfiguration(),null,null,new ByteBufferQueuedHttpInput())
         {
             @Override
             public ByteBufferPool getByteBufferPool()

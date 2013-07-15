@@ -25,7 +25,7 @@ import javax.servlet.ReadListener;
 /**
  * <p>An implementation of HttpInput using {@link ByteBuffer} as items.</p>
  */
-public class ByteBufferHttpInput extends QueuedHttpInput<ByteBuffer>
+public class ByteBufferQueuedHttpInput extends QueuedHttpInput<ByteBuffer>
 {
     @Override
     protected int remaining(ByteBuffer item)
@@ -39,6 +39,12 @@ public class ByteBufferHttpInput extends QueuedHttpInput<ByteBuffer>
         int l = Math.min(item.remaining(), length);
         item.get(buffer, offset, l);
         return l;
+    }
+    
+    @Override
+    protected void consume(ByteBuffer item, int length)
+    {
+        item.position(item.position()+length);
     }
 
     @Override
