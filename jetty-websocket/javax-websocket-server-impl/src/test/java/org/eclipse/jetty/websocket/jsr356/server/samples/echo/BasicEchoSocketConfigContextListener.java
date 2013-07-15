@@ -22,11 +22,12 @@ import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.websocket.ContainerProvider;
 import javax.websocket.DeploymentException;
+import javax.websocket.Endpoint;
 import javax.websocket.server.ServerContainer;
 import javax.websocket.server.ServerEndpointConfig;
 
 /**
- * Example of adding a server socket (annotated) programmatically via config
+ * Example of adding a server socket (which extends {@link Endpoint}) programmatically via the {@link ServerContainer#addEndpoint(ServerEndpointConfig)}
  */
 public class BasicEchoSocketConfigContextListener implements ServletContextListener
 {
