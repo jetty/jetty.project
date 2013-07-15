@@ -40,6 +40,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.toolchain.test.annotation.Stress;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
@@ -47,7 +48,6 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -88,7 +88,6 @@ import static org.junit.Assert.assertThat;
  * This test actually doesn't belong to jetty-client. But for now it's ok. Once the issue is identified this test can
  * be moved or removed.
  */
-@Ignore
 @RunWith(JUnit4.class)
 public class HttpStalledServerConnectionTest
 {
@@ -97,12 +96,12 @@ public class HttpStalledServerConnectionTest
     private Server server;
     private ServerConnector connector;
     private HttpClient httpClient;
-    private ExecutorService threadPool = Executors.newFixedThreadPool(16);
+    private ExecutorService threadPool = Executors.newFixedThreadPool(256);
 
     @Before
     public void setUp() throws Exception
     {
-        QueuedThreadPool threadPool = new QueuedThreadPool();
+        QueuedThreadPool threadPool = new QueuedThreadPool(256);
         threadPool.setName("serverQTP");
         server = new Server(threadPool);
         server.setHandler(new AbstractHandler()
@@ -112,7 +111,6 @@ public class HttpStalledServerConnectionTest
             {
                 IO.copy(request.getInputStream(), response.getOutputStream());
                 baseRequest.setHandled(true);
-                //                response.getWriter().write("Hello world");
             }
         });
         connector = new ServerConnector(server);
@@ -132,19 +130,21 @@ public class HttpStalledServerConnectionTest
 
     }
 
+    @Stress("small loadtest")
     @Test
     public void simpleLoadTest() throws InterruptedException, ExecutionException, TimeoutException
     {
-        int requests = 1000;
+        int requests = 2000;
+        int timeout = 30;
+
         CountDownLatch requestLatch = new CountDownLatch(requests);
         for (int i = 0; i < requests; i++)
         {
             threadPool.execute(new executeSingleRequestRunnable(requestLatch));
         }
         threadPool.shutdown();
-        threadPool.awaitTermination(60, TimeUnit.SECONDS);
-
-        assertThat("all requests executed", requestLatch.await(60, TimeUnit.SECONDS), is(true));
+        threadPool.awaitTermination(timeout, TimeUnit.SECONDS);
+        assertThat("all requests executed", requestLatch.await(timeout, TimeUnit.SECONDS), is(true));
     }
 
     private class executeSingleRequestRunnable implements Runnable
@@ -162,12 +162,11 @@ public class HttpStalledServerConnectionTest
             DeferredContentProvider deferredContentProvider = new DeferredContentProvider();
             org.eclipse.jetty.client.api.Request request = httpClient.newRequest(uri).method(HttpMethod.POST).content
                     (deferredContentProvider);
-            request.header("Via","http/1.1 Thomass-MacBook-Pro.local");
-            request.header("X-Forwarded-Proto", "http");
-            request.header("X-Forwarded-Host", "localhost");
-            request.header("X-Forwarded-For", "localhost/127.0.0.1:61726");
-            request.header("X-Forwarded-Server", "Thomass-MacBook-Pro.local");
+
             ArrayList<Response.ResponseListener> listeners = new ArrayList<>();
+            // hack to avoid the test finishing before all requests have been answered. Test could as well be
+            // rewritten to use the blocking methods of httpClient
+            final CountDownLatch responseLatch = new CountDownLatch(1);
             listeners.add(new Response.ContentListener()
             {
                 @Override
@@ -175,7 +174,9 @@ public class HttpStalledServerConnectionTest
                 {
                     assertThat("response status is 200", response.getStatus(), is(200));
                     requestLatch.countDown();
-                    LOG.warn("status={},response={}", response.getStatus(), BufferUtil.toDetailString(content));
+                    responseLatch.countDown();
+                    LOG.debug("#{} status={},response={}", requestLatch.getCount(), response.getStatus(),
+                            BufferUtil.toDetailString(content));
                 }
             });
             httpClient.send(request, listeners);
@@ -183,6 +184,14 @@ public class HttpStalledServerConnectionTest
 
             deferredContentProvider.offer(BufferUtil.toBuffer(body.getBytes()));
             deferredContentProvider.close();
+            try
+            {
+                responseLatch.await(5, TimeUnit.SECONDS);
+            }
+            catch (InterruptedException e)
+            {
+                e.printStackTrace();
+            }
         }
     }
 }
