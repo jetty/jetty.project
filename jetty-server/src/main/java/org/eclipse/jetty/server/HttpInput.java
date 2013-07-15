@@ -217,7 +217,28 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
         }
     }
 
-    public abstract void consumeAll();
+    /* ------------------------------------------------------------ */
+    public void consumeAll()
+    {
+        synchronized (lock())
+        {
+            try
+            {
+                while (!isFinished())
+                {
+                    T item = getNextContent();
+                    if (item==null)
+                        _state.waitForContent(this);
+                    else
+                        consume(item,remaining(item));
+                }
+            }
+            catch (IOException e)
+            {
+                throw new RuntimeIOException(e);
+            }
+        }
+    }
 
     @Override
     public boolean isFinished()

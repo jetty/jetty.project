@@ -165,26 +165,4 @@ public abstract class QueuedHttpInput<T> extends HttpInput<T>
         }
     }
 
-    /* ------------------------------------------------------------ */
-    public void consumeAll()
-    {
-        synchronized (lock())
-        {
-            try
-            {
-                while (!isFinished())
-                {
-                    T item = getNextContent();
-                    if (item==null)
-                        blockForContent();
-                    else
-                        consume(item,remaining(item));
-                }
-            }
-            catch (IOException e)
-            {
-                throw new RuntimeIOException(e);
-            }
-        }
-    }
 }

@@ -156,53 +156,6 @@ class HttpInputOverHTTP extends HttpInput<ByteBuffer> implements Callback
     }
 
     @Override
-    public void consumeAll()
-    {
-        final HttpParser parser = _httpConnection.getParser();
-        try
-        {
-            ByteBuffer requestBuffer = null;
-            while (!parser.isComplete())
-            {                
-                _content=null;
-                _httpConnection.getParser().parseNext(requestBuffer==null?BufferUtil.EMPTY_BUFFER:requestBuffer);
-                
-                if (parser.isComplete())
-                    break;
-
-                if (BufferUtil.isEmpty(requestBuffer))
-                {
-                    if ( _httpConnection.getEndPoint().isInputShutdown())
-                        parser.atEOF();
-                    else
-                    {
-                        requestBuffer=_httpConnection.getRequestBuffer();
-                        
-                        if (BufferUtil.isEmpty(requestBuffer))
-                        {
-                            int filled=_httpConnection.getEndPoint().fill(requestBuffer);
-                            if (filled==0)
-                                filled=_httpConnection.getEndPoint().fill(requestBuffer);
-
-                            if (filled<0)
-                                _httpConnection.getParser().atEOF();
-                            else if (filled==0)
-                            {
-                                blockForContent();
-                            }      
-                        }
-                    }
-                }
-            }
-        }
-        catch(IOException e)
-        {
-            LOG.ignore(e);
-            _httpConnection.getParser().atEOF();
-        }
-    }
-
-    @Override
     protected void unready()
     {
         _httpConnection.fillInterested(this);
