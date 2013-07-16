@@ -118,9 +118,9 @@ public class HttpTransportOverSPDY implements HttpTransport
         // info!=null content!=null lastContent==true           reply, commit with content and complete
 
         short version = stream.getSession().getVersion();
-        boolean hasContent = BufferUtil.hasContent(content) && HttpMethod.HEAD.name().equals(requestHeaders.get
-            (HTTPSPDYHeader
-                .METHOD.name(version)));
+        boolean isHeadRequest = HttpMethod.HEAD.name().equals(requestHeaders.get(HTTPSPDYHeader.METHOD.name(version))
+                .value());
+        boolean hasContent = BufferUtil.hasContent(content) && !isHeadRequest;
 
         if (info != null)
         {

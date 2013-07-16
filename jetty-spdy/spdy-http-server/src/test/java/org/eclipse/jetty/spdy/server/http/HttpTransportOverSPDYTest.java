@@ -18,13 +18,6 @@
 
 package org.eclipse.jetty.spdy.server.http;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Random;
@@ -51,6 +44,13 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class HttpTransportOverSPDYTest
@@ -79,8 +79,10 @@ public class HttpTransportOverSPDYTest
     @Before
     public void setUp() throws Exception
     {
+        Fields requestHeaders = new Fields();
+        requestHeaders.add(HTTPSPDYHeader.METHOD.name(SPDY.V3),"GET");
         httpTransportOverSPDY = new HttpTransportOverSPDY(connector, httpConfiguration, endPoint, pushStrategy,
-                stream, new Fields());
+                stream, requestHeaders);
         when(responseInfo.getStatus()).thenReturn(HttpStatus.OK_200);
         when(stream.getSession()).thenReturn(session);
         when(session.getVersion()).thenReturn(SPDY.V3);
