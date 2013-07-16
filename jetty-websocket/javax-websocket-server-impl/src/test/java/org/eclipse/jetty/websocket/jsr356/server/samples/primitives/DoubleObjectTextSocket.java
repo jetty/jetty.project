@@ -52,7 +52,7 @@ public class DoubleObjectTextSocket
         }
         else
         {
-            String msg = d.toString();
+            String msg = String.format("%.4f",d);
             session.getAsyncRemote().sendText(msg);
         }
     }

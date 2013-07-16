@@ -24,17 +24,18 @@ import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
+import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.jsr356.server.StackUtil;
 
-@ServerEndpoint("/echo/primitives/float")
-public class FloatTextSocket
+@ServerEndpoint("/echo/primitives/integer/params/{a}")
+public class IntParamTextSocket
 {
-    private static final Logger LOG = Log.getLogger(FloatTextSocket.class);
-    
+    private static final Logger LOG = Log.getLogger(IntParamTextSocket.class);
+
     private Session session;
 
     @OnOpen
@@ -44,9 +45,9 @@ public class FloatTextSocket
     }
 
     @OnMessage
-    public void onMessage(float f) throws IOException
+    public void onMessage(int i, @PathParam("a") int param) throws IOException
     {
-        String msg = String.format("%.4f",f);
+        String msg = String.format("%d|%d",i,param);
         session.getAsyncRemote().sendText(msg);
     }
 

@@ -46,7 +46,7 @@ public class DoubleTextSocket
     @OnMessage
     public void onMessage(double d) throws IOException
     {
-        String msg = Double.toString(d);
+        String msg = String.format("%.4f",d);
         session.getAsyncRemote().sendText(msg);
     }
 

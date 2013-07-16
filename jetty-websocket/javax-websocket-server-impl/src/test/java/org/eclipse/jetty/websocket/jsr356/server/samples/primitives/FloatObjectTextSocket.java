@@ -52,7 +52,7 @@ public class FloatObjectTextSocket
         }
         else
         {
-            String msg = f.toString();
+            String msg = String.format("%.4f",f);
             session.getAsyncRemote().sendText(msg);
         }
     }

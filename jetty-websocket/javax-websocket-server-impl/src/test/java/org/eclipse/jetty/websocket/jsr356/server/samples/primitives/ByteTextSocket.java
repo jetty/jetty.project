@@ -46,7 +46,7 @@ public class ByteTextSocket
     @OnMessage
     public void onMessage(byte b) throws IOException
     {
-        String msg = String.format("0x%02x",b);
+        String msg = String.format("0x%02X",b);
         session.getAsyncRemote().sendText(msg);
     }
 

@@ -52,7 +52,7 @@ public class ByteObjectTextSocket
         }
         else
         {
-            String msg = String.format("0x%02x",b);
+            String msg = String.format("0x%02X",b);
             session.getAsyncRemote().sendText(msg);
         }
     }

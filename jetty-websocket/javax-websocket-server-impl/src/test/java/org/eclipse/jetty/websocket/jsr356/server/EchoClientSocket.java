@@ -16,44 +16,58 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.server.samples.primitives;
+package org.eclipse.jetty.websocket.jsr356.server;
 
 import java.io.IOException;
 
+import javax.websocket.ClientEndpoint;
+import javax.websocket.CloseReason;
+import javax.websocket.EncodeException;
+import javax.websocket.OnClose;
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
-import javax.websocket.server.ServerEndpoint;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.jsr356.server.StackUtil;
-
-@ServerEndpoint("/echo/primitives/float")
-public class FloatTextSocket
+@ClientEndpoint
+public class EchoClientSocket extends TrackingSocket
 {
-    private static final Logger LOG = Log.getLogger(FloatTextSocket.class);
-    
     private Session session;
 
     @OnOpen
     public void onOpen(Session session)
     {
         this.session = session;
+        openLatch.countDown();
     }
 
-    @OnMessage
-    public void onMessage(float f) throws IOException
+    @OnClose
+    public void onClose(CloseReason close)
     {
-        String msg = String.format("%.4f",f);
-        session.getAsyncRemote().sendText(msg);
+        this.session = null;
+        super.closeReason = close;
+        super.closeLatch.countDown();
+    }
+
+    public void sendObject(Object obj) throws IOException, EncodeException
+    {
+        session.getBasicRemote().sendObject(obj);
     }
 
     @OnError
-    public void onError(Throwable cause) throws IOException
+    public void onError(Throwable t)
     {
-        LOG.warn("Error",cause);
-        session.getBasicRemote().sendText("Exception: " + StackUtil.toString(cause));
+        addError(t);
+    }
+
+    @OnMessage
+    public void onText(String text)
+    {
+        addEvent(text);
+    }
+
+    public void close() throws IOException
+    {
+        this.session.close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE,"Test Complete"));
     }
 }

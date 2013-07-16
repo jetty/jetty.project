@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.jsr356.server;
 
 import javax.websocket.server.ServerEndpoint;
+import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
@@ -42,7 +43,7 @@ public class JsrServerEndpointImpl implements EventDriverImpl
         
         EndpointInstance ei = (EndpointInstance)websocket;
         AnnotatedServerEndpointMetadata metadata = (AnnotatedServerEndpointMetadata)ei.getMetadata();
-        JsrEvents events = new JsrEvents(metadata);
+        JsrEvents<ServerEndpoint,ServerEndpointConfig> events = new JsrEvents<>(metadata);
         return new JsrAnnotatedEventDriver(policy,ei,events);
     }
 

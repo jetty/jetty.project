@@ -57,8 +57,6 @@ import org.junit.Assert;
 public class WSServer
 {
     private static final Logger LOG = Log.getLogger(WSServer.class);
-    @SuppressWarnings("unused")
-    private final TestingDir testdir;
     private final File contextDir;
     private final String contextPath;
     private Server server;
@@ -69,8 +67,12 @@ public class WSServer
 
     public WSServer(TestingDir testdir, String contextName)
     {
-        this.testdir = testdir;
-        this.contextDir = testdir.getFile(contextName);
+        this(testdir.getDir(),contextName);
+    }
+
+    public WSServer(File testdir, String contextName)
+    {
+        this.contextDir = new File(testdir,contextName);
         this.contextPath = "/" + contextName;
         FS.ensureEmpty(contextDir);
     }
