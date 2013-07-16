@@ -111,7 +111,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         // Shutting down the parser may invoke messageComplete() or earlyEOF()
         parser.atEOF();
         parser.parseNext(BufferUtil.EMPTY_BUFFER);
-        if (!onResponseFailure(new EOFException()))
+        if (!responseFailure(new EOFException()))
         {
             // TODO: just shutdown here, or full close ?
             getHttpChannel().getHttpConnection().close();
@@ -135,7 +135,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         parser.setHeadResponse(exchange.getRequest().getMethod() == HttpMethod.HEAD);
         exchange.getResponse().version(version).status(status).reason(reason);
 
-        onResponseBegin(exchange);
+        responseBegin(exchange);
         return false;
     }
 
@@ -146,7 +146,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         if (exchange == null)
             return false;
 
-        onResponseHeader(exchange, field);
+        responseHeader(exchange, field);
         return false;
     }
 
@@ -157,7 +157,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         if (exchange == null)
             return false;
 
-        onResponseHeaders(exchange);
+        responseHeaders(exchange);
         return false;
     }
 
@@ -168,7 +168,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         if (exchange == null)
             return false;
 
-        onResponseContent(exchange, buffer);
+        responseContent(exchange, buffer);
         return false;
     }
 
@@ -179,7 +179,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         if (exchange == null)
             return false; // TODO: is it correct to return false here ?
 
-        onResponseSuccess(exchange);
+        responseSuccess(exchange);
         return true;
     }
 
@@ -217,7 +217,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
 
     private void failAndClose(Throwable failure)
     {
-        onResponseFailure(failure);
-        getHttpChannel().getHttpConnection().close();
+        if (responseFailure(failure))
+            getHttpChannel().getHttpConnection().close();
     }
 }
