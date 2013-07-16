@@ -62,6 +62,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
 {
@@ -213,6 +214,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 assertEquals("HEAD", httpRequest.getMethod());
                 assertEquals(path, target);
                 assertEquals(path, httpRequest.getRequestURI());
+                httpResponse.getWriter().write("body that shouldn't be sent on a HEAD request");
                 handlerLatch.countDown();
             }
         }), null);
@@ -228,6 +230,12 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 Fields replyHeaders = replyInfo.getHeaders();
                 assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
                 replyLatch.countDown();
+            }
+
+            @Override
+            public void onData(Stream stream, DataInfo dataInfo)
+            {
+                fail("HEAD request shouldn't send any data");
             }
         });
         assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));

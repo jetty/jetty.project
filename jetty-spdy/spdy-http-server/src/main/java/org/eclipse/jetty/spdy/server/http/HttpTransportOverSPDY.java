@@ -29,6 +29,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.EndPoint;
@@ -116,7 +117,10 @@ public class HttpTransportOverSPDY implements HttpTransport
         // info!=null content!=null lastContent==false          reply, commit with content
         // info!=null content!=null lastContent==true           reply, commit with content and complete
 
-        boolean hasContent = BufferUtil.hasContent(content);
+        short version = stream.getSession().getVersion();
+        boolean hasContent = BufferUtil.hasContent(content) && HttpMethod.HEAD.name().equals(requestHeaders.get
+            (HTTPSPDYHeader
+                .METHOD.name(version)));
 
         if (info != null)
         {
@@ -128,7 +132,6 @@ public class HttpTransportOverSPDY implements HttpTransport
                 LOG.warn("Committed response twice.", exception);
                 return;
             }
-            short version = stream.getSession().getVersion();
             Fields headers = new Fields();
 
             HttpVersion httpVersion = HttpVersion.HTTP_1_1;
