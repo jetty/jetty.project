@@ -25,8 +25,8 @@ import javax.websocket.Decoder;
 
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
+import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 import org.eclipse.jetty.websocket.jsr356.MessageType;
-import org.eclipse.jetty.websocket.jsr356.utils.ReflectUtils;
 
 public class DecoderMetadataSet extends CoderMetadataSet<Decoder, DecoderMetadata>
 {

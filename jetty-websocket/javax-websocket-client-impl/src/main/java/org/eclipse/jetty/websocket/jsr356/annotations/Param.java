@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356.annotations;
 
-import org.eclipse.jetty.websocket.jsr356.utils.ReflectUtils;
+import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 
 public class Param
 {

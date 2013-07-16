@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.utils;
+package org.eclipse.jetty.websocket.common.util;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -344,8 +344,7 @@ public class ReflectUtils
     public static String toString(Class<?> pojo, Method method)
     {
         StringBuilder str = new StringBuilder();
-        str.append(pojo.getName());
-        str.append("  ");
+
         // method modifiers
         int mod = method.getModifiers() & Modifier.methodModifiers();
         if (mod != 0)
@@ -356,6 +355,10 @@ public class ReflectUtils
         // return type
         Type retType = method.getGenericReturnType();
         appendTypeName(str,retType,false).append(' ');
+
+        // class name
+        str.append(pojo.getName());
+        str.append("#");
 
         // method name
         str.append(method.getName());

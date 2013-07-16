@@ -27,8 +27,8 @@ import javax.websocket.MessageHandler;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 import org.eclipse.jetty.websocket.jsr356.metadata.MessageHandlerMetadata;
-import org.eclipse.jetty.websocket.jsr356.utils.ReflectUtils;
 
 /**
  * Factory for {@link MessageHandlerMetadata}

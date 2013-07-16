@@ -24,6 +24,8 @@ import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.lang.reflect.WildcardType;
 
+import org.eclipse.jetty.websocket.common.util.ReflectUtils;
+
 public class TypeTree
 {
     public static void dumpTree(String indent, Type type)

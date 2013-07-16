@@ -25,6 +25,7 @@ import java.util.Objects;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketException;
+import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 
 /**
  * A Callable Method
@@ -71,8 +72,31 @@ public class CallableMethod
         }
         catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e)
         {
-            String err = String.format("Cannot call method %s on %s with args: %s",method,pojo,args);
-            throw new WebSocketException(err,e);
+            StringBuilder err = new StringBuilder();
+            err.append("Cannot call method ");
+            err.append(ReflectUtils.toString(pojo,method));
+            err.append(" with args: [");
+
+            boolean delim = false;
+            for (Object arg : args)
+            {
+                if (delim)
+                {
+                    err.append(", ");
+                }
+                if (arg == null)
+                {
+                    err.append("<null>");
+                }
+                else
+                {
+                    err.append(arg.getClass().getName());
+                }
+                delim = true;
+            }
+            err.append("]");
+
+            throw new WebSocketException(err.toString(),e);
         }
     }
 
