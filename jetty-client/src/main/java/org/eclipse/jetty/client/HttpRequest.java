@@ -196,6 +196,7 @@ public class HttpRequest implements Request
     {
         params.add(name, value);
         this.query = buildQuery();
+        this.uri = buildURI(true);
         return this;
     }
 
