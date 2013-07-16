@@ -130,7 +130,7 @@ public class HttpClient extends ContainerLifeCycle
     private volatile long idleTimeout;
     private volatile boolean tcpNoDelay = true;
     private volatile boolean dispatchIO = true;
-    private volatile boolean strictEventOrdering = true;
+    private volatile boolean strictEventOrdering = false;
     private volatile ProxyConfiguration proxyConfig;
     private volatile HttpField encodingField;
 

@@ -323,6 +323,7 @@ public abstract class HttpReceiver
 
     protected void dispose()
     {
+        responseState.set(ResponseState.FAILURE);
         decoder = null;
     }
 

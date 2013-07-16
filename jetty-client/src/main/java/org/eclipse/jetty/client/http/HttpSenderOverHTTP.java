@@ -47,7 +47,7 @@ public class HttpSenderOverHTTP extends HttpSender
     }
 
     @Override
-    protected void sendHeaders(HttpExchange exchange, HttpContent content)
+    protected void sendHeaders(HttpExchange exchange, HttpContent content, Callback callback)
     {
         Request request = exchange.getRequest();
         ContentProvider requestContent = request.getContent();
@@ -104,7 +104,7 @@ public class HttpSenderOverHTTP extends HttpSender
                         if (hasContent)
                             toWrite[toWrite.length - 1] = contentBuffer;
                         EndPoint endPoint = getHttpChannel().getHttpConnection().getEndPoint();
-                        endPoint.write(new ByteBufferRecyclerCallback(content, bufferPool, toRecycle), toWrite);
+                        endPoint.write(new ByteBufferRecyclerCallback(callback, bufferPool, toRecycle), toWrite);
                         return;
                     }
                     default:
@@ -117,12 +117,12 @@ public class HttpSenderOverHTTP extends HttpSender
         catch (Exception x)
         {
             LOG.debug(x);
-            content.failed(x);
+            callback.failed(x);
         }
     }
 
     @Override
-    protected void sendContent(HttpExchange exchange, HttpContent content)
+    protected void sendContent(HttpExchange exchange, HttpContent content, Callback callback)
     {
         try
         {
@@ -145,9 +145,9 @@ public class HttpSenderOverHTTP extends HttpSender
                     {
                         EndPoint endPoint = getHttpChannel().getHttpConnection().getEndPoint();
                         if (chunk != null)
-                            endPoint.write(new ByteBufferRecyclerCallback(content, bufferPool, chunk), chunk, contentBuffer);
+                            endPoint.write(new ByteBufferRecyclerCallback(callback, bufferPool, chunk), chunk, contentBuffer);
                         else
-                            endPoint.write(content, contentBuffer);
+                            endPoint.write(callback, contentBuffer);
                         return;
                     }
                     case SHUTDOWN_OUT:
@@ -162,7 +162,7 @@ public class HttpSenderOverHTTP extends HttpSender
                     case DONE:
                     {
                         assert generator.isEnd();
-                        content.succeeded();
+                        callback.succeeded();
                         return;
                     }
                     default:
@@ -175,7 +175,7 @@ public class HttpSenderOverHTTP extends HttpSender
         catch (Exception x)
         {
             LOG.debug(x);
-            content.failed(x);
+            callback.failed(x);
         }
     }
 
