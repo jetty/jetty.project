@@ -40,11 +40,20 @@ public class JsrServerEndpointImpl implements EventDriverImpl
         {
             throw new IllegalStateException(String.format("Websocket %s must be an %s",websocket.getClass().getName(),EndpointInstance.class.getName()));
         }
-        
+
         EndpointInstance ei = (EndpointInstance)websocket;
         AnnotatedServerEndpointMetadata metadata = (AnnotatedServerEndpointMetadata)ei.getMetadata();
-        JsrEvents<ServerEndpoint,ServerEndpointConfig> events = new JsrEvents<>(metadata);
-        return new JsrAnnotatedEventDriver(policy,ei,events);
+        JsrEvents<ServerEndpoint, ServerEndpointConfig> events = new JsrEvents<>(metadata);
+        JsrAnnotatedEventDriver driver = new JsrAnnotatedEventDriver(policy,ei,events);
+
+        ServerEndpointConfig config = (ServerEndpointConfig)ei.getConfig();
+        if (config instanceof PathParamServerEndpointConfig)
+        {
+            PathParamServerEndpointConfig ppconfig = (PathParamServerEndpointConfig)config;
+            driver.setRequestParameters(ppconfig.getPathParamMap());
+        }
+
+        return driver;
     }
 
     @Override
@@ -60,7 +69,7 @@ public class JsrServerEndpointImpl implements EventDriverImpl
         {
             return false;
         }
-        
+
         EndpointInstance ei = (EndpointInstance)websocket;
         Object endpoint = ei.getEndpoint();
 

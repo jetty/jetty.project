@@ -18,11 +18,14 @@
 
 package org.eclipse.jetty.websocket.jsr356.annotations;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.Map;
 
+import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
 
+import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.common.events.annotated.CallableMethod;
 import org.eclipse.jetty.websocket.jsr356.JsrSession;
 import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
@@ -38,11 +41,12 @@ public abstract class JsrCallable extends CallableMethod
         super(pojo,method);
 
         Class<?> ptypes[] = method.getParameterTypes();
+        Annotation pannos[][] = method.getParameterAnnotations();
         int len = ptypes.length;
         params = new Param[len];
         for (int i = 0; i < len; i++)
         {
-            params[i] = new Param(i,ptypes[i]);
+            params[i] = new Param(i,ptypes[i],pannos[i]);
         }
 
         args = new Object[len];
@@ -102,7 +106,7 @@ public abstract class JsrCallable extends CallableMethod
 
     public void init(JsrSession session)
     {
-        // Default the session.
+        // Default for the session.
         // Session is an optional parameter (always)
         idxSession = findIndexForRole(Param.Role.SESSION);
         if (idxSession >= 0)
@@ -110,7 +114,7 @@ public abstract class JsrCallable extends CallableMethod
             args[idxSession] = session;
         }
 
-        // Default the path parameters
+        // Default for the path parameters
         // PathParam's are optional parameters (always)
         Map<String, String> pathParams = session.getPathParameters();
         if ((pathParams != null) && (pathParams.size() > 0))
@@ -120,8 +124,25 @@ public abstract class JsrCallable extends CallableMethod
                 if (param.role == Role.PATH_PARAM)
                 {
                     int idx = param.index;
-                    String value = pathParams.get(param.getPathParamName());
-                    args[idx] = value;
+                    String rawvalue = pathParams.get(param.getPathParamName());
+
+                    Decoder decoder = session.getDecoderFactory().getDecoderFor(param.type);
+                    if (decoder instanceof Decoder.Text<?>)
+                    {
+                        Decoder.Text<?> textDecoder = (Decoder.Text<?>)decoder;
+                        try
+                        {
+                            args[idx] = textDecoder.decode(rawvalue);
+                        }
+                        catch (DecodeException e)
+                        {
+                            session.notifyError(e);
+                        }
+                    }
+                    else
+                    {
+                        throw new InvalidWebSocketException("PathParam decoders must use Decoder.Text");
+                    }
                 }
             }
         }

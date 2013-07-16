@@ -53,19 +53,29 @@ public class AnnotatedServerEndpointMetadata extends AnnotatedEndpointMetadata<S
     @Override
     public void customizeParamsOnClose(LinkedList<IJsrParamId> params)
     {
-        params.addFirst(JsrParamPath.INSTANCE);
+        super.customizeParamsOnClose(params);
+        params.addFirst(JsrPathParamId.INSTANCE);
     }
 
     @Override
     public void customizeParamsOnError(LinkedList<IJsrParamId> params)
     {
-        params.addFirst(JsrParamPath.INSTANCE);
+        super.customizeParamsOnError(params);
+        params.addFirst(JsrPathParamId.INSTANCE);
     }
     
     @Override
     public void customizeParamsOnOpen(LinkedList<IJsrParamId> params)
     {
-        params.addFirst(JsrParamPath.INSTANCE);
+        super.customizeParamsOnOpen(params);
+        params.addFirst(JsrPathParamId.INSTANCE);
+    }
+    
+    @Override
+    public void customizeParamsOnMessage(LinkedList<IJsrParamId> params)
+    {
+        super.customizeParamsOnMessage(params);
+        params.addFirst(JsrPathParamId.INSTANCE);
     }
 
     @Override

@@ -20,9 +20,9 @@ package org.eclipse.jetty.websocket.server.examples;
 
 import java.io.IOException;
 
-import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.server.examples.echo.BigEchoSocket;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
@@ -33,7 +33,7 @@ public class MyCustomCreationServlet extends WebSocketServlet
     public static class MyCustomCreator implements WebSocketCreator
     {
         @Override
-        public Object createWebSocket(UpgradeRequest req, UpgradeResponse resp)
+        public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp)
         {
             String query = req.getQueryString();
 

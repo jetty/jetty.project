@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.nio.ByteBuffer;
+import java.util.Map;
 
 import javax.websocket.CloseReason;
 import javax.websocket.DecodeException;
@@ -46,9 +47,9 @@ import org.eclipse.jetty.websocket.jsr356.annotations.JsrEvents;
 public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver implements EventDriver
 {
     private static final Logger LOG = Log.getLogger(JsrAnnotatedEventDriver.class);
-    private final JsrEvents events;
+    private final JsrEvents<?, ?> events;
 
-    public JsrAnnotatedEventDriver(WebSocketPolicy policy, EndpointInstance endpointInstance, JsrEvents events)
+    public JsrAnnotatedEventDriver(WebSocketPolicy policy, EndpointInstance endpointInstance, JsrEvents<?, ?> events)
     {
         super(policy,endpointInstance);
         this.events = events;
@@ -322,6 +323,11 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver implements E
         {
             onFatalError(e);
         }
+    }
+
+    public void setRequestParameters(Map<String, String> requestParameters)
+    {
+        events.setRequestParameters(requestParameters);
     }
 
     @Override

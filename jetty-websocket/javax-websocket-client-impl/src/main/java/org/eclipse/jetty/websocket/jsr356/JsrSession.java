@@ -68,7 +68,6 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
     private final MessageHandlerWrapper wrappers[];
     private Set<MessageHandler> messageHandlerSet;
     private List<Extension> negotiatedExtensions;
-    private Map<String, List<String>> jsrParameterMap;
     private Map<String, String> pathParameters = new HashMap<>();
     private JsrAsyncRemote asyncRemote;
     private JsrBasicRemote basicRemote;
@@ -342,6 +341,15 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
     public void setMaxTextMessageBufferSize(int length)
     {
         getPolicy().setMaxTextMessageBufferSize(length);
+    }
+
+    public void setPathParameters(Map<String, String> pathParams)
+    {
+        this.pathParameters.clear();
+        if (pathParams != null)
+        {
+            this.pathParameters.putAll(pathParams);
+        }
     }
 
     private void updateMessageHandlerSet()

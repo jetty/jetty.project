@@ -28,7 +28,7 @@ import javax.websocket.Encoder;
 import javax.websocket.Extension;
 import javax.websocket.server.ServerEndpointConfig;
 
-public class EmptyServerEndpointConfig implements ServerEndpointConfig
+public class BasicServerEndpointConfig implements ServerEndpointConfig
 {
     private final List<Class<? extends Decoder>> decoders;
     private final List<Class<? extends Encoder>> encoders;
@@ -39,11 +39,11 @@ public class EmptyServerEndpointConfig implements ServerEndpointConfig
     private final String path;
     private Map<String, Object> userProperties;
 
-    public EmptyServerEndpointConfig(Class<?> endpointClass, String path)
+    public BasicServerEndpointConfig(Class<?> endpointClass, String path)
     {
         this.endpointClass = endpointClass;
         this.path = path;
-        
+
         this.decoders = new ArrayList<>();
         this.encoders = new ArrayList<>();
         this.subprotocols = new ArrayList<>();
@@ -51,7 +51,27 @@ public class EmptyServerEndpointConfig implements ServerEndpointConfig
         this.userProperties = new HashMap<>();
         this.configurator = BasicServerEndpointConfigurator.INSTANCE;
     }
-    
+
+    public BasicServerEndpointConfig(ServerEndpointConfig copy)
+    {
+        this.endpointClass = copy.getEndpointClass();
+        this.path = copy.getPath();
+
+        this.decoders = new ArrayList<>(copy.getDecoders());
+        this.encoders = new ArrayList<>(copy.getEncoders());
+        this.subprotocols = new ArrayList<>(copy.getSubprotocols());
+        this.extensions = new ArrayList<>(copy.getExtensions());
+        this.userProperties = new HashMap<>(copy.getUserProperties());
+        if (copy.getConfigurator() != null)
+        {
+            this.configurator = copy.getConfigurator();
+        }
+        else
+        {
+            this.configurator = BasicServerEndpointConfigurator.INSTANCE;
+        }
+    }
+
     @Override
     public List<Class<? extends Encoder>> getEncoders()
     {

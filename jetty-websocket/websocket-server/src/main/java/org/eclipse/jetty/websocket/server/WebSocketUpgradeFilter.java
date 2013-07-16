@@ -100,7 +100,7 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
                 WebSocketCreator creator = resource.getResource();
 
                 // Store PathSpec resource mapping as request attribute
-                httpreq.setAttribute(PathSpec.class.getName(),resource);
+                httpreq.setAttribute(PathSpec.class.getName(),resource.getPathSpec());
 
                 // We have an upgrade request
                 if (factory.acceptWebSocket(creator,httpreq,httpresp))

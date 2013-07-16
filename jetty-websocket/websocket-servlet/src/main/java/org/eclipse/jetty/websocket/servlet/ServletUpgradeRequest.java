@@ -274,4 +274,18 @@ public class ServletUpgradeRequest extends UpgradeRequest
         this.req.setAttribute(name,o);
     }
 
+    public Object getServletAttribute(String name)
+    {
+        return req.getAttribute(name);
+    }
+
+    public boolean isUserInRole(String role)
+    {
+        return req.isUserInRole(role);
+    }
+
+    public String getRequestPath()
+    {
+        return req.getServletPath();
+    }
 }

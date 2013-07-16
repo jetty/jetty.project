@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.lang.annotation.Annotation;
 import java.nio.ByteBuffer;
+import java.util.Map;
 
 import javax.websocket.CloseReason;
 import javax.websocket.DecodeException;
@@ -84,6 +85,11 @@ public class JsrEvents<T extends Annotation, C extends EndpointConfig>
      * Callable for &#064;{@link OnMessage} annotation dealing with Pong Message Format
      */
     private OnMessagePongCallable onPong;
+
+    /**
+     * The Request Parameters (from resolved javax.websocket.server.PathParam entries)
+     */
+    private Map<String, String> requestParameters;
 
     public JsrEvents(AnnotatedEndpointMetadata<T, C> metadata)
     {
@@ -210,6 +216,8 @@ public class JsrEvents<T extends Annotation, C extends EndpointConfig>
 
     public void init(JsrSession session)
     {
+        session.setPathParameters(requestParameters);
+
         if (onOpen != null)
         {
             onOpen.init(session);
@@ -260,5 +268,10 @@ public class JsrEvents<T extends Annotation, C extends EndpointConfig>
             return false;
         }
         return onText.isPartialMessageSupported();
+    }
+
+    public void setRequestParameters(Map<String, String> requestParameters)
+    {
+        this.requestParameters = requestParameters;
     }
 }

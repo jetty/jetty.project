@@ -18,9 +18,9 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.server.WebSocketHandler;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 
@@ -35,7 +35,7 @@ public class EchoHandler extends WebSocketHandler implements WebSocketCreator
     }
 
     @Override
-    public Object createWebSocket(UpgradeRequest req, UpgradeResponse resp)
+    public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp)
     {
         return socket;
     }

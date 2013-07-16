@@ -113,7 +113,9 @@ public class ServerAnnotatedEndpointScanner_GoodSignaturesTest
         Field fClose = findFieldRef(AnnotatedServerEndpointMetadata.class,"onClose");
         Field fError = findFieldRef(AnnotatedServerEndpointMetadata.class,"onError");
         Field fText = findFieldRef(AnnotatedServerEndpointMetadata.class,"onText");
+        Field fTextStream = findFieldRef(AnnotatedServerEndpointMetadata.class,"onTextStream");
         Field fBinary = findFieldRef(AnnotatedServerEndpointMetadata.class,"onBinary");
+        Field fBinaryStream = findFieldRef(AnnotatedServerEndpointMetadata.class,"onBinaryStream");
         Field fPong = findFieldRef(AnnotatedServerEndpointMetadata.class,"onPong");
 
         // @formatter:off
@@ -152,8 +154,8 @@ public class ServerAnnotatedEndpointScanner_GoodSignaturesTest
         // -- Beans
         Case.add(data, DateTextSocket.class, fText, Date.class);
         // -- Reader Events
-        Case.add(data, ReaderParamSocket.class, fText, Reader.class, String.class);
-        Case.add(data, StringReturnReaderParamSocket.class, fText, Reader.class, String.class);
+        Case.add(data, ReaderParamSocket.class, fTextStream, Reader.class, String.class);
+        Case.add(data, StringReturnReaderParamSocket.class, fTextStream, Reader.class, String.class);
         // -- Binary Events
         Case.add(data, BasicBinaryMessageByteBufferSocket.class, fBinary, ByteBuffer.class);
         // -- Pong Events

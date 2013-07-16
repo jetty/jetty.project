@@ -43,8 +43,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
@@ -158,12 +156,8 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     {
         try
         {
-            // TODO: use ServletUpgradeRequest in Jetty 9.1
-            @SuppressWarnings("deprecation")
-            ServletWebSocketRequest sockreq = new ServletWebSocketRequest(request);
-            // TODO: use ServletUpgradeResponse in Jetty 9.1
-            @SuppressWarnings("deprecation")
-            ServletWebSocketResponse sockresp = new ServletWebSocketResponse(response);
+            ServletUpgradeRequest sockreq = new ServletUpgradeRequest(request);
+            ServletUpgradeResponse sockresp = new ServletUpgradeResponse(response);
 
             UpgradeContext context = getActiveUpgradeContext();
             if (context == null)
@@ -171,6 +165,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
                 context = new UpgradeContext();
                 setActiveUpgradeContext(context);
             }
+            
             context.setRequest(sockreq);
             context.setResponse(sockresp);
 
@@ -236,7 +231,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
      * Default Creator logic
      */
     @Override
-    public Object createWebSocket(UpgradeRequest req, UpgradeResponse resp)
+    public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp)
     {
         if (registeredSocketClasses.size() < 1)
         {

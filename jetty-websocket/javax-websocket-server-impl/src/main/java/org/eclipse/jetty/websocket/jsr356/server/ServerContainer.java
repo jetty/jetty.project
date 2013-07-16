@@ -68,7 +68,7 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
             }
             else
             {
-                cec = new EmptyServerEndpointConfig(endpoint.getClass(),path);
+                cec = new BasicServerEndpointConfig(endpoint.getClass(),path);
             }
         }
         return new EndpointInstance(endpoint,cec,metadata);

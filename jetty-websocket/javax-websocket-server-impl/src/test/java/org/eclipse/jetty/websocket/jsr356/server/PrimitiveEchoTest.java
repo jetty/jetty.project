@@ -170,10 +170,8 @@ public class PrimitiveEchoTest
         EchoCase.add(TESTCASES,ShortObjectTextSocket.class).addMessage(-32001L).expect("-32001");
         
         // PathParam based
-        /*
         EchoCase.add(TESTCASES,IntParamTextSocket.class).requestPath("/echo/primitives/integer/params/5678")
           .addMessage(1234).expect("1234|5678");
-          */
     }
 
     @BeforeClass

@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.websocket.jsr356.annotations;
 
+import java.lang.annotation.Annotation;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 
 public class Param
@@ -55,21 +59,42 @@ public class Param
 
     public int index;
     public Class<?> type;
+    private transient Map<Class<? extends Annotation>, Annotation> annotations;
+
     /*
      * The bound role for this parameter.
      */
     public Role role = null;
     private String pathParamName = null;
 
-    public Param(int idx, Class<?> type)
+    public Param(int idx, Class<?> type, Annotation[] annos)
     {
         this.index = idx;
         this.type = type;
+        if (annos != null)
+        {
+            this.annotations = new HashMap<>();
+            for (Annotation anno : annos)
+            {
+                this.annotations.put(anno.annotationType(),anno);
+            }
+        }
     }
 
     public void bind(Role role)
     {
         this.role = role;
+    }
+
+    @SuppressWarnings("unchecked")
+    public <A extends Annotation> A getAnnotation(Class<A> annotationClass)
+    {
+        if (this.annotations == null)
+        {
+            return null;
+        }
+
+        return (A)this.annotations.get(annotationClass);
     }
 
     public String getPathParamName()

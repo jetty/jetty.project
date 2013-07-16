@@ -25,13 +25,14 @@ import java.util.Map;
 
 import javax.websocket.server.HandshakeRequest;
 
-import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.server.pathmap.PathSpec;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 
 public class JsrHandshakeRequest implements HandshakeRequest
 {
-    private final UpgradeRequest request;
+    private final ServletUpgradeRequest request;
 
-    public JsrHandshakeRequest(UpgradeRequest req)
+    public JsrHandshakeRequest(ServletUpgradeRequest req)
     {
         this.request = req;
     }
@@ -60,6 +61,11 @@ public class JsrHandshakeRequest implements HandshakeRequest
         return request.getQueryString();
     }
 
+    public PathSpec getRequestPathSpec()
+    {
+        return (PathSpec)request.getServletAttribute(PathSpec.class.getName());
+    }
+
     @Override
     public URI getRequestURI()
     {
@@ -69,15 +75,12 @@ public class JsrHandshakeRequest implements HandshakeRequest
     @Override
     public Principal getUserPrincipal()
     {
-        // TODO: need to return User Principal
-        return null;
+        return request.getUserPrincipal();
     }
 
     @Override
     public boolean isUserInRole(String role)
     {
-        // TODO: need to return isUserInRole result
-        return false;
+        return request.isUserInRole(role);
     }
-
 }

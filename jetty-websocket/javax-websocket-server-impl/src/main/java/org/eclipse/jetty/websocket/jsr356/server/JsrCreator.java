@@ -25,9 +25,11 @@ import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.jsr356.endpoints.EndpointInstance;
+import org.eclipse.jetty.websocket.jsr356.server.pathmap.WebSocketPathSpec;
+import org.eclipse.jetty.websocket.server.pathmap.PathSpec;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 
 public class JsrCreator implements WebSocketCreator
@@ -41,11 +43,11 @@ public class JsrCreator implements WebSocketCreator
     }
 
     @Override
-    public Object createWebSocket(UpgradeRequest req, UpgradeResponse resp)
+    public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp)
     {
         JsrHandshakeRequest hsreq = new JsrHandshakeRequest(req);
         JsrHandshakeResponse hsresp = new JsrHandshakeResponse(resp);
-        
+
         ServerEndpointConfig config = metadata.getConfig();
 
         ServerEndpointConfig.Configurator configurator = config.getConfigurator();
@@ -81,6 +83,15 @@ public class JsrCreator implements WebSocketCreator
         {
             Class<?> endpointClass = config.getEndpointClass();
             Object endpoint = config.getConfigurator().getEndpointInstance(endpointClass);
+            PathSpec pathSpec = hsreq.getRequestPathSpec();
+            if (pathSpec instanceof WebSocketPathSpec)
+            {
+                // We have a PathParam path spec
+                WebSocketPathSpec wspathSpec = (WebSocketPathSpec)pathSpec;
+                String requestPath = req.getRequestPath();
+                // Wrap the config with the path spec information
+                config = new PathParamServerEndpointConfig(config,wspathSpec,requestPath);
+            }
             return new EndpointInstance(endpoint,config,metadata);
         }
         catch (InstantiationException e)

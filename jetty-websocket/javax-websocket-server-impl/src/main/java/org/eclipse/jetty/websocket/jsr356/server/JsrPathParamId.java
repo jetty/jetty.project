@@ -29,14 +29,14 @@ import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
 /**
  * Param handling for static parameters annotated with &#064;{@link PathParam}
  */
-public class JsrParamPath implements IJsrParamId
+public class JsrPathParamId implements IJsrParamId
 {
-    public static final IJsrParamId INSTANCE = new JsrParamPath();
+    public static final IJsrParamId INSTANCE = new JsrPathParamId();
 
     @Override
     public boolean process(Param param, JsrCallable callable) throws InvalidSignatureException
     {
-        PathParam pathparam = param.type.getAnnotation(PathParam.class);
+        PathParam pathparam = param.getAnnotation(PathParam.class);
         if(pathparam != null)
         {
             param.bind(Role.PATH_PARAM);
