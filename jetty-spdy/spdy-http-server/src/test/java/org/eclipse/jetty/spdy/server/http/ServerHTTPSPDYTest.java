@@ -243,6 +243,44 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
     }
 
     @Test
+    public void testPOSTWithDelayedContentBody() throws Exception
+    {
+        final String path = "/foo";
+        final CountDownLatch handlerLatch = new CountDownLatch(1);
+        Session session = startClient(version, startHTTPServer(version, new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
+                    throws IOException, ServletException
+            {
+                // don't read the request body, reply immediately
+                request.setHandled(true);
+                handlerLatch.countDown();
+            }
+        }), null);
+
+        Fields headers = SPDYTestUtils.createHeaders("localhost", connector.getPort(), version, "POST", path);
+        headers.put("content-type", "application/x-www-form-urlencoded");
+        final CountDownLatch replyLatch = new CountDownLatch(1);
+        Stream stream = session.syn(new SynInfo(5, TimeUnit.SECONDS, headers, false, (byte)0),
+                new StreamFrameListener.Adapter()
+                {
+                    @Override
+                    public void onReply(Stream stream, ReplyInfo replyInfo)
+                    {
+                        assertTrue(replyInfo.isClose());
+                        Fields replyHeaders = replyInfo.getHeaders();
+                        assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                        replyLatch.countDown();
+                    }
+                });
+        stream.data(new StringDataInfo("a", false));
+        assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
+        stream.data(new StringDataInfo("b", true));
+    }
+
+    @Test
     public void testPOSTWithParameters() throws Exception
     {
         final String path = "/foo";
