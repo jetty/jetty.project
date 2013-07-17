@@ -169,7 +169,7 @@ public class ProxySPDYToHTTPTest
 
         InetSocketAddress proxyAddress = startProxy(startServer(new TestServerHandler(header, null)), 30000, 30000);
 
-        Session client = factory.newSPDYClient(version).connect(proxyAddress, null).get(5, TimeUnit.SECONDS);
+        Session client = factory.newSPDYClient(version).connect(proxyAddress, null);
 
         final CountDownLatch replyLatch = new CountDownLatch(1);
 
@@ -202,7 +202,7 @@ public class ProxySPDYToHTTPTest
 
         InetSocketAddress proxyAddress = startProxy(startServer(new TestServerHandler(header, data)), 30000, 30000);
 
-        Session client = factory.newSPDYClient(version).connect(proxyAddress, null).get(5, TimeUnit.SECONDS);
+        Session client = factory.newSPDYClient(version).connect(proxyAddress, null);
 
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
@@ -275,7 +275,7 @@ public class ProxySPDYToHTTPTest
             {
                 resetLatch.countDown();
             }
-        }).get(5, TimeUnit.SECONDS);
+        });
 
         Fields headers = SPDYTestUtils.createHeaders("localhost", proxyAddress.getPort(), version, "GET", "/");
         headers.put("connection", "close");
@@ -309,7 +309,7 @@ public class ProxySPDYToHTTPTest
 
         final CountDownLatch replyLatch = new CountDownLatch(1);
 
-        Session client = factory.newSPDYClient(version).connect(proxyAddress, null).get(5, TimeUnit.SECONDS);
+        Session client = factory.newSPDYClient(version).connect(proxyAddress, null);
         Fields headers = SPDYTestUtils.createHeaders("localhost", proxyAddress.getPort(), version, "GET", "/");
 
         client.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
@@ -335,7 +335,7 @@ public class ProxySPDYToHTTPTest
 
         InetSocketAddress proxyAddress = startProxy(startServer(new TestServerHandler(header, null)), 30000, 30000);
 
-        Session client = factory.newSPDYClient(version).connect(proxyAddress, null).get(5, TimeUnit.SECONDS);
+        Session client = factory.newSPDYClient(version).connect(proxyAddress, null);
 
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
@@ -383,7 +383,7 @@ public class ProxySPDYToHTTPTest
 
         InetSocketAddress proxyAddress = startProxy(startServer(new TestServerHandler(header, null)), 30000, 30000);
 
-        Session client = factory.newSPDYClient(version).connect(proxyAddress, null).get(5, TimeUnit.SECONDS);
+        Session client = factory.newSPDYClient(version).connect(proxyAddress, null);
 
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
@@ -439,7 +439,7 @@ public class ProxySPDYToHTTPTest
             {
                 goAwayLatch.countDown();
             }
-        }).get(5, TimeUnit.SECONDS);
+        });
 
         Fields headers = SPDYTestUtils.createHeaders("localhost", proxyAddress.getPort(), version, "POST", "/");
         ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);
@@ -470,7 +470,7 @@ public class ProxySPDYToHTTPTest
             }
         }), 30000, timeout);
 
-        Session client = factory.newSPDYClient(version).connect(proxyAddress, null).get(5, TimeUnit.SECONDS);
+        Session client = factory.newSPDYClient(version).connect(proxyAddress, null);
 
         final CountDownLatch replyLatch = new CountDownLatch(1);
 
@@ -510,7 +510,7 @@ public class ProxySPDYToHTTPTest
             {
                 pingLatch.countDown();
             }
-        }).get(5, TimeUnit.SECONDS);
+        });
 
         client.ping(new PingInfo(5, TimeUnit.SECONDS));
 

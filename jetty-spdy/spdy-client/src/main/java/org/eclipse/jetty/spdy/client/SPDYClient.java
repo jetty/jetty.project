@@ -27,8 +27,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Future;
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -112,13 +112,13 @@ public class SPDYClient
      *
      * @param address the address to connect to
      * @param listener the session listener that will be notified of session events
-     * @return a {@link Future} that provides a {@link Session} when connected
+     * @return a {@link Session} when connected
      */
-    public Future<Session> connect(SocketAddress address, SessionFrameListener listener)
+    public Session connect(SocketAddress address, SessionFrameListener listener) throws ExecutionException, InterruptedException
     {
         FuturePromise<Session> promise = new FuturePromise<>();
         connect(address, listener, promise);
-        return promise;
+        return promise.get();
     }
 
     /**

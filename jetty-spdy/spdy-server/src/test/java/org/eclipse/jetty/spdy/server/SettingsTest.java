@@ -159,7 +159,7 @@ public class SettingsTest extends AbstractTest
         Session sessionV2 = startClient(address, null);
         sessionV2.settings(settingsInfo);
 
-        Session sessionV3 = clientFactory.newSPDYClient(SPDY.V3).connect(address, null).get(5, TimeUnit.SECONDS);
+        Session sessionV3 = clientFactory.newSPDYClient(SPDY.V3).connect(address, null);
         sessionV3.settings(settingsInfo);
 
         Assert.assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));

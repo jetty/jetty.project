@@ -202,7 +202,7 @@ public class ProxySPDYToSPDYLoadTest
             {
                 try
                 {
-                    Session client = factory.newSPDYClient(version).connect(proxyAddress, null).get(5, TimeUnit.SECONDS);
+                    Session client = factory.newSPDYClient(version).connect(proxyAddress, null);
                     for (int i = 0; i < requestsPerClient; i++)
                     {
                         sendSingleClientRequest(proxyAddress, client, serverIdentificationString, serverHost);

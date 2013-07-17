@@ -169,7 +169,7 @@ public class ProxySPDYToSPDYTest
         }));
         proxyConnector.addConnectionFactory(proxyConnector.getConnectionFactory("spdy/" + version));
 
-        Session client = factory.newSPDYClient(version).connect(proxyAddress, null).get(5, TimeUnit.SECONDS);
+        Session client = factory.newSPDYClient(version).connect(proxyAddress, null);
 
         final CountDownLatch replyLatch = new CountDownLatch(1);
         Fields headers = SPDYTestUtils.createHeaders("localhost", proxyAddress.getPort(), version, "GET", "/");
@@ -215,7 +215,7 @@ public class ProxySPDYToSPDYTest
             {
                 resetLatch.countDown();
             }
-        }).get(5, TimeUnit.SECONDS);
+        });
 
         Fields headers = SPDYTestUtils.createHeaders("localhost", proxyAddress.getPort(), version, "GET", "/");
         headers.put(header, "bar");
@@ -247,7 +247,7 @@ public class ProxySPDYToSPDYTest
         }));
         proxyConnector.addConnectionFactory(proxyConnector.getConnectionFactory("spdy/" + version));
 
-        Session client = factory.newSPDYClient(version).connect(proxyAddress, null).get(5, TimeUnit.SECONDS);
+        Session client = factory.newSPDYClient(version).connect(proxyAddress, null);
 
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
@@ -318,7 +318,7 @@ public class ProxySPDYToSPDYTest
 
         final CountDownLatch pushSynLatch = new CountDownLatch(1);
         final CountDownLatch pushDataLatch = new CountDownLatch(1);
-        Session client = factory.newSPDYClient(version).connect(proxyAddress, null).get(5, TimeUnit.SECONDS);
+        Session client = factory.newSPDYClient(version).connect(proxyAddress, null);
 
         Fields headers = new Fields();
         headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + proxyAddress.getPort());
@@ -417,7 +417,7 @@ public class ProxySPDYToSPDYTest
 
         final CountDownLatch pushSynLatch = new CountDownLatch(3);
         final CountDownLatch pushDataLatch = new CountDownLatch(3);
-        Session client = factory.newSPDYClient(version).connect(proxyAddress, null).get(5, TimeUnit.SECONDS);
+        Session client = factory.newSPDYClient(version).connect(proxyAddress, null);
 
         Fields headers = new Fields();
         headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + proxyAddress.getPort());
@@ -516,7 +516,7 @@ public class ProxySPDYToSPDYTest
             {
                 pingLatch.countDown();
             }
-        }).get(5, TimeUnit.SECONDS);
+        });
 
         client.ping(new PingInfo(5, TimeUnit.SECONDS));
 
@@ -552,7 +552,7 @@ public class ProxySPDYToSPDYTest
             {
                 resetLatch.countDown();
             }
-        }).get(5, TimeUnit.SECONDS);
+        });
 
         Fields headers = new Fields();
         headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + proxyAddress.getPort());

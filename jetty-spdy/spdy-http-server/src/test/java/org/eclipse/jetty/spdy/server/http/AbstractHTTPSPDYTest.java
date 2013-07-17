@@ -22,7 +22,6 @@ import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -122,7 +121,7 @@ public abstract class AbstractHTTPSPDYTest
             clientFactory = newSPDYClientFactory(threadPool);
             clientFactory.start();
         }
-        return clientFactory.newSPDYClient(version).connect(socketAddress, listener).get(5, TimeUnit.SECONDS);
+        return clientFactory.newSPDYClient(version).connect(socketAddress, listener);
     }
 
     protected SPDYClient.Factory newSPDYClientFactory(Executor threadPool)

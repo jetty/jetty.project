@@ -178,7 +178,7 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
             if (session == null)
             {
                 SPDYClient client = factory.newSPDYClient(version);
-                session = client.connect(address, sessionListener).get(getConnectTimeout(), TimeUnit.MILLISECONDS);
+                session = client.connect(address, sessionListener);
                 LOG.debug("Proxy session connected to {}", address);
                 Session existing = serverSessions.putIfAbsent(host, session);
                 if (existing != null)
