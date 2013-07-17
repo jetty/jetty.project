@@ -140,22 +140,11 @@ public class HttpTransportOverSPDYTest
     }
 
     @Test
-    public void testSendWithResponseInfoNullAndContentNullAndLastContentFalse() throws Exception
-    {
-        ByteBuffer content = null;
-        boolean lastContent = false;
-
-        httpTransportOverSPDY.send(null, content, lastContent, callback);
-        verify(callback, times(1)).succeeded();
-        verify(stream, times(0)).data(any(ByteBufferDataInfo.class), any(Callback.class));
-    }
-
-    @Test
     public void testSendWithResponseInfoNullAndContentAndLastContentFalse() throws Exception
     {
         ByteBuffer content = createRandomByteBuffer();
         boolean lastContent = false;
-        
+
         httpTransportOverSPDY.send(null, content, lastContent, callback);
         ArgumentCaptor<ByteBufferDataInfo> dataInfoCaptor = ArgumentCaptor.forClass(ByteBufferDataInfo.class);
         ArgumentCaptor<Callback> callbackCaptor = ArgumentCaptor.forClass(Callback.class);
@@ -166,13 +155,35 @@ public class HttpTransportOverSPDYTest
         assertThat("ByteBuffer is empty", dataInfoCaptor.getValue().length(), is(4096));
     }
 
-    @Test
+    @Test(expected = IllegalStateException.class)
+    public void testSendWithResponseInfoNullAndContentNullAndLastContentFalse() throws Exception
+    {
+        ByteBuffer content = null;
+        boolean lastContent = false;
+        httpTransportOverSPDY.send(null, content, lastContent, callback);
+    }
+
+    @Test(expected = IllegalStateException.class)
     public void testSendWithResponseInfoNullAndEmptyContentAndLastContentFalse() throws Exception
     {
         ByteBuffer content = BufferUtil.EMPTY_BUFFER;
         boolean lastContent = false;
-
         httpTransportOverSPDY.send(null, content, lastContent, callback);
+    }
+
+    @Test
+    public void testSendWithResponseInfoAndContentNullAndLastContentFalse() throws Exception
+    {
+        ByteBuffer content = null;
+        boolean lastContent = false;
+
+        httpTransportOverSPDY.send(responseInfo, content, lastContent, callback);
+        ArgumentCaptor<ReplyInfo> replyInfoCaptor = ArgumentCaptor.forClass(ReplyInfo.class);
+        ArgumentCaptor<Callback> callbackCaptor = ArgumentCaptor.forClass(Callback.class);
+        verify(stream, times(1)).reply(replyInfoCaptor.capture(), callbackCaptor.capture());
+        callbackCaptor.getValue().succeeded();
+        assertThat("ReplyInfo close is true", replyInfoCaptor.getValue().isClose(), is(false));
+
         verify(stream, times(0)).data(any(ByteBufferDataInfo.class), any(Callback.class));
         verify(callback, times(1)).succeeded();
     }
@@ -182,7 +193,7 @@ public class HttpTransportOverSPDYTest
     {
         ByteBuffer content = null;
         boolean lastContent = true;
-        
+
         // when stream.isClosed() is called a 2nd time, the reply has closed the stream already
         when(stream.isClosed()).thenReturn(false).thenReturn(true);
 
@@ -213,23 +224,6 @@ public class HttpTransportOverSPDYTest
         callbackCaptor.getValue().succeeded();
         assertThat("lastContent is true", dataInfoCaptor.getValue().isClose(), is(true));
         assertThat("ByteBuffer length is 4096", dataInfoCaptor.getValue().length(), is(4096));
-        verify(callback, times(1)).succeeded();
-    }
-
-    @Test
-    public void testSendWithResponseInfoAndContentNullAndLastContentFalse() throws Exception
-    {
-        ByteBuffer content = null;
-        boolean lastContent = false;
-
-        httpTransportOverSPDY.send(responseInfo, content, lastContent, callback);
-        ArgumentCaptor<ReplyInfo> replyInfoCaptor = ArgumentCaptor.forClass(ReplyInfo.class);
-        ArgumentCaptor<Callback> callbackCaptor = ArgumentCaptor.forClass(Callback.class);
-        verify(stream, times(1)).reply(replyInfoCaptor.capture(), callbackCaptor.capture());
-        callbackCaptor.getValue().succeeded();
-        assertThat("ReplyInfo close is true", replyInfoCaptor.getValue().isClose(), is(false));
-
-        verify(stream, times(0)).data(any(ByteBufferDataInfo.class), any(Callback.class));
         verify(callback, times(1)).succeeded();
     }
 

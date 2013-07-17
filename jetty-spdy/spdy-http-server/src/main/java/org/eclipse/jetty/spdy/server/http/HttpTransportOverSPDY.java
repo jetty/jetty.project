@@ -98,7 +98,7 @@ public class HttpTransportOverSPDY implements HttpTransport
     }
 
     @Override
-    public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent, Callback callback)
+    public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent, final Callback callback)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Sending {} {} {} {} last={}", this, stream, info, BufferUtil.toDetailString(content), lastContent);
@@ -133,29 +133,36 @@ public class HttpTransportOverSPDY implements HttpTransport
                 LOG.warn("Committed response twice.", exception);
                 return;
             }
-            sendReply(info, lastContent && !hasContent ? callback : new Callback.Adapter(), close);
+            sendReply(info, !hasContent ? callback : new Callback.Adapter()
+            {
+                @Override
+                public void failed(Throwable x)
+                {
+                    callback.failed(x);
+                }
+            }, close);
         }
 
         // Do we have some content to send as well
         if (hasContent)
         {
+            // send the data and let it call the callback
             LOG.debug("Send content: {} on stream: {} lastContent={}", BufferUtil.toDetailString(content), stream,
                     lastContent);
-
-            // send the data and let it call the callback
             stream.data(new ByteBufferDataInfo(endPoint.getIdleTimeout(), TimeUnit.MILLISECONDS, content, lastContent
             ), callback);
         }
         // else do we need to close
         else if (lastContent && info == null)
         {
-            LOG.debug("No content and lastContent=true. Sending empty ByteBuffer to close stream: {}", stream);
             // send empty data to close and let the send call the callback
+            LOG.debug("No content and lastContent=true. Sending empty ByteBuffer to close stream: {}", stream);
             stream.data(new ByteBufferDataInfo(endPoint.getIdleTimeout(), TimeUnit.MILLISECONDS,
                     BufferUtil.EMPTY_BUFFER, lastContent), callback);
         }
-        else if(!lastContent)
-            callback.succeeded();
+        else if (!lastContent && !hasContent && info == null)
+            throw new IllegalStateException("not lastContent, no content and no responseInfo!");
+
     }
 
     private void sendReply(HttpGenerator.ResponseInfo info, Callback callback, boolean close)
