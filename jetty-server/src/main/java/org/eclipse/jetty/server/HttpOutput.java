@@ -314,7 +314,59 @@ write completed    -          -          -          ASYNC         READY->owp
     	}
 
     }
-    
+
+    public void write(ByteBuffer buffer) throws IOException
+    {  
+        _written+=buffer.remaining();
+        boolean complete=_channel.getResponse().isAllContentWritten(_written);
+
+        // Async or Blocking ?
+        while(true)
+        {
+            switch(_state.get())
+            {
+                case OPEN:
+                    // process blocking below
+                    break;
+                    
+                case ASYNC:
+                    throw new IllegalStateException("isReady() not called");
+
+                case READY:
+                    if (!_state.compareAndSet(State.READY, State.PENDING))
+                        continue;
+
+                    // Do the asynchronous writing from the callback
+                    new AsyncWrite(buffer,complete).process();
+                    return;
+
+                case PENDING:
+                case UNREADY:
+                    throw new WritePendingException();
+
+                case CLOSED:
+                    throw new EofException("Closed");
+            }
+            break;
+        }
+
+        
+        // handle blocking write
+        int len=BufferUtil.length(buffer);
+
+        // flush any content from the aggregate
+        if (BufferUtil.hasContent(_aggregate))
+            _channel.write(_aggregate, complete && len==0);
+
+        // write any remaining content in the buffer directly
+        if (len>0)
+            _channel.write(buffer, complete);
+        else if (complete)
+            _channel.write(BufferUtil.EMPTY_BUFFER,complete);
+
+        if (complete)
+            closed();
+    }
 
     @Override
     public void write(int b) throws IOException
@@ -623,17 +675,22 @@ write completed    -          -          -          ASYNC         READY->owp
 
     private class AsyncWrite extends AsyncFlush
     {
-        private final byte[] _b;
-        private final int _off;
-        private final int _len;
+        private final ByteBuffer _buffer;
         private final boolean _complete;
+        private final int _len;
 
         public AsyncWrite(byte[] b, int off, int len, boolean complete) 
         {
-            _b=b;
-            _off=off;
-            _len=len;
+            _buffer=ByteBuffer.wrap(b, off, len);
             _complete=complete;
+            _len=len;
+        }
+
+        public AsyncWrite(ByteBuffer buffer, boolean complete) 
+        {
+            _buffer=buffer;
+            _complete=complete;
+            _len=buffer.remaining();
         }
 
         @Override
@@ -649,14 +706,13 @@ write completed    -          -          -          ASYNC         READY->owp
             // TODO write comments
             if (!_complete && _len<BufferUtil.space(_aggregate) && _len<_aggregate.capacity()/4)
             {
-                BufferUtil.append(_aggregate, _b, _off, _len);
+                BufferUtil.put(_buffer,_aggregate);
             }
             // TODO write comments
             else if (_len>0 && !_flushed)
             {
-                ByteBuffer buffer=ByteBuffer.wrap(_b, _off, _len);
                 _flushed=true;
-                _channel.write(buffer, _complete, this);
+                _channel.write(_buffer, _complete, this);
                 return false;
             }
             else if (_len==0 && !_flushed)

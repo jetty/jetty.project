@@ -284,26 +284,9 @@ public class ResourceCache
     {
         try
         {
-            int len=(int)resource.length();
-            if (len<0)
-            {
-                LOG.warn("invalid resource: "+String.valueOf(resource)+" "+len);
-                return null;
-            }
-            ByteBuffer buffer = BufferUtil.allocate(len);
-            int pos=BufferUtil.flipToFill(buffer);
-            if (resource.getFile()!=null)
-                BufferUtil.readFrom(resource.getFile(),buffer);
-            else
-            {
-                InputStream is = resource.getInputStream();
-                BufferUtil.readFrom(is,len,buffer);
-                is.close();
-            }
-            BufferUtil.flipToFlush(buffer,pos);
-            return buffer;
+            return BufferUtil.toBuffer(resource,true);
         }
-        catch(IOException e)
+        catch(IOException|IllegalArgumentException e)
         {
             LOG.warn(e);
             return null;
@@ -316,30 +299,11 @@ public class ResourceCache
         try
         {
             if (_useFileMappedBuffer && resource.getFile()!=null) 
-                return BufferUtil.toBuffer(resource.getFile());
+                return BufferUtil.toMappedBuffer(resource.getFile());
             
-            int len=(int)resource.length();
-            if (len<0)
-            {
-                LOG.warn("invalid resource: "+String.valueOf(resource)+" "+len);
-                return null;
-            }
-            ByteBuffer buffer = BufferUtil.allocateDirect(len);
-
-            int pos=BufferUtil.flipToFill(buffer);
-            if (resource.getFile()!=null)
-                BufferUtil.readFrom(resource.getFile(),buffer);
-            else
-            {
-                InputStream is = resource.getInputStream();
-                BufferUtil.readFrom(is,len,buffer);
-                is.close();
-            }
-            BufferUtil.flipToFlush(buffer,pos);
-            
-            return buffer;
+            return BufferUtil.toBuffer(resource,true);
         }
-        catch(IOException e)
+        catch(IOException|IllegalArgumentException e)
         {
             LOG.warn(e);
             return null;

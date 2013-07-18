@@ -456,30 +456,34 @@ public class HttpChannelState
             }
         }
 
-        if (aListeners!=null)
+        if (event!=null)
         {
-            for (AsyncListener listener : aListeners)
+            if (aListeners!=null)
             {
-                try
+                if (event.getThrowable()!=null)
                 {
-                    if (event!=null && event.getThrowable()!=null)
-                    {
-                        event.getSuppliedRequest().setAttribute(RequestDispatcher.ERROR_EXCEPTION,event.getThrowable());
-                        event.getSuppliedRequest().setAttribute(RequestDispatcher.ERROR_MESSAGE,event.getThrowable().getMessage());
-                        listener.onError(event);
-                    }
-                    else
-                        listener.onComplete(event);
+                    event.getSuppliedRequest().setAttribute(RequestDispatcher.ERROR_EXCEPTION,event.getThrowable());
+                    event.getSuppliedRequest().setAttribute(RequestDispatcher.ERROR_MESSAGE,event.getThrowable().getMessage());
                 }
-                catch(Exception e)
+
+                for (AsyncListener listener : aListeners)
                 {
-                    LOG.warn(e);
+                    try
+                    {
+                        if (event.getThrowable()!=null)
+                            listener.onError(event);
+                        else
+                            listener.onComplete(event);
+                    }
+                    catch(Exception e)
+                    {
+                        LOG.warn(e);
+                    }
                 }
             }
-        }
 
-        if (event!=null)
             event.completed();
+        }
     }
 
     protected void recycle()

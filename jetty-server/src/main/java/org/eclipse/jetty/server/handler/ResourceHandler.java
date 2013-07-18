@@ -531,7 +531,7 @@ public class ResourceHandler extends HandlerWrapper
                     resource.length()>_minMemoryMappedContentLength &&
                     resource instanceof FileResource)
                 {
-                    ByteBuffer buffer = BufferUtil.toBuffer(resource.getFile());
+                    ByteBuffer buffer = BufferUtil.toMappedBuffer(resource.getFile());
                     ((HttpOutput)out).sendContent(buffer,callback);
                 }
                 else  // Do a blocking write of a channel (if available) or input stream
@@ -550,7 +550,7 @@ public class ResourceHandler extends HandlerWrapper
                     resource.length()>_minMemoryMappedContentLength &&
                     resource instanceof FileResource)
                 {
-                    ByteBuffer buffer = BufferUtil.toBuffer(resource.getFile());
+                    ByteBuffer buffer = BufferUtil.toMappedBuffer(resource.getFile());
                     ((HttpOutput)out).sendContent(buffer);
                 }
                 else  // Do a blocking write of a channel (if available) or input stream

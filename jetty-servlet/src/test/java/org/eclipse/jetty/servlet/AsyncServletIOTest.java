@@ -257,8 +257,6 @@ public class AsyncServletIOTest
         return list;
     }
 
-
-    
     static AtomicInteger _owp = new AtomicInteger();
     static AtomicInteger _oda = new AtomicInteger();
     static AtomicInteger _read = new AtomicInteger();
@@ -376,7 +374,4 @@ public class AsyncServletIOTest
             });
         }
     }
-    
-    
-
 }
