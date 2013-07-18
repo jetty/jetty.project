@@ -185,6 +185,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     @Override
     public long getCreationTime() throws IllegalStateException
     {
+        checkValid();
         return _created;
     }
 
@@ -365,6 +366,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     @Override
     public void invalidate() throws IllegalStateException
     {
+        checkValid();
         // remove session from context and invalidate other sessions with same ID.
         _manager.removeSession(this,true);
         doInvalidate();
