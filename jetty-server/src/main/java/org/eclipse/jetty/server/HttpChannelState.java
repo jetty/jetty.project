@@ -223,8 +223,8 @@ public class HttpChannelState
                                 _async=null;
                                 return Action.ASYNC_EXPIRED;
                             case STARTED:
-                                // TODO
-                                LOG.warn("TODO Fix this double dispatch",new IllegalStateException(this.getStatusString()));
+                                if (DEBUG)
+                                    LOG.warn("TODO Fix this double dispatch",new IllegalStateException(this.getStatusString()));
                                 return Action.WAIT;
                         }
                     }
