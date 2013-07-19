@@ -75,7 +75,14 @@ public class ContextFactory implements ObjectFactory
      * Threadlocal for injecting a context to use
      * instead of looking up the map.
      */
-    private static final ThreadLocal __threadContext = new ThreadLocal();
+    private static final ThreadLocal<Context> __threadContext = new ThreadLocal<Context>();
+    
+    /**
+     * Threadlocal for setting a classloader which must be used 
+     * when finding the comp context.
+     */
+    private static final ThreadLocal<ClassLoader> __threadClassLoader = new ThreadLocal<ClassLoader>();
+    
 
 
     /**
@@ -107,10 +114,25 @@ public class ContextFactory implements ObjectFactory
             return ctx;
         }
 
+        //See if there is a classloader to use for finding the comp context
+        //Don't use its parent hierarchy if set.
+        ClassLoader loader = (ClassLoader)__threadClassLoader.get();
+        if (loader != null)
+        {
+            if (__log.isDebugEnabled() && loader != null) __log.debug("Using threadlocal classloader");
+            ctx = getContextForClassLoader(loader);
+            if (ctx == null)
+            {
+                ctx = newNamingContext(obj, loader, env, name, nameCtx);
+                __contextMap.put (loader, ctx);
+                if(__log.isDebugEnabled())__log.debug("Made context "+name.get(0)+" for classloader: "+loader);
+            }
+            return ctx;
+        }
        
-        ClassLoader tccl = Thread.currentThread().getContextClassLoader();
-        ClassLoader loader = tccl;
         //If the thread context classloader is set, then try its hierarchy to find a matching context
+        ClassLoader tccl = Thread.currentThread().getContextClassLoader();
+        loader = tccl;      
         if (loader != null)
         {
             if (__log.isDebugEnabled() && loader != null) __log.debug("Trying thread context classloader");
@@ -194,25 +216,34 @@ public class ContextFactory implements ObjectFactory
 
     /**
      * Associate the given Context with the current thread.
-     * resetComponentContext method should be called to reset the context.
+     * disassociate method should be called to reset the context.
      * @param ctx the context to associate to the current thread.
      * @return the previous context associated on the thread (can be null)
      */
-    public static Context setComponentContext(final Context ctx)
+    public static Context associateContext(final Context ctx)
     {
         Context previous = (Context)__threadContext.get();
         __threadContext.set(ctx);
         return previous;
     }
 
-    /**
-     * Set back the context with the given value.
-     * Don't return the previous context, use setComponentContext() method for this.
-     * @param ctx the context to associate to the current thread.
-     */
-    public static void resetComponentContext(final Context ctx)
+    public static void disassociateContext(final Context ctx)
     {
-        __threadContext.set(ctx);
+        __threadContext.remove();
+    }
+    
+    
+    public static ClassLoader associateClassLoader(final ClassLoader loader)
+    {
+        ClassLoader prev = (ClassLoader)__threadClassLoader.get();
+        __threadClassLoader.set(loader);
+        return prev;
+    }
+    
+    
+    public static void disassociateClassLoader ()
+    {
+        __threadClassLoader.remove();
     }
 
     public static void dump(Appendable out, String indent) throws IOException
