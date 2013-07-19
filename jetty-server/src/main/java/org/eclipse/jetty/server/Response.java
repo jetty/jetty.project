@@ -99,6 +99,7 @@ public class Response implements HttpServletResponse
     private Locale _locale;
     private MimeTypes.Type _mimeType;
     private String _characterEncoding;
+    private boolean _explicitEncoding;
     private String _contentType;
     private OutputType _outputType = OutputType.NONE;
     private ResponseWriter _writer;
@@ -128,6 +129,7 @@ public class Response implements HttpServletResponse
         _contentLength = -1;
         _out.reset();
         _fields.clear();
+        _explicitEncoding=false;
     }
 
     public void setHeaders(HttpContent httpContent)
@@ -745,7 +747,7 @@ public class Response implements HttpServletResponse
                 encoding = MimeTypes.inferCharsetFromContentType(_contentType);
                 if (encoding == null)
                     encoding = StringUtil.__ISO_8859_1;
-                setCharacterEncoding(encoding);
+                setCharacterEncoding(encoding,false);
             }
             
             if (_writer != null && _writer.isFor(encoding))
@@ -843,6 +845,11 @@ public class Response implements HttpServletResponse
     @Override
     public void setCharacterEncoding(String encoding)
     {
+        setCharacterEncoding(encoding,true);
+    }
+    
+    private void setCharacterEncoding(String encoding, boolean explicit)
+    {
         if (isIncluding())
             return;
 
@@ -850,6 +857,8 @@ public class Response implements HttpServletResponse
         {
             if (encoding == null)
             {
+                _explicitEncoding=false;
+                
                 // Clear any encoding.
                 if (_characterEncoding != null)
                 {
@@ -868,6 +877,7 @@ public class Response implements HttpServletResponse
             else
             {
                 // No, so just add this one to the mimetype
+                _explicitEncoding=explicit;
                 _characterEncoding = StringUtil.normalizeCharset(encoding);
                 if (_contentType != null)
                 {
@@ -928,6 +938,7 @@ public class Response implements HttpServletResponse
             else
             {
                 _characterEncoding = charset;
+                _explicitEncoding = true;
             }
 
             HttpField field = HttpField.CONTENT_TYPE.get(_contentType);
@@ -1068,8 +1079,8 @@ public class Response implements HttpServletResponse
 
         String charset = _channel.getRequest().getContext().getContextHandler().getLocaleEncoding(locale);
 
-        if (charset != null && charset.length() > 0 && _characterEncoding == null)
-            setCharacterEncoding(charset);
+        if (charset != null && charset.length() > 0 && !_explicitEncoding)
+            setCharacterEncoding(charset,false);
     }
 
     @Override
