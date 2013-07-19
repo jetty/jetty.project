@@ -42,9 +42,9 @@ public class HttpChannelOverSPDY extends HttpChannel<DataInfo>
 {
     private static final Logger LOG = Log.getLogger(HttpChannelOverSPDY.class);
 
-    private final Queue<Runnable> tasks = new LinkedList<>();
     private final Stream stream;
     private boolean dispatched; // Guarded by synchronization on tasks
+    private boolean redispatch; // Guarded by synchronization on tasks
     private boolean headersComplete;
 
     public HttpChannelOverSPDY(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport, HttpInputOverSPDY input, Stream stream)
@@ -60,43 +60,46 @@ public class HttpChannelOverSPDY extends HttpChannel<DataInfo>
         return super.headerComplete();
     }
 
-    private void post(Runnable task)
-    {
-        synchronized (tasks)
-        {
-            LOG.debug("Posting task {}", task);
-            tasks.offer(task);
-            dispatch();
-        }
-    }
-
     private void dispatch()
     {
-        synchronized (tasks)
+        synchronized (this)
         {
             if (dispatched)
-                return;
-
-            final Runnable task = tasks.poll();
-            if (task != null)
+                redispatch=true;
+            else
             {
-                dispatched = true;
-                LOG.debug("Dispatching task {}", task);
-                execute(new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        LOG.debug("Executing task {}", task);
-                        task.run();
-                        LOG.debug("Completing task {}", task);
-                        dispatched = false;
-                        dispatch();
-                    }
-                });
+                LOG.debug("Dispatch {}", this);
+                dispatched=true;
+                execute(this);
             }
         }
     }
+
+    @Override
+    public void run()
+    {
+        boolean execute=true;
+        
+        while(execute)
+        {
+            try
+            {
+                LOG.debug("Executing {}",this);
+                super.run();
+            }
+            finally
+            {
+                LOG.debug("Completing {}", this);
+                synchronized (this)
+                {
+                    dispatched = redispatch;
+                    redispatch=false;
+                    execute=dispatched;
+                }
+            }
+        }
+    }
+    
 
     public void requestStart(final Fields headers, final boolean endRequest)
     {
@@ -114,20 +117,19 @@ public class HttpChannelOverSPDY extends HttpChannel<DataInfo>
 
         if (endRequest)
         {
-            if (headerComplete())
-                post(this);
+            boolean dispatch = headerComplete();
             if (messageComplete())
-                post(this);
+                dispatch=true;
+            if (dispatch)
+                dispatch();
         }
     }
 
     public void requestContent(final DataInfo dataInfo, boolean endRequest)
     {
-        if (!headersComplete)
-        {
-            if (headerComplete())
-                post(this);
-        }
+        boolean dispatch=false;
+        if (!headersComplete && headerComplete())
+            dispatch=true;
 
         LOG.debug("HTTP > {} bytes of content", dataInfo.length());
 
@@ -147,13 +149,13 @@ public class HttpChannelOverSPDY extends HttpChannel<DataInfo>
         LOG.debug("Queuing last={} content {}", endRequest, copyDataInfo);
 
         if (content(copyDataInfo))
-            post(this);
+            dispatch=true;
 
-        if (endRequest)
-        {
-            if (messageComplete())
-                post(this);
-        }
+        if (endRequest && messageComplete())
+            dispatch=true;
+        
+        if (dispatch)
+            dispatch();
     }
 
     private boolean performBeginRequest(Fields headers)
