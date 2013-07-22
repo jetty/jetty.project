@@ -114,6 +114,7 @@ public abstract class Resource implements ResourceFactory, Closeable
             }
             catch(Exception e)
             {
+                LOG.warn(e.toString());
                 LOG.debug(Log.EXCEPTION,e);
                 return new BadResource(url,e.toString());
             }
