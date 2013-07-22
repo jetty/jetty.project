@@ -19,7 +19,6 @@
 package org.eclipse.jetty.io.ssl;
 
 import java.io.IOException;
-import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.util.Arrays;
@@ -39,7 +38,6 @@ import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.FillInterest;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
-import org.eclipse.jetty.io.SocketBased;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -110,17 +108,20 @@ public class SslConnection extends AbstractConnection
         this._sslEngine = sslEngine;
         this._decryptedEndPoint = newDecryptedEndPoint();
 
-        if (endPoint instanceof SocketBased)
-        {
-            try
-            {
-                ((SocketBased)endPoint).getSocket().setSoLinger(true, 30000);
-            }
-            catch (SocketException e)
-            {
-                throw new RuntimeIOException(e);
-            }
-        }
+        // commented out for now as it might cause native code being stuck in preClose0.
+        // See: https://java.net/jira/browse/GRIZZLY-547
+
+//        if (endPoint instanceof SocketBased)
+//        {
+//            try
+//            {
+//                ((SocketBased)endPoint).getSocket().setSoLinger(true, 30000);
+//            }
+//            catch (SocketException e)
+//            {
+//                throw new RuntimeIOException(e);
+//            }
+//        }
     }
 
     protected DecryptedEndPoint newDecryptedEndPoint()

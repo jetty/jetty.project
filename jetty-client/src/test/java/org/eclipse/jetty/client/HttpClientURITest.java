@@ -108,13 +108,15 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
             }
         });
 
+        String pathQuery = path + "?" + query;
         Request request = client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
                 .timeout(5, TimeUnit.SECONDS)
-                .path(path + "?" + query);
+                .path(pathQuery);
 
         Assert.assertEquals(path, request.getPath());
         Assert.assertEquals(query, request.getQuery());
+        Assert.assertTrue(request.getURI().toString().endsWith(pathQuery));
         Fields params = request.getParams();
         Assert.assertEquals(1, params.size());
         Assert.assertEquals(value, params.get(name).value());
@@ -131,6 +133,7 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
         String value = "1";
         final String query = name + "=" + value;
         final String path = "/path";
+        String pathQuery = path + "?" + query;
         start(new AbstractHandler()
         {
             @Override
@@ -150,6 +153,7 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
 
         Assert.assertEquals(path, request.getPath());
         Assert.assertEquals(query, request.getQuery());
+        Assert.assertTrue(request.getURI().toString().endsWith(pathQuery));
         Fields params = request.getParams();
         Assert.assertEquals(1, params.size());
         Assert.assertEquals(value, params.get(name).value());
@@ -168,6 +172,7 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
         String value2 = "2";
         final String query = name1 + "=" + value1 + "&" + name2 + "=" + value2;
         final String path = "/path";
+        String pathQuery = path + "?" + query;
         start(new AbstractHandler()
         {
             @Override
@@ -187,6 +192,7 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
 
         Assert.assertEquals(path, request.getPath());
         Assert.assertEquals(query, request.getQuery());
+        Assert.assertTrue(request.getURI().toString().endsWith(pathQuery));
         Fields params = request.getParams();
         Assert.assertEquals(2, params.size());
         Assert.assertEquals(value1, params.get(name1).value());
@@ -208,6 +214,7 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
         String encodedValue2 = URLEncoder.encode(value2, "UTF-8");
         final String query = name1 + "=" + encodedValue1 + "&" + name2 + "=" + encodedValue2;
         final String path = "/path";
+        String pathQuery = path + "?" + query;
         start(new AbstractHandler()
         {
             @Override
@@ -229,6 +236,7 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
 
         Assert.assertEquals(path, request.getPath());
         Assert.assertEquals(query, request.getQuery());
+        Assert.assertTrue(request.getURI().toString().endsWith(pathQuery));
         Fields params = request.getParams();
         Assert.assertEquals(2, params.size());
         Assert.assertEquals(value1, params.get(name1).value());

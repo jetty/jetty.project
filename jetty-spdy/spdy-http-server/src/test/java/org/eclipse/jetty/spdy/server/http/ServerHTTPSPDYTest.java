@@ -60,6 +60,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
 {
@@ -211,6 +212,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 assertEquals("HEAD", httpRequest.getMethod());
                 assertEquals(path, target);
                 assertEquals(path, httpRequest.getRequestURI());
+                httpResponse.getWriter().write("body that shouldn't be sent on a HEAD request");
                 handlerLatch.countDown();
             }
         }), null);
@@ -227,9 +229,53 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
                 replyLatch.countDown();
             }
+
+            @Override
+            public void onData(Stream stream, DataInfo dataInfo)
+            {
+                fail("HEAD request shouldn't send any data");
+            }
         });
         assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
         assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testPOSTWithDelayedContentBody() throws Exception
+    {
+        final String path = "/foo";
+        final CountDownLatch handlerLatch = new CountDownLatch(1);
+        Session session = startClient(version, startHTTPServer(version, new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
+                    throws IOException, ServletException
+            {
+                // don't read the request body, reply immediately
+                request.setHandled(true);
+                handlerLatch.countDown();
+            }
+        }), null);
+
+        Fields headers = SPDYTestUtils.createHeaders("localhost", connector.getPort(), version, "POST", path);
+        headers.put("content-type", "application/x-www-form-urlencoded");
+        final CountDownLatch replyLatch = new CountDownLatch(1);
+        Stream stream = session.syn(new SynInfo(5, TimeUnit.SECONDS, headers, false, (byte)0),
+                new StreamFrameListener.Adapter()
+                {
+                    @Override
+                    public void onReply(Stream stream, ReplyInfo replyInfo)
+                    {
+                        assertTrue(replyInfo.isClose());
+                        Fields replyHeaders = replyInfo.getHeaders();
+                        assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                        replyLatch.countDown();
+                    }
+                });
+        stream.data(new StringDataInfo("a", false));
+        assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
+        stream.data(new StringDataInfo("b", true));
     }
 
     @Test

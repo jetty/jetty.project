@@ -176,11 +176,7 @@ public class HttpClient extends ContainerLifeCycle
     protected void doStart() throws Exception
     {
         if (sslContextFactory != null)
-        {
             addBean(sslContextFactory);
-            // Avoid to double dispatch when using SSL
-            setDispatchIO(false);
-        }
 
         String name = HttpClient.class.getSimpleName() + "@" + hashCode();
 

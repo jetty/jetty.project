@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collection;
 
+import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -62,6 +63,21 @@ public class TrieTest
         trie.put("foo-bar",6);
         trie.put("foo+bar",7);
         trie.put("HELL4",8);
+        trie.put("",9);
+    }
+
+    @Test
+    public void testKeySet() throws Exception
+    {
+        Assert.assertTrue(trie.keySet().contains("hello"));
+        Assert.assertTrue(trie.keySet().contains("He"));
+        Assert.assertTrue(trie.keySet().contains("HELL"));
+        Assert.assertTrue(trie.keySet().contains("wibble"));
+        Assert.assertTrue(trie.keySet().contains("Wobble"));
+        Assert.assertTrue(trie.keySet().contains("foo-bar"));
+        Assert.assertTrue(trie.keySet().contains("foo+bar"));
+        Assert.assertTrue(trie.keySet().contains("HELL4"));
+        Assert.assertTrue(trie.keySet().contains(""));        
     }
     
     @Test
@@ -82,6 +98,8 @@ public class TrieTest
         Assert.assertEquals(5,trie.get("wobble").intValue());
         Assert.assertEquals(6,trie.get("Foo-bar").intValue());
         Assert.assertEquals(7,trie.get("FOO+bar").intValue());
+        Assert.assertEquals(8,trie.get("HELL4").intValue());
+        Assert.assertEquals(9,trie.get("").intValue());
         
         Assert.assertEquals(null,trie.get("helloworld"));
         Assert.assertEquals(null,trie.get("Help"));
@@ -151,6 +169,7 @@ public class TrieTest
         Assert.assertEquals(3,trie.getBest(StringUtil.getUtf8Bytes("xHELLxxxxx"),1,8).intValue()); 
         Assert.assertEquals(6,trie.getBest(StringUtil.getUtf8Bytes("xfoo-BARxx"),1,8).intValue()); 
         Assert.assertEquals(8,trie.getBest(StringUtil.getUtf8Bytes("xHELL4xxxx"),1,8).intValue());  
+        Assert.assertEquals(9,trie.getBest(StringUtil.getUtf8Bytes("xZZZZZxxxx"),1,8).intValue());  
     }
 
     @Test
@@ -167,6 +186,7 @@ public class TrieTest
         Assert.assertEquals(3,trie.getBest(BufferUtil.toBuffer("xHELLxxxxx"),1,8).intValue()); 
         Assert.assertEquals(6,trie.getBest(BufferUtil.toBuffer("xfoo-BARxx"),1,8).intValue()); 
         Assert.assertEquals(8,trie.getBest(BufferUtil.toBuffer("xHELL4xxxx"),1,8).intValue());  
+        Assert.assertEquals(9,trie.getBest(BufferUtil.toBuffer("xZZZZZxxxx"),1,8).intValue());  
         
         ByteBuffer buffer = (ByteBuffer)BufferUtil.toBuffer("xhelloxxxxxxx").position(2);
         Assert.assertEquals(1,trie.getBest(buffer,-1,10).intValue());
@@ -186,6 +206,7 @@ public class TrieTest
         Assert.assertEquals(3,trie.getBest(BufferUtil.toDirectBuffer("xHELLxxxxx"),1,8).intValue()); 
         Assert.assertEquals(6,trie.getBest(BufferUtil.toDirectBuffer("xfoo-BARxx"),1,8).intValue()); 
         Assert.assertEquals(8,trie.getBest(BufferUtil.toDirectBuffer("xHELL4xxxx"),1,8).intValue());  
+        Assert.assertEquals(9,trie.getBest(BufferUtil.toDirectBuffer("xZZZZZxxxx"),1,8).intValue());  
         
         ByteBuffer buffer = (ByteBuffer)BufferUtil.toDirectBuffer("xhelloxxxxxxx").position(2);
         Assert.assertEquals(1,trie.getBest(buffer,-1,10).intValue());
