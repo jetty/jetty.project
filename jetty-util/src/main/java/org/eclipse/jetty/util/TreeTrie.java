@@ -70,9 +70,8 @@ public class TreeTrie<V> extends AbstractTrie<V>
     public boolean put(String s, V v)
     {
         TreeTrie<V> t = this;
-        int k;
         int limit = s.length();
-        for(k=0; k < limit; k++)
+        for(int k=0; k < limit; k++)
         {
             char c=s.charAt(k);
             
@@ -102,7 +101,6 @@ public class TreeTrie<V> extends AbstractTrie<V>
             }
         }
         t._key=v==null?null:s;
-        V old=t._value;
         t._value = v;
         return true;
     }
@@ -182,7 +180,7 @@ public class TreeTrie<V> extends AbstractTrie<V>
             if (index>=0)
             {
                 if (t._nextIndex[index] == null) 
-                    return null;
+                    break;
                 t = t._nextIndex[index];
             }
             else
@@ -196,7 +194,7 @@ public class TreeTrie<V> extends AbstractTrie<V>
                     n=null;
                 }
                 if (n==null)
-                    return null;
+                    break;
                 t=n;
             }
             
@@ -207,7 +205,7 @@ public class TreeTrie<V> extends AbstractTrie<V>
                 V best=t.getBest(b,offset+i+1,len-i-1);
                 if (best!=null)
                     return best;
-                return t._value;
+                break;
             }
         }
         return t._value;
@@ -240,7 +238,7 @@ public class TreeTrie<V> extends AbstractTrie<V>
             if (index>=0)
             {
                 if (t._nextIndex[index] == null) 
-                    return null;
+                    break;
                 t = t._nextIndex[index];
             }
             else
@@ -254,7 +252,7 @@ public class TreeTrie<V> extends AbstractTrie<V>
                     n=null;
                 }
                 if (n==null)
-                    return null;
+                    break;
                 t=n;
             }
             
@@ -265,7 +263,7 @@ public class TreeTrie<V> extends AbstractTrie<V>
                 V best=t.getBest(b,offset+i+1,len-i-1);
                 if (best!=null)
                     return best;
-                return t._value;
+                break;
             }
         }
         return t._value;

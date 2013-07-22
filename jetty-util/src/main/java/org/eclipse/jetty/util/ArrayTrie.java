@@ -249,18 +249,20 @@ public class ArrayTrie<V> extends AbstractTrie<V>
             if (index>=0)
             {
                 int idx=t*ROW_SIZE+index;
-                t=_rowIndex[idx];
-                if (t==0)
-                    return null;
+                int nt=_rowIndex[idx];
+                if (nt==0)
+                    break;
+                t=nt;
             }
             else
             {
                 char[] big = _bigIndex==null?null:_bigIndex[t];
                 if (big==null)
                     return null;
-                t=big[c];
-                if (t==0)
-                    return null;
+                int nt=big[c];
+                if (nt==0)
+                    break;
+                t=nt;
             }
             
             // Is the next Trie is a match
@@ -286,18 +288,20 @@ public class ArrayTrie<V> extends AbstractTrie<V>
             if (index>=0)
             {
                 int idx=t*ROW_SIZE+index;
-                t=_rowIndex[idx];
-                if (t==0)
-                    return null;
+                int nt=_rowIndex[idx];
+                if (nt==0)
+                    break;
+                t=nt;
             }
             else
             {
                 char[] big = _bigIndex==null?null:_bigIndex[t];
                 if (big==null)
                     return null;
-                t=big[c];
-                if (t==0)
-                    return null;
+                int nt=big[c];
+                if (nt==0)
+                    break;
+                t=nt;
             }
             
             // Is the next Trie is a match
@@ -307,7 +311,7 @@ public class ArrayTrie<V> extends AbstractTrie<V>
                 V best=getBest(t,b,offset+i+1,len-i-1);
                 if (best!=null)
                     return best;
-                return (V)_value[t];
+                break;
             }
         }
         return (V)_value[t];
@@ -323,18 +327,20 @@ public class ArrayTrie<V> extends AbstractTrie<V>
             if (index>=0)
             {
                 int idx=t*ROW_SIZE+index;
-                t=_rowIndex[idx];
-                if (t==0)
-                    return null;
+                int nt=_rowIndex[idx];
+                if (nt==0)
+                    break;
+                t=nt;
             }
             else
             {
                 char[] big = _bigIndex==null?null:_bigIndex[t];
                 if (big==null)
                     return null;
-                t=big[c];
-                if (t==0)
-                    return null;
+                int nt=big[c];
+                if (nt==0)
+                    break;
+                t=nt;
             }
             
             // Is the next Trie is a match
@@ -344,7 +350,7 @@ public class ArrayTrie<V> extends AbstractTrie<V>
                 V best=getBest(t,b,offset+i+1,len-i-1);
                 if (best!=null)
                     return best;
-                return (V)_value[t];
+                break;
             }
         }
         return (V)_value[t];
