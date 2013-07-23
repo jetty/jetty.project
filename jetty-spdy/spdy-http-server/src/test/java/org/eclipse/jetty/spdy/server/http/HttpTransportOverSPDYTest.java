@@ -73,22 +73,22 @@ public class HttpTransportOverSPDYTest
     @Mock
     HttpGenerator.ResponseInfo responseInfo;
 
-    private Random random = new Random();
+    Random random = new Random();
+    short version = SPDY.V3;
 
     HttpTransportOverSPDY httpTransportOverSPDY;
-    private short version = SPDY.V3;
 
     @Before
     public void setUp() throws Exception
     {
         Fields requestHeaders = new Fields();
         requestHeaders.add(HTTPSPDYHeader.METHOD.name(version), "GET");
-        httpTransportOverSPDY = new HttpTransportOverSPDY(connector, httpConfiguration, endPoint, pushStrategy,
-                stream, requestHeaders, version);
         when(responseInfo.getStatus()).thenReturn(HttpStatus.OK_200);
         when(stream.getSession()).thenReturn(session);
         when(session.getVersion()).thenReturn(SPDY.V3);
         when(stream.isClosed()).thenReturn(false);
+        httpTransportOverSPDY = new HttpTransportOverSPDY(connector, httpConfiguration, endPoint, pushStrategy,
+                stream, requestHeaders);
     }
 
     @Test

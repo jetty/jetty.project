@@ -106,7 +106,7 @@ public class HTTPSPDYServerConnectionFactory extends SPDYServerConnectionFactory
                     ("gzip")))
                 headers.add("accept-encoding", "gzip");
             HttpTransportOverSPDY transport = new HttpTransportOverSPDY(connector, httpConfiguration, endPoint,
-                    pushStrategy, stream, headers, getVersion());
+                    pushStrategy, stream, headers);
             HttpInputOverSPDY input = new HttpInputOverSPDY();
             HttpChannelOverSPDY channel = new HttpChannelOverSPDY(connector, httpConfiguration, endPoint, transport, input, stream);
             stream.setAttribute(CHANNEL_ATTRIBUTE, channel);
