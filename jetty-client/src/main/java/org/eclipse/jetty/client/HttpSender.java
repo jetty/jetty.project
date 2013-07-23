@@ -540,9 +540,13 @@ public class HttpSender implements AsyncContentProvider.Listener
         boolean notCommitted = isBeforeCommit(current);
         if (result == null && notCommitted && request.getAbortCause() == null)
         {
-            result = exchange.responseComplete(failure).getReference();
-            exchange.terminateResponse();
-            LOG.debug("Failed on behalf {}", exchange);
+            completion = exchange.responseComplete(failure);
+            if (completion.isMarked())
+            {
+                result = completion.getReference();
+                exchange.terminateResponse();
+                LOG.debug("Failed on behalf {}", exchange);
+            }
         }
 
         if (result != null)
