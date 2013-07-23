@@ -70,8 +70,7 @@ public class HttpDestinationOverHTTP extends HttpDestination  implements Promise
             process(connection, false);
     }
 
-    // TODO: make it protected
-    public HttpConnectionOverHTTP acquire()
+    protected HttpConnectionOverHTTP acquire()
     {
         return (HttpConnectionOverHTTP)connectionPool.acquire();
     }

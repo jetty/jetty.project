@@ -19,7 +19,6 @@
 package org.eclipse.jetty.client;
 
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -37,7 +36,6 @@ public class HttpExchange
     private final AtomicBoolean requestComplete = new AtomicBoolean();
     private final AtomicBoolean responseComplete = new AtomicBoolean();
     private final AtomicInteger complete = new AtomicInteger();
-    private final CountDownLatch terminate = new CountDownLatch(2);
     private final AtomicReference<HttpChannel> channel = new AtomicReference<>();
     private final HttpConversation conversation;
     private final HttpDestination destination;
@@ -216,28 +214,6 @@ public class HttpExchange
         HttpChannel channel = this.channel.get();
         if (channel != null)
             channel.proceed(this, proceed);
-    }
-
-    public void terminateRequest()
-    {
-        terminate.countDown();
-    }
-
-    public void terminateResponse()
-    {
-        terminate.countDown();
-    }
-
-    public void awaitTermination()
-    {
-        try
-        {
-            terminate.await();
-        }
-        catch (InterruptedException x)
-        {
-            LOG.ignore(x);
-        }
     }
 
     private String toString(int code)
