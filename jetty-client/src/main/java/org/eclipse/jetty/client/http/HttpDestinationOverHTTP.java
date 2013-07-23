@@ -36,7 +36,12 @@ public class HttpDestinationOverHTTP extends HttpDestination  implements Promise
     public HttpDestinationOverHTTP(HttpClient client, String scheme, String host, int port)
     {
         super(client, scheme, host, port);
-        this.connectionPool = new HttpConnectionPool(this, client.getMaxConnectionsPerDestination(), this);
+        this.connectionPool = newHttpConnectionPool(client);
+    }
+
+    protected HttpConnectionPool newHttpConnectionPool(HttpClient client)
+    {
+        return new HttpConnectionPool(this, client.getMaxConnectionsPerDestination(), this);
     }
 
     public HttpConnectionPool getHttpConnectionPool()
@@ -85,7 +90,7 @@ public class HttpDestinationOverHTTP extends HttpDestination  implements Promise
      * @param connection the new connection
      * @param dispatch whether to dispatch the processing to another thread
      */
-    private void process(final HttpConnectionOverHTTP connection, boolean dispatch)
+    protected void process(final HttpConnectionOverHTTP connection, boolean dispatch)
     {
         HttpClient client = getHttpClient();
         final HttpExchange exchange = getHttpExchanges().poll();
