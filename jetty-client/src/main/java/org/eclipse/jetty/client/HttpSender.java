@@ -317,9 +317,11 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
         if (result == null && notCommitted && request.getAbortCause() == null)
         {
             // Complete the response from here
-            exchange.responseComplete();
-            result = exchange.terminateResponse(failure);
-            LOG.debug("Failed response from request {}", exchange);
+            if (exchange.responseComplete())
+            {
+                result = exchange.terminateResponse(failure);
+                LOG.debug("Failed response from request {}", exchange);
+            }
         }
 
         if (result != null)
