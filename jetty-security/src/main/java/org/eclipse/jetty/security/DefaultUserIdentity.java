@@ -54,7 +54,7 @@ public class DefaultUserIdentity implements UserIdentity
     }
 
     public boolean isUserInRole(String role, Scope scope)
-    { 
+    {
         //Servlet Spec 3.1, pg 125
         if ("*".equals(role))
             return false;

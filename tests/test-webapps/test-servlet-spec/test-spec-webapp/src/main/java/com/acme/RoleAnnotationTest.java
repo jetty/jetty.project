@@ -75,7 +75,7 @@ public class RoleAnnotationTest extends HttpServlet
             result = request.isUserInRole("manager");
             out.println("<br/><b>Result: isUserInRole(\"manager\")="+result+":"+ (result?" <span class=\"pass\">PASS":" <span class=\"fail\">FAIL")+"</span></b>");
             result = request.isUserInRole("user");
-            out.println("<br/><b>Result: isUserInRole(\"user\")="+result+":"+ (result==false?" <span class=\"pass\">PASS":" <span class=\"fail\">FAIL")+"</span></b>");
+            out.println("<br/><b>Result: isUserInRole(\"user\")="+result+":"+ (result?" <span class=\"pass\">PASS":" <span class=\"fail\">FAIL")+"</span></b>");
             String context = _config.getServletContext().getContextPath();
             if (!context.endsWith("/"))
                 context += "/";

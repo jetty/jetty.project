@@ -542,7 +542,13 @@ public class HttpRequest implements Request
             for (String nameValue : query.split("&"))
             {
                 String[] parts = nameValue.split("=");
-                param(parts[0], parts.length < 2 ? "" : urlDecode(parts[1]));
+                if (parts.length > 0)
+                {
+                    String name = parts[0];
+                    if (name.trim().length() == 0)
+                        continue;
+                    param(name, parts.length < 2 ? "" : urlDecode(parts[1]));
+                }
             }
         }
     }
