@@ -914,22 +914,6 @@ public class HttpClient extends ContainerLifeCycle
         dump(out, indent, getBeans(), destinations.values());
     }
 
-    protected Connection tunnel(Connection connection)
-    {
-        // TODO
-/*
-        HttpConnection httpConnection = (HttpConnection)connection;
-        HttpDestination destination = httpConnection.getHttpDestination();
-        SslConnection sslConnection = createSslConnection(destination, httpConnection.getEndPoint());
-        Connection result = (Connection)sslConnection.getDecryptedEndPoint().getConnection();
-        selectorManager.connectionClosed(httpConnection);
-        selectorManager.connectionOpened(sslConnection);
-        LOG.debug("Tunnelled {} over {}", connection, result);
-        return result;
-*/
-        return connection;
-    }
-
     private class ContentDecoderFactorySet implements Set<ContentDecoder.Factory>
     {
         private final Set<ContentDecoder.Factory> set = new HashSet<>();

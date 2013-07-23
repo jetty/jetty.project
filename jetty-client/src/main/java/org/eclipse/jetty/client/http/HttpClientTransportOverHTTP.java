@@ -107,6 +107,19 @@ public class HttpClientTransportOverHTTP extends ContainerLifeCycle implements H
         }
     }
 
+    @Override
+    public org.eclipse.jetty.client.api.Connection tunnel(org.eclipse.jetty.client.api.Connection connection)
+    {
+        HttpConnectionOverHTTP httpConnection = (HttpConnectionOverHTTP)connection;
+        HttpDestination destination = httpConnection.getHttpDestination();
+        SslConnection sslConnection = createSslConnection(destination, httpConnection.getEndPoint());
+        HttpConnectionOverHTTP result = (HttpConnectionOverHTTP)sslConnection.getDecryptedEndPoint().getConnection();
+        selectorManager.connectionClosed(httpConnection);
+        selectorManager.connectionOpened(sslConnection);
+        LOG.debug("Tunnelled {} over {}", connection, result);
+        return result;
+    }
+
     protected void configure(HttpClient client, SocketChannel channel) throws SocketException
     {
         channel.socket().setTcpNoDelay(client.isTCPNoDelay());

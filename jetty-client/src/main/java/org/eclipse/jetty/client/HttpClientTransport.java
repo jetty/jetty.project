@@ -30,4 +30,6 @@ public interface HttpClientTransport
     HttpDestination newHttpDestination(HttpClient httpClient, String scheme, String host, int port);
 
     void connect(HttpDestination destination, SocketAddress address, Promise<Connection> promise);
+
+    Connection tunnel(Connection connection);
 }

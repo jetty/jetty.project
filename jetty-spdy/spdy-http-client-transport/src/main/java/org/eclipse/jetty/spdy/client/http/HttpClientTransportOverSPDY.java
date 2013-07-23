@@ -87,4 +87,10 @@ public class HttpClientTransportOverSPDY implements HttpClientTransport
                 }
         );
     }
+
+    @Override
+    public Connection tunnel(Connection connection)
+    {
+        throw new UnsupportedOperationException();
+    }
 }

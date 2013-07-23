@@ -330,7 +330,7 @@ public abstract class HttpDestination implements Destination, Closeable, Dumpabl
                         if (response.getStatus() == 200)
                         {
                             // Wrap the connection with TLS
-                            Connection tunnel = client.tunnel(connection);
+                            Connection tunnel = client.getTransport().tunnel(connection);
                             delegate.succeeded(tunnel);
                         }
                         else
