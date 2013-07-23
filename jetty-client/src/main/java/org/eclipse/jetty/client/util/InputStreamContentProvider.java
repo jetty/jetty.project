@@ -25,6 +25,8 @@ import java.util.NoSuchElementException;
 
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * A {@link ContentProvider} for an {@link InputStream}.
@@ -44,6 +46,8 @@ import org.eclipse.jetty.util.BufferUtil;
  */
 public class InputStreamContentProvider implements ContentProvider
 {
+    private static final Logger LOG = Log.getLogger(InputStreamContentProvider.class);
+
     private final InputStream stream;
     private final int bufferSize;
 
@@ -88,63 +92,91 @@ public class InputStreamContentProvider implements ContentProvider
     @Override
     public Iterator<ByteBuffer> iterator()
     {
-        return new Iterator<ByteBuffer>()
-        {
-            private final byte[] bytes = new byte[bufferSize];
-            private Exception failure;
-            private ByteBuffer buffer;
+        return new InputStreamIterator();
+    }
 
-            @Override
-            public boolean hasNext()
+    /**
+     * Iterating over an {@link InputStream} is tricky, because {@link #hasNext()} must return false
+     * if the stream reads -1. However, we don't know what to return until we read the stream, which
+     * means that stream reading must be performed by {@link #hasNext()}, which introduces a side-effect
+     * on what is supposed to be a simple query method (with respect to the Query Command Separation
+     * Principle).
+     * <p />
+     * Alternatively, we could return {@code true} from {@link #hasNext()} even if we don't know that
+     * we will read -1, but then when {@link #next()} reads -1 it must return an empty buffer.
+     * However this is problematic, since GETs with no content indication would become GET with chunked
+     * content, and not understood by servers.
+     * <p />
+     * Therefore we need to make sure that {@link #hasNext()} does not perform any side effect (so that
+     * it can be called multiple times) until {@link #next()} is called.
+     */
+    private class InputStreamIterator implements Iterator<ByteBuffer>
+    {
+        private final byte[] bytes = new byte[bufferSize];
+        private Exception failure;
+        private ByteBuffer buffer;
+        private Boolean hasNext;
+
+        @Override
+        public boolean hasNext()
+        {
+            try
             {
-                try
+                if (hasNext != null)
+                    return hasNext;
+
+                int read = stream.read(bytes);
+                LOG.debug("Read {} bytes from {}", read, stream);
+                if (read > 0)
                 {
-                    int read = stream.read(bytes);
-                    if (read > 0)
-                    {
-                        buffer = onRead(bytes, 0, read);
-                        return true;
-                    }
-                    else if (read < 0)
-                    {
-                        return false;
-                    }
-                    else
-                    {
-                        buffer = BufferUtil.EMPTY_BUFFER;
-                        return true;
-                    }
+                    buffer = onRead(bytes, 0, read);
+                    hasNext = Boolean.TRUE;
+                    return true;
                 }
-                catch (Exception x)
+                else if (read < 0)
                 {
-                    if (failure == null)
-                    {
-                        failure = x;
-                        // Signal we have more content to cause a call to
-                        // next() which will throw NoSuchElementException.
-                        return true;
-                    }
+                    hasNext = Boolean.FALSE;
                     return false;
                 }
+                else
+                {
+                    buffer = BufferUtil.EMPTY_BUFFER;
+                    hasNext = Boolean.TRUE;
+                    return true;
+                }
             }
-
-            @Override
-            public ByteBuffer next()
+            catch (Exception x)
             {
-                ByteBuffer result = buffer;
-                buffer = null;
-                if (failure != null)
-                    throw (NoSuchElementException)new NoSuchElementException().initCause(failure);
-                if (result == null)
-                    throw new NoSuchElementException();
-                return result;
+                LOG.debug(x);
+                if (failure == null)
+                {
+                    failure = x;
+                    // Signal we have more content to cause a call to
+                    // next() which will throw NoSuchElementException.
+                    hasNext = Boolean.TRUE;
+                    return true;
+                }
+                throw new IllegalStateException();
             }
+        }
 
-            @Override
-            public void remove()
-            {
-                throw new UnsupportedOperationException();
-            }
-        };
+        @Override
+        public ByteBuffer next()
+        {
+            if (failure != null)
+                throw (NoSuchElementException)new NoSuchElementException().initCause(failure);
+            ByteBuffer result = buffer;
+            if (result == null)
+                throw new NoSuchElementException();
+            buffer = null;
+            hasNext = null;
+            return result;
+        }
+
+        @Override
+        public void remove()
+        {
+            throw new UnsupportedOperationException();
+        }
     }
 }
