@@ -43,6 +43,7 @@ import org.eclipse.jetty.spdy.api.HeadersInfo;
 import org.eclipse.jetty.spdy.api.PushInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
+import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamStatus;
 import org.eclipse.jetty.util.BlockingCallback;
@@ -68,7 +69,7 @@ public class HttpTransportOverSPDY implements HttpTransport
     private final BlockingCallback streamBlocker = new BlockingCallback();
     private final AtomicBoolean committed = new AtomicBoolean();
 
-    public HttpTransportOverSPDY(Connector connector, HttpConfiguration configuration, EndPoint endPoint, PushStrategy pushStrategy, Stream stream, Fields requestHeaders, short version)
+    public HttpTransportOverSPDY(Connector connector, HttpConfiguration configuration, EndPoint endPoint, PushStrategy pushStrategy, Stream stream, Fields requestHeaders)
     {
         this.connector = connector;
         this.configuration = configuration;
@@ -76,7 +77,8 @@ public class HttpTransportOverSPDY implements HttpTransport
         this.pushStrategy = pushStrategy == null ? new PushStrategy.None() : pushStrategy;
         this.stream = stream;
         this.requestHeaders = requestHeaders;
-        this.version = version;
+        Session session = stream.getSession();
+        this.version = session.getVersion();
     }
 
     protected Stream getStream()
@@ -254,7 +256,7 @@ public class HttpTransportOverSPDY implements HttpTransport
                                           PushStrategy pushStrategy, Stream stream, Fields requestHeaders,
                                           PushResourceCoordinator coordinator, short version)
         {
-            super(connector, configuration, endPoint, pushStrategy, stream, requestHeaders, version);
+            super(connector, configuration, endPoint, pushStrategy, stream, requestHeaders);
             this.coordinator = coordinator;
             this.version = version;
         }
