@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.client.spdy;
+package org.eclipse.jetty.spdy.client.http;
 
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpReceiver;
@@ -32,6 +32,7 @@ import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.StreamStatus;
+import org.eclipse.jetty.spdy.http.HTTPSPDYHeader;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 
@@ -55,37 +56,52 @@ public class HttpReceiverOverSPDY extends HttpReceiver implements StreamFrameLis
         if (exchange == null)
             return;
 
-        HttpResponse response = exchange.getResponse();
-
-        Fields fields = replyInfo.getHeaders();
-        // TODO: use HTTPSPDYHeader enum
-        HttpVersion version = HttpVersion.fromString(fields.get(":version").value());
-        response.version(version);
-        Integer status = fields.get(":status").valueAsInt();
-        response.status(status);
-        response.reason(HttpStatus.getMessage(status));
-
-        onResponseBegin(exchange);
-
-        for (Fields.Field field : fields)
+        try
         {
-            // TODO: handle multiple values properly
-            // TODO: skip special headers
-            HttpField httpField = new HttpField(field.name(), field.value());
-            onResponseHeader(exchange, httpField);
+            HttpResponse response = exchange.getResponse();
+
+            Fields fields = replyInfo.getHeaders();
+            short spdy = stream.getSession().getVersion();
+            HttpVersion version = HttpVersion.fromString(fields.get(HTTPSPDYHeader.VERSION.name(spdy)).value());
+            response.version(version);
+            String[] status = fields.get(HTTPSPDYHeader.STATUS.name(spdy)).value().split(" ", 2);
+
+            Integer code = Integer.parseInt(status[0]);
+            response.status(code);
+            String reason = status.length < 2 ? HttpStatus.getMessage(code) : status[1];
+            response.reason(reason);
+
+            if (responseBegin(exchange))
+            {
+                for (Fields.Field field : fields)
+                {
+                    String name = field.name();
+                    if (HTTPSPDYHeader.from(spdy, name) != null)
+                        continue;
+                    // TODO: handle multiple values properly
+                    HttpField httpField = new HttpField(name, field.value());
+                    responseHeader(exchange, httpField);
+                }
+
+                if (responseHeaders(exchange))
+                {
+                    if (replyInfo.isClose())
+                    {
+                        responseSuccess(exchange);
+                    }
+                }
+            }
         }
-
-        onResponseHeaders(exchange);
-
-        if (replyInfo.isClose())
+        catch (Exception x)
         {
-            onResponseSuccess(exchange);
+            responseFailure(x);
         }
     }
 
     @Override
     public StreamFrameListener onPush(Stream stream, PushInfo pushInfo)
     {
+        // SPDY push not supported
         getHttpChannel().getSession().rst(new RstInfo(stream.getId(), StreamStatus.REFUSED_STREAM), new Callback.Adapter());
         return null;
     }
@@ -103,14 +119,24 @@ public class HttpReceiverOverSPDY extends HttpReceiver implements StreamFrameLis
         if (exchange == null)
             return;
 
-        int length = dataInfo.length();
-        // TODO: avoid data copy here
-        onResponseContent(exchange, dataInfo.asByteBuffer(false));
-        dataInfo.consume(length);
-
-        if (dataInfo.isClose())
+        try
         {
-            onResponseSuccess(exchange);
+            int length = dataInfo.length();
+            // TODO: avoid data copy here
+            boolean process = responseContent(exchange, dataInfo.asByteBuffer(false));
+            dataInfo.consume(length);
+
+            if (process)
+            {
+                if (dataInfo.isClose())
+                {
+                    responseSuccess(exchange);
+                }
+            }
+        }
+        catch (Exception x)
+        {
+            responseFailure(x);
         }
     }
 }

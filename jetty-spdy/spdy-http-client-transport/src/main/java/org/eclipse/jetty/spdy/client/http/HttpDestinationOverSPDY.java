@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.client.spdy;
+package org.eclipse.jetty.spdy.client.http;
 
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -30,7 +30,7 @@ import org.eclipse.jetty.util.Promise;
 public class HttpDestinationOverSPDY extends HttpDestination implements Promise<Connection>
 {
     private final AtomicReference<ConnectState> connect = new AtomicReference<>(ConnectState.DISCONNECTED);
-    private volatile HttpConnectionOverSPDY connection;
+    private HttpConnectionOverSPDY connection;
 
     public HttpDestinationOverSPDY(HttpClient client, String scheme, String host, int port)
     {
@@ -48,7 +48,7 @@ public class HttpDestinationOverSPDY extends HttpDestination implements Promise<
                 case DISCONNECTED:
                 {
                     if (!connect.compareAndSet(current, ConnectState.CONNECTING))
-                        continue;
+                        break;
                     newConnection(this);
                     return;
                 }
@@ -59,10 +59,9 @@ public class HttpDestinationOverSPDY extends HttpDestination implements Promise<
                 }
                 case CONNECTED:
                 {
-                    HttpConnectionOverSPDY connection = this.connection;
-                    if (connection != null)
-                        process(connection, false);
-                    break;
+                    if (process(connection, false))
+                        break;
+                    return;
                 }
                 default:
                 {
@@ -75,14 +74,14 @@ public class HttpDestinationOverSPDY extends HttpDestination implements Promise<
     @Override
     public void succeeded(Connection result)
     {
+        HttpConnectionOverSPDY connection = this.connection = (HttpConnectionOverSPDY)result;
         if (connect.compareAndSet(ConnectState.CONNECTING, ConnectState.CONNECTED))
         {
-            HttpConnectionOverSPDY connection = this.connection = (HttpConnectionOverSPDY)result;
             process(connection, true);
         }
         else
         {
-            result.close();
+            connection.close();
             failed(new IllegalStateException());
         }
     }
@@ -93,39 +92,40 @@ public class HttpDestinationOverSPDY extends HttpDestination implements Promise<
         connect.set(ConnectState.DISCONNECTED);
     }
 
-    private void process(final HttpConnectionOverSPDY connection, boolean dispatch)
+    private boolean process(final HttpConnectionOverSPDY connection, boolean dispatch)
     {
         HttpClient client = getHttpClient();
         final HttpExchange exchange = getHttpExchanges().poll();
         LOG.debug("Processing exchange {} on connection {}", exchange, connection);
-        if (exchange != null)
+        if (exchange == null)
+            return false;
+
+        final Request request = exchange.getRequest();
+        Throwable cause = request.getAbortCause();
+        if (cause != null)
         {
-            final Request request = exchange.getRequest();
-            Throwable cause = request.getAbortCause();
-            if (cause != null)
+            LOG.debug("Abort before processing {}: {}", exchange, cause);
+            abort(exchange, cause);
+        }
+        else
+        {
+            if (dispatch)
             {
-                abort(exchange, cause);
-                LOG.debug("Aborted before processing {}: {}", exchange, cause);
+                client.getExecutor().execute(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        connection.send(exchange);
+                    }
+                });
             }
             else
             {
-                if (dispatch)
-                {
-                    client.getExecutor().execute(new Runnable()
-                    {
-                        @Override
-                        public void run()
-                        {
-                            connection.send(exchange);
-                        }
-                    });
-                }
-                else
-                {
-                    connection.send(exchange);
-                }
+                connection.send(exchange);
             }
         }
+        return true;
     }
 
     private enum ConnectState

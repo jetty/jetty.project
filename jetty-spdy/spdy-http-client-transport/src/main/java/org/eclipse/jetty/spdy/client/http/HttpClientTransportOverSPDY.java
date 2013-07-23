@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.client.spdy;
+package org.eclipse.jetty.spdy.client.http;
 
 import java.net.SocketAddress;
 
