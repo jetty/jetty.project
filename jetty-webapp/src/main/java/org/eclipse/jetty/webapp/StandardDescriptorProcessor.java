@@ -623,16 +623,15 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             {
                 //no servlet mappings
                 context.getMetaData().setOrigin(servlet_name+".servlet.mappings", descriptor);
-                ServletMapping mapping = addServletMapping(servlet_name, node, context, descriptor);
-                mapping.setDefault(context.getMetaData().getOrigin(servlet_name+".servlet.mappings") == Origin.WebDefaults);
+                addServletMapping(servlet_name, node, context, descriptor);               
                 break;
             }
-            case WebXml:
             case WebDefaults:
+            case WebXml:
             case WebOverride:
             {
                 //previously set by a web xml descriptor, if we're parsing another web xml descriptor allow override
-                //otherwise just ignore it
+                //otherwise just ignore it as web.xml takes precedence (pg 8-81 5.g.vi)
                 if (!(descriptor instanceof FragmentDescriptor))
                 {
                    addServletMapping(servlet_name, node, context, descriptor);
@@ -1181,7 +1180,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
     {
         ServletMapping mapping = new ServletMapping();
         mapping.setServletName(servletName);
-
+        mapping.setDefault(descriptor instanceof DefaultsDescriptor);
+        
         List<String> paths = new ArrayList<String>();
         Iterator<XmlParser.Node> iter = node.iterator("url-pattern");
         while (iter.hasNext())
