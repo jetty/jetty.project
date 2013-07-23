@@ -728,6 +728,8 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
         @Override
         protected void completed()
         {
+            // Nothing to do, since we always return false from process().
+            // Termination is obtained via LastContentCallback.
         }
 
         @Override

@@ -24,6 +24,7 @@ import java.util.Iterator;
 
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.util.DeferredContentProvider;
+import org.eclipse.jetty.util.BufferUtil;
 
 /**
  * {@link HttpContent} is a stateful, linear representation of the request content provided
@@ -139,5 +140,17 @@ public class HttpContent
     public boolean isConsumed()
     {
         return content == AFTER;
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x - has=%b,last=%b,consumed=%b,buffer=%s",
+                getClass().getSimpleName(),
+                hashCode(),
+                hasContent(),
+                isLast(),
+                isConsumed(),
+                BufferUtil.toDetailString(getContent()));
     }
 }
