@@ -459,16 +459,16 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     {
         if (isUsingCookies())
         {
-            String sessionPath = (_sessionPath==null) ? contextPath : _sessionPath;
+            String sessionPath = (_cookieConfig.getPath()==null) ? contextPath : _cookieConfig.getPath();
             sessionPath = (sessionPath==null||sessionPath.length()==0) ? "/" : sessionPath;
             String id = getNodeId(session);
             HttpCookie cookie = null;
             if (_sessionComment == null)
             {
                 cookie = new HttpCookie(
-                                        _sessionCookie,
+                                        _cookieConfig.getName(),
                                         id,
-                                        _sessionDomain,
+                                        _cookieConfig.getDomain(),
                                         sessionPath,
                                         _cookieConfig.getMaxAge(),
                                         _cookieConfig.isHttpOnly(),
@@ -477,9 +477,9 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
             else
             {
                 cookie = new HttpCookie(
-                                        _sessionCookie,
+                                        _cookieConfig.getName(),
                                         id,
-                                        _sessionDomain,
+                                        _cookieConfig.getDomain(),
                                         sessionPath,
                                         _cookieConfig.getMaxAge(),
                                         _cookieConfig.isHttpOnly(),
@@ -906,36 +906,48 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
             @Override
             public void setDomain(String domain)
             {
+                if (isStarted())
+                    throw new IllegalStateException("CookieConfig cannot be set after ServletContext is started");
                 _sessionDomain=domain;
             }
 
             @Override
             public void setHttpOnly(boolean httpOnly)
-            {
+            {   
+                if (isStarted())
+                    throw new IllegalStateException("CookieConfig cannot be set after ServletContext is started");
                 _httpOnly=httpOnly;
             }
 
             @Override
             public void setMaxAge(int maxAge)
-            {
+            {               
+                if (isStarted())
+                    throw new IllegalStateException("CookieConfig cannot be set after ServletContext is started");
                 _maxCookieAge=maxAge;
             }
 
             @Override
             public void setName(String name)
-            {
+            {  
+                    if (isStarted())
+                        throw new IllegalStateException("CookieConfig cannot be set after ServletContext is started");
                 _sessionCookie=name;
             }
 
             @Override
             public void setPath(String path)
             {
+                if (isStarted())
+                    throw new IllegalStateException("CookieConfig cannot be set after ServletContext is started"); 
                 _sessionPath=path;
             }
 
             @Override
             public void setSecure(boolean secure)
             {
+                if (isStarted())
+                    throw new IllegalStateException("CookieConfig cannot be set after ServletContext is started");
                 _secureCookies=secure;
             }
 
