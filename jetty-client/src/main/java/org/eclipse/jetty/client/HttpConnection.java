@@ -154,7 +154,7 @@ public class HttpConnection extends AbstractConnection implements Connection
 
     private void normalizeRequest(Request request)
     {
-        if (request.getMethod() == null)
+        if (request.method() == null)
             request.method(HttpMethod.GET);
 
         if (request.getVersion() == null)
@@ -163,7 +163,7 @@ public class HttpConnection extends AbstractConnection implements Connection
         if (request.getIdleTimeout() <= 0)
             request.idleTimeout(client.getIdleTimeout(), TimeUnit.MILLISECONDS);
 
-        HttpMethod method = request.getMethod();
+        String method = request.method();
         HttpVersion version = request.getVersion();
         HttpFields headers = request.getHeaders();
         ContentProvider content = request.getContent();
@@ -178,7 +178,7 @@ public class HttpConnection extends AbstractConnection implements Connection
             path = "/";
             request.path(path);
         }
-        if (destination.isProxied() && HttpMethod.CONNECT != method)
+        if (destination.isProxied() && !HttpMethod.CONNECT.is(method))
         {
             path = request.getURI().toString();
             request.path(path);

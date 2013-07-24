@@ -41,7 +41,7 @@ public enum HttpMethod
     MOVE;
 
     /* ------------------------------------------------------------ */
-    /** 
+    /**
      * Optimised lookup to find a method name and trailing space in a byte array.
      * @param bytes Array containing ISO-8859-1 characters
      * @param position The first valid index
@@ -70,22 +70,22 @@ public enum HttpMethod
                     return HEAD;
                 break;
             case 'O':
-                if (bytes[position+1]=='O' && bytes[position+2]=='T' && bytes[position+3]=='I' && length>=8 && 
+                if (bytes[position+1]=='O' && bytes[position+2]=='T' && bytes[position+3]=='I' && length>=8 &&
                 bytes[position+4]=='O' && bytes[position+5]=='N' && bytes[position+6]=='S' && bytes[position+7]==' ' )
                     return OPTIONS;
                 break;
             case 'D':
-                if (bytes[position+1]=='E' && bytes[position+2]=='L' && bytes[position+3]=='E' && length>=7 && 
+                if (bytes[position+1]=='E' && bytes[position+2]=='L' && bytes[position+3]=='E' && length>=7 &&
                 bytes[position+4]=='T' && bytes[position+5]=='E' && bytes[position+6]==' ' )
                     return DELETE;
                 break;
             case 'T':
-                if (bytes[position+1]=='R' && bytes[position+2]=='A' && bytes[position+3]=='C' && length>=6 && 
+                if (bytes[position+1]=='R' && bytes[position+2]=='A' && bytes[position+3]=='C' && length>=6 &&
                 bytes[position+4]=='E' && bytes[position+5]==' ' )
                     return TRACE;
                 break;
             case 'C':
-                if (bytes[position+1]=='O' && bytes[position+2]=='N' && bytes[position+3]=='N' && length>=8 && 
+                if (bytes[position+1]=='O' && bytes[position+2]=='N' && bytes[position+3]=='N' && length>=8 &&
                 bytes[position+4]=='E' && bytes[position+5]=='C' && bytes[position+6]=='T' && bytes[position+7]==' ' )
                     return CONNECT;
                 break;
@@ -93,7 +93,7 @@ public enum HttpMethod
                 if (bytes[position+1]=='O' && bytes[position+2]=='V' && bytes[position+3]=='E' &&  bytes[position+4]==' ')
                     return MOVE;
                 break;
-                
+
             default:
                 break;
         }
@@ -101,7 +101,7 @@ public enum HttpMethod
     }
 
     /* ------------------------------------------------------------ */
-    /** 
+    /**
      * Optimised lookup to find a method name and trailing space in a byte array.
      * @param buffer buffer containing ISO-8859-1 characters
      * @return A HttpMethod if a match or null if no easy match.
@@ -110,14 +110,14 @@ public enum HttpMethod
     {
         if (buffer.hasArray())
             return lookAheadGet(buffer.array(),buffer.arrayOffset()+buffer.position(),buffer.arrayOffset()+buffer.limit());
-        
+
         // TODO use cache and check for space
         // return CACHE.getBest(buffer,0,buffer.remaining());
         return null;
     }
-    
+
     /* ------------------------------------------------------------ */
-    public final static Trie<HttpMethod> CACHE= new ArrayTrie<HttpMethod>();
+    public final static Trie<HttpMethod> CACHE= new ArrayTrie<>();
     static
     {
         for (HttpMethod method : HttpMethod.values())
@@ -144,15 +144,15 @@ public enum HttpMethod
     /* ------------------------------------------------------------ */
     public boolean is(String s)
     {
-        return toString().equalsIgnoreCase(s);    
+        return toString().equalsIgnoreCase(s);
     }
-    
+
     /* ------------------------------------------------------------ */
     public ByteBuffer asBuffer()
     {
         return _buffer.asReadOnlyBuffer();
     }
-    
+
     /* ------------------------------------------------------------ */
     public String asString()
     {

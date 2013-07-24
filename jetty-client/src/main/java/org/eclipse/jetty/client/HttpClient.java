@@ -387,7 +387,7 @@ public class HttpClient extends ContainerLifeCycle
     protected Request copyRequest(Request oldRequest, URI newURI)
     {
         Request newRequest = new HttpRequest(this, oldRequest.getConversationID(), newURI);
-        newRequest.method(oldRequest.getMethod())
+        newRequest.method(oldRequest.method())
                 .version(oldRequest.getVersion())
                 .content(oldRequest.getContent());
         for (HttpField header : oldRequest.getHeaders())

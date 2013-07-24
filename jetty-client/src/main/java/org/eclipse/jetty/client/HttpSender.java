@@ -176,7 +176,7 @@ public class HttpSender implements AsyncContentProvider.Listener
                         String query = request.getQuery();
                         if (query != null)
                             path += "?" + query;
-                        requestInfo = new HttpGenerator.RequestInfo(request.getVersion(), request.getHeaders(), contentLength, request.getMethod().asString(), path);
+                        requestInfo = new HttpGenerator.RequestInfo(request.getVersion(), request.getHeaders(), contentLength, request.method(), path);
                         break;
                     }
                     case NEED_HEADER:
