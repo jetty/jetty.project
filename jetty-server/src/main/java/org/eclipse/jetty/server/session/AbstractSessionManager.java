@@ -899,14 +899,16 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
 
             @Override
             public void setComment(String comment)
-            {
+            {  
+                if (_context != null && _context.getContextHandler().isAvailable())
+                    throw new IllegalStateException("CookieConfig cannot be set after ServletContext is started");
                 _sessionComment = comment;
             }
 
             @Override
             public void setDomain(String domain)
             {
-                if (isStarted())
+                if (_context != null && _context.getContextHandler().isAvailable())
                     throw new IllegalStateException("CookieConfig cannot be set after ServletContext is started");
                 _sessionDomain=domain;
             }
@@ -914,7 +916,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
             @Override
             public void setHttpOnly(boolean httpOnly)
             {   
-                if (isStarted())
+                if (_context != null && _context.getContextHandler().isAvailable())
                     throw new IllegalStateException("CookieConfig cannot be set after ServletContext is started");
                 _httpOnly=httpOnly;
             }
@@ -922,7 +924,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
             @Override
             public void setMaxAge(int maxAge)
             {               
-                if (isStarted())
+                if (_context != null && _context.getContextHandler().isAvailable())
                     throw new IllegalStateException("CookieConfig cannot be set after ServletContext is started");
                 _maxCookieAge=maxAge;
             }
@@ -930,7 +932,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
             @Override
             public void setName(String name)
             {  
-                    if (isStarted())
+                    if (_context != null && _context.getContextHandler().isAvailable())
                         throw new IllegalStateException("CookieConfig cannot be set after ServletContext is started");
                 _sessionCookie=name;
             }
@@ -938,7 +940,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
             @Override
             public void setPath(String path)
             {
-                if (isStarted())
+                if (_context != null && _context.getContextHandler().isAvailable())
                     throw new IllegalStateException("CookieConfig cannot be set after ServletContext is started"); 
                 _sessionPath=path;
             }
@@ -946,7 +948,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
             @Override
             public void setSecure(boolean secure)
             {
-                if (isStarted())
+                if (_context != null && _context.getContextHandler().isAvailable())
                     throw new IllegalStateException("CookieConfig cannot be set after ServletContext is started");
                 _secureCookies=secure;
             }
