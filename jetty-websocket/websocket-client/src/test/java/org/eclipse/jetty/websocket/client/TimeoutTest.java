@@ -80,7 +80,7 @@ public class TimeoutTest
     @Test
     public void testIdleDetectedByClient() throws Exception
     {
-        TrackingSocket wsocket = new TrackingSocket();
+        JettyTrackingSocket wsocket = new JettyTrackingSocket();
 
         URI wsUri = server.getWsUri();
         client.setMaxIdleTimeout(1000);

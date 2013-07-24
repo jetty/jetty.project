@@ -74,7 +74,7 @@ public class BadNetworkTest
     @Test
     public void testAbruptClientClose() throws Exception
     {
-        TrackingSocket wsocket = new TrackingSocket();
+        JettyTrackingSocket wsocket = new JettyTrackingSocket();
 
         URI wsUri = server.getWsUri();
         Future<Session> future = client.connect(wsocket,wsUri);
@@ -103,7 +103,7 @@ public class BadNetworkTest
     @Test
     public void testAbruptServerClose() throws Exception
     {
-        TrackingSocket wsocket = new TrackingSocket();
+        JettyTrackingSocket wsocket = new JettyTrackingSocket();
 
         URI wsUri = server.getWsUri();
         Future<Session> future = client.connect(wsocket,wsUri);

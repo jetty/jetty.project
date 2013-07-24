@@ -55,7 +55,7 @@ public class ClientConnectTest
     private WebSocketClient client;
 
     @SuppressWarnings("unchecked")
-    private <E extends Throwable> E assertExpectedError(ExecutionException e, TrackingSocket wsocket, Class<E> errorClass) throws IOException
+    private <E extends Throwable> E assertExpectedError(ExecutionException e, JettyTrackingSocket wsocket, Class<E> errorClass) throws IOException
     {
         // Validate thrown cause
         Throwable cause = e.getCause();
@@ -104,7 +104,7 @@ public class ClientConnectTest
     @Test
     public void testBadHandshake() throws Exception
     {
-        TrackingSocket wsocket = new TrackingSocket();
+        JettyTrackingSocket wsocket = new JettyTrackingSocket();
 
         URI wsUri = server.getWsUri();
         Future<Session> future = client.connect(wsocket,wsUri);
@@ -133,7 +133,7 @@ public class ClientConnectTest
     @Test
     public void testBadHandshake_GetOK() throws Exception
     {
-        TrackingSocket wsocket = new TrackingSocket();
+        JettyTrackingSocket wsocket = new JettyTrackingSocket();
 
         URI wsUri = server.getWsUri();
         Future<Session> future = client.connect(wsocket,wsUri);
@@ -162,7 +162,7 @@ public class ClientConnectTest
     @Test
     public void testBadHandshake_GetOK_WithSecWebSocketAccept() throws Exception
     {
-        TrackingSocket wsocket = new TrackingSocket();
+        JettyTrackingSocket wsocket = new JettyTrackingSocket();
 
         URI wsUri = server.getWsUri();
         Future<Session> future = client.connect(wsocket,wsUri);
@@ -198,7 +198,7 @@ public class ClientConnectTest
     @Test
     public void testBadHandshake_SwitchingProtocols_InvalidConnectionHeader() throws Exception
     {
-        TrackingSocket wsocket = new TrackingSocket();
+        JettyTrackingSocket wsocket = new JettyTrackingSocket();
 
         URI wsUri = server.getWsUri();
         Future<Session> future = client.connect(wsocket,wsUri);
@@ -234,7 +234,7 @@ public class ClientConnectTest
     @Test
     public void testBadHandshake_SwitchingProtocols_NoConnectionHeader() throws Exception
     {
-        TrackingSocket wsocket = new TrackingSocket();
+        JettyTrackingSocket wsocket = new JettyTrackingSocket();
 
         URI wsUri = server.getWsUri();
         Future<Session> future = client.connect(wsocket,wsUri);
@@ -270,7 +270,7 @@ public class ClientConnectTest
     @Test
     public void testBadUpgrade() throws Exception
     {
-        TrackingSocket wsocket = new TrackingSocket();
+        JettyTrackingSocket wsocket = new JettyTrackingSocket();
 
         URI wsUri = server.getWsUri();
         Future<Session> future = client.connect(wsocket,wsUri);
@@ -300,7 +300,7 @@ public class ClientConnectTest
     @Ignore("Opened bug 399525")
     public void testConnectionNotAccepted() throws Exception
     {
-        TrackingSocket wsocket = new TrackingSocket();
+        JettyTrackingSocket wsocket = new JettyTrackingSocket();
 
         URI wsUri = server.getWsUri();
         Future<Session> future = client.connect(wsocket,wsUri);
@@ -330,7 +330,7 @@ public class ClientConnectTest
     @Test
     public void testConnectionRefused() throws Exception
     {
-        TrackingSocket wsocket = new TrackingSocket();
+        JettyTrackingSocket wsocket = new JettyTrackingSocket();
 
         // Intentionally bad port with nothing listening on it
         URI wsUri = new URI("ws://127.0.0.1:1");
@@ -359,7 +359,7 @@ public class ClientConnectTest
     @Test(expected = TimeoutException.class)
     public void testConnectionTimeout_Concurrent() throws Exception
     {
-        TrackingSocket wsocket = new TrackingSocket();
+        JettyTrackingSocket wsocket = new JettyTrackingSocket();
 
         URI wsUri = server.getWsUri();
         Future<Session> future = client.connect(wsocket,wsUri);

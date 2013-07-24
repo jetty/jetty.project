@@ -75,7 +75,7 @@ public class SlowClientTest
     @Slow
     public void testClientSlowToSend() throws Exception
     {
-        TrackingSocket tsocket = new TrackingSocket();
+        JettyTrackingSocket tsocket = new JettyTrackingSocket();
         client.getPolicy().setIdleTimeout(60000);
 
         URI wsUri = server.getWsUri();

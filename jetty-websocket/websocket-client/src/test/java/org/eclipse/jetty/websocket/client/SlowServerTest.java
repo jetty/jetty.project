@@ -76,7 +76,7 @@ public class SlowServerTest
     @Slow
     public void testServerSlowToRead() throws Exception
     {
-        TrackingSocket tsocket = new TrackingSocket();
+        JettyTrackingSocket tsocket = new JettyTrackingSocket();
         client.setMasker(new ZeroMasker());
         client.getPolicy().setIdleTimeout(60000);
 
@@ -125,7 +125,7 @@ public class SlowServerTest
     public void testServerSlowToSend() throws Exception
     {
         // final Exchanger<String> exchanger = new Exchanger<String>();
-        TrackingSocket tsocket = new TrackingSocket();
+        JettyTrackingSocket tsocket = new JettyTrackingSocket();
         // tsocket.messageExchanger = exchanger;
         client.setMasker(new ZeroMasker());
         client.getPolicy().setIdleTimeout(60000);

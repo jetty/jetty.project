@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.jsr356.annotations;
 import java.io.Reader;
 
 import javax.websocket.OnMessage;
-import javax.websocket.Session;
 
 import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
 import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
@@ -56,10 +55,9 @@ public class JsrParamIdText extends JsrParamIdOnMessage implements IJsrParamId
     @Override
     public boolean process(Param param, JsrCallable callable) throws InvalidSignatureException
     {
-        // Session parameter (optional)
-        if (param.type.isAssignableFrom(Session.class))
+        if (super.process(param,callable))
         {
-            param.bind(Role.SESSION);
+            // Found common roles
             return true;
         }
 

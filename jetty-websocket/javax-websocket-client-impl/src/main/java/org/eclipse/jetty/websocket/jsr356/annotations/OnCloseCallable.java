@@ -52,6 +52,17 @@ public class OnCloseCallable extends JsrCallable
         this.call(endpoint,close.getStatusCode(),close.getReason());
     }
 
+    public void call(Object endpoint, CloseReason closeReason)
+    {
+        // Close Reason is an optional parameter
+        if (idxCloseReason >= 0)
+        {
+            // convert to javax.websocket.CloseReason
+            super.args[idxCloseReason] = closeReason;
+        }
+        super.call(endpoint,super.args);
+    }
+
     public void call(Object endpoint, int statusCode, String reason)
     {
         // Close Reason is an optional parameter

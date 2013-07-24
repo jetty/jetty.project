@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.jsr356.annotations;
 
 import javax.websocket.OnError;
-import javax.websocket.Session;
 
 import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
 import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
@@ -27,16 +26,16 @@ import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
 /**
  * Param handling for &#064;{@link OnError} parameters.
  */
-public class JsrParamIdOnError implements IJsrParamId
+public class JsrParamIdOnError extends JsrParamIdBase implements IJsrParamId
 {
     public static final IJsrParamId INSTANCE = new JsrParamIdOnError();
 
     @Override
     public boolean process(Param param, JsrCallable callable) throws InvalidSignatureException
     {
-        if (param.type.isAssignableFrom(Session.class))
+        if (super.process(param,callable))
         {
-            param.bind(Role.SESSION);
+            // Found common roles
             return true;
         }
 

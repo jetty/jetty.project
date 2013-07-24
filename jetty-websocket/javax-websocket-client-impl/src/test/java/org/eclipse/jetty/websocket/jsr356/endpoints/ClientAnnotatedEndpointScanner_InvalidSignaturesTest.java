@@ -25,6 +25,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import javax.websocket.ClientEndpoint;
+import javax.websocket.ClientEndpointConfig;
 import javax.websocket.DeploymentException;
 import javax.websocket.OnClose;
 import javax.websocket.OnError;
@@ -96,7 +98,7 @@ public class ClientAnnotatedEndpointScanner_InvalidSignaturesTest
     public void testScan_InvalidSignature() throws DeploymentException
     {
         AnnotatedClientEndpointMetadata metadata = new AnnotatedClientEndpointMetadata(container,pojo);
-        AnnotatedEndpointScanner scanner = new AnnotatedEndpointScanner(metadata);
+        AnnotatedEndpointScanner<ClientEndpoint, ClientEndpointConfig> scanner = new AnnotatedEndpointScanner<>(metadata);
         try
         {
             scanner.scan();

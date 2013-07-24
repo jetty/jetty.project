@@ -183,6 +183,11 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
         return encoderFactory;
     }
 
+    public EndpointConfig getEndpointConfig()
+    {
+        return config;
+    }
+
     public EndpointMetadata getEndpointMetadata()
     {
         return metadata;

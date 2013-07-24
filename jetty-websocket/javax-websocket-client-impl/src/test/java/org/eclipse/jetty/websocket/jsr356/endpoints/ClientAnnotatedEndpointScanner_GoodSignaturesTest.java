@@ -26,20 +26,18 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import javax.websocket.ClientEndpoint;
+import javax.websocket.ClientEndpointConfig;
 import javax.websocket.CloseReason;
 import javax.websocket.PongMessage;
 import javax.websocket.Session;
 
 import org.eclipse.jetty.websocket.jsr356.ClientContainer;
+import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointMetadata;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
 import org.eclipse.jetty.websocket.jsr356.annotations.JsrCallable;
-import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointMetadata;
 import org.eclipse.jetty.websocket.jsr356.client.AnnotatedClientEndpointMetadata;
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicBinaryMessageByteBufferSocket;
-import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicCloseReasonSessionSocket;
-import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicCloseReasonSocket;
-import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicCloseSessionReasonSocket;
-import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicCloseSocket;
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicErrorSessionSocket;
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicErrorSessionThrowableSocket;
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicErrorSocket;
@@ -49,6 +47,10 @@ import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicOpenSessionSock
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicOpenSocket;
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicPongMessageSocket;
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicTextMessageStringSocket;
+import org.eclipse.jetty.websocket.jsr356.endpoints.samples.close.CloseReasonSessionSocket;
+import org.eclipse.jetty.websocket.jsr356.endpoints.samples.close.CloseReasonSocket;
+import org.eclipse.jetty.websocket.jsr356.endpoints.samples.close.CloseSessionReasonSocket;
+import org.eclipse.jetty.websocket.jsr356.endpoints.samples.close.CloseSocket;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -102,10 +104,10 @@ public class ClientAnnotatedEndpointScanner_GoodSignaturesTest
         Case.add(data, BasicOpenSocket.class, fOpen);
         Case.add(data, BasicOpenSessionSocket.class, fOpen, Session.class);
         // -- Close Events
-        Case.add(data, BasicCloseSocket.class, fClose);
-        Case.add(data, BasicCloseReasonSocket.class, fClose, CloseReason.class);
-        Case.add(data, BasicCloseReasonSessionSocket.class, fClose, CloseReason.class, Session.class);
-        Case.add(data, BasicCloseSessionReasonSocket.class, fClose, Session.class, CloseReason.class);
+        Case.add(data, CloseSocket.class, fClose);
+        Case.add(data, CloseReasonSocket.class, fClose, CloseReason.class);
+        Case.add(data, CloseReasonSessionSocket.class, fClose, CloseReason.class, Session.class);
+        Case.add(data, CloseSessionReasonSocket.class, fClose, Session.class, CloseReason.class);
         // -- Error Events
         Case.add(data, BasicErrorSocket.class, fError);
         Case.add(data, BasicErrorSessionSocket.class, fError, Session.class);
@@ -141,7 +143,7 @@ public class ClientAnnotatedEndpointScanner_GoodSignaturesTest
     public void testScan_Basic() throws Exception
     {
         AnnotatedClientEndpointMetadata metadata = new AnnotatedClientEndpointMetadata(container,testcase.pojo);
-        AnnotatedEndpointScanner scanner = new AnnotatedEndpointScanner(metadata);
+        AnnotatedEndpointScanner<ClientEndpoint, ClientEndpointConfig> scanner = new AnnotatedEndpointScanner<>(metadata);
         scanner.scan();
 
         Assert.assertThat("Metadata",metadata,notNullValue());

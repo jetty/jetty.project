@@ -20,7 +20,7 @@ package org.eclipse.jetty.websocket.jsr356.annotations;
 
 import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
 
-public abstract class JsrParamIdOnMessage implements IJsrParamId
+public abstract class JsrParamIdOnMessage extends JsrParamIdBase implements IJsrParamId
 {
     protected void assertPartialMessageSupportDisabled(Param param, JsrCallable callable)
     {

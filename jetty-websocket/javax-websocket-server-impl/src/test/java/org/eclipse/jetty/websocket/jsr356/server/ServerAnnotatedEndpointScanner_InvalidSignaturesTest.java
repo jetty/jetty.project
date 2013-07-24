@@ -29,6 +29,8 @@ import javax.websocket.DeploymentException;
 import javax.websocket.OnClose;
 import javax.websocket.OnError;
 import javax.websocket.OnOpen;
+import javax.websocket.server.ServerEndpoint;
+import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -95,7 +97,7 @@ public class ServerAnnotatedEndpointScanner_InvalidSignaturesTest
     public void testScan_InvalidSignature() throws DeploymentException
     {
         AnnotatedServerEndpointMetadata metadata = new AnnotatedServerEndpointMetadata(container,pojo);
-        AnnotatedEndpointScanner scanner = new AnnotatedEndpointScanner(metadata);
+        AnnotatedEndpointScanner<ServerEndpoint,ServerEndpointConfig> scanner = new AnnotatedEndpointScanner<>(metadata);
 
         try
         {

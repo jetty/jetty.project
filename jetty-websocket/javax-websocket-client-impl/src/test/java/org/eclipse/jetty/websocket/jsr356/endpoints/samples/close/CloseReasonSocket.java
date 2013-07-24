@@ -16,20 +16,21 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.endpoints.samples;
+package org.eclipse.jetty.websocket.jsr356.endpoints.samples.close;
 
 import javax.websocket.ClientEndpoint;
+import javax.websocket.CloseReason;
 import javax.websocket.OnClose;
 
 import org.eclipse.jetty.websocket.jsr356.endpoints.TrackingSocket;
 
 @ClientEndpoint
-public class BasicCloseSocket extends TrackingSocket
+public class CloseReasonSocket extends TrackingSocket
 {
     @OnClose
-    public void onClose()
+    public void onClose(CloseReason reason)
     {
-        addEvent("onClose()");
+        addEvent("onClose(CloseReason)");
         closeLatch.countDown();
     }
 }

@@ -16,15 +16,15 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.server.samples;
+package org.eclipse.jetty.websocket.jsr356.endpoints.samples.close;
 
+import javax.websocket.ClientEndpoint;
 import javax.websocket.OnClose;
-import javax.websocket.server.ServerEndpoint;
 
-import org.eclipse.jetty.websocket.jsr356.server.TrackingSocket;
+import org.eclipse.jetty.websocket.jsr356.endpoints.TrackingSocket;
 
-@ServerEndpoint(value = "/basic")
-public class BasicCloseSocket extends TrackingSocket
+@ClientEndpoint
+public class CloseSocket extends TrackingSocket
 {
     @OnClose
     public void onClose()

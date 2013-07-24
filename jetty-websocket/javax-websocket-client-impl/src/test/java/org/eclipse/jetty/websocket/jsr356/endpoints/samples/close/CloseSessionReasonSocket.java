@@ -16,35 +16,22 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.annotations;
+package org.eclipse.jetty.websocket.jsr356.endpoints.samples.close;
 
+import javax.websocket.ClientEndpoint;
 import javax.websocket.CloseReason;
 import javax.websocket.OnClose;
+import javax.websocket.Session;
 
-import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
-import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
+import org.eclipse.jetty.websocket.jsr356.endpoints.TrackingSocket;
 
-/**
- * Param handling for &#064;{@link OnClose} parameters.
- */
-public class JsrParamIdOnClose extends JsrParamIdBase implements IJsrParamId
+@ClientEndpoint
+public class CloseSessionReasonSocket extends TrackingSocket
 {
-    public static final IJsrParamId INSTANCE = new JsrParamIdOnClose();
-
-    @Override
-    public boolean process(Param param, JsrCallable callable) throws InvalidSignatureException
+    @OnClose
+    public void onClose(Session session, CloseReason reason)
     {
-        if (super.process(param,callable))
-        {
-            // Found common roles
-            return true;
-        }
-
-        if (param.type.isAssignableFrom(CloseReason.class))
-        {
-            param.bind(Role.CLOSE_REASON);
-            return true;
-        }
-        return false;
+        addEvent("onClose(Session,CloseReason)");
+        closeLatch.countDown();
     }
 }

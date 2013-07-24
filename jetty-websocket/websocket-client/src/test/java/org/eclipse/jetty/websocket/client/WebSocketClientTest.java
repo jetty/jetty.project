@@ -75,7 +75,7 @@ public class WebSocketClientTest
     @Test(expected = IllegalArgumentException.class)
     public void testAddExtension_NotInstalled() throws Exception
     {
-        TrackingSocket cliSock = new TrackingSocket();
+        JettyTrackingSocket cliSock = new JettyTrackingSocket();
 
         client.getPolicy().setIdleTimeout(10000);
 
@@ -91,7 +91,7 @@ public class WebSocketClientTest
     @Test
     public void testBasicEcho_FromClient() throws Exception
     {
-        TrackingSocket cliSock = new TrackingSocket();
+        JettyTrackingSocket cliSock = new JettyTrackingSocket();
 
         client.getPolicy().setIdleTimeout(10000);
 
@@ -125,7 +125,7 @@ public class WebSocketClientTest
     @Test
     public void testBasicEcho_FromServer() throws Exception
     {
-        TrackingSocket wsocket = new TrackingSocket();
+        JettyTrackingSocket wsocket = new JettyTrackingSocket();
         Future<Session> future = client.connect(wsocket,server.getWsUri());
 
         // Server
@@ -157,7 +157,7 @@ public class WebSocketClientTest
         fact.start();
         try
         {
-            TrackingSocket wsocket = new TrackingSocket();
+            JettyTrackingSocket wsocket = new JettyTrackingSocket();
 
             URI wsUri = server.getWsUri();
             Future<Session> future = client.connect(wsocket,wsUri);
@@ -197,7 +197,7 @@ public class WebSocketClientTest
         {
             int bufferSize = 512;
 
-            TrackingSocket wsocket = new TrackingSocket();
+            JettyTrackingSocket wsocket = new JettyTrackingSocket();
 
             URI wsUri = server.getWsUri();
             Future<Session> future = client.connect(wsocket,wsUri);
@@ -235,7 +235,7 @@ public class WebSocketClientTest
         fact.start();
         try
         {
-            TrackingSocket wsocket = new TrackingSocket();
+            JettyTrackingSocket wsocket = new JettyTrackingSocket();
 
             URI wsUri = server.getWsUri().resolve("/test?snack=cashews&amount=handful&brand=off");
             Future<Session> future = client.connect(wsocket,wsUri);

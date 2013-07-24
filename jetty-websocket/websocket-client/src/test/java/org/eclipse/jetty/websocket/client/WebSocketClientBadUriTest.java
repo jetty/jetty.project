@@ -85,7 +85,7 @@ public class WebSocketClientBadUriTest
     @Test
     public void testBadURI() throws Exception
     {
-        TrackingSocket wsocket = new TrackingSocket();
+        JettyTrackingSocket wsocket = new JettyTrackingSocket();
 
         try
         {

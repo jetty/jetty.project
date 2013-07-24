@@ -19,32 +19,33 @@
 package org.eclipse.jetty.websocket.jsr356.annotations;
 
 import javax.websocket.EndpointConfig;
-import javax.websocket.OnOpen;
+import javax.websocket.Session;
 
 import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
 import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
 
 /**
- * Param handling for &#064;{@link OnOpen} parameters.
+ * Common base for Parameter Identification in JSR Callable methods
  */
-public class JsrParamIdOnOpen extends JsrParamIdBase implements IJsrParamId
+public abstract class JsrParamIdBase implements IJsrParamId
 {
-    public static final IJsrParamId INSTANCE = new JsrParamIdOnOpen();
-
     @Override
     public boolean process(Param param, JsrCallable callable) throws InvalidSignatureException
     {
-        if (super.process(param,callable))
+        // Session parameter (optional)
+        if (param.type.isAssignableFrom(Session.class))
         {
-            // Found common roles
+            param.bind(Role.SESSION);
             return true;
         }
 
+        // Endpoint Config (optional)
         if (param.type.isAssignableFrom(EndpointConfig.class))
         {
             param.bind(Role.ENDPOINT_CONFIG);
             return true;
         }
+
         return false;
     }
 }

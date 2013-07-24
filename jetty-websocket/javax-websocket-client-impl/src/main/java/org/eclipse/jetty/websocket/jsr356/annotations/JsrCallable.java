@@ -35,6 +35,7 @@ public abstract class JsrCallable extends CallableMethod
     protected final Param[] params;
     protected final Object[] args;
     protected int idxSession = -1;
+    protected int idxConfig = -1;
 
     public JsrCallable(Class<?> pojo, Method method)
     {
@@ -59,6 +60,7 @@ public abstract class JsrCallable extends CallableMethod
     {
         this(copy.getPojo(),copy.getMethod());
         this.idxSession = copy.idxSession;
+        this.idxConfig = copy.idxConfig;
         System.arraycopy(copy.params,0,this.params,0,params.length);
         System.arraycopy(copy.args,0,this.args,0,args.length);
     }
@@ -112,6 +114,13 @@ public abstract class JsrCallable extends CallableMethod
         if (idxSession >= 0)
         {
             args[idxSession] = session;
+        }
+
+        // Optional EndpointConfig
+        idxConfig = findIndexForRole(Param.Role.ENDPOINT_CONFIG);
+        if (idxConfig >= 0)
+        {
+            args[idxConfig] = session.getEndpointConfig();
         }
 
         // Default for the path parameters

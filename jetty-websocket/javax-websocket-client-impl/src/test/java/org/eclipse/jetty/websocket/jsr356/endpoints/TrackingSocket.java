@@ -20,14 +20,13 @@ package org.eclipse.jetty.websocket.jsr356.endpoints;
 
 import static org.hamcrest.Matchers.*;
 
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import javax.websocket.CloseReason;
 import javax.websocket.CloseReason.CloseCode;
 
-import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.junit.Assert;
@@ -38,13 +37,24 @@ import org.junit.Assert;
 public abstract class TrackingSocket
 {
     private static final Logger LOG = Log.getLogger(TrackingSocket.class);
-    
+
     public CloseReason closeReason;
-    public BlockingQueue<String> eventQueue = new BlockingArrayQueue<String>();
-    public BlockingQueue<Throwable> errorQueue = new BlockingArrayQueue<>();
+    public EventQueue<String> eventQueue = new EventQueue<String>();
+    public EventQueue<Throwable> errorQueue = new EventQueue<>();
     public CountDownLatch openLatch = new CountDownLatch(1);
     public CountDownLatch closeLatch = new CountDownLatch(1);
     public CountDownLatch dataLatch = new CountDownLatch(1);
+
+    protected void addError(Throwable t)
+    {
+        LOG.warn(t);
+        errorQueue.add(t);
+    }
+
+    protected void addEvent(String format, Object... args)
+    {
+        eventQueue.add(String.format(format,args));
+    }
 
     public void assertClose(CloseCode expectedCode, String expectedReason) throws InterruptedException
     {
@@ -64,26 +74,16 @@ public abstract class TrackingSocket
         Assert.assertThat("Close Reason",closeReason.getReasonPhrase(),is(expectedReason));
     }
 
-    protected void addEvent(String format, Object... args)
+    public void assertEvent(String expected)
     {
-        eventQueue.add(String.format(format,args));
-    }
-
-    protected void addError(Throwable t)
-    {
-        errorQueue.add(t);
+        String actual = eventQueue.poll();
+        Assert.assertEquals("Event",expected,actual);
     }
 
     public void assertIsOpen() throws InterruptedException
     {
         assertWasOpened();
         assertNotClosed();
-    }
-
-    public void assertEvent(String expected)
-    {
-        String actual = eventQueue.poll();
-        Assert.assertEquals("Event",expected,actual);
     }
 
     public void assertNotClosed()

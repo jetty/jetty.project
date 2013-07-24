@@ -35,9 +35,9 @@ import org.junit.Assert;
 /**
  * Testing Socket used on client side WebSocket testing.
  */
-public class TrackingSocket extends WebSocketAdapter
+public class JettyTrackingSocket extends WebSocketAdapter
 {
-    private static final Logger LOG = Log.getLogger(TrackingSocket.class);
+    private static final Logger LOG = Log.getLogger(JettyTrackingSocket.class);
 
     public int closeCode = -1;
     public Exchanger<String> messageExchanger;

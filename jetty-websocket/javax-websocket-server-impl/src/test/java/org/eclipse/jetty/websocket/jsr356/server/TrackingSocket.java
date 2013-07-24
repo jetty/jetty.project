@@ -45,6 +45,17 @@ public abstract class TrackingSocket
     public CountDownLatch closeLatch = new CountDownLatch(1);
     public CountDownLatch dataLatch = new CountDownLatch(1);
 
+    protected void addError(Throwable t)
+    {
+        LOG.warn(t);
+        errorQueue.add(t);
+    }
+
+    protected void addEvent(String format, Object... args)
+    {
+        eventQueue.add(String.format(format,args));
+    }
+
     public void assertClose(CloseCode expectedCode, String expectedReason) throws InterruptedException
     {
         assertCloseCode(expectedCode);
@@ -63,26 +74,16 @@ public abstract class TrackingSocket
         Assert.assertThat("Close Reason",closeReason.getReasonPhrase(),is(expectedReason));
     }
 
-    protected void addEvent(String format, Object... args)
+    public void assertEvent(String expected)
     {
-        eventQueue.add(String.format(format,args));
-    }
-
-    protected void addError(Throwable t)
-    {
-        errorQueue.add(t);
+        String actual = eventQueue.poll();
+        Assert.assertEquals("Event",expected,actual);
     }
 
     public void assertIsOpen() throws InterruptedException
     {
         assertWasOpened();
         assertNotClosed();
-    }
-
-    public void assertEvent(String expected)
-    {
-        String actual = eventQueue.poll();
-        Assert.assertEquals("Event",expected,actual);
     }
 
     public void assertNotClosed()

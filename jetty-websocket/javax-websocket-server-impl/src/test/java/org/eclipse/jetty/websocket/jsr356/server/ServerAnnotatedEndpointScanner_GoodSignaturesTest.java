@@ -115,6 +115,7 @@ public class ServerAnnotatedEndpointScanner_GoodSignaturesTest
         Field fText = findFieldRef(AnnotatedServerEndpointMetadata.class,"onText");
         Field fTextStream = findFieldRef(AnnotatedServerEndpointMetadata.class,"onTextStream");
         Field fBinary = findFieldRef(AnnotatedServerEndpointMetadata.class,"onBinary");
+        @SuppressWarnings("unused")
         Field fBinaryStream = findFieldRef(AnnotatedServerEndpointMetadata.class,"onBinaryStream");
         Field fPong = findFieldRef(AnnotatedServerEndpointMetadata.class,"onPong");
 
