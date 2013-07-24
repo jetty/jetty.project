@@ -293,15 +293,27 @@ public class HttpTransportOverSPDY implements HttpTransport
 
         private void sendNextResourceData()
         {
-            PushResource resource;
-            if(active.compareAndSet(false, true))
+            LOG.debug("{} sendNextResourceData active: {}", hashCode(), active.get());
+            if (active.compareAndSet(false, true))
             {
-                resource = queue.poll();
-                if (resource == null)
+                PushResource resource = queue.poll();
+                if (resource != null)
+                {
+                    LOG.debug("Opening new push channel for: {}", resource);
+                    HttpChannelOverSPDY pushChannel = newHttpChannelOverSPDY(resource.getPushStream(), resource.getPushRequestHeaders());
+                    pushChannel.requestStart(resource.getPushRequestHeaders(), true);
                     return;
-                LOG.debug("Opening new push channel for: {}", resource);
-                HttpChannelOverSPDY pushChannel = newHttpChannelOverSPDY(resource.getPushStream(), resource.getPushRequestHeaders());
-                pushChannel.requestStart(resource.getPushRequestHeaders(), true);
+                }
+
+                if (active.compareAndSet(true, false))
+                {
+                    if (queue.peek() != null)
+                        sendNextResourceData();
+                }
+                else
+                {
+                    throw new IllegalStateException("active must not be false here! Concurrency bug!");
+                }
             }
         }
 
@@ -335,14 +347,15 @@ public class HttpTransportOverSPDY implements HttpTransport
                 public void failed(Throwable x)
                 {
                     LOG.debug("Creating push stream failed.", x);
+                    sendNextResourceData();
                 }
             });
         }
 
         private void complete()
         {
-            if(!active.compareAndSet(true, false))
-                LOG.warn("complete() called and active==false? That smells like a concurrency bug!", new IllegalStateException());
+            if (!active.compareAndSet(true, false))
+                throw new IllegalStateException();
             sendNextResourceData();
         }
 
