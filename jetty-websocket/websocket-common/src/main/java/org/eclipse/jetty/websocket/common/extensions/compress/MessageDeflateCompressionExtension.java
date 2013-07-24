@@ -18,11 +18,8 @@
 
 package org.eclipse.jetty.websocket.common.extensions.compress;
 
-
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
@@ -30,15 +27,19 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.extensions.AbstractExtension;
 
 /**
- * Per Message Compression extension for WebSocket.
+ * Per Message Deflate Compression extension for WebSocket.
  * <p>
  * Attempts to follow <a href="https://tools.ietf.org/html/draft-ietf-hybi-permessage-compression-01">draft-ietf-hybi-permessage-compression-01</a>
  */
-public class MessageCompressionExtension extends AbstractExtension
+public class MessageDeflateCompressionExtension extends AbstractExtension
 {
-    private static final Logger LOG = Log.getLogger(MessageCompressionExtension.class);
-
     private CompressionMethod method;
+    
+    @Override
+    public String getName()
+    {
+        return "permessage-deflate";
+    }
 
     @Override
     public void incomingFrame(Frame frame)
@@ -133,10 +134,6 @@ public class MessageCompressionExtension extends AbstractExtension
     public void setConfig(ExtensionConfig config)
     {
         super.setConfig(config);
-
-        String methodOptions = config.getParameter("method","deflate");
-        LOG.debug("Method requested: {}",methodOptions);
-
         method = new DeflateCompressionMethod();
     }
 

@@ -49,7 +49,7 @@ public class MessageCompressionExtensionTest
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
 
         // Setup extension
-        MessageCompressionExtension ext = new MessageCompressionExtension();
+        MessageDeflateCompressionExtension ext = new MessageDeflateCompressionExtension();
         ext.setBufferPool(new MappedByteBufferPool());
         ext.setPolicy(policy);
         ExtensionConfig config = ExtensionConfig.parse("permessage-compress");
@@ -162,7 +162,7 @@ public class MessageCompressionExtensionTest
      */
     @Test
     public void testIncomingPing() {
-        MessageCompressionExtension ext = new MessageCompressionExtension();
+        MessageDeflateCompressionExtension ext = new MessageDeflateCompressionExtension();
         ext.setBufferPool(new MappedByteBufferPool());
         ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("permessage-compress");
@@ -199,7 +199,7 @@ public class MessageCompressionExtensionTest
     @Test
     public void testIncomingUncompressedFrames()
     {
-        MessageCompressionExtension ext = new MessageCompressionExtension();
+        MessageDeflateCompressionExtension ext = new MessageDeflateCompressionExtension();
         ext.setBufferPool(new MappedByteBufferPool());
         ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("permessage-compress");
@@ -255,7 +255,7 @@ public class MessageCompressionExtensionTest
     @Test
     public void testOutgoingFrames() throws IOException
     {
-        MessageCompressionExtension ext = new MessageCompressionExtension();
+        MessageDeflateCompressionExtension ext = new MessageDeflateCompressionExtension();
         ext.setBufferPool(new MappedByteBufferPool());
         ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("permessage-compress");
@@ -325,7 +325,7 @@ public class MessageCompressionExtensionTest
     @Test
     public void testOutgoingPing() throws IOException
     {
-        MessageCompressionExtension ext = new MessageCompressionExtension();
+        MessageDeflateCompressionExtension ext = new MessageDeflateCompressionExtension();
         ext.setBufferPool(new MappedByteBufferPool());
         ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("permessage-compress");

@@ -34,6 +34,12 @@ public class IdentityExtension extends AbstractExtension
     {
         return getConfig().getParameter(key,"?");
     }
+    
+    @Override
+    public String getName()
+    {
+        return "identity";
+    }
 
     @Override
     public void incomingError(Throwable e)

@@ -34,6 +34,12 @@ import org.eclipse.jetty.websocket.common.extensions.AbstractExtension;
 public class FragmentExtension extends AbstractExtension
 {
     private int maxLength = -1;
+    
+    @Override
+    public String getName()
+    {
+        return "fragment";
+    }
 
     @Override
     public void incomingError(Throwable e)

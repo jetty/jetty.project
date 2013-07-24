@@ -25,10 +25,6 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Extension;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
-import org.eclipse.jetty.websocket.common.extensions.compress.FrameCompressionExtension;
-import org.eclipse.jetty.websocket.common.extensions.compress.MessageCompressionExtension;
-import org.eclipse.jetty.websocket.common.extensions.fragment.FragmentExtension;
-import org.eclipse.jetty.websocket.common.extensions.identity.IdentityExtension;
 
 public class WebSocketExtensionFactory extends ExtensionFactory
 {
@@ -40,13 +36,6 @@ public class WebSocketExtensionFactory extends ExtensionFactory
         super();
         this.policy = policy;
         this.bufferPool = bufferPool;
-
-        register("identity",IdentityExtension.class);
-        register("fragment",FragmentExtension.class);
-        /* FIXME: Disabled due to bug report - http://bugs.eclipse.org/395444 
-         * register("x-webkit-deflate-frame",FrameCompressionExtension.class);
-         * register("permessage-compress",MessageCompressionExtension.class);
-         */
     }
 
     @Override

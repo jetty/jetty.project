@@ -34,6 +34,12 @@ import org.eclipse.jetty.websocket.common.extensions.AbstractExtension;
 public class FrameCompressionExtension extends AbstractExtension
 {
     private CompressionMethod method = new DeflateCompressionMethod();
+    
+    @Override
+    public String getName()
+    {
+        return "x-webkit-deflate-frame";
+    }
 
     @Override
     public synchronized void incomingFrame(Frame frame)
