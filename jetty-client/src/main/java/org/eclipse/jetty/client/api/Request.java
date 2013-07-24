@@ -76,15 +76,21 @@ public interface Request
     int getPort();
 
     /**
-     * @return the method of this request, such as GET or POST
+     * @return the method of this request, such as GET or POST, as a String
      */
-    HttpMethod getMethod();
+    String getMethod();
 
     /**
      * @param method the method of this request, such as GET or POST
      * @return this request object
      */
     Request method(HttpMethod method);
+
+    /**
+     * @param method the method of this request, such as GET or POST
+     * @return this request object
+     */
+    Request method(String method);
 
     /**
      * @return the path of this request, such as "/" or "/path" - without the query

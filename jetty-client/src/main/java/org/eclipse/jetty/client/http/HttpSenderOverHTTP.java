@@ -56,7 +56,7 @@ public class HttpSenderOverHTTP extends HttpSender
         String query = request.getQuery();
         if (query != null)
             path += "?" + query;
-        HttpGenerator.RequestInfo requestInfo = new HttpGenerator.RequestInfo(request.getVersion(), request.getHeaders(), contentLength, request.getMethod().asString(), path);
+        HttpGenerator.RequestInfo requestInfo = new HttpGenerator.RequestInfo(request.getVersion(), request.getHeaders(), contentLength, request.getMethod(), path);
 
         try
         {

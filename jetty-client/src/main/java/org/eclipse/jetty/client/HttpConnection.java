@@ -91,7 +91,7 @@ public abstract class HttpConnection implements Connection
         if (request.getIdleTimeout() <= 0)
             request.idleTimeout(client.getIdleTimeout(), TimeUnit.MILLISECONDS);
 
-        HttpMethod method = request.getMethod();
+        String method = request.getMethod();
         HttpVersion version = request.getVersion();
         HttpFields headers = request.getHeaders();
         ContentProvider content = request.getContent();
@@ -106,7 +106,7 @@ public abstract class HttpConnection implements Connection
             path = "/";
             request.path(path);
         }
-        if (destination.isProxied() && HttpMethod.CONNECT != method)
+        if (destination.isProxied() && !HttpMethod.CONNECT.is(method))
         {
             path = request.getURI().toString();
             request.path(path);

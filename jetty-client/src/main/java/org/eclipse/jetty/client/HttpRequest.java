@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
@@ -65,7 +66,7 @@ public class HttpRequest implements Request
     private String scheme;
     private String path;
     private String query;
-    private HttpMethod method;
+    private String method;
     private HttpVersion version;
     private long idleTimeout;
     private long timeout;
@@ -125,7 +126,7 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public HttpMethod getMethod()
+    public String getMethod()
     {
         return method;
     }
@@ -133,7 +134,14 @@ public class HttpRequest implements Request
     @Override
     public Request method(HttpMethod method)
     {
-        this.method = method;
+        this.method = method.asString();
+        return this;
+    }
+
+    @Override
+    public Request method(String method)
+    {
+        this.method = Objects.requireNonNull(method).toUpperCase(Locale.ENGLISH);
         return this;
     }
 

@@ -95,8 +95,9 @@ public class RedirectProtocolHandler extends Response.Listener.Empty implements 
                     {
                         case 301:
                         {
-                            if (request.getMethod() == HttpMethod.GET || request.getMethod() == HttpMethod.HEAD)
-                                redirect(result, request.getMethod(), newURI);
+                            String method = request.getMethod();
+                            if (HttpMethod.GET.is(method) || HttpMethod.HEAD.is(method))
+                                redirect(result, method, newURI);
                             else
                                 fail(result, new HttpResponseException("HTTP protocol violation: received 301 for non GET or HEAD request", response));
                             break;
@@ -105,7 +106,7 @@ public class RedirectProtocolHandler extends Response.Listener.Empty implements 
                         case 303:
                         {
                             // Redirect must be done using GET
-                            redirect(result, HttpMethod.GET, newURI);
+                            redirect(result, HttpMethod.GET.asString(), newURI);
                             break;
                         }
                         case 307:
@@ -174,7 +175,7 @@ public class RedirectProtocolHandler extends Response.Listener.Empty implements 
         }
     }
 
-    private void redirect(Result result, HttpMethod method, URI location)
+    private void redirect(Result result, String method, URI location)
     {
         final Request request = result.getRequest();
         HttpConversation conversation = client.getConversation(request.getConversationID(), false);

@@ -65,7 +65,7 @@ public class HttpSenderOverSPDY extends HttpSender
         }
 
         // Add special SPDY headers
-        fields.put(HTTPSPDYHeader.METHOD.name(spdyVersion), request.getMethod().asString());
+        fields.put(HTTPSPDYHeader.METHOD.name(spdyVersion), request.getMethod());
         String path = request.getPath();
         String query = request.getQuery();
         if (query != null)
