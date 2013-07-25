@@ -10,6 +10,7 @@ jetty-8.1.12.v20130725 - 25 July 2013
  + 408806 getParameter returns null on Multipart request if called before
    request.getPart()/getParts()
  + 408909 GzipFilter setting of headers when reset and/or not compressed
+ + 409028 Jetty HttpClient does not work with proxy CONNECT method.
  + 409133 Empty <welcome-file> causes StackOverflowError
  + 409436 NPE on context restart using dynamic servlet registration
  + 409449 Ensure servlets, filters and listeners added via dynamic
