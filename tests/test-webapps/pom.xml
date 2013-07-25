@@ -25,6 +25,7 @@
   </parent>
   <artifactId>test-webapps-parent</artifactId>
   <name>Jetty Tests :: WebApps :: Parent</name>
+  <url>http://www.eclipse.org/jetty</url>
   <packaging>pom</packaging>
   <build>
     <plugins>

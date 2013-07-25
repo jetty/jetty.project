@@ -9,6 +9,7 @@
   <packaging>jar</packaging>
   <name>Test :: Continuation</name>
   <description>Asynchronous API</description>
+  <url>http://www.eclipse.org/jetty</url>
   <build>
     <plugins>
       <plugin>

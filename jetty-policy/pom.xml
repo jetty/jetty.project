@@ -8,6 +8,7 @@
   <artifactId>jetty-policy</artifactId>
   <name>Jetty :: Policy Tool</name>
   <packaging>jar</packaging>
+  <url>http://www.eclipse.org/jetty</url>
   <properties>
     <jetty.test.policy.loc>target/test-policy</jetty.test.policy.loc>
     <bundle-symbolic-name>${project.groupId}.policy</bundle-symbolic-name>

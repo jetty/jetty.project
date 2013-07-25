@@ -25,6 +25,7 @@
   </parent>
   <artifactId>test-sessions-common</artifactId>
   <name>Jetty Tests :: Sessions :: Common</name>
+  <url>http://www.eclipse.org/jetty</url>
   <build>
   </build>
   <dependencies>

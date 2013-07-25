@@ -8,6 +8,7 @@
   </parent>
   <artifactId>test-jetty-nested</artifactId>
   <name>Jetty :: Nested Test</name>
+  <url>http://www.eclipse.org/jetty</url>
   <packaging>war</packaging>
   <dependencies>
     <dependency>

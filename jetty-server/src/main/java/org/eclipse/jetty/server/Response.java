@@ -570,6 +570,7 @@ public class Response implements HttpServletResponse
      */
     public void addHeader(String name, String value)
     {
+
         if (_connection.isIncluding())
         {
             if (name.startsWith(SET_INCLUDE_HEADER_PREFIX))
@@ -578,6 +579,12 @@ public class Response implements HttpServletResponse
                 return;
         }
 
+        if (HttpHeaders.CONTENT_TYPE.equalsIgnoreCase(name))
+        {
+            setContentType(value);
+            return;
+        }
+        
         _connection.getResponseFields().add(name, value);
         if (HttpHeaders.CONTENT_LENGTH.equalsIgnoreCase(name))
             _connection._generator.setContentLength(Long.parseLong(value));

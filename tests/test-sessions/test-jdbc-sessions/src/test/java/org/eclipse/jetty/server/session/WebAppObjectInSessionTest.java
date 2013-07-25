@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.server.session;
 
+import org.eclipse.jetty.util.resource.Resource;
 import org.junit.Test;
 
 /**
@@ -30,6 +31,7 @@ public class WebAppObjectInSessionTest extends AbstractWebAppObjectInSessionTest
 
     public AbstractTestServer createServer(int port)
     {
+        Resource.setDefaultUseCaches(false);
         return new JdbcTestServer(port);
     }
 

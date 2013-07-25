@@ -48,12 +48,15 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 
+import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.ReadLineInputStream;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -174,13 +177,12 @@ public class MultiPartFilter implements Filter
             
             // Read each part
             boolean lastPart=false;
-            String content_disposition=null;
-            String content_transfer_encoding=null;
-            
-            
+      
             outer:while(!lastPart && params.size()<_maxFormKeys)
             {
                 String type_content=null;
+                String content_disposition=null;
+                String content_transfer_encoding=null;
                 
                 while(true)
                 {
@@ -283,7 +285,7 @@ public class MultiPartFilter implements Filter
                     
                     if ("base64".equalsIgnoreCase(content_transfer_encoding))
                     {
-                        in = new Base64InputStream(in);   
+                        in = new Base64InputStream((ReadLineInputStream)in);   
                     }
                     else if ("quoted-printable".equalsIgnoreCase(content_transfer_encoding))
                     {
@@ -513,12 +515,11 @@ public class MultiPartFilter implements Filter
             {
                 try
                 {
-                    String s=new String((byte[])o,_encoding);
-                    return s;
+                   return getParameterBytesAsString(name, (byte[])o);
                 }
                 catch(Exception e)
                 {
-                    e.printStackTrace();
+                    LOG.warn(e);
                 }
             }
             else if (o!=null)
@@ -533,11 +534,11 @@ public class MultiPartFilter implements Filter
         @Override
         public Map getParameterMap()
         {
-            Map<String, String> cmap = new HashMap<String,String>();
+            Map<String, String[]> cmap = new HashMap<String,String[]>();
             
             for ( Object key : _params.keySet() )
             {
-                cmap.put((String)key,getParameter((String)key));
+                cmap.put((String)key,getParameterValues((String)key));
             }
             
             return Collections.unmodifiableMap(cmap);
@@ -571,7 +572,7 @@ public class MultiPartFilter implements Filter
                 {
                     try
                     {
-                        v[i]=new String((byte[])o,_encoding);
+                        v[i]=getParameterBytesAsString(name, (byte[])o);
                     }
                     catch(Exception e)
                     {
@@ -594,18 +595,36 @@ public class MultiPartFilter implements Filter
         {
             _encoding=enc;
         }
+        
+        
+        /* ------------------------------------------------------------------------------- */
+        private String getParameterBytesAsString (String name, byte[] bytes) 
+        throws UnsupportedEncodingException
+        {
+            //check if there is a specific encoding for the parameter
+            Object ct = _params.get(name+CONTENT_TYPE_SUFFIX);
+            //use default if not
+            String contentType = _encoding;
+            if (ct != null)
+            {
+                String tmp = MimeTypes.getCharsetFromContentType(new ByteArrayBuffer((String)ct));
+                contentType = (tmp == null?_encoding:tmp);
+            }
+            
+            return new String(bytes,contentType);
+        }
     }
     
     private static class Base64InputStream extends InputStream
     {
-        BufferedReader _in;
+        ReadLineInputStream _in;
         String _line;
         byte[] _buffer;
         int _pos;
         
-        public Base64InputStream (InputStream in)
+        public Base64InputStream (ReadLineInputStream in)
         {
-            _in = new BufferedReader(new InputStreamReader(in));
+            _in = in;
         }
 
         @Override
@@ -614,6 +633,7 @@ public class MultiPartFilter implements Filter
             if (_buffer==null || _pos>= _buffer.length)
             {
                 _line = _in.readLine();
+                System.err.println("LINE: "+_line);
                 if (_line==null)
                     return -1;
                 if (_line.startsWith("--"))
@@ -621,7 +641,13 @@ public class MultiPartFilter implements Filter
                 else if (_line.length()==0)
                     _buffer="\r\n".getBytes();
                 else
-                    _buffer=B64Code.decode(_line);
+                {
+                    ByteArrayOutputStream bout = new ByteArrayOutputStream(4*_line.length()/3);  
+                    B64Code.decode(_line, bout);    
+                    bout.write(13);
+                    bout.write(10);
+                    _buffer = bout.toByteArray();
+                }
                 
                 _pos=0;
             }

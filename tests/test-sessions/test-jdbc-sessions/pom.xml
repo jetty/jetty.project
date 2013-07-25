@@ -25,6 +25,7 @@
   </parent>
   <artifactId>test-jdbc-sessions</artifactId>
   <name>Jetty Tests :: Sessions :: JDBC</name>
+  <url>http://www.eclipse.org/jetty</url>
   <build>
     <plugins>
       <plugin>
