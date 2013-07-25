@@ -36,12 +36,12 @@ public class ProxyFakeTunnelTest extends ProxyTunnellingTest
     {
         return _proxySocket.getLocalPort();
     }
-    
+
 
     protected void startProxy() throws Exception
     {
         _proxySocket = new ServerSocket(0);
-        
+
         _proxyThread = new Thread()
         {
             @Override
@@ -63,19 +63,28 @@ public class ProxyFakeTunnelTest extends ProxyTunnellingTest
         };
         _proxyThread.setDaemon(true);
         _proxyThread.start();
-        
+
     }
 
     protected void stopProxy() throws Exception
     {
-        _proxySocket.close();
-        _proxyThread.interrupt();
+        if (_proxySocket != null)
+        {
+            _proxySocket.close();
+            _proxyThread.interrupt();
+        }
+    }
+
+    @Override
+    public void testExternalProxy() throws Exception
+    {
+        // Do not execute this test, since it won't hit the fake proxy
     }
 
     static class FakeProxy extends Thread
     {
         Socket _socket;
-        
+
         public FakeProxy(Socket socket)
         {
             _socket=socket;
@@ -86,50 +95,50 @@ public class ProxyFakeTunnelTest extends ProxyTunnellingTest
 
             Socket toserver=null;
             final InputStream in;
-            final OutputStream out; 
+            final OutputStream out;
             try
             {
                  in = _socket.getInputStream();
                  out = _socket.getOutputStream();
-                
+
                 String address="";
                 int state=0;
-                
+
                 for (int b=in.read();b>=0;b=in.read())
-                {   
+                {
                     switch(state)
                     {
                         case 0:
                             if (' '==b)
                                 state=1;
                             break;
-                            
+
                         case 1:
                             if (' '==b)
                                 state=2;
                             else
                                 address+=(char)b;
                             break;
-                            
+
                         case 2:
                             if ('\r'==b)
                                 state=3;
                             break;
-                            
+
                         case 3:
                             if ('\n'==b)
                                 state=4;
                             else
                                 state=2;
                             break;
-                            
+
                         case 4:
                             if ('\r'==b)
                                 state=5;
                             else
                                 state=2;
                             break;
-                            
+
                         case 5:
                             if ('\n'==b)
                             {
@@ -142,7 +151,7 @@ public class ProxyFakeTunnelTest extends ProxyTunnellingTest
                                     out.write((
                                             "HTTP/1.1 200 OK\r\n"+
                                             "Server: fake\r\n"+
-                                            // "Content-Length: 0\r\n"+ 
+                                            // "Content-Length: 0\r\n"+
                                             "\r\n"
                                             ).getBytes());
                                 }
@@ -151,12 +160,12 @@ public class ProxyFakeTunnelTest extends ProxyTunnellingTest
                                     out.write((
                                             "HTTP/1.1 503 Unavailable\r\n"+
                                             "Server: fake\r\n"+
-                                            "Content-Length: 0\r\n"+ 
+                                            "Content-Length: 0\r\n"+
                                             "\r\n"
                                             ).getBytes());
                                 }
                                 out.flush();
-           
+
                                 if (toserver!=null)
                                 {
                                     final InputStream from = toserver.getInputStream();
@@ -188,7 +197,7 @@ public class ProxyFakeTunnelTest extends ProxyTunnellingTest
                                     copy.setDaemon(true);
                                     copy.start();
                                 }
-                                
+
                             }
                             else
                                 state=2;
@@ -196,11 +205,11 @@ public class ProxyFakeTunnelTest extends ProxyTunnellingTest
 
                         case 6:
                             toserver.getOutputStream().write((byte)b);
-                            
+
                     }
                 }
-                
-                
+
+
             }
             catch (IOException e)
             {
@@ -221,8 +230,8 @@ public class ProxyFakeTunnelTest extends ProxyTunnellingTest
                 }
             }
         }
-        
+
     }
-    
-    
+
+
 }
