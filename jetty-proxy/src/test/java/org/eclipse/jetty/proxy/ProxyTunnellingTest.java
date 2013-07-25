@@ -57,6 +57,7 @@ import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Assume;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -373,6 +374,7 @@ public class ProxyTunnellingTest
     }
 
     @Test
+    @Ignore("External Proxy Server no longer stable enough for testing")
     public void testExternalProxy() throws Exception
     {
         // Free proxy server obtained from http://hidemyass.com/proxy-list/
