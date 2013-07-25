@@ -8,6 +8,7 @@ jetty-7.6.12.v20130725 - 25 July 2013
  + 408662 In pax-web servlet services requests even if init() has not finished
    running
  + 408909 GzipFilter setting of headers when reset and/or not compressed
+ + 409028 Jetty HttpClient does not work with proxy CONNECT method.
  + 409133 Empty <welcome-file> causes StackOverflowError
  + 409556 FileInputStream not closed in DirectNIOBuffer
  + 410630 MongoSessionManager conflicting session update op
