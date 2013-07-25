@@ -112,10 +112,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         parser.atEOF();
         parser.parseNext(BufferUtil.EMPTY_BUFFER);
         if (!responseFailure(new EOFException()))
-        {
-            // TODO: just shutdown here, or full close ?
             getHttpChannel().getHttpConnection().close();
-        }
     }
 
     @Override
@@ -177,10 +174,10 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     {
         HttpExchange exchange = getHttpExchange();
         if (exchange == null)
-            return false; // TODO: is it correct to return false here ?
+            return false;
 
         responseSuccess(exchange);
-        return true;
+        return false;
     }
 
     @Override
