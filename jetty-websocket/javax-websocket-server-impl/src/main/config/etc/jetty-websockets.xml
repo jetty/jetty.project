@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <!-- =========================================================== -->
+  <!-- Add javax.websocket Configuring classes to all webapps for this Server -->
+  <!-- =========================================================== -->
+  <Call class="org.eclipse.jetty.webapp.Configuration$ClassList" name="setServerDefault">
+    <Arg><Ref refid="Server" /></Arg>
+    <Call name="addBefore">
+      <Arg name="beforeClass">org.eclipse.jetty.annotations.AnnotationConfiguration</Arg>
+      <Arg>
+        <Array type="String">
+          <Item>org.eclipse.jetty.websocket.jsr356.server.WebSocketConfiguration</Item>
+        </Array>
+      </Arg>
+    </Call>
+  </Call>
+
+</Configure>
