@@ -377,7 +377,8 @@ public class ProxyTunnellingTest
         try
         {
             ContentExchange exchange = new ContentExchange(true);
-            exchange.setTimeout(5000);
+            // Use a longer timeout, sometimes the proxy takes a while to answer
+            exchange.setTimeout(20000);
             exchange.setURL("https://www.google.com");
             httpClient.send(exchange);
             assertEquals(HttpExchange.STATUS_COMPLETED, exchange.waitForDone());
