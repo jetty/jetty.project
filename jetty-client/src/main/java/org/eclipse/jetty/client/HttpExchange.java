@@ -44,6 +44,7 @@ public class HttpExchange
     private final HttpResponse response;
     private volatile Throwable requestFailure;
     private volatile Throwable responseFailure;
+  
 
     public HttpExchange(HttpConversation conversation, HttpDestination destination, Request request, List<Response.ResponseListener> listeners)
     {
