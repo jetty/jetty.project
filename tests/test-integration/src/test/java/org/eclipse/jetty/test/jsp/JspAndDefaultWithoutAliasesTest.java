@@ -30,8 +30,8 @@ import java.util.Collection;
 import java.util.List;
 
 import org.eclipse.jetty.security.HashLoginService;
+import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -68,6 +68,7 @@ public class JspAndDefaultWithoutAliasesTest
 
         // @formatter:off
         data.add(new Object[] { "/dump.jsp" });
+        data.add(new Object[] { "/dump.jsp/" });
         data.add(new Object[] { "/dump.jsp%00" });
         data.add(new Object[] { "/dump.jsp%00x" });
         data.add(new Object[] { "/dump.jsp%00x/dump.jsp" });
@@ -87,10 +88,7 @@ public class JspAndDefaultWithoutAliasesTest
     @BeforeClass
     public static void startServer() throws Exception
     {
-        server = new Server();
-        SelectChannelConnector connector = new SelectChannelConnector();
-        connector.setPort(0);
-        server.addConnector(connector);
+        server = new Server(0);
 
         // Configure LoginService
         HashLoginService login = new HashLoginService();
@@ -119,8 +117,9 @@ public class JspAndDefaultWithoutAliasesTest
         server.setHandler(context);
 
         server.start();
-
-        serverURI = new URI("http://localhost:" + connector.getLocalPort() + "/");
+        
+        int port = ((NetworkConnector)server.getConnectors()[0]).getLocalPort();
+        serverURI = new URI("http://localhost:" + port + "/");
     }
 
     @AfterClass
