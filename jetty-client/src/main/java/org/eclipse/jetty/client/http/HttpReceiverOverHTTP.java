@@ -129,7 +129,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         if (exchange == null)
             return false;
 
-        parser.setHeadResponse(HttpMethod.HEAD.is(exchange.getRequest().getMethod()));
+        String method = exchange.getRequest().getMethod();
+        parser.setHeadResponse(HttpMethod.HEAD.is(method) || HttpMethod.CONNECT.is(method));
         exchange.getResponse().version(version).status(status).reason(reason);
 
         responseBegin(exchange);
@@ -177,7 +178,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             return false;
 
         responseSuccess(exchange);
-        return false;
+        return true;
     }
 
     @Override
