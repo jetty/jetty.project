@@ -21,13 +21,11 @@ package org.eclipse.jetty.server;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletResponse;
-import javax.servlet.WriteListener;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
@@ -224,7 +222,8 @@ public class HttpChannelState
                                 return Action.ASYNC_EXPIRED;
                             case STARTED:
                                 if (DEBUG)
-                                    LOG.warn("TODO Fix this double dispatch",new IllegalStateException(this.getStatusString()));
+                                    LOG.debug("TODO Fix this double dispatch",new IllegalStateException(this
+                                            .getStatusString()));
                                 return Action.WAIT;
                         }
                     }
