@@ -64,7 +64,7 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
     {
         factory.cleanup();
     }
-
+    
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
     {
@@ -136,6 +136,11 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
     {
         out.append(indent).append(" +- pathmap=").append(pathmap.toString()).append("\n");
         pathmap.dump(out,indent + "   ");
+    }
+
+    public WebSocketServerFactory getFactory()
+    {
+        return factory;
     }
 
     @ManagedAttribute(value = "mappings", readonly = true)

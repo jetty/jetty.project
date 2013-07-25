@@ -49,7 +49,11 @@ public class WebSocketConfiguration extends AbstractConfiguration
         String pathSpec = "/*";
         context.addFilter(fholder,pathSpec,EnumSet.of(DispatcherType.REQUEST));
         LOG.debug("Adding {} mapped to {} to {}",filter,pathSpec,context);
+        
+        // Store reference to the WebSocketUpgradeFilter
+        context.setAttribute(WebSocketUpgradeFilter.class.getName(),filter);
 
+        // Store reference to the ServerContainer
         ServerContainer container = new ServerContainer(filter);
         filter.setWebSocketServerFactoryListener(container);
         context.setAttribute(JAVAX_WEBSOCKET_SERVER_CONTAINER,container);
