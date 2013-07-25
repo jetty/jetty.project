@@ -68,6 +68,7 @@ public class JspAndDefaultWithoutAliasesTest
 
         // @formatter:off
         data.add(new Object[] { "/dump.jsp" });
+        data.add(new Object[] { "/dump.jsp/" });
         data.add(new Object[] { "/dump.jsp%00" });
         data.add(new Object[] { "/dump.jsp%00x" });
         data.add(new Object[] { "/dump.jsp%00x/dump.jsp" });

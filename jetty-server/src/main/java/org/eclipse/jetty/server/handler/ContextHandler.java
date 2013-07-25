@@ -2506,7 +2506,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             if (dot<0)
                 return false;
             String suffix=path.substring(dot);
-            return resource.getAlias().toString().endsWith(suffix);
+            return resource.toString().endsWith(suffix);
         }
     }
     
@@ -2521,10 +2521,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         public boolean check(String path, Resource resource)
         {
             int slash = path.lastIndexOf('/');
-            if (slash<0)
+            if (slash<0 || slash==path.length()-1)
                 return false;
             String suffix=path.substring(slash);
-            return resource.getAlias().toString().endsWith(suffix);
+            return resource.toString().endsWith(suffix);
         }
     }
     /* ------------------------------------------------------------ */
@@ -2537,7 +2537,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         public boolean check(String path, Resource resource)
         {
             int slash = path.lastIndexOf('/');
-            if (slash<0)
+            if (slash<0 || resource.exists())
                 return false;
             String suffix=path.substring(slash);
             return resource.getAlias().toString().endsWith(suffix);
