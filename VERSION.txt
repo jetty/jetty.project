@@ -1,3 +1,5 @@
+jetty-7.6.13-SNAPSHOT
+
 jetty-7.6.12.v20130725 - 25 July 2013
  + 396706 CGI support parameters
  + 397193 MongoSessionManager refresh updates last access time
