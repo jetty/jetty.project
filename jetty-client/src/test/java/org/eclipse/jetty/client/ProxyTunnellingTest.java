@@ -346,6 +346,7 @@ public class ProxyTunnellingTest
     }
 
     @Test
+    @Ignore
     public void testExternalProxy() throws Exception
     {
         // Free proxy server obtained from http://hidemyass.com/proxy-list/
