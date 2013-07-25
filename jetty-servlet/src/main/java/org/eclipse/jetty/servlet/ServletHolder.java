@@ -90,7 +90,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
      */
     public ServletHolder()
     {
-        super (Source.EMBEDDED);
+        this(Source.EMBEDDED);
     }
     
     /* ---------------------------------------------------------------- */
@@ -98,7 +98,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
      */
     public ServletHolder(Holder.Source creator)
     {
-        super (creator);
+        super(creator);
     }
     
     /* ---------------------------------------------------------------- */
@@ -106,7 +106,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
      */
     public ServletHolder(Servlet servlet)
     {
-        super (Source.EMBEDDED);
+        this(Source.EMBEDDED);
         setServlet(servlet);
     }
 
@@ -115,7 +115,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
      */
     public ServletHolder(String name, Class<? extends Servlet> servlet)
     {
-        super (Source.EMBEDDED);
+        this(Source.EMBEDDED);
         setName(name);
         setHeldClass(servlet);
     }
@@ -125,7 +125,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
      */
     public ServletHolder(String name, Servlet servlet)
     {
-        super (Source.EMBEDDED);
+        this(Source.EMBEDDED);
         setName(name);
         setServlet(servlet);
     }
@@ -135,7 +135,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
      */
     public ServletHolder(Class<? extends Servlet> servlet)
     {
-        super (Source.EMBEDDED);
+        this(Source.EMBEDDED);
         setHeldClass(servlet);
     }
 
@@ -653,6 +653,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         Servlet servlet=_servlet;
         synchronized(this)
         {
+            if (!isStarted())
+                throw new UnavailableException("Servlet not initialized", -1);
             if (_unavailable!=0 || !_initOnStartup)
                 servlet=getServlet();
             if (servlet==null)

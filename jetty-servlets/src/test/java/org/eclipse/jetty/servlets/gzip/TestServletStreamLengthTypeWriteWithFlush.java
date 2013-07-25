@@ -35,15 +35,15 @@ import org.eclipse.jetty.servlets.GzipFilter;
  * 
  * <pre>
  *  1) get stream
- *  2) set content type
  *  2) set content length
- *  4) write
+ *  3) set content type
+ *  4) write and flush
  * </pre>
  * 
  * @see <a href="Eclipse Bug 354014">http://bugs.eclipse.org/354014</a>
  */
 @SuppressWarnings("serial")
-public class TestServletStreamTypeLengthWrite extends TestDirContentServlet
+public class TestServletStreamLengthTypeWriteWithFlush extends TestDirContentServlet
 {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
@@ -53,14 +53,20 @@ public class TestServletStreamTypeLengthWrite extends TestDirContentServlet
 
         ServletOutputStream out = response.getOutputStream();
 
+        // set content-length of uncompressed content (GzipFilter should handle this)
+        response.setContentLength(dataBytes.length);
+        
         if (fileName.endsWith("txt"))
             response.setContentType("text/plain");
         else if (fileName.endsWith("mp3"))
             response.setContentType("audio/mpeg");
         response.setHeader("ETag","W/etag-"+fileName);
 
-        response.setContentLength(dataBytes.length);
-
-        out.write(dataBytes);
+        for ( int i = 0 ; i < dataBytes.length ; i++)
+        {
+            out.write(dataBytes[i]);
+            // flush using response object (not the stream itself)
+            response.flushBuffer();
+        }
     }
 }

@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.ListIterator;
 import java.util.Set;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +38,7 @@ import javax.servlet.AsyncContext;
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
+import javax.servlet.RequestDispatcher;
 import javax.servlet.Servlet;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -197,28 +199,70 @@ public class ServletHandler extends ScopedHandler
         throws Exception
     {
         super.doStop();
-        
+
         // Stop filters
+        List<FilterHolder> filterHolders = new ArrayList<FilterHolder>();
+        List<FilterMapping> filterMappings = LazyList.array2List(_filterMappings);
         if (_filters!=null)
         {
             for (int i=_filters.length; i-->0;)
             {
                 try { _filters[i].stop(); }catch(Exception e){LOG.warn(Log.EXCEPTION,e);}
+                if (_filters[i].getSource() != Source.EMBEDDED)
+                {
+                    //remove all of the mappings that were for non-embedded filters
+                    _filterNameMap.remove(_filters[i].getName());
+                    //remove any mappings associated with this filter
+                    ListIterator<FilterMapping> fmitor = filterMappings.listIterator();
+                    while (fmitor.hasNext())
+                    {
+                        FilterMapping fm = fmitor.next();
+                        if (fm.getFilterName().equals(_filters[i].getName()))
+                            fmitor.remove();
+                    }
+                }
+                else
+                    filterHolders.add(_filters[i]); //only retain embedded
             }
         }
-        
+        _filters = (FilterHolder[]) LazyList.toArray(filterHolders, FilterHolder.class);
+        _filterMappings = (FilterMapping[]) LazyList.toArray(filterMappings, FilterMapping.class);
+        _matchAfterIndex = (_filterMappings == null || _filterMappings.length == 0 ? -1 : _filterMappings.length-1);
+        _matchBeforeIndex = -1;
+
+
         // Stop servlets
+        List<ServletHolder> servletHolders = new ArrayList<ServletHolder>();  //will be remaining servlets
+        List<ServletMapping> servletMappings = LazyList.array2List(_servletMappings); //will be remaining mappings
         if (_servlets!=null)
         {
             for (int i=_servlets.length; i-->0;)
             {
                 try { _servlets[i].stop(); }catch(Exception e){LOG.warn(Log.EXCEPTION,e);}
+                if (_servlets[i].getSource() != Source.EMBEDDED)
+                {
+                    //remove from servlet name map
+                    _servletNameMap.remove(_servlets[i].getName());
+                    //remove any mappings associated with this servlet
+                    ListIterator<ServletMapping> smitor = servletMappings.listIterator();
+                    while (smitor.hasNext())
+                    {
+                        ServletMapping sm = smitor.next();
+                        if (sm.getServletName().equals(_servlets[i].getName()))
+                            smitor.remove();
+                    }
+                }
+                else
+                    servletHolders.add(_servlets[i]); //only retain embedded 
             }
         }
+        _servlets = (ServletHolder[]) LazyList.toArray(servletHolders, ServletHolder.class);
+        _servletMappings = (ServletMapping[])LazyList.toArray(servletMappings, ServletMapping.class);
 
+
+        //will be regenerated on next start
         _filterPathMappings=null;
-        _filterNameMappings=null;
-        
+        _filterNameMappings=null;       
         _servletPathMap=null;
     }
 
@@ -519,8 +563,8 @@ public class ServletHandler extends ScopedHandler
 
             if (!response.isCommitted())
             {
-                request.setAttribute(Dispatcher.ERROR_EXCEPTION_TYPE,th.getClass());
-                request.setAttribute(Dispatcher.ERROR_EXCEPTION,th);
+                request.setAttribute(RequestDispatcher.ERROR_EXCEPTION_TYPE,th.getClass());
+                request.setAttribute(RequestDispatcher.ERROR_EXCEPTION,th);
                 if (th instanceof UnavailableException)
                 {
                     UnavailableException ue = (UnavailableException)th;
@@ -545,8 +589,8 @@ public class ServletHandler extends ScopedHandler
             // TODO httpResponse.getHttpConnection().forceClose();
             if (!response.isCommitted())
             {
-                request.setAttribute(Dispatcher.ERROR_EXCEPTION_TYPE,e.getClass());
-                request.setAttribute(Dispatcher.ERROR_EXCEPTION,e);
+                request.setAttribute(RequestDispatcher.ERROR_EXCEPTION_TYPE,e.getClass());
+                request.setAttribute(RequestDispatcher.ERROR_EXCEPTION,e);
                 response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             }
             else
@@ -782,7 +826,7 @@ public class ServletHandler extends ScopedHandler
      */
     public ServletHolder addServletWithMapping (String className,String pathSpec)
     {
-        ServletHolder holder = newServletHolder(null);
+        ServletHolder holder = newServletHolder(Holder.Source.EMBEDDED);
         holder.setName(className+"-"+LazyList.size(_servlets));
         holder.setClassName(className);
         addServletWithMapping(holder,pathSpec);
@@ -797,7 +841,8 @@ public class ServletHandler extends ScopedHandler
     {
         ServletHolder holder = newServletHolder(Holder.Source.EMBEDDED);
         holder.setHeldClass(servlet);
-        setServlets((ServletHolder[])LazyList.addToArray(getServlets(), holder, ServletHolder.class));
+        //DUPLICATES adding servlet from addServletWithMapping(holder, pathSpec)?
+        //setServlets((ServletHolder[])LazyList.addToArray(getServlets(), holder, ServletHolder.class));
         addServletWithMapping(holder,pathSpec);
         
         return holder;
@@ -969,7 +1014,7 @@ public class ServletHandler extends ScopedHandler
      */
     public FilterHolder addFilterWithMapping (String className,String pathSpec,int dispatches)
     {
-        FilterHolder holder = newFilterHolder(null);
+        FilterHolder holder = newFilterHolder(Holder.Source.EMBEDDED);
         holder.setName(className+"-"+_filters.length);
         holder.setClassName(className);
         
@@ -1118,7 +1163,7 @@ public class ServletHandler extends ScopedHandler
                 {
                     //programmatically defined filter mappings are prepended to mapping list in the order
                     //in which they were defined. In other words, insert this mapping at the tail of the 
-                    //programmatically added filter mappings, BEFORE the first web.xml defined filter mapping.
+                    //programmatically prepended filter mappings, BEFORE the first web.xml defined filter mapping.
 
                     if (_matchBeforeIndex < 0)
                     { 
@@ -1161,14 +1206,15 @@ public class ServletHandler extends ScopedHandler
     {
         if (pos < 0)
             throw new IllegalArgumentException("FilterMapping insertion pos < 0");
-        
         FilterMapping[] mappings = getFilterMappings();
+        
         if (mappings==null || mappings.length==0)
         {
             return new FilterMapping[] {mapping};
         }
         FilterMapping[] new_mappings = new FilterMapping[mappings.length+1];
 
+    
         if (before)
         {
             //copy existing filter mappings up to but not including the pos

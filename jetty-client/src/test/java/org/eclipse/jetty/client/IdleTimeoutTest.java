@@ -18,12 +18,27 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.IOException;
+import java.net.URI;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 
 /**
  * IdleTimeoutTest
@@ -76,5 +91,57 @@ public class IdleTimeoutTest
         if (!counter.await(80, TimeUnit.SECONDS))
             Assert.fail("Test did not complete in time");
         
+    }
+
+    @Test
+    public void testConnectionsAreReleasedWhenExpired() throws Exception
+    {
+        // we need a server that times out and a client with shorter timeout settings, so we need to create new ones
+        Server server = new Server();
+        Connector connector = new SelectChannelConnector();
+        server.addConnector(connector);
+        server.setHandler(new AbstractHandler()
+        {
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                if (request.getParameter("timeout") != null)
+                {
+                    try
+                    {
+                        Thread.sleep(1000);
+                    }
+                    catch (InterruptedException e)
+                    {
+                        e.printStackTrace();
+                    }
+                }
+                baseRequest.setHandled(true);
+                response.getWriter().write("Hello world");
+            }
+        });
+        server.start();
+
+        HttpClient httpClient = new HttpClient();
+        httpClient.setMaxConnectionsPerAddress(1);
+        httpClient.setConnectTimeout(200);
+        httpClient.setTimeout(200);
+        httpClient.setIdleTimeout(200);
+        httpClient.start();
+
+        String uriString =  "http://localhost:" + connector.getLocalPort() + "/";
+
+        HttpExchange httpExchange = new HttpExchange();
+        httpExchange.setURI(URI.create(uriString).resolve("?timeout=true"));
+        httpExchange.setMethod(HttpMethods.GET);
+        httpClient.send(httpExchange);
+        int status = httpExchange.waitForDone();
+        assertThat("First request expired", status, is(8));
+
+        httpExchange = new HttpExchange();
+        httpExchange.setURI(URI.create(uriString));
+        httpExchange.setMethod(HttpMethods.GET);
+        httpClient.send(httpExchange);
+        status = httpExchange.waitForDone();
+        assertThat("Second request was successful as timeout is not set", status, is(7));
     }
 }

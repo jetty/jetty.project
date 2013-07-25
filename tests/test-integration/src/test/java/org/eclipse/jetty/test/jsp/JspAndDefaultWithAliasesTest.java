@@ -67,6 +67,7 @@ public class JspAndDefaultWithAliasesTest
 
         // @formatter:off
         data.add(new String[] { "false","/dump.jsp" });
+        data.add(new String[] { "false","/dump.jsp/" });
         data.add(new String[] { "true", "/dump.jsp%00" });
         data.add(new String[] { "false","/dump.jsp%00/" });
         data.add(new String[] { "false","/dump.jsp%00x/dump.jsp" });

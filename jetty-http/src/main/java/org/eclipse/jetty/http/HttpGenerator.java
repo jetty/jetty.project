@@ -1015,14 +1015,17 @@ public class HttpGenerator extends AbstractGenerator
                 // If we need EOC and everything written
                 if (_needEOC && (_content == null || _content.length() == 0))
                 {
+                    if (_header == null && _buffer == null)
+                        _header = _buffers.getHeader();
+
                     if (_needCRLF)
                     {
-                        if (_buffer == null && _header != null && _header.space() >= 2)
+                        if (_buffer == null && _header != null && _header.space() >= HttpTokens.CRLF.length)
                         {
                             _header.put(HttpTokens.CRLF);
                             _needCRLF = false;
                         }
-                        else if (_buffer!=null && _buffer.space() >= 2)
+                        else if (_buffer!=null && _buffer.space() >= HttpTokens.CRLF.length)
                         {
                             _buffer.put(HttpTokens.CRLF);
                             _needCRLF = false;

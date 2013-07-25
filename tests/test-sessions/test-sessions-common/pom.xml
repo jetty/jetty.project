@@ -21,10 +21,11 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-sessions-parent</artifactId>
-    <version>8.1.11.v20130520-SNAPSHOT</version>
+    <version>8.1.12-SNAPSHOT</version>
   </parent>
   <artifactId>test-sessions-common</artifactId>
   <name>Jetty Tests :: Sessions :: Common</name>
+  <url>http://www.eclipse.org/jetty</url>
   <build>
   </build>
   <dependencies>

@@ -21,10 +21,11 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>tests-parent</artifactId>
-    <version>8.1.11.v20130520-SNAPSHOT</version>
+    <version>8.1.12-SNAPSHOT</version>
   </parent>
   <artifactId>test-webapps-parent</artifactId>
   <name>Jetty Tests :: WebApps :: Parent</name>
+  <url>http://www.eclipse.org/jetty</url>
   <packaging>pom</packaging>
   <build>
     <plugins>

@@ -1170,7 +1170,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             String welcome = indexNode.toString(false, true);
             
             //Servlet Spec 3.0 p. 74 welcome files are additive
-            context.setWelcomeFiles((String[])LazyList.addToArray(context.getWelcomeFiles(),welcome,String.class));
+            if (welcome != null && welcome.trim().length() > 0)
+                context.setWelcomeFiles((String[])LazyList.addToArray(context.getWelcomeFiles(),welcome,String.class));
         }
     }
     

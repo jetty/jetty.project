@@ -107,6 +107,8 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
     public void setBufferSize(int bufferSize)
     {
         _bufferSize = bufferSize;
+        if (_compressedStream!=null)
+            _compressedStream.setBufferSize(bufferSize);
     }
 
     /* ------------------------------------------------------------ */
@@ -127,18 +129,21 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
     {
         super.setContentType(ct);
     
-        if (ct!=null)
+        if (!_noCompression)
         {
-            int colon=ct.indexOf(";");
-            if (colon>0)
-                ct=ct.substring(0,colon);
-        }
-    
-        if ((_compressedStream==null || _compressedStream.getOutputStream()==null) && 
-            (_mimeTypes==null && ct!=null && ct.contains("gzip") ||
-             _mimeTypes!=null && (ct==null||!_mimeTypes.contains(StringUtil.asciiToLowerCase(ct)))))
-        {
-            noCompression();
+            if (ct!=null)
+            {
+                int colon=ct.indexOf(";");
+                if (colon>0)
+                    ct=ct.substring(0,colon);
+            }
+
+            if ((_compressedStream==null || _compressedStream.getOutputStream()==null) && 
+                    (_mimeTypes==null && ct!=null && ct.contains("gzip") ||
+                    _mimeTypes!=null && (ct==null||!_mimeTypes.contains(StringUtil.asciiToLowerCase(ct)))))
+            {
+                noCompression();
+            }
         }
     }
 
@@ -173,7 +178,10 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
     @Override
     public void setContentLength(int length)
     {
-        setContentLength((long)length);
+        if (_noCompression)
+            super.setContentLength(length);
+        else
+            setContentLength((long)length);
     }
     
     /* ------------------------------------------------------------ */
@@ -237,7 +245,7 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
         if (_writer!=null)
             _writer.flush();
         if (_compressedStream!=null)
-            _compressedStream.finish();
+            _compressedStream.flush();
         else
             getResponse().flushBuffer();
     }
@@ -311,6 +319,8 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
      */
     public void noCompression()
     {
+        if (!_noCompression)
+            setDeferredHeaders();
         _noCompression=true;
         if (_compressedStream!=null)
         {
@@ -335,6 +345,25 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
             _writer.flush();
         if (_compressedStream!=null)
             _compressedStream.finish();
+        else 
+            setDeferredHeaders();
+    }
+
+    /* ------------------------------------------------------------ */
+    private void setDeferredHeaders()
+    {
+        if (!isCommitted())
+        {
+            if (_contentLength>=0)
+            {
+                if (_contentLength < Integer.MAX_VALUE)
+                    super.setContentLength((int)_contentLength);
+                else
+                    super.setHeader("Content-Length",Long.toString(_contentLength));
+            }
+            if(_etag!=null)
+                super.setHeader("ETag",_etag);
+        }
     }
     
     /* ------------------------------------------------------------ */
@@ -344,7 +373,9 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
     @Override
     public void setHeader(String name, String value)
     {
-        if ("content-length".equalsIgnoreCase(name))
+        if (_noCompression)
+            super.setHeader(name,value);
+        else if ("content-length".equalsIgnoreCase(name))
         {
             setContentLength(Long.parseLong(value));
         }
@@ -370,7 +401,7 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
     @Override
     public boolean containsHeader(String name)
     {
-        if ("etag".equalsIgnoreCase(name) && _etag!=null)
+        if (!_noCompression && "etag".equalsIgnoreCase(name) && _etag!=null)
             return true;
         return super.containsHeader(name);
     }
@@ -385,10 +416,7 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
         if (_compressedStream==null)
         {
             if (getResponse().isCommitted() || _noCompression)
-            {
-                setContentLength(_contentLength);
                 return getResponse().getOutputStream();
-            }
             
             _compressedStream=newCompressedStream(_request,(HttpServletResponse)getResponse());
         }
@@ -411,10 +439,7 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
                 throw new IllegalStateException("getOutputStream() called");
             
             if (getResponse().isCommitted() || _noCompression)
-            {
-                setContentLength(_contentLength);
                 return getResponse().getWriter();
-            }
             
             _compressedStream=newCompressedStream(_request,(HttpServletResponse)getResponse());
             _writer=newWriter(_compressedStream,getCharacterEncoding());

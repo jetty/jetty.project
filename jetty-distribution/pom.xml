@@ -3,10 +3,11 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>8.1.11.v20130520-SNAPSHOT</version>
+    <version>8.1.12-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-distribution</artifactId>
   <name>Jetty :: Distribution Assemblies</name>
+  <url>http://www.eclipse.org/jetty</url>
   <packaging>pom</packaging>
   <properties>
     <assembly-directory>target/distribution</assembly-directory>

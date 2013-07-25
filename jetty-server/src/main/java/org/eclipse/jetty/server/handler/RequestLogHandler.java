@@ -25,20 +25,21 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.continuation.Continuation;
+import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.server.AsyncContinuation;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-
 
 
 /** 
  * RequestLogHandler.
  * This handler can be used to wrap an individual context for context logging.
- * 
  * 
  * @org.apache.xbean.XBean
  */
@@ -53,7 +54,7 @@ public class RequestLogHandler extends HandlerWrapper
      * @see org.eclipse.jetty.server.server.Handler#handle(java.lang.String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+    public void handle(String target, final Request baseRequest, HttpServletRequest request, final HttpServletResponse response)
             throws IOException, ServletException
     {
         AsyncContinuation continuation = baseRequest.getAsyncContinuation();
@@ -68,11 +69,25 @@ public class RequestLogHandler extends HandlerWrapper
         }
         finally
         {
-            if (_requestLog != null && DispatcherType.REQUEST.equals(baseRequest.getDispatcherType()))
+            if (continuation.isAsync())
             {
-                _requestLog.log(baseRequest, (Response)response);
+                if (continuation.isInitial())
+                    continuation.addContinuationListener(new ContinuationListener()
+                    {
+                        
+                        public void onTimeout(Continuation continuation)
+                        {
+                            
+                        }
+                        
+                        public void onComplete(Continuation continuation)
+                        {
+                            _requestLog.log(baseRequest, (Response)response);
+                        }
+                    });
             }
-            
+            else
+                _requestLog.log(baseRequest, (Response)response);
         }
     }
 
@@ -139,9 +154,13 @@ public class RequestLogHandler extends HandlerWrapper
     @Override
     protected void doStart() throws Exception
     {
+        if (_requestLog==null)
+        {
+            LOG.warn("!RequestLog");
+            _requestLog=new NullRequestLog();
+        }
         super.doStart();
-        if (_requestLog!=null)
-            _requestLog.start();
+        _requestLog.start();
     }
 
     /* ------------------------------------------------------------ */
@@ -152,8 +171,19 @@ public class RequestLogHandler extends HandlerWrapper
     protected void doStop() throws Exception
     {
         super.doStop();
-        if (_requestLog!=null)
-            _requestLog.stop();
+        _requestLog.stop();
+        if (_requestLog instanceof NullRequestLog)
+            _requestLog=null;
+    }
+
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    private static class NullRequestLog extends AbstractLifeCycle implements RequestLog
+    {
+        public void log(Request request, Response response)
+        {            
+        }
     }
     
 }

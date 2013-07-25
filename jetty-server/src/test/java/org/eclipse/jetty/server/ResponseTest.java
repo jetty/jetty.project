@@ -172,6 +172,10 @@ public class ResponseTest
         response.setContentType("foo/bar");
         assertEquals("foo/bar", response.getContentType());
 
+        response.recycle();
+        response.addHeader("Content-Type","text/something");
+        assertEquals("text/something",response.getContentType());
+
     }
 
     @Test

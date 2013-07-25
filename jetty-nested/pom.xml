@@ -4,12 +4,13 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>8.1.11.v20130520-SNAPSHOT</version>
+    <version>8.1.12-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-nested</artifactId>
   <name>Jetty :: Nested</name>
   <packaging>jar</packaging>
   <description>Local Servlet Connector for jetty.</description>
+  <url>http://www.eclipse.org/jetty</url>
   <properties>
     <bundle-symbolic-name>${project.groupId}.nested</bundle-symbolic-name>
   </properties>

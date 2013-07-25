@@ -2,12 +2,12 @@
   <parent>
     <groupId>org.eclipse.jetty.aggregate</groupId>
     <artifactId>jetty-aggregate-project</artifactId>
-    <version>8.1.11.v20130520-SNAPSHOT</version>
+    <version>8.1.12-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-client</artifactId>
   <name>Jetty :: Aggregate :: HTTP Client</name>
-
+  <url>http://www.eclipse.org/jetty</url>
   <build>
     <sourceDirectory>${project.build.directory}/sources</sourceDirectory>
     <plugins>

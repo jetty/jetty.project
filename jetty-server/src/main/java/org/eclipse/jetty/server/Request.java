@@ -19,6 +19,7 @@
 package org.eclipse.jetty.server;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -81,6 +82,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.MultiMap;
@@ -363,6 +365,7 @@ public class Request implements HttpServletRequest
                         }
                     }
                 }
+              
             }
 
             if (_parameters == null)
@@ -378,6 +381,28 @@ public class Request implements HttpServletRequest
                     Object values = entry.getValue();
                     for (int i = 0; i < LazyList.size(values); i++)
                         _parameters.add(name,LazyList.get(values,i));
+                }
+            }
+
+            if (content_type != null && content_type.length()>0 && content_type.startsWith("multipart/form-data") && getAttribute(__MULTIPART_CONFIG_ELEMENT)!=null)
+            {
+                try
+                {
+                    getParts();
+                }
+                catch (IOException e)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.warn(e);
+                    else
+                        LOG.warn(e.toString());
+                }
+                catch (ServletException e)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.warn(e);
+                    else
+                        LOG.warn(e.toString());
                 }
             }
         }
@@ -2014,39 +2039,8 @@ public class Request implements HttpServletRequest
 
     /* ------------------------------------------------------------ */
     public Part getPart(String name) throws IOException, ServletException
-    {        
-        if (getContentType() == null || !getContentType().startsWith("multipart/form-data"))
-            throw new ServletException("Content-Type != multipart/form-data");
-
-        if (_multiPartInputStream == null)
-        { 
-            MultipartConfigElement config = (MultipartConfigElement)getAttribute(__MULTIPART_CONFIG_ELEMENT);
-
-            if (config == null)
-                throw new IllegalStateException("No multipart config for servlet");
-
-            _multiPartInputStream = new MultiPartInputStream(getInputStream(), 
-                                                             getContentType(),config, 
-                                                             (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null));
-            setAttribute(__MULTIPART_INPUT_STREAM, _multiPartInputStream);
-            setAttribute(__MULTIPART_CONTEXT, _context);
-            Collection<Part> parts = _multiPartInputStream.getParts(); //causes parsing 
-            for (Part p:parts)
-            {
-                MultiPartInputStream.MultiPart mp = (MultiPartInputStream.MultiPart)p;
-                if (mp.getContentDispositionFilename() == null && mp.getFile() == null)
-                {
-                    //Servlet Spec 3.0 pg 23, parts without filenames must be put into init params
-                    String charset = null;
-                    if (mp.getContentType() != null)
-                        charset = MimeTypes.getCharsetFromContentType(new ByteArrayBuffer(mp.getContentType()));
-                    
-                    String content=new String(mp.getBytes(),charset==null?StringUtil.__UTF8:charset);
-                    getParameter(""); //cause params to be evaluated
-                    getParameters().add(mp.getName(), content);
-                }
-            }
-        }
+    {                
+        getParts();
         return _multiPartInputStream.getPart(name);
     }
 
@@ -2055,6 +2049,9 @@ public class Request implements HttpServletRequest
     {
         if (getContentType() == null || !getContentType().startsWith("multipart/form-data"))
             throw new ServletException("Content-Type != multipart/form-data");
+        
+        if (_multiPartInputStream == null)
+            _multiPartInputStream = (MultiPartInputStream)getAttribute(__MULTIPART_INPUT_STREAM);
         
         if (_multiPartInputStream == null)
         {
@@ -2073,19 +2070,32 @@ public class Request implements HttpServletRequest
             for (Part p:parts)
             {
                 MultiPartInputStream.MultiPart mp = (MultiPartInputStream.MultiPart)p;
-                if (mp.getContentDispositionFilename() == null && mp.getFile() == null)
+                if (mp.getContentDispositionFilename() == null)
                 {
                     //Servlet Spec 3.0 pg 23, parts without filenames must be put into init params
                     String charset = null;
                     if (mp.getContentType() != null)
                         charset = MimeTypes.getCharsetFromContentType(new ByteArrayBuffer(mp.getContentType()));
 
-                    String content=new String(mp.getBytes(),charset==null?StringUtil.__UTF8:charset);                   
-                    getParameter(""); //cause params to be evaluated
-                    getParameters().add(mp.getName(), content);
+                    ByteArrayOutputStream os = null;
+                    InputStream is = mp.getInputStream(); //get the bytes regardless of being in memory or in temp file
+                    try
+                    {
+                        os = new ByteArrayOutputStream();
+                        IO.copy(is, os);
+                        String content=new String(os.toByteArray(),charset==null?StringUtil.__UTF8:charset);   
+                        getParameter(""); //cause params to be evaluated
+                        getParameters().add(mp.getName(), content);
+                    }
+                    finally
+                    {
+                        IO.close(os);
+                        IO.close(is);
+                    }
                 }
             }
         }
+
         return _multiPartInputStream.getParts();
     }
 
