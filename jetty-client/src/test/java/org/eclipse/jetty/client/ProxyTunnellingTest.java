@@ -20,6 +20,7 @@ package org.eclipse.jetty.client;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
+import java.net.Socket;
 import java.net.URLEncoder;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -46,6 +47,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -106,14 +108,20 @@ public class ProxyTunnellingTest
 
     protected void stopServer() throws Exception
     {
-        server.stop();
-        server.join();
+        if (server != null)
+        {
+            server.stop();
+            server.join();
+        }
     }
 
     protected void stopProxy() throws Exception
     {
-        proxy.stop();
-        proxy.join();
+        if (proxy != null)
+        {
+            proxy.stop();
+            proxy.join();
+        }
     }
 
     @Test
@@ -330,6 +338,50 @@ public class ProxyTunnellingTest
 
             httpClient.send(exchange);
             assertTrue("Server connect exception should have occurred", latch.await(serverConnectTimeout * 2, TimeUnit.MILLISECONDS));
+        }
+        finally
+        {
+            httpClient.stop();
+        }
+    }
+
+    @Test
+    public void testExternalProxy() throws Exception
+    {
+        // Free proxy server obtained from http://hidemyass.com/proxy-list/
+        String proxyHost = "81.208.25.53";
+        int proxyPort = 3128;
+        try
+        {
+            new Socket(proxyHost, proxyPort).close();
+        }
+        catch (IOException x)
+        {
+            Assume.assumeNoException(x);
+        }
+
+        // Start the server to start the SslContextFactory
+        startSSLServer(new AbstractHandler()
+        {
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                throw new ServletException();
+            }
+        });
+
+        HttpClient httpClient = new HttpClient();
+        httpClient.setProxy(new Address(proxyHost, proxyPort));
+        httpClient.registerListener(RedirectListener.class.getName());
+        httpClient.start();
+
+        try
+        {
+            ContentExchange exchange = new ContentExchange(true);
+            exchange.setTimeout(5000);
+            exchange.setURL("https://www.google.com");
+            httpClient.send(exchange);
+            assertEquals(HttpExchange.STATUS_COMPLETED, exchange.waitForDone());
+            assertEquals(200, exchange.getResponseStatus());
         }
         finally
         {

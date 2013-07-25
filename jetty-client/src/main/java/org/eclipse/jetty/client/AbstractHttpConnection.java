@@ -36,7 +36,6 @@ import org.eclipse.jetty.http.HttpVersions;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Buffers;
-import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
@@ -318,7 +317,11 @@ public abstract class AbstractHttpConnection extends AbstractConnection implemen
         {
             HttpExchange exchange = _exchange;
             if (exchange!=null)
+            {
                 exchange.setStatus(HttpExchange.STATUS_PARSING_CONTENT);
+                if (HttpMethods.CONNECT.equalsIgnoreCase(exchange.getMethod()))
+                    _parser.setPersistent(true);
+            }
         }
 
         @Override
@@ -350,8 +353,6 @@ public abstract class AbstractHttpConnection extends AbstractConnection implemen
                 }
             }
         }
-
-
     }
 
     @Override
