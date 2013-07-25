@@ -49,6 +49,7 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
+import org.junit.Ignore;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -346,6 +347,7 @@ public class ProxyTunnellingTest
     }
 
     @Test
+    @Ignore
     public void testExternalProxy() throws Exception
     {
         // Free proxy server obtained from http://hidemyass.com/proxy-list/
