@@ -1,4 +1,36 @@
-jetty-8.1.12-SNAPSHOT
+jetty-8.1.12.v20130725 - 25 July 2013
+ + 396706 CGI support parameters
+ + 397193 MongoSessionManager refresh updates last access time
+ + 407342 ReloadedSessionMissingClassTest uses class compiled with jdk7
+ + 408529 Etags set in 304 response
+ + 408600 set correct jetty.url in all pom files
+ + 408642 setContentType from addHeader
+ + 408662 In pax-web servlet services requests even if init() has not finished
+   running
+ + 408806 getParameter returns null on Multipart request if called before
+   request.getPart()/getParts()
+ + 408909 GzipFilter setting of headers when reset and/or not compressed
+ + 409133 Empty <welcome-file> causes StackOverflowError
+ + 409436 NPE on context restart using dynamic servlet registration
+ + 409449 Ensure servlets, filters and listeners added via dynamic
+   registration, annotations or descriptors are cleaned on context restarts
+ + 409556 FileInputStream not closed in DirectNIOBuffer
+ + 410405 Avoid NPE for requestDispatcher(../)
+ + 410630 MongoSessionManager conflicting session update op
+ + 410750 NoSQLSessions: implement session context data persistence across
+   server restarts
+ + 410893 async support defaults to false for spec created servlets and filters
+ + 411135 HttpClient may send proxied https requests to the proxy instead of
+   the target server.
+ + 411216 RequestLogHandler handles async completion
+ + 411458 MultiPartFilter getParameterMap doesn't preserve multivalued
+   parameters 411459  MultiPartFilter.Wrapper getParameter should use charset
+   encoding of part
+ + 411755 MultiPartInputStreamParser fails on base64 encoded content
+ + 411909 GzipFilter flushbuffer() results in erroneous finish() call
+ + 412712 HttpClient does not send the terminal chunk after partial writes.
+ + 412750 HttpClient close expired connections fix
+ + 413684 Trailing slash shows JSP source
 
 jetty-8.1.11.v20130520 - 20 May 2013
  + 402844 STOP.PORT & STOP.KEY behaviour has changed
