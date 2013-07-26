@@ -149,16 +149,10 @@ public class ProxySPDYToSPDYLoadTest
     @After
     public void destroy() throws Exception
     {
-        if (server != null)
-        {
-            server.stop();
-            server.join();
-        }
-        if (proxy != null)
-        {
-            proxy.stop();
-            proxy.join();
-        }
+        server.stop();
+        server.join();
+        proxy.stop();
+        proxy.join();
         factory.stop();
     }
 
@@ -270,7 +264,7 @@ public class ProxySPDYToSPDYLoadTest
         }
 
         @Override
-        public StreamFrameListener onSyn (Stream stream, SynInfo synInfo)
+        public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
         {
             Fields requestHeaders = synInfo.getHeaders();
             Assert.assertNotNull(requestHeaders.get("via"));
