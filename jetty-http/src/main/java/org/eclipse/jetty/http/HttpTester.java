@@ -67,10 +67,8 @@ public class HttpTester
     {
         Response r=new Response();
         HttpParser parser =new HttpParser(r);
-        if (parser.parseNext(response))
-            return r;
-        else
-            return null;
+        parser.parseNext(response);
+        return r;
     }
 
 
@@ -93,7 +91,7 @@ public class HttpTester
         {
             _version=version;
         }
-        
+
         public void setContent(byte[] bytes)
         {
             try
