@@ -83,11 +83,11 @@ public class JSONEnumConvertor implements JSON.Convertor
         if (_fromJSON)
         {
             out.addClass(obj.getClass());
-            out.add("value",obj.toString());
+            out.add("value",((Enum)obj).name());
         }
         else
         {
-            out.add(obj.toString());
+            out.add(((Enum)obj).name());
         }
     }
 
