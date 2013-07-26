@@ -67,8 +67,10 @@ public class HttpTester
     {
         Response r=new Response();
         HttpParser parser =new HttpParser(r);
-        parser.parseNext(response);
-        return r;
+        if (parser.parseNext(response))
+            return r;
+        else
+            return null;
     }
 
 
