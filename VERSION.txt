@@ -1,4 +1,4 @@
-jetty-8.1.12.v20130725 - 25 July 2013
+jetty-8.1.12-SNAPSHOT - 26 July 2013
  + 396706 CGI support parameters
  + 397193 MongoSessionManager refresh updates last access time
  + 407342 ReloadedSessionMissingClassTest uses class compiled with jdk7
@@ -31,7 +31,10 @@ jetty-8.1.12.v20130725 - 25 July 2013
  + 411909 GzipFilter flushbuffer() results in erroneous finish() call
  + 412712 HttpClient does not send the terminal chunk after partial writes.
  + 412750 HttpClient close expired connections fix
+ + 413371 Default JSON.Converters for List and Set.
+ + 413372 JSON Enum uses name rather than toString()
  + 413684 Trailing slash shows JSP source
+ + 413812 Make RateTracker serializable
 
 jetty-8.1.11.v20130520 - 20 May 2013
  + 402844 STOP.PORT & STOP.KEY behaviour has changed
