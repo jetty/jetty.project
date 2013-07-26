@@ -26,6 +26,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -57,6 +58,7 @@ import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Assume;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -373,6 +375,7 @@ public class ProxyTunnellingTest
     }
 
     @Test
+    @Ignore // to delicate to rely on external proxy.
     public void testExternalProxy() throws Exception
     {
         // Free proxy server obtained from http://hidemyass.com/proxy-list/
