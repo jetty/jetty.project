@@ -39,7 +39,7 @@ public class WebSocketConfiguration extends AbstractConfiguration
 {
     private static final Logger LOG = Log.getLogger(WebSocketConfiguration.class);
 
-    public void configureContext(ServletContextHandler context, boolean startContainer)
+    public static ServerContainer configureContext(ServletContextHandler context)
     {
         WebSocketUpgradeFilter filter = new WebSocketUpgradeFilter();
         FilterHolder fholder = new FilterHolder(filter);
@@ -58,17 +58,14 @@ public class WebSocketConfiguration extends AbstractConfiguration
 
         // Store a reference to the ServerContainer per javax.websocket spec 1.0 final section 6.4 Programmatic Server Deployment
         context.setAttribute(javax.websocket.server.ServerContainer.class.getName(),jettyContainer);
-
-        if (startContainer)
-        {
-            jettyContainer.start();
-        }
+        
+        return jettyContainer;
     }
 
     @Override
     public void configure(WebAppContext context) throws Exception
     {
-        configureContext(context,false);
+        WebSocketConfiguration.configureContext(context);
     }
 
     @Override
