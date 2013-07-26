@@ -20,10 +20,8 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
-
 import javax.servlet.ServletInputStream;
 
-import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -34,7 +32,7 @@ import org.eclipse.jetty.util.log.Logger;
  * <p>{@link QueuedHttpInput} stores the items directly; if the items contain byte buffers, it does not copy them
  * but simply holds references to the item, thus the caller must organize for those buffers to valid while
  * held by this class.</p>
- * <p>To assist the caller, subclasses may override methods {@link #onContentQueued(T)},
+ * <p>To assist the caller, subclasses may override methods {@link #onAsyncRead()},
  * {@link #onContentConsumed(T)} and {@link #onAllContentConsumed()} that can be implemented so that the
  * caller will know when buffers are queued and consumed.</p>
  */
@@ -77,7 +75,7 @@ public abstract class QueuedHttpInput<T> extends HttpInput<T>
             onContentConsumed(item);
             LOG.debug("{} consumed {}", this, item);
             item = _inputQ.peekUnsafe();
-            
+
             // If that was the last item then notify
             if (item==null)
                 onAllContentConsumed();
