@@ -451,10 +451,10 @@
     <module>jetty-distribution</module>
     <module>jetty-runner</module>
     <module>jetty-monitor</module>
+    <module>jetty-http-spi</module>
 
     <!-- modules that need fixed and added back, or simply dropped and not maintained
     <module>jetty-rhttp</module>
-    <module>jetty-http-spi</module>
     -->
     <module>jetty-overlay-deployer</module>
   </modules>
