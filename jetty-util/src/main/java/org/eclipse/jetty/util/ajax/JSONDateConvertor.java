@@ -40,9 +40,10 @@ import org.eclipse.jetty.util.log.Logger;
 public class JSONDateConvertor implements JSON.Convertor
 {
     private static final Logger LOG = Log.getLogger(JSONDateConvertor.class);
-    private boolean _fromJSON;
-    DateCache _dateCache;
-    SimpleDateFormat _format;
+
+    private final boolean _fromJSON;
+    private final DateCache _dateCache;
+    private final SimpleDateFormat _format;
 
     public JSONDateConvertor()
     {
@@ -53,7 +54,7 @@ public class JSONDateConvertor implements JSON.Convertor
     {
         this(DateCache.DEFAULT_FORMAT,TimeZone.getTimeZone("GMT"),fromJSON);
     }
-    
+
     public JSONDateConvertor(String format,TimeZone zone,boolean fromJSON)
     {
         _dateCache=new DateCache(format);
@@ -62,7 +63,7 @@ public class JSONDateConvertor implements JSON.Convertor
         _format=new SimpleDateFormat(format);
         _format.setTimeZone(zone);
     }
-    
+
     public JSONDateConvertor(String format, TimeZone zone, boolean fromJSON, Locale locale)
     {
         _dateCache = new DateCache(format, locale);
@@ -71,7 +72,7 @@ public class JSONDateConvertor implements JSON.Convertor
         _format = new SimpleDateFormat(format, new DateFormatSymbols(locale));
         _format.setTimeZone(zone);
     }
-    
+
     public Object fromJSON(Map map)
     {
         if (!_fromJSON)
@@ -85,7 +86,7 @@ public class JSONDateConvertor implements JSON.Convertor
         }
         catch(Exception e)
         {
-            LOG.warn(e);  
+            LOG.warn(e);
         }
         return null;
     }
