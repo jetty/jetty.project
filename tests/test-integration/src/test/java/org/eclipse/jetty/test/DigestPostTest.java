@@ -21,6 +21,7 @@ package org.eclipse.jetty.test;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.net.URI;
 import java.security.MessageDigest;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
@@ -230,14 +231,15 @@ public class DigestPostTest
         try
         {
             AuthenticationStore authStore = client.getAuthenticationStore();
-            authStore.addAuthentication(new DigestAuthentication(srvUrl, "test", "testuser", "password"));
+            authStore.addAuthentication(new DigestAuthentication(new URI(srvUrl), "test", "testuser", "password"));
             client.start();
 
             Request request = client.newRequest(srvUrl);
             request.method(HttpMethod.POST);
             request.content(new BytesContentProvider(__message.getBytes("UTF8")));
             _received=null;
-            ContentResponse response = request.send().get(5, TimeUnit.SECONDS);
+            request = request.timeout(5, TimeUnit.SECONDS);
+            ContentResponse response = request.send();
             Assert.assertEquals(__message,_received);
             Assert.assertEquals(200,response.getStatus());
         }
@@ -255,7 +257,7 @@ public class DigestPostTest
         try
         {
             AuthenticationStore authStore = client.getAuthenticationStore();
-            authStore.addAuthentication(new DigestAuthentication(srvUrl, "test", "testuser", "password"));   
+            authStore.addAuthentication(new DigestAuthentication(new URI(srvUrl), "test", "testuser", "password"));   
             client.start();
 
             String sent = IO.toString(new FileInputStream("src/test/resources/message.txt"));
@@ -264,7 +266,8 @@ public class DigestPostTest
             request.method(HttpMethod.POST);
             request.content(new StringContentProvider(sent));
             _received=null;
-            ContentResponse response = request.send().get(5, TimeUnit.SECONDS);
+            request = request.timeout(5, TimeUnit.SECONDS);
+            ContentResponse response = request.send();
            
             Assert.assertEquals(200,response.getStatus());
             Assert.assertEquals(sent,_received);

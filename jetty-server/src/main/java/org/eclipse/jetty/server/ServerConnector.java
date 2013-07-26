@@ -116,7 +116,6 @@ public class ServerConnector extends AbstractNetworkConnector
         this(server,null,null,null,acceptors,selectors,new HttpConnectionFactory());
     }
 
-
     /* ------------------------------------------------------------ */
     /** Generic Server Connection with default configuration.
      * <p>Construct a Server Connector with the passed Connection factories.</p>

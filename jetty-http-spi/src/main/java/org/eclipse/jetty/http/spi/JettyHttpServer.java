@@ -20,18 +20,26 @@ package org.eclipse.jetty.http.spi;
 
 import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpHandler;
+
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.log.Log;import org.eclipse.jetty.util.log.Logger;
 
 
+
+
+
+import org.eclipse.jetty.util.thread.ThreadPool;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executor;
@@ -68,10 +76,10 @@ public class JettyHttpServer extends com.sun.net.httpserver.HttpServer
     public void bind(InetSocketAddress addr, int backlog) throws IOException
     {
     	// check if there is already a connector listening
-        Connector[] connectors = _server.getConnectors();
+        Collection<NetworkConnector> connectors = _server.getBeans(NetworkConnector.class);
         if (connectors != null)
         {
-            for (Connector connector : connectors)
+            for (NetworkConnector connector : connectors)
             {
                 if (connector.getPort() == addr.getPort()) {
                     if (LOG.isDebugEnabled()) LOG.debug("server already bound to port " + addr.getPort() + ", no need to rebind");
@@ -86,8 +94,7 @@ public class JettyHttpServer extends com.sun.net.httpserver.HttpServer
         this._addr = addr;
 
         if (LOG.isDebugEnabled()) LOG.debug("binding server to port " + addr.getPort());
-        SelectChannelConnector connector = new SelectChannelConnector();
-        connector.setAcceptors(1);
+        ServerConnector connector = new ServerConnector(_server);
         connector.setPort(addr.getPort());
         connector.setHost(addr.getHostName());
         _server.addConnector(connector);
@@ -121,19 +128,20 @@ public class JettyHttpServer extends com.sun.net.httpserver.HttpServer
     {
         if (executor == null)
             throw new IllegalArgumentException("missing required 'executor' argument");
-
-    	if (!(executor instanceof ThreadPoolExecutor))
-    		throw new IllegalArgumentException("only java.util.concurrent.ThreadPoolExecutor instances are allowed, got: " + executor.getClass().getName());
-    	
-    	if (LOG.isDebugEnabled()) LOG.debug("using ThreadPoolExecutor for server thread pool");
-    	this._executor = (ThreadPoolExecutor) executor;
-    	_server.setThreadPool(new ThreadPoolExecutorAdapter(_executor));
+        ThreadPool threadPool = _server.getThreadPool();
+        if (threadPool instanceof DelegatingThreadPool)
+            ((DelegatingThreadPool)_server.getThreadPool()).setExecutor(executor);
+        else
+            throw new UnsupportedOperationException("!DelegatingThreadPool");
     }
 
     @Override
     public Executor getExecutor()
     {
-        return _executor;
+        ThreadPool threadPool = _server.getThreadPool();
+        if (threadPool instanceof DelegatingThreadPool)
+            return ((DelegatingThreadPool)_server.getThreadPool()).getExecutor();
+        return threadPool;
     }
 
     @Override

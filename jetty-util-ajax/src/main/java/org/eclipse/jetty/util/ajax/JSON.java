@@ -39,8 +39,7 @@ import org.eclipse.jetty.util.log.Logger;
 
 /**
  * JSON Parser and Generator.
- *
- * <p>
+ * <p />
  * This class provides some static methods to convert POJOs to and from JSON
  * notation. The mapping from JSON to java is:
  *
@@ -52,9 +51,7 @@ import org.eclipse.jetty.util.log.Logger;
  *   null   ==> null
  *   bool   ==> Boolean
  * </pre>
- *
- * </p>
- * <p>
+
  * The java to JSON mapping is:
  *
  * <pre>
@@ -68,30 +65,27 @@ import org.eclipse.jetty.util.log.Logger;
  *   Object --> string (dubious!)
  * </pre>
  *
- * </p>
- * <p>
  * The interface {@link JSON.Convertible} may be implemented by classes that
  * wish to externalize and initialize specific fields to and from JSON objects.
  * Only directed acyclic graphs of objects are supported.
- * </p>
- * <p>
+ * <p />
  * The interface {@link JSON.Generator} may be implemented by classes that know
  * how to render themselves as JSON and the {@link #toString(Object)} method
  * will use {@link JSON.Generator#addJSON(Appendable)} to generate the JSON.
  * The class {@link JSON.Literal} may be used to hold pre-generated JSON object.
- * <p>
+ * <p />
  * The interface {@link JSON.Convertor} may be implemented to provide static
- * convertors for objects that may be registered with
- * {@link #registerConvertor(Class, org.eclipse.jetty.util.ajax.JSON.Convertor)}
- * . These convertors are looked up by class, interface and super class by
+ * converters for objects that may be registered with
+ * {@link #registerConvertor(Class, Convertor)}.
+ * These converters are looked up by class, interface and super class by
  * {@link #getConvertor(Class)}.
- * </p>
- * <p>If a JSON object has a "class" field, then a java class for that name is
- * looked up and the method {@link convertTo(Class,Map)} is used to find a
- * Convertor for that class.   If a JSON object has a "x-class" field then a 
- * direct lookup for a Convertor for that named x-class is done, so that none
- * java classes may be converted.
- * </p>
+ * <p />
+ * If a JSON object has a "class" field, then a java class for that name is
+ * loaded and the method {@link #convertTo(Class,Map)} is used to find a
+ * {@link JSON.Convertor} for that class.
+ * <p />
+ * If a JSON object has a "x-class" field then a direct lookup for a
+ * {@link JSON.Convertor} for that class name is done (without loading the class).
  */
 public class JSON
 {
@@ -105,7 +99,6 @@ public class JSON
     {
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @return the initial stringBuffer size to use when creating JSON strings
      *         (default 1024)
@@ -115,7 +108,6 @@ public class JSON
         return _stringBufferSize;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @param stringBufferSize
      *            the initial stringBuffer size to use when creating JSON
@@ -126,7 +118,6 @@ public class JSON
         _stringBufferSize = stringBufferSize;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Register a {@link Convertor} for a class or interface.
      *
@@ -140,19 +131,16 @@ public class JSON
         DEFAULT.addConvertor(forClass,convertor);
     }
 
-    /* ------------------------------------------------------------ */
     public static JSON getDefault()
     {
         return DEFAULT;
     }
 
-    /* ------------------------------------------------------------ */
     @Deprecated
     public static void setDefault(JSON json)
     {
     }
 
-    /* ------------------------------------------------------------ */
     public static String toString(Object object)
     {
         StringBuilder buffer = new StringBuilder(DEFAULT.getStringBufferSize());
@@ -160,7 +148,6 @@ public class JSON
         return buffer.toString();
     }
 
-    /* ------------------------------------------------------------ */
     public static String toString(Map object)
     {
         StringBuilder buffer = new StringBuilder(DEFAULT.getStringBufferSize());
@@ -168,7 +155,6 @@ public class JSON
         return buffer.toString();
     }
 
-    /* ------------------------------------------------------------ */
     public static String toString(Object[] array)
     {
         StringBuilder buffer = new StringBuilder(DEFAULT.getStringBufferSize());
@@ -176,7 +162,6 @@ public class JSON
         return buffer.toString();
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @param s
      *            String containing JSON object or array.
@@ -187,7 +172,6 @@ public class JSON
         return DEFAULT.parse(new StringSource(s),false);
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @param s
      *            String containing JSON object or array.
@@ -200,7 +184,6 @@ public class JSON
         return DEFAULT.parse(new StringSource(s),stripOuterComment);
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @param in
      *            Reader containing JSON object or array.
@@ -211,7 +194,6 @@ public class JSON
         return DEFAULT.parse(new ReaderSource(in),false);
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @param in
      *            Reader containing JSON object or array.
@@ -224,7 +206,6 @@ public class JSON
         return DEFAULT.parse(new ReaderSource(in),stripOuterComment);
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @deprecated use {@link #parse(Reader)}
      * @param in
@@ -237,7 +218,6 @@ public class JSON
         return DEFAULT.parse(new StringSource(IO.toString(in)),false);
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @deprecated use {@link #parse(Reader, boolean)}
      * @param in
@@ -252,7 +232,6 @@ public class JSON
         return DEFAULT.parse(new StringSource(IO.toString(in)),stripOuterComment);
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Convert Object to JSON
      *
@@ -267,7 +246,6 @@ public class JSON
         return buffer.toString();
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Convert JSON to Object
      *
@@ -287,7 +265,6 @@ public class JSON
         append((Appendable)buffer,object);
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Append object as JSON to string buffer.
      *
@@ -301,32 +278,58 @@ public class JSON
         try
         {
             if (object == null)
+            {
                 buffer.append("null");
-            else if (object instanceof Convertible)
-                appendJSON(buffer,(Convertible)object);
-            else if (object instanceof Generator)
-                appendJSON(buffer,(Generator)object);
+            }
+            // Most likely first
             else if (object instanceof Map)
+            {
                 appendMap(buffer,(Map)object);
-            else if (object instanceof Collection)
-                appendArray(buffer,(Collection)object);
-            else if (object.getClass().isArray())
-                appendArray(buffer,object);
-            else if (object instanceof Number)
-                appendNumber(buffer,(Number)object);
-            else if (object instanceof Boolean)
-                appendBoolean(buffer,(Boolean)object);
-            else if (object instanceof Character)
-                appendString(buffer,object.toString());
+            }
             else if (object instanceof String)
+            {
                 appendString(buffer,(String)object);
+            }
+            else if (object instanceof Number)
+            {
+                appendNumber(buffer,(Number)object);
+            }
+            else if (object instanceof Boolean)
+            {
+                appendBoolean(buffer,(Boolean)object);
+            }
+            else if (object.getClass().isArray())
+            {
+                appendArray(buffer,object);
+            }
+            else if (object instanceof Character)
+            {
+                appendString(buffer,object.toString());
+            }
+            else if (object instanceof Convertible)
+            {
+                appendJSON(buffer,(Convertible)object);
+            }
+            else if (object instanceof Generator)
+            {
+                appendJSON(buffer,(Generator)object);
+            }
             else
             {
+                // Check Convertor before Collection to support JSONCollectionConvertor
                 Convertor convertor = getConvertor(object.getClass());
                 if (convertor != null)
+                {
                     appendJSON(buffer,convertor,object);
+                }
+                else if (object instanceof Collection)
+                {
+                    appendArray(buffer,(Collection)object);
+                }
                 else
+                {
                     appendString(buffer,object.toString());
+                }
             }
         }
         catch (IOException e)
@@ -335,14 +338,12 @@ public class JSON
         }
     }
 
-    /* ------------------------------------------------------------ */
     @Deprecated
     public void appendNull(StringBuffer buffer)
     {
         appendNull((Appendable)buffer);
     }
 
-    /* ------------------------------------------------------------ */
     public void appendNull(Appendable buffer)
     {
         try
@@ -355,14 +356,12 @@ public class JSON
         }
     }
 
-    /* ------------------------------------------------------------ */
     @Deprecated
     public void appendJSON(final StringBuffer buffer, final Convertor convertor, final Object object)
     {
         appendJSON((Appendable)buffer,convertor,object);
     }
 
-    /* ------------------------------------------------------------ */
     public void appendJSON(final Appendable buffer, final Convertor convertor, final Object object)
     {
         appendJSON(buffer,new Convertible()
@@ -378,14 +377,12 @@ public class JSON
         });
     }
 
-    /* ------------------------------------------------------------ */
     @Deprecated
     public void appendJSON(final StringBuffer buffer, Convertible converter)
     {
         appendJSON((Appendable)buffer,converter);
     }
 
-    /* ------------------------------------------------------------ */
     public void appendJSON(final Appendable buffer, Convertible converter)
     {
         ConvertableOutput out=new ConvertableOutput(buffer);
@@ -393,27 +390,23 @@ public class JSON
         out.complete();
     }
 
-    /* ------------------------------------------------------------ */
     @Deprecated
     public void appendJSON(StringBuffer buffer, Generator generator)
     {
         generator.addJSON(buffer);
     }
 
-    /* ------------------------------------------------------------ */
     public void appendJSON(Appendable buffer, Generator generator)
     {
         generator.addJSON(buffer);
     }
 
-    /* ------------------------------------------------------------ */
     @Deprecated
     public void appendMap(StringBuffer buffer, Map<?,?> map)
     {
         appendMap((Appendable)buffer,map);
     }
 
-    /* ------------------------------------------------------------ */
     public void appendMap(Appendable buffer, Map<?,?> map)
     {
         try
@@ -444,14 +437,12 @@ public class JSON
         }
     }
 
-    /* ------------------------------------------------------------ */
     @Deprecated
     public void appendArray(StringBuffer buffer, Collection collection)
     {
-    	appendArray((Appendable)buffer,collection);
+        appendArray((Appendable)buffer,collection);
     }
 
-    /* ------------------------------------------------------------ */
     public void appendArray(Appendable buffer, Collection collection)
     {
         try
@@ -482,14 +473,12 @@ public class JSON
         }
     }
 
-    /* ------------------------------------------------------------ */
     @Deprecated
     public void appendArray(StringBuffer buffer, Object array)
     {
-	appendArray((Appendable)buffer,array);
+    appendArray((Appendable)buffer,array);
     }
 
-    /* ------------------------------------------------------------ */
     public void appendArray(Appendable buffer, Object array)
     {
         try
@@ -518,14 +507,12 @@ public class JSON
         }
     }
 
-    /* ------------------------------------------------------------ */
     @Deprecated
     public void appendBoolean(StringBuffer buffer, Boolean b)
     {
         appendBoolean((Appendable)buffer,b);
     }
 
-    /* ------------------------------------------------------------ */
     public void appendBoolean(Appendable buffer, Boolean b)
     {
         try
@@ -535,7 +522,7 @@ public class JSON
                 appendNull(buffer);
                 return;
             }
-            buffer.append(b.booleanValue()?"true":"false");
+            buffer.append(b?"true":"false");
         }
         catch (IOException e)
         {
@@ -543,14 +530,12 @@ public class JSON
         }
     }
 
-    /* ------------------------------------------------------------ */
     @Deprecated
     public void appendNumber(StringBuffer buffer, Number number)
     {
-	appendNumber((Appendable)buffer,number);
+        appendNumber((Appendable)buffer,number);
     }
 
-    /* ------------------------------------------------------------ */
     public void appendNumber(Appendable buffer, Number number)
     {
         try
@@ -568,14 +553,12 @@ public class JSON
         }
     }
 
-    /* ------------------------------------------------------------ */
     @Deprecated
     public void appendString(StringBuffer buffer, String string)
     {
-    	appendString((Appendable)buffer,string);
+        appendString((Appendable)buffer,string);
     }
 
-    /* ------------------------------------------------------------ */
     public void appendString(Appendable buffer, String string)
     {
         if (string == null)
@@ -589,37 +572,31 @@ public class JSON
 
     // Parsing utilities
 
-    /* ------------------------------------------------------------ */
     protected String toString(char[] buffer, int offset, int length)
     {
         return new String(buffer,offset,length);
     }
 
-    /* ------------------------------------------------------------ */
     protected Map<String, Object> newMap()
     {
         return new HashMap<String, Object>();
     }
 
-    /* ------------------------------------------------------------ */
     protected Object[] newArray(int size)
     {
         return new Object[size];
     }
 
-    /* ------------------------------------------------------------ */
     protected JSON contextForArray()
     {
         return this;
     }
 
-    /* ------------------------------------------------------------ */
     protected JSON contextFor(String field)
     {
         return this;
     }
 
-    /* ------------------------------------------------------------ */
     protected Object convertTo(Class type, Map map)
     {
         if (type != null && Convertible.class.isAssignableFrom(type))
@@ -644,7 +621,6 @@ public class JSON
         return map;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Register a {@link Convertor} for a class or interface.
      *
@@ -658,7 +634,6 @@ public class JSON
         _convertors.put(forClass.getName(),convertor);
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Lookup a convertor for a class.
      * <p>
@@ -677,7 +652,7 @@ public class JSON
         if (convertor == null && this != DEFAULT)
             convertor = DEFAULT.getConvertor(cls);
 
-        while (convertor == null && cls != null && cls != Object.class)
+        while (convertor == null && cls != Object.class)
         {
             Class[] ifs = cls.getInterfaces();
             int i = 0;
@@ -692,7 +667,6 @@ public class JSON
         return convertor;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Register a {@link JSON.Convertor} for a named class or interface.
      *
@@ -706,7 +680,6 @@ public class JSON
         _convertors.put(name,convertor);
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Lookup a convertor for a named class.
      *
@@ -716,14 +689,12 @@ public class JSON
      */
     public Convertor getConvertorFor(String name)
     {
-        String clsName = name;
-        Convertor convertor = _convertors.get(clsName);
+        Convertor convertor = _convertors.get(name);
         if (convertor == null && this != DEFAULT)
-            convertor = DEFAULT.getConvertorFor(clsName);
+            convertor = DEFAULT.getConvertorFor(name);
         return convertor;
     }
 
-    /* ------------------------------------------------------------ */
     public Object parse(Source source, boolean stripOuterComment)
     {
         int comment_state = 0; // 0=no comment, 1="/", 2="/*", 3="/* *" -1="//"
@@ -811,7 +782,6 @@ public class JSON
         return o;
     }
 
-    /* ------------------------------------------------------------ */
     public Object parse(Source source)
     {
         int comment_state = 0; // 0=no comment, 1="/", 2="/*", 3="/* *" -1="//"
@@ -911,13 +881,11 @@ public class JSON
         return null;
     }
 
-    /* ------------------------------------------------------------ */
     protected Object handleUnknown(Source source, char c)
     {
         throw new IllegalStateException("unknown char '" + c + "'(" + (int)c + ") in " + source);
     }
 
-    /* ------------------------------------------------------------ */
     protected Object parseObject(Source source)
     {
         if (source.next() != '{')
@@ -952,10 +920,10 @@ public class JSON
         String xclassname = (String)map.get("x-class");
         if (xclassname != null)
         {
-        	Convertor c = getConvertorFor(xclassname);
-        	if (c != null)
-        		return c.fromJSON(map);
-        	LOG.warn("no Convertor for xclassname '%s'", xclassname);
+            Convertor c = getConvertorFor(xclassname);
+            if (c != null)
+                return c.fromJSON(map);
+            LOG.warn("No Convertor for x-class '{}'", xclassname);
         }
 
         String classname = (String)map.get("class");
@@ -968,14 +936,13 @@ public class JSON
             }
             catch (ClassNotFoundException e)
             {
-                LOG.warn("no Class for classname '%s'", classname);
+                LOG.warn("No Class for '{}'", classname);
             }
         }
-        
+
         return map;
     }
 
-    /* ------------------------------------------------------------ */
     protected Object parseArray(Source source)
     {
         if (source.next() != '[')
@@ -1042,7 +1009,6 @@ public class JSON
         throw new IllegalStateException("unexpected end of array");
     }
 
-    /* ------------------------------------------------------------ */
     protected String parseString(Source source)
     {
         if (source.next() != '"')
@@ -1110,7 +1076,6 @@ public class JSON
                 else if (c == '\\')
                 {
                     escape = true;
-                    continue;
                 }
                 else if (c == '\"')
                 {
@@ -1118,7 +1083,9 @@ public class JSON
                     return toString(scratch,0,i);
                 }
                 else
+                {
                     scratch[i++] = c;
+                }
             }
 
             // Missing end quote, but return string anyway ?
@@ -1175,17 +1142,19 @@ public class JSON
             else if (c == '\\')
             {
                 escape = true;
-                continue;
             }
             else if (c == '\"')
+            {
                 break;
+            }
             else
+            {
                 builder.append(c);
+            }
         }
         return builder.toString();
     }
 
-    /* ------------------------------------------------------------ */
     public Number parseNumber(Source source)
     {
         boolean minus = false;
@@ -1270,7 +1239,6 @@ public class JSON
 
     }
 
-    /* ------------------------------------------------------------ */
     protected void seekTo(char seek, Source source)
     {
         while (source.hasNext())
@@ -1287,7 +1255,6 @@ public class JSON
         throw new IllegalStateException("Expected '" + seek + "'");
     }
 
-    /* ------------------------------------------------------------ */
     protected char seekTo(String seek, Source source)
     {
         while (source.hasNext())
@@ -1306,7 +1273,6 @@ public class JSON
         throw new IllegalStateException("Expected one of '" + seek + "'");
     }
 
-    /* ------------------------------------------------------------ */
     protected static void complete(String seek, Source source)
     {
         int i = 0;
@@ -1398,7 +1364,7 @@ public class JSON
                 _buffer.append(c);
                 QuotedStringTokenizer.quote(_buffer,name);
                 _buffer.append(':');
-                appendNumber(_buffer,new Double(value));
+                appendNumber(_buffer, value);
                 c = ',';
             }
             catch (IOException e)
@@ -1444,7 +1410,6 @@ public class JSON
         }
     }
 
-    /* ------------------------------------------------------------ */
     public interface Source
     {
         boolean hasNext();
@@ -1456,7 +1421,6 @@ public class JSON
         char[] scratchBuffer();
     }
 
-    /* ------------------------------------------------------------ */
     public static class StringSource implements Source
     {
         private final String string;
@@ -1500,7 +1464,6 @@ public class JSON
         }
     }
 
-    /* ------------------------------------------------------------ */
     public static class ReaderSource implements Source
     {
         private Reader _reader;
@@ -1567,7 +1530,6 @@ public class JSON
 
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * JSON Output class for use by {@link Convertible}.
      */
@@ -1586,7 +1548,6 @@ public class JSON
         public void add(String name, boolean value);
     }
 
-    /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /**
      * JSON Convertible object. Object can implement this interface in a similar
@@ -1607,7 +1568,6 @@ public class JSON
         public void fromJSON(Map object);
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Static JSON Convertor.
      * <p>
@@ -1626,7 +1586,6 @@ public class JSON
         public Object fromJSON(Map object);
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * JSON Generator. A class that can add it's JSON representation directly to
      * a StringBuffer. This is useful for object instances that are frequently
@@ -1637,7 +1596,6 @@ public class JSON
         public void addJSON(Appendable buffer);
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * A Literal JSON generator A utility instance of {@link JSON.Generator}
      * that holds a pre-generated string on JSON text.
@@ -1646,7 +1604,6 @@ public class JSON
     {
         private String _json;
 
-        /* ------------------------------------------------------------ */
         /**
          * Construct a literal JSON instance for use by
          * {@link JSON#toString(Object)}. If {@link Log#isDebugEnabled()} is
