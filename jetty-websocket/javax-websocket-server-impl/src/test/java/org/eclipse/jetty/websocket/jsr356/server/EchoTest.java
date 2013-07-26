@@ -59,7 +59,7 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class PrimitiveEchoTest
+public class EchoTest
 {
     private static final List<EchoCase[]> TESTCASES = new ArrayList<>();
 
@@ -172,12 +172,21 @@ public class PrimitiveEchoTest
         // PathParam based
         EchoCase.add(TESTCASES,IntParamTextSocket.class).requestPath("/echo/primitives/integer/params/5678")
           .addMessage(1234).expect("1234|5678");
+        
+        // Reader based
+        /* NOT WORKING YET
+        EchoCase.add(TESTCASES,ReaderSocket.class).addMessage("Hello World").expect("Hello World");
+        EchoCase.add(TESTCASES,ReaderParamSocket.class).requestPath("/echo/streaming/readerparam/OhNo")
+          .addMessage("Hello World").expect("Hello World|OnNo");
+        EchoCase.add(TESTCASES,StringReturnReaderParamSocket.class).requestPath("/echo/streaming/readerparam2/OhMy")
+          .addMessage("Hello World").expect("Hello World|OhMy");
+          */
     }
 
     @BeforeClass
     public static void startServer() throws Exception
     {
-        File testdir = MavenTestingUtils.getTargetTestingDir(PrimitiveEchoTest.class.getName());
+        File testdir = MavenTestingUtils.getTargetTestingDir(EchoTest.class.getName());
         server = new WSServer(testdir,"app");
         server.copyWebInf("empty-web.xml");
 
@@ -217,7 +226,7 @@ public class PrimitiveEchoTest
 
     private EchoCase testcase;
 
-    public PrimitiveEchoTest(EchoCase testcase)
+    public EchoTest(EchoCase testcase)
     {
         this.testcase = testcase;
         System.err.println(testcase);

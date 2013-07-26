@@ -112,6 +112,8 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver implements E
                 LOG.debug("Binary Message InputStream");
                 final MessageInputStream stream = new MessageInputStream(session.getConnection());
                 activeMessage = stream;
+
+                // Always dispatch streaming read to another thread.
                 dispatch(new Runnable()
                 {
                     @Override
@@ -279,6 +281,7 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver implements E
                 final MessageReader stream = new MessageReader(new MessageInputStream(session.getConnection()));
                 activeMessage = stream;
 
+                // Always dispatch streaming read to another thread.
                 dispatch(new Runnable()
                 {
                     @Override

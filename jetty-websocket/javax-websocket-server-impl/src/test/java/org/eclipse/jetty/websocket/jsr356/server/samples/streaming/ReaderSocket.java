@@ -24,7 +24,6 @@ import java.io.Reader;
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.Session;
-import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.util.IO;
@@ -32,19 +31,15 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.jsr356.server.StackUtil;
 
-@ServerEndpoint("/echo/streaming/readerparam2/{param}")
-public class StringReturnReaderParamSocket
+@ServerEndpoint("/echo/streaming/reader")
+public class ReaderSocket
 {
-    private static final Logger LOG = Log.getLogger(StringReturnReaderParamSocket.class);
+    private static final Logger LOG = Log.getLogger(ReaderSocket.class);
 
     @OnMessage
-    public String onReader(Reader reader, @PathParam("param") String param) throws IOException
+    public String onReader(Reader reader) throws IOException
     {
-        StringBuilder msg = new StringBuilder();
-        msg.append(IO.toString(reader));
-        msg.append('|');
-        msg.append(param);
-        return msg.toString();
+        return IO.toString(reader);
     }
 
     @OnError

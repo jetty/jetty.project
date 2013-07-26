@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.jsr356.server.samples.echo;
 
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
-import javax.websocket.ContainerProvider;
 import javax.websocket.DeploymentException;
 import javax.websocket.server.ServerContainer;
 
@@ -38,7 +37,7 @@ public class BasicEchoSocketContextListener implements ServletContextListener
     @Override
     public void contextInitialized(ServletContextEvent sce)
     {
-        ServerContainer container = (ServerContainer)ContainerProvider.getWebSocketContainer();
+        ServerContainer container = (ServerContainer)sce.getServletContext().getAttribute(ServerContainer.class.getName());
         try
         {
             container.addEndpoint(BasicEchoSocket.class);
