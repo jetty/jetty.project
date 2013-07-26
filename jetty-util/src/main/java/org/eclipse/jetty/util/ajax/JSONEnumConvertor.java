@@ -32,7 +32,7 @@ import org.eclipse.jetty.util.log.Logger;
  * If fromJSON is true in the constructor, the JSON generated will
  * be of the form {class="com.acme.TrafficLight",value="Green"}
  * If fromJSON is false, then only the string value of the enum is generated.
- * 
+ *
  *
  */
 public class JSONEnumConvertor implements JSON.Convertor
@@ -43,8 +43,8 @@ public class JSONEnumConvertor implements JSON.Convertor
     {
         try
         {
-            Class e = Loader.loadClass(getClass(),"java.lang.Enum");
-            _valueOf=e.getMethod("valueOf",new Class[]{Class.class,String.class});
+            Class<?> e = Loader.loadClass(getClass(),"java.lang.Enum");
+            _valueOf=e.getMethod("valueOf",Class.class,String.class);
         }
         catch(Exception e)
         {
@@ -56,12 +56,12 @@ public class JSONEnumConvertor implements JSON.Convertor
     {
         this(false);
     }
-    
+
     public JSONEnumConvertor(boolean fromJSON)
     {
         _fromJSON=fromJSON;
     }
-    
+
     public Object fromJSON(Map map)
     {
         if (!_fromJSON)
@@ -69,11 +69,11 @@ public class JSONEnumConvertor implements JSON.Convertor
         try
         {
             Class c=Loader.loadClass(getClass(),(String)map.get("class"));
-            return _valueOf.invoke(null,new Object[]{c,map.get("value")});
+            return _valueOf.invoke(null,c,map.get("value"));
         }
         catch(Exception e)
         {
-            LOG.warn(e);  
+            LOG.warn(e);
         }
         return null;
     }
@@ -90,5 +90,4 @@ public class JSONEnumConvertor implements JSON.Convertor
             out.add(((Enum)obj).name());
         }
     }
-
 }
