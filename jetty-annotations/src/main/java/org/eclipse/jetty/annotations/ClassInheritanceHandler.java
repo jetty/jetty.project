@@ -33,16 +33,15 @@ import org.eclipse.jetty.util.log.Logger;
 public class ClassInheritanceHandler implements ClassHandler
 {
     private static final Logger LOG = Log.getLogger(ClassInheritanceHandler.class);
-
     
-    MultiMap _inheritanceMap;
+    MultiMap<String> _inheritanceMap;
     
     public ClassInheritanceHandler()
     {
-       _inheritanceMap = new MultiMap();
+       _inheritanceMap = new MultiMap<>();
     }
     
-    public ClassInheritanceHandler(MultiMap map)
+    public ClassInheritanceHandler(MultiMap<String> map)
     {
         _inheritanceMap = map;
     }
@@ -65,12 +64,12 @@ public class ClassInheritanceHandler implements ClassHandler
         }  
     }
     
-    public List getClassNamesExtendingOrImplementing (String className)
+    public List<String> getClassNamesExtendingOrImplementing (String className)
     {
         return _inheritanceMap.getValues(className);
     }
     
-    public MultiMap getMap ()
+    public MultiMap<String> getMap ()
     {
         return _inheritanceMap;
     }

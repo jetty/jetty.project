@@ -140,7 +140,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
     @Override
     public void postConfigure(WebAppContext context) throws Exception
     {
-        MultiMap map = (MultiMap)context.getAttribute(CLASS_INHERITANCE_MAP);
+        MultiMap<String> map = (MultiMap<String>)context.getAttribute(CLASS_INHERITANCE_MAP);
         if (map != null)
             map.clear();
         
@@ -216,7 +216,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
                     //process the whole class hierarchy to satisfy the ServletContainerInitializer
                     if (context.getAttribute(CLASS_INHERITANCE_MAP) == null)
                     {
-                        MultiMap map = new MultiMap();
+                        MultiMap<String> map = new MultiMap<>();
                         context.setAttribute(CLASS_INHERITANCE_MAP, map);
                         _classInheritanceHandler = new ClassInheritanceHandler(map);
                     }
