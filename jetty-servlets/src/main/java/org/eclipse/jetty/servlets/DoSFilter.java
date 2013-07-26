@@ -19,6 +19,7 @@
 package org.eclipse.jetty.servlets;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -1028,8 +1029,10 @@ public class DoSFilter implements Filter
      * A RateTracker is associated with a connection, and stores request rate
      * data.
      */
-    class RateTracker extends Timeout.Task implements HttpSessionBindingListener, HttpSessionActivationListener
+    class RateTracker extends Timeout.Task implements HttpSessionBindingListener, HttpSessionActivationListener, Serializable
     {
+        private static final long serialVersionUID = 3534663738034577872L;
+
         transient protected final String _id;
         transient protected final int _type;
         transient protected final long[] _timestamps;
