@@ -77,7 +77,7 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
         super(requestURI,websocket,connection);
         if (!(websocket instanceof AbstractJsrEventDriver))
         {
-            throw new IllegalArgumentException("Cannot non JSR WebSocket: " + websocket);
+            throw new IllegalArgumentException("Cannot use, not a JSR WebSocket: " + websocket);
         }
         AbstractJsrEventDriver jsr = (AbstractJsrEventDriver)websocket;
         this.config = jsr.getConfig();
