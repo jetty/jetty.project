@@ -43,7 +43,7 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
 {
     public static ServerContainer get(WebAppContext context)
     {
-        return (ServerContainer)context.getAttribute(WebSocketConfiguration.JAVAX_WEBSOCKET_SERVER_CONTAINER);
+        return (ServerContainer)context.getAttribute(javax.websocket.server.ServerContainer.class.getName());
     }
 
     private final MappedWebSocketCreator mappedCreator;

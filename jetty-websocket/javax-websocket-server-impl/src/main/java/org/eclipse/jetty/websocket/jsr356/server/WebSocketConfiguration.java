@@ -24,6 +24,7 @@ import javax.servlet.DispatcherType;
 
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.servlet.FilterHolder;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
@@ -36,11 +37,9 @@ import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
  */
 public class WebSocketConfiguration extends AbstractConfiguration
 {
-    public static final String JAVAX_WEBSOCKET_SERVER_CONTAINER = "javax.websocket.server.ServerContainer";
     private static final Logger LOG = Log.getLogger(WebSocketConfiguration.class);
 
-    @Override
-    public void configure(WebAppContext context) throws Exception
+    public void configureContext(ServletContextHandler context, boolean startContainer)
     {
         WebSocketUpgradeFilter filter = new WebSocketUpgradeFilter();
         FilterHolder fholder = new FilterHolder(filter);
@@ -49,14 +48,27 @@ public class WebSocketConfiguration extends AbstractConfiguration
         String pathSpec = "/*";
         context.addFilter(fholder,pathSpec,EnumSet.of(DispatcherType.REQUEST));
         LOG.debug("Adding {} mapped to {} to {}",filter,pathSpec,context);
-        
+
         // Store reference to the WebSocketUpgradeFilter
         context.setAttribute(WebSocketUpgradeFilter.class.getName(),filter);
 
-        // Store reference to the ServerContainer
-        ServerContainer container = new ServerContainer(filter);
-        filter.setWebSocketServerFactoryListener(container);
-        context.setAttribute(JAVAX_WEBSOCKET_SERVER_CONTAINER,container);
+        // Create the Jetty ServerContainer implementation
+        ServerContainer jettyContainer = new ServerContainer(filter);
+        filter.setWebSocketServerFactoryListener(jettyContainer);
+
+        // Store a reference to the ServerContainer per javax.websocket spec 1.0 final section 6.4 Programmatic Server Deployment
+        context.setAttribute(javax.websocket.server.ServerContainer.class.getName(),jettyContainer);
+
+        if (startContainer)
+        {
+            jettyContainer.start();
+        }
+    }
+
+    @Override
+    public void configure(WebAppContext context) throws Exception
+    {
+        configureContext(context,false);
     }
 
     @Override
