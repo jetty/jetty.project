@@ -147,7 +147,8 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
                 HttpConversation conversation = exchange.getConversation();
                 HttpResponse response = exchange.getResponse();
 
-                parser.setHeadResponse(HttpMethod.HEAD.is(exchange.getRequest().method()));
+                String method = exchange.getRequest().method();
+                parser.setHeadResponse(HttpMethod.HEAD.is(method) || HttpMethod.CONNECT.is(method));
                 response.version(version).status(status).reason(reason);
 
                 // Probe the protocol handlers
