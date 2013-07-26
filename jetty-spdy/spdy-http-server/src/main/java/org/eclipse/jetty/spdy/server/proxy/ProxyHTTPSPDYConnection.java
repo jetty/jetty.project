@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.spdy.server.proxy;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
