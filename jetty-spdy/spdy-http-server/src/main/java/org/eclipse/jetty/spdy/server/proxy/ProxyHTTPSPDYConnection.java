@@ -232,51 +232,50 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
         }
 
         @Override
-        public void reply(ReplyInfo replyInfo, Callback handler)
+        public void reply(ReplyInfo replyInfo, final Callback handler)
         {
-            try
+            Fields headers = new Fields(replyInfo.getHeaders(), false);
+
+            headers.remove(HTTPSPDYHeader.SCHEME.name(version));
+
+            String status = headers.remove(HTTPSPDYHeader.STATUS.name(version)).value();
+            Matcher matcher = statusRegexp.matcher(status);
+            matcher.matches();
+            int code = Integer.parseInt(matcher.group(1));
+            String reason = matcher.group(2).trim();
+
+            HttpVersion httpVersion = HttpVersion.fromString(headers.remove(HTTPSPDYHeader.VERSION.name(version)).value());
+
+            // Convert the Host header from a SPDY special header to a normal header
+            Fields.Field host = headers.remove(HTTPSPDYHeader.HOST.name(version));
+            if (host != null)
+                headers.put("host", host.value());
+
+            HttpFields fields = new HttpFields();
+            for (Fields.Field header : headers)
             {
-                Fields headers = new Fields(replyInfo.getHeaders(), false);
+                String name = camelize(header.name());
+                fields.put(name, header.value());
+            }
 
-                headers.remove(HTTPSPDYHeader.SCHEME.name(version));
+            // TODO: handle better the HEAD last parameter
+            long contentLength = fields.getLongField(HttpHeader.CONTENT_LENGTH.asString());
+            HttpGenerator.ResponseInfo info = new HttpGenerator.ResponseInfo(httpVersion, fields, contentLength, code,
+                    reason, false);
 
-                String status = headers.remove(HTTPSPDYHeader.STATUS.name(version)).value();
-                Matcher matcher = statusRegexp.matcher(status);
-                matcher.matches();
-                int code = Integer.parseInt(matcher.group(1));
-                String reason = matcher.group(2).trim();
-
-                HttpVersion httpVersion = HttpVersion.fromString(headers.remove(HTTPSPDYHeader.VERSION.name(version)).value());
-
-                // Convert the Host header from a SPDY special header to a normal header
-                Fields.Field host = headers.remove(HTTPSPDYHeader.HOST.name(version));
-                if (host != null)
-                    headers.put("host", host.value());
-
-                HttpFields fields = new HttpFields();
-                for (Fields.Field header : headers)
+            send(info, null, replyInfo.isClose(), new Adapter()
+            {
+                @Override
+                public void failed(Throwable x)
                 {
-                    String name = camelize(header.name());
-                    fields.put(name, header.value());
+                    handler.failed(x);
                 }
+            });
 
-                // TODO: handle better the HEAD last parameter
-                long contentLength = fields.getLongField(HttpHeader.CONTENT_LENGTH.asString());
-                HttpGenerator.ResponseInfo info = new HttpGenerator.ResponseInfo(httpVersion, fields, contentLength, code,
-                        reason, false);
+            if (replyInfo.isClose())
+                completed();
 
-                // TODO use the async send
-                send(info, null, replyInfo.isClose());
-
-                if (replyInfo.isClose())
-                    completed();
-
-                handler.succeeded();
-            }
-            catch (IOException x)
-            {
-                handler.failed(x);
-            }
+            handler.succeeded();
         }
 
         private String camelize(String name)
@@ -295,25 +294,24 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
         }
 
         @Override
-        public void data(DataInfo dataInfo, Callback handler)
+        public void data(DataInfo dataInfo, final Callback handler)
         {
-            try
+            // Data buffer must be copied, as the ByteBuffer is pooled
+            ByteBuffer byteBuffer = dataInfo.asByteBuffer(false);
+
+            send(null, byteBuffer, dataInfo.isClose(), new Adapter()
             {
-                // Data buffer must be copied, as the ByteBuffer is pooled
-                ByteBuffer byteBuffer = dataInfo.asByteBuffer(false);
+                @Override
+                public void failed(Throwable x)
+                {
+                    handler.failed(x);
+                }
+            });
 
-                // TODO use the async send with callback!
-                send(null, byteBuffer, dataInfo.isClose());
+            if (dataInfo.isClose())
+                completed();
 
-                if (dataInfo.isClose())
-                    completed();
-
-                handler.succeeded();
-            }
-            catch (IOException x)
-            {
-                handler.failed(x);
-            }
+            handler.succeeded();
         }
     }
 
