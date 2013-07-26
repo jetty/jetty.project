@@ -27,6 +27,7 @@ jetty-7.6.12.v20130726 - 26 July 2013
  + 413371 Default JSON.Converters for List and Set.
  + 413372 JSON Enum uses name rather than toString()
  + 413684 Trailing slash shows JSP source
+ + 413812 Make RateTracker serializable
 
 jetty-7.6.11.v20130520 - 20 May 2013
  + 402844 STOP.PORT & STOP.KEY behaviour has changed
