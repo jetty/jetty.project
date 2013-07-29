@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.server;
 
 import java.io.IOException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -43,6 +44,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
@@ -99,7 +101,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     private final EventDriverFactory eventDriverFactory;
     private final WebSocketExtensionFactory extensionFactory;
     private List<WebSocketServerFactory.Listener> listeners = new ArrayList<>();
-    private SessionFactory sessionFactory;
+    private List<SessionFactory> sessionFactories;
     private WebSocketCreator creator;
     private List<Class<?>> registeredSocketClasses;
 
@@ -123,7 +125,8 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         this.basePolicy = policy;
         this.eventDriverFactory = new EventDriverFactory(basePolicy);
         this.extensionFactory = new WebSocketExtensionFactory(basePolicy,bufferPool);
-        this.sessionFactory = new WebSocketSessionFactory();
+        this.sessionFactories = new ArrayList<>();
+        this.sessionFactories.add(new WebSocketSessionFactory());
         this.creator = this;
 
         // Create supportedVersions
@@ -165,7 +168,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
                 context = new UpgradeContext();
                 setActiveUpgradeContext(context);
             }
-            
+
             context.setRequest(sockreq);
             context.setResponse(sockresp);
 
@@ -199,6 +202,15 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         listeners.add(listener);
     }
 
+    public void addSessionFactory(SessionFactory sessionFactory)
+    {
+        if (sessionFactories.contains(sessionFactory))
+        {
+            return;
+        }
+        this.sessionFactories.add(sessionFactory);
+    }
+
     @Override
     public void cleanup()
     {
@@ -225,6 +237,31 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     public WebSocketServletFactory createFactory(WebSocketPolicy policy)
     {
         return new WebSocketServerFactory(policy);
+    }
+
+    private WebSocketSession createSession(URI requestURI, EventDriver websocket, LogicalConnection connection)
+    {
+        if (websocket == null)
+        {
+            throw new InvalidWebSocketException("Unable to create Session from null websocket");
+        }
+
+        for (SessionFactory impl : sessionFactories)
+        {
+            if (impl.supports(websocket))
+            {
+                try
+                {
+                    return impl.createSession(requestURI,websocket,connection);
+                }
+                catch (Throwable e)
+                {
+                    throw new InvalidWebSocketException("Unable to create Session",e);
+                }
+            }
+        }
+
+        throw new InvalidWebSocketException("Unable to create Session: unrecognized internal EventDriver type: " + websocket.getClass().getName());
     }
 
     /**
@@ -301,11 +338,6 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     public WebSocketPolicy getPolicy()
     {
         return basePolicy;
-    }
-
-    public SessionFactory getSessionFactory()
-    {
-        return sessionFactory;
     }
 
     @Override
@@ -415,11 +447,6 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         this.creator = creator;
     }
 
-    public void setSessionFactory(SessionFactory sessionFactory)
-    {
-        this.sessionFactory = sessionFactory;
-    }
-
     /**
      * Upgrade the request/response to a WebSocket Connection.
      * <p>
@@ -488,7 +515,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         }
 
         // Setup Session
-        WebSocketSession session = sessionFactory.createSession(request.getRequestURI(),driver,connection);
+        WebSocketSession session = createSession(request.getRequestURI(),driver,connection);
         session.setPolicy(getPolicy().clonePolicy());
         session.setUpgradeRequest(request);
         response.setExtensions(extensionStack.getNegotiatedExtensions());

@@ -21,12 +21,20 @@ package org.eclipse.jetty.websocket.common;
 import java.net.URI;
 
 import org.eclipse.jetty.websocket.common.events.EventDriver;
+import org.eclipse.jetty.websocket.common.events.JettyAnnotatedEventDriver;
+import org.eclipse.jetty.websocket.common.events.JettyListenerEventDriver;
 
 /**
  * Default Session factory, creating WebSocketSession objects.
  */
 public class WebSocketSessionFactory implements SessionFactory
 {
+    @Override
+    public boolean supports(EventDriver websocket)
+    {
+        return (websocket instanceof JettyAnnotatedEventDriver) || (websocket instanceof JettyListenerEventDriver);
+    }
+    
     @Override
     public WebSocketSession createSession(URI requestURI, EventDriver websocket, LogicalConnection connection)
     {

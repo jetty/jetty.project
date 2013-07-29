@@ -25,6 +25,7 @@ import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.common.SessionFactory;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
+import org.eclipse.jetty.websocket.jsr356.endpoints.AbstractJsrEventDriver;
 
 public class JsrSessionFactory implements SessionFactory
 {
@@ -45,5 +46,11 @@ public class JsrSessionFactory implements SessionFactory
     public String getNextId()
     {
         return String.format("websocket-%d",idgen.incrementAndGet());
+    }
+
+    @Override
+    public boolean supports(EventDriver websocket)
+    {
+        return (websocket instanceof AbstractJsrEventDriver);
     }
 }
