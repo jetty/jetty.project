@@ -16,10 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.server;
-
-import javax.websocket.DeploymentException;
-import javax.websocket.server.ServerEndpoint;
+package org.eclipse.jetty.websocket.jsr356.server.deploy;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -27,6 +24,10 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.DiscoveredAnnotation;
 import org.eclipse.jetty.webapp.WebAppContext;
 
+/**
+ * Once an Annotated Server Endpoint is discovered, add it to the list of
+ * discovered Annotated Endpoints.
+ */
 public class ServerEndpointAnnotation extends DiscoveredAnnotation
 {
     private static final Logger LOG = Log.getLogger(ServerEndpointAnnotation.class);
@@ -40,7 +41,7 @@ public class ServerEndpointAnnotation extends DiscoveredAnnotation
     {
         super(context,className,resource);
     }
-
+    
     @Override
     public void apply()
     {
@@ -51,20 +52,13 @@ public class ServerEndpointAnnotation extends DiscoveredAnnotation
             LOG.warn(_className + " cannot be loaded");
             return;
         }
-
-        ServerEndpoint annotation = clazz.getAnnotation(ServerEndpoint.class);
-
-        String path = annotation.value();
-        LOG.info("Got path: \"{}\"",path);
-
-        ServerContainer container = ServerContainer.get(_context);
-        try
-        {
-            container.addEndpoint(clazz);
+        
+        DiscoveredEndpoints discovered = (DiscoveredEndpoints)_context.getAttribute(DiscoveredEndpoints.class.getName());
+        if(discovered == null) {
+            LOG.warn("Context attribute not found: " + DiscoveredEndpoints.class.getName());
+            return;
         }
-        catch (DeploymentException e)
-        {
-            e.printStackTrace();
-        }
+
+        discovered.addAnnotatedEndpoint(clazz);
     }
 }

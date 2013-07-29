@@ -25,15 +25,15 @@ import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
-import org.eclipse.jetty.websocket.jsr356.annotations.IJsrParamId;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointMetadata;
+import org.eclipse.jetty.websocket.jsr356.annotations.IJsrParamId;
 
 public class AnnotatedServerEndpointMetadata extends AnnotatedEndpointMetadata<ServerEndpoint,ServerEndpointConfig> implements ServerEndpointMetadata
 {
     private final ServerEndpoint endpoint;
     private final AnnotatedServerEndpointConfig config;
 
-    protected AnnotatedServerEndpointMetadata(ServerContainer container, Class<?> websocket) throws DeploymentException
+    protected AnnotatedServerEndpointMetadata(ServerContainer container, Class<?> websocket, ServerEndpointConfig baseConfig) throws DeploymentException
     {
         super(websocket);
 
@@ -44,7 +44,7 @@ public class AnnotatedServerEndpointMetadata extends AnnotatedEndpointMetadata<S
         }
 
         this.endpoint = anno;
-        this.config = new AnnotatedServerEndpointConfig(websocket,anno);
+        this.config = new AnnotatedServerEndpointConfig(websocket,anno,baseConfig);
         
         getDecoders().addAll(anno.decoders());
         getEncoders().addAll(anno.encoders());

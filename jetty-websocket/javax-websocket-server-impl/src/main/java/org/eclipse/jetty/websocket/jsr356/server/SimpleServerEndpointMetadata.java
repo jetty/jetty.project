@@ -26,11 +26,16 @@ import org.eclipse.jetty.websocket.jsr356.client.SimpleEndpointMetadata;
 public class SimpleServerEndpointMetadata extends SimpleEndpointMetadata implements ServerEndpointMetadata
 {
     private final ServerEndpointConfig config;
-    
+
     public SimpleServerEndpointMetadata(Class<? extends Endpoint> endpointClass, ServerEndpointConfig config)
     {
         super(endpointClass);
         this.config = config;
+        if (this.config != null)
+        {
+            getDecoders().addAll(config.getDecoders());
+            getEncoders().addAll(config.getEncoders());
+        }
     }
 
     @Override

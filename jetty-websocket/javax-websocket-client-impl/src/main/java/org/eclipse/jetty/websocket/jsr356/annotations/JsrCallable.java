@@ -27,6 +27,8 @@ import javax.websocket.Decoder;
 
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.common.events.annotated.CallableMethod;
+import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
+import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 import org.eclipse.jetty.websocket.jsr356.JsrSession;
 import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
 
@@ -63,6 +65,18 @@ public abstract class JsrCallable extends CallableMethod
         this.idxConfig = copy.idxConfig;
         System.arraycopy(copy.params,0,this.params,0,params.length);
         System.arraycopy(copy.args,0,this.args,0,args.length);
+    }
+
+    protected void assertRoleRequired(int index, String description)
+    {
+        if (index < 0)
+        {
+            StringBuilder err = new StringBuilder();
+            err.append("Unable to find parameter with role [");
+            err.append(description).append("] in method: ");
+            err.append(ReflectUtils.toString(pojo,method));
+            throw new InvalidSignatureException(err.toString());
+        }
     }
 
     /**

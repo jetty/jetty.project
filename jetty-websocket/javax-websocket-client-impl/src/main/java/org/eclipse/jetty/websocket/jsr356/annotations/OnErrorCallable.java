@@ -45,8 +45,10 @@ public class OnErrorCallable extends JsrCallable
 
     public void call(Object endpoint, Throwable cause)
     {
-        // Throwable is a mandatory parameter
-        super.args[idxThrowable] = cause;
+        if (idxThrowable >= 0)
+        {
+            super.args[idxThrowable] = cause;
+        }
         super.call(endpoint,super.args);
     }
 
@@ -54,6 +56,7 @@ public class OnErrorCallable extends JsrCallable
     public void init(JsrSession session)
     {
         idxThrowable = findIndexForRole(Param.Role.ERROR_CAUSE);
+        assertRoleRequired(idxThrowable,"Throwable");
         super.init(session);
     }
 

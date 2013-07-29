@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.server;
+package org.eclipse.jetty.websocket.jsr356.server.deploy;
 
 import java.util.List;
 
@@ -76,13 +76,13 @@ public class ServerEndpointAnnotationHandler extends AbstractDiscoverableAnnotat
     public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
             List<Value> values)
     {
-        LOG.warn("@ServerEndpoint annotation not supported for fields");
+        /* @ServerEndpoint annotation not supported for fields */
     }
 
     @Override
     public void handleMethod(String className, String methodName, int access, String desc, String signature, String[] exceptions, String annotation,
             List<Value> values)
     {
-        LOG.warn("@ServerEndpoint annotation not supported for methods");
+        /* @ServerEndpoint annotation not supported for methods */
     }
 }

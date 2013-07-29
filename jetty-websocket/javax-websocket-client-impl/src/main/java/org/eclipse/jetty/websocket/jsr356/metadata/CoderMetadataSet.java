@@ -85,6 +85,19 @@ public abstract class CoderMetadataSet<T, M extends CoderMetadata<T>> implements
         return metadatas;
     }
 
+    public List<M> addAll(List<Class<? extends T>> coders)
+    {
+        List<M> metadatas = new ArrayList<>();
+
+        for (Class<? extends T> coder : coders)
+        {
+            metadatas.addAll(discover(coder));
+        }
+
+        trackMetadata(metadatas);
+        return metadatas;
+    }
+
     /**
      * Coder Specific discovery of Metadata for a specific coder.
      * 

@@ -43,12 +43,38 @@ public class AnnotatedServerEndpointConfig implements ServerEndpointConfig
 
     private Map<String, Object> userProperties;
     private List<Extension> extensions;
-    
+
     public AnnotatedServerEndpointConfig(Class<?> endpointClass, ServerEndpoint anno) throws DeploymentException
     {
-        this.decoders = Collections.unmodifiableList(Arrays.asList(anno.decoders()));
-        this.encoders = Collections.unmodifiableList(Arrays.asList(anno.encoders()));
-        this.subprotocols = Collections.unmodifiableList(Arrays.asList(anno.subprotocols()));
+        this(endpointClass,anno,null);
+    }
+
+    public AnnotatedServerEndpointConfig(Class<?> endpointClass, ServerEndpoint anno, ServerEndpointConfig baseConfig) throws DeploymentException
+    {
+        List<Class<? extends Decoder>> compositeDecoders = new ArrayList<>();
+        List<Class<? extends Encoder>> compositeEncoders = new ArrayList<>();
+        List<String> compositeSubProtocols = new ArrayList<>();
+
+        Configurator configr = null;
+
+        // Copy from base config
+        if (baseConfig != null)
+        {
+            compositeDecoders.addAll(baseConfig.getDecoders());
+            compositeEncoders.addAll(baseConfig.getEncoders());
+            compositeSubProtocols.addAll(baseConfig.getSubprotocols());
+            configr = baseConfig.getConfigurator();
+        }
+
+        // now add from annotations
+        compositeDecoders.addAll(Arrays.asList(anno.decoders()));
+        compositeEncoders.addAll(Arrays.asList(anno.encoders()));
+        compositeSubProtocols.addAll(Arrays.asList(anno.subprotocols()));
+
+        // Create unmodifiable lists
+        this.decoders = Collections.unmodifiableList(compositeDecoders);
+        this.encoders = Collections.unmodifiableList(compositeEncoders);
+        this.subprotocols = Collections.unmodifiableList(compositeSubProtocols);
 
         // supplied by init lifecycle
         this.extensions = new ArrayList<>();
@@ -56,10 +82,17 @@ public class AnnotatedServerEndpointConfig implements ServerEndpointConfig
         this.endpointClass = endpointClass;
         // no userProperties in annotation
         this.userProperties = new HashMap<>();
-        
+
         if (anno.configurator() == null)
         {
-            this.configurator = BasicServerEndpointConfigurator.INSTANCE;
+            if (configr != null)
+            {
+                this.configurator = configr;
+            }
+            else
+            {
+                this.configurator = BasicServerEndpointConfigurator.INSTANCE;
+            }
         }
         else
         {
@@ -80,9 +113,9 @@ public class AnnotatedServerEndpointConfig implements ServerEndpointConfig
     }
 
     @Override
-    public List<Class<? extends Encoder>> getEncoders()
+    public Configurator getConfigurator()
     {
-        return encoders;
+        return configurator;
     }
 
     @Override
@@ -92,15 +125,21 @@ public class AnnotatedServerEndpointConfig implements ServerEndpointConfig
     }
 
     @Override
-    public Map<String, Object> getUserProperties()
+    public List<Class<? extends Encoder>> getEncoders()
     {
-        return userProperties;
+        return encoders;
     }
 
     @Override
     public Class<?> getEndpointClass()
     {
         return endpointClass;
+    }
+
+    @Override
+    public List<Extension> getExtensions()
+    {
+        return extensions;
     }
 
     @Override
@@ -116,15 +155,9 @@ public class AnnotatedServerEndpointConfig implements ServerEndpointConfig
     }
 
     @Override
-    public List<Extension> getExtensions()
+    public Map<String, Object> getUserProperties()
     {
-        return extensions;
-    }
-
-    @Override
-    public Configurator getConfigurator()
-    {
-        return configurator;
+        return userProperties;
     }
 
     @Override

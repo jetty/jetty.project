@@ -26,7 +26,8 @@ import javax.websocket.Endpoint;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
-import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
 import org.eclipse.jetty.websocket.jsr356.ClientContainer;
 import org.eclipse.jetty.websocket.jsr356.JsrSessionFactory;
@@ -41,11 +42,8 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 
 public class ServerContainer extends ClientContainer implements javax.websocket.server.ServerContainer, WebSocketServerFactory.Listener
 {
-    public static ServerContainer get(WebAppContext context)
-    {
-        return (ServerContainer)context.getAttribute(javax.websocket.server.ServerContainer.class.getName());
-    }
-
+    private static final Logger LOG = Log.getLogger(ServerContainer.class);
+    
     private final MappedWebSocketCreator mappedCreator;
     private WebSocketServerFactory webSocketServletFactory;
     private Map<Class<?>, ServerEndpointMetadata> endpointServerMetadataCache = new ConcurrentHashMap<>();
@@ -90,6 +88,7 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     @Override
     public void addEndpoint(ServerEndpointConfig config) throws DeploymentException
     {
+        LOG.debug("addEndpoint({})",config);
         ServerEndpointMetadata metadata = getServerEndpointMetadata(config.getEndpointClass(),config);
         addEndpoint(metadata);
     }
@@ -108,7 +107,7 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
             if (anno != null)
             {
                 // Annotated takes precedence here
-                AnnotatedServerEndpointMetadata ametadata = new AnnotatedServerEndpointMetadata(this,endpoint);
+                AnnotatedServerEndpointMetadata ametadata = new AnnotatedServerEndpointMetadata(this,endpoint,config);
                 AnnotatedEndpointScanner<ServerEndpoint,ServerEndpointConfig> scanner = new AnnotatedEndpointScanner<>(ametadata);
                 metadata = ametadata;
                 scanner.scan();

@@ -30,6 +30,8 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
 import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.websocket.jsr356.server.deploy.DiscoveredEndpoints;
+import org.eclipse.jetty.websocket.jsr356.server.deploy.ServerEndpointAnnotationHandler;
 import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
 
 /**
@@ -51,6 +53,9 @@ public class WebSocketConfiguration extends AbstractConfiguration
 
         // Store reference to the WebSocketUpgradeFilter
         context.setAttribute(WebSocketUpgradeFilter.class.getName(),filter);
+        
+        // Store reference to DiscoveredEndpoints
+        context.setAttribute(DiscoveredEndpoints.class.getName(),new DiscoveredEndpoints());
 
         // Create the Jetty ServerContainer implementation
         ServerContainer jettyContainer = new ServerContainer(filter);
