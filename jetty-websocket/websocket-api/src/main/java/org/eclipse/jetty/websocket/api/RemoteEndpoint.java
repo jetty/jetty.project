@@ -35,17 +35,25 @@ public interface RemoteEndpoint
     void sendBytes(ByteBuffer data) throws IOException;
 
     /**
-     * Initiates the asynchronous transmission of a binary message. This method returns before the message is transmitted. Developers may provide a callback to
-     * be notified when the message has been transmitted, or may use the returned Future object to track progress of the transmission. Errors in transmission
-     * are given to the developer in the WriteResult object in either case.
+     * Initiates the asynchronous transmission of a binary message. This method returns before the message is transmitted. Developers may use the returned
+     * Future object to track progress of the transmission.
      * 
      * @param data
      *            the data being sent
-     * @param completion
-     *            handler that will be notified of progress
      * @return the Future object representing the send operation.
      */
     Future<Void> sendBytesByFuture(ByteBuffer data);
+
+    /**
+     * Initiates the asynchronous transmission of a binary message. This method returns before the message is transmitted. Developers may provide a callback to
+     * be notified when the message has been transmitted or resulted in an error.
+     * 
+     * @param data
+     *            the data being sent
+     * @param callback
+     *            callback to notify of success or failure of the write operation
+     */
+    void sendBytes(ByteBuffer data, WriteCallback callback);
 
     /**
      * Send a binary message in pieces, blocking until all of the message has been transmitted. The runtime reads the message in order. Non-final pieces are
@@ -94,15 +102,23 @@ public interface RemoteEndpoint
     void sendString(String text) throws IOException;
 
     /**
-     * Initiates the asynchronous transmission of a text message. This method returns before the message is transmitted. Developers may provide a callback to be
-     * notified when the message has been transmitted, or may use the returned Future object to track progress of the transmission. Errors in transmission are
-     * given to the developer in the WriteResult object in either case.
+     * Initiates the asynchronous transmission of a text message. This method may return before the message is transmitted. Developers may use the returned
+     * Future object to track progress of the transmission.
      * 
      * @param text
      *            the text being sent
-     * @param completion
-     *            the handler which will be notified of progress
      * @return the Future object representing the send operation.
      */
     Future<Void> sendStringByFuture(String text);
+
+    /**
+     * Initiates the asynchronous transmission of a text message. This method may return before the message is transmitted. Developers may provide a callback to
+     * be notified when the message has been transmitted or resulted in an error.
+     * 
+     * @param text
+     *            the text being sent
+     * @param callback
+     *            callback to notify of success or failure of the write operation
+     */
+    void sendString(String text, WriteCallback callback);
 }

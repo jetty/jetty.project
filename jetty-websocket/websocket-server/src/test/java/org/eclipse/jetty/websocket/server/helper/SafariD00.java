@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.server.helper;
 
+import static org.hamcrest.Matchers.*;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,9 +35,6 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.junit.Assert;
-
-import static org.hamcrest.Matchers.*;
-import static org.hamcrest.Matchers.is;
 
 public class SafariD00
 {

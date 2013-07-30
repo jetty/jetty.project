@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.server.helper;
 
-import java.sql.Connection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 

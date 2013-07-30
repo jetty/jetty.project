@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.common;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -140,6 +141,19 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
         }
         WebSocketFrame frame = WebSocketFrame.binary().setPayload(data);
         return sendAsyncFrame(frame);
+    }
+    
+    @Override
+    public void sendBytes(ByteBuffer data, WriteCallback callback)
+    {
+        Objects.requireNonNull(callback,"WriteCallback cannot be null");
+        msgType.set(BINARY);
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("sendBytes({}, {})",BufferUtil.toDetailString(data),callback);
+        }
+        WebSocketFrame frame = WebSocketFrame.binary().setPayload(data);
+        sendFrame(frame,callback);
     }
 
     public void sendFrame(WebSocketFrame frame, WriteCallback callback)
@@ -317,12 +331,25 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
     @Override
     public Future<Void> sendStringByFuture(String text)
     {
-        msgType.set(BINARY);
+        msgType.set(TEXT);
         WebSocketFrame frame = WebSocketFrame.text(text);
         if (LOG.isDebugEnabled())
         {
             LOG.debug("sendStringByFuture with {}",BufferUtil.toDetailString(frame.getPayload()));
         }
         return sendAsyncFrame(frame);
+    }
+    
+    @Override
+    public void sendString(String text, WriteCallback callback)
+    {
+        Objects.requireNonNull(callback,"WriteCallback cannot be null");
+        msgType.set(TEXT);
+        WebSocketFrame frame = WebSocketFrame.text(text);
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("sendString({},{})",BufferUtil.toDetailString(frame.getPayload()),callback);
+        }
+        sendFrame(frame,callback);
     }
 }

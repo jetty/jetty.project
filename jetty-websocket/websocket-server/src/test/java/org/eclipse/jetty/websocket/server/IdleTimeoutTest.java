@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.server;
 
 import static org.hamcrest.Matchers.*;
 
-import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.websocket.api.StatusCode;

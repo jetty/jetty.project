@@ -34,6 +34,7 @@ import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer;
 import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer.ServerConnection;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.io.FutureWriteCallback;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -115,6 +116,44 @@ public class WebSocketClientTest
         Assert.assertThat("client.connectionManager.sessions.size",client.getConnectionManager().getSessions().size(),is(1));
 
         cliSock.getSession().getRemote().sendStringByFuture("Hello World!");
+        srvSock.echoMessage(1,TimeUnit.MILLISECONDS,500);
+        // wait for response from server
+        cliSock.waitForMessage(500,TimeUnit.MILLISECONDS);
+
+        cliSock.assertMessage("Hello World!");
+    }
+    
+    @Test
+    public void testBasicEcho_UsingCallback() throws Exception
+    {
+        JettyTrackingSocket cliSock = new JettyTrackingSocket();
+
+        client.getPolicy().setIdleTimeout(10000);
+
+        URI wsUri = server.getWsUri();
+        ClientUpgradeRequest request = new ClientUpgradeRequest();
+        request.setSubProtocols("echo");
+        Future<Session> future = client.connect(cliSock,wsUri,request);
+
+        final ServerConnection srvSock = server.accept();
+        srvSock.upgrade();
+
+        Session sess = future.get(500,TimeUnit.MILLISECONDS);
+        Assert.assertThat("Session",sess,notNullValue());
+        Assert.assertThat("Session.open",sess.isOpen(),is(true));
+        Assert.assertThat("Session.upgradeRequest",sess.getUpgradeRequest(),notNullValue());
+        Assert.assertThat("Session.upgradeResponse",sess.getUpgradeResponse(),notNullValue());
+
+        cliSock.assertWasOpened();
+        cliSock.assertNotClosed();
+
+        Assert.assertThat("client.connectionManager.sessions.size",client.getConnectionManager().getSessions().size(),is(1));
+
+        FutureWriteCallback callback = new FutureWriteCallback();
+        
+        cliSock.getSession().getRemote().sendString("Hello World!",callback);
+        callback.get(1,TimeUnit.SECONDS);
+        
         srvSock.echoMessage(1,TimeUnit.MILLISECONDS,500);
         // wait for response from server
         cliSock.waitForMessage(500,TimeUnit.MILLISECONDS);
