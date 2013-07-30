@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,14 +26,28 @@ import javax.websocket.server.ServerEndpoint;
 
 public class EchoCase
 {
-    public static EchoCase add(List<EchoCase[]> data, Class<?> serverPojo, String path)
+    public static class PartialBinary
     {
-        EchoCase ecase = new EchoCase();
-        ecase.serverPojo = serverPojo;
-        ecase.path = path;
-        data.add(new EchoCase[]
-        { ecase });
-        return ecase;
+        ByteBuffer part;
+
+        boolean fin;
+        public PartialBinary(ByteBuffer part, boolean fin)
+        {
+            this.part = part;
+            this.fin = fin;
+        }
+    }
+
+    public static class PartialText
+    {
+        String part;
+
+        boolean fin;
+        public PartialText(String part, boolean fin)
+        {
+            this.part = part;
+            this.fin = fin;
+        }
     }
 
     public static EchoCase add(List<EchoCase[]> data, Class<?> serverPojo)
@@ -43,6 +58,16 @@ public class EchoCase
         { ecase });
         ServerEndpoint endpoint = serverPojo.getAnnotation(ServerEndpoint.class);
         ecase.path = endpoint.value();
+        return ecase;
+    }
+
+    public static EchoCase add(List<EchoCase[]> data, Class<?> serverPojo, String path)
+    {
+        EchoCase ecase = new EchoCase();
+        ecase.serverPojo = serverPojo;
+        ecase.path = path;
+        data.add(new EchoCase[]
+        { ecase });
         return ecase;
     }
 
@@ -58,6 +83,26 @@ public class EchoCase
     public EchoCase addMessage(Object msg)
     {
         messages.add(msg);
+        return this;
+    }
+
+    public EchoCase addSplitMessage(ByteBuffer... parts)
+    {
+        int len = parts.length;
+        for (int i = 0; i < len; i++)
+        {
+            addMessage(new PartialBinary(parts[i],(i == (len-1))));
+        }
+        return this;
+    }
+
+    public EchoCase addSplitMessage(String... parts)
+    {
+        int len = parts.length;
+        for (int i = 0; i < len; i++)
+        {
+            addMessage(new PartialText(parts[i],(i == (len-1))));
+        }
         return this;
     }
 
@@ -83,13 +128,18 @@ public class EchoCase
         str.append(",messages[").append(messages.size());
         str.append("]=");
         boolean delim = false;
-        for(Object msg: messages) {
-            if(delim) {
+        for (Object msg : messages)
+        {
+            if (delim)
+            {
                 str.append(",");
             }
-            if(msg instanceof String) {
+            if (msg instanceof String)
+            {
                 str.append("'").append(msg).append("'");
-            } else {
+            }
+            else
+            {
                 str.append("(").append(msg.getClass().getName()).append(")");
                 str.append(msg);
             }

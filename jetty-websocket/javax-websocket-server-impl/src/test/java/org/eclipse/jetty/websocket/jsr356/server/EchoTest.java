@@ -33,6 +33,10 @@ import javax.websocket.WebSocketContainer;
 import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.websocket.jsr356.server.EchoCase.PartialBinary;
+import org.eclipse.jetty.websocket.jsr356.server.EchoCase.PartialText;
+import org.eclipse.jetty.websocket.jsr356.server.samples.partial.PartialTextSessionSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.partial.PartialTextSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.primitives.BooleanObjectTextSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.primitives.BooleanTextSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.primitives.ByteObjectTextSocket;
@@ -147,7 +151,7 @@ public class EchoTest
         EchoCase.add(TESTCASES,FloatObjectTextSocket.class).addMessage("42").expect("42.0000");
         EchoCase.add(TESTCASES,FloatObjectTextSocket.class).addMessage(".123").expect("0.1230");
         EchoCase.add(TESTCASES,FloatObjectTextSocket.class).addMessage("50505E-6").expect("0.0505");
-        
+
         EchoCase.add(TESTCASES,IntTextSocket.class).addMessage((int)8).expect("8");
         EchoCase.add(TESTCASES,IntTextSocket.class).addMessage((int)22).expect("22");
         EchoCase.add(TESTCASES,IntTextSocket.class).addMessage("12345678").expect("12345678");
@@ -171,17 +175,23 @@ public class EchoTest
         EchoCase.add(TESTCASES,ShortObjectTextSocket.class).addMessage((int)4).expect("4");
         EchoCase.add(TESTCASES,ShortObjectTextSocket.class).addMessage((int)987).expect("987");
         EchoCase.add(TESTCASES,ShortObjectTextSocket.class).addMessage(-32001L).expect("-32001");
-        
+
         // PathParam based
-        EchoCase.add(TESTCASES,IntParamTextSocket.class).requestPath("/echo/primitives/integer/params/5678")
-          .addMessage(1234).expect("1234|5678");
-        
+        EchoCase.add(TESTCASES,IntParamTextSocket.class).requestPath("/echo/primitives/integer/params/5678").addMessage(1234).expect("1234|5678");
+
         // Reader based
         EchoCase.add(TESTCASES,ReaderSocket.class).addMessage("Hello World").expect("Hello World");
-        EchoCase.add(TESTCASES,ReaderParamSocket.class).requestPath("/echo/streaming/readerparam/OhNo")
-          .addMessage("Hello World").expect("Hello World|OhNo");
-        EchoCase.add(TESTCASES,StringReturnReaderParamSocket.class).requestPath("/echo/streaming/readerparam2/OhMy")
-          .addMessage("Hello World").expect("Hello World|OhMy");
+        EchoCase.add(TESTCASES,ReaderParamSocket.class).requestPath("/echo/streaming/readerparam/OhNo").addMessage("Hello World").expect("Hello World|OhNo");
+        EchoCase.add(TESTCASES,StringReturnReaderParamSocket.class).requestPath("/echo/streaming/readerparam2/OhMy").addMessage("Hello World")
+                .expect("Hello World|OhMy");
+
+        // Partial message based
+        EchoCase.add(TESTCASES,PartialTextSocket.class)
+          .addSplitMessage("Saved"," by ","zero")
+          .expect("('Saved',false)(' by ',false)('zero',true)");
+        EchoCase.add(TESTCASES,PartialTextSessionSocket.class)
+          .addSplitMessage("Built"," for"," the"," future")
+          .expect("('Built',false)(' for',false)(' the',false)(' future',true)");
     }
 
     @BeforeClass
@@ -249,8 +259,29 @@ public class EchoTest
             int messageCount = 0;
             for (Object msg : testcase.messages)
             {
-                socket.sendObject(msg);
-                messageCount++;
+                if (msg instanceof PartialText)
+                {
+                    PartialText pt = (PartialText)msg;
+                    socket.sendPartialText(pt.part,pt.fin);
+                    if (pt.fin)
+                    {
+                        messageCount++;
+                    }
+                }
+                else if (msg instanceof PartialBinary)
+                {
+                    PartialBinary pb = (PartialBinary)msg;
+                    socket.sendPartialBinary(pb.part,pb.fin);
+                    if (pb.fin)
+                    {
+                        messageCount++;
+                    }
+                }
+                else
+                {
+                    socket.sendObject(msg);
+                    messageCount++;
+                }
             }
 
             // Collect Responses

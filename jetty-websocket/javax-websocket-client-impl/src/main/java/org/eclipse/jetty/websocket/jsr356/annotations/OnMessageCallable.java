@@ -28,6 +28,7 @@ import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 import org.eclipse.jetty.websocket.jsr356.EncoderFactory;
 import org.eclipse.jetty.websocket.jsr356.InitException;
 import org.eclipse.jetty.websocket.jsr356.JsrSession;
+import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
 
 public class OnMessageCallable extends JsrCallable
 {
@@ -129,6 +130,8 @@ public class OnMessageCallable extends JsrCallable
     public void init(JsrSession session)
     {
         super.init(session);
+        idxPartialMessageFlag = findIndexForRole(Role.MESSAGE_PARTIAL_FLAG);
+
         EncoderFactory.Wrapper encoderWrapper = session.getEncoderFactory().getWrapperFor(returnType);
         if (encoderWrapper != null)
         {

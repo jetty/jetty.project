@@ -51,6 +51,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
     public final OutgoingFrames outgoing;
     private final ReentrantLock msgLock = new ReentrantLock();
     private final AtomicInteger msgType = new AtomicInteger(NONE);
+    private boolean partialStarted = false;
 
     public WebSocketRemoteEndpoint(LogicalConnection connection, OutgoingFrames outgoing)
     {
@@ -172,7 +173,11 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
                     LOG.debug("sendPartialBytes({}, {})",BufferUtil.toDetailString(fragment),isLast);
                 }
                 WebSocketFrame frame = WebSocketFrame.binary().setPayload(fragment).setFin(isLast);
+                if(partialStarted) {
+                    frame.setContinuation(true);
+                }
                 blockingWrite(frame);
+                partialStarted = !isLast;
             }
             finally
             {
@@ -207,8 +212,11 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
                     LOG.debug("sendPartialString({}, {})",fragment,isLast);
                 }
                 WebSocketFrame frame = WebSocketFrame.text(fragment).setFin(isLast);
+                if(partialStarted) {
+                    frame.setContinuation(true);
+                }
                 blockingWrite(frame);
-
+                partialStarted = !isLast;
             }
             finally
             {

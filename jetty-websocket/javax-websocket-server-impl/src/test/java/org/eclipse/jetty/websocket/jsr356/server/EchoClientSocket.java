@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.jsr356.server;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import javax.websocket.ClientEndpoint;
 import javax.websocket.CloseReason;
@@ -34,11 +35,9 @@ public class EchoClientSocket extends TrackingSocket
 {
     private Session session;
 
-    @OnOpen
-    public void onOpen(Session session)
+    public void close() throws IOException
     {
-        this.session = session;
-        openLatch.countDown();
+        this.session.close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE,"Test Complete"));
     }
 
     @OnClose
@@ -49,15 +48,17 @@ public class EchoClientSocket extends TrackingSocket
         super.closeLatch.countDown();
     }
 
-    public void sendObject(Object obj) throws IOException, EncodeException
-    {
-        session.getBasicRemote().sendObject(obj);
-    }
-
     @OnError
     public void onError(Throwable t)
     {
         addError(t);
+    }
+
+    @OnOpen
+    public void onOpen(Session session)
+    {
+        this.session = session;
+        openLatch.countDown();
     }
 
     @OnMessage
@@ -66,8 +67,18 @@ public class EchoClientSocket extends TrackingSocket
         addEvent(text);
     }
 
-    public void close() throws IOException
+    public void sendObject(Object obj) throws IOException, EncodeException
     {
-        this.session.close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE,"Test Complete"));
+        session.getBasicRemote().sendObject(obj);
+    }
+
+    public void sendPartialBinary(ByteBuffer part, boolean fin) throws IOException
+    {
+        session.getBasicRemote().sendBinary(part,fin);
+    }
+
+    public void sendPartialText(String part, boolean fin) throws IOException
+    {
+        session.getBasicRemote().sendText(part,fin);
     }
 }
