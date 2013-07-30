@@ -34,6 +34,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.junit.Assert;
 
+import static org.hamcrest.Matchers.*;
 import static org.hamcrest.Matchers.is;
 
 public class SafariD00
@@ -113,6 +114,7 @@ public class SafariD00
         {
             line = br.readLine();
             // System.out.printf("RESP: %s%n",line);
+            Assert.assertThat(line, notNullValue());
             if (line.length() == 0)
             {
                 foundEnd = true;
