@@ -34,7 +34,7 @@ public class WebSocketSessionFactory implements SessionFactory
     {
         return (websocket instanceof JettyAnnotatedEventDriver) || (websocket instanceof JettyListenerEventDriver);
     }
-    
+
     @Override
     public WebSocketSession createSession(URI requestURI, EventDriver websocket, LogicalConnection connection)
     {

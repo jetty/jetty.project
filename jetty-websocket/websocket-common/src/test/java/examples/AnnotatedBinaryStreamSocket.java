@@ -35,6 +35,9 @@ public class AnnotatedBinaryStreamSocket
     @OnWebSocketMessage
     public void onBinary(InputStream stream)
     {
+        if(stream == null) { 
+            new RuntimeException("Stream cannot be null").printStackTrace(System.err);
+        }
         capture.add("onBinary(%s)",stream);
     }
 

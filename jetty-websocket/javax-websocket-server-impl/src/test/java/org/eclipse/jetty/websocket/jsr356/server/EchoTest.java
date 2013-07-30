@@ -50,6 +50,9 @@ import org.eclipse.jetty.websocket.jsr356.server.samples.primitives.LongObjectTe
 import org.eclipse.jetty.websocket.jsr356.server.samples.primitives.LongTextSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.primitives.ShortObjectTextSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.primitives.ShortTextSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.streaming.ReaderParamSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.streaming.ReaderSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.streaming.StringReturnReaderParamSocket;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -174,13 +177,11 @@ public class EchoTest
           .addMessage(1234).expect("1234|5678");
         
         // Reader based
-        /* NOT WORKING YET
         EchoCase.add(TESTCASES,ReaderSocket.class).addMessage("Hello World").expect("Hello World");
         EchoCase.add(TESTCASES,ReaderParamSocket.class).requestPath("/echo/streaming/readerparam/OhNo")
-          .addMessage("Hello World").expect("Hello World|OnNo");
+          .addMessage("Hello World").expect("Hello World|OhNo");
         EchoCase.add(TESTCASES,StringReturnReaderParamSocket.class).requestPath("/echo/streaming/readerparam2/OhMy")
           .addMessage("Hello World").expect("Hello World|OhMy");
-          */
     }
 
     @BeforeClass

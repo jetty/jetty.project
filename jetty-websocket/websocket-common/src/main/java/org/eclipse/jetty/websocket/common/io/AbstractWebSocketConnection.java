@@ -216,7 +216,13 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         this.writeBytes = new WriteBytesProvider(generator,new FlushCallback());
         this.setInputBufferSize(policy.getInputBufferSize());
     }
-
+    
+    @Override
+    public Executor getExecutor()
+    {
+        return super.getExecutor();
+    }
+    
     @Override
     public void close()
     {

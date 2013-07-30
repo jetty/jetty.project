@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.common.extensions.mux;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -70,6 +71,13 @@ public class MuxChannel implements LogicalConnection, IncomingFrames, SuspendTok
 
         this.inputClosed = new AtomicBoolean(false);
         this.outputClosed = new AtomicBoolean(false);
+    }
+    
+    @Override
+    public Executor getExecutor()
+    {
+        // TODO Auto-generated method stub
+        return null;
     }
 
     @Override

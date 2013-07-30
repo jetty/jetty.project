@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.jsr356.samples;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.websocket.api.SuspendToken;
@@ -56,6 +57,12 @@ public class DummyConnection implements LogicalConnection
 
     @Override
     public ByteBufferPool getBufferPool()
+    {
+        return null;
+    }
+
+    @Override
+    public Executor getExecutor()
     {
         return null;
     }

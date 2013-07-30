@@ -19,11 +19,13 @@
 package org.eclipse.jetty.websocket.common.io;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -42,6 +44,7 @@ public class LocalWebSocketConnection implements LogicalConnection, IncomingFram
     private static final Logger LOG = Log.getLogger(LocalWebSocketConnection.class);
     private final String id;
     private final ByteBufferPool bufferPool;
+    private final Executor executor;
     private WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
     private IncomingFrames incoming;
     private IOState ioState = new IOState();
@@ -55,12 +58,19 @@ public class LocalWebSocketConnection implements LogicalConnection, IncomingFram
     {
         this.id = id;
         this.bufferPool = new MappedByteBufferPool();
+        this.executor = new ExecutorThreadPool();
         this.ioState.addListener(this);
     }
 
     public LocalWebSocketConnection(TestName testname)
     {
         this(testname.getMethodName());
+    }
+    
+    @Override
+    public Executor getExecutor()
+    {
+        return executor;
     }
 
     @Override

@@ -25,6 +25,9 @@ import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
 
 /**
@@ -34,6 +37,7 @@ import org.eclipse.jetty.websocket.common.LogicalConnection;
  */
 public class MessageInputStream extends InputStream implements MessageAppender
 {
+    private static final Logger LOG = Log.getLogger(MessageInputStream.class);
     /**
      * Used for controlling read suspend/resume behavior if the queue is full, but the read operations haven't caught up yet.
      */
@@ -53,6 +57,11 @@ public class MessageInputStream extends InputStream implements MessageAppender
     @Override
     public void appendMessage(ByteBuffer payload, boolean isLast) throws IOException
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("appendMessage(ByteBuffer,{}): {}",isLast,BufferUtil.toDetailString(payload));
+        }
+        
         if (buffersExhausted.get())
         {
             // This indicates a programming mistake/error and must be bug fixed
@@ -102,6 +111,8 @@ public class MessageInputStream extends InputStream implements MessageAppender
     @Override
     public void messageComplete()
     {
+        LOG.debug("messageComplete()");
+        
         buffersExhausted.set(true);
         // toss an empty ByteBuffer into queue to let it drain
         try
@@ -117,6 +128,8 @@ public class MessageInputStream extends InputStream implements MessageAppender
     @Override
     public int read() throws IOException
     {
+        LOG.debug("read()");
+        
         try
         {
             if (closed.get())
@@ -143,7 +156,10 @@ public class MessageInputStream extends InputStream implements MessageAppender
         }
         catch (InterruptedException e)
         {
-            throw new IOException(e);
+            LOG.warn(e);
+            closed.set(true);
+            return -1;
+//            throw new IOException(e);
         }
     }
 

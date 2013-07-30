@@ -58,6 +58,7 @@ public class JsrSessionTest
         ClientEndpointConfig config = new EmptyClientEndpointConfig();
         DummyEndpoint websocket = new DummyEndpoint();
         SimpleEndpointMetadata metadata = new SimpleEndpointMetadata(websocket.getClass());
+        // Executor executor = null;
 
         EndpointInstance ei = new EndpointInstance(websocket,config,metadata);
 

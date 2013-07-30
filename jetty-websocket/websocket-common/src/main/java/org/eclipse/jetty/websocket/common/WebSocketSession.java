@@ -24,6 +24,7 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.MultiMap;
@@ -59,6 +60,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
     private final URI requestURI;
     private final EventDriver websocket;
     private final LogicalConnection connection;
+    private final Executor executor;
     private ExtensionFactory extensionFactory;
     private String protocolVersion;
     private Map<String, String[]> parameterMap = new HashMap<>();
@@ -79,6 +81,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
         this.requestURI = requestURI;
         this.websocket = websocket;
         this.connection = connection;
+        this.executor = connection.getExecutor();
         this.outgoingHandler = connection;
         this.incomingHandler = websocket;
 
@@ -134,8 +137,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
 
     public void dispatch(Runnable runnable)
     {
-        // TODO Auto-generated method stub
-        runnable.run();
+        executor.execute(runnable);
     }
 
     @Override

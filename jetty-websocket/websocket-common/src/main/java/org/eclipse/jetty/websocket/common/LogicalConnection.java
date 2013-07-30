@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.common;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.websocket.api.StatusCode;
@@ -63,6 +64,12 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
      * @return
      */
     ByteBufferPool getBufferPool();
+    
+    /**
+     * Get the Executor used by this connection.
+     * @return
+     */
+    Executor getExecutor();
 
     /**
      * Get the read/write idle timeout.

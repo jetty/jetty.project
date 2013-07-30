@@ -27,6 +27,7 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.CloseInfo;
+import org.eclipse.jetty.websocket.common.message.MessageAppender;
 import org.eclipse.jetty.websocket.common.message.MessageInputStream;
 import org.eclipse.jetty.websocket.common.message.MessageReader;
 import org.eclipse.jetty.websocket.common.message.SimpleBinaryMessage;
@@ -79,12 +80,13 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
             if (events.onBinary.isStreaming())
             {
                 activeMessage = new MessageInputStream(session.getConnection());
+                final MessageAppender msg = activeMessage;
                 dispatch(new Runnable()
                 {
                     @Override
                     public void run()
                     {
-                        events.onBinary.call(websocket,session,activeMessage);
+                        events.onBinary.call(websocket,session,msg);
                     }
                 });
             }
@@ -180,12 +182,13 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
             if (events.onText.isStreaming())
             {
                 activeMessage = new MessageReader(new MessageInputStream(session.getConnection()));
+                final MessageAppender msg = activeMessage;
                 dispatch(new Runnable()
                 {
                     @Override
                     public void run()
                     {
-                        events.onText.call(websocket,session,activeMessage);
+                        events.onText.call(websocket,session,msg);
                     }
                 });
             }
