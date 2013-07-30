@@ -87,6 +87,7 @@ public class WebSocketClient extends ContainerLifeCycle
     {
         this.sslContextFactory = sslContextFactory;
         this.policy = WebSocketPolicy.newClientPolicy();
+        this.bufferPool = new MappedByteBufferPool();
         this.extensionRegistry = new WebSocketExtensionFactory(policy,bufferPool);
         if(LOG.isDebugEnabled()) {
             LOG.debug("Using ZeroMasker (DEBUG)");
