@@ -23,7 +23,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -92,7 +91,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     private final Scheduler scheduler = new ScheduledExecutorScheduler();
     private final Queue<WebSocketSession> sessions = new ConcurrentLinkedQueue<>();
     private final String supportedVersions;
-    private final WebSocketPolicy basePolicy;
+    private final WebSocketPolicy defaultPolicy;
     private final EventDriverFactory eventDriverFactory;
     private final WebSocketExtensionFactory extensionFactory;
     private List<SessionFactory> sessionFactories;
@@ -116,9 +115,9 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
 
         this.registeredSocketClasses = new ArrayList<>();
 
-        this.basePolicy = policy;
-        this.eventDriverFactory = new EventDriverFactory(basePolicy);
-        this.extensionFactory = new WebSocketExtensionFactory(basePolicy,bufferPool);
+        this.defaultPolicy = policy;
+        this.eventDriverFactory = new EventDriverFactory(defaultPolicy);
+        this.extensionFactory = new WebSocketExtensionFactory(defaultPolicy,bufferPool);
         this.sessionFactories = new ArrayList<>();
         this.sessionFactories.add(new WebSocketSessionFactory());
         this.creator = this;
@@ -307,7 +306,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     @Override
     public WebSocketPolicy getPolicy()
     {
-        return basePolicy;
+        return defaultPolicy;
     }
 
     @Override

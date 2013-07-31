@@ -427,16 +427,16 @@ public class WebSocketClient extends ContainerLifeCycle
     /**
      * Set the timeout for connecting to the remote server.
      * 
-     * @param timeoutMilliseconds
+     * @param ms
      *            the timeout in milliseconds
      */
-    public void setConnectTimeout(long timeoutMilliseconds)
+    public void setConnectTimeout(long ms)
     {
-        if (timeoutMilliseconds < 0)
+        if (ms < 0)
         {
             throw new IllegalStateException("Connect Timeout cannot be negative");
         }
-        this.connectTimeout = timeoutMilliseconds;
+        this.connectTimeout = ms;
     }
 
     public void setCookieStore(CookieStore cookieStore)
@@ -469,12 +469,12 @@ public class WebSocketClient extends ContainerLifeCycle
      * <p>
      * Existing connections will not have their max idle timeout adjusted.
      * 
-     * @param milliseconds
+     * @param ms
      *            the timeout in milliseconds
      */
-    public void setMaxIdleTimeout(long milliseconds)
+    public void setMaxIdleTimeout(long ms)
     {
-        this.policy.setIdleTimeout(milliseconds);
+        this.policy.setIdleTimeout(ms);
     }
 
     public void setMaxTextMessageBufferSize(int max)

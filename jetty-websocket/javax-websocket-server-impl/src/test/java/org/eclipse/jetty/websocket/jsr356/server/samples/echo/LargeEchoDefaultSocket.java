@@ -19,27 +19,18 @@
 package org.eclipse.jetty.websocket.jsr356.server.samples.echo;
 
 import javax.websocket.OnMessage;
-import javax.websocket.OnOpen;
 import javax.websocket.Session;
+import javax.websocket.WebSocketContainer;
 import javax.websocket.server.ServerEndpoint;
 
 /**
- * Annotated echo socket
+ * Annotated echo socket (default behavior as defined from {@link WebSocketContainer#setDefaultMaxTextMessageBufferSize(int)})
  */
 @ServerEndpoint(value = "/echo/large")
-public class LargeEchoSocket
+public class LargeEchoDefaultSocket
 {
-    private Session session;
-
-    @OnOpen
-    public void open(Session session)
-    {
-        this.session = session;
-        this.session.setMaxTextMessageBufferSize(128 * 1024);
-    }
-
     @OnMessage
-    public void echo(String msg)
+    public void echo(Session session, String msg)
     {
         // reply with echo
         session.getAsyncRemote().sendText(msg);

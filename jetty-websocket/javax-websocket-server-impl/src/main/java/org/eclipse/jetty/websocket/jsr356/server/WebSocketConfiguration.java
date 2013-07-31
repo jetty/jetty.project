@@ -30,6 +30,8 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
 import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.websocket.api.WebSocketBehavior;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.DiscoveredEndpoints;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.ServerEndpointAnnotationHandler;
 import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
@@ -43,7 +45,9 @@ public class WebSocketConfiguration extends AbstractConfiguration
 
     public static ServerContainer configureContext(ServletContextHandler context)
     {
-        WebSocketUpgradeFilter filter = new WebSocketUpgradeFilter();
+        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+        
+        WebSocketUpgradeFilter filter = new WebSocketUpgradeFilter(policy);
         FilterHolder fholder = new FilterHolder(filter);
         fholder.setName("Jetty_WebSocketUpgradeFilter");
         fholder.setDisplayName("WebSocket Upgrade Filter");

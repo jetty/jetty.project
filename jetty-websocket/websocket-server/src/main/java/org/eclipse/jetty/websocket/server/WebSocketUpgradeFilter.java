@@ -35,7 +35,6 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.server.pathmap.PathMappings;
 import org.eclipse.jetty.websocket.server.pathmap.PathMappings.MappedResource;
@@ -52,9 +51,8 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
     private final WebSocketServerFactory factory;
     private PathMappings<WebSocketCreator> pathmap = new PathMappings<>();
     
-    public WebSocketUpgradeFilter()
+    public WebSocketUpgradeFilter(WebSocketPolicy policy)
     {
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
         factory = new WebSocketServerFactory(policy);
         addBean(factory,true);
     }

@@ -227,7 +227,7 @@ public class UpgradeConnection extends AbstractConnection
 
         // Initialize / Negotiate Extensions
         EventDriver websocket = connectPromise.getDriver();
-        WebSocketPolicy policy = connectPromise.getClient().getPolicy();
+        WebSocketPolicy policy = websocket.getPolicy();
 
         SessionFactory sessionFactory = connectPromise.getClient().getSessionFactory();
         WebSocketSession session = sessionFactory.createSession(request.getRequestURI(),websocket,connection);

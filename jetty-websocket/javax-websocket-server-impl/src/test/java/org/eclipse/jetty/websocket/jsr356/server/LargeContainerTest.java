@@ -29,15 +29,15 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.jsr356.server.samples.echo.LargeEchoConfiguredSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.echo.LargeEchoDefaultSocket;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 
 /**
- * Test Echo of Large messages, targeting the {@link javax.websocket.Session#setMaxTextMessageBufferSize(int)} functionality
+ * Test Echo of Large messages, targeting the {@link javax.websocket.WebSocketContainer#setDefaultMaxTextMessageBufferSize(int)} functionality
  */
-public class LargeAnnotatedTest
+public class LargeContainerTest
 {
     @Rule
     public TestingDir testdir = new TestingDir();
@@ -46,8 +46,8 @@ public class LargeAnnotatedTest
     public void testEcho() throws Exception
     {
         WSServer wsb = new WSServer(testdir,"app");
-        wsb.createWebInf();
-        wsb.copyEndpoint(LargeEchoConfiguredSocket.class);
+        wsb.copyWebInf("large-echo-config-web.xml");
+        wsb.copyEndpoint(LargeEchoDefaultSocket.class);
 
         try
         {

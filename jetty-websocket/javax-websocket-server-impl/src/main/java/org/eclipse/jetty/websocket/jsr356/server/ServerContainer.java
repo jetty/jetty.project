@@ -138,4 +138,54 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
             return metadata;
         }
     }
+
+    @Override
+    public long getDefaultAsyncSendTimeout()
+    {
+        return webSocketServerFactory.getPolicy().getAsyncWriteTimeout();
+    }
+
+    @Override
+    public int getDefaultMaxBinaryMessageBufferSize()
+    {
+        return webSocketServerFactory.getPolicy().getMaxBinaryMessageBufferSize();
+    }
+
+    @Override
+    public long getDefaultMaxSessionIdleTimeout()
+    {
+        return webSocketServerFactory.getPolicy().getIdleTimeout();
+    }
+
+    @Override
+    public int getDefaultMaxTextMessageBufferSize()
+    {
+        return webSocketServerFactory.getPolicy().getMaxTextMessageBufferSize();
+    }
+
+    @Override
+    public void setAsyncSendTimeout(long ms)
+    {
+        webSocketServerFactory.getPolicy().setAsyncWriteTimeout(ms);
+    }
+
+    @Override
+    public void setDefaultMaxBinaryMessageBufferSize(int max)
+    {
+        webSocketServerFactory.getPolicy().setMaxBinaryMessageSize(max);
+        webSocketServerFactory.getPolicy().setMaxBinaryMessageBufferSize(max);
+    }
+
+    @Override
+    public void setDefaultMaxSessionIdleTimeout(long ms)
+    {
+        webSocketServerFactory.getPolicy().setIdleTimeout(ms);
+    }
+
+    @Override
+    public void setDefaultMaxTextMessageBufferSize(int max)
+    {
+        webSocketServerFactory.getPolicy().setMaxTextMessageSize(max);
+        webSocketServerFactory.getPolicy().setMaxTextMessageBufferSize(max);
+    }
 }

@@ -306,10 +306,10 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     }
 
     @Override
-    public void setAsyncSendTimeout(long timeoutmillis)
+    public void setAsyncSendTimeout(long ms)
     {
-        client.setMaxIdleTimeout(timeoutmillis);
-        client.setAsyncWriteTimeout(timeoutmillis);
+        client.setMaxIdleTimeout(ms);
+        client.setAsyncWriteTimeout(ms);
     }
 
     @Override
@@ -320,9 +320,9 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     }
 
     @Override
-    public void setDefaultMaxSessionIdleTimeout(long timeout)
+    public void setDefaultMaxSessionIdleTimeout(long ms)
     {
-        client.setMaxIdleTimeout(timeout);
+        client.setMaxIdleTimeout(ms);
     }
 
     @Override
