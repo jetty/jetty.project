@@ -37,6 +37,7 @@ import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
@@ -165,6 +166,9 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         client.setEventDriverFactory(new JsrEventDriverFactory(client.getPolicy()));
         client.setSessionFactory(new JsrSessionFactory(this));
         addBean(client);
+
+        ShutdownThread.register(client);
+
         super.doStart();
     }
 
