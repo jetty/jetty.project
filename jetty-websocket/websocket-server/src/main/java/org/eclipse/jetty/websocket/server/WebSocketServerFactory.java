@@ -23,7 +23,9 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -47,6 +49,7 @@ import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
+import org.eclipse.jetty.websocket.api.util.QuoteUtil;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.common.SessionFactory;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
@@ -276,7 +279,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
             throw new WebSocketException("Unable to create instance of " + firstClass,e);
         }
     }
-    
+
     @Override
     protected void doStop() throws Exception
     {
@@ -326,12 +329,26 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         if (connection == null)
         {
             // no "Connection: upgrade" header present.
+            LOG.debug("No 'Connection' header found");
             return false;
         }
 
-        if (!"upgrade".equalsIgnoreCase(connection))
+        // Test for "Upgrade" token
+        boolean foundUpgradeToken = false;
+        Iterator<String> iter = QuoteUtil.splitAt(connection,",");
+        while (iter.hasNext())
         {
-            LOG.debug("Not a 'Connection: Upgrade' (was [Connection: " + connection + "])");
+            String token = iter.next();
+            if ("upgrade".equalsIgnoreCase(token))
+            {
+                foundUpgradeToken = true;
+                break;
+            }
+        }
+
+        if (!foundUpgradeToken)
+        {
+            LOG.debug("No a `Upgrade` token found in 'Connection' header (was [Connection: {}])",request.getHeader("connection"));
             return false;
         }
 

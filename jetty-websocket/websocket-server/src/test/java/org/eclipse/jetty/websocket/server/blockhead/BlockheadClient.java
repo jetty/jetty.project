@@ -115,6 +115,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames, Connecti
     private IOState ioState;
     private CountDownLatch disconnectedLatch = new CountDownLatch(1);
     private ByteBuffer remainingBuffer;
+    private String connectionValue = "Upgrade";
 
     public BlockheadClient(URI destWebsocketURI) throws URISyntaxException
     {
@@ -232,6 +233,36 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames, Connecti
         }
     }
 
+    public void expectServerDisconnect()
+    {
+        if (eof)
+        {
+            return;
+        }
+
+        try
+        {
+            int len = in.read();
+            if (len == (-1))
+            {
+                // we are disconnected
+                eof = true;
+                return;
+            }
+
+            Assert.assertThat("Expecting no data and proper socket disconnect (issued from server)",len,is(-1));
+        }
+        catch (SocketTimeoutException e)
+        {
+            LOG.warn(e);
+            Assert.fail("Expected a server initiated disconnect, instead the read timed out");
+        }
+        catch (IOException e)
+        {
+            // acceptable path
+        }
+    }
+
     public HttpResponse expectUpgradeResponse() throws IOException
     {
         HttpResponse response = readResponseHeader();
@@ -291,6 +322,11 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames, Connecti
     public void flush() throws IOException
     {
         out.flush();
+    }
+
+    public String getConnectionValue()
+    {
+        return connectionValue;
     }
 
     private List<ExtensionConfig> getExtensionConfigs(HttpResponse response)
@@ -464,36 +500,6 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames, Connecti
         }
     }
 
-    public void expectServerDisconnect()
-    {
-        if (eof)
-        {
-            return;
-        }
-
-        try
-        {
-            int len = in.read();
-            if (len == (-1))
-            {
-                // we are disconnected
-                eof = true;
-                return;
-            }
-
-            Assert.assertThat("Expecting no data and proper socket disconnect (issued from server)",len,is(-1));
-        }
-        catch (SocketTimeoutException e)
-        {
-            LOG.warn(e);
-            Assert.fail("Expected a server initiated disconnect, instead the read timed out");
-        }
-        catch (IOException e)
-        {
-            // acceptable path
-        }
-    }
-
     public int read(ByteBuffer buf) throws IOException
     {
         if (eof)
@@ -606,7 +612,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames, Connecti
         req.append("GET ").append(getRequestPath()).append(" HTTP/1.1\r\n");
         req.append("Host: ").append(getRequestHost()).append("\r\n");
         req.append("Upgrade: websocket\r\n");
-        req.append("Connection: Upgrade\r\n");
+        req.append("Connection: ").append(connectionValue).append("\r\n");
         for (String header : headers)
         {
             req.append(header);
@@ -625,6 +631,11 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames, Connecti
         req.append("Sec-WebSocket-Version: ").append(version).append("\r\n");
         req.append("\r\n");
         writeRaw(req.toString());
+    }
+
+    public void setConnectionValue(String connectionValue)
+    {
+        this.connectionValue = connectionValue;
     }
 
     public void setDebug(boolean flag)
