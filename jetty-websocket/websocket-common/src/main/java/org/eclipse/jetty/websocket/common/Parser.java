@@ -91,7 +91,11 @@ public class Parser
 
     private void assertSanePayloadLength(long len)
     {
-        LOG.debug("Payload Length: " + len);
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("Payload Length: {} - {}",len,this);
+        }
+        
         // Since we use ByteBuffer so often, having lengths over Integer.MAX_VALUE is really impossible.
         if (len > Integer.MAX_VALUE)
         {
@@ -602,7 +606,8 @@ public class Parser
     public String toString()
     {
         StringBuilder builder = new StringBuilder();
-        builder.append("Parser[");
+        builder.append("Parser@").append(Integer.toHexString(hashCode()));
+        builder.append("[");
         if (incomingFramesHandler == null)
         {
             builder.append("NO_HANDLER");
@@ -611,14 +616,11 @@ public class Parser
         {
             builder.append(incomingFramesHandler.getClass().getSimpleName());
         }
-        builder.append(",s=");
-        builder.append(state);
-        builder.append(",c=");
-        builder.append(cursor);
-        builder.append(",len=");
-        builder.append(payloadLength);
-        builder.append(",f=");
-        builder.append(frame);
+        builder.append(",s=").append(state);
+        builder.append(",c=").append(cursor);
+        builder.append(",len=").append(payloadLength);
+        builder.append(",f=").append(frame);
+        builder.append(",p=").append(policy);
         builder.append("]");
         return builder.toString();
     }

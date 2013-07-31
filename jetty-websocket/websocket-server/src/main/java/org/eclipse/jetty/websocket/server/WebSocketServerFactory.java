@@ -516,7 +516,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
 
         // Setup Session
         WebSocketSession session = createSession(request.getRequestURI(),driver,connection);
-        session.setPolicy(getPolicy().clonePolicy());
+        session.setPolicy(driver.getPolicy());
         session.setUpgradeRequest(request);
         response.setExtensions(extensionStack.getNegotiatedExtensions());
         session.setUpgradeResponse(response);

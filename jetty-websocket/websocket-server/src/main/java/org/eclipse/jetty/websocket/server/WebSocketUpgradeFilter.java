@@ -76,8 +76,6 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
             return;
         }
 
-        LOG.debug("doFilter({})",request);
-
         if ((request instanceof HttpServletRequest) && (response instanceof HttpServletResponse))
         {
             HttpServletRequest httpreq = (HttpServletRequest)request;

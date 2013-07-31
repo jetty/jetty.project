@@ -60,6 +60,7 @@ public class WebSocketConfiguration extends AbstractConfiguration
         // Create the Jetty ServerContainer implementation
         ServerContainer jettyContainer = new ServerContainer(filter);
         filter.setWebSocketServerFactoryListener(jettyContainer);
+        context.addBean(jettyContainer,true);
 
         // Store a reference to the ServerContainer per javax.websocket spec 1.0 final section 6.4 Programmatic Server Deployment
         context.setAttribute(javax.websocket.server.ServerContainer.class.getName(),jettyContainer);
