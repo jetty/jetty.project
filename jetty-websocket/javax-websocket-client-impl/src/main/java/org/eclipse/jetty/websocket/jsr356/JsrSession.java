@@ -254,7 +254,12 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
     @Override
     public String getNegotiatedSubprotocol()
     {
-        return getUpgradeResponse().getAcceptedSubProtocol();
+        String acceptedSubProtocol = getUpgradeResponse().getAcceptedSubProtocol();
+        if (acceptedSubProtocol == null)
+        {
+            return "";
+        }
+        return acceptedSubProtocol;
     }
 
     @Override
