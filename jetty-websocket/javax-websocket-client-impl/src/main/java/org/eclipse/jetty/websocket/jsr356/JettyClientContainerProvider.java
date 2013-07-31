@@ -30,7 +30,14 @@ public class JettyClientContainerProvider extends ContainerProvider
     protected WebSocketContainer getContainer()
     {
         ClientContainer container = new ClientContainer();
-        container.start();
-        return container;
+        try
+        {
+            container.start();
+            return container;
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException("Unable to start Client Container",e);
+        }
     }
 }

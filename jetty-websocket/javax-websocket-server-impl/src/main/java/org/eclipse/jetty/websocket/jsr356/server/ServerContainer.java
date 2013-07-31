@@ -38,20 +38,24 @@ import org.eclipse.jetty.websocket.jsr356.metadata.EndpointMetadata;
 import org.eclipse.jetty.websocket.jsr356.server.pathmap.WebSocketPathSpec;
 import org.eclipse.jetty.websocket.server.MappedWebSocketCreator;
 import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 
-public class ServerContainer extends ClientContainer implements javax.websocket.server.ServerContainer, WebSocketServerFactory.Listener
+public class ServerContainer extends ClientContainer implements javax.websocket.server.ServerContainer
 {
     private static final Logger LOG = Log.getLogger(ServerContainer.class);
     
     private final MappedWebSocketCreator mappedCreator;
-    private WebSocketServerFactory webSocketServletFactory;
+    private final WebSocketServerFactory webSocketServerFactory;
     private Map<Class<?>, ServerEndpointMetadata> endpointServerMetadataCache = new ConcurrentHashMap<>();
 
-    public ServerContainer(MappedWebSocketCreator creator)
+    public ServerContainer(MappedWebSocketCreator creator, WebSocketServerFactory factory)
     {
         super();
         this.mappedCreator = creator;
+        this.webSocketServerFactory = factory;
+        EventDriverFactory eventDriverFactory = this.webSocketServerFactory.getEventDriverFactory();
+        eventDriverFactory.addImplementation(new JsrServerEndpointImpl());
+        eventDriverFactory.addImplementation(new JsrEndpointImpl());
+        this.webSocketServerFactory.addSessionFactory(new JsrSessionFactory(this));
     }
 
     public EndpointInstance newClientEndpointInstance(Object endpoint, ServerEndpointConfig config, String path)
@@ -133,26 +137,5 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
 
             return metadata;
         }
-    }
-
-    public WebSocketServletFactory getWebSocketServletFactory()
-    {
-        return webSocketServletFactory;
-    }
-
-    @Override
-    public void onWebSocketServerFactoryStarted(WebSocketServerFactory factory)
-    {
-        this.webSocketServletFactory = factory;
-        EventDriverFactory eventDriverFactory = this.webSocketServletFactory.getEventDriverFactory();
-        eventDriverFactory.addImplementation(new JsrServerEndpointImpl());
-        eventDriverFactory.addImplementation(new JsrEndpointImpl());
-        this.webSocketServletFactory.addSessionFactory(new JsrSessionFactory(this));
-    }
-
-    @Override
-    public void onWebSocketServerFactoryStopped(WebSocketServerFactory factory)
-    {
-        /* do nothing */
     }
 }

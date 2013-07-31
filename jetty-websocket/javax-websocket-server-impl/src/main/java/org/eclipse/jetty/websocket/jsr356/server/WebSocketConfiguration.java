@@ -54,17 +54,16 @@ public class WebSocketConfiguration extends AbstractConfiguration
         // Store reference to the WebSocketUpgradeFilter
         context.setAttribute(WebSocketUpgradeFilter.class.getName(),filter);
         
-        // Store reference to DiscoveredEndpoints
-        context.setAttribute(DiscoveredEndpoints.class.getName(),new DiscoveredEndpoints());
-
         // Create the Jetty ServerContainer implementation
-        ServerContainer jettyContainer = new ServerContainer(filter);
-        filter.setWebSocketServerFactoryListener(jettyContainer);
-        context.addBean(jettyContainer,true);
+        ServerContainer jettyContainer = new ServerContainer(filter,filter.getFactory());
+        context.addBean(jettyContainer);
 
         // Store a reference to the ServerContainer per javax.websocket spec 1.0 final section 6.4 Programmatic Server Deployment
         context.setAttribute(javax.websocket.server.ServerContainer.class.getName(),jettyContainer);
         
+        // Store reference to DiscoveredEndpoints
+        context.setAttribute(DiscoveredEndpoints.class.getName(),new DiscoveredEndpoints());
+
         return jettyContainer;
     }
 

@@ -36,8 +36,7 @@ import javax.websocket.Extension;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
@@ -58,10 +57,8 @@ import org.eclipse.jetty.websocket.jsr356.metadata.EndpointMetadata;
  * <p>
  * This should be specific to a JVM if run in a standalone mode. or specific to a WebAppContext if running on the Jetty server.
  */
-public class ClientContainer implements WebSocketContainer
+public class ClientContainer extends ContainerLifeCycle implements WebSocketContainer
 {
-    private static final Logger LOG = Log.getLogger(ClientContainer.class);
-
     /** Tracking all primitive decoders for the container */
     private final DecoderFactory decoderFactory;
     /** Tracking all primitive encoders for the container */
@@ -159,6 +156,16 @@ public class ClientContainer implements WebSocketContainer
     {
         EndpointInstance instance = newClientEndpointInstance(endpoint,null);
         return connect(instance,path);
+    }
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        client = new WebSocketClient();
+        client.setEventDriverFactory(new JsrEventDriverFactory(client.getPolicy()));
+        client.setSessionFactory(new JsrSessionFactory(this));
+        addBean(client);
+        super.doStart();
     }
 
     public EndpointMetadata getClientEndpointMetadata(Class<?> endpoint)
@@ -319,39 +326,5 @@ public class ClientContainer implements WebSocketContainer
     {
         client.getPolicy().setMaxTextMessageSize(max);
         client.setMaxTextMessageBufferSize(max);
-    }
-
-    /**
-     * Start the container
-     */
-    public void start()
-    {
-        client = new WebSocketClient();
-        client.setEventDriverFactory(new JsrEventDriverFactory(client.getPolicy()));
-        client.setSessionFactory(new JsrSessionFactory(this));
-
-        try
-        {
-            client.start();
-        }
-        catch (Exception e)
-        {
-            LOG.warn("Unable to start Jetty WebSocketClient instance",e);
-        }
-    }
-
-    /**
-     * Stop the container
-     */
-    public void stop()
-    {
-        try
-        {
-            client.stop();
-        }
-        catch (Exception e)
-        {
-            LOG.warn("Unable to start Jetty WebSocketClient instance",e);
-        }
     }
 }

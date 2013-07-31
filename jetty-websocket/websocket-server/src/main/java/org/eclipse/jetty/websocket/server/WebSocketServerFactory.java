@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -66,13 +65,6 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
  */
 public class WebSocketServerFactory extends ContainerLifeCycle implements WebSocketCreator, WebSocketServletFactory
 {
-    public static interface Listener
-    {
-        void onWebSocketServerFactoryStarted(WebSocketServerFactory factory);
-
-        void onWebSocketServerFactoryStopped(WebSocketServerFactory factory);
-    }
-
     private static final Logger LOG = Log.getLogger(WebSocketServerFactory.class);
     private static final ThreadLocal<UpgradeContext> ACTIVE_CONTEXT = new ThreadLocal<>();
 
@@ -100,7 +92,6 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     private final WebSocketPolicy basePolicy;
     private final EventDriverFactory eventDriverFactory;
     private final WebSocketExtensionFactory extensionFactory;
-    private List<WebSocketServerFactory.Listener> listeners = new ArrayList<>();
     private List<SessionFactory> sessionFactories;
     private WebSocketCreator creator;
     private List<Class<?>> registeredSocketClasses;
@@ -197,11 +188,6 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         }
     }
 
-    public void addListener(WebSocketServerFactory.Listener listener)
-    {
-        listeners.add(listener);
-    }
-
     public void addSessionFactory(SessionFactory sessionFactory)
     {
         if (sessionFactories.contains(sessionFactory))
@@ -290,25 +276,11 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
             throw new WebSocketException("Unable to create instance of " + firstClass,e);
         }
     }
-
-    @Override
-    protected void doStart() throws Exception
-    {
-        for (WebSocketServerFactory.Listener listener : listeners)
-        {
-            listener.onWebSocketServerFactoryStarted(this);
-        }
-        super.doStart();
-    }
-
+    
     @Override
     protected void doStop() throws Exception
     {
         closeAllConnections();
-        for (WebSocketServerFactory.Listener listener : listeners)
-        {
-            listener.onWebSocketServerFactoryStopped(this);
-        }
         super.doStop();
     }
 
@@ -329,11 +301,6 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         return extensionFactory;
     }
 
-    public Collection<WebSocketServerFactory.Listener> getListeners()
-    {
-        return listeners;
-    }
-
     @Override
     public WebSocketPolicy getPolicy()
     {
@@ -343,7 +310,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     @Override
     public void init() throws Exception
     {
-        start();
+        start(); // start lifecycle
     }
 
     @Override
@@ -413,11 +380,6 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     public void register(Class<?> websocketPojo)
     {
         registeredSocketClasses.add(websocketPojo);
-    }
-
-    public void removeListener(WebSocketServerFactory.Listener listener)
-    {
-        listeners.remove(listener);
     }
 
     public boolean sessionClosed(WebSocketSession session)

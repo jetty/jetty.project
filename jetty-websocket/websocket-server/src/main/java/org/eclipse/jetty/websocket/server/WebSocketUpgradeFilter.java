@@ -46,12 +46,18 @@ import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
  * Inline Servlet Filter to capture WebSocket upgrade requests and perform path mappings to {@link WebSocketCreator} objects.
  */
 @ManagedObject("WebSocket Upgrade Filter")
-public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, Dumpable
+public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter, MappedWebSocketCreator, Dumpable
 {
     private static final Logger LOG = Log.getLogger(WebSocketUpgradeFilter.class);
+    private final WebSocketServerFactory factory;
     private PathMappings<WebSocketCreator> pathmap = new PathMappings<>();
-    private WebSocketServerFactory factory;
-    private WebSocketServerFactory.Listener listener;
+    
+    public WebSocketUpgradeFilter()
+    {
+        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+        factory = new WebSocketServerFactory(policy);
+        addBean(factory,true);
+    }
 
     @Override
     public void addMapping(PathSpec spec, WebSocketCreator creator)
@@ -153,8 +159,8 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
     {
         try
         {
-            WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
-
+            WebSocketPolicy policy = factory.getPolicy();
+            
             String max = config.getInitParameter("maxIdleTime");
             if (max != null)
             {
@@ -178,20 +184,13 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
             {
                 policy.setInputBufferSize(Integer.parseInt(max));
             }
-
-            factory = new WebSocketServerFactory(policy);
-            factory.addListener(this.listener);
-            factory.init();
+            
+            factory.start();
         }
         catch (Exception x)
         {
             throw new ServletException(x);
         }
-    }
-
-    public void setWebSocketServerFactoryListener(WebSocketServerFactory.Listener listener)
-    {
-        this.listener = listener;
     }
 
     @Override
