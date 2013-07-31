@@ -76,19 +76,6 @@ public class UpgradeRequest
             extensions.add(ExtensionConfig.parse(config));
         }
     }
-    
-    /**
-     * Get the User Principal for this request.
-     * <p>
-     * Only applicable when using UpgradeRequest from server side.
-     * 
-     * @return the user principal
-     */
-    public Principal getUserPrincipal()
-    {
-        // Server side should override to implement
-        return null;
-    }
 
     public void clearHeaders()
     {
@@ -201,6 +188,16 @@ public class UpgradeRequest
         return Collections.unmodifiableMap(parameters);
     }
 
+    public String getProtocolVersion()
+    {
+        String version = getHeader("Sec-WebSocket-Version");
+        if (version == null)
+        {
+            return "13";
+        }
+        return version;
+    }
+
     public String getQueryString()
     {
         return requestURI.getQuery();
@@ -226,6 +223,19 @@ public class UpgradeRequest
     public List<String> getSubProtocols()
     {
         return subProtocols;
+    }
+
+    /**
+     * Get the User Principal for this request.
+     * <p>
+     * Only applicable when using UpgradeRequest from server side.
+     * 
+     * @return the user principal
+     */
+    public Principal getUserPrincipal()
+    {
+        // Server side should override to implement
+        return null;
     }
 
     public boolean hasSubProtocol(String test)
