@@ -112,9 +112,24 @@ public class ClientContainer implements WebSocketContainer
         {
             return (JsrSession)futSess.get();
         }
-        catch (InterruptedException | ExecutionException e)
+        catch (InterruptedException e)
         {
             throw new IOException("Connect failure",e);
+        }
+        catch (ExecutionException e)
+        {
+            // Unwrap Actual Cause
+            Throwable cause = e.getCause();
+
+            if (cause instanceof IOException)
+            {
+                // Just rethrow
+                throw (IOException)cause;
+            }
+            else
+            {
+                throw new IOException("Connect failure",cause);
+            }
         }
     }
 
