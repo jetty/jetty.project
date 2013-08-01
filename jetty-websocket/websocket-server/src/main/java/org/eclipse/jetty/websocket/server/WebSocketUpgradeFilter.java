@@ -94,7 +94,7 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
                 {
                     LOG.debug("WebSocket Upgrade on {} has no associated endpoint",target);
                     // no match.
-                    httpresp.sendError(HttpServletResponse.SC_NOT_FOUND,"No websocket endpoint matching path: " + target);
+                    chain.doFilter(request,response);
                     return;
                 }
                 LOG.debug("WebSocket Upgrade detected on {} for endpoint {}",target,resource);
