@@ -31,7 +31,7 @@ public class JettyAnnotatedImpl implements EventDriverImpl
     public EventDriver create(Object websocket, WebSocketPolicy policy)
     {
         Class<?> websocketClass = websocket.getClass();
-        synchronized (cache)
+        synchronized (this)
         {
             JettyAnnotatedMetadata metadata = cache.get(websocketClass);
             if (metadata == null)

@@ -38,6 +38,12 @@ public class LocalWebSocketSession extends WebSocketSession
         setOutgoingHandler(outgoingCapture);
     }
 
+    @Override
+    public void dispatch(Runnable runnable)
+    {
+        runnable.run();
+    }
+
     public OutgoingFramesCapture getOutgoingCapture()
     {
         return outgoingCapture;

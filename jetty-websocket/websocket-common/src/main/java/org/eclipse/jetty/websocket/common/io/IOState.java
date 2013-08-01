@@ -21,8 +21,6 @@ package org.eclipse.jetty.websocket.common.io;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -64,12 +62,11 @@ public class IOState
     private ConnectionState state;
     private final List<ConnectionStateListener> listeners = new CopyOnWriteArrayList<>();
 
-    private final AtomicBoolean inputAvailable;
-    private final AtomicBoolean outputAvailable;
-    private final AtomicReference<CloseHandshakeSource> closeHandshakeSource;
-    private final AtomicReference<CloseInfo> closeInfo;
-
-    private final AtomicBoolean cleanClose;
+    private boolean inputAvailable;
+    private boolean outputAvailable;
+    private CloseHandshakeSource closeHandshakeSource;
+    private CloseInfo closeInfo;
+    private boolean cleanClose;
 
     /**
      * Create a new IOState, initialized to {@link ConnectionState#CONNECTING}
@@ -77,11 +74,11 @@ public class IOState
     public IOState()
     {
         this.state = ConnectionState.CONNECTING;
-        this.inputAvailable = new AtomicBoolean(false);
-        this.outputAvailable = new AtomicBoolean(false);
-        this.closeHandshakeSource = new AtomicReference<>(CloseHandshakeSource.NONE);
-        this.closeInfo = new AtomicReference<>();
-        this.cleanClose = new AtomicBoolean(false);
+        this.inputAvailable = false;
+        this.outputAvailable = false;
+        this.closeHandshakeSource = CloseHandshakeSource.NONE;
+        this.closeInfo = null;
+        this.cleanClose = false;
     }
 
     public void addListener(ConnectionStateListener listener)
@@ -107,7 +104,7 @@ public class IOState
 
     public CloseInfo getCloseInfo()
     {
-        return closeInfo.get();
+        return closeInfo;
     }
 
     public ConnectionState getConnectionState()
@@ -125,7 +122,7 @@ public class IOState
 
     public boolean isInputAvailable()
     {
-        return inputAvailable.get();
+        return inputAvailable;
     }
 
     public boolean isOpen()
@@ -135,7 +132,7 @@ public class IOState
 
     public boolean isOutputAvailable()
     {
-        return outputAvailable.get();
+        return outputAvailable;
     }
 
     private void notifyStateListeners(ConnectionState state)
@@ -154,7 +151,7 @@ public class IOState
     public void onAbnormalClose(CloseInfo close)
     {
         ConnectionState event = null;
-        synchronized (this.state)
+        synchronized (this)
         {
             if (this.state == ConnectionState.CLOSED)
             {
@@ -164,14 +161,15 @@ public class IOState
 
             if (this.state == ConnectionState.OPEN)
             {
-                this.cleanClose.set(false);
+                this.cleanClose = false;
             }
 
             this.state = ConnectionState.CLOSED;
-            this.closeInfo.compareAndSet(null,close);
-            this.inputAvailable.set(false);
-            this.outputAvailable.set(false);
-            this.closeHandshakeSource.set(CloseHandshakeSource.ABNORMAL);
+            if (closeInfo == null)
+                this.closeInfo = close;
+            this.inputAvailable = false;
+            this.outputAvailable = false;
+            this.closeHandshakeSource = CloseHandshakeSource.ABNORMAL;
             event = this.state;
         }
         notifyStateListeners(event);
@@ -200,22 +198,26 @@ public class IOState
             onOpened();
         }
 
-        synchronized (this.state)
+        synchronized (this)
         {
-            closeInfo.compareAndSet(null,close);
+            if (closeInfo == null)
+                closeInfo = close;
 
-            boolean in = inputAvailable.get();
-            boolean out = outputAvailable.get();
-            closeHandshakeSource.compareAndSet(CloseHandshakeSource.NONE,CloseHandshakeSource.LOCAL);
+            boolean in = inputAvailable;
+            boolean out = outputAvailable;
+            if (closeHandshakeSource == CloseHandshakeSource.NONE)
+            {
+                closeHandshakeSource = CloseHandshakeSource.LOCAL;
+            }
             out = false;
-            outputAvailable.set(false);
+            outputAvailable = false;
 
             LOG.debug("onCloseLocal(), input={}, output={}",in,out);
 
             if (!in && !out)
             {
                 LOG.debug("Close Handshake satisfied, disconnecting");
-                cleanClose.set(true);
+                cleanClose = true;
                 this.state = ConnectionState.CLOSED;
                 event = this.state;
             }
@@ -226,7 +228,7 @@ public class IOState
                 event = this.state;
             }
         }
-        
+
         LOG.debug("event = {}",event);
 
         // Only notify on state change events
@@ -239,13 +241,13 @@ public class IOState
             if (close.isHarsh())
             {
                 LOG.debug("Harsh close, disconnecting");
-                synchronized (this.state)
+                synchronized (this)
                 {
-                    this.state = ConnectionState.CLOSED;
-                    cleanClose.set(false);
-                    outputAvailable.set(false);
-                    inputAvailable.set(false);
-                    this.closeHandshakeSource.set(CloseHandshakeSource.ABNORMAL);
+                    state = ConnectionState.CLOSED;
+                    cleanClose = false;
+                    outputAvailable = false;
+                    inputAvailable = false;
+                    closeHandshakeSource = CloseHandshakeSource.ABNORMAL;
                     event = this.state;
                 }
                 notifyStateListeners(event);
@@ -261,7 +263,7 @@ public class IOState
     {
         LOG.debug("onCloseRemote({})",close);
         ConnectionState event = null;
-        synchronized (this.state)
+        synchronized (this)
         {
             if (this.state == ConnectionState.CLOSED)
             {
@@ -269,21 +271,25 @@ public class IOState
                 return;
             }
 
-            closeInfo.compareAndSet(null,close);
+            if (closeInfo == null)
+                closeInfo = close;
 
-            boolean in = inputAvailable.get();
-            boolean out = outputAvailable.get();
-            closeHandshakeSource.compareAndSet(CloseHandshakeSource.NONE,CloseHandshakeSource.REMOTE);
+            boolean in = inputAvailable;
+            boolean out = outputAvailable;
+            if (closeHandshakeSource == CloseHandshakeSource.NONE)
+            {
+                closeHandshakeSource = CloseHandshakeSource.REMOTE;
+            }
             in = false;
-            inputAvailable.set(false);
+            inputAvailable = false;
 
             LOG.debug("onCloseRemote(), input={}, output={}",in,out);
 
             if (!in && !out)
             {
                 LOG.debug("Close Handshake satisfied, disconnecting");
-                cleanClose.set(true);
-                this.state = ConnectionState.CLOSED;
+                cleanClose = true;
+                state = ConnectionState.CLOSED;
                 event = this.state;
             }
             else if (this.state == ConnectionState.OPEN)
@@ -315,11 +321,11 @@ public class IOState
         }
 
         ConnectionState event = null;
-        synchronized (this.state)
+        synchronized (this)
         {
             this.state = ConnectionState.CONNECTED;
-            this.inputAvailable.set(false); // cannot read (yet)
-            this.outputAvailable.set(true); // write allowed
+            inputAvailable = false; // cannot read (yet)
+            outputAvailable = true; // write allowed
             event = this.state;
         }
         notifyStateListeners(event);
@@ -332,12 +338,12 @@ public class IOState
     {
         assert (this.state == ConnectionState.CONNECTING);
         ConnectionState event = null;
-        synchronized (this.state)
+        synchronized (this)
         {
             this.state = ConnectionState.CLOSED;
-            this.cleanClose.set(false);
-            this.inputAvailable.set(false);
-            this.outputAvailable.set(false);
+            cleanClose = false;
+            inputAvailable = false;
+            outputAvailable = false;
             event = this.state;
         }
         notifyStateListeners(event);
@@ -357,11 +363,11 @@ public class IOState
         assert (this.state == ConnectionState.CONNECTED);
 
         ConnectionState event = null;
-        synchronized (this.state)
+        synchronized (this)
         {
             this.state = ConnectionState.OPEN;
-            this.inputAvailable.set(true);
-            this.outputAvailable.set(true);
+            this.inputAvailable = true;
+            this.outputAvailable = true;
             event = this.state;
         }
         notifyStateListeners(event);
@@ -375,7 +381,7 @@ public class IOState
     public void onReadEOF()
     {
         ConnectionState event = null;
-        synchronized (this.state)
+        synchronized (this)
         {
             if (this.state == ConnectionState.CLOSED)
             {
@@ -385,12 +391,13 @@ public class IOState
 
             CloseInfo close = new CloseInfo(StatusCode.NO_CLOSE,"Read EOF");
 
-            this.cleanClose.set(false);
+            this.cleanClose = false;
             this.state = ConnectionState.CLOSED;
-            this.closeInfo.compareAndSet(null,close);
-            this.inputAvailable.set(false);
-            this.outputAvailable.set(false);
-            this.closeHandshakeSource.set(CloseHandshakeSource.ABNORMAL);
+            if (closeInfo == null)
+                this.closeInfo = close;
+            this.inputAvailable = false;
+            this.outputAvailable = false;
+            this.closeHandshakeSource = CloseHandshakeSource.ABNORMAL;
             event = this.state;
         }
         notifyStateListeners(event);
@@ -398,21 +405,21 @@ public class IOState
 
     public boolean wasAbnormalClose()
     {
-        return closeHandshakeSource.get() == CloseHandshakeSource.ABNORMAL;
+        return closeHandshakeSource == CloseHandshakeSource.ABNORMAL;
     }
 
     public boolean wasCleanClose()
     {
-        return cleanClose.get();
+        return cleanClose;
     }
 
     public boolean wasLocalCloseInitiated()
     {
-        return closeHandshakeSource.get() == CloseHandshakeSource.LOCAL;
+        return closeHandshakeSource == CloseHandshakeSource.LOCAL;
     }
 
     public boolean wasRemoteCloseInitiated()
     {
-        return closeHandshakeSource.get() == CloseHandshakeSource.REMOTE;
+        return closeHandshakeSource == CloseHandshakeSource.REMOTE;
     }
 }

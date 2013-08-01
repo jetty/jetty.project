@@ -27,6 +27,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketException;
+import org.eclipse.jetty.websocket.api.util.QuoteUtil;
 
 public class EventMethod
 {
@@ -103,7 +104,7 @@ public class EventMethod
         }
         catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e)
         {
-            String err = String.format("Cannot call method %s on %s with args: %s",method,pojo,args);
+            String err = String.format("Cannot call method %s on %s with args: %s",method,pojo, QuoteUtil.join(args,","));
             throw new WebSocketException(err,e);
         }
     }
