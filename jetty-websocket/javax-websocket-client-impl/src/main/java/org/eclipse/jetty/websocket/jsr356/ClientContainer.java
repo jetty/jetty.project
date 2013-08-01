@@ -308,14 +308,15 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     @Override
     public void setAsyncSendTimeout(long ms)
     {
-        client.setMaxIdleTimeout(ms);
         client.setAsyncWriteTimeout(ms);
     }
 
     @Override
     public void setDefaultMaxBinaryMessageBufferSize(int max)
     {
+        // overall message limit (used in non-streaming)
         client.getPolicy().setMaxBinaryMessageSize(max);
+        // incoming streaming buffer size
         client.setMaxBinaryMessageBufferSize(max);
     }
 
@@ -328,7 +329,9 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     @Override
     public void setDefaultMaxTextMessageBufferSize(int max)
     {
+        // overall message limit (used in non-streaming)
         client.getPolicy().setMaxTextMessageSize(max);
+        // incoming streaming buffer size
         client.setMaxTextMessageBufferSize(max);
     }
 }

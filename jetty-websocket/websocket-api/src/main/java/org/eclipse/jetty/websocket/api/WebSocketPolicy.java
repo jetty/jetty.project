@@ -47,9 +47,7 @@ public class WebSocketPolicy
     /**
      * The maximum size of a text message buffer.
      * <p>
-     * Used primarily for stream based messaging.
-     * <p>
-     * Note: Cannot be greater than {@link #maxTextMessageSize}, or less than {@link #inputBufferSize}
+     * Used ONLY for stream based message writing.
      * <p>
      * Default: 32768 (32 K)
      */
@@ -67,9 +65,7 @@ public class WebSocketPolicy
     /**
      * The maximum size of a binary message buffer
      * <p>
-     * Used primarily for stream based messaging.
-     * <p>
-     * Note: Cannot be greater than {@link #maxBinaryMessageSize}, or less than {@link #inputBufferSize}
+     * Used ONLY for for stream based message writing
      * <p>
      * Default: 32768 (32 K)
      */
@@ -104,14 +100,6 @@ public class WebSocketPolicy
     public WebSocketPolicy(WebSocketBehavior behavior)
     {
         this.behavior = behavior;
-    }
-
-    private void assertGreaterThan(String name, long size, String otherName, long otherSize)
-    {
-        if (size < otherSize)
-        {
-            throw new IllegalArgumentException(String.format("%s [%d] must be greater than %s [%d]",name,size,otherName,otherSize));
-        }
     }
 
     private void assertLessThan(String name, long size, String otherName, long otherSize)
@@ -207,7 +195,7 @@ public class WebSocketPolicy
     }
 
     /**
-     * Get the maximum size of a binary message buffer
+     * Get the maximum size of a binary message buffer (for streaming writing)
      * <p>
      * Note: Cannot be greater than {@link #getMaxBinaryMessageSize()}
      * 
@@ -231,7 +219,7 @@ public class WebSocketPolicy
     }
 
     /**
-     * Get the maximum size of a text message buffer.
+     * Get the maximum size of a text message buffer (for streaming writing)
      * <p>
      * Note: Cannot be greater than {@link #maxTextMessageSize}
      * 
@@ -298,9 +286,7 @@ public class WebSocketPolicy
     /**
      * The maximum size of a binary message buffer.
      * <p>
-     * Used primarily for stream based messaging.
-     * <p>
-     * Note: Cannot be greater than {@link #getMaxBinaryMessageSize()} or less than {@link #getInputBufferSize()}
+     * Used ONLY for stream based message writing.
      * 
      * @param size
      *            the maximum size of the binary message buffer
@@ -308,8 +294,6 @@ public class WebSocketPolicy
     public void setMaxBinaryMessageBufferSize(int size)
     {
         assertPositive("MaxBinaryMessageBufferSize",size);
-        assertLessThan("MaxBinaryMessageBufferSize",size,"MaxBinaryMessageSize",maxBinaryMessageSize);
-        assertGreaterThan("MaxBinaryMessageBufferSize",size,"InputBufferSize",inputBufferSize);
 
         this.maxBinaryMessageBufferSize = size;
     }
@@ -325,7 +309,6 @@ public class WebSocketPolicy
     public void setMaxBinaryMessageSize(int size)
     {
         assertPositive("MaxBinaryMessageSize",size);
-        assertGreaterThan("MaxBinaryMessageSize",size,"MaxBinaryMessageBufferSize",maxBinaryMessageBufferSize);
 
         this.maxBinaryMessageSize = size;
     }
@@ -333,9 +316,7 @@ public class WebSocketPolicy
     /**
      * The maximum size of a text message buffer.
      * <p>
-     * Used primarily for stream based messaging.
-     * <p>
-     * Note: Cannot be greater than {@link #getMaxTextMessageSize()} or less than {@link #getInputBufferSize()}
+     * Used ONLY for stream based message writing.
      * 
      * @param size
      *            the maximum size of the text message buffer
@@ -343,8 +324,6 @@ public class WebSocketPolicy
     public void setMaxTextMessageBufferSize(int size)
     {
         assertPositive("MaxTextMessageBufferSize",size);
-        assertLessThan("MaxTextMessageBufferSize",size,"MaxTextMessageSize",maxTextMessageSize);
-        assertGreaterThan("MaxTextMessageBufferSize",size,"InputBufferSize",inputBufferSize);
 
         this.maxTextMessageBufferSize = size;
     }
@@ -360,7 +339,6 @@ public class WebSocketPolicy
     public void setMaxTextMessageSize(int size)
     {
         assertPositive("MaxTextMessageSize",size);
-        assertGreaterThan("MaxTextMessageSize",size,"MaxTextMessageBufferSize",maxTextMessageBufferSize);
 
         this.maxTextMessageSize = size;
     }

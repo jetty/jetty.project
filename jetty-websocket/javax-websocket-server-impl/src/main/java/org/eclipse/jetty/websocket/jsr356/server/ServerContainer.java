@@ -148,7 +148,7 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     @Override
     public int getDefaultMaxBinaryMessageBufferSize()
     {
-        return webSocketServerFactory.getPolicy().getMaxBinaryMessageBufferSize();
+        return webSocketServerFactory.getPolicy().getMaxBinaryMessageSize();
     }
 
     @Override
@@ -160,7 +160,7 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     @Override
     public int getDefaultMaxTextMessageBufferSize()
     {
-        return webSocketServerFactory.getPolicy().getMaxTextMessageBufferSize();
+        return webSocketServerFactory.getPolicy().getMaxTextMessageSize();
     }
 
     @Override
@@ -172,7 +172,9 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     @Override
     public void setDefaultMaxBinaryMessageBufferSize(int max)
     {
+        // overall message limit (used in non-streaming)
         webSocketServerFactory.getPolicy().setMaxBinaryMessageSize(max);
+        // incoming streaming buffer size
         webSocketServerFactory.getPolicy().setMaxBinaryMessageBufferSize(max);
     }
 
@@ -185,7 +187,9 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     @Override
     public void setDefaultMaxTextMessageBufferSize(int max)
     {
+        // overall message limit (used in non-streaming)
         webSocketServerFactory.getPolicy().setMaxTextMessageSize(max);
+        // incoming streaming buffer size 
         webSocketServerFactory.getPolicy().setMaxTextMessageBufferSize(max);
     }
 }
