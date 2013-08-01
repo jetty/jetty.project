@@ -173,7 +173,7 @@ public class ClientUpgradeRequest extends UpgradeRequest
         // Other headers
         for (String key : getHeaders().keySet())
         {
-            if (FORBIDDEN_HEADERS.contains(key.toLowerCase()))
+            if (FORBIDDEN_HEADERS.contains(key))
             {
                 LOG.warn("Skipping forbidden header - {}",key);
                 continue; // skip

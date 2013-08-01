@@ -20,10 +20,10 @@ package org.eclipse.jetty.websocket.api;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.util.QuoteUtil;
@@ -33,13 +33,13 @@ public class UpgradeResponse
     public static final String SEC_WEBSOCKET_PROTOCOL = "Sec-WebSocket-Protocol";
     private int statusCode;
     private String statusReason;
-    private Map<String, List<String>> headers = new HashMap<>();
+    private Map<String, List<String>> headers = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     private List<ExtensionConfig> extensions = new ArrayList<>();
     private boolean success = false;
 
     public void addHeader(String name, String value)
     {
-        String key = name.toLowerCase();
+        String key = name;
         List<String> values = headers.get(key);
         if (values == null)
         {
@@ -115,7 +115,7 @@ public class UpgradeResponse
 
     public List<String> getHeaders(String name)
     {
-        return headers.get(name.toLowerCase());
+        return headers.get(name);
     }
 
     public int getStatusCode()
@@ -188,7 +188,7 @@ public class UpgradeResponse
     {
         List<String> values = new ArrayList<>();
         values.add(value);
-        headers.put(name.toLowerCase(),values);
+        headers.put(name,values);
     }
 
     public void setStatusCode(int statusCode)

@@ -25,8 +25,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
+import java.util.TreeMap;
 
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.util.QuoteUtil;
@@ -37,7 +37,7 @@ public class UpgradeRequest
     private List<String> subProtocols = new ArrayList<>();
     private List<ExtensionConfig> extensions = new ArrayList<>();
     private List<HttpCookie> cookies = new ArrayList<>();
-    private Map<String, List<String>> headers = new HashMap<>();
+    private Map<String, List<String>> headers = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     private Map<String, List<String>> parameters = new HashMap<>();
     private Object session;
     private String httpVersion;
@@ -94,7 +94,7 @@ public class UpgradeRequest
 
     public String getHeader(String name)
     {
-        List<String> values = headers.get(name.toLowerCase(Locale.ENGLISH));
+        List<String> values = headers.get(name);
         // no value list
         if (values == null)
         {
@@ -128,7 +128,7 @@ public class UpgradeRequest
 
     public int getHeaderInt(String name)
     {
-        List<String> values = headers.get(name.toLowerCase(Locale.ENGLISH));
+        List<String> values = headers.get(name);
         // no value list
         if (values == null)
         {
@@ -267,14 +267,14 @@ public class UpgradeRequest
 
     public void setHeader(String name, List<String> values)
     {
-        headers.put(name.toLowerCase(Locale.ENGLISH),values);
+        headers.put(name,values);
     }
 
     public void setHeader(String name, String value)
     {
         List<String> values = new ArrayList<>();
         values.add(value);
-        setHeader(name.toLowerCase(Locale.ENGLISH),values);
+        setHeader(name,values);
     }
 
     public void setHeaders(Map<String, List<String>> headers)

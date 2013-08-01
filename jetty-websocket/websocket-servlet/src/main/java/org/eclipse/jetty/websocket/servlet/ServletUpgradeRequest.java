@@ -86,12 +86,7 @@ public class ServletUpgradeRequest extends UpgradeRequest
         while (headerNames.hasMoreElements())
         {
             String name = headerNames.nextElement();
-            Enumeration<String> valuesEnum = request.getHeaders(name);
-            List<String> values = new ArrayList<>();
-            while (valuesEnum.hasMoreElements())
-            {
-                values.add(valuesEnum.nextElement());
-            }
+            List<String> values = Collections.list(request.getHeaders(name));
             setHeader(name,values);
         }
 

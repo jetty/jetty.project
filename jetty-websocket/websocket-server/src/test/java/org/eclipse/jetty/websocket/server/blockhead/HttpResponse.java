@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.TreeMap;
 
 import org.eclipse.jetty.websocket.common.io.http.HttpResponseHeaderParseListener;
 
@@ -29,13 +30,13 @@ public class HttpResponse implements HttpResponseHeaderParseListener
 {
     private int statusCode;
     private String statusReason;
-    private Map<String, String> headers = new HashMap<>();
+    private Map<String, String> headers = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     private ByteBuffer remainingBuffer;
 
     @Override
     public void addHeader(String name, String value)
     {
-        headers.put(name.toLowerCase(Locale.ENGLISH),value);
+        headers.put(name,value);
     }
 
     public String getExtensionsHeader()
@@ -45,7 +46,7 @@ public class HttpResponse implements HttpResponseHeaderParseListener
 
     public String getHeader(String name)
     {
-        return headers.get(name.toLowerCase(Locale.ENGLISH));
+        return headers.get(name);
     }
 
     public ByteBuffer getRemainingBuffer()
