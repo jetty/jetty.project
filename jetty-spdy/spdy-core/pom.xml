@@ -6,9 +6,9 @@
         <version>8.1.13-SNAPSHOT</version>
     </parent>
 
-	<modelVersion>4.0.0</modelVersion>
-	<artifactId>spdy-core</artifactId>
-	<name>Jetty :: SPDY :: Core</name>
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>spdy-core</artifactId>
+  <name>Jetty :: SPDY :: Core</name>
   <url>http://www.eclipse.org/jetty</url>
     <dependencies>
         <dependency>
@@ -16,21 +16,21 @@
             <artifactId>jetty-util</artifactId>
             <version>${project.version}</version>
         </dependency>
-		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.hamcrest</groupId>
-			<artifactId>hamcrest-all</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.mockito</groupId>
-			<artifactId>mockito-core</artifactId>
-			<scope>test</scope>
-		</dependency>
+        <dependency>
+          <groupId>junit</groupId>
+          <artifactId>junit</artifactId>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>org.hamcrest</groupId>
+          <artifactId>hamcrest-library</artifactId>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>org.mockito</groupId>
+          <artifactId>mockito-core</artifactId>
+          <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>

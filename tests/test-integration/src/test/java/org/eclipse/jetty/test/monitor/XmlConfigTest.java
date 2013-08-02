@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.test.monitor;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.io.IOException;
 import java.util.Random;
@@ -30,7 +30,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.monitor.JMXMonitor;
-import org.eclipse.jetty.toolchain.test.JettyDistro;
+import org.eclipse.jetty.test.support.JettyDistro;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
