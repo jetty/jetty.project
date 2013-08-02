@@ -95,6 +95,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     private String[] __dftProtectedTargets = {"/web-inf", "/meta-inf"};
 
+  
     public static String[] DEFAULT_CONFIGURATION_CLASSES =
     {
         "org.eclipse.jetty.webapp.WebInfConfiguration",
@@ -1402,6 +1403,32 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     /* ------------------------------------------------------------ */
     public class Context extends ServletContextHandler.Context
     {
+       
+        /* ------------------------------------------------------------ */
+        @Override
+        public void checkListener(Class<? extends EventListener> listener) throws IllegalStateException
+        {
+            try
+            {
+                super.checkListener(listener);
+            }
+            catch (IllegalArgumentException e)
+            {
+                //not one of the standard servlet listeners, check our extended session listener types
+                boolean ok = false;
+                for (Class l:SessionHandler.SESSION_LISTENER_TYPES)
+                {
+                    if (l.isAssignableFrom(listener))
+                    {
+                        ok = true;
+                        break;
+                    }
+                }
+                if (!ok)
+                    throw new IllegalArgumentException("Inappropriate listener type "+listener.getName());
+            }
+        }
+
         /* ------------------------------------------------------------ */
         @Override
         public URL getResource(String path) throws MalformedURLException
@@ -1447,7 +1474,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
                 return servletContext;
             }
         }
-        
         
     }
 

@@ -197,14 +197,14 @@ public class AnnotationTest extends HttpServlet
             out.println("<pre>");
             out.println("initParams={@WebInitParam(name=\"fromAnnotation\", value=\"xyz\")}");
             out.println("</pre>");
-            out.println("<br/><b>Result: "+("xyz".equals(config.getInitParameter("fromAnnotation"))? "<span class=\"pass\">PASS": "<span class=\"fail\">FAIL")+"</span>");
+            out.println("<p><b>Result: "+("xyz".equals(config.getInitParameter("fromAnnotation"))? "<span class=\"pass\">PASS": "<span class=\"fail\">FAIL")+"</span></p>");
 
             out.println("<h2>Init Params from web-fragment</h2>");
             out.println("<pre>");
             out.println("extra1=123, extra2=345");
             out.println("</pre>");
             boolean fragInitParamResult = "123".equals(config.getInitParameter("extra1")) && "345".equals(config.getInitParameter("extra2"));
-            out.println("<br/><b>Result: "+(fragInitParamResult? "<span class=\"pass\">PASS": "<span class=\"fail\">FAIL")+"</span>");
+            out.println("<p><b>Result: "+(fragInitParamResult? "<span class=\"pass\">PASS": "<span class=\"fail\">FAIL")+"</span></p>");
 
 
              __HandlesTypes = Arrays.asList( "javax.servlet.GenericServlet", 
@@ -221,7 +221,7 @@ public class AnnotationTest extends HttpServlet
              out.println("<pre>");
              out.println("@HandlesTypes({javax.servlet.Servlet.class, Foo.class})");
              out.println("</pre>");
-             out.print("<br/><b>Result: ");
+             out.print("<p><b>Result: ");
              List<Class> classes = (List<Class>)config.getServletContext().getAttribute("com.acme.Foo");
              List<String> classNames = new ArrayList<String>();
              if (classes != null)
@@ -241,19 +241,28 @@ public class AnnotationTest extends HttpServlet
              }
              else
                  out.print("<br/><span class=\"fail\">FAIL</span> (No such attribute com.acme.Foo)");
-             out.println("</b>");
+             out.println("</b></p>");
 
             out.println("<h2>Complete Servlet Registration</h2>");
             Boolean complete = (Boolean)config.getServletContext().getAttribute("com.acme.AnnotationTest.complete");
-            out.println("<br/><b>Result: "+(complete.booleanValue()?"<span class=\"pass\">PASS":"<span class=\"fail\">FAIL")+"</span></b>");
+            out.println("<p><b>Result: "+(complete.booleanValue()?"<span class=\"pass\">PASS":"<span class=\"fail\">FAIL")+"</span></b></p>");
             
             out.println("<h2>ServletContextListener Programmatic Registration from ServletContainerInitializer</h2>");
             Boolean programmaticListener = (Boolean)config.getServletContext().getAttribute("com.acme.AnnotationTest.listenerTest");
-            out.println("<br/><b>Result: "+(programmaticListener.booleanValue()?"<span class=\"pass\">PASS":"<span class=\"fail\">FAIL")+"</span></b>");
+            out.println("<p><b>Result: "+(programmaticListener.booleanValue()?"<span class=\"pass\">PASS":"<span class=\"fail\">FAIL")+"</span></b></p>");
             
             out.println("<h2>ServletContextListener Programmatic Registration Prevented from ServletContextListener</h2>");
             Boolean programmaticListenerPrevention = (Boolean)config.getServletContext().getAttribute("com.acme.AnnotationTest.listenerRegoTest");
-            out.println("<br/><b>Result: "+(programmaticListenerPrevention.booleanValue()?"<span class=\"pass\">PASS":"<span class=\"fail\">FAIL")+"</span></b>");
+            out.println("<p><b>Result: "+(programmaticListenerPrevention.booleanValue()?"<span class=\"pass\">PASS":"<span class=\"fail\">FAIL")+"</span></b></p>");
+            
+            out.println("<h2>ServletContextListener Registration Prevented from ServletContextListener</h2>");
+            Boolean webListenerPrevention = (Boolean)config.getServletContext().getAttribute("com.acme.AnnotationTest.sclFromSclRegoTest");
+            out.println("<p><b>Result: "+(webListenerPrevention.booleanValue()?"<span class=\"pass\">PASS":"<span class=\"fail\">FAIL")+"</span></b></p>");
+            
+            out.println("<h2>Invalid Type for Listener Detection</h2>");
+            Boolean badListener = (Boolean)config.getServletContext().getAttribute("com.acme.AnnotationTest.invalidListenerRegoTest");
+            out.println("<p><b>Result: "+(badListener.booleanValue()?"<span class=\"pass\">PASS":"<span class=\"fail\">FAIL")+"</span></b></p>");
+            
             
             out.println("<h2>@PostConstruct Callback</h2>");
             out.println("<pre>");
@@ -261,7 +270,7 @@ public class AnnotationTest extends HttpServlet
             out.println("private void myPostConstructMethod ()");
             out.println("{}"); 
             out.println("</pre>");
-            out.println("<br/><b>Result: "+postConstructResult+"</b>");
+            out.println("<p><b>Result: "+postConstructResult+"</b></p>");
            
             
             out.println("<h2>@Resource Injection for DataSource</h2>");    
@@ -272,8 +281,8 @@ public class AnnotationTest extends HttpServlet
             out.println("myDS=ds;");
             out.println("}");
             out.println("</pre>");
-            out.println("<br/><b>Result: "+dsResult+"</b>");
-            out.println("<br/><b>JNDI Lookup Result: "+dsLookupResult+"</b>");
+            out.println("<p><b>Result: "+dsResult+"</b>");
+            out.println("<br/><b>JNDI Lookup Result: "+dsLookupResult+"</b></p>");
 
             
             out.println("<h2>@Resource Injection for env-entry </h2>");
@@ -283,19 +292,20 @@ public class AnnotationTest extends HttpServlet
             out.println("@Resource(name=\"minAmount\")");
             out.println("private Double minAmount;");
             out.println("</pre>");
-            out.println("<br/><b>Result: "+envResult+": "+(maxAmount.compareTo(new Double(55))==0?" <span class=\"pass\">PASS":" <span class=\"fail\">FAIL")+"</span></b>");     
+            out.println("<p><b>Result: "+envResult+": "+(maxAmount.compareTo(new Double(55))==0?" <span class=\"pass\">PASS":" <span class=\"fail\">FAIL")+"</span></b>");     
             out.println("<br/><b>JNDI Lookup Result: "+envLookupResult+"</b>");
             out.println("<br/><b>Result: "+envResult2+": "+(minAmount.compareTo(new Double("0.99"))==0?" <span class=\"pass\">PASS":" <span class=\"fail\">FAIL")+"</span></b>");     
             out.println("<br/><b>JNDI Lookup Result: "+envLookupResult2+"</b>");
             out.println("<br/><b>Result: "+envResult3+": "+(avgAmount.compareTo(new Double("1.25"))==0?" <span class=\"pass\">PASS":" <span class=\"fail\">FAIL")+"</span></b>");     
-            out.println("<br/><b>JNDI Lookup Result: "+envLookupResult3+"</b>");          
+            out.println("<br/><b>JNDI Lookup Result: "+envLookupResult3+"</b></p>");     
+            
             out.println("<h2>@Resource Injection for UserTransaction </h2>");
             out.println("<pre>");
             out.println("@Resource(mappedName=\"UserTransaction\")");
             out.println("private UserTransaction myUserTransaction;");
             out.println("</pre>");
-            out.println("<br/><b>Result: "+txResult+"</b>");
-            out.println("<br/><b>JNDI Lookup Result: "+txLookupResult+"</b>");
+            out.println("<p><b>Result: "+txResult+"</b>");
+            out.println("<br/><b>JNDI Lookup Result: "+txLookupResult+"</b></p>");
 
             out.println("</body>");            
             out.println("</html>");

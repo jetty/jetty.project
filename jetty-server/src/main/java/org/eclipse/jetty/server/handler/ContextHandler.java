@@ -40,6 +40,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
+
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterRegistration;
@@ -61,6 +62,9 @@ import javax.servlet.SessionTrackingMode;
 import javax.servlet.descriptor.JspConfigDescriptor;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSessionAttributeListener;
+import javax.servlet.http.HttpSessionIdListener;
+import javax.servlet.http.HttpSessionListener;
 
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.ClassLoaderDump;
@@ -103,10 +107,16 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 {
     public static int SERVLET_MAJOR_VERSION=3;
     public static int SERVLET_MINOR_VERSION=0;
+    public static final Class[] SERVLET_LISTENER_TYPES = new Class[] {ServletContextListener.class, 
+                                                                      ServletContextAttributeListener.class,
+                                                                      ServletRequestListener.class,
+                                                                      ServletRequestAttributeListener.class};
+
+    public static final int DEFAULT_LISTENER_TYPE_INDEX = 1;
+    public static final int EXTENDED_LISTENER_TYPE_INDEX = 0;
+
 
     final private static String __unimplmented="Unimplemented - use org.eclipse.jetty.servlet.ServletContextHandler";
-
-
 
     private static final Logger LOG = Log.getLogger(ContextHandler.class);
 
@@ -1721,6 +1731,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     public class Context extends NoContext
     {
         protected boolean _enabled = true; //whether or not the dynamic API is enabled for callers
+        protected boolean _extendedListenerTypes = false;
+  
 
         /* ------------------------------------------------------------ */
         protected Context()
@@ -2125,6 +2137,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             try
             {
                 Class<? extends EventListener> clazz = _classLoader==null?Loader.loadClass(ContextHandler.class,className):_classLoader.loadClass(className);
+                checkListener(clazz);
                 addListener(clazz);
             }
             catch (ClassNotFoundException e)
@@ -2138,6 +2151,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         {
             if (!_enabled)
                 throw new UnsupportedOperationException();
+
+            checkListener(t.getClass());
+                       
             ContextHandler.this.addEventListener(t);
             ContextHandler.this.addProgrammaticListener(t);
         }
@@ -2148,6 +2164,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             if (!_enabled)
                 throw new UnsupportedOperationException();
 
+            checkListener(listenerClass);
+            
             try
             {
                 EventListener e = createListener(listenerClass);
@@ -2173,6 +2191,34 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             }
         }
 
+        
+        public void checkListener (Class<? extends EventListener> listener) throws IllegalStateException
+        {
+            boolean ok = false;
+            int startIndex = (isExtendedListenerTypes()?EXTENDED_LISTENER_TYPE_INDEX:DEFAULT_LISTENER_TYPE_INDEX);
+            for (int i=startIndex;i<SERVLET_LISTENER_TYPES.length;i++)
+            {
+                if (SERVLET_LISTENER_TYPES[i].isAssignableFrom(listener))
+                {
+                    ok = true;
+                    break;
+                }
+            }
+            if (!ok)
+                throw new IllegalArgumentException("Inappropriate listener class "+listener.getName());
+        }
+
+        public void setExtendedListenerTypes (boolean extended)
+        {
+           _extendedListenerTypes = extended;
+        }
+        
+       public boolean isExtendedListenerTypes()
+       {
+           return _extendedListenerTypes;
+       }
+        
+        
         @Override
         public ClassLoader getClassLoader()
         {
@@ -2210,7 +2256,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         {
             return _enabled;
         }
-
+        
+      
 
         public <T> T createInstance (Class<T> clazz) throws Exception
         {

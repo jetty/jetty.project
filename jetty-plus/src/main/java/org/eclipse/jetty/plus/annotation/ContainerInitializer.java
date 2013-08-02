@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import javax.servlet.ServletContainerInitializer;
+import javax.servlet.ServletContextListener;
 
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -101,11 +102,12 @@ public class ContainerInitializer
                     for (String s : _applicableTypeNames)
                         classes.add(Loader.loadClass(context.getClass(), s));
                 }
-
+                context.getServletContext().setExtendedListenerTypes(true);
                 _target.onStartup(classes, context.getServletContext());
             }
             finally
-            {
+            { 
+                context.getServletContext().setExtendedListenerTypes(false);
                 Thread.currentThread().setContextClassLoader(oldLoader);
             }
         }
