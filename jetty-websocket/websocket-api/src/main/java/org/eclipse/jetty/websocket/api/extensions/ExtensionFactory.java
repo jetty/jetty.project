@@ -34,7 +34,10 @@ public abstract class ExtensionFactory implements Iterable<Class<? extends Exten
         availableExtensions = new HashMap<>();
         for (Extension ext : extensionLoader)
         {
-            availableExtensions.put(ext.getName(),ext.getClass());
+            if (ext != null)
+            {
+                availableExtensions.put(ext.getName(),ext.getClass());
+            }
         }
     }
 

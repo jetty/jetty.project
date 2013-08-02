@@ -18,20 +18,11 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import java.util.EnumSet;
-
-import javax.servlet.DispatcherType;
-
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
-import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
 import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.eclipse.jetty.websocket.api.WebSocketBehavior;
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.DiscoveredEndpoints;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.ServerEndpointAnnotationHandler;
 import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
@@ -41,22 +32,9 @@ import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
  */
 public class WebSocketConfiguration extends AbstractConfiguration
 {
-    private static final Logger LOG = Log.getLogger(WebSocketConfiguration.class);
-
     public static ServerContainer configureContext(ServletContextHandler context)
     {
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
-        
-        WebSocketUpgradeFilter filter = new WebSocketUpgradeFilter(policy);
-        FilterHolder fholder = new FilterHolder(filter);
-        fholder.setName("Jetty_WebSocketUpgradeFilter");
-        fholder.setDisplayName("WebSocket Upgrade Filter");
-        String pathSpec = "/*";
-        context.addFilter(fholder,pathSpec,EnumSet.of(DispatcherType.REQUEST));
-        LOG.debug("Adding {} mapped to {} to {}",filter,pathSpec,context);
-
-        // Store reference to the WebSocketUpgradeFilter
-        context.setAttribute(WebSocketUpgradeFilter.class.getName(),filter);
+        WebSocketUpgradeFilter filter = WebSocketUpgradeFilter.configureContext(context);
         
         // Create the Jetty ServerContainer implementation
         ServerContainer jettyContainer = new ServerContainer(filter,filter.getFactory());

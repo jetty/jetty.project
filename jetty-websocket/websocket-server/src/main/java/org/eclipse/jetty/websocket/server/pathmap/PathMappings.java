@@ -142,6 +142,11 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
     {
         return mappings;
     }
+    
+    public void reset()
+    {
+        mappings.clear();
+    }
 
     public MappedResource<E> getMatch(String path)
     {

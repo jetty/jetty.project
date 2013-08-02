@@ -19,6 +19,9 @@
 package org.eclipse.jetty.websocket.server;
 
 import java.io.IOException;
+import java.util.EnumSet;
+
+import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -28,12 +31,15 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.servlet.FilterHolder;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.server.pathmap.PathMappings;
 import org.eclipse.jetty.websocket.server.pathmap.PathMappings.MappedResource;
@@ -47,6 +53,25 @@ import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter, MappedWebSocketCreator, Dumpable
 {
     private static final Logger LOG = Log.getLogger(WebSocketUpgradeFilter.class);
+    
+    public static WebSocketUpgradeFilter configureContext(ServletContextHandler context)
+    {
+        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+
+        WebSocketUpgradeFilter filter = new WebSocketUpgradeFilter(policy);
+        FilterHolder fholder = new FilterHolder(filter);
+        fholder.setName("Jetty_WebSocketUpgradeFilter");
+        fholder.setDisplayName("WebSocket Upgrade Filter");
+        String pathSpec = "/*";
+        context.addFilter(fholder,pathSpec,EnumSet.of(DispatcherType.REQUEST));
+        LOG.debug("Adding {} mapped to {} to {}",filter,pathSpec,context);
+
+        // Store reference to the WebSocketUpgradeFilter
+        context.setAttribute(WebSocketUpgradeFilter.class.getName(),filter);
+
+        return filter;
+    }
+    
     private final WebSocketServerFactory factory;
     private final PathMappings<WebSocketCreator> pathmap = new PathMappings<>();
 
@@ -66,7 +91,7 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
     public void destroy()
     {
         factory.cleanup();
-        pathmap.getMappings().clear();
+        pathmap.reset();
         super.destroy();
     }
 
