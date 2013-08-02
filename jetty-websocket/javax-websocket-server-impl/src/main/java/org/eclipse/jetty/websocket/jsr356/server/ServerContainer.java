@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.jsr356.server;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
 import javax.websocket.DeploymentException;
 import javax.websocket.Endpoint;
 import javax.websocket.server.ServerEndpoint;
@@ -42,10 +41,10 @@ import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
 public class ServerContainer extends ClientContainer implements javax.websocket.server.ServerContainer
 {
     private static final Logger LOG = Log.getLogger(ServerContainer.class);
-    
+
     private final MappedWebSocketCreator mappedCreator;
     private final WebSocketServerFactory webSocketServerFactory;
-    private Map<Class<?>, ServerEndpointMetadata> endpointServerMetadataCache = new ConcurrentHashMap<>();
+    private final Map<Class<?>, ServerEndpointMetadata> endpointServerMetadataCache = new ConcurrentHashMap<>();
 
     public ServerContainer(MappedWebSocketCreator creator, WebSocketServerFactory factory)
     {
@@ -56,6 +55,13 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
         eventDriverFactory.addImplementation(new JsrServerEndpointImpl());
         eventDriverFactory.addImplementation(new JsrEndpointImpl());
         this.webSocketServerFactory.addSessionFactory(new JsrSessionFactory(this));
+    }
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        endpointServerMetadataCache.clear();
+        super.doStop();
     }
 
     public EndpointInstance newClientEndpointInstance(Object endpoint, ServerEndpointConfig config, String path)
@@ -189,7 +195,7 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     {
         // overall message limit (used in non-streaming)
         webSocketServerFactory.getPolicy().setMaxTextMessageSize(max);
-        // incoming streaming buffer size 
+        // incoming streaming buffer size
         webSocketServerFactory.getPolicy().setMaxTextMessageBufferSize(max);
     }
 }

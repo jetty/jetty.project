@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.server;
 
 import java.io.IOException;
-
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -49,8 +48,8 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
 {
     private static final Logger LOG = Log.getLogger(WebSocketUpgradeFilter.class);
     private final WebSocketServerFactory factory;
-    private PathMappings<WebSocketCreator> pathmap = new PathMappings<>();
-    
+    private final PathMappings<WebSocketCreator> pathmap = new PathMappings<>();
+
     public WebSocketUpgradeFilter(WebSocketPolicy policy)
     {
         factory = new WebSocketServerFactory(policy);
@@ -67,8 +66,10 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
     public void destroy()
     {
         factory.cleanup();
+        pathmap.getMappings().clear();
+        super.destroy();
     }
-    
+
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
     {
@@ -124,7 +125,6 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
 
         // not an Upgrade request
         chain.doFilter(request,response);
-        return;
     }
 
     @Override
@@ -158,7 +158,7 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
         try
         {
             WebSocketPolicy policy = factory.getPolicy();
-            
+
             String max = config.getInitParameter("maxIdleTime");
             if (max != null)
             {
@@ -182,7 +182,7 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
             {
                 policy.setInputBufferSize(Integer.parseInt(max));
             }
-            
+
             factory.start();
         }
         catch (Exception x)
