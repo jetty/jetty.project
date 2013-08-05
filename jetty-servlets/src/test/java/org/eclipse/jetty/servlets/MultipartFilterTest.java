@@ -703,7 +703,6 @@ public class MultipartFilterTest
         assertTrue(response.getContent().contains("aaaa,bbbbb"));
     }
     
-    @Test
     public void testContentTypeWithCharSet() throws Exception
     {
         // generated and parsed test
@@ -733,6 +732,39 @@ public class MultipartFilterTest
         assertTrue(response.getContent().indexOf("brown cow")>=0);
     }
     
+    
+    @Test
+    public void testBufferOverflowNoCRLF () throws Exception
+    {
+        String boundary="XyXyXy";
+        // generated and parsed test
+        HttpTester request = new HttpTester();
+        HttpTester response = new HttpTester();
+        tester.addServlet(BoundaryServlet.class,"/testb");
+        tester.setAttribute("fileName", "abc");
+        tester.setAttribute("desc", "123");
+        tester.setAttribute("title", "ttt");
+        request.setMethod("POST");
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host","tester");
+        request.setURI("/context/testb");
+        request.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
+
+        String content = "--XyXyXy";
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        baos.write(content.getBytes());
+
+        for (int i=0; i< 8500; i++) //create content that will overrun default buffer size of BufferedInputStream
+        {
+            baos.write('a');
+        }
+        request.setContent(baos.toString());
+
+        response.parse(tester.getResponses(request.generate()));
+        assertTrue(response.getContent().contains("Buffer size exceeded"));
+        assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, response.getStatus());
+    }
 
     /*
      * see the testParameterMap test
