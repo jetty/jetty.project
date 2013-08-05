@@ -22,6 +22,7 @@ import java.io.IOException;
 
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
+import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -92,13 +93,16 @@ public class RequestLogHandler extends HandlerWrapper
         }
         finally
         {
-            if (baseRequest.getHttpChannelState().isAsync())
+            if (_requestLog != null && baseRequest.getDispatcherType().equals(DispatcherType.REQUEST))
             {
-                if (baseRequest.getHttpChannelState().isInitial())
-                    baseRequest.getAsyncContext().addListener(_listener);
+                if (baseRequest.getHttpChannelState().isAsync())
+                {
+                    if (baseRequest.getHttpChannelState().isInitial())
+                        baseRequest.getAsyncContext().addListener(_listener);
+                }
+                else
+                    _requestLog.log(baseRequest, (Response)response);
             }
-            else
-                _requestLog.log(baseRequest, (Response)response);
         }
     }
 
