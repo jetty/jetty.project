@@ -169,7 +169,7 @@
             </configuration>
           </execution>
           <execution>
-            <id>ban-junit.jar</id>
+            <id>ban-junit-dep.jar</id>
             <goals>
               <goal>enforce</goal>
             </goals>
@@ -177,10 +177,10 @@
               <rules>
                 <bannedDependencies>
                   <excludes>
-                    <exclude>junit:junit:*:jar</exclude>
+                    <exclude>junit:junit-dep:*:jar</exclude>
                   </excludes>
                   <searchTransitive>true</searchTransitive>
-                  <message>We use junit-dep.jar, not junit.jar (as the standard junit.jar aggregates too many 3rd party libs inside of it)</message>
+                  <message>We use junit.jar, not junit-dep.jar (as of junit 4.11, hamcrest is no longer embedded)</message>
                 </bannedDependencies>
               </rules>
             </configuration>

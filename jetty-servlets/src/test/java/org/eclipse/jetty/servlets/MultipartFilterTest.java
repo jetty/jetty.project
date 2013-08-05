@@ -738,8 +738,8 @@ public class MultipartFilterTest
     {
         String boundary="XyXyXy";
         // generated and parsed test
-        HttpTester request = new HttpTester();
-        HttpTester response = new HttpTester();
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
         tester.addServlet(BoundaryServlet.class,"/testb");
         tester.setAttribute("fileName", "abc");
         tester.setAttribute("desc", "123");
@@ -761,7 +761,7 @@ public class MultipartFilterTest
         }
         request.setContent(baos.toString());
 
-        response.parse(tester.getResponses(request.generate()));
+        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
         assertTrue(response.getContent().contains("Buffer size exceeded"));
         assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, response.getStatus());
     }
