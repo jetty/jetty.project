@@ -521,7 +521,35 @@ public class MultiPartInputStreamTest extends TestCase
         assertThat(baos.toString("UTF-8"), is("Other")); 
     }
     
-  
+
+    public void testBufferOverflowNoCRLF () throws Exception
+    {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        baos.write("--AaB03x".getBytes());
+        for (int i=0; i< 8500; i++) //create content that will overrun default buffer size of BufferedInputStream
+        {
+            baos.write('a');
+        }
+        
+        MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
+        MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(baos.toByteArray()), 
+                                                             _contentType,
+                                                             config,
+                                                             _tmpDir);
+        mpis.setDeleteOnExit(true);
+        try
+        {
+            mpis.getParts();
+            fail ("Multipart buffer overrun");
+        }
+        catch (IOException e)
+        {
+            assertTrue(e.getMessage().startsWith("Buffer size exceeded"));
+        }
+
+    }
+    
+    
     public void testCharsetEncoding () throws Exception
     {
         String contentType = "multipart/form-data; boundary=TheBoundary; charset=ISO-8859-1";

@@ -49,6 +49,10 @@ public class ReadLineInputStream extends BufferedInputStream
         while (true)
         {
             int b=super.read();
+            
+            if (markpos < 0)
+                throw new IOException("Buffer size exceeded: no line terminator");
+            
             if (b==-1)
             {
                 int m=markpos;
