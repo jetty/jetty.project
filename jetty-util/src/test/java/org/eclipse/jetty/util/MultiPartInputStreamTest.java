@@ -18,17 +18,8 @@
 
 package org.eclipse.jetty.util;
 
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -530,6 +521,34 @@ public class MultiPartInputStreamTest
     }
     
     @Test
+    public void testBufferOverflowNoCRLF () throws Exception
+    {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        baos.write("--AaB03x".getBytes());
+        for (int i=0; i< 8500; i++) //create content that will overrun default buffer size of BufferedInputStream
+        {
+            baos.write('a');
+        }
+        
+        MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
+        MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(baos.toByteArray()), 
+                                                             _contentType,
+                                                             config,
+                                                             _tmpDir);
+        mpis.setDeleteOnExit(true);
+        try
+        {
+            mpis.getParts();
+            fail ("Multipart buffer overrun");
+        }
+        catch (IOException e)
+        {
+            assertTrue(e.getMessage().startsWith("Buffer size exceeded"));
+        }
+
+    }
+    
+    
     public void testCharsetEncoding () throws Exception
     {
         String contentType = "multipart/form-data; boundary=TheBoundary; charset=ISO-8859-1";
