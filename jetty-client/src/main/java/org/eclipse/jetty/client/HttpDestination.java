@@ -24,7 +24,6 @@ import java.net.URI;
 import java.nio.channels.AsynchronousCloseException;
 import java.util.List;
 import java.util.Queue;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
@@ -38,6 +37,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -66,7 +66,7 @@ public abstract class HttpDestination implements Destination, Closeable, Dumpabl
         this.host = host;
         this.address = new Address(host, port);
 
-        this.exchanges = new LinkedBlockingQueue<>(client.getMaxRequestsQueuedPerDestination());
+        this.exchanges = new BlockingArrayQueue<>(client.getMaxRequestsQueuedPerDestination());
 
         this.requestNotifier = new RequestNotifier(client);
         this.responseNotifier = new ResponseNotifier(client);

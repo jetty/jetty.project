@@ -43,6 +43,7 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.client.util.PathContentProvider;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -66,8 +67,8 @@ public class HttpRequest implements Request
     private String scheme;
     private String path;
     private String query;
-    private String method;
-    private HttpVersion version;
+    private String method = HttpMethod.GET.asString();
+    private HttpVersion version = HttpVersion.HTTP_1_1;
     private long idleTimeout;
     private long timeout;
     private ContentProvider content;
@@ -91,6 +92,11 @@ public class HttpRequest implements Request
         extractParams(query);
         this.uri = buildURI(true);
         followRedirects(client.isFollowRedirects());
+        idleTimeout = client.getIdleTimeout();
+        HttpField acceptEncodingField = client.getAcceptEncodingField();
+        if (acceptEncodingField != null)
+            headers.put(acceptEncodingField);
+        headers.put(client.getUserAgentField());
     }
 
     @Override
@@ -134,8 +140,7 @@ public class HttpRequest implements Request
     @Override
     public Request method(HttpMethod method)
     {
-        this.method = method.asString();
-        return this;
+        return method(method.asString());
     }
 
     @Override
@@ -195,7 +200,7 @@ public class HttpRequest implements Request
     @Override
     public Request version(HttpVersion version)
     {
-        this.version = version;
+        this.version = Objects.requireNonNull(version);
         return this;
     }
 

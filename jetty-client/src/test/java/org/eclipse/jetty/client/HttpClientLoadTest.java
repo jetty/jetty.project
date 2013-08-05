@@ -19,7 +19,6 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
-import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -51,6 +50,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.Scheduler;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -73,9 +73,27 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
         client.setMaxConnectionsPerDestination(32768);
         client.setMaxRequestsQueuedPerDestination(1024 * 1024);
         client.setDispatchIO(false);
+        client.setStrictEventOrdering(false);
 
         Random random = new Random();
+        // At least 25k requests to warmup properly (use -XX:+PrintCompilation to verify JIT activity)
+        int runs = 1;
         int iterations = 500;
+        for (int i = 0; i < runs; ++i)
+        {
+            run(random, iterations);
+        }
+
+        // Re-run after warmup
+        iterations = 50_000;
+        for (int i = 0; i < runs; ++i)
+        {
+            run(random, iterations);
+        }
+    }
+
+    private void run(Random random, int iterations) throws InterruptedException
+    {
         CountDownLatch latch = new CountDownLatch(iterations);
         List<String> failures = new ArrayList<>();
 
@@ -84,7 +102,7 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
 
         // Dumps the state of the client if the test takes too long
         final Thread testThread = Thread.currentThread();
-        client.getScheduler().schedule(new Runnable()
+        Scheduler.Task task = client.getScheduler().schedule(new Runnable()
         {
             @Override
             public void run()
@@ -108,9 +126,11 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
         for (int i = 0; i < iterations; ++i)
         {
             test(random, latch, failures);
+//            test("http", "localhost", "GET", false, false, 64 * 1024, false, latch, failures);
         }
         Assert.assertTrue(latch.await(iterations, TimeUnit.SECONDS));
         long end = System.nanoTime();
+        task.cancel();
         long elapsed = TimeUnit.NANOSECONDS.toMillis(end - begin);
         logger.info("{} requests in {} ms, {} req/s", iterations, elapsed, elapsed > 0 ? iterations * 1000 / elapsed : -1);
 
@@ -122,34 +142,44 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
 
     private void test(Random random, final CountDownLatch latch, final List<String> failures) throws InterruptedException
     {
-        int maxContentLength = 64 * 1024;
-
         // Choose a random destination
         String host = random.nextBoolean() ? "localhost" : "127.0.0.1";
-        URI uri = URI.create(scheme + "://" + host + ":" + connector.getLocalPort());
-        Request request = client.newRequest(uri);
-
         // Choose a random method
         HttpMethod method = random.nextBoolean() ? HttpMethod.GET : HttpMethod.POST;
-        request.method(method);
 
         boolean ssl = HttpScheme.HTTPS.is(scheme);
 
         // Choose randomly whether to close the connection on the client or on the server
+        boolean clientClose = false;
         if (!ssl && random.nextBoolean())
+            clientClose = true;
+        boolean serverClose = false;
+        if (!ssl && random.nextBoolean())
+            serverClose = true;
+
+        int maxContentLength = 64 * 1024;
+        int contentLength = random.nextInt(maxContentLength) + 1;
+
+        test(scheme, host, method.asString(), clientClose, serverClose, contentLength, true, latch, failures);
+    }
+
+    private void test(String scheme, String host, String method, boolean clientClose, boolean serverClose, int contentLength, final boolean checkContentLength, final CountDownLatch latch, final List<String> failures) throws InterruptedException
+    {
+        Request request = client.newRequest(host, connector.getLocalPort())
+                .scheme(scheme)
+                .method(method);
+
+        if (clientClose)
             request.header(HttpHeader.CONNECTION, "close");
-        else if (!ssl && random.nextBoolean())
+        else if (serverClose)
             request.header("X-Close", "true");
 
-        int contentLength = random.nextInt(maxContentLength) + 1;
         switch (method)
         {
-            case GET:
-                // Randomly ask the server to download data upon this GET request
-                if (random.nextBoolean())
-                    request.header("X-Download", String.valueOf(contentLength));
+            case "GET":
+                request.header("X-Download", String.valueOf(contentLength));
                 break;
-            case POST:
+            case "POST":
                 request.header("X-Upload", String.valueOf(contentLength));
                 request.content(new BytesContentProvider(new byte[contentLength]));
                 break;
@@ -163,15 +193,19 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
             @Override
             public void onHeaders(Response response)
             {
-                String content = response.getHeaders().get("X-Content");
-                if (content != null)
-                    contentLength.set(Integer.parseInt(content));
+                if (checkContentLength)
+                {
+                    String content = response.getHeaders().get("X-Content");
+                    if (content != null)
+                        contentLength.set(Integer.parseInt(content));
+                }
             }
 
             @Override
             public void onContent(Response response, ByteBuffer content)
             {
-                contentLength.addAndGet(-content.remaining());
+                if (checkContentLength)
+                    contentLength.addAndGet(-content.remaining());
             }
 
             @Override
@@ -182,8 +216,10 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
                     result.getFailure().printStackTrace();
                     failures.add("Result failed " + result);
                 }
-                if (contentLength.get() != 0)
+
+                if (checkContentLength && contentLength.get() != 0)
                     failures.add("Content length mismatch " + contentLength);
+
                 requestLatch.countDown();
                 latch.countDown();
             }

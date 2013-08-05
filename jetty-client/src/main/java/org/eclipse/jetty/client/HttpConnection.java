@@ -22,7 +22,6 @@ import java.net.HttpCookie;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.api.Authentication;
 import org.eclipse.jetty.client.api.Connection;
@@ -82,22 +81,10 @@ public abstract class HttpConnection implements Connection
 
     protected void normalizeRequest(Request request)
     {
-        if (request.getMethod() == null)
-            request.method(HttpMethod.GET);
-
-        if (request.getVersion() == null)
-            request.version(HttpVersion.HTTP_1_1);
-
-        if (request.getIdleTimeout() <= 0)
-            request.idleTimeout(client.getIdleTimeout(), TimeUnit.MILLISECONDS);
-
         String method = request.getMethod();
         HttpVersion version = request.getVersion();
         HttpFields headers = request.getHeaders();
         ContentProvider content = request.getContent();
-
-        if (request.getAgent() == null)
-            headers.put(client.getUserAgentField());
 
         // Make sure the path is there
         String path = request.getPath();
@@ -155,12 +142,5 @@ public abstract class HttpConnection implements Connection
         Authentication.Result authnResult = client.getAuthenticationStore().findAuthenticationResult(authenticationURI);
         if (authnResult != null)
             authnResult.apply(request);
-
-        if (!headers.containsKey(HttpHeader.ACCEPT_ENCODING.asString()))
-        {
-            HttpField acceptEncodingField = client.getAcceptEncodingField();
-            if (acceptEncodingField != null)
-                headers.put(acceptEncodingField);
-        }
     }
 }

@@ -122,7 +122,7 @@ public class HttpClient extends ContainerLifeCycle
     private volatile int maxConnectionsPerDestination = 64;
     private volatile int maxRequestsQueuedPerDestination = 1024;
     private volatile int requestBufferSize = 4096;
-    private volatile int responseBufferSize = 4096;
+    private volatile int responseBufferSize = 16384;
     private volatile int maxRedirects = 8;
     private volatile SocketAddress bindAddress;
     private volatile long connectTimeout = 15000;

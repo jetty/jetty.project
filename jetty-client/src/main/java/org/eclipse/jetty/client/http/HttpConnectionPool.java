@@ -19,7 +19,9 @@
 package org.eclipse.jetty.client.http;
 
 import java.io.IOException;
+import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.client.api.Connection;
@@ -39,7 +41,7 @@ public class HttpConnectionPool implements Dumpable
     private final Destination destination;
     private final int maxConnections;
     private final Promise<Connection> connectionPromise;
-    private final BlockingQueue<Connection> idleConnections;
+    private final BlockingDeque<Connection> idleConnections;
     private final BlockingQueue<Connection> activeConnections;
 
     public HttpConnectionPool(Destination destination, int maxConnections, Promise<Connection> connectionPromise)
@@ -47,7 +49,7 @@ public class HttpConnectionPool implements Dumpable
         this.destination = destination;
         this.maxConnections = maxConnections;
         this.connectionPromise = connectionPromise;
-        this.idleConnections = new BlockingArrayQueue<>(maxConnections);
+        this.idleConnections = new LinkedBlockingDeque<>(maxConnections);
         this.activeConnections = new BlockingArrayQueue<>(maxConnections);
     }
 
@@ -110,7 +112,7 @@ public class HttpConnectionPool implements Dumpable
 
     private Connection acquireIdleConnection()
     {
-        Connection connection = idleConnections.poll();
+        Connection connection = idleConnections.pollFirst();
         if (connection != null)
             activate(connection);
         return connection;
@@ -134,7 +136,8 @@ public class HttpConnectionPool implements Dumpable
     {
         if (activeConnections.remove(connection))
         {
-            if (idleConnections.offer(connection))
+            // Make sure we use "hot" connections first
+            if (idleConnections.offerFirst(connection))
             {
                 LOG.debug("Connection idle {}", connection);
                 return true;
@@ -147,7 +150,7 @@ public class HttpConnectionPool implements Dumpable
         return false;
     }
 
-    public void remove(Connection connection)
+    public boolean remove(Connection connection)
     {
         boolean removed = activeConnections.remove(connection);
         removed |= idleConnections.remove(connection);
@@ -156,6 +159,7 @@ public class HttpConnectionPool implements Dumpable
             int pooled = connectionCount.decrementAndGet();
             LOG.debug("Connection removed {} - pooled: {}", connection, pooled);
         }
+        return removed;
     }
 
     public boolean isActive(Connection connection)
