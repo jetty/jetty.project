@@ -69,25 +69,28 @@ public class RequestLogHandler extends HandlerWrapper
         }
         finally
         {
-            if (continuation.isAsync())
+            if (_requestLog != null && baseRequest.getDispatcherType().equals(DispatcherType.REQUEST))
             {
-                if (continuation.isInitial())
-                    continuation.addContinuationListener(new ContinuationListener()
-                    {
-                        
-                        public void onTimeout(Continuation continuation)
+                if (continuation.isAsync())
+                {
+                    if (continuation.isInitial())
+                        continuation.addContinuationListener(new ContinuationListener()
                         {
-                            
-                        }
-                        
-                        public void onComplete(Continuation continuation)
-                        {
-                            _requestLog.log(baseRequest, (Response)response);
-                        }
-                    });
+
+                            public void onTimeout(Continuation continuation)
+                            {
+
+                            }
+
+                            public void onComplete(Continuation continuation)
+                            {
+                                _requestLog.log(baseRequest, (Response)response);
+                            }
+                        });
+                }
+                else
+                    _requestLog.log(baseRequest, (Response)response);
             }
-            else
-                _requestLog.log(baseRequest, (Response)response);
         }
     }
 
