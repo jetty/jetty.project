@@ -22,7 +22,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 
 /**
- * Wraps the exposed {@link WriteCallback} API with a Jetty {@link Callback}.
+ * Wraps the exposed {@link WriteCallback} WebSocket API with a Jetty {@link Callback}.
  * <p>
  * We don't expose the jetty {@link Callback} object to the webapp, as that makes things complicated for the WebAppContext's Classloader.
  */
