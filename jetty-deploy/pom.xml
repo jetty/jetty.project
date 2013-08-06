@@ -92,12 +92,5 @@
       <version>${project.version}</version>
       <optional>true</optional>
     </dependency>
-    <!--
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-websocket</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency> -->
   </dependencies>
 </project>
