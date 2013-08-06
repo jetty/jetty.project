@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.jsr356.decoders;
 
+import java.io.InputStream;
+import java.io.Reader;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.websocket.jsr356.MessageType;
@@ -57,5 +59,12 @@ public class PrimitiveDecoderMetadataSet extends DecoderMetadataSet
         msgType = MessageType.BINARY;
         register(ByteBuffer.class,ByteBufferDecoder.class,msgType,streamed);
         register(byte[].class,ByteArrayDecoder.class,msgType,streamed);
+
+        // STREAMING based
+        streamed = true;
+        msgType = MessageType.TEXT;
+        register(Reader.class,ReaderDecoder.class,msgType,streamed);
+        msgType = MessageType.BINARY;
+        register(InputStream.class,InputStreamDecoder.class,msgType,streamed);
     }
 }
