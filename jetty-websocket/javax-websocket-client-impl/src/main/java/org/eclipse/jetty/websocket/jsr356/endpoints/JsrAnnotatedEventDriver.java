@@ -214,6 +214,19 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver implements E
     }
 
     @Override
+    public void onPong(ByteBuffer buffer)
+    {
+        try
+        {
+            events.callPong(jsrsession.getAsyncRemote(),websocket,buffer);
+        }
+        catch (DecodeException | IOException e)
+        {
+            onFatalError(e);
+        }
+    }
+
+    @Override
     public void onReader(Reader reader)
     {
         try

@@ -140,8 +140,13 @@ public abstract class AbstractEventDriver implements IncomingFrames, EventDriver
                     {
                         pongBuf = ByteBuffer.allocate(0);
                     }
-                    onPong(pongBuf);
+                    onPing(frame.getPayload());
                     session.getRemote().sendPong(pongBuf);
+                    break;
+                }
+                case OpCode.PONG:
+                {
+                    onPong(frame.getPayload());
                     break;
                 }
                 case OpCode.BINARY:
@@ -192,6 +197,12 @@ public abstract class AbstractEventDriver implements IncomingFrames, EventDriver
 
     @Override
     public void onPong(ByteBuffer buffer)
+    {
+        /* TODO: provide annotation in future */
+    }
+    
+    @Override
+    public void onPing(ByteBuffer buffer)
     {
         /* TODO: provide annotation in future */
     }

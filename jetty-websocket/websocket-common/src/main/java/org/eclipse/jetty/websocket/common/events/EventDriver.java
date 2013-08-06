@@ -51,6 +51,8 @@ public interface EventDriver extends IncomingFrames
 
     public void onInputStream(InputStream stream);
 
+    public void onPing(ByteBuffer buffer);
+    
     public void onPong(ByteBuffer buffer);
 
     public void onReader(Reader reader);
