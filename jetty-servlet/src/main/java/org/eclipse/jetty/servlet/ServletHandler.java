@@ -538,18 +538,10 @@ public class ServletHandler extends ScopedHandler
                 }
                 else
                     LOG.warn(th);
-                while (th instanceof ServletException)
-                {
-                    Throwable cause=((ServletException)th).getRootCause();
-                    if (cause==null)
-                        break;
-                    th=cause;
-                }
             }
             // handle or log exception
             else if (th instanceof EofException)
                 throw (EofException)th;
-
             else if (LOG.isDebugEnabled())
             {
                 LOG.warn(request.getRequestURI(), th);
@@ -580,7 +572,7 @@ public class ServletHandler extends ScopedHandler
                     response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             }
             else
-                LOG.debug("Response already committed for handling "+th);
+                LOG.debug("Response already committed",th);
         }
         catch(Error e)
         {

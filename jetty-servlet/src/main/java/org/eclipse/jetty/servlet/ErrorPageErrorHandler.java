@@ -66,6 +66,9 @@ public class ErrorPageErrorHandler extends ErrorHandler
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
+        
+        
+        
         String method = request.getMethod();
         if (!HttpMethod.GET.is(method) && !HttpMethod.POST.is(method) && !HttpMethod.HEAD.is(method))
         {
@@ -75,25 +78,26 @@ public class ErrorPageErrorHandler extends ErrorHandler
         if (_errorPages!=null)
         {
             String error_page= null;
-            Class<?> exClass= (Class<?>)request.getAttribute(Dispatcher.ERROR_EXCEPTION_TYPE);
+            
+            
+            Throwable th= (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
 
-            if (ServletException.class.equals(exClass))
+            // Walk the cause hierarchy
+            while (error_page == null && th != null )
             {
+                Class<?> exClass=th.getClass();
                 error_page= (String)_errorPages.get(exClass.getName());
-                if (error_page == null)
+                
+                // walk the inheritance hierarchy
+                while (error_page == null)
                 {
-                    Throwable th= (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
-                    while (th instanceof ServletException)
-                        th= ((ServletException)th).getRootCause();
-                    if (th != null)
-                        exClass= th.getClass();
+                    exClass= exClass.getSuperclass();
+                    if (exClass==null)
+                        break;
+                    error_page= (String)_errorPages.get(exClass.getName());
                 }
-            }
-
-            while (error_page == null && exClass != null )
-            {
-                error_page= (String)_errorPages.get(exClass.getName());
-                exClass= exClass.getSuperclass();
+                
+                th=(th instanceof ServletException)?((ServletException)th).getRootCause():null;
             }
 
             if (error_page == null)
@@ -121,7 +125,7 @@ public class ErrorPageErrorHandler extends ErrorHandler
                 }
             }
             
-            //try new servlet 3.0 global error page
+            //try servlet 3.x global error page
             if (error_page == null)
             {
                 error_page = _errorPages.get(GLOBAL_ERROR_PAGE);

@@ -102,8 +102,8 @@ public class ErrorPageTest
         assertThat(response,Matchers.containsString("HTTP/1.1 500 Server Error"));
         assertThat(response,Matchers.containsString("ERROR_PAGE: /TestException"));
         assertThat(response,Matchers.containsString("ERROR_CODE: 500"));
-        assertThat(response,Matchers.containsString("ERROR_EXCEPTION: java.lang.IllegalStateException"));
-        assertThat(response,Matchers.containsString("ERROR_EXCEPTION_TYPE: class java.lang.IllegalStateException"));
+        assertThat(response,Matchers.containsString("ERROR_EXCEPTION: javax.servlet.ServletException: java.lang.IllegalStateException"));
+        assertThat(response,Matchers.containsString("ERROR_EXCEPTION_TYPE: class javax.servlet.ServletException"));
         assertThat(response,Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$FailServlet-1"));
         assertThat(response,Matchers.containsString("ERROR_REQUEST_URI: /fail/exception"));
     }
