@@ -243,7 +243,7 @@ public class EchoTest
         System.err.println(testcase);
     }
 
-    @Test
+    @Test(timeout=1000)
     public void testEcho() throws Exception
     {
         EchoClientSocket socket = new EchoClientSocket();

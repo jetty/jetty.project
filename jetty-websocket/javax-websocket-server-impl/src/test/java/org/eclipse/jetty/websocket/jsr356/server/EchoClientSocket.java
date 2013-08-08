@@ -51,7 +51,11 @@ public class EchoClientSocket extends TrackingSocket
     @OnError
     public void onError(Throwable t)
     {
-        addError(t);
+        if(t == null) {
+            addError(new NullPointerException("Throwable should not be null"));
+        } else {
+            addError(t);
+        }
     }
 
     @OnOpen
