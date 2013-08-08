@@ -22,11 +22,13 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 
 import org.eclipse.jetty.annotations.AnnotationParser.DiscoverableAnnotationHandler;
 import org.eclipse.jetty.annotations.AnnotationParser.Value;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.Test;
 
 public class TestAnnotationParser
@@ -161,5 +163,15 @@ public class TestAnnotationParser
 
         parser.registerHandler(new MultiAnnotationHandler());
         parser.parse(classNames, null);
+    }
+    
+    
+    @Test
+    public void testHiddenFilesInJar () throws Exception
+    {
+        File badClassesJar = MavenTestingUtils.getTestResourceFile("bad-classes.jar");
+        AnnotationParser parser = new AnnotationParser();
+        parser.parse(badClassesJar.toURI(), null);
+        //only the valid classes inside bad-classes.jar should be parsed. If any invalid classes are parsed and exception would be thrown here
     }
 }

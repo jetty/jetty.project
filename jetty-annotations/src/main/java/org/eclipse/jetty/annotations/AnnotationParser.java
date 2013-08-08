@@ -753,7 +753,7 @@ public class AnnotationParser
     public void parseDir (Resource dir, ClassNameResolver resolver)
     throws Exception
     {
-        if (!dir.isDirectory() || !dir.exists())
+        if (!dir.isDirectory() || !dir.exists() || dir.getName().startsWith("."))
             return;
 
         if (LOG.isDebugEnabled()) {LOG.debug("Scanning dir {}", dir);};
@@ -767,7 +767,7 @@ public class AnnotationParser
                 if (res.isDirectory())
                     parseDir(res, resolver);
                 String name = res.getName();
-                if (name.endsWith(".class"))
+                if (isValidClassFileName(name))
                 {
                     if ((resolver == null)|| (!resolver.isExcluded(name) && (!isParsed(name) || resolver.shouldOverride(name))))
                     {
@@ -812,8 +812,12 @@ public class AnnotationParser
             {
                 try
                 {
+                    //skip directories
+                    if (entry.isDirectory())
+                        return;
+                    
                     String name = entry.getName();
-                    if (name.toLowerCase(Locale.ENGLISH).endsWith(".class"))
+                    if (isValidClassFileName(name))
                     {
                         String shortName =  name.replace('/', '.').substring(0,name.length()-6);
                         if ((resolver == null)
@@ -930,28 +934,33 @@ public class AnnotationParser
                 JarEntry entry = jar_in.getNextJarEntry();
                 while (entry!=null)
                 {                   
-                    try
+                    //skip directories
+                    if (!entry.isDirectory())
                     {
-                        String name = entry.getName();
-                        if (name.toLowerCase(Locale.ENGLISH).endsWith(".class"))
+                        try
                         {
-                            String shortName =  name.replace('/', '.').substring(0,name.length()-6);
+                            String name = entry.getName();
 
-                            if ((resolver == null)
-                                 ||
-                                (!resolver.isExcluded(shortName) && (!isParsed(shortName) || resolver.shouldOverride(shortName))))
+                            //skip any class files that are in a hidden directory (ie dirname starts with .) 
+                            if (isValidClassFileName(name))
                             {
-                                Resource clazz = Resource.newResource("jar:"+uri+"!/"+name);
-                                if (LOG.isDebugEnabled()) {LOG.debug("Scanning class from jar {}", clazz);};
-                                scanClass(clazz.getInputStream());
+                                String shortName =  name.replace('/', '.').substring(0,name.length()-6);
+
+                                if ((resolver == null)
+                                        ||
+                                        (!resolver.isExcluded(shortName) && (!isParsed(shortName) || resolver.shouldOverride(shortName))))
+                                {
+                                    Resource clazz = Resource.newResource("jar:"+uri+"!/"+name);
+                                    if (LOG.isDebugEnabled()) {LOG.debug("Scanning class from jar {}", clazz);};
+                                    scanClass(clazz.getInputStream());
+                                }
                             }
                         }
+                        catch (Exception e)
+                        {
+                            LOG.warn("Problem processing jar entry "+entry, e);
+                        }
                     }
-                    catch (Exception e)
-                    {
-                        LOG.warn("Problem processing jar entry "+entry, e);
-                    }
-                                    
                     entry = jar_in.getNextJarEntry();
                 }
             }
@@ -974,6 +983,38 @@ public class AnnotationParser
     {
         ClassReader reader = new ClassReader(is);
         reader.accept(new MyClassVisitor(), ClassReader.SKIP_CODE|ClassReader.SKIP_DEBUG|ClassReader.SKIP_FRAMES);
+    }
+    
+    /**
+     * Check that the given path represents a valid class file name.
+     * The check is fairly cursory, checking that:
+     * <ul>
+     * <li> the name ends with .class</li>
+     * <li> it isn't a dot file or in a hidden directory </li>
+     * <li> the name of the class at least begins with a valid identifier for a class name </li>
+     * </ul>
+     * @param path
+     * @return
+     */
+    private boolean isValidClassFileName (String path)
+    {
+        //skip anything that is not a class file
+        if (!path.toLowerCase(Locale.ENGLISH).endsWith(".class"))
+            return false;
+        
+        //skip any classfiles that are not a valid name
+        int c0 = 0;      
+        int ldir = path.lastIndexOf('/', path.length()-6);
+        c0 = (ldir > -1 ? ldir+1 : c0);
+        
+        if (!Character.isJavaIdentifierStart(path.charAt(c0)))
+            return false;
+        
+        //skip any classfiles that are in a hidden directory
+        if (path.startsWith(".") || path.contains("/."))
+            return false;
+        
+        return true;
     }
 }
 
