@@ -1,0 +1,11 @@
+
+#===========================================================
+# Request logger
+# Will add a handler to log all HTTP requests to a standard
+# request log format file.
+#-----------------------------------------------------------
+
+requestlog.retain=90
+requestlog.append=true
+requestlog.extended=true
+etc/jetty-requestlog.xml

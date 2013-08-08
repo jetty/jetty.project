@@ -76,13 +76,20 @@ System Properties:
     com.sun.management.jmxremote
       Enable remote JMX management in Sun JVMS.
       
-      
 Properties:
   These are set with a command line like "java -jar start.jar name=value"
   and only affect the start mechanism.  Some of these are defined in the 
   default start.config and will not be available if another configuration
   file is used. NOTE: Not all properties are listed here:
 
+    jetty.home=[directory]
+      Set the home directory of the jetty distribtion.
+      
+    jetty.base=[directory]
+      Set the jetty configuration directory.  This is where the etc, webapps and start
+      files will be looked for. If not found in jetty.base, they are looked for in 
+      jetty.home.
+      
     path=[directory]
       An additional class path element to add to the started class path. Typically
       this is used to add directories of classes and/or resources
@@ -120,8 +127,8 @@ Properties:
 
 
 Available Configurations:
-  By convention, configuration files are kept in $JETTY_HOME/etc.
-  The known configuration files are:
+  By convention, configuration files are kept in ${jetty.base}/etc or 
+  ${jetty.home}/etc The known configuration files are:
   
     @CONFIGS@
 
@@ -135,6 +142,6 @@ Defaults:
   
   If --ini options are provided on  the command line, then start.ini will NOT be read. 
   
-  The current start.ini arguments are:
+  The current start.ini files are:
 
     @STARTINI@

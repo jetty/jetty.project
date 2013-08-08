@@ -100,7 +100,6 @@ public class ConfigTest
     @Before
     public void reset()
     {
-        Config.clearProperties();
     }
 
     /*
@@ -115,7 +114,7 @@ public class ConfigTest
         Config cfg = new Config();
         cfg.parse(buf);
 
-        Assert.assertEquals(getTestResourcesDir().getCanonicalPath(),Config.getProperty("test.resources.dir"));
+        Assert.assertEquals(getTestResourcesDir().getCanonicalPath(),cfg.getProperty("test.resources.dir"));
     }
 
     /*
@@ -131,8 +130,8 @@ public class ConfigTest
         Config options = new Config();
         options.parse(buf);
 
-        Assert.assertEquals("foo",Config.getProperty("test.jetty.start.text"));
-        Assert.assertEquals("Eatagramovabits",Config.getProperty("test.jetty.start.quote"));
+        Assert.assertEquals("foo",options.getProperty("test.jetty.start.text"));
+        Assert.assertEquals("Eatagramovabits",options.getProperty("test.jetty.start.quote"));
     }
 
     /*

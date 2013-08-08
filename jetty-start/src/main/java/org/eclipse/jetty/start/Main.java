@@ -51,8 +51,6 @@ import java.util.Locale;
 import java.util.Properties;
 import java.util.Set;
 
-import javax.naming.OperationNotSupportedException;
-
 /*-------------------------------------------*/
 /**
  * <p>
@@ -82,19 +80,17 @@ public class Main
     private boolean _dryRun = false;
     private boolean _exec = false;
     private final Config _config = new Config();
-    private final Set<String> _sysProps = new HashSet<String>();
-    private final List<String> _jvmArgs = new ArrayList<String>();
+    private final Set<String> _sysProps = new HashSet<>();
+    private final List<String> _jvmArgs = new ArrayList<>();
+    private final List<File> _iniFiles = new ArrayList<>();
     private String _startConfig = null;
-
-    private String _jettyHome;
 
     public static void main(String[] args)
     {
         try
         {
             Main main = new Main();
-            List<String> arguments = main.expandCommandLine(args);
-            List<String> xmls = main.processCommandLine(arguments);
+            List<String> xmls = main.processCommandLine(args);
             if (xmls != null)
                 main.start(xmls);
         }
@@ -106,64 +102,36 @@ public class Main
 
     Main() throws IOException
     {
-        _jettyHome = System.getProperty("jetty.home",".");
-        _jettyHome = new File(_jettyHome).getCanonicalPath();
+        String jetty_home=new File(System.getProperty("jetty.home",".")).getCanonicalPath();
+        _config.setProperty("jetty.home",jetty_home);
     }
 
-    public List<String> expandCommandLine(String[] args) throws Exception
+    Config getConfig()
     {
-        List<String> arguments = new ArrayList<String>();
-
-        // add the command line args and look for start.ini args
-        boolean ini = false;
-        for (String arg : args)
-        {
+        return _config;
+    }
+    
+    public List<String> processCommandLine(String[] args) throws Exception
+    {
+        String source="";
+        
+        // Handle default ini args
+        ArrayList<String> arguments = new ArrayList<>(Arrays.asList(args));
+        boolean ini=false;
+        for(String arg : arguments)
             if (arg.startsWith("--ini=") || arg.equals("--ini"))
-            {
                 ini = true;
-                if (arg.length() > 6)
-                {
-                    arguments.addAll(loadStartIni(new File(arg.substring(6))));
-                }
-            }
-            else if (arg.startsWith("--config="))
-            {
-                _startConfig = arg.substring(9);
-            }
-            else
-            {
-                arguments.add(arg);
-            }
-        }
-
-        // if no non-option inis, add the start.ini and start.d
         if (!ini)
-        {
-            arguments.addAll(0,parseStartIniFiles());
-        }
-
-        return arguments;
-    }
-
-    List<String> parseStartIniFiles()
-    {
-        List<String> ini_args = new ArrayList<String>();
-        File start_ini = new File(_jettyHome,"start.ini");
-        if (start_ini.exists())
-            ini_args.addAll(loadStartIni(start_ini));
-           
-        return ini_args;
-    }
-
-    public List<String> processCommandLine(List<String> arguments) throws Exception
-    {
+            arguments.add("--ini=start.ini");
+        
         // The XML Configuration Files to initialize with
         List<String> xmls = new ArrayList<String>();
 
-        // Process the arguments
-        int startup = 0;
-        for (String arg : arguments)
+        // Process the arguments in for loop so list of args can be extended.
+        for (int i=0;i<arguments.size();i++)
         {
+            String arg=arguments.get(i);
+            
             if ("--help".equals(arg) || "-?".equals(arg))
             {
                 _showUsage = true;
@@ -172,9 +140,9 @@ public class Main
 
             if ("--stop".equals(arg))
             {
-                int port = Integer.parseInt(Config.getProperty("STOP.PORT","-1"));
-                String key = Config.getProperty("STOP.KEY",null);
-                int timeout = Integer.parseInt(Config.getProperty("STOP.WAIT","0"));
+                int port = Integer.parseInt(_config.getProperty("STOP.PORT","-1"));
+                String key = _config.getProperty("STOP.KEY",null);
+                int timeout = Integer.parseInt(_config.getProperty("STOP.WAIT","0"));
                 stop(port,key,timeout);
                 return null;
             }
@@ -215,6 +183,28 @@ public class Main
                 continue;
             }
 
+
+            if (arg.startsWith("--ini=") || arg.equals("--ini"))
+            {
+                ini = true;
+                if (arg.length() > 6)
+                {
+                    String name=arg.substring(6);
+                    File file=_config.getFileBaseHomeAbs(name);
+                    arguments.addAll(i+1,loadStartIni(file,name));
+                }
+                
+                continue;
+            }
+            
+            
+            if (arg.startsWith("--config="))
+            {
+                _startConfig = arg.substring(9);
+                continue;
+            }
+            
+            
             // Special internal indicator that jetty was started by the jetty.sh Daemon
             if ("--daemon".equals(arg))
             {
@@ -278,17 +268,58 @@ public class Main
                 switch (assign.length)
                 {
                     case 2:
-                        if ("OPTIONS".equals(assign[0]))
+                        if ("_SRC_".equals(assign[0]))
+                        {
+                            source=assign[1].trim();
+                        }
+                        else if ("DEFINE".equals(assign[0]))
                         {
                             String opts[] = assign[1].split(",");
                             for (String opt : opts)
-                                _config.addActiveOption(opt.trim());
+                                _config.defineOption(opt.trim());
+                        }
+                        else  if ("DEPEND".equals(assign[0]))
+                        {
+                            String opts[] = assign[1].split(",");
+                            for (String opt : opts)
+                            {
+                                opt=opt.trim();
+                                if (!_config.getOptions().contains(opt))                                
+                                {
+                                    System.err.printf("Missing Dependency: %s DEPEND %s%n",path(source),opt );
+                                    usageExit(ERR_LOGGING);
+                                }
+                            }
+                        }
+                        else  if ("EXCLUDE".equals(assign[0]))
+                        {
+                            String opts[] = assign[1].split(",");
+                            for (String opt : opts)
+                            {
+                                opt=opt.trim();
+                                if (_config.getOptions().contains(opt))                                
+                                {
+                                    System.err.printf("Excluded Dependency: %s EXCLUDE %s%n",path(source),opt );
+                                    usageExit(ERR_LOGGING);
+                                }
+                            }
+                        }
+                        else if ("OPTION".equals(assign[0]))
+                        {
+                            String opts[] = assign[1].split(",");
+                            for (String opt : opts)
+                                _config.addOption(opt.trim());
+                        }
+                        else if ("OPTIONS".equals(assign[0]))
+                        {
+                            this._config.setProperty(assign[0],assign[1]);
                         }
                         else
                         {
                             this._config.setProperty(assign[0],assign[1]);
                         }
                         break;
+                        
                     case 1:
                         this._config.setProperty(assign[0],null);
                         break;
@@ -398,15 +429,7 @@ public class Main
                     }
                     else if (info.equals("@CONFIGS"))
                     {
-                        File etc = new File(System.getProperty("jetty.home","."),"etc");
-                        if (!etc.exists() || !etc.isDirectory())
-                        {
-                            System.out.print(indent);
-                            System.out.println("Unable to find/list " + etc);
-                            continue;
-                        }
-
-                        File configs[] = etc.listFiles(new FileFilter()
+                        FileFilter filter =new FileFilter()
                         {
                             public boolean accept(File path)
                             {
@@ -418,34 +441,54 @@ public class Main
                                 String name = path.getName().toLowerCase(Locale.ENGLISH);
                                 return (name.startsWith("jetty") && name.endsWith(".xml"));
                             }
-                        });
-
+                        };
+                        
+                        // list home etc
+                        File etc = new File(_config.getJettyHome(),"etc");
+                        if (!etc.exists() || !etc.isDirectory())
+                        {
+                            System.out.print(indent);
+                            System.out.println("Unable to find/list " + etc);
+                            continue;
+                        }
                         List<File> configFiles = new ArrayList<File>();
+                        File[] configs = etc.listFiles(filter);
                         configFiles.addAll(Arrays.asList(configs));
+                        
+                        // list base etc
+                        if (!_config.getJettyHome().equals(_config.getJettyBase()))
+                        {
+                            etc = new File(_config.getJettyBase(),"etc");
+                            if (etc.exists() && etc.isDirectory())
+                            {
+                                configs = etc.listFiles(filter);
+                                configFiles.addAll(Arrays.asList(configs));
+                            }
+                        }
+                        
                         Collections.sort(configFiles);
 
                         for (File configFile : configFiles)
-                        {
-                            System.out.print(indent);
-                            System.out.print("etc/");
-                            System.out.println(configFile.getName());
-                        }
+                            System.out.printf("%s%s%n",indent,path(configFile));
                     }
                     else if (info.equals("@STARTINI"))
                     {
-                        List<String> ini = parseStartIniFiles();
-                        if (ini != null && ini.size() > 0)
+                        for (File file : _iniFiles)
                         {
-                            for (String a : ini)
+                            String path=path(file);
+                            System.out.printf("%s%s:%n",indent,path);
+
+                            try (FileReader reader=new FileReader(file); BufferedReader in = new BufferedReader(reader);)
                             {
-                                System.out.print(indent);
-                                System.out.println(a);
+                                String arg;
+                                while ((arg = in.readLine()) != null)
+                                {
+                                    arg = arg.trim();
+                                    if (arg.length() == 0 || arg.startsWith("#"))
+                                        continue;
+                                    System.out.printf("%s  %s%n",indent,arg);
+                                }
                             }
-                        }
-                        else
-                        {
-                            System.out.print(indent);
-                            System.out.println("none");
                         }
                     }
                 }
@@ -466,6 +509,29 @@ public class Main
         System.exit(EXIT_USAGE);
     }
 
+    String path(String path) 
+    {
+        if (path==null)
+            return path;
+        if (path.startsWith(_config.getJettyHome()))
+            path = "${jetty.home}" + path.substring(_config.getJettyHome().length());
+        if (_config.getJettyBase()!=null && path.startsWith(_config.getJettyBase()))
+            path = "${jetty.base}" + path.substring(_config.getJettyBase().length());
+        return path;
+    }
+    
+    String path(File file) 
+    {
+        try
+        {
+            return path(file.getCanonicalPath());
+        }
+        catch (IOException e)
+        {
+        }
+        return path(file.getAbsolutePath());
+    }
+    
     public void invokeMain(ClassLoader classloader, String classname, List<String> args) throws IllegalAccessException, InvocationTargetException,
             NoSuchMethodException, ClassNotFoundException
     {
@@ -550,12 +616,13 @@ public class Main
         {
             System.err.println("java.class.path=" + System.getProperty("java.class.path"));
             System.err.println("jetty.home=" + System.getProperty("jetty.home"));
+            System.err.println("jetty.base=" + System.getProperty("jetty.base"));
             System.err.println("java.home=" + System.getProperty("java.home"));
             System.err.println("java.io.tmpdir=" + System.getProperty("java.io.tmpdir"));
             System.err.println("java.class.path=" + classpath);
             System.err.println("classloader=" + cl);
             System.err.println("classloader.parent=" + cl.getParent());
-            System.err.println("properties=" + Config.getProperties());
+            System.err.println("properties=" + _config.getProperties());
         }
 
         // Show the usage information and return
@@ -689,23 +756,20 @@ public class Main
             return xmlFilename;
         }
 
-        File xml = new File(xmlFilename);
-        if (xml.exists() && xml.isFile())
-        {
+        // Look for the file as absolute, jetty-base or jetty-home
+        File xml = _config.getFileBaseHomeAbs(xmlFilename);
+        if (xml!=null && xml.isFile())
             return xml.getAbsolutePath();
-        }
-
-        xml = new File(_jettyHome,fixPath(xmlFilename));
-        if (xml.exists() && xml.isFile())
-        {
+        
+        // Try corrected / for \
+        xml = _config.getFileBaseHomeAbs(fixPath(xmlFilename));
+        if (xml!=null && xml.isFile())
             return xml.getAbsolutePath();
-        }
-
-        xml = new File(_jettyHome,fixPath("etc/" + xmlFilename));
-        if (xml.exists() && xml.isFile())
-        {
+        
+        // Try in etc
+        xml = _config.getFileBaseHomeAbs("etc/"+xmlFilename);
+        if (xml!=null && xml.isFile())
             return xml.getAbsolutePath();
-        }
 
         throw new FileNotFoundException("Unable to find XML Config: " + xmlFilename);
     }
@@ -718,7 +782,9 @@ public class Main
         {
             cmd.addArg(x);
         }
-        cmd.addRawArg("-Djetty.home=" + _jettyHome);
+        cmd.addRawArg("-Djetty.home=" + _config.getJettyHome());
+        if (_config.getJettyBase()!=null)
+            cmd.addRawArg("-Djetty.base=" + _config.getJettyBase());
 
         // Special Stop/Shutdown properties
         ensureSystemPropertySet("STOP.PORT");
@@ -736,7 +802,7 @@ public class Main
         cmd.addRawArg(_config.getMainClassname());
 
         // Check if we need to pass properties as a file
-        Properties properties = Config.getProperties();
+        Properties properties = _config.getProperties();
         if (properties.size() > 0)
         {
             File prop_file = File.createTempFile("start",".properties");
@@ -748,7 +814,7 @@ public class Main
 
         for (String xml : xmls)
         {
-            cmd.addRawArg(xml);
+           cmd.addRawArg(xml);
         }
         return cmd;
     }
@@ -767,7 +833,7 @@ public class Main
             return; // done
         }
 
-        Properties props = Config.getProperties();
+        Properties props = _config.getProperties();
         if (props.containsKey(key))
         {
             String val = props.getProperty(key,null);
@@ -841,7 +907,8 @@ public class Main
         System.out.println("Note: If using multiple options (eg: 'Server,servlet,webapp,jms,jmx') "
                 + "then overlapping entries will not be repeated in the eventual classpath.");
         System.out.println();
-        System.out.printf("${jetty.home} = %s%n",_jettyHome);
+        System.out.printf("${jetty.home} = %s%n",_config.getJettyHome());
+        System.out.printf("${jetty.base} = %s%n",_config.getJettyBase());
         System.out.println();
 
         for (String sectionId : sectionIds)
@@ -876,14 +943,7 @@ public class Main
 
             int i = 0;
             for (File element : sectionCP.getElements())
-            {
-                String elementPath = element.getAbsolutePath();
-                if (elementPath.startsWith(_jettyHome))
-                {
-                    elementPath = "${jetty.home}" + elementPath.substring(_jettyHome.length());
-                }
-                System.out.printf("%2d: %20s | %s\n",i++,getVersion(element),elementPath);
-            }
+                System.out.printf("%2d: %20s | %s\n",i++,getVersion(element),path(element));
 
             System.out.println();
         }
@@ -894,7 +954,7 @@ public class Main
         // Iterate through active classpath, and fetch Implementation Version from each entry (if present)
         // to dump to end user.
 
-        System.out.println("Active Options: " + _config.getActiveOptions());
+        System.out.println("Active Options: " + _config.getOptions());
 
         if (classpath.count() == 0)
         {
@@ -908,14 +968,7 @@ public class Main
 
         int i = 0;
         for (File element : classpath.getElements())
-        {
-            String elementPath = element.getAbsolutePath();
-            if (elementPath.startsWith(_jettyHome))
-            {
-                elementPath = "${jetty.home}" + elementPath.substring(_jettyHome.length());
-            }
-            System.out.printf("%2d: %20s | %s\n",i++,getVersion(element),elementPath);
-        }
+            System.out.printf("%2d: %20s | %s\n",i++,getVersion(element),path(element));
     }
 
     private String fixPath(String path)
@@ -1002,13 +1055,6 @@ public class Main
 
             // parse the config
             _config.parse(cfgstream);
-
-            _jettyHome = Config.getProperty("jetty.home",_jettyHome);
-            if (_jettyHome != null)
-            {
-                _jettyHome = new File(_jettyHome).getCanonicalPath();
-                System.setProperty("jetty.home",_jettyHome);
-            }
 
             // Collect the configured xml configurations.
             List<String> ret = new ArrayList<String>();
@@ -1145,17 +1191,22 @@ public class Main
     /**
      * Convert a start.ini format file into an argument list.
      */
-    List<String> loadStartIni(File ini)
+    List<String> loadStartIni(File ini,String name)
     {
-        if (!ini.exists())
+        if (ini==null || !ini.exists() || ini.isDirectory() || !ini.canRead())
         {
-            System.err.println("Warning - can't find ini file: " + ini);
+            System.err.println("Warning - bad ini file: " + name);
             // No start.ini found, skip load.
             return Collections.emptyList();
         }
 
+        ini=ini.getAbsoluteFile();
+        if (!_iniFiles.contains(ini))
+            _iniFiles.add(ini);
         List<String> args = new ArrayList<String>();
 
+        args.add("_SRC_="+name);
+        
         FileReader reader = null;
         BufferedReader buf = null;
         try
@@ -1176,11 +1227,8 @@ public class Main
                 {
                     try
                     {
-                        File start_d = new File(arg);
-                        if (!start_d.exists() || !start_d.isDirectory())
-                            start_d = new File(_jettyHome,arg);
-                        
-                        if (start_d.isDirectory())
+                        File start_d = _config.getFileBaseHomeAbs(arg);
+                        if (start_d!=null && start_d.isDirectory())
                         {
                             File[] inis = start_d.listFiles(new FilenameFilter()
                             {
@@ -1193,8 +1241,9 @@ public class Main
                             Arrays.sort(inis);
                             
                             for (File i : inis)
-                                args.addAll(loadStartIni(i));
-     
+                                args.addAll(loadStartIni(i,i.getAbsolutePath()));
+
+                            args.add("_SRC_="+name);
                             continue;
                         }
                     }

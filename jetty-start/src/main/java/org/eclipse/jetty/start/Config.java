@@ -45,6 +45,8 @@ import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.TreeSet;
 
+import org.omg.CORBA._PolicyStub;
+
 /**
  * <p>
  * It allows an application to be started with the command <code>"java -jar start.jar"</code>.
@@ -184,14 +186,14 @@ public class Config
 
     private static final String _version;
     private static boolean DEBUG = false;
-    private static final Map<String, String> __properties = new HashMap<String, String>();
+    private final Map<String, String> _properties = new HashMap<String, String>();
     private final Map<String, Classpath> _classpaths = new HashMap<String, Classpath>();
     private final List<String> _xml = new ArrayList<String>();
     private String _classname = null;
 
     private int argCount = 0;
     
-    private final Set<String> _activeOptions = new TreeSet<String>(new Comparator<String>()
+    private final Set<String> _options = new TreeSet<String>(new Comparator<String>()
     {
         // Make sure "*" is always at the end of the list
         public int compare(String o1, String o2)
@@ -208,17 +210,24 @@ public class Config
         }
     });
 
+    public Classpath defineOption(String option)
+    {
+        Classpath cp = _classpaths.get(option);
+        if (cp == null)
+        {
+            cp = new Classpath();
+            _classpaths.put(option,cp);
+        }
+        return cp;
+    }
+    
     private boolean addClasspathComponent(List<String> sections, String component)
     {
         for (String section : sections)
         {
-            Classpath cp = _classpaths.get(section);
-            if (cp == null)
-                cp = new Classpath();
+            Classpath cp = defineOption(section);
 
             boolean added = cp.addComponent(component);
-            _classpaths.put(section,cp);
-
             if (!added)
             {
                 // First failure means all failed.
@@ -234,10 +243,6 @@ public class Config
         for (String section : sections)
         {
             Classpath cp = _classpaths.get(section);
-            if (cp == null)
-            {
-                cp = new Classpath();
-            }
             if (!cp.addClasspath(path))
             {
                 // First failure means all failed.
@@ -385,7 +390,7 @@ public class Config
      */
     public Classpath getActiveClasspath()
     {
-        return getCombinedClasspath(_activeOptions);
+        return getCombinedClasspath(_options);
     }
 
     /**
@@ -408,7 +413,7 @@ public class Config
             Classpath otherCp = _classpaths.get(optionId);
             if (otherCp == null)
             {
-                throw new IllegalArgumentException("No such OPTIONS: " + optionId);
+                throw new IllegalArgumentException("No such OPTION: " + optionId);
             }
             cp.overlay(otherCp);
         }
@@ -421,12 +426,12 @@ public class Config
         return _classname;
     }
 
-    public static void clearProperties()
+    public void clearProperties()
     {
-        __properties.clear();
+        _properties.clear();
     }
     
-    public static Properties getProperties()
+    public Properties getProperties()
     {
         Properties properties = new Properties();
         // Add System Properties First
@@ -436,30 +441,30 @@ public class Config
             properties.put(name, System.getProperty(name));
         }
         // Add Config Properties Next (overwriting any System Properties that exist)
-        for (String key : __properties.keySet()) {
-            properties.put(key,__properties.get(key));
+        for (String key : _properties.keySet()) {
+            properties.put(key,_properties.get(key));
         }
         return properties;
     }
     
-    public static String getProperty(String name)
+    public String getProperty(String name)
     {
         if ("version".equalsIgnoreCase(name)) {
             return _version;
         }
         // Search Config Properties First
-        if (__properties.containsKey(name)) {
-            return __properties.get(name);
+        if (_properties.containsKey(name)) {
+            return _properties.get(name);
         }
         // Return what exists in System.Properties otherwise.
         return System.getProperty(name);
     }
 
-    public static String getProperty(String name, String defaultValue)
+    public String getProperty(String name, String defaultValue)
     {
         // Search Config Properties First
-        if (__properties.containsKey(name))
-            return __properties.get(name);
+        if (_properties.containsKey(name))
+            return _properties.get(name);
         // Return what exists in System.Properties otherwise.
         return System.getProperty(name, defaultValue);
     }
@@ -956,31 +961,46 @@ public class Config
         }
         if (name.equals("OPTIONS"))
         {
-            _activeOptions.clear();
+            _options.clear();
             String ids[] = value.split(",");
             for (String id : ids)
+                addOption(id);
+        }
+        if (name.equals("jetty.base"))
+        {
+            File base=new File(value);
+            try
             {
-                addActiveOption(id);
+                value=base.getCanonicalPath();
+            }
+            catch(Exception e)
+            {
+                e.printStackTrace();
             }
         }
-        __properties.put(name,value);
+        _properties.put(name,value);
     }
 
-    public void addActiveOption(String option)
+    public void addOption(String option)
     {
-        _activeOptions.add(option); 
-        __properties.put("OPTIONS",join(_activeOptions,","));
+        _options.add(option); 
+        _properties.put("OPTIONS",join(_options,","));
+    }
+    
+    public Set<String> getKnownOptions()
+    {
+        return _classpaths.keySet();
     }
 
-    public Set<String> getActiveOptions()
+    public Set<String> getOptions()
     {
-        return _activeOptions;
+        return _options;
     }
 
-    public void removeActiveOption(String option)
+    public void removeOption(String option)
     {
-        _activeOptions.remove(option);
-        __properties.put("OPTIONS",join(_activeOptions,","));
+        _options.remove(option);
+        _properties.put("OPTIONS",join(_options,","));
     }
     
     private String join(Collection<?> coll, String delim)
@@ -999,4 +1019,37 @@ public class Config
         return buf.toString();
     }
 
+    public String getJettyHome()
+    {
+        return getProperty("jetty.home");
+    }
+    
+    public String getJettyBase()
+    {
+        return getProperty("jetty.base");
+    }
+
+    public File getFileBaseHomeAbs(String filename)
+    {
+        File file;
+        
+        String base = getJettyBase();
+        if (base!=null)
+        {
+            file=new File(base,filename);
+            if (file.exists())
+                return file;
+        }
+        
+        file=new File(getJettyHome(),filename);
+        if (file.exists())
+            return file;
+
+        file=new File(filename);
+        if (file.exists())
+            return file;
+        
+        return null;
+        
+    }
 }
