@@ -301,7 +301,7 @@ public class Generator
                 buffer.put((byte)(payloadLength & 0xFF));
             }
             /*
-             * if payload is ge 126 we have a 7 + 16 bit length
+             * if payload is greater 126 we have a 7 + 16 bit length
              */
             else if (payloadLength >= 0x7E)
             {
@@ -333,7 +333,7 @@ public class Generator
             int maskingStartPosition = buffer.position();
 
             // remember the offset within the frame payload (for working with
-            // windowed frames that don't split on 4 byte barriers)
+            // masked windowed frames that don't split on 4 byte barriers)
             int payloadOffset = frame.getPayload().position();
             int payloadStart = frame.getPayloadStart();
 
@@ -360,7 +360,7 @@ public class Generator
                     // mask, using offset information from frame windowing.
                     b ^= mask[posFrame % 4];
 
-                    // Mask each byte by its absolute position in the bytebuffer
+                    // Mask each byte by its absolute position in the payload bytebuffer
                     buffer.put(posBuf,b);
                 }
             }
