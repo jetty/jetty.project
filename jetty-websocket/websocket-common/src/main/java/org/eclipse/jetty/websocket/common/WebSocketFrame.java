@@ -595,7 +595,7 @@ public class WebSocketFrame implements Frame
 
         data = BufferUtil.toBuffer(buf);
         payloadStart = data.position();
-        payloadLength = data.limit();
+        payloadLength = data.remaining();
         return this;
     }
 
