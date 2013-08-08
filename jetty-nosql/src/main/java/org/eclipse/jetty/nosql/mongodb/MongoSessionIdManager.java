@@ -450,6 +450,7 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
     /**
      * is the session id known to mongo, and is it valid
      */
+    @Override
     public boolean idInUse(String sessionId)
     {        
         /*
@@ -473,6 +474,7 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void addSession(HttpSession session)
     {
         if (session == null)
@@ -494,6 +496,7 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void removeSession(HttpSession session)
     {
         if (session == null)
@@ -508,6 +511,7 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void invalidateAll(String sessionId)
     {
         synchronized (_sessionsIds)
@@ -520,7 +524,7 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
             Handler[] contexts = _server.getChildHandlersByClass(ContextHandler.class);
             for (int i=0; contexts!=null && i<contexts.length; i++)
             {
-                SessionHandler sessionHandler = (SessionHandler)((ContextHandler)contexts[i]).getChildHandlerByClass(SessionHandler.class);
+                SessionHandler sessionHandler = ((ContextHandler)contexts[i]).getChildHandlerByClass(SessionHandler.class);
                 if (sessionHandler != null) 
                 {
                     SessionManager manager = sessionHandler.getSessionManager();
@@ -532,26 +536,7 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
                 }
             }
         }      
-    }
-
-    /* ------------------------------------------------------------ */
-    // TODO not sure if this is correct
-    public String getClusterId(String nodeId)
-    {
-        int dot=nodeId.lastIndexOf('.');
-        return (dot>0)?nodeId.substring(0,dot):nodeId;
-    }
-
-    /* ------------------------------------------------------------ */
-    // TODO not sure if this is correct
-    public String getNodeId(String clusterId, HttpServletRequest request)
-    {
-        if (_workerName!=null)
-            return clusterId+'.'+_workerName;
-
-        return clusterId;
-    }
-    
+    } 
     
     /* ------------------------------------------------------------ */
     @Override
@@ -563,6 +548,24 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
         synchronized (_sessionsIds)
         {
             _sessionsIds.remove(oldClusterId);//remove the old one from the list
+
+            /* ------------------------------------------------------------ */
+            // TODO not sure if this is correct
+            public String getClusterId(String nodeId)
+            {
+                int dot=nodeId.lastIndexOf('.');
+                return (dot>0)?nodeId.substring(0,dot):nodeId;
+            }
+
+            /* ------------------------------------------------------------ */
+            // TODO not sure if this is correct
+            public String getNodeId(String clusterId, HttpServletRequest request)
+            {
+                if (_workerName!=null)
+                    return clusterId+'.'+_workerName;
+
+                return clusterId;
+            }
             _sessionsIds.add(newClusterId); //add in the new session id to the list
 
             //tell all contexts to update the id 

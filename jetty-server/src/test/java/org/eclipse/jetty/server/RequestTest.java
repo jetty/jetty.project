@@ -225,6 +225,7 @@ public class RequestTest
         "Host: whatever\r\n"+
         "Content-Type: multipart/form-data; boundary=\"AaB03x\"\r\n"+
         "Content-Length: "+multipart.getBytes().length+"\r\n"+
+        "Connection: close\r\n"+
         "\r\n"+
         multipart;
 
@@ -351,12 +352,13 @@ public class RequestTest
         };
 
         results.clear();
-        _connector.getResponses(
+        String response=_connector.getResponses(
                 "GET / HTTP/1.1\n"+
                 "Host: myhost\n"+
                 "Connection: close\n"+
                 "\n");
         int i=0;
+        assertThat(response,Matchers.containsString("200 OK"));
         assertEquals("http://myhost/",results.get(i++));
         assertEquals("0.0.0.0",results.get(i++));
         assertEquals("myhost",results.get(i++));
@@ -364,12 +366,13 @@ public class RequestTest
         
         
         results.clear();
-        _connector.getResponses(
+        response=_connector.getResponses(
                 "GET / HTTP/1.1\n"+
                 "Host: myhost:8888\n"+
                 "Connection: close\n"+
                 "\n");
         i=0;
+        assertThat(response,Matchers.containsString("200 OK"));
         assertEquals("http://myhost:8888/",results.get(i++));
         assertEquals("0.0.0.0",results.get(i++));
         assertEquals("myhost",results.get(i++));
@@ -377,13 +380,14 @@ public class RequestTest
         
         
         results.clear();
-        _connector.getResponses(
+        response=_connector.getResponses(
                 "GET / HTTP/1.1\n"+
                 "Host: 1.2.3.4\n"+
                 "Connection: close\n"+
                 "\n");
         i=0;
-        
+
+        assertThat(response,Matchers.containsString("200 OK"));
         assertEquals("http://1.2.3.4/",results.get(i++));
         assertEquals("0.0.0.0",results.get(i++));
         assertEquals("1.2.3.4",results.get(i++));
@@ -391,12 +395,13 @@ public class RequestTest
         
         
         results.clear();
-        _connector.getResponses(
+        response=_connector.getResponses(
                 "GET / HTTP/1.1\n"+
                 "Host: 1.2.3.4:8888\n"+
                 "Connection: close\n"+
                 "\n");
         i=0;
+        assertThat(response,Matchers.containsString("200 OK"));
         assertEquals("http://1.2.3.4:8888/",results.get(i++));
         assertEquals("0.0.0.0",results.get(i++));
         assertEquals("1.2.3.4",results.get(i++));
@@ -404,12 +409,13 @@ public class RequestTest
         
         
         results.clear();
-        _connector.getResponses(
+        response=_connector.getResponses(
                 "GET / HTTP/1.1\n"+
                 "Host: [::1]\n"+
                 "Connection: close\n"+
                 "\n");
         i=0;
+        assertThat(response,Matchers.containsString("200 OK"));
         assertEquals("http://[::1]/",results.get(i++));
         assertEquals("0.0.0.0",results.get(i++));
         assertEquals("::1",results.get(i++));
@@ -417,12 +423,13 @@ public class RequestTest
         
         
         results.clear();
-        _connector.getResponses(
+        response=_connector.getResponses(
                 "GET / HTTP/1.1\n"+
                 "Host: [::1]:8888\n"+
                 "Connection: close\n"+
                 "\n");
         i=0;
+        assertThat(response,Matchers.containsString("200 OK"));
         assertEquals("http://[::1]:8888/",results.get(i++));
         assertEquals("0.0.0.0",results.get(i++));
         assertEquals("::1",results.get(i++));
@@ -430,7 +437,7 @@ public class RequestTest
         
         
         results.clear();
-        _connector.getResponses(
+        response=_connector.getResponses(
                 "GET / HTTP/1.1\n"+
                 "Host: [::1]\n"+
                 "x-forwarded-for: remote\n"+
@@ -438,6 +445,7 @@ public class RequestTest
                 "Connection: close\n"+
                 "\n");
         i=0;
+        assertThat(response,Matchers.containsString("200 OK"));
         assertEquals("https://[::1]/",results.get(i++));
         assertEquals("remote",results.get(i++));
         assertEquals("::1",results.get(i++));
@@ -445,7 +453,7 @@ public class RequestTest
         
         
         results.clear();
-        _connector.getResponses(
+        response=_connector.getResponses(
                 "GET / HTTP/1.1\n"+
                 "Host: [::1]:8888\n"+
                 "Connection: close\n"+
@@ -453,7 +461,7 @@ public class RequestTest
                 "x-forwarded-proto: https\n"+
                 "\n");
         i=0;
-        
+        assertThat(response,Matchers.containsString("200 OK"));
         assertEquals("https://[::1]:8888/",results.get(i++));
         assertEquals("remote",results.get(i++));
         assertEquals("::1",results.get(i++));

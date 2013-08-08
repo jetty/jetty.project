@@ -58,6 +58,7 @@ public class SessionCookieTest
         /**
          * @see org.eclipse.jetty.server.SessionIdManager#idInUse(java.lang.String)
          */
+        @Override
         public boolean idInUse(String id)
         {
             return false;
@@ -66,6 +67,7 @@ public class SessionCookieTest
         /**
          * @see org.eclipse.jetty.server.SessionIdManager#addSession(javax.servlet.http.HttpSession)
          */
+        @Override
         public void addSession(HttpSession session)
         {
 
@@ -74,6 +76,7 @@ public class SessionCookieTest
         /**
          * @see org.eclipse.jetty.server.SessionIdManager#removeSession(javax.servlet.http.HttpSession)
          */
+        @Override
         public void removeSession(HttpSession session)
         {
 
@@ -82,26 +85,10 @@ public class SessionCookieTest
         /**
          * @see org.eclipse.jetty.server.SessionIdManager#invalidateAll(java.lang.String)
          */
+        @Override
         public void invalidateAll(String id)
         {
 
-        }
-
-        /**
-         * @see org.eclipse.jetty.server.SessionIdManager#getClusterId(java.lang.String)
-         */
-        public String getClusterId(String nodeId)
-        {
-            int dot=nodeId.lastIndexOf('.');
-            return (dot>0)?nodeId.substring(0,dot):nodeId;
-        }
-
-        /**
-         * @see org.eclipse.jetty.server.SessionIdManager#getNodeId(java.lang.String, javax.servlet.http.HttpServletRequest)
-         */
-        public String getNodeId(String clusterId, HttpServletRequest request)
-        {
-            return clusterId+'.'+_workerName;
         }
 
         @Override
@@ -119,6 +106,7 @@ public class SessionCookieTest
         /**
          * @see org.eclipse.jetty.server.session.AbstractSessionManager#addSession(org.eclipse.jetty.server.session.AbstractSession)
          */
+        @Override
         protected void addSession(AbstractSession session)
         {
 
@@ -127,6 +115,7 @@ public class SessionCookieTest
         /**
          * @see org.eclipse.jetty.server.session.AbstractSessionManager#getSession(java.lang.String)
          */
+        @Override
         public AbstractSession getSession(String idInCluster)
         {
             return null;
@@ -135,6 +124,7 @@ public class SessionCookieTest
         /**
          * @see org.eclipse.jetty.server.session.AbstractSessionManager#invalidateSessions()
          */
+        @Override
         protected void invalidateSessions() throws Exception
         {
 
@@ -143,6 +133,7 @@ public class SessionCookieTest
         /**
          * @see org.eclipse.jetty.server.session.AbstractSessionManager#newSession(javax.servlet.http.HttpServletRequest)
          */
+        @Override
         protected AbstractSession newSession(HttpServletRequest request)
         {
             return null;
@@ -151,6 +142,7 @@ public class SessionCookieTest
         /**
          * @see org.eclipse.jetty.server.session.AbstractSessionManager#removeSession(java.lang.String)
          */
+        @Override
         protected boolean removeSession(String idInCluster)
         {
             return false;
