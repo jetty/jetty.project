@@ -5,6 +5,8 @@
 
 jetty.https.port=8443
 
+EXCLUDE=spdy
+
 DEFINE=https
 OPTION=https
 DEPEND=ssl
