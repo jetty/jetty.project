@@ -81,38 +81,7 @@ public class HashSessionIdManager extends AbstractSessionIdManager
         }
         return sessions;
     }
-    /* ------------------------------------------------------------ */
-    /** Get the session ID with any worker ID.
-     *
-     * @param clusterId
-     * @param request
-     * @return sessionId plus any worker ID.
-     */
-    public String getNodeId(String clusterId,HttpServletRequest request)
-    {
-        // used in Ajp13Parser
-        String worker=request==null?null:(String)request.getAttribute("org.eclipse.jetty.ajp.JVMRoute");
-        if (worker!=null)
-            return clusterId+'.'+worker;
-
-        if (_workerName!=null)
-            return clusterId+'.'+_workerName;
-
-        return clusterId;
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Get the session ID without any worker ID.
-     *
-     * @param nodeId the node id
-     * @return sessionId without any worker ID.
-     */
-    public String getClusterId(String nodeId)
-    {
-        int dot=nodeId.lastIndexOf('.');
-        return (dot>0)?nodeId.substring(0,dot):nodeId;
-    }
-
+    
     /* ------------------------------------------------------------ */
     @Override
     protected void doStart() throws Exception
@@ -132,6 +101,7 @@ public class HashSessionIdManager extends AbstractSessionIdManager
     /**
      * @see SessionIdManager#idInUse(String)
      */
+    @Override
     public boolean idInUse(String id)
     {
         synchronized (this)
@@ -144,6 +114,7 @@ public class HashSessionIdManager extends AbstractSessionIdManager
     /**
      * @see SessionIdManager#addSession(HttpSession)
      */
+    @Override
     public void addSession(HttpSession session)
     {
         String id = getClusterId(session.getId());
@@ -165,6 +136,7 @@ public class HashSessionIdManager extends AbstractSessionIdManager
     /**
      * @see SessionIdManager#removeSession(HttpSession)
      */
+    @Override
     public void removeSession(HttpSession session)
     {
         String id = getClusterId(session.getId());
@@ -199,6 +171,7 @@ public class HashSessionIdManager extends AbstractSessionIdManager
     /**
      * @see SessionIdManager#invalidateAll(String)
      */
+    @Override
     public void invalidateAll(String id)
     {
         Collection<WeakReference<HttpSession>> sessions;
@@ -221,6 +194,7 @@ public class HashSessionIdManager extends AbstractSessionIdManager
     
     
     /* ------------------------------------------------------------ */
+    @Override
     public void renewSessionId (String oldClusterId, String oldNodeId, HttpServletRequest request)
     {
         //generate a new id

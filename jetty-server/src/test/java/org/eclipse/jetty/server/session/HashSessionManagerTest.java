@@ -102,7 +102,7 @@ public class HashSessionManagerTest
         Assert.assertTrue(testDir.exists());
         Assert.assertTrue(testDir.canWrite());
         
-        HashSessionIdManager idManager = new HashSessionIdManager();
+        AbstractSessionIdManager idManager = new HashSessionIdManager();
         idManager.setWorkerName("foo");
         manager.setSessionIdManager(idManager);
         
