@@ -240,6 +240,7 @@ public class HttpParser
         return _state == state;
     }
 
+    /* ------------------------------------------------------------------------------- */
     private static class BadMessage extends Error
     {
         private final int _code;
@@ -806,8 +807,6 @@ public class HttpParser
         {
             // process each character
             byte ch=next(buffer);
-            if (ch<0)
-                throw new BadMessage("Illegal character");
             if (ch==0)
                 continue;
             
@@ -917,6 +916,8 @@ public class HttpParser
                                         break;
                                 }
                             }
+                            else if (ch<=HttpTokens.SPACE)
+                                throw new BadMessage();
                             else
                             {
                                 if (buffer.hasRemaining())
@@ -981,6 +982,8 @@ public class HttpParser
                     break;
 
                 case HEADER_NAME:
+                    if (ch<0)
+                        throw new BadMessage();
                     switch(ch)
                     {
                         case HttpTokens.LINE_FEED:
@@ -990,7 +993,6 @@ public class HttpParser
                                 _header=HttpHeader.CACHE.get(_headerString);
                             }
                             setState(State.HEADER);
-
                             break;
 
                         case HttpTokens.COLON:
@@ -1001,10 +1003,11 @@ public class HttpParser
                             }
                             setState(State.HEADER_VALUE);
                             break;
+                            
                         case HttpTokens.SPACE:
                         case HttpTokens.TAB:
-                            _string.append((char)ch);
                             break;
+                            
                         default:
                         {
                             _string.append((char)ch);
@@ -1016,6 +1019,12 @@ public class HttpParser
                     break;
 
                 case HEADER_IN_NAME:
+                    if (ch<HttpTokens.SPACE)
+                    {
+                        
+                    }
+                    if (ch<0)
+                        throw new BadMessage("Illegal character");
                     switch(ch)
                     {
                         case HttpTokens.LINE_FEED:
@@ -1091,7 +1100,7 @@ public class HttpParser
                             break;
                         default:
                         {
-                            _string.append((char)ch);
+                            _string.append((char)(0xff&ch));
                             _length=_string.length();
                             setState(State.HEADER_IN_VALUE);
                         }
@@ -1140,7 +1149,7 @@ public class HttpParser
                                 _valueString=null;
                                 _field=null;
                             }
-                            _string.append((char)ch);
+                            _string.append((char)(0xff&ch));
                             _length++;
                     }
                     break;
