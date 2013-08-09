@@ -310,7 +310,7 @@ public class HttpParser
                 if (ch==HttpTokens.LINE_FEED)
                     return ch;
 
-                throw new BadMessage();
+                throw new BadMessage("Bad EOL");
             }
 
             // Defer lookup of LF
@@ -320,7 +320,7 @@ public class HttpParser
         
         // Only LF or TAB acceptable special characters
         if (ch!=HttpTokens.LINE_FEED && ch!=HttpTokens.TAB)
-            throw new BadMessage();
+            throw new BadMessage("Illegal character");
         
         /*
         if (ch>HttpTokens.SPACE)
@@ -403,8 +403,6 @@ public class HttpParser
         {
             // process each character
             byte ch=next(buffer);
-            if (ch==-1)
-                return true;
             if (ch==0)
                 continue;
 
@@ -436,10 +434,8 @@ public class HttpParser
                             _methodString=method.asString();
                         setState(State.SPACE1);
                     }
-                    else if (ch < HttpTokens.SPACE && ch>=0)
-                    {
-                        throw new BadMessage(HttpStatus.BAD_REQUEST_400,"No URI");
-                    }
+                    else if (ch<HttpTokens.SPACE)
+                        throw new BadMessage(ch<0?"Illegal character":"No URI");
                     else
                         _string.append((char)ch);
                     break;
@@ -455,16 +451,14 @@ public class HttpParser
                         }
                         setState(State.SPACE1);
                     }
-                    else if (ch < HttpTokens.SPACE && ch>=0)
-                    {
-                        throw new BadMessage(HttpStatus.BAD_REQUEST_400,"No Status");
-                    }
+                    else if (ch < HttpTokens.SPACE)
+                        throw new BadMessage(ch<0?"Illegal character":"No Status");
                     else
                         _string.append((char)ch);
                     break;
 
                 case SPACE1:
-                    if (ch > HttpTokens.SPACE || ch<0)
+                    if (ch > HttpTokens.SPACE)
                     {
                         if (_responseHandler!=null)
                         {
@@ -508,9 +502,7 @@ public class HttpParser
                         }
                     }
                     else if (ch < HttpTokens.SPACE)
-                    {
                         throw new BadMessage(HttpStatus.BAD_REQUEST_400,_requestHandler!=null?"No URI":"No Status");
-                    }
                     break;
 
                 case STATUS:
@@ -529,7 +521,7 @@ public class HttpParser
                     }
                     else
                     {
-                        throw new IllegalStateException();
+                        throw new BadMessage();
                     }
                     break;
 
@@ -562,7 +554,7 @@ public class HttpParser
                     break;
 
                 case SPACE2:
-                    if (ch > HttpTokens.SPACE || ch<0)
+                    if (ch > HttpTokens.SPACE)
                     {
                         _string.setLength(0);
                         _string.append((char)ch);
@@ -621,6 +613,8 @@ public class HttpParser
                             return_from_parse=_handler.messageComplete()||return_from_parse;
                         }
                     }
+                    else if (ch<HttpTokens.SPACE)
+                        throw new BadMessage();
                     break;
 
                 case REQUEST_VERSION:
@@ -646,8 +640,10 @@ public class HttpParser
                         return_from_parse=_requestHandler.startRequest(_method,_methodString,_uri, _version)||return_from_parse;
                         continue;
                     }
-                    else
+                    else if (ch>HttpTokens.SPACE)
                         _string.append((char)ch);
+                    else
+                        throw new BadMessage();
 
                     break;
 
@@ -660,12 +656,14 @@ public class HttpParser
                         return_from_parse=_responseHandler.startResponse(_version, _responseStatus, reason)||return_from_parse;
                         continue;
                     }
-                    else
+                    else if (ch>=HttpTokens.SPACE)
                     {
                         _string.append((char)ch);
                         if (ch!=' '&&ch!='\t')
                             _length=_string.length();
                     }
+                    else
+                        throw new BadMessage();
                     break;
 
                 default:
@@ -808,8 +806,8 @@ public class HttpParser
         {
             // process each character
             byte ch=next(buffer);
-            if (ch==-1)
-                return true;
+            if (ch<0)
+                throw new BadMessage("Illegal character");
             if (ch==0)
                 continue;
             
