@@ -50,12 +50,16 @@ public class RewriteServlet extends HttpServlet
         out.println("<tr><th>Rewritten request URI: </th><td>" + req.getRequestURI() + "</td></tr>");
 
         Cookie cookie = null;
-        for(Cookie c: req.getCookies())
+        Cookie[] cookies = req.getCookies();
+        if (cookies != null)
         {
-            if (c.getName().equals("visited"))
+            for(Cookie c: cookies)
             {
-                cookie = c;
-                break;
+                if (c.getName().equals("visited"))
+                {
+                    cookie = c;
+                    break;
+                }
             }
         }
         if (cookie!=null)

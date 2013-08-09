@@ -48,7 +48,11 @@ public class HashCrossContextPsuedoSession<T> implements CrossContextPsuedoSessi
 
     public T fetch(HttpServletRequest request)
     {
-        for (Cookie cookie : request.getCookies())
+        Cookie[] cookies = request.getCookies();
+        if (cookies == null)
+            return null;
+        
+        for (Cookie cookie : cookies)
         {
             if (_cookieName.equals(cookie.getName()))
             {

@@ -544,7 +544,12 @@ public class Request implements HttpServletRequest
     public Cookie[] getCookies()
     {
         if (_cookiesExtracted)
-            return _cookies == null?null:_cookies.getCookies();
+        {
+            if (_cookies == null || _cookies.getCookies().length == 0)
+                return null;
+            
+            return _cookies.getCookies();
+        }
 
         _cookiesExtracted = true;
 
@@ -563,7 +568,11 @@ public class Request implements HttpServletRequest
             }
         }
 
-        return _cookies == null?null:_cookies.getCookies();
+        //Javadoc for Request.getCookies() stipulates null for no cookies
+        if (_cookies == null || _cookies.getCookies().length == 0)
+            return null;
+        
+        return _cookies.getCookies();
     }
 
     /* ------------------------------------------------------------ */
