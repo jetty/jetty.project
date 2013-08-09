@@ -39,7 +39,7 @@ import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.junit.Assert;
-import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -119,22 +119,6 @@ public class TestAnnotationParser
             public void handleMethod(String className, String methodName, int access, String desc, String signature, String[] exceptions, String annotation,
                     List<Value> values)
             {
-                System.err.println("Sample annotated method : classname=" + className + " methodName=" + methodName + " access=" + access + " desc=" + desc
-                        + " signature=" + signature);
-
-                org.objectweb.asm.Type retType = org.objectweb.asm.Type.getReturnType(desc);
-                System.err.println("REturn type = " + retType);
-                org.objectweb.asm.Type[] params = org.objectweb.asm.Type.getArgumentTypes(desc);
-                if (params == null)
-                    System.err.println("No params");
-                else
-                    System.err.println(params.length + " params");
-
-                if (exceptions == null)
-                    System.err.println("No exceptions");
-                else
-                    System.err.println(exceptions.length + " exceptions");
-
                 assertEquals("org.eclipse.jetty.annotations.ClassA",className);
                 assertTrue(methods.contains(methodName));
                 assertEquals("org.eclipse.jetty.annotations.Sample",annotation);
@@ -149,7 +133,7 @@ public class TestAnnotationParser
 
         parser.registerHandler(new SampleAnnotationHandler());
 
-        long start = System.currentTimeMillis();
+        //long start = System.currentTimeMillis();
         parser.parse(classNames,new ClassNameResolver()
         {
             public boolean isExcluded(String name)
@@ -163,9 +147,9 @@ public class TestAnnotationParser
             }
 
         });
-        long end = System.currentTimeMillis();
+        //long end = System.currentTimeMillis();
 
-        System.err.println("Time to parse class: " + ((end - start)));
+        //System.err.println("Time to parse class: " + ((end - start)));
     }
 
     @Test
@@ -181,11 +165,6 @@ public class TestAnnotationParser
                     List<Value> values)
             {
                 assertTrue("org.eclipse.jetty.annotations.ClassB".equals(className));
-
-                for (Value anv : values)
-                {
-                    System.err.println(anv.toString());
-                }
             }
 
             public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
@@ -200,10 +179,6 @@ public class TestAnnotationParser
             {
                 assertTrue("org.eclipse.jetty.annotations.ClassB".equals(className));
                 assertTrue("a".equals(methodName));
-                for (Value anv : values)
-                {
-                    System.err.println(anv.toString());
-                }
             }
 
             @Override
@@ -228,7 +203,6 @@ public class TestAnnotationParser
     }
 
     @Test
-    @Ignore
     public void testBasedirExclusion() throws Exception
     {
         // Build up basedir, which itself has a path segment that violates java package and classnaming.

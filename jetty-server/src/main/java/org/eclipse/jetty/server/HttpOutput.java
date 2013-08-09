@@ -516,7 +516,8 @@ write completed    -          -          -          ASYNC         READY->owp
 
     /* ------------------------------------------------------------ */
     /** Asynchronous send of content.
-     * @param in The content to send
+     * @param in The content to send as a stream.  The stream will be closed 
+     * after reading all content.
      * @param callback The callback to use to notify success or failure
      */
     public void sendContent(InputStream in, Callback callback)
@@ -526,7 +527,8 @@ write completed    -          -          -          ASYNC         READY->owp
 
     /* ------------------------------------------------------------ */
     /** Asynchronous send of content.
-     * @param in The content to send
+     * @param in The content to send as a channel.  The channel will be closed 
+     * after reading all content.
      * @param callback The callback to use to notify success or failure
      */
     public void sendContent(ReadableByteChannel in, Callback callback)
@@ -836,6 +838,7 @@ write completed    -          -          -          ASYNC         READY->owp
             {
                 eof=true;
                 len=0;
+                _in.close();
             }
             else if (len<_buffer.capacity())
             {
@@ -868,6 +871,14 @@ write completed    -          -          -          ASYNC         READY->owp
         {
             super.failed(x);
             _channel.getByteBufferPool().release(_buffer);
+            try
+            {
+                _in.close();
+            }
+            catch (IOException e)
+            {
+                LOG.ignore(e);
+            }
         }
 
     }
@@ -904,6 +915,7 @@ write completed    -          -          -          ASYNC         READY->owp
             {
                 eof=true;
                 len=0;
+                _in.close();
             }
             else if (len<_buffer.capacity())
             {
@@ -935,6 +947,14 @@ write completed    -          -          -          ASYNC         READY->owp
         {
             super.failed(x);
             _channel.getByteBufferPool().release(_buffer);
+            try
+            {
+                _in.close();
+            }
+            catch (IOException e)
+            {
+                LOG.ignore(e);
+            }
         }
     }
 

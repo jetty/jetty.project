@@ -753,6 +753,7 @@ public class AnnotationParser
     public void parseDir (Resource dir, ClassNameResolver resolver)
     throws Exception
     {
+        //skip dirs whose name start with . (ie hidden)
         if (!dir.isDirectory() || !dir.exists() || dir.getName().startsWith("."))
             return;
 
@@ -766,16 +767,21 @@ public class AnnotationParser
                 Resource res = dir.addPath(files[f]);
                 if (res.isDirectory())
                     parseDir(res, resolver);
-                String name = res.getName();
-                if (isValidClassFileName(name))
+                else
                 {
-                    if ((resolver == null)|| (!resolver.isExcluded(name) && (!isParsed(name) || resolver.shouldOverride(name))))
+                    //we've already verified the directories, so just verify the class file name
+                    String filename = res.getFile().getName();
+                    if (isValidClassFileName(filename))
                     {
-                        Resource r = Resource.newResource(res.getURL());
-                        if (LOG.isDebugEnabled()) {LOG.debug("Scanning class {}", r);};
-                        scanClass(r.getInputStream());
-                    }
+                        String name = res.getName();
+                        if ((resolver == null)|| (!resolver.isExcluded(name) && (!isParsed(name) || resolver.shouldOverride(name))))
+                        {
+                            Resource r = Resource.newResource(res.getURL());
+                            if (LOG.isDebugEnabled()) {LOG.debug("Scanning class {}", r);};
+                            scanClass(r.getInputStream());
+                        }
 
+                    }
                 }
             }
             catch (Exception ex)
@@ -812,27 +818,11 @@ public class AnnotationParser
             {
                 try
                 {
-                    //skip directories
-                    if (entry.isDirectory())
-                        return;
-                    
-                    String name = entry.getName();
-                    if (isValidClassFileName(name))
-                    {
-                        String shortName =  name.replace('/', '.').substring(0,name.length()-6);
-                        if ((resolver == null)
-                             ||
-                            (!resolver.isExcluded(shortName) && (!isParsed(shortName) || resolver.shouldOverride(shortName))))
-                        {
-
-                            Resource clazz = Resource.newResource("jar:"+jarUri+"!/"+name);
-                            scanClass(clazz.getInputStream());
-                        }
-                    }
+                    parseJarEntry(jarUri, entry, resolver);
                 }
                 catch (Exception e)
                 {
-                    LOG.warn("Problem processing jar entry "+entry, e);
+                    LOG.warn("Problem parsing jar entry: {}", entry.getName());
                 }
             }
 
@@ -900,6 +890,8 @@ public class AnnotationParser
             scanClass(r.getInputStream());
             return;
         }
+        
+        if (LOG.isDebugEnabled()) LOG.warn("Resource not scannable for classes: {}", uri);
     }
 
 
@@ -933,34 +925,8 @@ public class AnnotationParser
             { 
                 JarEntry entry = jar_in.getNextJarEntry();
                 while (entry!=null)
-                {                   
-                    //skip directories
-                    if (!entry.isDirectory())
-                    {
-                        try
-                        {
-                            String name = entry.getName();
-
-                            //skip any class files that are in a hidden directory (ie dirname starts with .) 
-                            if (isValidClassFileName(name))
-                            {
-                                String shortName =  name.replace('/', '.').substring(0,name.length()-6);
-
-                                if ((resolver == null)
-                                        ||
-                                        (!resolver.isExcluded(shortName) && (!isParsed(shortName) || resolver.shouldOverride(shortName))))
-                                {
-                                    Resource clazz = Resource.newResource("jar:"+uri+"!/"+name);
-                                    if (LOG.isDebugEnabled()) {LOG.debug("Scanning class from jar {}", clazz);};
-                                    scanClass(clazz.getInputStream());
-                                }
-                            }
-                        }
-                        catch (Exception e)
-                        {
-                            LOG.warn("Problem processing jar entry "+entry, e);
-                        }
-                    }
+                {      
+                    parseJarEntry(uri, entry, resolver);
                     entry = jar_in.getNextJarEntry();
                 }
             }
@@ -970,8 +936,44 @@ public class AnnotationParser
             } 
         }   
     }
+
+    /**
+     * Parse a single entry in a jar file
+     * @param jar
+     * @param entry
+     * @param resolver
+     * @throws Exception
+     */
+    protected void parseJarEntry (URI jar, JarEntry entry, final ClassNameResolver resolver)
+    throws Exception
+    {
+        if (jar == null || entry == null)
+            return;
+
+        //skip directories
+        if (entry.isDirectory())
+            return;
+
+        String name = entry.getName();
+
+        //check file is a valid class file name
+        if (isValidClassFileName(name) && isValidClassFilePath(name))
+        {
+            String shortName =  name.replace('/', '.').substring(0,name.length()-6);
+
+            if ((resolver == null)
+                    ||
+                (!resolver.isExcluded(shortName) && (!isParsed(shortName) || resolver.shouldOverride(shortName))))
+            {
+                Resource clazz = Resource.newResource("jar:"+jar+"!/"+name);
+                if (LOG.isDebugEnabled()) {LOG.debug("Scanning class from jar {}", clazz);};
+                scanClass(clazz.getInputStream());
+            }
+        }
+    }
     
     
+
     /**
      * Use ASM on a class
      * 
@@ -993,27 +995,56 @@ public class AnnotationParser
      * <li> it isn't a dot file or in a hidden directory </li>
      * <li> the name of the class at least begins with a valid identifier for a class name </li>
      * </ul>
+     * @param name
+     * @return
+     */
+    private boolean isValidClassFileName (String name)
+    {
+        //no name cannot be valid
+        if (name == null || name.length()==0)
+            return false;
+
+        //skip anything that is not a class file
+        if (!name.toLowerCase(Locale.ENGLISH).endsWith(".class"))
+        {
+            if (LOG.isDebugEnabled()) LOG.debug("Not a class: {}",name);
+            return false;
+        }
+
+        //skip any classfiles that are not a valid java identifier
+        int c0 = 0;      
+        int ldir = name.lastIndexOf('/', name.length()-6);
+        c0 = (ldir > -1 ? ldir+1 : c0);
+        if (!Character.isJavaIdentifierStart(name.charAt(c0)))
+        {
+            if (LOG.isDebugEnabled()) LOG.debug("Not a java identifier: {}"+name);
+            return false;
+        }
+   
+        return true;
+    }
+    
+    
+    /**
+     * Check that the given path does not contain hidden directories
+     *
      * @param path
      * @return
      */
-    private boolean isValidClassFileName (String path)
+    private boolean isValidClassFilePath (String path)
     {
-        //skip anything that is not a class file
-        if (!path.toLowerCase(Locale.ENGLISH).endsWith(".class"))
+        //no path is not valid
+        if (path == null || path.length()==0)
             return false;
-        
-        //skip any classfiles that are not a valid name
-        int c0 = 0;      
-        int ldir = path.lastIndexOf('/', path.length()-6);
-        c0 = (ldir > -1 ? ldir+1 : c0);
-        
-        if (!Character.isJavaIdentifierStart(path.charAt(c0)))
-            return false;
-        
+
+
         //skip any classfiles that are in a hidden directory
         if (path.startsWith(".") || path.contains("/."))
+        {
+            if (LOG.isDebugEnabled()) LOG.debug("Contains hidden dirs: {}"+path);
             return false;
-        
+        }
+
         return true;
     }
 }
