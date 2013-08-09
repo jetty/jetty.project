@@ -273,11 +273,13 @@ public class HttpOutput extends ServletOutputStream
             Resource resource = (Resource)content;
             _channel.getResponse().getHttpFields().putDateField(HttpHeader.LAST_MODIFIED, resource.lastModified());
             
-            ReadableByteChannel in=((Resource)content).getReadableByteChannel();
-            if (in!=null)
-                sendContent(in,callback);
-            else
-                sendContent(resource.getInputStream(),callback);
+            try (ReadableByteChannel in=((Resource)content).getReadableByteChannel())
+            {
+                if (in!=null)
+                    sendContent(in,callback);
+                else
+                    sendContent(resource.getInputStream(),callback);
+            }
         }
         else if (content instanceof ByteBuffer)
         {
@@ -417,13 +419,15 @@ public class HttpOutput extends ServletOutputStream
             return;
         }
         
-        ReadableByteChannel rbc=httpContent.getReadableByteChannel();
-        if (rbc!=null)
+        try (ReadableByteChannel rbc=httpContent.getReadableByteChannel())
         {
-            sendContent(rbc,callback);
-            return;
+            if (rbc!=null)
+            {
+                sendContent(rbc,callback);
+                return;
+            }
         }
-           
+
         InputStream in = httpContent.getInputStream();
         if ( in!=null )
         {
