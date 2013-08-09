@@ -652,7 +652,7 @@ public class AnnotationParser
             if (!isParsed(className) || resolver.shouldOverride(className))
             {
                 className = className.replace('.', '/')+".class";
-                URL resource = Loader.getResource(this.getClass(), className, false);
+                URL resource = Loader.getResource(this.getClass(), className);
                 if (resource!= null)
                 {
                     Resource r = Resource.newResource(resource);
@@ -683,7 +683,7 @@ public class AnnotationParser
                 if (!isParsed(cz.getName()) || resolver.shouldOverride(cz.getName()))
                 {
                     String nameAsResource = cz.getName().replace('.', '/')+".class";
-                    URL resource = Loader.getResource(this.getClass(), nameAsResource, false);
+                    URL resource = Loader.getResource(this.getClass(), nameAsResource);
                     if (resource!= null)
                     {
                         Resource r = Resource.newResource(resource);
@@ -732,7 +732,7 @@ public class AnnotationParser
             if ((resolver == null) || (!resolver.isExcluded(s) &&  (!isParsed(s) || resolver.shouldOverride(s))))
             {
                 s = s.replace('.', '/')+".class";
-                URL resource = Loader.getResource(this.getClass(), s, false);
+                URL resource = Loader.getResource(this.getClass(), s);
                 if (resource!= null)
                 {
                     Resource r = Resource.newResource(resource);

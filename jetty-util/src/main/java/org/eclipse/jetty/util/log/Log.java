@@ -89,7 +89,7 @@ public class Log
                  * configuration of the Log class in situations where access to the System.properties are
                  * either too late or just impossible.
                  */
-                URL testProps = Loader.getResource(Log.class,"jetty-logging.properties",true);
+                URL testProps = Loader.getResource(Log.class,"jetty-logging.properties");
                 if (testProps != null)
                 {
                     InputStream in = null;
