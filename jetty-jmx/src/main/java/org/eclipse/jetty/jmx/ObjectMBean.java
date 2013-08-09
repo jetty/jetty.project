@@ -130,7 +130,7 @@ public class ObjectMBean implements DynamicMBean
 
                 try
                 {
-                    Class<?> mClass = (Object.class.equals(oClass))?oClass=ObjectMBean.class:Loader.loadClass(oClass,mName,true);
+                    Class<?> mClass = (Object.class.equals(oClass))?oClass=ObjectMBean.class:Loader.loadClass(oClass,mName);
 
                     LOG.debug("ObjectMbean: mbeanFor {} mClass={}", o, mClass);
 

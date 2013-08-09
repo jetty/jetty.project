@@ -261,7 +261,7 @@ public abstract class Resource implements ResourceFactory, Closeable
     /* ------------------------------------------------------------ */
     /** Find a classpath resource.
      * The {@link java.lang.Class#getResource(String)} method is used to lookup the resource. If it is not
-     * found, then the {@link Loader#getResource(Class, String, boolean)} method is used.
+     * found, then the {@link Loader#getResource(Class, String)} method is used.
      * If it is still not found, then {@link ClassLoader#getSystemResource(String)} is used.
      * Unlike {@link ClassLoader#getSystemResource(String)} this method does not check for normal resources.
      * @param name The relative name of the resource
@@ -275,7 +275,7 @@ public abstract class Resource implements ResourceFactory, Closeable
         URL url=Resource.class.getResource(name);
         
         if (url==null)
-            url=Loader.getResource(Resource.class,name,checkParents);
+            url=Loader.getResource(Resource.class,name);
         if (url==null)
             return null;
         return newResource(url,useCaches);

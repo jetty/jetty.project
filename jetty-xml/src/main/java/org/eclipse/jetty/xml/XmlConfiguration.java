@@ -95,9 +95,9 @@ public class XmlConfiguration
     private synchronized static XmlParser initParser()
     {
         XmlParser parser = new XmlParser();
-        URL config60 = Loader.getResource(XmlConfiguration.class,"org/eclipse/jetty/xml/configure_6_0.dtd",true);
-        URL config76 = Loader.getResource(XmlConfiguration.class,"org/eclipse/jetty/xml/configure_7_6.dtd",true);
-        URL config90 = Loader.getResource(XmlConfiguration.class,"org/eclipse/jetty/xml/configure_9_0.dtd",true);
+        URL config60 = Loader.getResource(XmlConfiguration.class,"org/eclipse/jetty/xml/configure_6_0.dtd");
+        URL config76 = Loader.getResource(XmlConfiguration.class,"org/eclipse/jetty/xml/configure_7_6.dtd");
+        URL config90 = Loader.getResource(XmlConfiguration.class,"org/eclipse/jetty/xml/configure_9_0.dtd");
         parser.redirectEntity("configure.dtd",config90);
         parser.redirectEntity("configure_1_0.dtd",config60);
         parser.redirectEntity("configure_1_1.dtd",config60);
@@ -351,7 +351,7 @@ public class XmlConfiguration
             if (className == null)
                 return null;
 
-            return Loader.loadClass(XmlConfiguration.class,className,true);
+            return Loader.loadClass(XmlConfiguration.class,className);
         }
 
         /**
@@ -847,7 +847,7 @@ public class XmlConfiguration
                             aClass = InetAddress.class;
                             break;
                         default:
-                            aClass = Loader.loadClass(XmlConfiguration.class, type, true);
+                            aClass = Loader.loadClass(XmlConfiguration.class, type);
                             break;
                     }
                 }

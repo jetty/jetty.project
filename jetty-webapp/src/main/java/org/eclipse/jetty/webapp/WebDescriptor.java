@@ -69,19 +69,19 @@ public class WebDescriptor extends Descriptor
     {
         XmlParser xmlParser=new XmlParser();
         //set up cache of DTDs and schemas locally
-        URL dtd22=Loader.getResource(Servlet.class,"javax/servlet/resources/web-app_2_2.dtd",true);
-        URL dtd23=Loader.getResource(Servlet.class,"javax/servlet/resources/web-app_2_3.dtd",true);
-        URL j2ee14xsd=Loader.getResource(Servlet.class,"javax/servlet/resources/j2ee_1_4.xsd",true);
-        URL webapp24xsd=Loader.getResource(Servlet.class,"javax/servlet/resources/web-app_2_4.xsd",true);
-        URL webapp25xsd=Loader.getResource(Servlet.class,"javax/servlet/resources/web-app_2_5.xsd",true);
-        URL webapp30xsd=Loader.getResource(Servlet.class,"javax/servlet/resources/web-app_3_0.xsd",true);
-        URL webcommon30xsd=Loader.getResource(Servlet.class,"javax/servlet/resources/web-common_3_0.xsd",true);
-        URL webfragment30xsd=Loader.getResource(Servlet.class,"javax/servlet/resources/web-fragment_3_0.xsd",true);
-        URL schemadtd=Loader.getResource(Servlet.class,"javax/servlet/resources/XMLSchema.dtd",true);
-        URL xmlxsd=Loader.getResource(Servlet.class,"javax/servlet/resources/xml.xsd",true);
-        URL webservice11xsd=Loader.getResource(Servlet.class,"javax/servlet/resources/j2ee_web_services_client_1_1.xsd",true);
-        URL webservice12xsd=Loader.getResource(Servlet.class,"javax/servlet/resources/javaee_web_services_client_1_2.xsd",true);
-        URL datatypesdtd=Loader.getResource(Servlet.class,"javax/servlet/resources/datatypes.dtd",true);
+        URL dtd22=Loader.getResource(Servlet.class,"javax/servlet/resources/web-app_2_2.dtd");
+        URL dtd23=Loader.getResource(Servlet.class,"javax/servlet/resources/web-app_2_3.dtd");
+        URL j2ee14xsd=Loader.getResource(Servlet.class,"javax/servlet/resources/j2ee_1_4.xsd");
+        URL webapp24xsd=Loader.getResource(Servlet.class,"javax/servlet/resources/web-app_2_4.xsd");
+        URL webapp25xsd=Loader.getResource(Servlet.class,"javax/servlet/resources/web-app_2_5.xsd");
+        URL webapp30xsd=Loader.getResource(Servlet.class,"javax/servlet/resources/web-app_3_0.xsd");
+        URL webcommon30xsd=Loader.getResource(Servlet.class,"javax/servlet/resources/web-common_3_0.xsd");
+        URL webfragment30xsd=Loader.getResource(Servlet.class,"javax/servlet/resources/web-fragment_3_0.xsd");
+        URL schemadtd=Loader.getResource(Servlet.class,"javax/servlet/resources/XMLSchema.dtd");
+        URL xmlxsd=Loader.getResource(Servlet.class,"javax/servlet/resources/xml.xsd");
+        URL webservice11xsd=Loader.getResource(Servlet.class,"javax/servlet/resources/j2ee_web_services_client_1_1.xsd");
+        URL webservice12xsd=Loader.getResource(Servlet.class,"javax/servlet/resources/javaee_web_services_client_1_2.xsd");
+        URL datatypesdtd=Loader.getResource(Servlet.class,"javax/servlet/resources/datatypes.dtd");
 
         URL jsp20xsd = null;
         URL jsp21xsd = null;
@@ -98,8 +98,8 @@ public class WebDescriptor extends Descriptor
         }
         finally
         {
-            if (jsp20xsd == null) jsp20xsd = Loader.getResource(Servlet.class, "javax/servlet/resources/jsp_2_0.xsd", true);
-            if (jsp21xsd == null) jsp21xsd = Loader.getResource(Servlet.class, "javax/servlet/resources/jsp_2_1.xsd", true);
+            if (jsp20xsd == null) jsp20xsd = Loader.getResource(Servlet.class, "javax/servlet/resources/jsp_2_0.xsd");
+            if (jsp21xsd == null) jsp21xsd = Loader.getResource(Servlet.class, "javax/servlet/resources/jsp_2_1.xsd");
         }
 
         redirect(xmlParser,"web-app_2_2.dtd",dtd22);
