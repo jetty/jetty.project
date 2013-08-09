@@ -536,11 +536,13 @@ public class ResourceHandler extends HandlerWrapper
                 }
                 else  // Do a blocking write of a channel (if available) or input stream
                 {
-                    ReadableByteChannel channel= resource.getReadableByteChannel();
-                    if (channel!=null)
-                        ((HttpOutput)out).sendContent(channel,callback);
-                    else
-                        ((HttpOutput)out).sendContent(resource.getInputStream(),callback);
+                    try (ReadableByteChannel channel= resource.getReadableByteChannel())
+                    {
+                        if (channel!=null)
+                            ((HttpOutput)out).sendContent(channel,callback);
+                        else
+                            ((HttpOutput)out).sendContent(resource.getInputStream(),callback);
+                    }
                 }
             }
             else
@@ -555,11 +557,13 @@ public class ResourceHandler extends HandlerWrapper
                 }
                 else  // Do a blocking write of a channel (if available) or input stream
                 {
-                    ReadableByteChannel channel= resource.getReadableByteChannel();
-                    if (channel!=null)
-                        ((HttpOutput)out).sendContent(channel);
-                    else
-                        ((HttpOutput)out).sendContent(resource.getInputStream());
+                    try (ReadableByteChannel channel= resource.getReadableByteChannel())
+                    {
+                        if (channel!=null)
+                            ((HttpOutput)out).sendContent(channel);
+                        else
+                            ((HttpOutput)out).sendContent(resource.getInputStream());
+                    }
                 }
             }
         }
