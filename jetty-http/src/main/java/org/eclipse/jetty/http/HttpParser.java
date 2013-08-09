@@ -302,7 +302,7 @@ public class HttpParser
             }
             // Only LF or TAB acceptable special characters
             else if (!(ch==HttpTokens.LINE_FEED || ch==HttpTokens.TAB))
-                throw new BadMessage();
+                throw new BadMessage("Illegal character");
         }
         
         return ch;
@@ -350,6 +350,8 @@ public class HttpParser
             }
             else if (ch==0)
                 break;
+            else if (ch<0)
+                throw new BadMessage();
         }
         return false;
     }
@@ -415,10 +417,8 @@ public class HttpParser
                             _methodString=method.asString();
                         setState(State.SPACE1);
                     }
-                    else if (ch < HttpTokens.SPACE && ch>=0)
-                    {
-                        throw new BadMessage(HttpStatus.BAD_REQUEST_400,"No URI");
-                    }
+                    else if (ch < HttpTokens.SPACE)
+                        throw new BadMessage(ch<0?"Illegal character":"No URI");
                     else
                         _string.append((char)ch);
                     break;
@@ -429,15 +429,11 @@ public class HttpParser
                         String version=takeString();
                         _version=HttpVersion.CACHE.get(version);
                         if (_version==null)
-                        {
                             throw new BadMessage(HttpStatus.BAD_REQUEST_400,"Unknown Version");
-                        }
                         setState(State.SPACE1);
                     }
-                    else if (ch < HttpTokens.SPACE && ch>=0)
-                    {
-                        throw new BadMessage(HttpStatus.BAD_REQUEST_400,"No Status");
-                    }
+                    else if (ch < HttpTokens.SPACE)
+                        throw new BadMessage(ch<0?"Illegal character":"No Status");
                     else
                         _string.append((char)ch);
                     break;
@@ -508,7 +504,7 @@ public class HttpParser
                     }
                     else
                     {
-                        throw new IllegalStateException();
+                        throw new BadMessage();
                     }
                     break;
 
@@ -541,7 +537,7 @@ public class HttpParser
                     break;
 
                 case SPACE2:
-                    if (ch > HttpTokens.SPACE || ch<0)
+                    if (ch > HttpTokens.SPACE)
                     {
                         _string.setLength(0);
                         _string.append((char)ch);
@@ -601,6 +597,8 @@ public class HttpParser
                             handle=_handler.messageComplete()||handle;
                         }
                     }
+                    else if (ch<0)
+                        throw new BadMessage();
                     break;
 
                 case REQUEST_VERSION:
@@ -624,8 +622,10 @@ public class HttpParser
                         handle=_requestHandler.startRequest(_method,_methodString,_uri, _version)||handle;
                         continue;
                     }
-                    else
+                    else if (ch>=HttpTokens.SPACE)
                         _string.append((char)ch);
+                    else
+                        throw new BadMessage();
 
                     break;
 
@@ -638,12 +638,14 @@ public class HttpParser
                         handle=_responseHandler.startResponse(_version, _responseStatus, reason)||handle;
                         continue;
                     }
-                    else
+                    else if (ch>=HttpTokens.SPACE)
                     {
                         _string.append((char)ch);
                         if (ch!=' '&&ch!='\t')
                             _length=_string.length();
-                    }
+                    } 
+                    else
+                        throw new BadMessage();
                     break;
 
                 default:
@@ -1001,10 +1003,6 @@ public class HttpParser
                     break;
 
                 case HEADER_IN_NAME:
-                    if (ch<HttpTokens.SPACE)
-                    {
-                        
-                    }
                     if (ch<0)
                         throw new BadMessage("Illegal character");
                     switch(ch)

@@ -363,7 +363,7 @@ public class HttpParserTest
         assertEquals("HTTP/1.0", _versionOrReason);
         assertEquals("Header1", _hdr[0]);
         assertEquals("\u00e6 \u00e6", _val[0]);
-        assertEquals(0, _h);
+        assertEquals(0, _headers);
         assertEquals(null,_bad);
     }
     
