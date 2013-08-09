@@ -601,7 +601,7 @@ public class ResponseTest
 
         String set = response.getHttpFields().getStringField("Set-Cookie");
 
-        assertEquals("name=value;Path=/path;Domain=domain;Secure;HttpOnly;Comment=comment", set);
+        assertEquals("name=value;Version=1;Path=/path;Domain=domain;Secure;HttpOnly;Comment=comment", set);
     }
 
 
@@ -630,7 +630,7 @@ public class ResponseTest
         assertNotNull(set);
         ArrayList<String> list = Collections.list(set);
         assertEquals(2, list.size());
-        assertTrue(list.contains("name=value;Path=/path;Domain=domain;Secure;HttpOnly;Comment=comment"));
+        assertTrue(list.contains("name=value;Version=1;Path=/path;Domain=domain;Secure;HttpOnly;Comment=comment"));
         assertTrue(list.contains("name2=value2;Path=/path;Domain=domain"));
 
         //get rid of the cookies

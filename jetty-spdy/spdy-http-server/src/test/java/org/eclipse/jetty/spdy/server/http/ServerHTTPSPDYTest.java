@@ -189,9 +189,9 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 assertThat("response code is 200 OK", replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value()
                         .contains("200"), is(true));
                 assertThat(replyInfo.getHeaders().get("Set-Cookie").values()[0], is(cookie1 + "=\"" + cookie1Value +
-                        "\""));
+                        "\";Version=1"));
                 assertThat(replyInfo.getHeaders().get("Set-Cookie").values()[1], is(cookie2 + "=\"" + cookie2Value +
-                        "\""));
+                        "\";Version=1"));
                 replyLatch.countDown();
             }
         });
