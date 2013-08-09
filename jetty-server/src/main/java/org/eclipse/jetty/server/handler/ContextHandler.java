@@ -101,8 +101,8 @@ import org.eclipse.jetty.util.resource.Resource;
 @ManagedObject("URI Context")
 public class ContextHandler extends ScopedHandler implements Attributes, Graceful
 {
-    public static int SERVLET_MAJOR_VERSION=3;
-    public static int SERVLET_MINOR_VERSION=0;
+    public final static int SERVLET_MAJOR_VERSION=3;
+    public final static int SERVLET_MINOR_VERSION=0;
 
     final private static String __unimplmented="Unimplemented - use org.eclipse.jetty.servlet.ServletContextHandler";
 
