@@ -279,10 +279,10 @@ public class HttpFieldsTest
         //test cookies with same name, domain and path, only 1 allowed
         fields.addSetCookie("everything","wrong","domain","path",0,"to be replaced",true,true,0);
         fields.addSetCookie("everything","value","domain","path",0,"comment",true,true,0);
-        assertEquals("everything=value;Path=path;Domain=domain;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=comment",fields.getStringField("Set-Cookie"));
+        assertEquals("everything=value;Version=1;Path=path;Domain=domain;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=comment",fields.getStringField("Set-Cookie"));
         Enumeration<String> e =fields.getValues("Set-Cookie");
         assertTrue(e.hasMoreElements());
-        assertEquals("everything=value;Path=path;Domain=domain;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=comment",e.nextElement());
+        assertEquals("everything=value;Version=1;Path=path;Domain=domain;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=comment",e.nextElement());
         assertFalse(e.hasMoreElements());
         assertEquals("Thu, 01 Jan 1970 00:00:00 GMT",fields.getStringField("Expires"));
         assertFalse(e.hasMoreElements());
@@ -293,9 +293,9 @@ public class HttpFieldsTest
         fields.addSetCookie("everything","value","domain2","path",0,"comment",true,true,0);
         e =fields.getValues("Set-Cookie");
         assertTrue(e.hasMoreElements());
-        assertEquals("everything=other;Path=path;Domain=domain1;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=blah",e.nextElement());
+        assertEquals("everything=other;Version=1;Path=path;Domain=domain1;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=blah",e.nextElement());
         assertTrue(e.hasMoreElements());
-        assertEquals("everything=value;Path=path;Domain=domain2;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=comment",e.nextElement());
+        assertEquals("everything=value;Version=1;Path=path;Domain=domain2;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=comment",e.nextElement());
         assertFalse(e.hasMoreElements());
         
         //test cookies with same name, same path, one with domain, one without
@@ -304,9 +304,9 @@ public class HttpFieldsTest
         fields.addSetCookie("everything","value","","path",0,"comment",true,true,0);
         e =fields.getValues("Set-Cookie");
         assertTrue(e.hasMoreElements());
-        assertEquals("everything=other;Path=path;Domain=domain1;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=blah",e.nextElement());
+        assertEquals("everything=other;Version=1;Path=path;Domain=domain1;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=blah",e.nextElement());
         assertTrue(e.hasMoreElements());
-        assertEquals("everything=value;Path=path;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=comment",e.nextElement());
+        assertEquals("everything=value;Version=1;Path=path;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=comment",e.nextElement());
         assertFalse(e.hasMoreElements());
         
         
@@ -316,9 +316,9 @@ public class HttpFieldsTest
         fields.addSetCookie("everything","value","domain1","path2",0,"comment",true,true,0);
         e =fields.getValues("Set-Cookie");
         assertTrue(e.hasMoreElements());
-        assertEquals("everything=other;Path=path1;Domain=domain1;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=blah",e.nextElement());
+        assertEquals("everything=other;Version=1;Path=path1;Domain=domain1;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=blah",e.nextElement());
         assertTrue(e.hasMoreElements());
-        assertEquals("everything=value;Path=path2;Domain=domain1;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=comment",e.nextElement());
+        assertEquals("everything=value;Version=1;Path=path2;Domain=domain1;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=comment",e.nextElement());
         assertFalse(e.hasMoreElements());
         
         //test cookies with same name, same domain, one with path, one without
@@ -327,9 +327,9 @@ public class HttpFieldsTest
         fields.addSetCookie("everything","value","domain1","",0,"comment",true,true,0);
         e =fields.getValues("Set-Cookie");
         assertTrue(e.hasMoreElements());
-        assertEquals("everything=other;Path=path1;Domain=domain1;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=blah",e.nextElement());
+        assertEquals("everything=other;Version=1;Path=path1;Domain=domain1;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=blah",e.nextElement());
         assertTrue(e.hasMoreElements());
-        assertEquals("everything=value;Domain=domain1;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=comment",e.nextElement());
+        assertEquals("everything=value;Version=1;Domain=domain1;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=comment",e.nextElement());
         assertFalse(e.hasMoreElements());
         
         //test cookies same name only, no path, no domain
@@ -338,13 +338,13 @@ public class HttpFieldsTest
         fields.addSetCookie("everything","value","","",0,"comment",true,true,0);
         e =fields.getValues("Set-Cookie");
         assertTrue(e.hasMoreElements());
-        assertEquals("everything=value;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=comment",e.nextElement());
+        assertEquals("everything=value;Version=1;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=comment",e.nextElement());
         assertFalse(e.hasMoreElements());
 
         fields.clear();
-        fields.addSetCookie("ev erything","va lue","do main","pa th",1,"co mment",true,true,2);
+        fields.addSetCookie("ev erything","va lue","do main","pa th",1,"co mment",true,true,1);
         String setCookie=fields.getStringField("Set-Cookie");
-        assertThat(setCookie,Matchers.startsWith("\"ev erything\"=\"va lue\";Version=2;Path=\"pa th\";Domain=\"do main\";Expires="));
+        assertThat(setCookie,Matchers.startsWith("\"ev erything\"=\"va lue\";Version=1;Path=\"pa th\";Domain=\"do main\";Expires="));
         assertThat(setCookie,Matchers.endsWith(" GMT;Max-Age=1;Secure;HttpOnly;Comment=\"co mment\""));
 
         fields.clear();
@@ -376,7 +376,7 @@ public class HttpFieldsTest
         fields=new HttpFields();
         fields.addSetCookie("name","value==",null,null,-1,null,false,false,0);
         setCookie=fields.getStringField("Set-Cookie");
-        assertEquals("name=\"value==\"",setCookie);
+        assertEquals("name=\"value==\";Version=1",setCookie);
 
     }
 

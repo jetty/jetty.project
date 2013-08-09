@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.http;
 
+import static org.eclipse.jetty.util.QuotedStringTokenizer.isQuoted;
+import static org.eclipse.jetty.util.QuotedStringTokenizer.quoteOnly;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
@@ -54,23 +57,27 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * HTTP Fields. A collection of HTTP header and or Trailer fields.
  *
- * <p>This class is not synchronized as it is expected that modifications will only be performed by a
+ * <p>This class is not synchronised as it is expected that modifications will only be performed by a
  * single thread.
+ * 
+ * <p>The cookie handling provided by this class is guided by the Servlet specification and RFC6265.
  *
  */
 public class HttpFields implements Iterable<HttpField>
 {
     private static final Logger LOG = Log.getLogger(HttpFields.class);
-    public static final String __COOKIE_DELIM="\"\\\n\r\t\f\b%+ ;=";
     public static final TimeZone __GMT = TimeZone.getTimeZone("GMT");
     public static final DateCache __dateCache = new DateCache("EEE, dd MMM yyyy HH:mm:ss 'GMT'", Locale.US);
 
+    public static final String __COOKIE_DELIM_PATH="\"\\\t%+ :;,@?=()<>{}[]";
+    public static final String __COOKIE_DELIM=__COOKIE_DELIM_PATH+"/";
+    
     static
     {
         __GMT.setID("GMT");
         __dateCache.setTimeZone(__GMT);
     }
-
+    
     public final static String __separators = ", \t";
 
     private static final String[] DAYS =
@@ -808,71 +815,87 @@ public class HttpFields implements Iterable<HttpField>
             final boolean isHttpOnly,
             int version)
     {
-        String delim=__COOKIE_DELIM;
-
         // Check arguments
         if (name == null || name.length() == 0)
             throw new IllegalArgumentException("Bad cookie name");
 
         // Format value and params
         StringBuilder buf = new StringBuilder(128);
-        String name_value_params;
-        QuotedStringTokenizer.quoteIfNeeded(buf, name, delim);
-        buf.append('=');
-        String start=buf.toString();
-        boolean hasDomain = false;
-        boolean hasPath = false;
         
-        if (value != null && value.length() > 0)
-            QuotedStringTokenizer.quoteIfNeeded(buf, value, delim);
+        // Name is checked by servlet spec, but can also be passed directly so check again
+        boolean quote_name=isQuoteNeededForCookie(name);
+        quoteOnlyOrAppend(buf,name,quote_name);
+        
+        buf.append('=');
+        
+        // Remember name= part to look for other matching set-cookie
+        String name_equals=buf.toString();
 
-        if (version>0)
-            buf.append(";Version=").append(version);
+        // Append the value
+        boolean quote_value=isQuoteNeededForCookie(value);
+        quoteOnlyOrAppend(buf,value,quote_value);
 
-        if (path != null && path.length() > 0)
+        // Look for domain and path fields and check if they need to be quoted
+        boolean has_domain = domain!=null && domain.length()>0;
+        boolean quote_domain = has_domain && isQuoteNeededForCookie(domain);
+        boolean has_path = path!=null && path.length()>0;
+        boolean quote_path = has_path && isQuoteNeededForCookiePath(path);
+        
+        // Upgrade the version if we have a comment or we need to quote value/path/domain or if they were already quoted
+        if (version==0 && ( comment!=null || quote_name || quote_value || quote_domain || quote_path || isQuoted(name) || isQuoted(value) || isQuoted(path) || isQuoted(domain)))
+            version=1;
+
+        // Append version
+        if (version==1)
+            buf.append (";Version=1");
+        else if (version>1)
+            buf.append (";Version=").append(version);
+        
+        // Append path
+        if (has_path)
         {
-            hasPath = true;
             buf.append(";Path=");
-            if (path.trim().startsWith("\""))
-                buf.append(path);
-            else
-                QuotedStringTokenizer.quoteIfNeeded(buf,path,delim);
+            quoteOnlyOrAppend(buf,path,quote_path);
         }
-        if (domain != null && domain.length() > 0)
+        
+        // Append domain
+        if (has_domain)
         {
-            hasDomain = true;
             buf.append(";Domain=");
-            QuotedStringTokenizer.quoteIfNeeded(buf,domain.toLowerCase(Locale.ENGLISH),delim);
+            quoteOnlyOrAppend(buf,domain,quote_domain);
         }
 
+        // Handle max-age and/or expires
         if (maxAge >= 0)
         {
-            // Always add the expires param as some browsers still don't handle max-age
+            // Always use expires
+            // This is required as some browser (M$ this means you!) don't handle max-age even with v1 cookies
             buf.append(";Expires=");
             if (maxAge == 0)
                 buf.append(__01Jan1970_COOKIE);
             else
                 formatCookieDate(buf, System.currentTimeMillis() + 1000L * maxAge);
-
-            buf.append(";Max-Age=");
-            buf.append(maxAge);
+            
+            // for v1 cookies, also send max-age
+            if (version>=1)
+            {
+                buf.append(";Max-Age=");
+                buf.append(maxAge);
+            }
         }
 
+        // add the other fields
         if (isSecure)
             buf.append(";Secure");
         if (isHttpOnly)
             buf.append(";HttpOnly");
-
-        if (comment != null && comment.length() > 0)
+        if (comment != null)
         {
             buf.append(";Comment=");
-            QuotedStringTokenizer.quoteIfNeeded(buf, comment, delim);
+            quoteOnlyOrAppend(buf,comment,isQuoteNeededForCookie(comment));
         }
 
-        name_value_params = buf.toString();
-
-        // remove existing set-cookie of same name
-
+        // remove any existing set-cookie fields of same name
         Iterator<HttpField> i=_fields.iterator();
         while (i.hasNext())
         {
@@ -880,26 +903,26 @@ public class HttpFields implements Iterable<HttpField>
             if (field.getHeader()==HttpHeader.SET_COOKIE)
             {
                 String val = (field.getValue() == null ? null : field.getValue().toString());
-                if (val!=null && val.startsWith(start))
+                if (val!=null && val.startsWith(name_equals))
                 {
                     //existing cookie has same name, does it also match domain and path?
-                    if (((!hasDomain && !val.contains("Domain")) || (hasDomain && val.contains("Domain="+domain))) &&
-                        ((!hasPath && !val.contains("Path")) || (hasPath && val.contains("Path="+path))))
+                    if (((!has_domain && !val.contains("Domain")) || (has_domain && val.contains(domain))) &&
+                        ((!has_path && !val.contains("Path")) || (has_path && val.contains(path))))
                     {
                         i.remove();
                     }
                 }
-                
             }
         }
         
-        add(HttpHeader.SET_COOKIE.toString(), name_value_params);
+        // add the set cookie
+        add(HttpHeader.SET_COOKIE.toString(), buf.toString());
 
         // Expire responses with set-cookie headers so they do not get cached.
         put(HttpHeader.EXPIRES.toString(), __01Jan1970);
     }
 
-    public void putTo(ByteBuffer bufferInFillMode) throws IOException
+    public void putTo(ByteBuffer bufferInFillMode) 
     {
         for (HttpField field : _fields)
         {
@@ -1097,19 +1120,20 @@ public class HttpFields implements Iterable<HttpField>
             }
         }
 
-        List vl = LazyList.getList(list, false);
-        if (vl.size() < 2) return vl;
+        List<String> vl = LazyList.getList(list, false);
+        if (vl.size() < 2) 
+            return vl;
 
-        List ql = LazyList.getList(qual, false);
+        List<Float> ql = LazyList.getList(qual, false);
 
         // sort list with swaps
         Float last = __zero;
         for (int i = vl.size(); i-- > 0;)
         {
-            Float q = (Float) ql.get(i);
+            Float q = ql.get(i);
             if (last.compareTo(q) > 0)
             {
-                Object tmp = vl.get(i);
+                String tmp = vl.get(i);
                 vl.set(i, vl.get(i + 1));
                 vl.set(i + 1, tmp);
                 ql.set(i, ql.get(i + 1));
@@ -1125,4 +1149,66 @@ public class HttpFields implements Iterable<HttpField>
     }
 
 
+
+    /* ------------------------------------------------------------ */
+    /** Does a cookie value need to be quoted?
+     * @param s value string
+     * @return true if quoted;
+     * @throws IllegalArgumentException If there a control characters in the string
+     */
+    public static boolean isQuoteNeededForCookie(String s)
+    {
+        if (s==null || s.length()==0)
+            return true;
+        
+        if (QuotedStringTokenizer.isQuoted(s))
+            return false;
+
+        for (int i=0;i<s.length();i++)
+        {
+            char c = s.charAt(i);
+            if (__COOKIE_DELIM.indexOf(c)>=0)
+                return true;
+            
+            if (c<0x20 || c>=0x7f)
+                throw new IllegalArgumentException("Illegal character in cookie value");
+        }
+
+        return false;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /** Does a cookie path need to be quoted?
+     * @param s value string
+     * @return true if quoted;
+     * @throws IllegalArgumentException If there a control characters in the string
+     */
+    public static boolean isQuoteNeededForCookiePath(String s)
+    {
+        if (s==null || s.length()==0)
+            return true;
+
+        if (QuotedStringTokenizer.isQuoted(s))
+            return false;
+        
+        for (int i=0;i<s.length();i++)
+        {
+            char c = s.charAt(i);
+            if (__COOKIE_DELIM_PATH.indexOf(c)>=0)
+                return true;
+            
+            if (c<0x20 || c>=0x7f)
+                throw new IllegalArgumentException("Illegal character in cookie value");
+        }
+
+        return false;
+    }
+    
+    private static void quoteOnlyOrAppend(StringBuilder buf, String s, boolean quote)
+    {
+        if (quote)
+            QuotedStringTokenizer.quoteOnly(buf,s);
+        else
+            buf.append(s);
+    }
 }
