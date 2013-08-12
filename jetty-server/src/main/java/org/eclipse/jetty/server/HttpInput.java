@@ -19,16 +19,11 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
-import java.io.InterruptedIOException;
-import java.nio.ByteBuffer;
-
-import javax.servlet.ServletInputStream;
 import javax.servlet.ReadListener;
+import javax.servlet.ServletInputStream;
 
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
-import org.eclipse.jetty.util.ArrayQueue;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -55,12 +50,12 @@ import org.eclipse.jetty.util.log.Logger;
 public abstract class HttpInput<T> extends ServletInputStream implements Runnable
 {
     private final static Logger LOG = Log.getLogger(HttpInput.class);
-    
+
     private HttpChannelState _channelState;
     private Throwable _onError;
     private ReadListener _listener;
     private boolean _notReady;
-    
+
     protected State _state = BLOCKING;
     private State _eof=null;
     private final Object _lock;
@@ -69,12 +64,12 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
     {
         this(null);
     }
-    
+
     protected HttpInput(Object lock)
     {
         _lock=lock==null?this:lock;
     }
-    
+
     public final Object lock()
     {
         return _lock;
@@ -91,16 +86,16 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
     }
 
     /**
-     * Access the next content to be consumed from.   Returning the next item does not consume it 
+     * Access the next content to be consumed from.   Returning the next item does not consume it
      * and it may be returned multiple times until it is consumed.   Calls to {@link #get(Object, byte[], int, int)}
      * or {@link #consume(Object, int)} are required to consume data from the content.
      * @return Content or null if none available.
      * @throws IOException
      */
     protected abstract T nextContent() throws IOException;
-    
+
     /**
-     * A convenience method to call nextContent and to check the return value, which if null then the 
+     * A convenience method to call nextContent and to check the return value, which if null then the
      * a check is made for EOF and the state changed accordingly.
      * @see #nextContent()
      * @return Content or null if none available.
@@ -109,17 +104,17 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
     protected T getNextContent() throws IOException
     {
         T content=nextContent();
-        
-        if (content==null && _eof!=null)   
+
+        if (content==null && _eof!=null)
         {
             LOG.debug("{} eof {}",this,_eof);
             _state=_eof;
             _eof=null;
         }
-        
+
         return content;
     }
-    
+
     @Override
     public int read() throws IOException
     {
@@ -155,7 +150,7 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
 
             // Get the current head of the input Q
             item = getNextContent();
-            
+
             // If we have no item
             if (item == null)
             {
@@ -171,11 +166,11 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
     protected abstract int remaining(T item);
 
     protected abstract int get(T item, byte[] buffer, int offset, int length);
-    
+
     protected abstract void consume(T item, int length);
 
     protected abstract void blockForContent() throws IOException;
-    
+
     protected boolean onAsyncRead()
     {
         if (_listener==null)
@@ -189,7 +184,7 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
      * @param item
      */
     public abstract void content(T item);
-    
+
 
     /* ------------------------------------------------------------ */
     /** This method should be called to signal to the HttpInput
@@ -283,7 +278,7 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
     protected void unready()
     {
     }
-    
+
     @Override
     public void setReadListener(ReadListener readListener)
     {
@@ -308,17 +303,17 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
             if (_onError==null)
                 LOG.warn(x);
             else
-                _onError=x; 
+                _onError=x;
         }
     }
-    
+
     @Override
     public void run()
     {
         final boolean available;
         final boolean eof;
         final Throwable x;
-        
+
         synchronized (lock())
         {
             if (!_notReady || _listener==null)
@@ -352,26 +347,26 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
             else
                 unready();
         }
-        catch(Exception e)
+        catch(Throwable e)
         {
             LOG.warn(e.toString());
             LOG.debug(e);
             _listener.onError(e);
         }
-    }  
-    
+    }
+
 
     protected static class State
     {
         public void waitForContent(HttpInput<?> in) throws IOException
         {
         }
-        
+
         public int noContent() throws IOException
         {
             return -1;
         }
-        
+
         public boolean isEOF()
         {
             return false;
@@ -390,7 +385,7 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
             return "OPEN";
         }
     };
-    
+
     protected static final State ASYNC= new State()
     {
         @Override
@@ -398,16 +393,16 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
         {
             return 0;
         }
-        @Override 
+        @Override
         public String toString()
         {
             return "ASYNC";
         }
     };
-    
+
     protected static final State EARLY_EOF= new State()
     {
-        @Override        
+        @Override
         public int noContent() throws IOException
         {
             throw new EofException();

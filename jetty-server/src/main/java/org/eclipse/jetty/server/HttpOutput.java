@@ -32,7 +32,6 @@ import javax.servlet.WriteListener;
 
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.BlockingCallback;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -60,12 +59,12 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private int _bufferSize;
     private WriteListener _writeListener;
     private volatile Throwable _onError;
-    
-    /* 
-ACTION             OPEN       ASYNC      READY      PENDING       UNREADY                    
+
+    /*
+ACTION             OPEN       ASYNC      READY      PENDING       UNREADY
 -------------------------------------------------------------------------------
-setWriteListener() READY->owp ise        ise        ise           ise          
-write()            OPEN       ise        PENDING    wpe           wpe          
+setWriteListener() READY->owp ise        ise        ise           ise
+write()            OPEN       ise        PENDING    wpe           wpe
 flush()            OPEN       ise        PENDING    wpe           wpe
 isReady()          OPEN:true  READY:true READY:true UNREADY:false UNREADY:false
 write completed    -          -          -          ASYNC         READY->owp
@@ -73,8 +72,8 @@ write completed    -          -          -          ASYNC         READY->owp
      */
     enum State { OPEN, ASYNC, READY, PENDING, UNREADY, CLOSED }
     private final AtomicReference<State> _state=new AtomicReference<>(State.OPEN);
-    
-    
+
+
 
     public HttpOutput(HttpChannel<?> channel)
     {
@@ -107,7 +106,7 @@ write completed    -          -          -          ASYNC         READY->owp
     {
         return _channel.getResponse().isAllContentWritten(_written);
     }
-    
+
     @Override
     public void close()
     {
@@ -134,7 +133,7 @@ write completed    -          -          -          ASYNC         READY->owp
             state=_state.get();
         }
     }
-    
+
     /* Called to indicated that the output is already closed and the state needs to be updated to match */
     void closed()
     {
@@ -145,7 +144,7 @@ write completed    -          -          -          ASYNC         READY->owp
             {
                 try
                 {
-                    _channel.getResponse().closeOutput(); 
+                    _channel.getResponse().closeOutput();
                 }
                 catch(IOException e)
                 {
@@ -186,20 +185,20 @@ write completed    -          -          -          ASYNC         READY->owp
                     else
                         _channel.write(BufferUtil.EMPTY_BUFFER, false);
                     return;
-                    
+
                 case ASYNC:
                     throw new IllegalStateException("isReady() not called");
-                    
+
                 case READY:
                     if (!_state.compareAndSet(State.READY, State.PENDING))
                         continue;
                     new AsyncFlush().process();
                     return;
-                    
+
                 case PENDING:
                 case UNREADY:
                     throw new WritePendingException();
-                    
+
                 case CLOSED:
                     return;
             }
@@ -207,10 +206,10 @@ write completed    -          -          -          ASYNC         READY->owp
         }
     }
 
-    
+
     @Override
     public void write(byte[] b, int off, int len) throws IOException
-    {  
+    {
     	_written+=len;
     	boolean complete=_channel.getResponse().isAllContentWritten(_written);
 
@@ -222,7 +221,7 @@ write completed    -          -          -          ASYNC         READY->owp
                 case OPEN:
                     // process blocking below
     	            break;
-    	            
+
                 case ASYNC:
                     throw new IllegalStateException("isReady() not called");
 
@@ -267,9 +266,9 @@ write completed    -          -          -          ASYNC         READY->owp
     	    break;
     	}
 
-    	
+
     	// handle blocking write
-    	
+
     	// Should we aggregate?
     	int capacity = getBufferSize();
     	if (!complete && len<=capacity/4)
@@ -316,7 +315,7 @@ write completed    -          -          -          ASYNC         READY->owp
     }
 
     public void write(ByteBuffer buffer) throws IOException
-    {  
+    {
         _written+=buffer.remaining();
         boolean complete=_channel.getResponse().isAllContentWritten(_written);
 
@@ -328,7 +327,7 @@ write completed    -          -          -          ASYNC         READY->owp
                 case OPEN:
                     // process blocking below
                     break;
-                    
+
                 case ASYNC:
                     throw new IllegalStateException("isReady() not called");
 
@@ -350,7 +349,7 @@ write completed    -          -          -          ASYNC         READY->owp
             break;
         }
 
-        
+
         // handle blocking write
         int len=BufferUtil.length(buffer);
 
@@ -383,7 +382,7 @@ write completed    -          -          -          ASYNC         READY->owp
                     if (_aggregate == null)
                         _aggregate = _channel.getByteBufferPool().acquire(getBufferSize(), false);
                     BufferUtil.append(_aggregate, (byte)b);
-                    
+
                     // Check if all written or full
                     if (complete || BufferUtil.isFull(_aggregate))
                     {
@@ -394,7 +393,7 @@ write completed    -          -          -          ASYNC         READY->owp
                             closed();
                     }
                     break;
-                    
+
                 case ASYNC:
                     throw new IllegalStateException("isReady() not called");
 
@@ -510,13 +509,13 @@ write completed    -          -          -          ASYNC         READY->owp
             public void failed(Throwable x)
             {
                 callback.failed(x);
-            }            
+            }
         });
     }
 
     /* ------------------------------------------------------------ */
     /** Asynchronous send of content.
-     * @param in The content to send as a stream.  The stream will be closed 
+     * @param in The content to send as a stream.  The stream will be closed
      * after reading all content.
      * @param callback The callback to use to notify success or failure
      */
@@ -527,7 +526,7 @@ write completed    -          -          -          ASYNC         READY->owp
 
     /* ------------------------------------------------------------ */
     /** Asynchronous send of content.
-     * @param in The content to send as a channel.  The channel will be closed 
+     * @param in The content to send as a channel.  The channel will be closed
      * after reading all content.
      * @param callback The callback to use to notify success or failure
      */
@@ -611,7 +610,7 @@ write completed    -          -          -          ASYNC         READY->owp
     {
         if (!_channel.getState().isAsync())
             throw new IllegalStateException("!ASYNC");
-        
+
         if (_state.compareAndSet(State.OPEN, State.READY))
         {
             _writeListener = writeListener;
@@ -621,7 +620,7 @@ write completed    -          -          -          ASYNC         READY->owp
             throw new IllegalStateException();
     }
 
-    /** 
+    /**
      * @see javax.servlet.ServletOutputStream#isReady()
      */
     @Override
@@ -667,7 +666,7 @@ write completed    -          -          -          ASYNC         READY->owp
             {
                 _writeListener.onWritePossible();
             }
-            catch (IOException e)
+            catch (Throwable e)
             {
                 _writeListener.onError(e);
                 close();
@@ -681,14 +680,14 @@ write completed    -          -          -          ASYNC         READY->owp
         private final boolean _complete;
         private final int _len;
 
-        public AsyncWrite(byte[] b, int off, int len, boolean complete) 
+        public AsyncWrite(byte[] b, int off, int len, boolean complete)
         {
             _buffer=ByteBuffer.wrap(b, off, len);
             _complete=complete;
             _len=len;
         }
 
-        public AsyncWrite(ByteBuffer buffer, boolean complete) 
+        public AsyncWrite(ByteBuffer buffer, boolean complete)
         {
             _buffer=buffer;
             _complete=complete;
@@ -696,7 +695,7 @@ write completed    -          -          -          ASYNC         READY->owp
         }
 
         @Override
-        protected boolean process() 
+        protected boolean process()
         {
             // flush any content from the aggregate
             if (BufferUtil.hasContent(_aggregate))
@@ -732,9 +731,9 @@ write completed    -          -          -          ASYNC         READY->owp
 
     private class AsyncFlush extends IteratingCallback
     {
-        protected boolean _flushed; 
+        protected boolean _flushed;
 
-        public AsyncFlush() 
+        public AsyncFlush()
         {
         }
 
@@ -754,7 +753,7 @@ write completed    -          -          -          ASYNC         READY->owp
                 _channel.write(BufferUtil.EMPTY_BUFFER,false,this);
                 return false;
             }
-            
+
             return true;
         }
 
@@ -772,13 +771,13 @@ write completed    -          -          -          ASYNC         READY->owp
                             if (!_state.compareAndSet(State.PENDING, State.ASYNC))
                                 continue;
                             break;
-                            
+
                         case UNREADY:
                             if (!_state.compareAndSet(State.UNREADY, State.READY))
                                 continue;
                             _channel.getState().onWritePossible();
                             break;
-                            
+
                         case CLOSED:
                             _onError=new EofException("Closed");
                             break;
@@ -796,7 +795,7 @@ write completed    -          -          -          ASYNC         READY->owp
                 _channel.getState().onWritePossible();
             }
         }
-        
+
         @Override
         public void failed(Throwable e)
         {
@@ -809,12 +808,12 @@ write completed    -          -          -          ASYNC         READY->owp
 
 
     /* ------------------------------------------------------------ */
-    /** An iterating callback that will take content from an 
+    /** An iterating callback that will take content from an
      * InputStream and write it to the associated {@link HttpChannel}.
-     * A non direct buffer of size {@link HttpOutput#getBufferSize()} is used. 
+     * A non direct buffer of size {@link HttpOutput#getBufferSize()} is used.
      * This callback is passed to the {@link HttpChannel#write(ByteBuffer, boolean, Callback)} to
-     * be notified as each buffer is written and only once all the input is consumed will the 
-     * wrapped {@link Callback#succeeded()} method be called. 
+     * be notified as each buffer is written and only once all the input is consumed will the
+     * wrapped {@link Callback#succeeded()} method be called.
      */
     private class InputStreamWritingCB extends IteratingNestedCallback
     {
@@ -822,7 +821,7 @@ write completed    -          -          -          ASYNC         READY->owp
         final ByteBuffer _buffer;
 
         public InputStreamWritingCB(InputStream in, Callback callback)
-        {          
+        {
             super(callback);
             _in=in;
             _buffer = _channel.getByteBufferPool().acquire(getBufferSize(), false);
@@ -833,7 +832,7 @@ write completed    -          -          -          ASYNC         READY->owp
         {
             boolean eof=false;
             int len=_in.read(_buffer.array(),0,_buffer.capacity());
-            
+
             if (len<0)
             {
                 eof=true;
@@ -849,12 +848,12 @@ write completed    -          -          -          ASYNC         READY->owp
                 else
                     len+=len2;
             }
-            
+
             // write what we have
             _buffer.position(0);
             _buffer.limit(len);
             _channel.write(_buffer,eof,this);
-            
+
             // Handle EOF
             if (eof)
             {
@@ -884,13 +883,13 @@ write completed    -          -          -          ASYNC         READY->owp
     }
 
     /* ------------------------------------------------------------ */
-    /** An iterating callback that will take content from a 
+    /** An iterating callback that will take content from a
      * ReadableByteChannel and write it to the {@link HttpChannel}.
      * A {@link ByteBuffer} of size {@link HttpOutput#getBufferSize()} is used that will be direct if
      * {@link HttpChannel#useDirectBuffers()} is true.
      * This callback is passed to the {@link HttpChannel#write(ByteBuffer, boolean, Callback)} to
-     * be notified as each buffer is written and only once all the input is consumed will the 
-     * wrapped {@link Callback#succeeded()} method be called. 
+     * be notified as each buffer is written and only once all the input is consumed will the
+     * wrapped {@link Callback#succeeded()} method be called.
      */
     private class ReadableByteChannelWritingCB extends IteratingNestedCallback
     {
@@ -898,7 +897,7 @@ write completed    -          -          -          ASYNC         READY->owp
         final ByteBuffer _buffer;
 
         public ReadableByteChannelWritingCB(ReadableByteChannel in, Callback callback)
-        {          
+        {
             super(callback);
             _in=in;
             _buffer = _channel.getByteBufferPool().acquire(getBufferSize(), _channel.useDirectBuffers());
@@ -910,7 +909,7 @@ write completed    -          -          -          ASYNC         READY->owp
             _buffer.clear();
             boolean eof=false;
             int len=_in.read(_buffer);
-            
+
             if (len<0)
             {
                 eof=true;
@@ -926,11 +925,11 @@ write completed    -          -          -          ASYNC         READY->owp
                 else
                     len+=len2;
             }
-            
+
             // write what we have
             _buffer.flip();
             _channel.write(_buffer,eof,this);
-            
+
             // Handle EOF
             if (eof)
             {
