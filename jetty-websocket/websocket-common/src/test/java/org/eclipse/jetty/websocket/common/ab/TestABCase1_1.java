@@ -21,7 +21,9 @@ package org.eclipse.jetty.websocket.common.ab;
 import static org.hamcrest.Matchers.*;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
@@ -47,23 +49,18 @@ public class TestABCase1_1
     public void testGenerate125ByteTextCase1_1_2()
     {
         int length = 125;
+        byte buf[] = new byte[length];
+        Arrays.fill(buf,(byte)'*');
+        String text = new String(buf,StringUtil.__UTF8_CHARSET);
 
-        StringBuilder builder = new StringBuilder();
+        Frame textFrame = WebSocketFrame.text(text);
 
-        for (int i = 0; i < length; ++i)
-        {
-            builder.append("*");
-        }
-
-        WebSocketFrame textFrame = WebSocketFrame.text(builder.toString());
-
-        Generator generator = new UnitGenerator();
-        ByteBuffer actual = generator.generate(textFrame);
+        ByteBuffer actual = UnitGenerator.generate(textFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                { (byte)0x81 });
+        { (byte)0x81 });
 
         byte b = 0x00; // no masking
         b |= length & 0x7F;
@@ -93,13 +90,12 @@ public class TestABCase1_1
 
         WebSocketFrame textFrame = WebSocketFrame.text(builder.toString());
 
-        Generator generator = new UnitGenerator();
-        ByteBuffer actual = generator.generate(textFrame);
+        ByteBuffer actual = UnitGenerator.generate(textFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                { (byte)0x81 });
+        { (byte)0x81 });
 
         byte b = 0x00; // no masking
         b |= length & 0x7E;
@@ -133,13 +129,12 @@ public class TestABCase1_1
 
         WebSocketFrame textFrame = WebSocketFrame.text(builder.toString());
 
-        Generator generator = new UnitGenerator();
-        ByteBuffer actual = generator.generate(textFrame);
+        ByteBuffer actual = UnitGenerator.generate(textFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                { (byte)0x81 });
+        { (byte)0x81 });
 
         byte b = 0x00; // no masking
         b |= length & 0x7E;
@@ -173,13 +168,12 @@ public class TestABCase1_1
 
         WebSocketFrame textFrame = WebSocketFrame.text(builder.toString());
 
-        Generator generator = new UnitGenerator();
-        ByteBuffer actual = generator.generate(textFrame);
+        ByteBuffer actual = UnitGenerator.generate(textFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                { (byte)0x81 });
+        { (byte)0x81 });
 
         byte b = 0x00; // no masking
         b |= 0x7E;
@@ -213,20 +207,18 @@ public class TestABCase1_1
 
         WebSocketFrame textFrame = WebSocketFrame.text(builder.toString());
 
-        Generator generator = new UnitGenerator();
-
-        ByteBuffer actual = generator.generate(textFrame);
+        ByteBuffer actual = UnitGenerator.generate(textFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                { (byte)0x81 });
+        { (byte)0x81 });
 
         byte b = 0x00; // no masking
         b |= 0x7E;
         expected.put(b);
         expected.put(new byte[]
-                { (byte)0xff, (byte)0xff });
+        { (byte)0xff, (byte)0xff });
 
         for (int i = 0; i < length; ++i)
         {
@@ -252,19 +244,18 @@ public class TestABCase1_1
 
         WebSocketFrame textFrame = WebSocketFrame.text(builder.toString());
 
-        Generator generator = new UnitGenerator();
-        ByteBuffer actual = generator.generate(textFrame);
+        ByteBuffer actual = UnitGenerator.generate(textFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(length + 11);
 
         expected.put(new byte[]
-                { (byte)0x81 });
+        { (byte)0x81 });
 
         byte b = 0x00; // no masking
         b |= 0x7F;
         expected.put(b);
         expected.put(new byte[]
-                { 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00 });
+        { 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00 });
 
         for (int i = 0; i < length; ++i)
         {
@@ -281,13 +272,12 @@ public class TestABCase1_1
     {
         WebSocketFrame textFrame = WebSocketFrame.text("");
 
-        Generator generator = new UnitGenerator();
-        ByteBuffer actual = generator.generate(textFrame);
+        ByteBuffer actual = UnitGenerator.generate(textFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(5);
 
         expected.put(new byte[]
-                { (byte)0x81, (byte)0x00 });
+        { (byte)0x81, (byte)0x00 });
 
         expected.flip();
 
@@ -302,7 +292,7 @@ public class TestABCase1_1
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                { (byte)0x81 });
+        { (byte)0x81 });
         byte b = 0x00; // no masking
         b |= length & 0x7F;
         expected.put(b);
@@ -335,7 +325,7 @@ public class TestABCase1_1
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                { (byte)0x81 });
+        { (byte)0x81 });
         byte b = 0x00; // no masking
         b |= length & 0x7E;
         expected.put(b);
@@ -369,7 +359,7 @@ public class TestABCase1_1
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                { (byte)0x81 });
+        { (byte)0x81 });
         byte b = 0x00; // no masking
         b |= length & 0x7E;
         expected.put(b);
@@ -403,7 +393,7 @@ public class TestABCase1_1
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                { (byte)0x81 });
+        { (byte)0x81 });
         byte b = 0x00; // no masking
         b |= 0x7E;
         expected.put(b);
@@ -437,12 +427,12 @@ public class TestABCase1_1
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                { (byte)0x81 });
+        { (byte)0x81 });
         byte b = 0x00; // no masking
         b |= 0x7E;
         expected.put(b);
         expected.put(new byte[]
-                { (byte)0xff, (byte)0xff });
+        { (byte)0xff, (byte)0xff });
 
         for (int i = 0; i < length; ++i)
         {
@@ -473,12 +463,12 @@ public class TestABCase1_1
         ByteBuffer expected = ByteBuffer.allocate(length + 11);
 
         expected.put(new byte[]
-                { (byte)0x81 });
+        { (byte)0x81 });
         byte b = 0x00; // no masking
         b |= 0x7F;
         expected.put(b);
         expected.put(new byte[]
-                { 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00 });
+        { 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00 });
 
         for (int i = 0; i < length; ++i)
         {
@@ -509,7 +499,7 @@ public class TestABCase1_1
         ByteBuffer expected = ByteBuffer.allocate(5);
 
         expected.put(new byte[]
-                { (byte)0x81, (byte)0x00 });
+        { (byte)0x81, (byte)0x00 });
 
         expected.flip();
 

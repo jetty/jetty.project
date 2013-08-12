@@ -230,15 +230,16 @@ public class BlockheadServer
         @Override
         public void outgoingFrame(Frame frame, WriteCallback callback)
         {
-            ByteBuffer buf = generator.generate(frame);
+            ByteBuffer headerBuf = generator.generateHeaderBytes(frame);
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("writing out: {}",BufferUtil.toDetailString(buf));
+                LOG.debug("writing out: {}",BufferUtil.toDetailString(headerBuf));
             }
 
             try
             {
-                BufferUtil.writeTo(buf,out);
+                BufferUtil.writeTo(headerBuf,out);
+                BufferUtil.writeTo(generator.getPayloadWindow(frame.getPayloadLength(),frame),out);
                 out.flush();
                 if (callback != null)
                 {

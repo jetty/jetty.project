@@ -55,8 +55,7 @@ public class TestABCase2
 
         WebSocketFrame pingFrame = WebSocketFrame.ping().setPayload(bytes);
 
-        Generator generator = new UnitGenerator();
-        ByteBuffer actual = generator.generate(pingFrame);
+        ByteBuffer actual = UnitGenerator.generate(pingFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(bytes.length + 32);
 
@@ -80,8 +79,7 @@ public class TestABCase2
 
         WebSocketFrame pingFrame = WebSocketFrame.ping().setPayload(bytes);
 
-        Generator generator = new UnitGenerator();
-        ByteBuffer actual = generator.generate(pingFrame);
+        ByteBuffer actual = UnitGenerator.generate(pingFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(32);
 
@@ -104,9 +102,7 @@ public class TestABCase2
     {
         WebSocketFrame pingFrame = WebSocketFrame.ping();
 
-
-        Generator generator = new UnitGenerator();
-        ByteBuffer actual = generator.generate(pingFrame);
+        ByteBuffer actual = UnitGenerator.generate(pingFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(5);
 
@@ -126,8 +122,7 @@ public class TestABCase2
 
         WebSocketFrame pingFrame = WebSocketFrame.ping().setPayload(messageBytes);
 
-        Generator generator = new UnitGenerator();
-        ByteBuffer actual = generator.generate(pingFrame);
+        ByteBuffer actual = UnitGenerator.generate(pingFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(32);
 
@@ -169,8 +164,7 @@ public class TestABCase2
 
         WebSocketFrame pingFrame = WebSocketFrame.ping().setPayload(bytes);
 
-        Generator generator = new UnitGenerator();
-        generator.generate(pingFrame);
+        UnitGenerator.generate(pingFrame);
     }
 
     @Test

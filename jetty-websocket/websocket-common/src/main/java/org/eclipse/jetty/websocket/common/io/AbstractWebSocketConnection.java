@@ -141,7 +141,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             return String.format("%s@%x",FlushInvoker.class.getSimpleName(),hashCode());
         }
     }
-    
+
     public class OnDisconnectCallback implements WriteCallback
     {
         @Override
@@ -216,13 +216,13 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         this.writeBytes = new WriteBytesProvider(generator,new FlushCallback());
         this.setInputBufferSize(policy.getInputBufferSize());
     }
-    
+
     @Override
     public Executor getExecutor()
     {
         return super.getExecutor();
     }
-    
+
     @Override
     public void close()
     {
@@ -254,7 +254,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     @Override
     public void disconnect()
     {
-        LOG.debug("{} disconnect()", policy.getBehavior());
+        LOG.debug("{} disconnect()",policy.getBehavior());
         synchronized (writeBytes)
         {
             if (!writeBytes.isClosed())
@@ -315,7 +315,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
 
     public void flush()
     {
-        ByteBuffer buffer = null;
+        List<ByteBuffer> buffers = null;
 
         synchronized (writeBytes)
         {
@@ -336,22 +336,12 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                 return;
             }
 
-            buffer = writeBytes.getByteBuffer();
-
-            if (buffer == null)
-            {
-                return;
-            }
+            buffers = writeBytes.getByteBuffers();
 
             flushing = true;
-
-            if (LOG.isDebugEnabled())
-            {
-                LOG.debug("Flushing {} - {}",BufferUtil.toDetailString(buffer),writeBytes);
-            }
         }
 
-        write(buffer);
+        write(buffers);
     }
 
     @Override
@@ -653,7 +643,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         return String.format("%s{g=%s,p=%s}",super.toString(),generator,parser);
     }
 
-    private <C> void write(ByteBuffer buffer)
+    private <C> void write(List<ByteBuffer> buffer)
     {
         EndPoint endpoint = getEndPoint();
 
@@ -665,7 +655,18 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
 
         try
         {
-            endpoint.write(writeBytes,buffer);
+            int bufsize = buffer.size();
+            if (bufsize == 1)
+            {
+                // simple case
+                endpoint.write(writeBytes,buffer.get(0));
+            }
+            else
+            {
+                // gathered writes case
+                ByteBuffer bbarr[] = buffer.toArray(new ByteBuffer[bufsize]);
+                endpoint.write(writeBytes,bbarr);
+            }
         }
         catch (Throwable t)
         {

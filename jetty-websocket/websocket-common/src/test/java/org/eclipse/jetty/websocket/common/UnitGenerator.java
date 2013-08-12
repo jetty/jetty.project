@@ -23,6 +23,8 @@ import java.util.List;
 
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 
@@ -31,11 +33,58 @@ import org.eclipse.jetty.websocket.api.extensions.Frame;
  */
 public class UnitGenerator extends Generator
 {
+    private static final Logger LOG = Log.getLogger(UnitGenerator.class);
+
+    public static ByteBuffer generate(Frame frame)
+    {
+        return generate(new Frame[]
+        { frame });
+    }
+
+    /**
+     * Generate All Frames into a single ByteBuffer.
+     * <p>
+     * This is highly inefficient and is not used in production! (This exists to make testing of the Generator easier)
+     * 
+     * @param frames
+     *            the frames to generate from
+     * @return the ByteBuffer representing all of the generated frames provided.
+     */
+    public static ByteBuffer generate(Frame[] frames)
+    {
+        Generator generator = new UnitGenerator();
+
+        // Generate into single bytebuffer
+        int buflen = 0;
+        for (Frame f : frames)
+        {
+            buflen += f.getPayloadLength() + Generator.OVERHEAD;
+        }
+        ByteBuffer completeBuf = ByteBuffer.allocate(buflen);
+        BufferUtil.clearToFill(completeBuf);
+
+        // Generate frames
+        for (Frame f : frames)
+        {
+            generator.generateWholeFrame(f,completeBuf);
+        }
+
+        BufferUtil.flipToFlush(completeBuf,0);
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("generate({} frames) - {}",frames.length,BufferUtil.toDetailString(completeBuf));
+        }
+        return completeBuf;
+    }
+
+    /**
+     * Generate a single giant buffer of all provided frames Not appropriate for production code, but useful for testing.
+     */
     public static ByteBuffer generate(List<WebSocketFrame> frames)
     {
         // Create non-symmetrical mask (helps show mask bytes order issues)
         byte[] MASK =
-            { 0x11, 0x22, 0x33, 0x44 };
+        { 0x11, 0x22, 0x33, 0x44 };
 
         // the generator
         Generator generator = new UnitGenerator();
@@ -52,13 +101,20 @@ public class UnitGenerator extends Generator
         // Generate frames
         for (WebSocketFrame f : frames)
         {
-            f.setMask(MASK); // make sure we have mask set
-            ByteBuffer slice = f.getPayload().slice();
-            BufferUtil.put(generator.generate(f),completeBuf);
-            f.setPayload(slice);
+            f.setMask(MASK); // make sure we have the test mask set
+            BufferUtil.put(generator.generateHeaderBytes(f),completeBuf);
+            ByteBuffer window = generator.getPayloadWindow(f.getPayloadLength(),f);
+            if (BufferUtil.hasContent(window))
+            {
+                BufferUtil.put(window,completeBuf);
+            }
         }
 
         BufferUtil.flipToFlush(completeBuf,0);
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("generate({} frames) - {}",frames.size(),BufferUtil.toDetailString(completeBuf));
+        }
         return completeBuf;
     }
 

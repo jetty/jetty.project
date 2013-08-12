@@ -23,8 +23,6 @@ import java.util.List;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -57,7 +55,6 @@ import org.eclipse.jetty.websocket.api.extensions.Frame;
  */
 public class Generator
 {
-    private static final Logger LOG = Log.getLogger(Generator.class);
     /**
      * The overhead (maximum) for a framing header. Assuming a maximum sized payload with masking key.
      */
@@ -65,7 +62,7 @@ public class Generator
 
     private final WebSocketBehavior behavior;
     private final ByteBufferPool bufferPool;
-    private boolean validating;
+    private final boolean validating;
 
     /** Is there an extension using RSV1 */
     private boolean rsv1InUse = false;
@@ -175,7 +172,7 @@ public class Generator
         this.rsv3InUse = false;
 
         // configure from list of extensions in use
-        for(Extension ext: exts)
+        for (Extension ext : exts)
         {
             if (ext.isRsv1User())
             {
@@ -192,191 +189,176 @@ public class Generator
         }
     }
 
-    /**
-     * generate a byte buffer based on the frame being passed in
-     * 
-     * bufferSize is determined by the length of the payload + 28 for frame overhead
-     * 
-     * @param frame
-     * @return
-     */
-    public synchronized ByteBuffer generate(Frame frame)
+    public ByteBuffer generateHeaderBytes(Frame frame)
     {
-        int bufferSize = frame.getPayloadLength() + OVERHEAD;
-        return generate(bufferSize,frame);
-    }
+        // we need a framing header
+        assertFrameValid(frame);
 
-    /**
-     * Generate, into a ByteBuffer, no more than bufferSize of contents from the frame. If the frame exceeds the bufferSize, then multiple calls to
-     * {@link #generate(int, WebSocketFrame)} are required to obtain each window of ByteBuffer to complete the frame.
-     */
-    public synchronized ByteBuffer generate(int windowSize, Frame frame)
-    {
-        if (windowSize < OVERHEAD)
-        {
-            throw new IllegalArgumentException("Cannot have windowSize less than " + OVERHEAD);
-        }
-
-        LOG.debug("{} Generate: {} (windowSize {})",behavior,frame,windowSize);
+        ByteBuffer buffer = bufferPool.acquire(OVERHEAD,true);
+        BufferUtil.flipToFill(buffer);
 
         /*
-         * prepare the byte buffer to put frame into
+         * start the generation process
          */
-        ByteBuffer buffer = bufferPool.acquire(windowSize,false);
-        BufferUtil.clearToFill(buffer);
-        if (LOG.isDebugEnabled())
+        byte b;
+
+        // Setup fin thru opcode
+        b = 0x00;
+        if (frame.isFin())
         {
-            LOG.debug("Acquired Buffer (windowSize={}): {}",windowSize,BufferUtil.toDetailString(buffer));
+            b |= 0x80; // 1000_0000
         }
-        // since the buffer from the pool can exceed the window size, artificially
-        // limit the buffer to the window size.
-        int newlimit = Math.min(buffer.position() + windowSize,buffer.limit());
-        buffer.limit(newlimit);
-        LOG.debug("Buffer limited: {}",buffer);
-
-        if (frame.remaining() == frame.getPayloadLength())
+        if (frame.isRsv1())
         {
-            // we need a framing header
-            assertFrameValid(frame);
+            b |= 0x40; // 0100_0000
+        }
+        if (frame.isRsv2())
+        {
+            b |= 0x20; // 0010_0000
+        }
+        if (frame.isRsv3())
+        {
+            b |= 0x10;
+        }
 
-            /*
-             * start the generation process
-             */
-            byte b;
+        // NOTE: using .getOpCode() here, not .getType().getOpCode() for testing reasons
+        byte opcode = frame.getOpCode();
 
-            // Setup fin thru opcode
-            b = 0x00;
-            if (frame.isFin())
-            {
-                b |= 0x80; // 1000_0000
-            }
-            if (frame.isRsv1())
-            {
-                b |= 0x40; // 0100_0000
-            }
-            if (frame.isRsv2())
-            {
-                b |= 0x20; // 0010_0000
-            }
-            if (frame.isRsv3())
-            {
-                b |= 0x10;
-            }
+        if (frame.isContinuation())
+        {
+            // Continuations are not the same OPCODE
+            opcode = OpCode.CONTINUATION;
+        }
 
-            // NOTE: using .getOpCode() here, not .getType().getOpCode() for testing reasons
-            byte opcode = frame.getOpCode();
+        b |= opcode & 0x0F;
 
-            if (frame.isContinuation())
-            {
-                // Continuations are not the same OPCODE
-                opcode = OpCode.CONTINUATION;
-            }
+        buffer.put(b);
 
-            b |= opcode & 0x0F;
+        // is masked
+        b = 0x00;
+        b |= (frame.isMasked()?0x80:0x00);
 
+        // payload lengths
+        int payloadLength = frame.getPayloadLength();
+
+        /*
+         * if length is over 65535 then its a 7 + 64 bit length
+         */
+        if (payloadLength > 0xFF_FF)
+        {
+            // we have a 64 bit length
+            b |= 0x7F;
+            buffer.put(b); // indicate 8 byte length
+            buffer.put((byte)0); //
+            buffer.put((byte)0); // anything over an
+            buffer.put((byte)0); // int is just
+            buffer.put((byte)0); // intsane!
+            buffer.put((byte)((payloadLength >> 24) & 0xFF));
+            buffer.put((byte)((payloadLength >> 16) & 0xFF));
+            buffer.put((byte)((payloadLength >> 8) & 0xFF));
+            buffer.put((byte)(payloadLength & 0xFF));
+        }
+        /*
+         * if payload is greater 126 we have a 7 + 16 bit length
+         */
+        else if (payloadLength >= 0x7E)
+        {
+            b |= 0x7E;
+            buffer.put(b); // indicate 2 byte length
+            buffer.put((byte)(payloadLength >> 8));
+            buffer.put((byte)(payloadLength & 0xFF));
+        }
+        /*
+         * we have a 7 bit length
+         */
+        else
+        {
+            b |= (payloadLength & 0x7F);
             buffer.put(b);
-
-            // is masked
-            b = 0x00;
-            b |= (frame.isMasked()?0x80:0x00);
-
-            // payload lengths
-            int payloadLength = frame.getPayloadLength();
-
-            /*
-             * if length is over 65535 then its a 7 + 64 bit length
-             */
-            if (payloadLength > 0xFF_FF)
-            {
-                // we have a 64 bit length
-                b |= 0x7F;
-                buffer.put(b); // indicate 8 byte length
-                buffer.put((byte)0); //
-                buffer.put((byte)0); // anything over an
-                buffer.put((byte)0); // int is just
-                buffer.put((byte)0); // intsane!
-                buffer.put((byte)((payloadLength >> 24) & 0xFF));
-                buffer.put((byte)((payloadLength >> 16) & 0xFF));
-                buffer.put((byte)((payloadLength >> 8) & 0xFF));
-                buffer.put((byte)(payloadLength & 0xFF));
-            }
-            /*
-             * if payload is greater 126 we have a 7 + 16 bit length
-             */
-            else if (payloadLength >= 0x7E)
-            {
-                b |= 0x7E;
-                buffer.put(b); // indicate 2 byte length
-                buffer.put((byte)(payloadLength >> 8));
-                buffer.put((byte)(payloadLength & 0xFF));
-            }
-            /*
-             * we have a 7 bit length
-             */
-            else
-            {
-                b |= (payloadLength & 0x7F);
-                buffer.put(b);
-            }
-
-            // masking key
-            if (frame.isMasked())
-            {
-                buffer.put(frame.getMask());
-            }
         }
 
-        // copy payload
-        if (frame.hasPayload())
+        // masking key
+        if (frame.isMasked())
         {
-            // remember the position
-            int maskingStartPosition = buffer.position();
+            byte[] mask = frame.getMask();
+            buffer.put(mask);
 
-            // remember the offset within the frame payload (for working with
-            // masked windowed frames that don't split on 4 byte barriers)
-            int payloadOffset = frame.getPayload().position();
-            int payloadStart = frame.getPayloadStart();
-
-            // put as much as possible into the buffer
-            BufferUtil.put(frame.getPayload(),buffer);
-
-            // mask it if needed
-            if (frame.isMasked())
+            // perform data masking here
+            byte mb;
+            ByteBuffer payload = frame.getPayload();
+            if ((payload != null) && (payload.remaining() > 0))
             {
-                // move back to remembered position.
-                int size = buffer.position() - maskingStartPosition;
-                byte[] mask = frame.getMask();
-                byte b;
-                int posBuf;
-                int posFrame;
-                for (int i = 0; i < size; i++)
+                int pos = payload.position();
+                int limit = payload.limit();
+                for (int i = pos; i < limit; i++)
                 {
-                    posBuf = i + maskingStartPosition;
-                    posFrame = i + (payloadOffset - payloadStart);
-
                     // get raw byte from buffer.
-                    b = buffer.get(posBuf);
+                    mb = payload.get(i);
 
                     // mask, using offset information from frame windowing.
-                    b ^= mask[posFrame % 4];
+                    mb ^= mask[(i - pos) % 4];
 
                     // Mask each byte by its absolute position in the payload bytebuffer
-                    buffer.put(posBuf,b);
+                    payload.put(i,mb);
                 }
             }
         }
 
         BufferUtil.flipToFlush(buffer,0);
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("Generated Buffer: {}",BufferUtil.toDetailString(buffer));
-        }
         return buffer;
+    }
+
+    /**
+     * Generate the whole frame (header + payload copy) into a single ByteBuffer.
+     * <p>
+     * Note: THIS IS SLOW. Only use this if you must.
+     * 
+     * @param frame
+     *            the frame to generate
+     */
+    public void generateWholeFrame(Frame frame, ByteBuffer buf)
+    {
+        buf.put(generateHeaderBytes(frame));
+        if (frame.hasPayload())
+        {
+            buf.put(getPayloadWindow(frame.getPayloadLength(),frame));
+        }
     }
 
     public ByteBufferPool getBufferPool()
     {
         return bufferPool;
+    }
+
+    public ByteBuffer getPayloadWindow(int windowSize, Frame frame)
+    {
+        if (!frame.hasPayload())
+        {
+            return BufferUtil.EMPTY_BUFFER;
+        }
+
+        ByteBuffer buffer;
+
+        // We will create a slice representing the windowSize of this payload
+        if (frame.getPayload().remaining() <= windowSize)
+        {
+            // remaining will fit within window
+            buffer = frame.getPayload().slice();
+            // adjust the frame payload position (mark as read)
+            frame.getPayload().position(frame.getPayload().limit());
+        }
+        else
+        {
+            // remaining is over the window size limit, slice it
+            buffer = frame.getPayload().slice();
+            buffer.limit(windowSize);
+            int offset = frame.getPayload().position(); // offset within frame payload
+            // adjust the frame payload position
+            int newpos = Math.min(offset + windowSize,frame.getPayload().limit());
+            frame.getPayload().position(newpos);
+        }
+
+        return buffer;
     }
 
     public boolean isRsv1InUse()

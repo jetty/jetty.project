@@ -468,14 +468,15 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames, Connecti
     @Override
     public void outgoingFrame(Frame frame, WriteCallback callback)
     {
-        ByteBuffer buf = generator.generate(frame);
+        ByteBuffer headerBuf = generator.generateHeaderBytes(frame);
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("writing out: {}",BufferUtil.toDetailString(buf));
+            LOG.debug("writing out: {}",BufferUtil.toDetailString(headerBuf));
         }
         try
         {
-            BufferUtil.writeTo(buf,out);
+            BufferUtil.writeTo(headerBuf,out);
+            BufferUtil.writeTo(frame.getPayload(),out);
             out.flush();
             if (callback != null)
             {
@@ -491,7 +492,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames, Connecti
         }
         finally
         {
-            bufferPool.release(buf);
+            bufferPool.release(headerBuf);
         }
 
         if (frame.getType().getOpCode() == OpCode.CLOSE)
@@ -512,7 +513,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames, Connecti
             return BufferUtil.put(remainingBuffer,buf);
         }
 
-        int len = 0;
+        int len = -1;
         int b;
         while ((in.available() > 0) && (buf.remaining() > 0))
         {
@@ -520,7 +521,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames, Connecti
             if (b == (-1))
             {
                 eof = true;
-                break;
+                return -1;
             }
             buf.put((byte)b);
             len++;

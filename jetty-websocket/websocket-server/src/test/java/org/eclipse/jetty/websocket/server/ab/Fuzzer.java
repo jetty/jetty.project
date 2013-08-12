@@ -62,7 +62,7 @@ public class Fuzzer
         PER_FRAME,
         SLOW
     }
-    
+
     public static enum DisconnectMode
     {
         /** Disconnect occurred after a proper close handshake */
@@ -115,7 +115,7 @@ public class Fuzzer
         for (WebSocketFrame f : send)
         {
             setClientMask(f);
-            BufferUtil.put(generator.generate(f),buf);
+            generator.generateWholeFrame(f,buf);
         }
         BufferUtil.flipToFlush(buf,0);
         return buf;
@@ -267,19 +267,16 @@ public class Fuzzer
                 buflen += f.getPayloadLength() + Generator.OVERHEAD;
             }
             ByteBuffer buf = ByteBuffer.allocate(buflen);
-            BufferUtil.clearToFill(buf);
 
             // Generate frames
             for (WebSocketFrame f : send)
             {
                 setClientMask(f);
-                ByteBuffer rawbytes = generator.generate(f);
-                if (LOG.isDebugEnabled())
+                buf.put(generator.generateHeaderBytes(f));
+                if (f.hasPayload())
                 {
-                    LOG.debug("frame: {}",f);
-                    LOG.debug("bytes: {}",BufferUtil.toDetailString(rawbytes));
+                    buf.put(f.getPayload());
                 }
-                BufferUtil.put(rawbytes,buf);
             }
             BufferUtil.flipToFlush(buf,0);
 
@@ -302,7 +299,15 @@ public class Fuzzer
             {
                 f.setMask(MASK); // make sure we have mask set
                 // Using lax generator, generate and send
-                client.writeRaw(generator.generate(f));
+                ByteBuffer fullframe = ByteBuffer.allocate(f.getPayloadLength() + Generator.OVERHEAD);
+                BufferUtil.flipToFill(fullframe);
+                fullframe.put(generator.generateHeaderBytes(f));
+                if (f.hasPayload())
+                {
+                    fullframe.put(f.getPayload());
+                }
+                BufferUtil.flipToFlush(fullframe,0);
+                client.writeRaw(fullframe);
                 client.flush();
             }
         }

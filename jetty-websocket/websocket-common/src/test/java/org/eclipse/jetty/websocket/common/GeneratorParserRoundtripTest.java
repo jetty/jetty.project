@@ -50,9 +50,13 @@ public class GeneratorParserRoundtripTest
             // Generate Buffer
             BufferUtil.flipToFill(out);
             WebSocketFrame frame = WebSocketFrame.text(message);
-            out = gen.generate(frame);
+            ByteBuffer header = gen.generateHeaderBytes(frame);
+            ByteBuffer payload = gen.getPayloadWindow(frame.getPayloadLength(),frame);
+            out.put(header);
+            out.put(payload);
 
             // Parse Buffer
+            BufferUtil.flipToFlush(out,0);
             parser.parse(out);
         }
         finally
@@ -81,6 +85,7 @@ public class GeneratorParserRoundtripTest
         String message = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
 
         ByteBuffer out = bufferPool.acquire(8192,false);
+        BufferUtil.flipToFill(out);
         try
         {
             // Setup Frame
@@ -92,9 +97,13 @@ public class GeneratorParserRoundtripTest
             frame.setMask(mask);
 
             // Generate Buffer
-            out = gen.generate(8192,frame);
+            ByteBuffer header = gen.generateHeaderBytes(frame);
+            ByteBuffer payload = gen.getPayloadWindow(8192,frame);
+            out.put(header);
+            out.put(payload);
 
             // Parse Buffer
+            BufferUtil.flipToFlush(out,0);
             parser.parse(out);
         }
         finally

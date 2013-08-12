@@ -31,7 +31,6 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.ByteBufferAssert;
 import org.eclipse.jetty.websocket.common.CloseInfo;
-import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.Parser;
@@ -50,8 +49,7 @@ public class TestABCase7_3
     {
         CloseInfo close = new CloseInfo();
 
-        Generator generator = new UnitGenerator();
-        ByteBuffer actual = generator.generate(close.asFrame());
+        ByteBuffer actual = UnitGenerator.generate(close.asFrame());
 
         ByteBuffer expected = ByteBuffer.allocate(5);
 
@@ -93,8 +91,7 @@ public class TestABCase7_3
         WebSocketFrame closeFrame = new WebSocketFrame(OpCode.CLOSE).setPayload(new byte[]
                 { 0x00 });
 
-        Generator generator = new UnitGenerator();
-        generator.generate(closeFrame);
+        UnitGenerator.generate(closeFrame);
     }
 
     @Test
@@ -124,8 +121,7 @@ public class TestABCase7_3
     {
         CloseInfo close = new CloseInfo(1000);
 
-        Generator generator = new UnitGenerator();
-        ByteBuffer actual = generator.generate(close.asFrame());
+        ByteBuffer actual = UnitGenerator.generate(close.asFrame());
 
         ByteBuffer expected = ByteBuffer.allocate(5);
 
@@ -169,8 +165,7 @@ public class TestABCase7_3
 
         CloseInfo close = new CloseInfo(1000,message);
 
-        Generator generator = new UnitGenerator();
-        ByteBuffer actual = generator.generate(close.asFrame());
+        ByteBuffer actual = UnitGenerator.generate(close.asFrame());
 
         ByteBuffer expected = ByteBuffer.allocate(32);
 
@@ -230,8 +225,7 @@ public class TestABCase7_3
 
         CloseInfo close = new CloseInfo(1000,message.toString());
 
-        Generator generator = new UnitGenerator();
-        ByteBuffer actual = generator.generate(close.asFrame());
+        ByteBuffer actual = UnitGenerator.generate(close.asFrame());
         ByteBuffer expected = ByteBuffer.allocate(132);
 
         byte messageBytes[] = message.toString().getBytes(StringUtil.__UTF8_CHARSET);
@@ -310,8 +304,7 @@ public class TestABCase7_3
 
         closeFrame.setPayload(BufferUtil.toArray(bb));
 
-        Generator generator = new UnitGenerator();
-        generator.generate(closeFrame);
+        UnitGenerator.generate(closeFrame);
     }
 
     @Test

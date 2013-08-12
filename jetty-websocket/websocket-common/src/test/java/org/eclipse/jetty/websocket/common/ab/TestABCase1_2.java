@@ -60,8 +60,7 @@ public class TestABCase1_2
 
         WebSocketFrame binaryFrame = WebSocketFrame.binary().setPayload(bb);
 
-        Generator generator = new UnitGenerator();
-        ByteBuffer actual = generator.generate(binaryFrame);
+        ByteBuffer actual = UnitGenerator.generate(binaryFrame);
 
 
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
@@ -99,8 +98,7 @@ public class TestABCase1_2
 
         WebSocketFrame binaryFrame = WebSocketFrame.binary().setPayload(bb);
 
-        Generator generator = new UnitGenerator();
-        ByteBuffer actual = generator.generate(binaryFrame);
+        ByteBuffer actual = UnitGenerator.generate(binaryFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
@@ -142,8 +140,7 @@ public class TestABCase1_2
 
         WebSocketFrame binaryFrame = WebSocketFrame.binary().setPayload(bb);
 
-        Generator generator = new UnitGenerator();
-        ByteBuffer actual = generator.generate(binaryFrame);
+        ByteBuffer actual = UnitGenerator.generate(binaryFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
@@ -184,8 +181,7 @@ public class TestABCase1_2
         bb.flip();
         WebSocketFrame binaryFrame = WebSocketFrame.binary().setPayload(bb);
 
-        Generator generator = new UnitGenerator();
-        ByteBuffer actual = generator.generate(binaryFrame);
+        ByteBuffer actual = UnitGenerator.generate(binaryFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
@@ -228,8 +224,7 @@ public class TestABCase1_2
 
         WebSocketFrame binaryFrame = WebSocketFrame.binary().setPayload(bb);
 
-        Generator generator = new UnitGenerator();
-        ByteBuffer actual = generator.generate(binaryFrame);
+        ByteBuffer actual = UnitGenerator.generate(binaryFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
@@ -268,8 +263,7 @@ public class TestABCase1_2
 
         WebSocketFrame binaryFrame = WebSocketFrame.binary().setPayload(bb);
 
-        Generator generator = new UnitGenerator();
-        ByteBuffer actual = generator.generate(binaryFrame);
+        ByteBuffer actual = UnitGenerator.generate(binaryFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(length + 11);
 
@@ -297,8 +291,7 @@ public class TestABCase1_2
     {
         WebSocketFrame binaryFrame = WebSocketFrame.binary(new byte[] {});
 
-        Generator generator = new UnitGenerator();
-        ByteBuffer actual = generator.generate(binaryFrame);
+        ByteBuffer actual = UnitGenerator.generate(binaryFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(5);
 

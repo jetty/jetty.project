@@ -62,8 +62,10 @@ public class OutgoingNetworkBytesCapture implements OutgoingFrames
     @Override
     public void outgoingFrame(Frame frame, WriteCallback callback)
     {
-        ByteBuffer buf = generator.generate(frame);
-        captured.add(buf.slice());
+        ByteBuffer buf = ByteBuffer.allocate(Generator.OVERHEAD + frame.getPayloadLength());
+        generator.generateWholeFrame(frame,buf);
+        BufferUtil.flipToFlush(buf,0);
+        captured.add(buf);
         if (callback != null)
         {
             callback.writeSuccess();

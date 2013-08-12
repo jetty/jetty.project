@@ -85,6 +85,7 @@ public class WebSocketFrame implements Frame
         return new WebSocketFrame(OpCode.TEXT).setPayload(msg);
     }
 
+    // FIXME: make each boolean/bit part of 1 byte (instead of multiple booleans) to save memory
     private boolean fin = true;
     private boolean rsv1 = false;
     private boolean rsv2 = false;
@@ -351,14 +352,7 @@ public class WebSocketFrame implements Frame
     @Override
     public ByteBuffer getPayload()
     {
-        if (data != null)
-        {
-            return data;
-        }
-        else
-        {
-            return null;
-        }
+        return data;
     }
 
     public String getPayloadAsUTF8()
@@ -378,16 +372,6 @@ public class WebSocketFrame implements Frame
             return 0;
         }
         return payloadLength;
-    }
-
-    @Override
-    public int getPayloadStart()
-    {
-        if (data == null)
-        {
-            return -1;
-        }
-        return payloadStart;
     }
 
     @Override
@@ -593,7 +577,7 @@ public class WebSocketFrame implements Frame
             }
         }
 
-        data = BufferUtil.toBuffer(buf);
+        data = ByteBuffer.wrap(buf);
         payloadStart = data.position();
         payloadLength = data.remaining();
         return this;
@@ -697,7 +681,6 @@ public class WebSocketFrame implements Frame
         b.append(rsv3?'1':'.');
         b.append(",masked=").append(masked);
         b.append(",continuation=").append(continuation);
-        b.append(",payloadStart=").append(getPayloadStart());
         b.append(",remaining=").append(remaining());
         b.append(",position=").append(position());
         b.append(']');

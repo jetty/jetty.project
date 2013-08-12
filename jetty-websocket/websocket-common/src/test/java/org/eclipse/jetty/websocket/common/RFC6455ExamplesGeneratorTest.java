@@ -21,9 +21,6 @@ package org.eclipse.jetty.websocket.common;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-import org.eclipse.jetty.websocket.common.Generator;
-import org.eclipse.jetty.websocket.common.OpCode;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.junit.Test;
 
 public class RFC6455ExamplesGeneratorTest
@@ -36,10 +33,8 @@ public class RFC6455ExamplesGeneratorTest
         WebSocketFrame text1 = WebSocketFrame.text("Hel").setFin(false);
         WebSocketFrame text2 = new WebSocketFrame(OpCode.CONTINUATION).setPayload("lo");
 
-        Generator generator = new UnitGenerator();
-
-        ByteBuffer actual1 = generator.generate(text1);
-        ByteBuffer actual2 = generator.generate(text2);
+        ByteBuffer actual1 = UnitGenerator.generate(text1);
+        ByteBuffer actual2 = UnitGenerator.generate(text2);
 
         ByteBuffer expected1 = ByteBuffer.allocate(5);
 
@@ -66,9 +61,7 @@ public class RFC6455ExamplesGeneratorTest
         pong.setMask(new byte[]
                 { 0x37, (byte)0xfa, 0x21, 0x3d });
 
-        Generator gen = new UnitGenerator();
-
-        ByteBuffer actual = gen.generate(pong);
+        ByteBuffer actual = UnitGenerator.generate(pong);
 
         ByteBuffer expected = ByteBuffer.allocate(11);
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
@@ -87,8 +80,7 @@ public class RFC6455ExamplesGeneratorTest
         text.setMask(new byte[]
                 { 0x37, (byte)0xfa, 0x21, 0x3d });
 
-        Generator gen = new UnitGenerator();
-        ByteBuffer actual = gen.generate(text);
+        ByteBuffer actual = UnitGenerator.generate(text);
 
         ByteBuffer expected = ByteBuffer.allocate(11);
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
@@ -110,9 +102,7 @@ public class RFC6455ExamplesGeneratorTest
         Arrays.fill(payload,(byte)0x44);
         binary.setPayload(payload);
 
-        Generator gen = new UnitGenerator();
-
-        ByteBuffer actual = gen.generate(binary);
+        ByteBuffer actual = UnitGenerator.generate(binary);
 
         ByteBuffer expected = ByteBuffer.allocate(dataSize + FUDGE);
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
@@ -141,9 +131,7 @@ public class RFC6455ExamplesGeneratorTest
         Arrays.fill(payload,(byte)0x44);
         binary.setPayload(payload);
 
-        Generator gen = new UnitGenerator();
-
-        ByteBuffer actual = gen.generate(binary);
+        ByteBuffer actual = UnitGenerator.generate(binary);
 
         ByteBuffer expected = ByteBuffer.allocate(dataSize + 10);
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
@@ -168,8 +156,7 @@ public class RFC6455ExamplesGeneratorTest
     {
         WebSocketFrame ping = new WebSocketFrame(OpCode.PING).setPayload("Hello");
 
-        Generator gen = new UnitGenerator();
-        ByteBuffer actual = gen.generate(ping);
+        ByteBuffer actual = UnitGenerator.generate(ping);
 
         ByteBuffer expected = ByteBuffer.allocate(10);
         expected.put(new byte[]
@@ -184,9 +171,7 @@ public class RFC6455ExamplesGeneratorTest
     {
         WebSocketFrame text = WebSocketFrame.text("Hello");
 
-        Generator generator = new UnitGenerator();
-
-        ByteBuffer actual = generator.generate(text);
+        ByteBuffer actual = UnitGenerator.generate(text);
 
         ByteBuffer expected = ByteBuffer.allocate(10);
 

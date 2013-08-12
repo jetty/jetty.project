@@ -81,9 +81,12 @@ public interface Frame
 
     public ByteBuffer getPayload();
 
+    /**
+     * The original payload length ({@link ByteBuffer#remaining()})
+     * 
+     * @return the original payload length ({@link ByteBuffer#remaining()})
+     */
     public int getPayloadLength();
-
-    public int getPayloadStart();
 
     public Type getType();
 
@@ -108,5 +111,10 @@ public interface Frame
 
     public boolean isRsv3();
 
+    /**
+     * The current number of bytes left to read from the payload ByteBuffer.
+     * 
+     * @return the current number of bytes left to read from the payload ByteBuffer
+     */
     public int remaining();
 }

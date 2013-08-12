@@ -25,7 +25,6 @@ import java.util.List;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.common.CloseInfo;
-import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.UnitGenerator;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.junit.Rule;
@@ -86,9 +85,7 @@ public class TestABCase3
     @Test(expected = ProtocolException.class)
     public void testGenerateInvalidControlFrame()
     {
-        Generator generator = new UnitGenerator();
-
-        generator.generate(invalidFrame);
+        UnitGenerator.generate(invalidFrame);
     }
 
 

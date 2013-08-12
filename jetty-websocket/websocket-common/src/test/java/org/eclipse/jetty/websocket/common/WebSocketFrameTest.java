@@ -25,10 +25,7 @@ import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.common.CloseInfo;
-import org.eclipse.jetty.websocket.common.Generator;
-import org.eclipse.jetty.websocket.common.OpCode;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -36,6 +33,14 @@ public class WebSocketFrameTest
 {
     private static Generator strictGenerator;
     private static Generator laxGenerator;
+
+    private ByteBuffer generateWholeFrame(Generator generator, Frame frame)
+    {
+        ByteBuffer buf = ByteBuffer.allocate(frame.getPayloadLength() + Generator.OVERHEAD);
+        generator.generateWholeFrame(frame,buf);
+        BufferUtil.flipToFlush(buf,0);
+        return buf;
+    }
 
     @BeforeClass
     public static void initGenerator()
@@ -57,7 +62,7 @@ public class WebSocketFrameTest
     public void testLaxInvalidClose()
     {
         WebSocketFrame frame = new WebSocketFrame(OpCode.CLOSE).setFin(false);
-        ByteBuffer actual = laxGenerator.generate(frame);
+        ByteBuffer actual = generateWholeFrame(laxGenerator,frame);
         ByteBuffer expected = ByteBuffer.allocate(2);
         expected.put((byte)0x08);
         expected.put((byte)0x00);
@@ -69,7 +74,7 @@ public class WebSocketFrameTest
     public void testLaxInvalidPing()
     {
         WebSocketFrame frame = new WebSocketFrame(OpCode.PING).setFin(false);
-        ByteBuffer actual = laxGenerator.generate(frame);
+        ByteBuffer actual = generateWholeFrame(laxGenerator,frame);
         ByteBuffer expected = ByteBuffer.allocate(2);
         expected.put((byte)0x09);
         expected.put((byte)0x00);
@@ -81,7 +86,7 @@ public class WebSocketFrameTest
     public void testStrictValidClose()
     {
         CloseInfo close = new CloseInfo(StatusCode.NORMAL);
-        ByteBuffer actual = strictGenerator.generate(close.asFrame());
+        ByteBuffer actual = generateWholeFrame(strictGenerator,close.asFrame());
         ByteBuffer expected = ByteBuffer.allocate(4);
         expected.put((byte)0x88);
         expected.put((byte)0x02);
@@ -95,7 +100,7 @@ public class WebSocketFrameTest
     public void testStrictValidPing()
     {
         WebSocketFrame frame = new WebSocketFrame(OpCode.PING);
-        ByteBuffer actual = strictGenerator.generate(frame);
+        ByteBuffer actual = generateWholeFrame(strictGenerator,frame);
         ByteBuffer expected = ByteBuffer.allocate(2);
         expected.put((byte)0x89);
         expected.put((byte)0x00);

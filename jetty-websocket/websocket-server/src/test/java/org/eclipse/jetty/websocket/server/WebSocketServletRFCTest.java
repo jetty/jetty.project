@@ -287,8 +287,9 @@ public class WebSocketServletRFCTest
             { (byte)0xC2, (byte)0xC3 };
 
             WebSocketFrame txt = WebSocketFrame.text().setPayload(buf);
-            ByteBuffer bb = generator.generate(txt);
-            client.writeRaw(bb);
+            ByteBuffer bbHeader = generator.generateHeaderBytes(txt);
+            client.writeRaw(bbHeader);
+            client.writeRaw(txt.getPayload());
 
             IncomingFramesCapture capture = client.readFrames(1,TimeUnit.SECONDS,1);
             WebSocketFrame frame = capture.getFrames().poll();
