@@ -379,6 +379,50 @@ public class HttpParserTest
         HttpParser parser= new HttpParser(handler);
         parseAll(parser,buffer);
         assertThat(_bad,Matchers.notNullValue());
+    } 
+
+    @Test
+    public void testNonStrict() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer(
+                "get / http/1.0\015\012" +
+                "HOST: localhost\015\012" +
+                "cOnNeCtIoN: ClOsE\015\012"+
+                "\015\012");
+        HttpParser.RequestHandler<ByteBuffer> handler  = new Handler();
+        HttpParser parser= new HttpParser(handler,-1,false);
+        parseAll(parser,buffer);
+
+        assertEquals("GET", _methodOrVersion);
+        assertEquals("/", _uriOrStatus);
+        assertEquals("HTTP/1.0", _versionOrReason);
+        assertEquals("Host", _hdr[0]);
+        assertEquals("localhost", _val[0]);
+        assertEquals("Connection", _hdr[1]);
+        assertEquals("close", _val[1]);
+        assertEquals(1, _h);
+    }
+    
+    @Test
+    public void testStrict() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer(
+                "gEt / http/1.0\015\012" +
+                "HOST: localhost\015\012" +
+                "cOnNeCtIoN: ClOsE\015\012"+
+                "\015\012");
+        HttpParser.RequestHandler<ByteBuffer> handler  = new Handler();
+        HttpParser parser= new HttpParser(handler,-1,true);
+        parseAll(parser,buffer);
+
+        assertEquals("gEt", _methodOrVersion);
+        assertEquals("/", _uriOrStatus);
+        assertEquals("HTTP/1.0", _versionOrReason);
+        assertEquals("HOST", _hdr[0]);
+        assertEquals("localhost", _val[0]);
+        assertEquals("cOnNeCtIoN", _hdr[1]);
+        assertEquals("ClOsE", _val[1]);
+        assertEquals(1, _h);
     }
     
     @Test
@@ -493,7 +537,6 @@ public class HttpParserTest
                         + "Content-Length: 10\015\012"
                         + "\015\012"
                         + "0123456789\015\012");
-
 
         HttpParser.RequestHandler<ByteBuffer> handler  = new Handler();
         HttpParser parser= new HttpParser(handler);
