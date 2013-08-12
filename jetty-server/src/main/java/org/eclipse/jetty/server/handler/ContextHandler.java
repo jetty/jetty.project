@@ -40,7 +40,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterRegistration;
@@ -62,9 +61,6 @@ import javax.servlet.SessionTrackingMode;
 import javax.servlet.descriptor.JspConfigDescriptor;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSessionAttributeListener;
-import javax.servlet.http.HttpSessionIdListener;
-import javax.servlet.http.HttpSessionListener;
 
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.ClassLoaderDump;
@@ -107,7 +103,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 {
     public final static int SERVLET_MAJOR_VERSION=3;
     public final static int SERVLET_MINOR_VERSION=0;
-    public static final Class[] SERVLET_LISTENER_TYPES = new Class[] {ServletContextListener.class, 
+    public static final Class[] SERVLET_LISTENER_TYPES = new Class[] {ServletContextListener.class,
                                                                       ServletContextAttributeListener.class,
                                                                       ServletRequestListener.class,
                                                                       ServletRequestAttributeListener.class};
@@ -559,7 +555,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         _requestListeners.clear();
         _requestAttributeListeners.clear();
         _eventListeners.clear();
-        
+
         if (eventListeners!=null)
             for (EventListener listener : eventListeners)
                 addEventListener(listener);
@@ -637,7 +633,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         return _programmaticListeners.contains(listener);
     }
 
-    
+
 
     /* ------------------------------------------------------------ */
     /**
@@ -837,7 +833,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 for (int i = _contextListeners.size(); i-->0;)
                     callContextDestroyed(_contextListeners.get(i),event);
             }
-            
+
             //retain only durable listeners
             setEventListeners(_durableListeners.toArray(new EventListener[_durableListeners.size()]));
             _durableListeners.clear();
@@ -977,8 +973,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         if (old_context != _scontext)
         {
             // check the target.
-            if (DispatcherType.REQUEST.equals(dispatch) || 
-                DispatcherType.ASYNC.equals(dispatch) || 
+            if (DispatcherType.REQUEST.equals(dispatch) ||
+                DispatcherType.ASYNC.equals(dispatch) ||
                 DispatcherType.ERROR.equals(dispatch) && baseRequest.getHttpChannelState().isAsync())
             {
                 if (_compactPath)
@@ -1309,18 +1305,18 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             LOG.warn(this+" contextPath ends with /*");
             contextPath=contextPath.substring(0,contextPath.length()-2);
         }
-        else if (contextPath.endsWith("/"))
+        else if (contextPath.length()>1 && contextPath.endsWith("/"))
         {
             LOG.warn(this+" contextPath ends with /");
             contextPath=contextPath.substring(0,contextPath.length()-1);
         }
-        
+
         if (contextPath.length()==0)
         {
             LOG.warn("Empty contextPath");
             contextPath="/";
         }
-        
+
         _contextPath = contextPath;
 
         if (getServer() != null && (getServer().isStarting() || getServer().isStarted()))
@@ -1732,7 +1728,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     {
         protected boolean _enabled = true; //whether or not the dynamic API is enabled for callers
         protected boolean _extendedListenerTypes = false;
-  
+
 
         /* ------------------------------------------------------------ */
         protected Context()
@@ -2153,7 +2149,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 throw new UnsupportedOperationException();
 
             checkListener(t.getClass());
-                       
+
             ContextHandler.this.addEventListener(t);
             ContextHandler.this.addProgrammaticListener(t);
         }
@@ -2165,7 +2161,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 throw new UnsupportedOperationException();
 
             checkListener(listenerClass);
-            
+
             try
             {
                 EventListener e = createListener(listenerClass);
@@ -2191,7 +2187,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             }
         }
 
-        
+
         public void checkListener (Class<? extends EventListener> listener) throws IllegalStateException
         {
             boolean ok = false;
@@ -2212,13 +2208,13 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         {
            _extendedListenerTypes = extended;
         }
-        
+
        public boolean isExtendedListenerTypes()
        {
            return _extendedListenerTypes;
        }
-        
-        
+
+
         @Override
         public ClassLoader getClassLoader()
         {
@@ -2256,8 +2252,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         {
             return _enabled;
         }
-        
-      
+
+
 
         public <T> T createInstance (Class<T> clazz) throws Exception
         {
@@ -2605,7 +2601,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             LOG.warn(__unimplmented);
         }
 
-        /** 
+        /**
          * @see javax.servlet.ServletContext#getVirtualServerName()
          */
         @Override
