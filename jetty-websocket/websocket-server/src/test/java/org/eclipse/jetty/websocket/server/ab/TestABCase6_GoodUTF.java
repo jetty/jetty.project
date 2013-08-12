@@ -134,7 +134,7 @@ public class TestABCase6_GoodUTF extends AbstractABCase
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new WebSocketFrame(OpCode.TEXT).setPayload(msg));
+        expect.add(new WebSocketFrame(OpCode.TEXT).setPayload(copyOf(msg)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);

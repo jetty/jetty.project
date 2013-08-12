@@ -98,14 +98,14 @@ public class TimeoutTest
 
             // Wait for inactivity idle timeout.
             long start = System.currentTimeMillis();
-            wsocket.waitForClose(10,TimeUnit.SECONDS);
+            wsocket.waitForClose(2,TimeUnit.SECONDS);
             long end = System.currentTimeMillis();
             long dur = (end - start);
             // Make sure idle timeout takes less than 5 total seconds
-            Assert.assertThat("Idle Timeout",dur,lessThanOrEqualTo(5000L));
+            Assert.assertThat("Idle Timeout",dur,lessThanOrEqualTo(3000L));
 
-            // Client should see a close event, with status SHUTDOWN
-            wsocket.assertCloseCode(StatusCode.SHUTDOWN);
+            // Client should see a close event, with abnormal status NO_CLOSE
+            wsocket.assertCloseCode(StatusCode.ABNORMAL);
         }
         finally
         {

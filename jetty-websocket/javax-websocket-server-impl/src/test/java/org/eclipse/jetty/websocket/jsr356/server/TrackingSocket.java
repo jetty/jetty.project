@@ -44,7 +44,7 @@ public abstract class TrackingSocket
     public CountDownLatch openLatch = new CountDownLatch(1);
     public CountDownLatch closeLatch = new CountDownLatch(1);
     public CountDownLatch dataLatch = new CountDownLatch(1);
-
+    
     protected void addError(Throwable t)
     {
         LOG.warn(t);

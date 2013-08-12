@@ -128,6 +128,7 @@ public class WriteBytesProvider implements Callback
      */
     public void close()
     {
+        LOG.debug(".close()");
         // Set queue closed, no new enqueue allowed.
         this.closed.set(true);
         // flush out backlog in queue
@@ -335,15 +336,12 @@ public class WriteBytesProvider implements Callback
             // Release the active byte buffer first
             generator.getBufferPool().release(buffer);
 
-            if (active != null)
+            if ((active != null) && (active.frame.remaining() <= 0))
             {
-                if (active.frame.remaining() <= 0)
-                {
-                    // All done with active FrameEntry
-                    successNotifiers.add(active.callback);
-                    // Forget active
-                    active = null;
-                }
+                // All done with active FrameEntry
+                successNotifiers.add(active.callback);
+                // Forget active
+                active = null;
             }
 
             for (FrameEntry entry : past)
@@ -351,10 +349,10 @@ public class WriteBytesProvider implements Callback
                 successNotifiers.add(entry.callback);
             }
             past.clear();
-
-            // notify flush callback
-            flushCallback.succeeded();
         }
+
+        // notify flush callback
+        flushCallback.succeeded();
 
         // Notify success (outside of synchronize lock)
         for (Callback successCallback : successNotifiers)

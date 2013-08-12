@@ -67,7 +67,7 @@ public class TestABCase9 extends AbstractABCase
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new WebSocketFrame(opcode).setPayload(msg));
+        expect.add(new WebSocketFrame(opcode).setPayload(copyOf(msg)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
@@ -94,7 +94,7 @@ public class TestABCase9 extends AbstractABCase
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new WebSocketFrame(opcode).setPayload(msg));
+        expect.add(new WebSocketFrame(opcode).setPayload(copyOf(msg)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
@@ -158,7 +158,7 @@ public class TestABCase9 extends AbstractABCase
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(WebSocketFrame.text().setPayload(utf));
+        expect.add(WebSocketFrame.text().setPayload(copyOf(utf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
@@ -317,7 +317,7 @@ public class TestABCase9 extends AbstractABCase
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(WebSocketFrame.binary(data));
+        expect.add(WebSocketFrame.binary(copyOf(data)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
@@ -348,7 +348,7 @@ public class TestABCase9 extends AbstractABCase
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(WebSocketFrame.binary().setPayload(data));
+        expect.add(WebSocketFrame.binary().setPayload(copyOf(data)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);

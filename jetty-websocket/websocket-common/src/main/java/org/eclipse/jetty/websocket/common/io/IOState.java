@@ -150,6 +150,7 @@ public class IOState
      */
     public void onAbnormalClose(CloseInfo close)
     {
+        LOG.debug("onAbnormalClose({})",close);
         ConnectionState event = null;
         synchronized (this)
         {
@@ -180,9 +181,9 @@ public class IOState
      */
     public void onCloseLocal(CloseInfo close)
     {
-        LOG.debug("onCloseLocal({})",close);
         ConnectionState event = null;
         ConnectionState initialState = this.state;
+        LOG.debug("onCloseLocal({}) : {}",close,initialState);
         if (initialState == ConnectionState.CLOSED)
         {
             // already closed
@@ -229,18 +230,17 @@ public class IOState
             }
         }
 
-        LOG.debug("event = {}",event);
-
         // Only notify on state change events
         if (event != null)
         {
             LOG.debug("notifying state listeners: {}",event);
             notifyStateListeners(event);
 
-            // if harsh, we don't expect an answer.
-            if (close.isHarsh())
+            /*
+            // if abnormal, we don't expect an answer.
+            if (close.isAbnormal())
             {
-                LOG.debug("Harsh close, disconnecting");
+                LOG.debug("Abnormal close, disconnecting");
                 synchronized (this)
                 {
                     state = ConnectionState.CLOSED;
@@ -253,6 +253,7 @@ public class IOState
                 notifyStateListeners(event);
                 return;
             }
+            */
         }
     }
 

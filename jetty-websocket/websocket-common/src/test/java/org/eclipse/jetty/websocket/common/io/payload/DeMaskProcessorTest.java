@@ -43,7 +43,7 @@ public class DeMaskProcessorTest
         frame.setMask(TypeUtil.fromHexString("11223344"));
         // frame.setMask(TypeUtil.fromHexString("00000000"));
 
-        ByteBuffer buf = new UnitGenerator().generate(frame);
+        ByteBuffer buf = UnitGenerator.generate(frame);
         LOG.debug("Buf: {}",BufferUtil.toDetailString(buf));
         ByteBuffer payload = buf.slice();
         payload.position(6); // where payload starts

@@ -20,6 +20,8 @@ package org.eclipse.jetty.websocket.jsr356.server;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import javax.websocket.ClientEndpoint;
 import javax.websocket.CloseReason;
@@ -33,7 +35,13 @@ import javax.websocket.Session;
 @ClientEndpoint
 public class EchoClientSocket extends TrackingSocket
 {
+    public final CountDownLatch eventCountLatch;
     private Session session;
+
+    public EchoClientSocket(int expectedEventCount)
+    {
+        this.eventCountLatch = new CountDownLatch(expectedEventCount);
+    }
 
     public void close() throws IOException
     {
@@ -51,9 +59,12 @@ public class EchoClientSocket extends TrackingSocket
     @OnError
     public void onError(Throwable t)
     {
-        if(t == null) {
+        if (t == null)
+        {
             addError(new NullPointerException("Throwable should not be null"));
-        } else {
+        }
+        else
+        {
             addError(t);
         }
     }
@@ -69,6 +80,12 @@ public class EchoClientSocket extends TrackingSocket
     public void onText(String text)
     {
         addEvent(text);
+        eventCountLatch.countDown();
+    }
+    
+    public boolean awaitAllEvents(long timeout, TimeUnit unit) throws InterruptedException
+    {
+        return eventCountLatch.await(timeout,unit);
     }
 
     public void sendObject(Object obj) throws IOException, EncodeException

@@ -203,7 +203,7 @@ public class ParserTest
         text.setPayload(payload);
         text.setOpCode(OpCode.TEXT);
 
-        ByteBuffer buf = new UnitGenerator().generate(text);
+        ByteBuffer buf = UnitGenerator.generate(text);
 
         ByteBuffer part1 = ByteBuffer.allocate(17); // header + good
         ByteBuffer part2 = ByteBuffer.allocate(4); // invalid

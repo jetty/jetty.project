@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.common.io;
 import java.io.EOFException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -46,7 +47,6 @@ import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
@@ -71,6 +71,12 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         @Override
         public void failed(Throwable x)
         {
+            if (ioState.wasAbnormalClose())
+            {
+                LOG.ignore(x);
+                return;
+            }
+
             LOG.debug("Write flush failure",x);
 
             // Unable to write? can't notify other side of close, so disconnect.
@@ -229,10 +235,29 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         close(StatusCode.NORMAL,null);
     }
 
+    /**
+     * Close the connection.
+     * <p>
+     * This can result in a close handshake over the network, or a simple local abnormal close
+     * 
+     * @param statusCode
+     *            the WebSocket status code.
+     * @param reason
+     *            the (optional) reason string. (null is allowed)
+     * @see StatusCode
+     */
     @Override
     public void close(int statusCode, String reason)
     {
-        enqueClose(statusCode,reason);
+        CloseInfo close = new CloseInfo(statusCode,reason);
+        if (statusCode == StatusCode.ABNORMAL)
+        {
+            ioState.onAbnormalClose(close);
+        }
+        else
+        {
+            ioState.onCloseLocal(close);
+        }
     }
 
     public void complete(final Callback callback)
@@ -265,7 +290,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         disconnect(false);
     }
 
-    public void disconnect(boolean onlyOutput)
+    private void disconnect(boolean onlyOutput)
     {
         EndPoint endPoint = getEndPoint();
         // We need to gently close first, to allow
@@ -277,21 +302,6 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             LOG.debug("Closing {}",endPoint);
             endPoint.close();
         }
-    }
-
-    /**
-     * Enqueue a close frame.
-     * 
-     * @param statusCode
-     *            the WebSocket status code.
-     * @param reason
-     *            the (optional) reason string. (null is allowed)
-     * @see StatusCode
-     */
-    private void enqueClose(int statusCode, String reason)
-    {
-        CloseInfo close = new CloseInfo(statusCode,reason);
-        ioState.onCloseLocal(close);
     }
 
     protected void execute(Runnable task)
@@ -321,6 +331,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         {
             if (flushing)
             {
+                LOG.debug("Actively flushing");
                 return;
             }
 
@@ -453,7 +464,17 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                 fillInterested();
                 break;
             case CLOSED:
-                this.disconnect();
+                if (ioState.wasAbnormalClose())
+                {
+                    // Fire out a close frame, indicating abnormal shutdown, then disconnect
+                    CloseInfo abnormal = new CloseInfo(StatusCode.SHUTDOWN,"Abnormal Close - " + ioState.getCloseInfo().getReason());
+                    outgoingFrame(abnormal.asFrame(),new OnDisconnectCallback());
+                }
+                else
+                {
+                    // Just disconnect
+                    this.disconnect();
+                }
                 break;
             case CLOSING:
                 CloseInfo close = ioState.getCloseInfo();
@@ -510,7 +531,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     @Override
     protected boolean onReadTimeout()
     {
-        LOG.debug("Read Timeout");
+        LOG.debug("{} Read Timeout",policy.getBehavior());
 
         IOState state = getIOState();
         if ((state.getConnectionState() == ConnectionState.CLOSING) || (state.getConnectionState() == ConnectionState.CLOSED))
@@ -521,8 +542,9 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         }
 
         // Initiate close - politely send close frame.
-        session.notifyError(new WebSocketTimeoutException("Timeout on Read"));
-        close(StatusCode.SHUTDOWN,"Idle Timeout");
+        session.notifyError(new SocketTimeoutException("Timeout on Read"));
+        // This is an Abnormal Close condition
+        close(StatusCode.ABNORMAL,"Idle Timeout");
 
         return false;
     }
@@ -575,13 +597,13 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         catch (IOException e)
         {
             LOG.warn(e);
-            enqueClose(StatusCode.PROTOCOL,e.getMessage());
+            close(StatusCode.PROTOCOL,e.getMessage());
             return -1;
         }
         catch (CloseException e)
         {
             LOG.warn(e);
-            enqueClose(e.getStatusCode(),e.getMessage());
+            close(e.getStatusCode(),e.getMessage());
             return -1;
         }
     }

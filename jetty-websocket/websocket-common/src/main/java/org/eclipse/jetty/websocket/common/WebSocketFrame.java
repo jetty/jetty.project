@@ -100,8 +100,6 @@ public class WebSocketFrame implements Frame
      */
     private ByteBuffer data;
     private int payloadLength = 0;
-    /** position of start of data within a fresh payload */
-    private int payloadStart = -1;
 
     private Type type;
     private boolean continuation = false;
@@ -578,7 +576,6 @@ public class WebSocketFrame implements Frame
         }
 
         data = ByteBuffer.wrap(buf);
-        payloadStart = data.position();
         payloadLength = data.remaining();
         return this;
     }
@@ -606,7 +603,6 @@ public class WebSocketFrame implements Frame
         }
 
         data = BufferUtil.toBuffer(buf,offset,len);
-        payloadStart = data.position();
         payloadLength = data.limit();
         return this;
     }
@@ -638,7 +634,6 @@ public class WebSocketFrame implements Frame
         }
 
         data = buf.slice();
-        payloadStart = data.position();
         payloadLength = data.limit();
         return this;
     }

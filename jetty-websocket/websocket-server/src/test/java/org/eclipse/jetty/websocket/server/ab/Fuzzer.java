@@ -300,12 +300,8 @@ public class Fuzzer
                 f.setMask(MASK); // make sure we have mask set
                 // Using lax generator, generate and send
                 ByteBuffer fullframe = ByteBuffer.allocate(f.getPayloadLength() + Generator.OVERHEAD);
-                BufferUtil.flipToFill(fullframe);
-                fullframe.put(generator.generateHeaderBytes(f));
-                if (f.hasPayload())
-                {
-                    fullframe.put(f.getPayload());
-                }
+                BufferUtil.clearToFill(fullframe);
+                generator.generateWholeFrame(f,fullframe);
                 BufferUtil.flipToFlush(fullframe,0);
                 client.writeRaw(fullframe);
                 client.flush();

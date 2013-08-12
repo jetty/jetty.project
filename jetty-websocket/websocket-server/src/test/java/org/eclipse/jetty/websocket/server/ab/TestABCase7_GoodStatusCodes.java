@@ -90,7 +90,7 @@ public class TestABCase7_GoodStatusCodes extends AbstractABCase
         send.add(new WebSocketFrame(OpCode.CLOSE).setPayload(payload.slice()));
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new WebSocketFrame(OpCode.CLOSE).setPayload(payload.slice()));
+        expect.add(new WebSocketFrame(OpCode.CLOSE).setPayload(copyOf(payload)));
 
         Fuzzer fuzzer = new Fuzzer(this);
         try
@@ -123,7 +123,7 @@ public class TestABCase7_GoodStatusCodes extends AbstractABCase
         send.add(new WebSocketFrame(OpCode.CLOSE).setPayload(payload.slice()));
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new WebSocketFrame(OpCode.CLOSE).setPayload(payload.slice()));
+        expect.add(new WebSocketFrame(OpCode.CLOSE).setPayload(copyOf(payload)));
 
         Fuzzer fuzzer = new Fuzzer(this);
         try

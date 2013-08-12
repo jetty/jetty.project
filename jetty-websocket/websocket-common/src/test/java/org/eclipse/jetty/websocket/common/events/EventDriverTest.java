@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.common.events;
 
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.websocket.api.StatusCode;

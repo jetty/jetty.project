@@ -178,6 +178,11 @@ public class CloseInfo
     {
         return !((statusCode == StatusCode.NORMAL) || (statusCode == StatusCode.NO_CODE));
     }
+    
+    public boolean isAbnormal()
+    {
+        return (statusCode == StatusCode.ABNORMAL);
+    }
 
     @Override
     public String toString()

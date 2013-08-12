@@ -20,8 +20,10 @@ package org.eclipse.jetty.websocket.server;
 
 import static org.hamcrest.Matchers.*;
 
+import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.OpCode;
@@ -83,17 +85,14 @@ public class IdleTimeoutTest
             // longer than server timeout configured in TimeoutServlet
             client.sleep(TimeUnit.MILLISECONDS,1000);
 
-            // Write to server (the server should be timed out and disconnect now)
+            // Write to server
+            // This action is possible, but does nothing.
+            // Server could be in a half-closed state at this point.
+            // Where the server read is closed (due to timeout), but the server write is still open.
+            // The server could not read this frame, if it is in this half closed state
             client.write(WebSocketFrame.text("Hello"));
 
-            // now read 1 frame from server (should be close frame)
-            IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,1500);
-            WebSocketFrame frame = capture.getFrames().poll();
-            Assert.assertThat("Was close frame", frame.getOpCode(), is(OpCode.CLOSE));
-            CloseInfo close = new CloseInfo(frame);
-            Assert.assertThat("Close.code", close.getStatusCode(), is(StatusCode.SHUTDOWN));
-            Assert.assertThat("Close.reason", close.getReason(), containsString("Idle Timeout"));
-            
+            // Expect server to be disconnected at this point
             client.expectServerDisconnect();
         }
         finally

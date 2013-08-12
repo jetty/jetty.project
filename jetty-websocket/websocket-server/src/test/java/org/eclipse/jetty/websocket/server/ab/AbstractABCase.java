@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -64,6 +65,40 @@ public abstract class AbstractABCase
     public static void stopServer()
     {
         server.stop();
+    }
+    
+    /**
+     * Make a copy of a byte buffer.
+     * <p>
+     * This is important in some tests, as the underlying byte buffer contained in a Frame can be modified through
+     * masking and make it difficult to compare the results in the fuzzer. 
+     * 
+     * @param payload the payload to copy
+     * @return a new byte array of the payload contents
+     */
+    protected byte[] copyOf(byte[] payload)
+    {
+        byte copy[] = new byte[payload.length];
+        System.arraycopy(payload,0,copy,0,payload.length);
+        return copy;
+    }
+    
+    /**
+     * Make a copy of a byte buffer.
+     * <p>
+     * This is important in some tests, as the underlying byte buffer contained in a Frame can be modified through
+     * masking and make it difficult to compare the results in the fuzzer. 
+     * 
+     * @param payload the payload to copy
+     * @return a new byte array of the payload contents
+     */
+    protected ByteBuffer copyOf(ByteBuffer payload)
+    {
+        ByteBuffer copy = ByteBuffer.allocate(payload.remaining());
+        BufferUtil.clearToFill(copy);
+        BufferUtil.put(payload,copy);
+        BufferUtil.flipToFlush(copy,0);
+        return copy;
     }
 
     public static String toUtf8String(byte[] buf)

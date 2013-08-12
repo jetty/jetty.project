@@ -243,10 +243,11 @@ public class EchoTest
         System.err.println(testcase);
     }
 
-    @Test(timeout=1000)
+    @Test(timeout=2000)
     public void testEcho() throws Exception
     {
-        EchoClientSocket socket = new EchoClientSocket();
+        int messageCount = testcase.getMessageCount();
+        EchoClientSocket socket = new EchoClientSocket(messageCount);
         URI toUri = serverUri.resolve(testcase.path.substring(1));
 
         try
@@ -256,37 +257,27 @@ public class EchoTest
             socket.waitForConnected(2,TimeUnit.SECONDS);
 
             // Send Messages
-            int messageCount = 0;
             for (Object msg : testcase.messages)
             {
                 if (msg instanceof PartialText)
                 {
                     PartialText pt = (PartialText)msg;
                     socket.sendPartialText(pt.part,pt.fin);
-                    if (pt.fin)
-                    {
-                        messageCount++;
-                    }
                 }
                 else if (msg instanceof PartialBinary)
                 {
                     PartialBinary pb = (PartialBinary)msg;
                     socket.sendPartialBinary(pb.part,pb.fin);
-                    if (pb.fin)
-                    {
-                        messageCount++;
-                    }
                 }
                 else
                 {
                     socket.sendObject(msg);
-                    messageCount++;
                 }
             }
 
             // Collect Responses
+            socket.awaitAllEvents(1,TimeUnit.SECONDS);
             EventQueue<String> received = socket.eventQueue;
-            received.awaitEventCount(messageCount,3,TimeUnit.SECONDS);
 
             // Validate Responses
             for (String expected : testcase.expectedStrings)

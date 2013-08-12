@@ -18,23 +18,34 @@
 
 package org.eclipse.jetty.websocket.server;
 
+import static org.hamcrest.Matchers.*;
+
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.websocket.server.helper.Hex;
 import org.junit.Assert;
-
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
 
 public class ByteBufferAssert
 {
     public static void assertEquals(String message, byte[] expected, byte[] actual)
     {
-        Assert.assertThat(message + " byte[].length",actual.length,is(expected.length));
-        int len = expected.length;
-        for (int i = 0; i < len; i++)
+        if (expected.length <= 200)
         {
-            Assert.assertThat(message + " byte[" + i + "]",actual[i],is(expected[i]));
+            // Simple comparison (useful for clear error messages)
+            String actualHex = Hex.asHex(actual);
+            String expectedHex = Hex.asHex(expected);
+            Assert.assertThat(message + " bytes", actualHex, is(expectedHex));
+        }
+        else
+        {
+            // Big byte buffers are checked byte for byte
+            Assert.assertThat(message + " byte[].length",actual.length,is(expected.length));
+            int len = expected.length;
+            for (int i = 0; i < len; i++)
+            {
+                Assert.assertThat(message + " byte[" + i + "]",actual[i],is(expected[i]));
+            }
         }
     }
 

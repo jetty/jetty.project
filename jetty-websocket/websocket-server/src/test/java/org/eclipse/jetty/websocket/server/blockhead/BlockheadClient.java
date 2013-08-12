@@ -521,11 +521,12 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames, Connecti
             if (b == (-1))
             {
                 eof = true;
-                return -1;
+                break;
             }
             buf.put((byte)b);
             len++;
         }
+
         return len;
     }
 
