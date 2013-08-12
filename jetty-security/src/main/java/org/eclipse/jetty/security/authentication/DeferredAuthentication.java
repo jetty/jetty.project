@@ -117,6 +117,9 @@ public class DeferredAuthentication implements Authentication.Deferred
     @Override
     public Authentication login(String username, Object password, ServletRequest request)
     {
+        if (username == null)
+            return null;
+        
         UserIdentity identity = _authenticator.login(username, password, request);
         if (identity != null)
         {
