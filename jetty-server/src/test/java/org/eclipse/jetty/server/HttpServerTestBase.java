@@ -37,7 +37,6 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.net.URL;
 import java.util.Arrays;
-import java.util.Random;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -57,7 +56,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.matchers.JUnitMatchers;
 /**
