@@ -20,6 +20,7 @@ package org.eclipse.jetty.http;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.nio.ByteBuffer;
@@ -29,6 +30,8 @@ import java.util.List;
 import org.eclipse.jetty.http.HttpParser.State;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
+import org.hamcrest.Matchers;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -313,6 +316,71 @@ public class HttpParserTest
         assertEquals(9, _h);
     }
 
+    @Test
+    public void testEncodedHeader() throws Exception
+    {
+        ByteBuffer buffer=BufferUtil.allocate(4096);
+        BufferUtil.flipToFill(buffer); 
+        BufferUtil.put(BufferUtil.toBuffer("GET "),buffer);
+        buffer.put("/foo/\u0690/".getBytes(StringUtil.__UTF8_CHARSET));
+        BufferUtil.put(BufferUtil.toBuffer(" HTTP/1.0\r\n"),buffer);
+        BufferUtil.put(BufferUtil.toBuffer("Header1: "),buffer);
+        buffer.put("\u00e6 \u00e6".getBytes(StringUtil.__ISO_8859_1_CHARSET));
+        BufferUtil.put(BufferUtil.toBuffer("  \r\n\r\n"),buffer);
+        BufferUtil.flipToFlush(buffer,0);
+                    
+        HttpParser.RequestHandler<ByteBuffer> handler  = new Handler();
+        HttpParser parser= new HttpParser(handler);
+        parseAll(parser,buffer);
+
+        assertEquals("GET", _methodOrVersion);
+        assertEquals("/foo/\u0690/", _uriOrStatus);
+        assertEquals("HTTP/1.0", _versionOrReason);
+        assertEquals("Header1", _hdr[0]);
+        assertEquals("\u00e6 \u00e6", _val[0]);
+        assertEquals(0, _h);
+        assertEquals(null,_bad);
+    }
+    
+    
+
+    @Test
+    public void testBadMethodEncoding() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer(
+            "G\u00e6T / HTTP/1.0\r\nHeader0: value0\r\n\n\n");
+        
+        HttpParser.RequestHandler<ByteBuffer> handler  = new Handler();
+        HttpParser parser= new HttpParser(handler);
+        parseAll(parser,buffer);
+        assertThat(_bad,Matchers.notNullValue());
+    }
+
+    @Test
+    public void testBadVersionEncoding() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer(
+            "GET / H\u00e6P/1.0\r\nHeader0: value0\r\n\n\n");
+        
+        HttpParser.RequestHandler<ByteBuffer> handler  = new Handler();
+        HttpParser parser= new HttpParser(handler);
+        parseAll(parser,buffer);
+        assertThat(_bad,Matchers.notNullValue());
+    }
+
+
+    @Test
+    public void testBadHeaderEncoding() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer(
+            "GET / HTTP/1.0\r\nH\u00e6der0: value0\r\n\n\n");
+        
+        HttpParser.RequestHandler<ByteBuffer> handler  = new Handler();
+        HttpParser parser= new HttpParser(handler);
+        parseAll(parser,buffer);
+        assertThat(_bad,Matchers.notNullValue());
+    }
+    
     @Test
     public void testSplitHeaderParse() throws Exception
     {
@@ -1125,7 +1193,7 @@ public class HttpParserTest
         @Override
         public void badMessage(int status, String reason)
         {
-            _bad=reason;
+            _bad=reason==null?(""+status):reason;
         }
 
         @Override
