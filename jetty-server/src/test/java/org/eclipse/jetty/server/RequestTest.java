@@ -18,26 +18,17 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Enumeration;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequestEvent;
@@ -58,9 +49,16 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.hamcrest.Matchers;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class RequestTest
 {
@@ -466,13 +464,6 @@ public class RequestTest
         assertEquals("remote",results.get(i++));
         assertEquals("::1",results.get(i++));
         assertEquals("8888",results.get(i++));
-
-        
-
-
-        
-        
-        
     }
 
     @Test
@@ -1042,6 +1033,12 @@ public class RequestTest
         }
     }
 
+    @Test(expected = UnsupportedEncodingException.class)
+    public void testNotSupportedCharacterEncoding() throws UnsupportedEncodingException
+    {
+        Request request = new Request(null, null);
+        request.setCharacterEncoding("doesNotExist");
+    }
 
     interface RequestTester
     {
