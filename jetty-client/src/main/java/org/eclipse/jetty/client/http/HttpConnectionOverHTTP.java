@@ -36,8 +36,8 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
 
     private final Delegate delegate;
     private final HttpChannelOverHTTP channel;
-    private volatile boolean closed;
-    private volatile long idleTimeout;
+    private boolean closed;
+    private long idleTimeout;
 
     public HttpConnectionOverHTTP(HttpClient client, EndPoint endPoint, HttpDestination destination)
     {
@@ -81,15 +81,9 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
         super.onClose();
     }
 
-    @Override
-    public void fillInterested()
+    protected boolean isClosed()
     {
-        // This is necessary when "upgrading" the connection for example after proxied
-        // CONNECT requests, because the old connection will read the CONNECT response
-        // and then set the read interest, while the new connection attached to the same
-        // EndPoint also will set the read interest, causing a ReadPendingException.
-        if (!closed)
-            super.fillInterested();
+        return closed;
     }
 
     @Override

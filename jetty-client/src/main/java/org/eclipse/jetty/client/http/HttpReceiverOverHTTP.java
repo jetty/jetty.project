@@ -50,9 +50,15 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         return (HttpChannelOverHTTP)super.getHttpChannel();
     }
 
+    private HttpConnectionOverHTTP getHttpConnection()
+    {
+        return getHttpChannel().getHttpConnection();
+    }
+
     public void receive()
     {
-        EndPoint endPoint = getHttpChannel().getHttpConnection().getEndPoint();
+        HttpConnectionOverHTTP connection = getHttpConnection();
+        EndPoint endPoint = connection.getEndPoint();
         HttpClient client = getHttpDestination().getHttpClient();
         ByteBufferPool bufferPool = client.getByteBufferPool();
         ByteBuffer buffer = bufferPool.acquire(client.getResponseBufferSize(), true);
@@ -60,21 +66,30 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         {
             while (true)
             {
-                int read = endPoint.fill(buffer);
-                LOG.debug("Read {} bytes from {}", read, endPoint);
-                if (read > 0)
+                // Connection may be closed in a parser callback
+                if (connection.isClosed())
                 {
-                    parse(buffer);
-                }
-                else if (read == 0)
-                {
-                    fillInterested();
+                    LOG.debug("{} closed", connection);
                     break;
                 }
                 else
                 {
-                    shutdown();
-                    break;
+                    int read = endPoint.fill(buffer);
+                    LOG.debug("Read {} bytes from {}", read, endPoint);
+                    if (read > 0)
+                    {
+                        parse(buffer);
+                    }
+                    else if (read == 0)
+                    {
+                        fillInterested();
+                        break;
+                    }
+                    else
+                    {
+                        shutdown();
+                        break;
+                    }
                 }
             }
         }
@@ -217,5 +232,11 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     {
         if (responseFailure(failure))
             getHttpChannel().getHttpConnection().close();
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x on %s", getClass().getSimpleName(), hashCode(), getHttpConnection());
     }
 }
