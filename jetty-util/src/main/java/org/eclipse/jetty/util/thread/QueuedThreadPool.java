@@ -80,7 +80,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
 
     public QueuedThreadPool(@Name("maxThreads") int maxThreads,  @Name("minThreads") int minThreads, @Name("idleTimeout")int idleTimeout)
     {
-        this(maxThreads, minThreads, 60000,null);
+        this(maxThreads, minThreads, idleTimeout, null);
     }
 
     public QueuedThreadPool(@Name("maxThreads") int maxThreads, @Name("minThreads") int minThreads, @Name("idleTimeout") int idleTimeout, @Name("queue") BlockingQueue<Runnable> queue)

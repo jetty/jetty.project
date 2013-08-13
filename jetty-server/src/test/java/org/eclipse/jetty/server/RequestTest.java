@@ -18,26 +18,18 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
@@ -61,6 +53,14 @@ import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class RequestTest
 {
@@ -172,8 +172,8 @@ public class RequestTest
         String responses=_connector.getResponses(request);
         assertTrue(responses.startsWith("HTTP/1.1 200"));
     }
-    
-    
+
+
     @Test
     public void testMultiPart() throws Exception
     {
@@ -182,7 +182,7 @@ public class RequestTest
         testTmpDir.deleteOnExit();
         assertTrue(testTmpDir.mkdirs());
         assertTrue(testTmpDir.list().length == 0);
-        
+
         ContextHandler contextHandler = new ContextHandler();
         contextHandler.setContextPath("/foo");
         contextHandler.setResourceBase(".");
@@ -204,12 +204,12 @@ public class RequestTest
                 String[] files = testTmpDir.list();
                 assertTrue(files.length == 0);
             }
-            
+
         });
         _server.stop();
         _server.setHandler(contextHandler);
         _server.start();
-        
+
         String multipart =  "--AaB03x\r\n"+
         "content-disposition: form-data; name=\"field1\"\r\n"+
         "\r\n"+
@@ -220,7 +220,7 @@ public class RequestTest
         "\r\n"+
         "000000000000000000000000000000000000000000000000000\r\n"+
         "--AaB03x--\r\n";
-        
+
         String request="GET /foo/x.html HTTP/1.1\r\n"+
         "Host: whatever\r\n"+
         "Content-Type: multipart/form-data; boundary=\"AaB03x\"\r\n"+
@@ -363,8 +363,8 @@ public class RequestTest
         assertEquals("0.0.0.0",results.get(i++));
         assertEquals("myhost",results.get(i++));
         assertEquals("80",results.get(i++));
-        
-        
+
+
         results.clear();
         response=_connector.getResponses(
                 "GET / HTTP/1.1\n"+
@@ -377,8 +377,8 @@ public class RequestTest
         assertEquals("0.0.0.0",results.get(i++));
         assertEquals("myhost",results.get(i++));
         assertEquals("8888",results.get(i++));
-        
-        
+
+
         results.clear();
         response=_connector.getResponses(
                 "GET / HTTP/1.1\n"+
@@ -392,8 +392,8 @@ public class RequestTest
         assertEquals("0.0.0.0",results.get(i++));
         assertEquals("1.2.3.4",results.get(i++));
         assertEquals("80",results.get(i++));
-        
-        
+
+
         results.clear();
         response=_connector.getResponses(
                 "GET / HTTP/1.1\n"+
@@ -406,8 +406,8 @@ public class RequestTest
         assertEquals("0.0.0.0",results.get(i++));
         assertEquals("1.2.3.4",results.get(i++));
         assertEquals("8888",results.get(i++));
-        
-        
+
+
         results.clear();
         response=_connector.getResponses(
                 "GET / HTTP/1.1\n"+
@@ -420,8 +420,8 @@ public class RequestTest
         assertEquals("0.0.0.0",results.get(i++));
         assertEquals("::1",results.get(i++));
         assertEquals("80",results.get(i++));
-        
-        
+
+
         results.clear();
         response=_connector.getResponses(
                 "GET / HTTP/1.1\n"+
@@ -434,8 +434,8 @@ public class RequestTest
         assertEquals("0.0.0.0",results.get(i++));
         assertEquals("::1",results.get(i++));
         assertEquals("8888",results.get(i++));
-        
-        
+
+
         results.clear();
         response=_connector.getResponses(
                 "GET / HTTP/1.1\n"+
@@ -450,8 +450,8 @@ public class RequestTest
         assertEquals("remote",results.get(i++));
         assertEquals("::1",results.get(i++));
         assertEquals("443",results.get(i++));
-        
-        
+
+
         results.clear();
         response=_connector.getResponses(
                 "GET / HTTP/1.1\n"+
@@ -466,13 +466,6 @@ public class RequestTest
         assertEquals("remote",results.get(i++));
         assertEquals("::1",results.get(i++));
         assertEquals("8888",results.get(i++));
-
-        
-
-
-        
-        
-        
     }
 
     @Test
@@ -669,7 +662,7 @@ public class RequestTest
         response=_connector.getResponses(
                     "GET / HTTP/1.1\n"+
                     "Host: whatever\n"+
-                    "\n", 
+                    "\n",
                     200, TimeUnit.MILLISECONDS
                     );
         assertTrue(response.indexOf("200")>0);
@@ -1051,6 +1044,12 @@ public class RequestTest
         }
     }
 
+    @Test(expected = UnsupportedEncodingException.class)
+    public void testNotSupportedCharacterEncoding() throws UnsupportedEncodingException
+    {
+        Request request = new Request(null, null);
+        request.setCharacterEncoding("doesNotExist");
+    }
 
     interface RequestTester
     {
@@ -1078,30 +1077,30 @@ public class RequestTest
                 response.sendError(500);
         }
     }
-    
+
     private class MultiPartRequestHandler extends AbstractHandler
     {
         File tmpDir;
-        
+
         public MultiPartRequestHandler(File tmpDir)
         {
             this.tmpDir = tmpDir;
         }
-        
-        
+
+
         @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             ((Request)request).setHandled(true);
             try
-            { 
+            {
 
                 MultipartConfigElement mpce = new MultipartConfigElement(tmpDir.getAbsolutePath(),-1, -1, 2);
                 request.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, mpce);
-               
+
                 String field1 = request.getParameter("field1");
                 assertNotNull(field1);
-                
+
                 Part foo = request.getPart("stuff");
                 assertNotNull(foo);
                 assertTrue(foo.getSize() > 0);

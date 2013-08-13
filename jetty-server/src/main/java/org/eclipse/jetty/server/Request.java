@@ -28,6 +28,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
+import java.nio.charset.UnsupportedCharsetException;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -38,7 +39,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncListener;
 import javax.servlet.DispatcherType;
@@ -64,7 +64,6 @@ import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
@@ -1697,7 +1696,16 @@ public class Request implements HttpServletRequest
 
         // check encoding is supported
         if (!StringUtil.isUTF8(encoding))
-            Charset.forName(encoding);
+        {
+            try
+            {
+                Charset.forName(encoding);
+            }
+            catch (UnsupportedCharsetException e)
+            {
+                throw new UnsupportedEncodingException(e.getMessage());
+            }
+        }
     }
 
     /* ------------------------------------------------------------ */
