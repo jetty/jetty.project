@@ -574,6 +574,8 @@ public class HttpChannelState
     {
         synchronized (this)
         {    
+            if (_state==State.DISPATCHED)
+                return _async!=null;
             return _async==Async.STARTED || _async==Async.EXPIRING;
         }
     }

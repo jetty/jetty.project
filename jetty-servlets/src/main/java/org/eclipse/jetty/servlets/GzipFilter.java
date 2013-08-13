@@ -352,7 +352,6 @@ public class GzipFilter extends UserAgentFilter
         {
             if (request.isAsyncStarted())
             {
-                 
                 request.getAsyncContext().addListener(new FinishOnCompleteListener(wrappedResponse));
             }
             else if (exceptional && !response.isCommitted())
