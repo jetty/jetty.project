@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.jsr356.encoders;
 
+import java.nio.ByteBuffer;
+
 import org.eclipse.jetty.websocket.jsr356.MessageType;
 import org.eclipse.jetty.websocket.jsr356.metadata.EncoderMetadataSet;
 
@@ -53,8 +55,8 @@ public class PrimitiveEncoderMetadataSet extends EncoderMetadataSet
 
         // BINARY based
         msgType = MessageType.BINARY;
-        // FIXME register(ByteBuffer.class,ByteBufferEncoder.class,msgType,streamed);
-        // FIXME register(byte[].class,ByteArrayEncoder.class,msgType,streamed);
+        register(ByteBuffer.class,ByteBufferEncoder.class,msgType,streamed);
+        register(byte[].class,ByteArrayEncoder.class,msgType,streamed);
 
     }
 }
