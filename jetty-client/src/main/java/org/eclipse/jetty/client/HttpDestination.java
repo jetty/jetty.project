@@ -428,6 +428,19 @@ public class HttpDestination implements Destination, Closeable, Dumpable
         getResponseNotifier().notifyComplete(listeners, new Result(request, cause, response, cause));
     }
 
+    protected void tunnelSucceeded(Connection connection, Promise<Connection> promise)
+    {
+        // Wrap the connection with TLS
+        Connection tunnel = client.tunnel(connection);
+        promise.succeeded(tunnel);
+    }
+
+    protected void tunnelFailed(Connection connection, Promise<Connection> promise, Throwable failure)
+    {
+        promise.failed(failure);
+        connection.close();
+    }
+
     @Override
     public String dump()
     {
@@ -516,22 +529,18 @@ public class HttpDestination implements Destination, Closeable, Dumpable
                 {
                     if (result.isFailed())
                     {
-                        failed(result.getFailure());
-                        connection.close();
+                        tunnelFailed(connection, delegate, result.getFailure());
                     }
                     else
                     {
                         Response response = result.getResponse();
                         if (response.getStatus() == 200)
                         {
-                            // Wrap the connection with TLS
-                            Connection tunnel = client.tunnel(connection);
-                            delegate.succeeded(tunnel);
+                            tunnelSucceeded(connection, delegate);
                         }
                         else
                         {
-                            failed(new HttpResponseException("Received " + response + " for " + result.getRequest(), response));
-                            connection.close();
+                            tunnelFailed(connection, delegate, new HttpResponseException("Received " + response + " for " + result.getRequest(), response));
                         }
                     }
                 }

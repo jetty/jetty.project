@@ -53,7 +53,7 @@ public class HttpConnection extends AbstractConnection implements Connection
     private final HttpSender sender;
     private final HttpReceiver receiver;
     private long idleTimeout;
-    private volatile boolean closed;
+    private boolean closed;
 
     public HttpConnection(HttpClient client, EndPoint endPoint, HttpDestination destination)
     {
@@ -88,15 +88,9 @@ public class HttpConnection extends AbstractConnection implements Connection
         super.onClose();
     }
 
-    @Override
-    public void fillInterested()
+    protected boolean isClosed()
     {
-        // This is necessary when "upgrading" the connection for example after proxied
-        // CONNECT requests, because the old connection will read the CONNECT response
-        // and then set the read interest, while the new connection attached to the same
-        // EndPoint also will set the read interest, causing a ReadPendingException.
-        if (!closed)
-            super.fillInterested();
+        return closed;
     }
 
     @Override
