@@ -576,7 +576,9 @@ public class HttpChannelState
         {
             switch(_state)
             {
-                case ASYNCSTARTED:
+                case ASYNCSTARTED:  // Suspend called, but not yet returned to container
+                case REDISPATCHING: // resumed while dispatched
+                case COMPLETECALLED:   // complete called
                 case ASYNCWAIT:
                     return true;
 
