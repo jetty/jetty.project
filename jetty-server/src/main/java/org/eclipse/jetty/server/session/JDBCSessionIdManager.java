@@ -29,11 +29,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Locale;
 import java.util.Random;
 import java.util.Set;
@@ -380,6 +376,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
     }
 
 
+    @Override
     public void addSession(HttpSession session)
     {
         if (session == null)
@@ -422,6 +419,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
 
 
 
+    @Override
     public void removeSession(HttpSession session)
     {
         if (session == null)
@@ -456,32 +454,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
     }
 
 
-    /**
-     * Get the session id without any node identifier suffix.
-     *
-     * @see org.eclipse.jetty.server.SessionIdManager#getClusterId(java.lang.String)
-     */
-    public String getClusterId(String nodeId)
-    {
-        int dot=nodeId.lastIndexOf('.');
-        return (dot>0)?nodeId.substring(0,dot):nodeId;
-    }
-
-
-    /**
-     * Get the session id, including this node's id as a suffix.
-     *
-     * @see org.eclipse.jetty.server.SessionIdManager#getNodeId(java.lang.String, javax.servlet.http.HttpServletRequest)
-     */
-    public String getNodeId(String clusterId, HttpServletRequest request)
-    {
-        if (_workerName!=null)
-            return clusterId+'.'+_workerName;
-
-        return clusterId;
-    }
-
-
+    @Override
     public boolean idInUse(String id)
     {
         if (id == null)
@@ -515,6 +488,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
      *
      * @see org.eclipse.jetty.server.SessionIdManager#invalidateAll(java.lang.String)
      */
+    @Override
     public void invalidateAll(String id)
     {
         //take the id out of the list of known sessionids for this node
@@ -527,7 +501,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
             Handler[] contexts = _server.getChildHandlersByClass(ContextHandler.class);
             for (int i=0; contexts!=null && i<contexts.length; i++)
             {
-                SessionHandler sessionHandler = (SessionHandler)((ContextHandler)contexts[i]).getChildHandlerByClass(SessionHandler.class);
+                SessionHandler sessionHandler = ((ContextHandler)contexts[i]).getChildHandlerByClass(SessionHandler.class);
                 if (sessionHandler != null)
                 {
                     SessionManager manager = sessionHandler.getSessionManager();
@@ -542,6 +516,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
     }
 
 
+    @Override
     public void renewSessionId (String oldClusterId, String oldNodeId, HttpServletRequest request)
     {
         //generate a new id
@@ -556,7 +531,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
             Handler[] contexts = _server.getChildHandlersByClass(ContextHandler.class);
             for (int i=0; contexts!=null && i<contexts.length; i++)
             {
-                SessionHandler sessionHandler = (SessionHandler)((ContextHandler)contexts[i]).getChildHandlerByClass(SessionHandler.class);
+                SessionHandler sessionHandler = ((ContextHandler)contexts[i]).getChildHandlerByClass(SessionHandler.class);
                 if (sessionHandler != null) 
                 {
                     SessionManager manager = sessionHandler.getSessionManager();
@@ -971,7 +946,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         Handler[] contexts = _server.getChildHandlersByClass(ContextHandler.class);
         for (int i=0; contexts!=null && i<contexts.length; i++)
         {
-            SessionHandler sessionHandler = (SessionHandler)((ContextHandler)contexts[i]).getChildHandlerByClass(SessionHandler.class);
+            SessionHandler sessionHandler = ((ContextHandler)contexts[i]).getChildHandlerByClass(SessionHandler.class);
             if (sessionHandler != null)
             {
                 SessionManager manager = sessionHandler.getSessionManager();

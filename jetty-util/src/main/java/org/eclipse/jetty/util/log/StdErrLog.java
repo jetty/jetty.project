@@ -82,6 +82,11 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
  *   long form, fully qualified class names.  when false, use abbreviated package names<br/>
  *   Default: false
  *   </dd>
+ *   <dt>org.eclipse.jetty.util.log.stderr.ESCAPE=(true|false)</dt>
+ *   <dd>Global Configuration, when true output logging events to STDERR are always
+ *   escaped so that control characters are replaced with '?";  '\r' with '<' and '\n' replaced '|'<br/>
+ *   Default: true
+ *   </dd>
  * </dl>
  */
 @ManagedObject("Jetty StdErr Logging Implementation")
@@ -94,6 +99,7 @@ public class StdErrLog extends AbstractLogger
     private final static boolean __source = Boolean.parseBoolean(Log.__props.getProperty("org.eclipse.jetty.util.log.SOURCE",
             Log.__props.getProperty("org.eclipse.jetty.util.log.stderr.SOURCE","false")));
     private final static boolean __long = Boolean.parseBoolean(Log.__props.getProperty("org.eclipse.jetty.util.log.stderr.LONG","false"));
+    private final static boolean __escape = Boolean.parseBoolean(Log.__props.getProperty("org.eclipse.jetty.util.log.stderr.ESCAPE","true"));
 
     static
     {
@@ -642,29 +648,34 @@ public class StdErrLog extends AbstractLogger
 
     private void escape(StringBuilder builder, String string)
     {
-        for (int i = 0; i < string.length(); ++i)
+        if (__escape)
         {
-            char c = string.charAt(i);
-            if (Character.isISOControl(c))
+            for (int i = 0; i < string.length(); ++i)
             {
-                if (c == '\n')
+                char c = string.charAt(i);
+                if (Character.isISOControl(c))
                 {
-                    builder.append('|');
-                }
-                else if (c == '\r')
-                {
-                    builder.append('<');
+                    if (c == '\n')
+                    {
+                        builder.append('|');
+                    }
+                    else if (c == '\r')
+                    {
+                        builder.append('<');
+                    }
+                    else
+                    {
+                        builder.append('?');
+                    }
                 }
                 else
                 {
-                    builder.append('?');
+                    builder.append(c);
                 }
             }
-            else
-            {
-                builder.append(c);
-            }
         }
+        else
+            builder.append(string);
     }
 
     private void format(StringBuilder buffer, Throwable thrown)

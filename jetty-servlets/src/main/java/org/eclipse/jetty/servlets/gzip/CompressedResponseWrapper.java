@@ -243,7 +243,7 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
         if (_writer!=null)
             _writer.flush();
         if (_compressedStream!=null)
-            _compressedStream.finish();
+            _compressedStream.flush();
         else
             getResponse().flushBuffer();
     }

@@ -57,12 +57,12 @@ public abstract class AbstractNewSessionTest
     @Test
     public void testNewSession() throws Exception
     {
-        String contextPath = "";
         String servletMapping = "/server";
         int scavengePeriod = 3;
         AbstractTestServer server = createServer(0, 1, scavengePeriod);
-        ServletContextHandler context = server.addContext(contextPath);
+        ServletContextHandler context = server.addContext("/");
         context.addServlet(TestServlet.class, servletMapping);
+        String contextPath = "";
 
         try
         {

@@ -188,13 +188,15 @@ if [ -z "$JETTY_HOME" ]
 then
   JETTY_SH=$0
   case "$JETTY_SH" in
-    /*)   ;;
-    ./*)  ;;
-    *)    JETTY_SH=./$JETTY_SH ;;
+    /*)     JETTY_HOME=${JETTY_SH%/*/*} ;;
+    ./*/*)  JETTY_HOME=${JETTY_SH%/*/*} ;;
+    ./*)    JETTY_HOME=.. ;;
+    */*/*)  JETTY_HOME=./${JETTY_SH%/*/*} ;;
+    */*)    JETTY_HOME=. ;;
+    *)      JETTY_HOME=.. ;;
   esac
-  JETTY_HOME=${JETTY_SH%/*/*}
 
-  if [ ! -f "${JETTY_SH%/*/*}/$JETTY_INSTALL_TRACE_FILE" ]
+  if [ ! -f "$JETTY_HOME/$JETTY_INSTALL_TRACE_FILE" ]
   then 
     JETTY_HOME=
   fi

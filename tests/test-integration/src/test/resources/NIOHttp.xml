@@ -6,17 +6,27 @@
     <!-- =========================================================== -->
     <!-- Set connectors                                              -->
     <!-- =========================================================== -->
-
+    
     <Call name="addConnector">
-      <Arg>
-          <New class="org.eclipse.jetty.server.ServerConnector">
-            <Set name="host"><SystemProperty name="jetty.host" /></Set>
-            <Set name="port"><SystemProperty name="jetty.port" default="0"/></Set>
-            <Set name="idleTimeout">300000</Set>
-            <Set name="Acceptors">2</Set>
-            <Set name="statsOn">false</Set>
-          </New>
-      </Arg>
-    </Call>
+    <Arg>
+      <New class="org.eclipse.jetty.server.ServerConnector">
+        <Arg name="server"><Ref refid="Server" /></Arg>
+        <Arg name="factories">
+          <Array type="org.eclipse.jetty.server.ConnectionFactory">
+            <Item>
+              <New class="org.eclipse.jetty.server.HttpConnectionFactory">
+                <Arg name="config"><Ref refid="httpConfig" /></Arg>
+              </New>
+            </Item>
+          </Array>
+        </Arg>
+        <Set name="host"><Property name="jetty.host" /></Set>
+        <Set name="port"><Property name="jetty.port" default="8080" /></Set>
+        <Set name="idleTimeout"><Property name="http.timeout" default="30000"/></Set>
+      </New>
+    </Arg>
+  </Call>
+    
+    
 
 </Configure>

@@ -68,6 +68,7 @@ public class HttpField
         CACHE.put(new CachedHttpField(HttpHeader.CONTENT_LENGTH,"0"));
         CACHE.put(new CachedHttpField(HttpHeader.CONTENT_ENCODING,"gzip"));
         CACHE.put(new CachedHttpField(HttpHeader.CONTENT_ENCODING,"deflate"));
+        CACHE.put(new CachedHttpField(HttpHeader.TRANSFER_ENCODING,"chunked"));
         CACHE.put(new CachedHttpField(HttpHeader.EXPIRES,"Fri, 01 Jan 1990 00:00:00 GMT"));
         
         // Content types

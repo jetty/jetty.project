@@ -28,6 +28,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
+import java.nio.charset.UnsupportedCharsetException;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -38,7 +39,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncListener;
 import javax.servlet.DispatcherType;
@@ -63,7 +63,6 @@ import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
@@ -203,7 +202,6 @@ public class Request implements HttpServletRequest
     private HttpSession _session;
     private SessionManager _sessionManager;
     private long _timeStamp;
-    private long _dispatchTime;
     private HttpURI _uri;
     private MultiPartInputStreamParser _multiPartInputStream; //if the request is a multi-part mime
     private AsyncContextState _async;
@@ -1395,16 +1393,6 @@ public class Request implements HttpServletRequest
         return null;
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * Get timestamp of the request dispatch
-     *
-     * @return timestamp
-     */
-    public long getDispatchTime()
-    {
-        return _dispatchTime;
-    }
 
     /* ------------------------------------------------------------ */
     public boolean isHandled()
@@ -1714,7 +1702,16 @@ public class Request implements HttpServletRequest
 
         // check encoding is supported
         if (!StringUtil.isUTF8(encoding))
-            Charset.forName(encoding);
+        {
+            try
+            {
+                Charset.forName(encoding);
+            }
+            catch (UnsupportedCharsetException e)
+            {
+                throw new UnsupportedEncodingException(e.getMessage());
+            }
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -1994,18 +1991,6 @@ public class Request implements HttpServletRequest
     public void setUserIdentityScope(UserIdentity.Scope scope)
     {
         _scope = scope;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Set timetstamp of request dispatch
-     *
-     * @param value
-     *            timestamp
-     */
-    public void setDispatchTime(long value)
-    {
-        _dispatchTime = value;
     }
 
     /* ------------------------------------------------------------ */

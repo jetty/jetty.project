@@ -373,7 +373,8 @@ public class HttpOutput extends ServletOutputStream
 
     /* ------------------------------------------------------------ */
     /** Asynchronous send of content.
-     * @param in The content to send
+     * @param in The content to send as a stream.  The stream will be closed 
+     * after reading all content.
      * @param callback The callback to use to notify success or failure
      */
     public void sendContent(InputStream in, Callback callback)
@@ -383,7 +384,8 @@ public class HttpOutput extends ServletOutputStream
 
     /* ------------------------------------------------------------ */
     /** Asynchronous send of content.
-     * @param in The content to send
+     * @param in The content to send as a channel.  The channel will be closed 
+     * after reading all content.
      * @param callback The callback to use to notify success or failure
      */
     public void sendContent(ReadableByteChannel in, Callback callback)
@@ -472,28 +474,38 @@ public class HttpOutput extends ServletOutputStream
         @Override
         protected boolean process() throws Exception
         {
-            int len=_in.read(_buffer.array(),0,_buffer.capacity());
-            if (len==-1)
-            {
-                closed();
-                _channel.getByteBufferPool().release(_buffer);
-                return true;
-            }
             boolean eof=false;
-
-            // if we read less than a buffer, are we at EOF?
-            if (len<_buffer.capacity())
+            int len=_in.read(_buffer.array(),0,_buffer.capacity());
+            
+            if (len<0)
             {
+                eof=true;
+                len=0;
+                _in.close();
+            }
+            else if (len<_buffer.capacity())
+            {
+                // read ahead for EOF to try for single commit
                 int len2=_in.read(_buffer.array(),len,_buffer.capacity()-len);
                 if (len2<0)
                     eof=true;
                 else
                     len+=len2;
             }
-
+            
+            // write what we have
             _buffer.position(0);
             _buffer.limit(len);
             _channel.write(_buffer,eof,this);
+            
+            // Handle EOF
+            if (eof)
+            {
+                closed();
+                _channel.getByteBufferPool().release(_buffer);
+                return true;
+            }
+
             return false;
         }
 
@@ -502,6 +514,14 @@ public class HttpOutput extends ServletOutputStream
         {
             super.failed(x);
             _channel.getByteBufferPool().release(_buffer);
+            try
+            {
+                _in.close();
+            }
+            catch (IOException e)
+            {
+                LOG.ignore(e);
+            }
         }
         
     }
@@ -531,30 +551,38 @@ public class HttpOutput extends ServletOutputStream
         protected boolean process() throws Exception
         {
             _buffer.clear();
-            int len=_in.read(_buffer);
-            if (len==-1)
-            {
-                closed();
-                _channel.getByteBufferPool().release(_buffer);
-                return true;
-            }
-
             boolean eof=false;
-
-            // if we read less than a buffer, are we at EOF?
-            if (len<_buffer.capacity())
+            int len=_in.read(_buffer);
+            
+            if (len<0)
             {
+                eof=true;
+                len=0;
+                _in.close();
+            }
+            else if (len<_buffer.capacity())
+            {
+                // read ahead for EOF to try for single commit
                 int len2=_in.read(_buffer);
                 if (len2<0)
                     eof=true;
                 else
                     len+=len2;
             }
-
+            
+            // write what we have
             _buffer.flip();
             _channel.write(_buffer,eof,this);
+            
+            // Handle EOF
+            if (eof)
+            {
+                closed();
+                _channel.getByteBufferPool().release(_buffer);
+                return true;
+            }
+
             return false;
-           
         }
 
         @Override
@@ -562,6 +590,14 @@ public class HttpOutput extends ServletOutputStream
         {
             super.failed(x);
             _channel.getByteBufferPool().release(_buffer);
+            try
+            {
+                _in.close();
+            }
+            catch (IOException e)
+            {
+                LOG.ignore(e);
+            }
         }
     }
 }

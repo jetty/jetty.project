@@ -99,7 +99,10 @@ public abstract class AbstractHTTPSPDYTest
     protected HTTPSPDYServerConnector newHTTPSPDYServerConnector(short version)
     {
         // For these tests, we need the connector to speak HTTP over SPDY even in non-SSL
-        HTTPSPDYServerConnector connector = new HTTPSPDYServerConnector(server,version,new HttpConfiguration(), new PushStrategy.None());
+        HttpConfiguration httpConfiguration = new HttpConfiguration();
+        httpConfiguration.setSendServerVersion(true);
+        httpConfiguration.setSendXPoweredBy(true);
+        HTTPSPDYServerConnector connector = new HTTPSPDYServerConnector(server,version, httpConfiguration, new PushStrategy.None());
         return connector;
     }
 

@@ -55,8 +55,7 @@ public class SpdyServer
         System.setProperty("jetty.home",jetty_home);
 
         // Setup Threadpool
-        QueuedThreadPool threadPool = new QueuedThreadPool();
-        threadPool.setMaxThreads(500);
+        QueuedThreadPool threadPool = new QueuedThreadPool(512);
 
         Server server = new Server(threadPool);
         server.manage(threadPool);

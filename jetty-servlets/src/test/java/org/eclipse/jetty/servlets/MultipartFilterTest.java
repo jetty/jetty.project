@@ -26,11 +26,13 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.EnumSet;
+import java.util.Map;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
@@ -38,10 +40,12 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletTester;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.StringUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -105,6 +109,7 @@ public class MultipartFilterTest
     public void tearDown() throws Exception
     {
         tester.stop();
+        tester=null;
     }
 
     @Test
@@ -698,8 +703,6 @@ public class MultipartFilterTest
         assertTrue(response.getContent().contains("aaaa,bbbbb"));
     }
     
-
-    @Test
     public void testContentTypeWithCharSet() throws Exception
     {
         // generated and parsed test
@@ -730,6 +733,39 @@ public class MultipartFilterTest
     }
     
     
+    @Test
+    public void testBufferOverflowNoCRLF () throws Exception
+    {
+        String boundary="XyXyXy";
+        // generated and parsed test
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
+        tester.addServlet(BoundaryServlet.class,"/testb");
+        tester.setAttribute("fileName", "abc");
+        tester.setAttribute("desc", "123");
+        tester.setAttribute("title", "ttt");
+        request.setMethod("POST");
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host","tester");
+        request.setURI("/context/testb");
+        request.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
+
+        String content = "--XyXyXy";
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        baos.write(content.getBytes());
+
+        for (int i=0; i< 8500; i++) //create content that will overrun default buffer size of BufferedInputStream
+        {
+            baos.write('a');
+        }
+        request.setContent(baos.toString());
+
+        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
+        assertTrue(response.getContent().contains("Buffer size exceeded"));
+        assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, response.getStatus());
+    }
+
     /*
      * see the testParameterMap test
      *
@@ -784,6 +820,59 @@ public class MultipartFilterTest
         response = HttpTester.parseResponse(tester.getResponses(request.generate()));
         assertEquals(HttpServletResponse.SC_OK,response.getStatus());
         assertTrue(response.getContent().indexOf("brown cow")>=0);
+    }
+
+    public static class TestServletCharSet extends HttpServlet
+    {
+
+        @Override
+        protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        {
+            //test that the multipart content bytes were converted correctly from their charset to unicode
+            String content = (String)req.getParameter("ttt");
+            assertNotNull(content);
+            assertEquals("ttt\u01FCzzz",content);       
+            assertEquals("application/octet-stream; charset=UTF-8",req.getParameter("ttt"+MultiPartFilter.CONTENT_TYPE_SUFFIX));
+                  
+            
+            //test that the parameter map retrieves values as String[]
+            Map map = req.getParameterMap();
+            Object o = map.get("ttt");
+            assertTrue(o.getClass().isArray());
+            super.doPost(req, resp);
+        } 
+    }
+    
+    
+    @Test
+    public void testWithCharSet()
+    throws Exception
+    {
+        // generated and parsed test
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
+        tester.addServlet(TestServletCharSet.class,"/test3");
+        
+        // test GET
+        request.setMethod("POST");
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host","tester");
+        request.setURI("/context/test3");
+        
+        String boundary="XyXyXy";
+        request.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
+        
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        
+        baos.write(("--" + boundary + "\r\n"+
+                "Content-Disposition: form-data; name=\"ttt\"\r\n"+
+                "Content-Type: application/octet-stream; charset=UTF-8\r\n\r\n").getBytes());
+        baos.write("ttt\u01FCzzz".getBytes(StringUtil.__UTF8));
+        baos.write(("\r\n--" + boundary + "--\r\n\r\n").getBytes());
+  
+        
+        request.setContent(baos.toByteArray());   
+        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
     }
 
     public static class DumpServlet extends HttpServlet

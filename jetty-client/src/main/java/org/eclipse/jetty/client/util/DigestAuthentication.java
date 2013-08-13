@@ -221,7 +221,7 @@ public class DigestAuthentication implements Authentication
             String A1 = user + ":" + realm + ":" + password;
             String hashA1 = toHexString(digester.digest(A1.getBytes(charset)));
 
-            String A2 = request.getMethod().asString() + ":" + request.getURI();
+            String A2 = request.method() + ":" + request.getURI();
             if ("auth-int".equals(qop))
                 A2 += ":" + toHexString(digester.digest(content));
             String hashA2 = toHexString(digester.digest(A2.getBytes(charset)));

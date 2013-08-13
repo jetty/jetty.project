@@ -336,11 +336,33 @@ public class B64Code
         if (encoded==null)
             return null;
 
+        ByteArrayOutputStream bout = new ByteArrayOutputStream(4*encoded.length()/3);        
+        decode(encoded, bout);
+        return bout.toByteArray();
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Base 64 decode as described in RFC 2045.
+     * <p>Unlike {@link #decode(char[])}, extra whitespace is ignored.
+     * @param encoded String to decode.
+     * @param output stream for decoded bytes
+     * @return byte array containing the decoded form of the input.
+     * @throws IllegalArgumentException if the input is not a valid
+     *         B64 encoding.
+     */
+    static public void decode (String encoded, ByteArrayOutputStream bout)
+    {
+        if (encoded==null)
+            return;
+        
+        if (bout == null)
+            throw new IllegalArgumentException("No outputstream for decoded bytes");
+        
         int ci=0;
         byte nibbles[] = new byte[4];
         int s=0;
-        ByteArrayOutputStream bout = new ByteArrayOutputStream(4*encoded.length()/3);
-
+  
         while (ci<encoded.length())
         {
             char c=encoded.charAt(ci++);
@@ -375,8 +397,9 @@ public class B64Code
 
         }
 
-        return bout.toByteArray();
+        return;
     }
+    
 
     public static void encode(int value,Appendable buf) throws IOException
     {

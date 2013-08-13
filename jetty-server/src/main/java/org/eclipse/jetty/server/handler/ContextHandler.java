@@ -101,8 +101,8 @@ import org.eclipse.jetty.util.resource.Resource;
 @ManagedObject("URI Context")
 public class ContextHandler extends ScopedHandler implements Attributes, Graceful
 {
-    public static int SERVLET_MAJOR_VERSION=3;
-    public static int SERVLET_MINOR_VERSION=0;
+    public final static int SERVLET_MAJOR_VERSION=3;
+    public final static int SERVLET_MINOR_VERSION=0;
 
     final private static String __unimplmented="Unimplemented - use org.eclipse.jetty.servlet.ServletContextHandler";
 
@@ -884,8 +884,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             String vhost = normalizeHostname(baseRequest.getServerName());
 
             boolean match = false;
+            boolean connectorName = false;
+            boolean connectorMatch = false;
 
-            loop: for (String contextVhost:_vhosts)
+            for (String contextVhost:_vhosts)
             {
                 if (contextVhost == null || contextVhost.length()==0)
                     continue;
@@ -895,21 +897,21 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                     case '*':
                         if (contextVhost.startsWith("*."))
                             // wildcard only at the beginning, and only for one additional subdomain level
-                            match = contextVhost.regionMatches(true,2,vhost,vhost.indexOf(".") + 1,contextVhost.length() - 2);
+                            match = match || contextVhost.regionMatches(true,2,vhost,vhost.indexOf(".") + 1,contextVhost.length() - 2);
                         break;
                     case '@':
+                        connectorName=true;
                         String name=baseRequest.getHttpChannel().getConnector().getName();
-                        match=name!=null && contextVhost.length()==name.length()+1 && contextVhost.endsWith(name);
+                        boolean m=name!=null && contextVhost.length()==name.length()+1 && contextVhost.endsWith(name);
+                        match = match || m;
+                        connectorMatch = connectorMatch || m;
                         break;
                     default:
-                        match = contextVhost.equalsIgnoreCase(vhost);
+                        match = match || contextVhost.equalsIgnoreCase(vhost);
                 }
 
-                if (match)
-                    break loop;
-
             }
-            if (!match)
+            if (!match || connectorName && !connectorMatch)
                 return false;
         }
 
@@ -1287,8 +1289,26 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public void setContextPath(String contextPath)
     {
-        if (contextPath != null && contextPath.length() > 1 && contextPath.endsWith("/"))
-            throw new IllegalArgumentException("ends with /");
+        if (contextPath == null)
+            throw new IllegalArgumentException("null contextPath");
+
+        if (contextPath.endsWith("/*"))
+        {
+            LOG.warn(this+" contextPath ends with /*");
+            contextPath=contextPath.substring(0,contextPath.length()-2);
+        }
+        else if (contextPath.endsWith("/"))
+        {
+            LOG.warn(this+" contextPath ends with /");
+            contextPath=contextPath.substring(0,contextPath.length()-1);
+        }
+        
+        if (contextPath.length()==0)
+        {
+            LOG.warn("Empty contextPath");
+            contextPath="/";
+        }
+        
         _contextPath = contextPath;
 
         if (getServer() != null && (getServer().isStarting() || getServer().isStarted()))
@@ -2576,7 +2596,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             if (dot<0)
                 return false;
             String suffix=path.substring(dot);
-            return resource.getAlias().toString().endsWith(suffix);
+            return resource.toString().endsWith(suffix);
         }
     }
 
@@ -2592,10 +2612,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         public boolean check(String path, Resource resource)
         {
             int slash = path.lastIndexOf('/');
-            if (slash<0)
+            if (slash<0 || slash==path.length()-1)
                 return false;
             String suffix=path.substring(slash);
-            return resource.getAlias().toString().endsWith(suffix);
+            return resource.toString().endsWith(suffix);
         }
     }
     /* ------------------------------------------------------------ */
@@ -2609,7 +2629,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         public boolean check(String path, Resource resource)
         {
             int slash = path.lastIndexOf('/');
-            if (slash<0)
+            if (slash<0 || resource.exists())
                 return false;
             String suffix=path.substring(slash);
             return resource.getAlias().toString().endsWith(suffix);

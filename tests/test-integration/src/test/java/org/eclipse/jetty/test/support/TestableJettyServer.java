@@ -120,6 +120,7 @@ public class TestableJettyServer
         for (int i = 0; i < this._xmlConfigurations.size(); i++)
         {
             URL configURL = this._xmlConfigurations.get(i);
+            System.err.println("configuring: "+configURL);
             XmlConfiguration configuration = new XmlConfiguration(configURL);
             if (last != null)
             {
@@ -176,18 +177,8 @@ public class TestableJettyServer
         _server.start();
 
         // Find the active server port.
-        this._serverPort = (-1);
-        Connector connectors[] = _server.getConnectors();
-        for (int i = 0; i < connectors.length; i++)
-        {
-            NetworkConnector connector = (NetworkConnector)connectors[i];
-            if (connector.getLocalPort() > 0)
-            {
-                this._serverPort = connector.getLocalPort();
-                break;
-            }
-        }
-
+        this._serverPort = ((NetworkConnector)_server.getConnectors()[0]).getPort();
+        System.err.println("Server Port="+_serverPort);
         Assert.assertTrue("Server Port is between 1 and 65535. Actually <" + _serverPort + ">",(1 <= this._serverPort) && (this._serverPort <= 65535));
     }
 

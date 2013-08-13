@@ -91,8 +91,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         _config = config;
         _connector = connector;
         _bufferPool = _connector.getByteBufferPool();
-        _generator = new HttpGenerator();
-        _generator.setSendServerVersion(_config.getSendServerVersion());
+        _generator = new HttpGenerator(_config.getSendServerVersion(),_config.getSendXPoweredBy());
         _channel = new HttpChannelOverHttp(connector, config, endPoint, this, new Input());
         _parser = newHttpParser();
 
@@ -133,14 +132,20 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             _parser.reset();
             // close to seek EOF
             _parser.close();
+            if (getEndPoint().isOpen())
+                fillInterested();
         }
         // else if we are persistent
         else if (_generator.isPersistent())
             // reset to seek next request
             _parser.reset();
         else
+        {
             // else seek EOF
             _parser.close();
+            if (getEndPoint().isOpen())
+                fillInterested();
+        }
 
         _generator.reset();
         _channel.reset();
@@ -235,7 +240,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     int filled = getEndPoint().fill(_requestBuffer);
                     if (filled==0) // Do a retry on fill 0 (optimisation for SSL connections)
                         filled = getEndPoint().fill(_requestBuffer);
-
+                    
                     LOG.debug("{} filled {}", this, filled);
 
                     // If we failed to fill

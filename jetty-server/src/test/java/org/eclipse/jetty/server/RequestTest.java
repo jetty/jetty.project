@@ -18,26 +18,17 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Enumeration;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequestEvent;
@@ -52,14 +43,22 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiPartInputStreamParser;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.hamcrest.Matchers;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class RequestTest
 {
@@ -100,24 +99,11 @@ public class RequestTest
             @Override
             public boolean check(HttpServletRequest request,HttpServletResponse response)
             {
-                Map map = null;
-                try
-                {
-                    //do the parse
-                    request.getParameterMap();
-                    Assert.fail("Expected parsing failure");
-                    return false;
-                }
-                catch (Exception e)
-                {
-                    //catch the error and check the param map is not null
-                    map = request.getParameterMap();
-                    assertFalse(map == null);
-                    assertTrue(map.isEmpty());
-
-                    Enumeration names = request.getParameterNames();
-                    assertFalse(names.hasMoreElements());
-                }
+                Map<String,String[]> map = null;
+                //do the parse
+                map = request.getParameterMap();
+                assertEquals("aaa"+Utf8Appendable.REPLACEMENT+"bbb",map.get("param")[0]);
+                assertEquals("value",map.get("other")[0]);
 
                 return true;
             }
@@ -125,7 +111,7 @@ public class RequestTest
 
         //Send a request with query string with illegal hex code to cause
         //an exception parsing the params
-        String request="GET /?param=%ZZaaa HTTP/1.1\r\n"+
+        String request="GET /?param=aaa%ZZbbb&other=value HTTP/1.1\r\n"+
         "Host: whatever\r\n"+
         "Content-Type: text/html;charset=utf8\n"+
         "Connection: close\n"+
@@ -237,6 +223,7 @@ public class RequestTest
         "Host: whatever\r\n"+
         "Content-Type: multipart/form-data; boundary=\"AaB03x\"\r\n"+
         "Content-Length: "+multipart.getBytes().length+"\r\n"+
+        "Connection: close\r\n"+
         "\r\n"+
         multipart;
 
@@ -363,12 +350,13 @@ public class RequestTest
         };
 
         results.clear();
-        _connector.getResponses(
+        String response=_connector.getResponses(
                 "GET / HTTP/1.1\n"+
                 "Host: myhost\n"+
                 "Connection: close\n"+
                 "\n");
         int i=0;
+        assertThat(response,Matchers.containsString("200 OK"));
         assertEquals("http://myhost/",results.get(i++));
         assertEquals("0.0.0.0",results.get(i++));
         assertEquals("myhost",results.get(i++));
@@ -376,12 +364,13 @@ public class RequestTest
         
         
         results.clear();
-        _connector.getResponses(
+        response=_connector.getResponses(
                 "GET / HTTP/1.1\n"+
                 "Host: myhost:8888\n"+
                 "Connection: close\n"+
                 "\n");
         i=0;
+        assertThat(response,Matchers.containsString("200 OK"));
         assertEquals("http://myhost:8888/",results.get(i++));
         assertEquals("0.0.0.0",results.get(i++));
         assertEquals("myhost",results.get(i++));
@@ -389,13 +378,14 @@ public class RequestTest
         
         
         results.clear();
-        _connector.getResponses(
+        response=_connector.getResponses(
                 "GET / HTTP/1.1\n"+
                 "Host: 1.2.3.4\n"+
                 "Connection: close\n"+
                 "\n");
         i=0;
-        
+
+        assertThat(response,Matchers.containsString("200 OK"));
         assertEquals("http://1.2.3.4/",results.get(i++));
         assertEquals("0.0.0.0",results.get(i++));
         assertEquals("1.2.3.4",results.get(i++));
@@ -403,12 +393,13 @@ public class RequestTest
         
         
         results.clear();
-        _connector.getResponses(
+        response=_connector.getResponses(
                 "GET / HTTP/1.1\n"+
                 "Host: 1.2.3.4:8888\n"+
                 "Connection: close\n"+
                 "\n");
         i=0;
+        assertThat(response,Matchers.containsString("200 OK"));
         assertEquals("http://1.2.3.4:8888/",results.get(i++));
         assertEquals("0.0.0.0",results.get(i++));
         assertEquals("1.2.3.4",results.get(i++));
@@ -416,12 +407,13 @@ public class RequestTest
         
         
         results.clear();
-        _connector.getResponses(
+        response=_connector.getResponses(
                 "GET / HTTP/1.1\n"+
                 "Host: [::1]\n"+
                 "Connection: close\n"+
                 "\n");
         i=0;
+        assertThat(response,Matchers.containsString("200 OK"));
         assertEquals("http://[::1]/",results.get(i++));
         assertEquals("0.0.0.0",results.get(i++));
         assertEquals("::1",results.get(i++));
@@ -429,12 +421,13 @@ public class RequestTest
         
         
         results.clear();
-        _connector.getResponses(
+        response=_connector.getResponses(
                 "GET / HTTP/1.1\n"+
                 "Host: [::1]:8888\n"+
                 "Connection: close\n"+
                 "\n");
         i=0;
+        assertThat(response,Matchers.containsString("200 OK"));
         assertEquals("http://[::1]:8888/",results.get(i++));
         assertEquals("0.0.0.0",results.get(i++));
         assertEquals("::1",results.get(i++));
@@ -442,7 +435,7 @@ public class RequestTest
         
         
         results.clear();
-        _connector.getResponses(
+        response=_connector.getResponses(
                 "GET / HTTP/1.1\n"+
                 "Host: [::1]\n"+
                 "x-forwarded-for: remote\n"+
@@ -450,6 +443,7 @@ public class RequestTest
                 "Connection: close\n"+
                 "\n");
         i=0;
+        assertThat(response,Matchers.containsString("200 OK"));
         assertEquals("https://[::1]/",results.get(i++));
         assertEquals("remote",results.get(i++));
         assertEquals("::1",results.get(i++));
@@ -457,7 +451,7 @@ public class RequestTest
         
         
         results.clear();
-        _connector.getResponses(
+        response=_connector.getResponses(
                 "GET / HTTP/1.1\n"+
                 "Host: [::1]:8888\n"+
                 "Connection: close\n"+
@@ -465,18 +459,11 @@ public class RequestTest
                 "x-forwarded-proto: https\n"+
                 "\n");
         i=0;
-        
+        assertThat(response,Matchers.containsString("200 OK"));
         assertEquals("https://[::1]:8888/",results.get(i++));
         assertEquals("remote",results.get(i++));
         assertEquals("::1",results.get(i++));
         assertEquals("8888",results.get(i++));
-
-        
-
-
-        
-        
-        
     }
 
     @Test
@@ -1046,6 +1033,12 @@ public class RequestTest
         }
     }
 
+    @Test(expected = UnsupportedEncodingException.class)
+    public void testNotSupportedCharacterEncoding() throws UnsupportedEncodingException
+    {
+        Request request = new Request(null, null);
+        request.setCharacterEncoding("doesNotExist");
+    }
 
     interface RequestTester
     {

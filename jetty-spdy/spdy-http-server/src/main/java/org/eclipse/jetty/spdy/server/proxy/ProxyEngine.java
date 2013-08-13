@@ -87,6 +87,8 @@ public abstract class ProxyEngine
 
     protected void removeHopHeaders(Fields headers)
     {
+        // Header names are case-insensitive (RFC2616) and oej.util.Fields.add converts the names to lowercase. So we
+        // need to compare with the lowercase values only
         for (String hopHeader : HOP_HEADERS)
             headers.remove(hopHeader);
     }

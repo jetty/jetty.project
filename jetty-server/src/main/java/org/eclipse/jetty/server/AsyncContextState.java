@@ -38,7 +38,7 @@ public class AsyncContextState implements AsyncContext
         _state=state;
     }
     
-    private HttpChannelState state()
+    HttpChannelState state()
     {
         HttpChannelState state=_state;
         if (state==null)

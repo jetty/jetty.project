@@ -212,6 +212,9 @@ public abstract class MappedLoginService extends AbstractLifeCycle implements Lo
      */
     public UserIdentity login(String username, Object credentials)
     {
+        if (username == null)
+            return null;
+        
         UserIdentity user = _users.get(username);
 
         if (user==null)

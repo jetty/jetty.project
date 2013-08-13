@@ -23,6 +23,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
 
@@ -330,14 +331,9 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
             }
             finally
             {
-                next=Next.RECYCLE;
+                _request.setHandled(true);
+                _transport.completed();
             }
-        }
-
-        if (next==Next.RECYCLE)
-        {
-            _request.setHandled(true);
-            _transport.completed();
         }
 
         LOG.debug("{} handle exit, result {}", this, next);

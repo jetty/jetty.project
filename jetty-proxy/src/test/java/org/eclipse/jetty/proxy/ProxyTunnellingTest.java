@@ -20,11 +20,13 @@ package org.eclipse.jetty.proxy;
 
 import java.io.IOException;
 import java.net.ConnectException;
+import java.net.Socket;
 import java.net.URLEncoder;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -55,6 +57,8 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Assume;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -116,14 +120,20 @@ public class ProxyTunnellingTest
 
     protected void stopServer() throws Exception
     {
-        server.stop();
-        server.join();
+        if (server != null)
+        {
+            server.stop();
+            server.join();
+        }
     }
 
     protected void stopProxy() throws Exception
     {
-        proxy.stop();
-        proxy.join();
+        if (proxy != null)
+        {
+            proxy.stop();
+            proxy.join();
+        }
     }
 
     @Test
@@ -357,6 +367,43 @@ public class ProxyTunnellingTest
         catch (ExecutionException x)
         {
             // Expected
+        }
+        finally
+        {
+            httpClient.stop();
+        }
+    }
+
+    @Test
+    @Ignore // to delicate to rely on external proxy.
+    public void testExternalProxy() throws Exception
+    {
+        // Free proxy server obtained from http://hidemyass.com/proxy-list/
+        String proxyHost = "81.208.25.53";
+        int proxyPort = 3128;
+        try
+        {
+            new Socket(proxyHost, proxyPort).close();
+        }
+        catch (IOException x)
+        {
+            Assume.assumeNoException(x);
+        }
+
+        SslContextFactory sslContextFactory = new SslContextFactory();
+        sslContextFactory.start();
+
+        HttpClient httpClient = new HttpClient(sslContextFactory);
+        httpClient.setProxyConfiguration(new ProxyConfiguration(proxyHost, proxyPort));
+        httpClient.start();
+
+        try
+        {
+            ContentResponse response = httpClient.newRequest("https://www.google.com")
+                    // Use a longer timeout, sometimes the proxy takes a while to answer
+                    .timeout(20, TimeUnit.SECONDS)
+                    .send();
+            assertEquals(HttpStatus.OK_200, response.getStatus());
         }
         finally
         {

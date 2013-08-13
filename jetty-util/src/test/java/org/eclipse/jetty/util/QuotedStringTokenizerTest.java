@@ -112,14 +112,6 @@ public class QuotedStringTokenizerTest
         QuotedStringTokenizer.quote(buf,"abcefg\"");
         assertEquals("\"abcefg\\\"\"",buf.toString());
 
-        buf.setLength(0);
-        QuotedStringTokenizer.quoteIfNeeded(buf,"abc \n efg","\"\\\n\r\t\f\b%+ ;=");
-        assertEquals("\"abc \\n efg\"",buf.toString());
-
-        buf.setLength(0);
-        QuotedStringTokenizer.quoteIfNeeded(buf,"abcefg","\"\\\n\r\t\f\b%+ ;=");
-        assertEquals("abcefg",buf.toString());
-
     }
 
     /*

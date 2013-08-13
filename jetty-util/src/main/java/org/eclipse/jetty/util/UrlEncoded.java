@@ -323,7 +323,13 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
                                 {
                                     i++;
                                     if (i+4<end)
-                                        buffer.getStringBuilder().append(Character.toChars((convertHexDigit(raw[++i])<<12) +(convertHexDigit(raw[++i])<<8) + (convertHexDigit(raw[++i])<<4) +convertHexDigit(raw[++i])));
+                                    {
+                                        byte top=raw[++i];
+                                        byte hi=raw[++i];
+                                        byte lo=raw[++i];
+                                        byte bot=raw[++i];
+                                        buffer.getStringBuilder().append(Character.toChars((convertHexDigit(top)<<12) +(convertHexDigit(hi)<<8) + (convertHexDigit(lo)<<4) +convertHexDigit(bot)));
+                                    }
                                     else
                                     {
                                         buffer.getStringBuilder().append(Utf8Appendable.REPLACEMENT);
@@ -331,7 +337,11 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
                                     }
                                 }
                                 else
-                                    buffer.append((byte)((convertHexDigit(raw[++i])<<4) + convertHexDigit(raw[++i])));
+                                {
+                                    byte hi=raw[++i];
+                                    byte lo=raw[++i];
+                                    buffer.append((byte)((convertHexDigit(hi)<<4) + convertHexDigit(lo)));
+                                }
                             }
                             else
                             {
@@ -347,6 +357,12 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
                 }
                 catch(NotUtf8Exception e)
                 {
+                    LOG.warn(e.toString());
+                    LOG.debug(e);
+                }
+                catch(NumberFormatException e)
+                {
+                    buffer.append(Utf8Appendable.REPLACEMENT_UTF8,0,3);
                     LOG.warn(e.toString());
                     LOG.debug(e);
                 }
@@ -549,6 +565,12 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
                 }
                 catch(NotUtf8Exception e)
                 {
+                    LOG.warn(e.toString());
+                    LOG.debug(e);
+                }
+                catch(NumberFormatException e)
+                {
+                    buffer.append(Utf8Appendable.REPLACEMENT_UTF8,0,3);
                     LOG.warn(e.toString());
                     LOG.debug(e);
                 }
@@ -798,9 +820,10 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
                             LOG.warn(e.toString());
                             LOG.debug(e);
                         }
-                        catch(NumberFormatException nfe)
+                        catch(NumberFormatException e)
                         {
-                            LOG.debug(nfe);
+                            LOG.warn(e.toString());
+                            LOG.debug(e);
                             buffer.getStringBuffer().append(Utf8Appendable.REPLACEMENT);  
                         }
                     }
@@ -870,32 +893,33 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
                                 {
                                     if ('u'==encoded.charAt(offset+i+1))
                                     {
-                                            if (i+6<length)
-                                            {
-                                        int o=offset+i+2;
-                                        i+=6;
-                                        String unicode = new String(Character.toChars(TypeUtil.parseInt(encoded,o,4,16)));
-                                        byte[] reencoded = unicode.getBytes(charset);
-                                        System.arraycopy(reencoded,0,ba,n,reencoded.length);
-                                        n+=reencoded.length;
-                                    }
-                                    else
-                                    {
-                                                ba[n++] = (byte)'?';
-                                                i=length;
-                                            }
+                                        if (i+6<length)
+                                        {
+                                            int o=offset+i+2;
+                                            i+=6;
+                                            String unicode = new String(Character.toChars(TypeUtil.parseInt(encoded,o,4,16)));
+                                            byte[] reencoded = unicode.getBytes(charset);
+                                            System.arraycopy(reencoded,0,ba,n,reencoded.length);
+                                            n+=reencoded.length;
                                         }
                                         else
                                         {
+                                            ba[n++] = (byte)'?';
+                                            i=length;
+                                        }
+                                    }
+                                    else
+                                    {
                                         int o=offset+i+1;
                                         i+=3;
                                         ba[n]=(byte)TypeUtil.parseInt(encoded,o,2,16);
                                         n++;
                                     }
                                 }
-                                catch(NumberFormatException nfe)
+                                catch(Exception e)
                                 {   
-                                    LOG.ignore(nfe);
+                                    LOG.warn(e.toString());
+                                    LOG.debug(e);
                                     ba[n++] = (byte)'?';
                                 }
                             }

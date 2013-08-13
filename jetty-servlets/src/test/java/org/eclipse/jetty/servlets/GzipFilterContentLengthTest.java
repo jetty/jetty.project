@@ -32,6 +32,7 @@ import org.eclipse.jetty.servlets.gzip.GzipTester;
 import org.eclipse.jetty.servlets.gzip.TestServletLengthStreamTypeWrite;
 import org.eclipse.jetty.servlets.gzip.TestServletLengthTypeStreamWrite;
 import org.eclipse.jetty.servlets.gzip.TestServletStreamLengthTypeWrite;
+import org.eclipse.jetty.servlets.gzip.TestServletStreamLengthTypeWriteWithFlush;
 import org.eclipse.jetty.servlets.gzip.TestServletStreamTypeLengthWrite;
 import org.eclipse.jetty.servlets.gzip.TestServletTypeLengthStreamWrite;
 import org.eclipse.jetty.servlets.gzip.TestServletTypeStreamLengthWrite;
@@ -73,12 +74,14 @@ public class GzipFilterContentLengthTest
         { TestServletLengthStreamTypeWrite.class, GzipFilter.GZIP },
         { TestServletLengthTypeStreamWrite.class, GzipFilter.GZIP },
         { TestServletStreamLengthTypeWrite.class, GzipFilter.GZIP },
+        { TestServletStreamLengthTypeWriteWithFlush.class, GzipFilter.GZIP },
         { TestServletStreamTypeLengthWrite.class, GzipFilter.GZIP },
         { TestServletTypeLengthStreamWrite.class, GzipFilter.GZIP },
         { TestServletTypeStreamLengthWrite.class, GzipFilter.GZIP },
         { TestServletLengthStreamTypeWrite.class, GzipFilter.DEFLATE },
         { TestServletLengthTypeStreamWrite.class, GzipFilter.DEFLATE },
         { TestServletStreamLengthTypeWrite.class, GzipFilter.DEFLATE },
+        { TestServletStreamLengthTypeWriteWithFlush.class, GzipFilter.DEFLATE },
         { TestServletStreamTypeLengthWrite.class, GzipFilter.DEFLATE },
         { TestServletTypeLengthStreamWrite.class, GzipFilter.DEFLATE },
         { TestServletTypeStreamLengthWrite.class, GzipFilter.DEFLATE }

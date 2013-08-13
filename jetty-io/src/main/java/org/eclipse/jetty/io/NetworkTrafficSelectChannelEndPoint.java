@@ -57,7 +57,7 @@ public class NetworkTrafficSelectChannelEndPoint extends SelectChannelEndPoint
             if (b.hasRemaining())
             {
                 int position = b.position();
-                flushed|=super.flush(b);
+                flushed&=super.flush(b);
                 int l=b.position()-position;
                 notifyOutgoing(b, position, l);
                 if (!flushed)

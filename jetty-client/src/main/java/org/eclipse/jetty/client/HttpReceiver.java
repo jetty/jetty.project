@@ -68,21 +68,30 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
         {
             while (true)
             {
-                int read = endPoint.fill(buffer);
-                LOG.debug("Read {} bytes from {}", read, connection);
-                if (read > 0)
+                // Connection may be closed in a parser callback
+                if (connection.isClosed())
                 {
-                    parse(buffer);
-                }
-                else if (read == 0)
-                {
-                    fillInterested();
+                    LOG.debug("{} closed", connection);
                     break;
                 }
                 else
                 {
-                    shutdown();
-                    break;
+                    int read = endPoint.fill(buffer);
+                    LOG.debug("Read {} bytes from {}", read, connection);
+                    if (read > 0)
+                    {
+                        parse(buffer);
+                    }
+                    else if (read == 0)
+                    {
+                        fillInterested();
+                        break;
+                    }
+                    else
+                    {
+                        shutdown();
+                        break;
+                    }
                 }
             }
         }
@@ -147,7 +156,8 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
                 HttpConversation conversation = exchange.getConversation();
                 HttpResponse response = exchange.getResponse();
 
-                parser.setHeadResponse(exchange.getRequest().getMethod() == HttpMethod.HEAD);
+                String method = exchange.getRequest().method();
+                parser.setHeadResponse(HttpMethod.HEAD.is(method) || HttpMethod.CONNECT.is(method));
                 response.version(version).status(status).reason(reason);
 
                 // Probe the protocol handlers
@@ -412,6 +422,12 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
         if (!updated)
             LOG.debug("State update failed: {} -> {}: {}", from, to, state.get());
         return updated;
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x on %s", getClass().getSimpleName(), hashCode(), connection);
     }
 
     private enum State

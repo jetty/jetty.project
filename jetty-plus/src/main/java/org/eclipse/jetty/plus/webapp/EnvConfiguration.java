@@ -31,6 +31,7 @@ import javax.naming.Name;
 import javax.naming.NameNotFoundException;
 import javax.naming.NamingException;
 
+import org.eclipse.jetty.jndi.ContextFactory;
 import org.eclipse.jetty.jndi.NamingContext;
 import org.eclipse.jetty.jndi.NamingUtil;
 import org.eclipse.jetty.jndi.local.localContextRoot;
@@ -147,6 +148,7 @@ public class EnvConfiguration extends AbstractConfiguration
         //get rid of any bindings for comp/env for webapp
         ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(context.getClassLoader());
+        ContextFactory.associateClassLoader(context.getClassLoader());
         try
         {
             Context ic = new InitialContext();
@@ -170,6 +172,7 @@ public class EnvConfiguration extends AbstractConfiguration
         }
         finally
         {
+            ContextFactory.disassociateClassLoader();
             Thread.currentThread().setContextClassLoader(oldLoader);
         }
     }
@@ -251,6 +254,7 @@ public class EnvConfiguration extends AbstractConfiguration
     {
         ClassLoader old_loader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(wac.getClassLoader());
+        ContextFactory.associateClassLoader(wac.getClassLoader());
         try
         {
             Context context = new InitialContext();
@@ -259,8 +263,9 @@ public class EnvConfiguration extends AbstractConfiguration
         }
         finally
         {
-           Thread.currentThread().setContextClassLoader(old_loader);
-       }
+            ContextFactory.disassociateClassLoader();
+            Thread.currentThread().setContextClassLoader(old_loader);
+        }
     }
 
     private static class Bound

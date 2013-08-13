@@ -43,6 +43,7 @@ public class HttpExchange
     private volatile HttpConnection connection;
     private volatile Throwable requestFailure;
     private volatile Throwable responseFailure;
+  
 
     public HttpExchange(HttpConversation conversation, HttpDestination destination, Request request, List<Response.ResponseListener> listeners)
     {

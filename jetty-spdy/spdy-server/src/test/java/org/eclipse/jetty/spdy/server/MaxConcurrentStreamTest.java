@@ -36,13 +36,14 @@ import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Fields;
-import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
-@Ignore("Fails the build too often. Runs fine always when run alone.")
+@RunWith(JUnit4.class)
 public class MaxConcurrentStreamTest extends AbstractTest
 {
     @Test
@@ -116,7 +117,5 @@ public class MaxConcurrentStreamTest extends AbstractTest
 
         stream.data(new ByteBufferDataInfo(BufferUtil.EMPTY_BUFFER, true));
         assertThat("Data has been received on first stream.", dataReceivedLatch.await(5, TimeUnit.SECONDS), is(true));
-
-        session.syn(synInfo, null);
     }
 }
