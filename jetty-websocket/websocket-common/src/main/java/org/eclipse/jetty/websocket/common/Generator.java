@@ -218,7 +218,7 @@ public class Generator
         }
         if (frame.isRsv3())
         {
-            b |= 0x10;
+            b |= 0x10; // 0001_0000
         }
 
         // NOTE: using .getOpCode() here, not .getType().getOpCode() for testing reasons

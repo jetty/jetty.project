@@ -101,6 +101,7 @@ public interface Frame
      * 
      * @return true if final frame.
      */
+    // FIXME: remove
     public boolean isLast();
 
     public boolean isMasked();

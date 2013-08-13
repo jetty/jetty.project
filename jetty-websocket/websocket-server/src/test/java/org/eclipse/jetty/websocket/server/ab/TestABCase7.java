@@ -362,47 +362,6 @@ public class TestABCase7 extends AbstractABCase
     }
 
     /**
-     * close with invalid payload (124 byte reason) (exceeds total allowed control frame payload bytes)
-     */
-    @Test
-    public void testCase7_3_6() throws Exception
-    {
-        ByteBuffer payload = ByteBuffer.allocate(256);
-        BufferUtil.clearToFill(payload);
-        payload.put((byte)0xE8);
-        payload.put((byte)0x03);
-        byte reason[] = new byte[124]; // too big
-        Arrays.fill(reason,(byte)'!');
-        payload.put(reason);
-        BufferUtil.flipToFlush(payload,0);
-
-        List<WebSocketFrame> send = new ArrayList<>();
-        WebSocketFrame close = new WebSocketFrame();
-        close.setPayload(payload);
-        close.setOpCode(OpCode.CLOSE); // set opcode after payload (to prevent early bad payload detection)
-        send.add(close);
-
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
-
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
-        {
-            enableStacks(Parser.class,false);
-            fuzzer.connect();
-            fuzzer.setSendMode(Fuzzer.SendMode.BULK);
-            fuzzer.send(send);
-            fuzzer.expect(expect);
-            fuzzer.expectNoMoreFrames();
-        }
-        finally
-        {
-            enableStacks(Parser.class,true);
-            fuzzer.close();
-        }
-    }
-
-    /**
      * close with invalid UTF8 in payload
      */
     @Test

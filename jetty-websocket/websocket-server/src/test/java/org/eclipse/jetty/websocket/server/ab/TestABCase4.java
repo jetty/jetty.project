@@ -44,7 +44,7 @@ public class TestABCase4 extends AbstractABCase
         public BadFrame(byte opcode)
         {
             super();
-            super.opcode = opcode;
+            super.finRsvOp = (byte)((finRsvOp & 0xF0) | (opcode & 0x0F));
             // NOTE: Not setting Frame.Type intentionally
         }
     }
