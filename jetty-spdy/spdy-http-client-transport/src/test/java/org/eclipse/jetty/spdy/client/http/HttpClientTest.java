@@ -41,7 +41,6 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class HttpClientTest extends AbstractHttpClientServerTest
@@ -322,7 +321,6 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         Assert.assertArrayEquals(data, response.getContent());
     }
 
-    @Ignore("idle timeout not yet implemented properly")
     @Slow
     @Test
     public void test_Request_IdleTimeout() throws Exception

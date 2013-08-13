@@ -35,7 +35,7 @@ public interface Connection extends Closeable
     /**
      * Sends a request with an associated response listener.
      * <p />
-     * {@link Request#send(Response.Listener)} will eventually call this method to send the request.
+     * {@link Request#send(Response.CompleteListener)} will eventually call this method to send the request.
      * It is exposed to allow applications to send requests via unpooled connections.
      *
      * @param request the request to send
