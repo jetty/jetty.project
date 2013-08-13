@@ -23,8 +23,6 @@ import java.io.IOException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.URIUtil;
 
@@ -42,7 +40,10 @@ public class CompactPathRule extends Rule implements Rule.ApplyURI
     @Override
     public void applyURI(Request request, String oldTarget, String newTarget) throws IOException
     {
-        request.setRequestURI(newTarget);
+        String uri = request.getRequestURI();
+        if (uri.startsWith("/"))
+            uri = URIUtil.compactPath(uri);
+        request.setRequestURI(uri);
     }
 
     @Override
