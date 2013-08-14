@@ -237,8 +237,6 @@ public class AnnotationParser
         
         /**
          * Get the name of the annotation processed by this handler. Can be null
-         * 
-         * @return
          */
         public String getAnnotationName();
     }
@@ -513,7 +511,7 @@ public class AnnotationParser
      * Register a handler that will be called back when the named annotation is
      * encountered on a class.
      *
-     * @deprecated see registerHandler(Handler)
+     * @deprecated see {@link #registerHandler(Handler)}
      * @param annotationName
      * @param handler
      */
@@ -525,9 +523,8 @@ public class AnnotationParser
 
     
     /**
-     * @deprecated
+     * @deprecated no replacement provided
      * @param annotationName
-     * @return
      */
     @Deprecated
     public List<DiscoverableAnnotationHandler> getAnnotationHandlers(String annotationName)
@@ -547,8 +544,7 @@ public class AnnotationParser
     }
 
     /**
-     * @deprecated
-     * @return
+     * @deprecated no replacement available
      */
     @Deprecated
     public List<DiscoverableAnnotationHandler> getAnnotationHandlers()
@@ -563,7 +559,7 @@ public class AnnotationParser
     }
 
     /**
-     * @deprecated see registerHandler(Handler)
+     * @deprecated see {@link #registerHandler(Handler)}
      * @param handler
      */
     @Deprecated
@@ -605,7 +601,6 @@ public class AnnotationParser
      * Remove a particular handler
      * 
      * @param h
-     * @return
      */
     public boolean deregisterHandler(Handler h)
     {
@@ -625,7 +620,6 @@ public class AnnotationParser
     /**
      * True if the class has already been processed, false otherwise
      * @param className
-     * @return
      */
     public boolean isParsed (String className)
     {

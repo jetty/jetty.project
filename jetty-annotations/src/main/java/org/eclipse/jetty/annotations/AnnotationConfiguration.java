@@ -257,9 +257,9 @@ public class AnnotationConfiguration extends AbstractConfiguration
     /**
      * Check to see if the ServletContainerIntializer loaded via the ServiceLoader came
      * from a jar that is excluded by the fragment ordering. See ServletSpec 3.0 p.85.
-     * @param orderedJars
+     * @param context
      * @param service
-     * @return
+     * @return true if excluded
      */
     public boolean isFromExcludedJar (WebAppContext context, ServletContainerInitializer service)
     throws Exception
@@ -298,7 +298,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
 
     /**
      * @param context
-     * @return
+     * @return list of non-excluded {@link ServletContainerInitializer}s
      * @throws Exception
      */
     public List<ServletContainerInitializer> getNonExcludedInitializers (WebAppContext context)
@@ -508,7 +508,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
      * 
      * @param jar
      * @param frags
-     * @return
+     * @return the fragment if found, or null of not found
      * @throws Exception
      */
     public FragmentDescriptor getFragmentFromJar (Resource jar,  List<FragmentDescriptor> frags)

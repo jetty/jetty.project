@@ -126,7 +126,6 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
      * @param rolesAllowed
      * @param permitOrDeny
      * @param transport
-     * @return
      */
     protected Constraint makeConstraint (Class servlet, String[] rolesAllowed, EmptyRoleSemantic permitOrDeny, TransportGuarantee transport)
     {
@@ -138,7 +137,6 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
     /**
      * Get the ServletMappings for the servlet's class.
      * @param className
-     * @return
      */
     protected List<ServletMapping> getServletMappings(String className)
     {
@@ -160,7 +158,6 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
      * Check if there are already <security-constraint> elements defined that match the url-patterns for
      * the servlet.
      * @param servletMappings
-     * @return
      */
     protected boolean constraintsExist (List<ServletMapping> servletMappings, List<ConstraintMapping> constraintMappings)
     {
