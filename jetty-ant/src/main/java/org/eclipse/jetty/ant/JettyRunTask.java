@@ -136,9 +136,6 @@ public class JettyRunTask extends Task
         this.contextHandlers = handlers;
     }
 
-    /**
-     * @return
-     */
     public File getTempDirectory()
     {
         return tempDirectory;
@@ -152,9 +149,6 @@ public class JettyRunTask extends Task
         this.tempDirectory = tempDirectory;
     }
 
-    /**
-     * @return
-     */
     public File getJettyXml()
     {
         return jettyXml;
@@ -191,9 +185,6 @@ public class JettyRunTask extends Task
         }
     }
 
-    /**
-     * @return
-     */
     public String getRequestLog()
     {
         if (requestLog != null)
@@ -301,9 +292,6 @@ public class JettyRunTask extends Task
         TaskLog.log("Daemon="+daemon);
     }
 
-    /**
-     * @return
-     */
     public int getScanIntervalSeconds()
     {
         return scanIntervalSeconds;

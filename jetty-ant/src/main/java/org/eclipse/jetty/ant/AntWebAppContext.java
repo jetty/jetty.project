@@ -432,9 +432,9 @@ public class AntWebAppContext extends WebAppContext
 
 
     /**
-     * Default constructor. Takes application name as an argument
+     * Default constructor. Takes project as an argument
      *
-     * @param name web application name.
+     * @param project the project.
      */
     public AntWebAppContext(Project project) throws Exception
     {
@@ -669,9 +669,6 @@ public class AntWebAppContext extends WebAppContext
         }
     }
 
-    /**
-     * @see WebApplicationProxy#stop()
-     */
     public void doStop()
     {
         try
