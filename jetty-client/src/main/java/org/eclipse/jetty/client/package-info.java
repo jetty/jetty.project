@@ -42,9 +42,9 @@
  * {@link org.eclipse.jetty.client.api.HttpClient} level.
  * <p />
  * Applications may decide to send the request and wait for the response in a blocking way, using
- * {@link Request#send()}.
+ * {@link org.eclipse.jetty.client.api.Request#send()}.
  * Alternatively, application may ask to be notified of response events asynchronously, using
- * {@link Request#send(Response.Listener)}.
+ * {@link org.eclipse.jetty.client.api.Request#send(Response.Listener)}.
  */
 package org.eclipse.jetty.client;
 

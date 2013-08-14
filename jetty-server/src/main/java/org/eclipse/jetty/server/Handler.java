@@ -56,10 +56,10 @@ public interface Handler extends LifeCycle, Destroyable
      * @param target The target of the request - either a URI or a name.
      * @param baseRequest The original unwrapped request object.
      * @param request The request either as the {@link Request}
-     * object or a wrapper of that request. The {@link AbstractHttpConnection#getCurrentHttpChannel()}
+     * object or a wrapper of that request. The {@link HttpChannel#getCurrentHttpChannel()}
      * method can be used access the Request object if required.
      * @param response The response as the {@link Response}
-     * object or a wrapper of that request. The {@link AbstractHttpConnection#getCurrentHttpChannel()}
+     * object or a wrapper of that request. The {@link HttpChannel#getCurrentHttpChannel()}
      * method can be used access the Response object if required.
      * @throws IOException
      * @throws ServletException
