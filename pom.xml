@@ -315,17 +315,34 @@
             <docfilessubdirs>true</docfilessubdirs>
             <detectLinks>false</detectLinks>
             <detectJavaApiLink>true</detectJavaApiLink>
-            <excludePackageNames>org.slf4j.*;org.mortbay.*</excludePackageNames>
+            <excludePackageNames>com.acme.*;org.slf4j.*;org.mortbay.*</excludePackageNames>
             <links>
-              <link>http://download.eclipse.org/jetty/stable-7/apidocs/</link>
+              <link>http://docs.oracle.com/javase/7/docs/api/</link>
+              <link>http://docs.oracle.com/javaee/7/api/</link>
+              <link>http://download.eclipse.org/jetty/stable-9/apidocs/</link>
+              <link>http://junit.sourceforge.net/javadoc/</link>
             </links>
             <tags>
               <tag>
                 <name>org.apache.xbean.XBean</name>
-                <placement>a</placement>
-                <head>Apache XBean:</head>
+                <placement>X</placement>
+                <head />
               </tag>
             </tags>
+            <header>
+              <![CDATA[
+                  <script type="text/javascript">
+                    var _gaq = _gaq || [];
+                    _gaq.push(['_setAccount', 'UA-1149868-7']);
+                    _gaq.push(['_trackPageview']);
+                    (function() {
+                      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+                      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+                      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+                    })();
+                 </script>
+              ]]>
+            </header>
           </configuration>
         </plugin>
         <plugin>
@@ -432,7 +449,17 @@
          <groupId>javax.servlet</groupId>
          <artifactId>javax.servlet-api</artifactId>
          <version>3.1.0</version>
-       </dependency>
+      </dependency>
+      <dependency>
+         <groupId>javax.websocket</groupId>
+         <artifactId>javax.websocket-api</artifactId>
+         <version>1.0</version>
+      </dependency>
+      <dependency>
+         <groupId>javax.websocket</groupId>
+         <artifactId>javax.websocket-client-api</artifactId>
+         <version>1.0</version>
+      </dependency>
       <dependency>
         <groupId>javax.annotation</groupId>
         <artifactId>javax.annotation-api</artifactId>
