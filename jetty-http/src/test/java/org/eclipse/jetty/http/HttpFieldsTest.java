@@ -374,9 +374,9 @@ public class HttpFieldsTest
         assertEquals("foo=bob;Domain=domain",e.nextElement());
 
         fields=new HttpFields();
-        fields.addSetCookie("name","value==",null,null,-1,null,false,false,0);
+        fields.addSetCookie("name","value%=",null,null,-1,null,false,false,0);
         setCookie=fields.getStringField("Set-Cookie");
-        assertEquals("name=\"value==\";Version=1",setCookie);
+        assertEquals("name=value%=",setCookie);
 
     }
 
