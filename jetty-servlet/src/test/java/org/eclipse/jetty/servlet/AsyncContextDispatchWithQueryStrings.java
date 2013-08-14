@@ -41,10 +41,7 @@ import org.junit.Test;
 
 /**
  * This tests verifies that merging of queryStrings works when dispatching
- * Requests via {@link Continuation} multiple times.
- *
- * @author tbecker
- *
+ * Requests via {@link AsyncContext} multiple times.
  */
 public class AsyncContextDispatchWithQueryStrings {
 

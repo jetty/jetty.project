@@ -98,7 +98,7 @@ public class ServletMapping
     
     /* ------------------------------------------------------------ */
     /**
-     * @param default1
+     * @param fromDefault
      */
     public void setDefault(boolean fromDefault)
     {
