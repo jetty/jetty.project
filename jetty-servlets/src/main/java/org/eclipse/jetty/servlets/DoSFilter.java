@@ -1055,7 +1055,7 @@ public class DoSFilter implements Filter
      *
      * @param address the address to remove
      * @return whether the address was removed from the list
-     * @see #addWhitelistAddress(List, String)
+     * @see #addWhitelistAddress(String)
      */
     @ManagedOperation("removes an IP address that will not be rate limited")
     public boolean removeWhitelistAddress(@Name("address") String address)

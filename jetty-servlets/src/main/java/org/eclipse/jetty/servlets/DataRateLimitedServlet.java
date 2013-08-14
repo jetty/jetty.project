@@ -43,9 +43,9 @@ import org.eclipse.jetty.server.HttpOutput;
  * static content at a limited data rate.
  * <p>
  * Two implementations are supported: <ul>
- * <li>the {@link StandardDataStream} impl uses only standard
+ * <li>The <code>StandardDataStream</code> impl uses only standard
  * APIs, but produces more garbage due to the byte[] nature of the API.  
- * <li>the {@link JettyDataStream} impl uses a Jetty API to write a ByteBuffer
+ * <li>the <code>JettyDataStream</code> impl uses a Jetty API to write a ByteBuffer
  * and thus allow the efficient use of file mapped buffers without any
  * temporary buffer copies (I did tell the JSR that this was a good idea to 
  * have in the standard!).
