@@ -314,7 +314,7 @@ abstract public class WriteFlusher
      * Tries to switch state to WRITING. If successful it writes the given buffers to the EndPoint. If state transition
      * fails it'll fail the callback.
      *
-     * If not all buffers can be written in one go it creates a new {@link PendingState} object to preserve the state
+     * If not all buffers can be written in one go it creates a new <code>PendingState</code> object to preserve the state
      * and then calls {@link #onIncompleteFlushed()}. The remaining buffers will be written in {@link #completeWrite()}.
      *
      * If all buffers have been written it calls callback.complete().
