@@ -182,7 +182,6 @@ public class ContextFactory implements ObjectFactory
      * @param env
      * @param name
      * @param parentCtx
-     * @return
      * @throws Exception
      */
     public NamingContext newNamingContext(Object obj, ClassLoader loader, Hashtable env, Name name, Context parentCtx)
@@ -203,7 +202,6 @@ public class ContextFactory implements ObjectFactory
     /**
      * Find the naming Context for the given classloader
      * @param loader
-     * @return
      */
     public Context getContextForClassLoader(ClassLoader loader)
     {
