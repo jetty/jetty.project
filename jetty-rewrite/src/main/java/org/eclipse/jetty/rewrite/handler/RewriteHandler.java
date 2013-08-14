@@ -50,7 +50,6 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
  * <li> {@link ResponsePatternRule} - sets the status/error codes. </li>
  * <li> {@link RewritePatternRule} - rewrites the requested URI. </li>
  * <li> {@link RewriteRegexRule} - rewrites the requested URI using regular expression for pattern matching. </li>
- * <li> {@link ProxyRule} - proxies the requested URI to the host defined in proxyTo. </li>
  * <li> {@link MsieSslRule} - disables the keep alive on SSL for IE5 and IE6. </li>
  * <li> {@link LegacyRule} - the old version of rewrite. </li>
  * <li> {@link ForwardedSchemeHeaderRule} - set the scheme according to the headers present. </li>
@@ -68,13 +67,6 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
  *             &lt;New id="rewrite" class="org.eclipse.jetty.rewrite.handler.RewritePatternRule"&gt;
  *               &lt;Set name="pattern"&gt;/*&lt;/Set&gt;
  *               &lt;Set name="replacement"&gt;/test&lt;/Set&gt;
- *             &lt;/New&gt;
- *           &lt;/Item&gt;
- * 
- *           &lt;Item&gt;
- *             &lt;New id="rewrite" class="org.eclipse.jetty.rewrite.handler.ProxyRule"&gt;
- *               &lt;Set name="pattern"&gt;/*&lt;/Set&gt;
- *               &lt;Set name="proxyTo"&gt;http://webtide.com:8080&lt;/Set&gt;
  *             &lt;/New&gt;
  *           &lt;/Item&gt;
  * 
