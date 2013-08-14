@@ -18,7 +18,8 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import javax.websocket.Decoder;
+import javax.websocket.Decoder.BinaryStream;
+import javax.websocket.Decoder.TextStream;
 import javax.websocket.MessageHandler;
 import javax.websocket.MessageHandler.Partial;
 import javax.websocket.MessageHandler.Whole;
@@ -26,7 +27,7 @@ import javax.websocket.MessageHandler.Whole;
 import org.eclipse.jetty.websocket.jsr356.metadata.MessageHandlerMetadata;
 
 /**
- * Expose a {@link MessageHandler} instance along with its associated {@link MessageHandlerMetadata} and {@link DecoderWrapper}
+ * Expose a {@link MessageHandler} instance along with its associated {@link MessageHandlerMetadata} and {@link DecoderFactory.Wrapper}
  */
 public class MessageHandlerWrapper
 {
@@ -74,8 +75,7 @@ public class MessageHandlerWrapper
     }
 
     /**
-     * Flag for a onMessage() method that wants MessageHandler.{@link Whole} with a Decoder that is based on {@link Decoder.TextStream} or
-     * {@link Decoder.BinaryStream}
+     * Flag for a onMessage() method that wants MessageHandler.{@link Whole} with a Decoder that is based on {@link TextStream} or {@link BinaryStream}
      * 
      * @return true for Streaming based Decoder, false for normal decoder for whole messages.
      */

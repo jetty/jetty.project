@@ -19,15 +19,15 @@
 /**
  * Jetty WebSocket Client API
  * <p>
- * The core class is {@link WebSocketClient}, which acts as a central configuration object (for example
- * for {@link WebSocketClient#setConnectTimeout(int) connect timeouts}, {@link WebSocketClient#setCookieStore(CookieStore)
+ * The core class is {@link org.eclipse.jetty.websocket.client.WebSocketClient}, which acts as a central configuration object (for example
+ * for {@link org.eclipse.jetty.websocket.client.WebSocketClient#setConnectTimeout(int) connect timeouts}, {@link WebSocketClient#setCookieStore(CookieStore)
  * request cookie store}, etc.) and as a factory for WebSocket {@link org.eclipse.jetty.websocket.api.Session} objects.
  * <p>
  * The <a href="https://tools.ietf.org/html/rfc6455">WebSocket protocol</a> is based on a framing protocol built
  * around an upgraded HTTP connection.  It is primarily focused on the sending of messages (text or binary), with an
  * occasional control frame (close, ping, pong) that this implementation uses.  
  * <p />
- * {@link WebSocketClient} holds a number of {@link org.eclipse.jetty.websocket.api.Session Sessions}, which in turn
+ * {@link org.eclipse.jetty.websocket.client.WebSocketClient} holds a number of {@link org.eclipse.jetty.websocket.api.Session Sessions}, which in turn
  * is used to manage physical vs virtual connection handling (mux extension).
  */
 package org.eclipse.jetty.websocket.client;

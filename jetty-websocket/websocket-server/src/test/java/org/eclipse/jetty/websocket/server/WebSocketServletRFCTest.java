@@ -49,8 +49,6 @@ import org.junit.runner.RunWith;
 
 /**
  * Test various <a href="http://tools.ietf.org/html/rfc6455">RFC 6455</a> specified requirements placed on {@link WebSocketServlet}
- * <p>
- * This test serves a different purpose than than the {@link WebSocketMessageRFC6455Test}, and {@link WebSocketParserRFC6455Test} tests.
  */
 @RunWith(AdvancedRunner.class)
 public class WebSocketServletRFCTest

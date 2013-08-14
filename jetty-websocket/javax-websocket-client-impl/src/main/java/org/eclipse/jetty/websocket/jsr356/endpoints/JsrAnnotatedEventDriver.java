@@ -26,7 +26,7 @@ import java.util.Map;
 
 import javax.websocket.CloseReason;
 import javax.websocket.DecodeException;
-import javax.websocket.MessageHandler;
+import javax.websocket.MessageHandler.Whole;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -142,7 +142,7 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver implements E
     }
 
     /**
-     * Entry point for binary frames destined for {@link MessageHandler#Whole}
+     * Entry point for binary frames destined for {@link Whole}
      */
     @Override
     public void onBinaryMessage(byte[] data)

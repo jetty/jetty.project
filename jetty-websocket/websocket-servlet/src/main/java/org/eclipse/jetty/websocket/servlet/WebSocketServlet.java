@@ -32,7 +32,7 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 /**
  * Abstract Servlet used to bridge the Servlet API to the WebSocket API.
  * <p>
- * To use this servlet, you will be required to register your websockets with the {@link WebSocketServerFactory} so that it can create your websockets under the
+ * To use this servlet, you will be required to register your websockets with the {@link WebSocketServletFactory} so that it can create your websockets under the
  * appropriate conditions.
  * <p>
  * The most basic implementation would be as follows.
@@ -56,7 +56,7 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
  * }
  * </pre>
  * 
- * Note: that only request that conforms to a "WebSocket: Upgrade" handshake request will trigger the {@link WebSocketServerFactory} handling of creating
+ * Note: that only request that conforms to a "WebSocket: Upgrade" handshake request will trigger the {@link WebSocketServletFactory} handling of creating
  * WebSockets.<br>
  * All other requests are treated as normal servlet requests.
  * 

@@ -163,8 +163,6 @@ public class UpgradeResponse
     /**
      * Set the list of extensions that are approved for use with this websocket.
      * <p>
-     * This is Advanced usage of the {@link WebSocketCreator} to allow for a custom set of negotiated extensions.
-     * <p>
      * Notes:
      * <ul>
      * <li>Per the spec you cannot add extensions that have not been seen in the {@link UpgradeRequest}, just remove entries you don't want to use</li>

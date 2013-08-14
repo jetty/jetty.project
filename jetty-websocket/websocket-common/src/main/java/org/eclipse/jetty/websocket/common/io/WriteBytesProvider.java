@@ -72,8 +72,6 @@ public class WriteBytesProvider implements Callback
 
         /**
          * Indicate that the frame entry is done generating
-         * 
-         * @return
          */
         public boolean isDone()
         {

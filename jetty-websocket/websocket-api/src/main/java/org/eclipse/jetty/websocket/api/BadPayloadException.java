@@ -20,7 +20,7 @@ package org.eclipse.jetty.websocket.api;
 
 /**
  * Exception to terminate the connection because it has received data within a frame payload that was not consistent with the requirements of that frame
- * payload. (eg: not UTF-8 in a text frame, or a bad data seen in the {@link PerMessageCompressionExtension})
+ * payload. (eg: not UTF-8 in a text frame, or a unexpected data seen by an extension)
  * 
  * @see StatusCode#BAD_PAYLOAD
  */

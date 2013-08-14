@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.jsr356.encoders;
 
 import javax.websocket.EncodeException;
 import javax.websocket.Encoder;
+import javax.websocket.Encoder.Text;
 
 /**
  * Default encoder for {@link Integer} to {@link Text} Message encoder

@@ -30,7 +30,6 @@ public interface WebSocketHandshake
      * 
      * @param request
      * @param response
-     * @param acceptedSubProtocol
      */
     public void doHandshakeResponse(ServletUpgradeRequest request, ServletUpgradeResponse response) throws IOException;
 }

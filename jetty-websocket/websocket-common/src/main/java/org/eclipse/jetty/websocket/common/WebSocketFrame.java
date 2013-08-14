@@ -132,8 +132,8 @@ public class WebSocketFrame implements Frame
     /**
      * Copy constructor for the websocket frame.
      * 
-     * @param copy
-     *            the websocket to copy.
+     * @param frame
+     *            the websocket frame to copy.
      */
     public WebSocketFrame(Frame frame)
     {

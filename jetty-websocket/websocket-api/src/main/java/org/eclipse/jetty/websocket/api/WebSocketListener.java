@@ -38,7 +38,7 @@ public interface WebSocketListener
     /**
      * A Close Event was received.
      * <p>
-     * The underlying {@link WebSocketConnection} will be considered closed at this point.
+     * The underlying Connection will be considered closed at this point.
      * 
      * @param statusCode
      *            the close status code. (See {@link StatusCode})

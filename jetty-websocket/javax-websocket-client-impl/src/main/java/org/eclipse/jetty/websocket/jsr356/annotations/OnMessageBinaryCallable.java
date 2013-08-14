@@ -18,11 +18,13 @@
 
 package org.eclipse.jetty.websocket.jsr356.annotations;
 
+import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
+import javax.websocket.Decoder.Binary;
 import javax.websocket.OnMessage;
 
 import org.eclipse.jetty.websocket.jsr356.JsrSession;
@@ -33,7 +35,7 @@ import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
  * <p>
  * Not for use with {@link InputStream} based {@link OnMessage} method objects.
  * 
- * @see Decoder.Binary
+ * @see Binary
  */
 public class OnMessageBinaryCallable extends OnMessageCallable
 {

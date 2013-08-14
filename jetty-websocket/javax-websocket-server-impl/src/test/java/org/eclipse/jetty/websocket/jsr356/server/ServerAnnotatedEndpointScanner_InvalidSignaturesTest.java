@@ -51,7 +51,7 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 /**
- * Test {@link JsrAnnotatedServerScanner} against various simple, single method annotated classes with invalid signatures.
+ * Test {@link AnnotatedEndpointScanner} against various simple, 1 method {@link ServerEndpoint} annotated classes with invalid signatures.
  */
 @RunWith(Parameterized.class)
 public class ServerAnnotatedEndpointScanner_InvalidSignaturesTest

@@ -342,7 +342,6 @@ public class QuoteUtil
      *            the string to possibly quote
      * @param delim
      *            the delimiter characters that will trigger automatic quoting
-     * @throws IOException
      */
     public static void quoteIfNeeded(StringBuilder buf, String str, String delim)
     {

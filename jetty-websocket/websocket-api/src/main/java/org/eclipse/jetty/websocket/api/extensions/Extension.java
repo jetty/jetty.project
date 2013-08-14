@@ -21,7 +21,7 @@ package org.eclipse.jetty.websocket.api.extensions;
 /**
  * Interface for WebSocket Extensions.
  * <p>
- * That work is performed by the two {@link FrameHandler} implementations for incoming and outgoing frame handling.
+ * That {@link Frame}s are passed through the Extension via the {@link IncomingFrames} and {@link OutgoingFrames} interfaces
  */
 public interface Extension extends IncomingFrames, OutgoingFrames
 {

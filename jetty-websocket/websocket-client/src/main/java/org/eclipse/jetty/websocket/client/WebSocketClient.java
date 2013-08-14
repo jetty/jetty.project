@@ -372,7 +372,7 @@ public class WebSocketClient extends ContainerLifeCycle
 
     /**
      * @return the {@link SslContextFactory} that manages TLS encryption
-     * @see WebSocketClient(SslContextFactory)
+     * @see #WebSocketClient(SslContextFactory)
      */
     public SslContextFactory getSslContextFactory()
     {

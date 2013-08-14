@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+
 import javax.websocket.ClientEndpoint;
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.DeploymentException;
@@ -83,21 +84,6 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         client.setEventDriverFactory(new JsrEventDriverFactory(client.getPolicy()));
         client.setSessionFactory(new JsrSessionFactory(this));
         addBean(client);
-    }
-
-    @Override
-    protected void doStart() throws Exception
-    {
-        super.doStart();
-        ShutdownThread.register(client);
-    }
-
-    @Override
-    protected void doStop() throws Exception
-    {
-        endpointClientMetadataCache.clear();
-        ShutdownThread.deregister(client);
-        super.doStop();
     }
 
     private Session connect(EndpointInstance instance, URI path) throws IOException
@@ -176,6 +162,21 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     {
         EndpointInstance instance = newClientEndpointInstance(endpoint,null);
         return connect(instance,path);
+    }
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        super.doStart();
+        ShutdownThread.register(client);
+    }
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        endpointClientMetadataCache.clear();
+        ShutdownThread.deregister(client);
+        super.doStop();
     }
 
     public EndpointMetadata getClientEndpointMetadata(Class<?> endpoint)
@@ -272,8 +273,6 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
 
     /**
      * Used in {@link Session#getOpenSessions()}
-     *
-     * @return
      */
     public Set<Session> getOpenSessions()
     {

@@ -108,7 +108,7 @@ public class ExtensionConfig
     }
 
     /**
-     * Return parameters in way similar to how {@link javax.net.websocket.extensions.Extension#getParameters()} works.
+     * Return parameters found in request URI.
      * 
      * @return the parameter map
      */

@@ -373,8 +373,6 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
 
     /**
      * Open/Activate the session
-     * 
-     * @throws IOException
      */
     public void open()
     {

@@ -49,7 +49,7 @@ public interface IJsrMethod
     /**
      * The type of message this method can handle
      * 
-     * @return the message type if &#064;{@link OnMessage} annotated, {@link MessageType#UNKNOWN} if unknown/unspecified
+     * @return the message type if &#064;{@link OnMessage} annotated, null if unknown/unspecified
      */
     MessageType getMessageType();
 

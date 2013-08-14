@@ -23,6 +23,7 @@ import java.lang.reflect.Method;
 
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
+import javax.websocket.Decoder.Text;
 import javax.websocket.OnMessage;
 
 import org.eclipse.jetty.websocket.jsr356.JsrSession;
@@ -33,7 +34,7 @@ import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
  * <p>
  * Not for use with {@link Reader} based {@link OnMessage} method objects.
  * 
- * @see Decoder.Text
+ * @see Text
  */
 public class OnMessageTextCallable extends OnMessageCallable
 {

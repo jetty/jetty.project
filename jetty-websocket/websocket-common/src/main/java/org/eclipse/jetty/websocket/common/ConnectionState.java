@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.common;
 
 import org.eclipse.jetty.websocket.common.io.IOState;
+import org.eclipse.jetty.websocket.common.io.IOState.ConnectionStateListener;
 
 /**
  * Connection states as outlined in <a href="https://tools.ietf.org/html/rfc6455">RFC6455</a>.
@@ -47,7 +48,7 @@ public enum ConnectionState
      * <p>
      * This can be considered a half-closed state.
      * <p>
-     * When receiving this as an event on {@link IOState.ConnectionStateListener#onConnectionStateChange(ConnectionState)} a close frame should be sent using
+     * When receiving this as an event on {@link ConnectionStateListener#onConnectionStateChange(ConnectionState)} a close frame should be sent using
      * the {@link CloseInfo} available from {@link IOState#getCloseInfo()}
      */
     CLOSING,

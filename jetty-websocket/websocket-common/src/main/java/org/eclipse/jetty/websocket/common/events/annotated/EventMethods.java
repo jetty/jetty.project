@@ -20,8 +20,6 @@ package org.eclipse.jetty.websocket.common.events.annotated;
 
 /**
  * A representation of the methods available to call for a particular class.
- * <p>
- * This class used to cache the method lookups via the {@link EventMethodsCache}
  */
 public class EventMethods
 {

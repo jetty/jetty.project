@@ -196,8 +196,6 @@ public class WebSocketPolicy
 
     /**
      * Get the maximum size of a binary message buffer (for streaming writing)
-     * <p>
-     * Note: Cannot be greater than {@link #getMaxBinaryMessageSize()}
      * 
      * @return the maximum size of a binary message buffer
      */
@@ -220,8 +218,6 @@ public class WebSocketPolicy
 
     /**
      * Get the maximum size of a text message buffer (for streaming writing)
-     * <p>
-     * Note: Cannot be greater than {@link #maxTextMessageSize}
      * 
      * @return the maximum size of a text message buffer
      */

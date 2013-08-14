@@ -23,7 +23,7 @@ import java.net.URI;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 
 /**
- * Interface for creating jetty {@link MutableSession} objects.
+ * Interface for creating jetty {@link WebSocketSession} objects.
  */
 public interface SessionFactory
 {

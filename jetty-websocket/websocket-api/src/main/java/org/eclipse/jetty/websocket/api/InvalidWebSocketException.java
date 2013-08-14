@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.api;
 
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+
 /**
  * Indicating that the provided Class is not a valid WebSocket as defined by the API.
  * <p>

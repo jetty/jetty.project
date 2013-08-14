@@ -59,7 +59,7 @@ import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.io.IOState.ConnectionStateListener;
 
 /**
- * Provides the implementation of {@link WebSocketConnection} within the framework of the new {@link Connection} framework of jetty-io
+ * Provides the implementation of {@link LogicalConnection} within the framework of the new {@link Connection} framework of jetty-io
  */
 public abstract class AbstractWebSocketConnection extends AbstractConnection implements LogicalConnection, ConnectionStateListener
 {

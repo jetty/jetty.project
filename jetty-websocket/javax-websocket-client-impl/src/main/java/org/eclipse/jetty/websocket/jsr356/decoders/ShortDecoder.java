@@ -20,6 +20,8 @@ package org.eclipse.jetty.websocket.jsr356.decoders;
 
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
+import javax.websocket.Decoder.Text;
+
 
 /**
  * Default implementation of the {@link Text} Message to {@link Short} decoder
