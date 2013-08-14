@@ -590,8 +590,8 @@ public class ObjectMBean implements DynamicMBean
      * getter and setter methods. Descriptions are obtained with a call to findDescription with the
      * attribute name.
      *
-     * @param name
-     * @param metaData "description" or "access:description" or "type:access:description"  where type is
+     * @param method
+     * @param attributeAnnotation "description" or "access:description" or "type:access:description"  where type is
      * one of: <ul>
      * <li>"Object" The field/method is on the managed object.
      * <li>"MBean" The field/method is on the mbean proxy object
