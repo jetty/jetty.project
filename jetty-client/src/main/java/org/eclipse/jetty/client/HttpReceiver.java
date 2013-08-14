@@ -359,7 +359,7 @@ public abstract class HttpReceiver
     /**
      * Method to be invoked when the response is failed.
      * <p />
-     * This method takes case of notifying {@link Response.FailureListener}s.
+     * This method takes care of notifying {@link Response.FailureListener}s.
      *
      * @param failure the response failure
      * @return whether the response was processed as failed
