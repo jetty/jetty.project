@@ -1,4 +1,163 @@
-jetty-9.1.0-SNAPSHOT
+jetty-9.1.0.M0 - 13 August 2013
+ + 393473 Add support for JSR-356 (javax.websocket) draft
+ + 396562 Add an implementation of RequestLog that supports Slf4j
+ + 398467 Servlet 3.1 Non Blocking IO
+ + 402984 WebSocket Upgrade must honor case insensitive header fields in
+   upgrade request
+ + 403280 Update to javax.el 2.2.4
+ + 403380 Introduce WebSocketTimeoutException to differentiate between EOF on
+   write and Timeout
+ + 403510 HttpSession maxInactiveInterval is not serialized in HashSession
+ + 403591 do not use the ConcurrentArrayBlockingQueue for thread pool, selector
+   and async request log
+ + 403817 Use of WebSocket Session.close() results in invalid status code
+ + 405188 HTTP 1.0 with GET returns internal IP address.
+ + 405422 Implement servlet3.1 spec sections 4.4.3 and 8.1.4 for new
+   HttpSessionIdListener class
+ + 405432 Check implementation of section 13.4.1 @ServletSecurity for
+   @HttpConstraint and HttpMethodConstraint clarifications
+ + 405435 Implement servlet3.1 section 13.6.3 for 303 redirects for Form auth
+ + 405437 Implement section 13.8.4 Uncovered HTTP methods
+ + 405525 Throw IllegalArgumentException if filter or servlet name is null or
+   empty string in ServletContext.addXXX() methods
+ + 405526 Deployment must fail if more than 1 servlet maps to same url pattern
+ + 405531 Implement Part.getSubmittedFileName()
+ + 405533 Implement special role ** for security constraints
+ + 405535 Implement Request.isUserInRole(role) check security-role-refs
+   defaulting to security-role if no matching ref
+ + 405944 Check annotation and resource injection is supported for
+   AsyncListener
+ + 406759 supressed stacktrace in ReferrerPushStrategyTest
+ + 407708 HttpUpgradeHandler must support injection
+ + 408782 Transparent Proxy - rewrite URL is ignoring query strings.
+ + 408904 Enhance CommandlineBuilder to not escape strings inside single quotes
+ + 409403 fix IllegalStateException when SPDY is used and the response is
+   written through BufferUtil.writeTo byte by byte
+ + 409796 fix and cleanup ReferrerPushStrategy. There's more work to do here,
+   so it remains @Ignore for now
+ + 409953 return buffer.slice() instead of buffer.asReadOnlyBuffer() in
+   ResourceCache to avoid using inefficent path in BufferUtil.writeTo
+ + 410083 Jetty clients submits incomplete URL to proxy.
+ + 410098 inject accept-encoding header for all http requests through SPDY as
+   SPDY clients MUST support spdy. Also remove two new tests that have been to
+   implementation agnostic and not needed anymore due to recent code changes
+ + 410246 HttpClient with proxy does not tunnel HTTPS requests.
+ + 410341 suppress stacktraces that happen during test setup shutdown after
+   successful test run
+ + 410800 Make RewritePatternRule queryString aware
+ + 412418 HttpTransportOverSPDY fix race condition while sending push streams
+   that could cause push data not to be sent. Fixes intermittent test issues in
+   ReferrerPushStrategyTest
+ + 412729 SPDYClient needs a Promise-based connect() method.
+ + 412829 Allow any mappings from web-default.xml to be overridden by web.xml
+ + 412830 Error Page match ServletException then root cause
+ + 412840 remove Future in SPDYClient.connect() and return Session instead in
+   blocking version
+ + 412935 setLocale is not an explicit set of character encoding
+ + 412940 minor threadsafe fixes
+ + 413018 ServletContext.addListener() should throw IllegalArgumentException if
+   arg is not correct type of listener
+ + 413020 Second call to HttpSession.invalidate() should throw exception 413019
+   HttpSession.getCreateTime() should throw exception after session is
+   invalidated
+ + 413291 Avoid SPDY double dispatch
+ + 413531 Introduce pluggable transports for HttpClient.
+ + 413901 isAsyncStarted remains true while original request is dispatched
+ + 414167 WebSocket handshake upgrade from FireFox fails due to keep-alive
+ + 414635 Modular start.d and jetty.base property
+ + 414640 HTTP header value encoding
+ + 414725 Annotation Scanning should exclude webapp basedir from path
+   validation checks
+ + 414731 Request.getCookies() should return null if there are no cookies
+ + 414740 Removed the parent peeking Loader
+ + 414891 Errors thrown by ReadListener and WriteListener not handled
+   correctly.
+ + 414913 WebSocket / Performance - reduce ByteBuffer allocation/copying during
+   generation/writing
+ + 414923 CompactPathRule needs to also compact the uri
+
+jetty-9.0.5.v20130813 - 13 August 2013
+ + 404468 Ported jetty-http-spi to Jetty-9
+ + 405424 add X-Powered-By and Server header to SPDY
+ + 405535 implement Request.isUserInRole(role) check security-role-refs
+   defaulting to security-role if no matching ref
+ + 408235 SPDYtoHTTP proxy fix: remove hop headers from upstream server
+ + 409028 Jetty HttpClient does not work with proxy CONNECT method.
+ + 409282 fix intermittently failing MaxConcurrentStreamTest
+ + 409845 add test that makes sure that DataFrameGenerator correctly prepends
+   the header information
+ + 410498 ignore type of exception in
+   GoAwayTest.testDataNotProcessedAfterGoAway
+ + 410668 HTTP client should support the PATCH method.
+ + 410800 Make RewritePatternRule queryString aware
+ + 410805 StandardSession: remove all frameBytes for a given stream from queue
+   if the stream is reset
+ + 411216 RequestLogHandler handles async completion
+ + 411458 MultiPartFilter getParameterMap doesn't preserve multivalued
+   parameters 411459  MultiPartFilter.Wrapper getParameter should use charset
+   encoding of part
+ + 411538 Use Replacement character for bad parameter % encodings
+ + 411545 SslConnection.DecryptedEndpoint.fill() sometimes misses a few network
+   bytes
+ + 411755 MultiPartInputStreamParser fails on base64 encoded content
+ + 411844 ArrayIndexOutOfBoundsException on wild URL.
+ + 411909 GzipFilter flushbuffer() results in erroneous finish() call
+ + 412234 fix bug where NetworkTrafficSelectChannelEndpoint counted bytes wrong
+   on incomplete writes
+ + 412318 HttpChannel fix multiple calls to _transport.completed() if handle()
+   is called multiple times while the channel is COMPLETED
+ + 412418 HttpTransportOverSPDY fix race condition while sending push streams
+   that could cause push data not to be sent. Fixes intermittent test issues in
+   ReferrerPushStrategyTest
+ + 412442 Avoid connection timeout after FIN-FIN close
+ + 412466 Improved search for unset JETTY_HOME
+ + 412608 EOF Chunk not sent on inputstream static content
+ + 412629 PropertyFileLoginModule doesn't cache user configuration file even
+   for refreshInterval=0
+ + 412637 ShutdownMonitorThread already started
+ + 412712 HttpClient does not send the terminal chunk after partial writes.
+ + 412713 add dumpOnStart configuration to jetty-maven-plugin
+ + 412750 HttpClient close expired connections fix
+ + 412814 HttpClient calling CompleteListener.onComplete() twice.
+ + 412846 jetty Http Client Connection through Proxy is failing with Timeout.
+ + 412938 Request.setCharacterEncoding now throws UnsupportedEncodingException
+   instead of UnsupportedCharsetException
+ + 413034 Multiple webapps redeploy returns NamingException with AppDynamics
+   javaagent
+ + 413066 accept lower case method: head
+ + 413108 HttpClient hardcodes dispatchIO=false when using SSL.
+ + 413113 Inconsistent Request.getURI() when adding parameters via
+   Request.param().
+ + 413154 ContextHandlerCollection defers virtual host handling to
+   ContextHandler
+ + 413155 HttpTransportOverSPDY remove constructor argument for version and get
+   version from stream.getSession instead
+ + 413371 Default JSON.Converters for List and Set.
+ + 413372 JSON Enum uses name rather than toString()
+ + 413393 better logging of bad URLs in Resources
+ + 413486 SessionCookieConfig setters should throw IllegalStateException if
+   called after context started
+ + 413568 Made AJP worker name generic
+ + 413684 Trailing slash shows JSP source
+ + 413901 isAsyncStarted remains true while original request is dispatched
+ + 414085 Add jetty-continuations to plugin dependencies
+ + 414101 Do not escape special characters in cookies
+ + 414235 RequestLogHandler configured on a context fails to handle forwarded
+   requests
+ + 414393 StringIndexOutofBoundsException with > 8k multipart content without
+   CR or LF
+ + 414449 Added HttpParser strict mode for case sensitivity
+ + 414507 Ensure AnnotationParser ignores parent dir hierarchy when checking
+   for hidden dirnames
+ + 414625 final static version fields
+ + 414640 HTTP header value encoding
+ + 414652 WebSocket's sendMessage() may hang on congested connections.
+ + 414727 Ensure asynchronously flushed resources are closed
+ + 414763 Added org.eclipse.jetty.util.log.stderr.ESCAPE option
+ + 414833 HttpSessionListener.destroy must be invoked in reverse order
+ + 414840 Request.login() throws NPE if username is null
+ + 414951 QueuedThreadPool fix constructor that missed to pass the idleTimeout
+ + 414972 HttpClient may read bytes with pre-tunnelled connection.i
 
 jetty-9.0.4.v20130625 - 25 June 2013
  + 396706 CGI support parameters
