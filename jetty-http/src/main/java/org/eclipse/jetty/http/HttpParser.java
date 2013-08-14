@@ -1493,7 +1493,6 @@ public class HttpParser
         /* ------------------------------------------------------------ */
         /** Called to signal that an EOF was received unexpectedly
          * during the parsing of a HTTP message
-         * @return True if the parser should return to its caller
          */
         public void earlyEOF();
 
@@ -1524,7 +1523,7 @@ public class HttpParser
 
         /**
          * This is the method called by the parser after it has parsed the host header (and checked it's format). This is
-         * called after the {@link HttpHandler#parsedHeader(HttpField) methods and before
+         * called after the {@link HttpHandler#parsedHeader(HttpField)} methods and before
          * HttpHandler#headerComplete();
          */
         public abstract boolean parsedHostHeader(String host,int port);
