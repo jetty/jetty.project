@@ -245,10 +245,10 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * Returns a <em>non</em> thread-safe list of {@link Request.Listener}s that can be modified before
+     * Returns a <em>non</em> thread-safe list of {@link org.eclipse.jetty.client.api.Request.Listener}s that can be modified before
      * performing requests.
      *
-     * @return a list of {@link Request.Listener} that can be used to add and remove listeners
+     * @return a list of {@link org.eclipse.jetty.client.api.Request.Listener} that can be used to add and remove listeners
      */
     public List<Request.Listener> getRequestListeners()
     {
@@ -845,13 +845,13 @@ public class HttpClient extends ContainerLifeCycle
     /**
      * Whether request events must be strictly ordered.
      * <p />
-     * {@link Response.CompleteListener}s may send a second request.
+     * {@link org.eclipse.jetty.client.api.Response.CompleteListener}s may send a second request.
      * If the second request is for the same destination, there is an inherent race
      * condition for the use of the connection: the first request may still be associated with the
      * connection, so the second request cannot use that connection and is forced to open another one.
      * <p />
      * From the point of view of connection usage, the connection is reusable just before the "complete"
-     * event, so it would be possible to reuse that connection from {@link Response.CompleteListener}s;
+     * event, so it would be possible to reuse that connection from {@link org.eclipse.jetty.client.api.Response.CompleteListener}s;
      * but in this case the second request's events will fire before the "complete" events of the first
      * request.
      * <p />

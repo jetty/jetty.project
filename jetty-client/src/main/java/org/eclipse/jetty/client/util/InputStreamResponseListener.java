@@ -19,6 +19,7 @@
 package org.eclipse.jetty.client.util;
 
 import java.io.IOException;
+
 import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
@@ -34,13 +35,14 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.api.Response.Listener;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
- * Implementation of {@link Response.Listener} that produces an {@link InputStream}
+ * Implementation of {@link Listener} that produces an {@link InputStream}
  * that allows applications to read the response content.
  * <p />
  * Typical usage is:

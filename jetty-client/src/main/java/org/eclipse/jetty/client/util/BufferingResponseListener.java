@@ -24,12 +24,13 @@ import java.nio.charset.UnsupportedCharsetException;
 import java.util.Locale;
 
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.api.Response.Listener;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 
 /**
- * <p>Implementation of {@link Response.Listener} that buffers the content up to a maximum length
+ * <p>Implementation of {@link Listener} that buffers the content up to a maximum length
  * specified to the constructors.</p>
  * <p>The content may be retrieved from {@link #onSuccess(Response)} or {@link #onComplete(Result)}
  * via {@link #getContent()} or {@link #getContentAsString()}.</p>

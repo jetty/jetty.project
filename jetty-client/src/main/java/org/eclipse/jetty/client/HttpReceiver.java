@@ -97,7 +97,7 @@ public abstract class HttpReceiver
      * Subclasses must have set the response status code on the {@link Response} object of the {@link HttpExchange}
      * prior invoking this method.
      * <p />
-     * This method takes case of notifying {@link Response.BeginListener}s.
+     * This method takes case of notifying {@link org.eclipse.jetty.client.api.Response.BeginListener}s.
      *
      * @param exchange the HTTP exchange
      * @return whether the processing should continue
@@ -134,7 +134,7 @@ public abstract class HttpReceiver
      * Subclasses must not have added the header to the {@link Response} object of the {@link HttpExchange}
      * prior invoking this method.
      * <p />
-     * This method takes case of notifying {@link Response.HeaderListener}s and storing cookies.
+     * This method takes case of notifying {@link org.eclipse.jetty.client.api.Response.HeaderListener}s and storing cookies.
      *
      * @param exchange the HTTP exchange
      * @param field the response HTTP field
@@ -210,7 +210,7 @@ public abstract class HttpReceiver
     /**
      * Method to be invoked after all response HTTP headers are available.
      * <p />
-     * This method takes case of notifying {@link Response.HeadersListener}s.
+     * This method takes case of notifying {@link org.eclipse.jetty.client.api.Response.HeadersListener}s.
      *
      * @param exchange the HTTP exchange
      * @return whether the processing should continue
@@ -264,7 +264,7 @@ public abstract class HttpReceiver
     /**
      * Method to be invoked when response HTTP content is available.
      * <p />
-     * This method takes case of decoding the content, if necessary, and notifying {@link Response.ContentListener}s.
+     * This method takes case of decoding the content, if necessary, and notifying {@link org.eclipse.jetty.client.api.Response.ContentListener}s.
      *
      * @param exchange the HTTP exchange
      * @param buffer the response HTTP content buffer
@@ -312,8 +312,8 @@ public abstract class HttpReceiver
     /**
      * Method to be invoked when the response is successful.
      * <p />
-     * This method takes case of notifying {@link Response.SuccessListener}s and possibly
-     * {@link Response.CompleteListener}s (if the exchange is completed).
+     * This method takes case of notifying {@link org.eclipse.jetty.client.api.Response.SuccessListener}s and possibly
+     * {@link org.eclipse.jetty.client.api.Response.CompleteListener}s (if the exchange is completed).
      *
      * @param exchange the HTTP exchange
      * @return whether the response was processed as successful
@@ -359,7 +359,7 @@ public abstract class HttpReceiver
     /**
      * Method to be invoked when the response is failed.
      * <p />
-     * This method takes care of notifying {@link Response.FailureListener}s.
+     * This method takes care of notifying {@link org.eclipse.jetty.client.api.Response.FailureListener}s.
      *
      * @param failure the response failure
      * @return whether the response was processed as failed
