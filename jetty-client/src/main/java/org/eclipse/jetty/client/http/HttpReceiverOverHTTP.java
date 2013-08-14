@@ -75,7 +75,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
                 else
                 {
                     int read = endPoint.fill(buffer);
-                    LOG.debug("Read {} bytes from {}", read, endPoint);
+                    if (LOG.isDebugEnabled()) // Avoid boxing of variable 'read'
+                        LOG.debug("Read {} bytes from {}", read, endPoint);
                     if (read > 0)
                     {
                         parse(buffer);

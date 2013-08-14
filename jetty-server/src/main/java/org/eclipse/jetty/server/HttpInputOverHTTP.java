@@ -21,7 +21,6 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.util.BlockingCallback;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -42,7 +41,7 @@ class HttpInputOverHTTP extends HttpInput<ByteBuffer> implements Callback
     {
         _httpConnection = httpConnection;
     }
-    
+
     @Override
     public void recycle()
     {
@@ -61,7 +60,7 @@ class HttpInputOverHTTP extends HttpInput<ByteBuffer> implements Callback
             _httpConnection.fillInterested(_readBlocker);
             LOG.debug("{} block readable on {}",this,_readBlocker);
             _readBlocker.block();
-            
+
             Object content=getNextContent();
             if (content!=null || isFinished())
                 break;
@@ -80,9 +79,9 @@ class HttpInputOverHTTP extends HttpInput<ByteBuffer> implements Callback
         // If we have some content available, return it
         if (BufferUtil.hasContent(_content))
             return _content;
-        
+
         // No - then we are going to need to parse some more content
-        _content=null;   
+        _content=null;
         ByteBuffer requestBuffer = _httpConnection.getRequestBuffer();
 
         while (!_httpConnection.getParser().isComplete())
@@ -93,17 +92,18 @@ class HttpInputOverHTTP extends HttpInput<ByteBuffer> implements Callback
             // If we got some content, that will do for now!
             if (BufferUtil.hasContent(_content))
                 return _content;
-            
+
             // No, we can we try reading some content?
             if (BufferUtil.isEmpty(requestBuffer) && _httpConnection.getEndPoint().isInputShutdown())
             {
                 _httpConnection.getParser().atEOF();
                 continue;
             }
-            
+
             // OK lets read some data
             int filled=_httpConnection.getEndPoint().fill(requestBuffer);
-            LOG.debug("{} filled {}",this,filled);
+            if (LOG.isDebugEnabled()) // Avoid boxing of variable 'filled'
+                LOG.debug("{} filled {}",this,filled);
             if (filled<=0)
             {
                 if (filled<0)
@@ -114,9 +114,9 @@ class HttpInputOverHTTP extends HttpInput<ByteBuffer> implements Callback
                 return null;
             }
         }
-            
-        return null; 
-           
+
+        return null;
+
     }
 
     @Override
@@ -132,7 +132,7 @@ class HttpInputOverHTTP extends HttpInput<ByteBuffer> implements Callback
         item.get(buffer, offset, l);
         return l;
     }
-    
+
     @Override
     protected void consume(ByteBuffer item, int length)
     {

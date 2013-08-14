@@ -93,7 +93,8 @@ public class SPDYConnection extends AbstractConnection implements Controller, Id
         while (true)
         {
             int filled = fill(endPoint, buffer);
-            LOG.debug("Read {} bytes", filled);
+            if (LOG.isDebugEnabled()) // Avoid boxing of variable 'filled'
+                LOG.debug("Read {} bytes", filled);
             if (filled == 0)
             {
                 return 0;

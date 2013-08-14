@@ -134,7 +134,8 @@ public class ChannelEndPoint extends AbstractEndPoint implements SocketBased
         try
         {
             int filled = _channel.read(buffer);
-            LOG.debug("filled {} {}", filled, this);
+            if (LOG.isDebugEnabled()) // Avoid boxing of variable 'filled'
+                LOG.debug("filled {} {}", filled, this);
 
             if (filled>0)
                 notIdle();
@@ -185,14 +186,14 @@ public class ChannelEndPoint extends AbstractEndPoint implements SocketBased
         {
             throw new EofException(e);
         }
-        
+
         if (flushed>0)
             notIdle();
 
         for (ByteBuffer b : buffers)
             if (!BufferUtil.isEmpty(b))
                 return false;
-        
+
         return true;
     }
 
