@@ -6,7 +6,7 @@
     <version>20</version>
   </parent>
   <artifactId>jetty-project</artifactId>
-  <version>9.1.0-SNAPSHOT</version>
+  <version>9.1.0.M0</version>
   <name>Jetty :: Project</name>
   <url>http://www.eclipse.org/jetty</url>
   <packaging>pom</packaging>
@@ -616,12 +616,14 @@
     > mvn -N site:sshdeploy     (for ssh users w/passphrase and ssh-agent)
    -->
   <profiles>
+<!--
     <profile>
       <id>eclipse-release</id>
       <modules>
         <module>aggregates/jetty-all</module>
       </modules>
     </profile>
+-->
     <profile>
       <id>update-version</id>
       <build>
