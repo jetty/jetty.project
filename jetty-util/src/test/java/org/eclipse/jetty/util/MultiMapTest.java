@@ -102,7 +102,7 @@ public class MultiMapTest
     }
 
     /**
-     * Tests {@link MultiMap#putValues(Object, List)}
+     * Tests {@link MultiMap#putValues(String, List)}
      */
     @Test
     public void testPutValues_List()
@@ -122,7 +122,7 @@ public class MultiMapTest
     }
 
     /**
-     * Tests {@link MultiMap#putValues(Object, String...)}
+     * Tests {@link MultiMap#putValues(String, String...)}
      */
     @Test
     public void testPutValues_StringArray()
@@ -138,7 +138,7 @@ public class MultiMapTest
     }
 
     /**
-     * Tests {@link MultiMap#putValues(Object, String...)}
+     * Tests {@link MultiMap#putValues(String, String...)}
      */
     @Test
     public void testPutValues_VarArgs()
@@ -153,7 +153,7 @@ public class MultiMapTest
     }
 
     /**
-     * Tests {@link MultiMap#add(Object, Object)}
+     * Tests {@link MultiMap#add(String, Object)}
      */
     @Test
     public void testAdd()
@@ -176,7 +176,7 @@ public class MultiMapTest
     }
 
     /**
-     * Tests {@link MultiMap#addValues(Object, List)}
+     * Tests {@link MultiMap#addValues(String, List)}
      */
     @Test
     public void testAddValues_List()
@@ -202,7 +202,7 @@ public class MultiMapTest
     }
 
     /**
-     * Tests {@link MultiMap#addValues(Object, List)}
+     * Tests {@link MultiMap#addValues(String, List)}
      */
     @Test
     public void testAddValues_List_Empty()
@@ -225,7 +225,7 @@ public class MultiMapTest
     }
 
     /**
-     * Tests {@link MultiMap#addValues(Object, String[])}
+     * Tests {@link MultiMap#addValues(String, Object[])}
      */
     @Test
     public void testAddValues_StringArray()
@@ -248,7 +248,7 @@ public class MultiMapTest
     }
 
     /**
-     * Tests {@link MultiMap#addValues(Object, String[])}
+     * Tests {@link MultiMap#addValues(String, Object[])}
      */
     @Test
     public void testAddValues_StringArray_Empty()
@@ -271,7 +271,7 @@ public class MultiMapTest
     }
 
     /**
-     * Tests {@link MultiMap#removeValue(Object, Object)}
+     * Tests {@link MultiMap#removeValue(String, Object)}
      */
     @Test
     public void testRemoveValue()
@@ -293,7 +293,7 @@ public class MultiMapTest
     }
 
     /**
-     * Tests {@link MultiMap#removeValue(Object, Object)}
+     * Tests {@link MultiMap#removeValue(String, Object)}
      */
     @Test
     public void testRemoveValue_InvalidItem()
@@ -314,7 +314,7 @@ public class MultiMapTest
     }
 
     /**
-     * Tests {@link MultiMap#removeValue(Object, Object)}
+     * Tests {@link MultiMap#removeValue(String, Object)}
      */
     @Test
     public void testRemoveValue_AllItems()
@@ -344,7 +344,7 @@ public class MultiMapTest
     }
 
     /**
-     * Tests {@link MultiMap#removeValue(Object, Object)}
+     * Tests {@link MultiMap#removeValue(String, Object)}
      */
     @Test
     public void testRemoveValue_FromEmpty()

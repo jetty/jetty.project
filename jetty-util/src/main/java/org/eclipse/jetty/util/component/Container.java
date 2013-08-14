@@ -46,7 +46,6 @@ public interface Container
     /**
      * Removes the given bean.
      * @return whether the bean was removed
-     * @see #removeBeans()
      */
     public boolean removeBean(Object o);
     

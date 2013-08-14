@@ -228,8 +228,8 @@ public class MultiMap<V> extends HashMap<String,List<V>>
     /**
      * Merge values.
      * 
-     * @param the
-     *            map to overlay on top of this one, merging together values if needed.
+     * @param map
+     *            the map to overlay on top of this one, merging together values if needed.
      * @return true if an existing key was merged with potentially new values, false if either no change was made, or there were only new keys.
      */
     public boolean addAllValues(MultiMap<V> map)
@@ -284,7 +284,7 @@ public class MultiMap<V> extends HashMap<String,List<V>>
      * <p>
      * NOTE: This is a SLOW operation, and is actively discouraged.
      * @param value
-     * @return
+     * @return true if contains simple value
      */
     public boolean containsSimpleValue(V value)
     {

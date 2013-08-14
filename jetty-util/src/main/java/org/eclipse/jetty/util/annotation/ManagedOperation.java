@@ -48,8 +48,6 @@ public @interface ManagedOperation
 {
     /**
      * Description of the Managed Object
-     * 
-     * @return
      */
     String value() default "Not Specified";
     

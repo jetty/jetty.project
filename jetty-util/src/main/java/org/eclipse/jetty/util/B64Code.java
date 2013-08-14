@@ -346,8 +346,7 @@ public class B64Code
      * Base 64 decode as described in RFC 2045.
      * <p>Unlike {@link #decode(char[])}, extra whitespace is ignored.
      * @param encoded String to decode.
-     * @param output stream for decoded bytes
-     * @return byte array containing the decoded form of the input.
+     * @param bout stream for decoded bytes
      * @throws IllegalArgumentException if the input is not a valid
      *         B64 encoding.
      */

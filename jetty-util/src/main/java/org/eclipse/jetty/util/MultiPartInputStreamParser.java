@@ -311,7 +311,6 @@ public class MultiPartInputStreamParser
 
         /**
          * Get the file, if any, the data has been written to.
-         * @return
          */
         public File getFile ()
         {
@@ -353,8 +352,6 @@ public class MultiPartInputStreamParser
 
     /**
      * Get the already parsed parts.
-     * 
-     * @return
      */
     public Collection<Part> getParsedParts()
     {
@@ -401,7 +398,6 @@ public class MultiPartInputStreamParser
     /**
      * Parse, if necessary, the multipart data and return the list of Parts.
      * 
-     * @return
      * @throws IOException
      * @throws ServletException
      */
@@ -424,7 +420,6 @@ public class MultiPartInputStreamParser
      * Get the named Part.
      * 
      * @param name
-     * @return
      * @throws IOException
      * @throws ServletException
      */

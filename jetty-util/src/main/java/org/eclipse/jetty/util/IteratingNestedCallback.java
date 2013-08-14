@@ -35,7 +35,7 @@ package org.eclipse.jetty.util;
  * task and a call the {@link #succeeded()} on this call back represents
  * completion of the subtask.  Only once all the subtasks are completed is 
  * the {@link Callback#succeeded()} method called on the {@link Callback} instance
- * passed the the {@link #IteratingCallback(Callback)} constructor.</p>
+ * passed the the {@link #IteratingNestedCallback(Callback)} constructor.</p>
  *  
  */
 public abstract class IteratingNestedCallback extends IteratingCallback
