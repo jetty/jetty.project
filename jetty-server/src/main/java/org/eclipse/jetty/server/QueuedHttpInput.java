@@ -28,12 +28,12 @@ import org.eclipse.jetty.util.log.Logger;
 
 /**
  * <p>{@link QueuedHttpInput} provides an implementation of {@link ServletInputStream} for {@link HttpChannel}.</p>
- * <p>{@link QueuedHttpInput} holds a queue of items passed to it by calls to {@link #content(T)}.</p>
+ * <p>{@link QueuedHttpInput} holds a queue of items passed to it by calls to {@link #content(Object)}.</p>
  * <p>{@link QueuedHttpInput} stores the items directly; if the items contain byte buffers, it does not copy them
  * but simply holds references to the item, thus the caller must organize for those buffers to valid while
  * held by this class.</p>
  * <p>To assist the caller, subclasses may override methods {@link #onAsyncRead()},
- * {@link #onContentConsumed(T)} and {@link #onAllContentConsumed()} that can be implemented so that the
+ * {@link #onContentConsumed(Object)} and {@link #onAllContentConsumed()} that can be implemented so that the
  * caller will know when buffers are queued and consumed.</p>
  */
 public abstract class QueuedHttpInput<T> extends HttpInput<T>

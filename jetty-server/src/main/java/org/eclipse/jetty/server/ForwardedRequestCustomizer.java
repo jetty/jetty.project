@@ -44,7 +44,7 @@ import org.eclipse.jetty.server.HttpConfiguration.Customizer;
  * the request came</p>
  * <p>Headers can also be defined so that forwarded SSL Session IDs and Cipher
  * suites may be customised</p> 
- * @see http://en.wikipedia.org/wiki/X-Forwarded-For
+ * @see <a href="http://en.wikipedia.org/wiki/X-Forwarded-For">Wikipedia: X-Forwarded-For</a>
  */
 public class ForwardedRequestCustomizer implements Customizer
 {
@@ -66,7 +66,6 @@ public class ForwardedRequestCustomizer implements Customizer
     /* ------------------------------------------------------------ */
     /**
      * Set a forced valued for the host header to control what is returned by {@link ServletRequest#getServerName()} and {@link ServletRequest#getServerPort()}.
-     * This value is only used if {@link #isForwarded()} is true.
      *
      * @param hostHeader
      *            The value of the host header to force.
@@ -90,7 +89,6 @@ public class ForwardedRequestCustomizer implements Customizer
     /**
      * @param forwardedHostHeader
      *            The header name for forwarded hosts (default x-forwarded-host)
-     * @see #setForwarded(boolean)
      */
     public void setForwardedHostHeader(String forwardedHostHeader)
     {
@@ -100,7 +98,6 @@ public class ForwardedRequestCustomizer implements Customizer
     /* ------------------------------------------------------------ */
     /**
      * @return the header name for forwarded server.
-     * @see #setForwarded(boolean)
      */
     public String getForwardedServerHeader()
     {
@@ -111,7 +108,6 @@ public class ForwardedRequestCustomizer implements Customizer
     /**
      * @param forwardedServerHeader
      *            The header name for forwarded server (default x-forwarded-server)
-     * @see #setForwarded(boolean)
      */
     public void setForwardedServerHeader(String forwardedServerHeader)
     {
@@ -121,7 +117,6 @@ public class ForwardedRequestCustomizer implements Customizer
     /* ------------------------------------------------------------ */
     /**
      * @return the forwarded for header
-     * @see #setForwarded(boolean)
      */
     public String getForwardedForHeader()
     {
@@ -132,7 +127,6 @@ public class ForwardedRequestCustomizer implements Customizer
     /**
      * @param forwardedRemoteAddressHeader
      *            The header name for forwarded for (default x-forwarded-for)
-     * @see #setForwarded(boolean)
      */
     public void setForwardedForHeader(String forwardedRemoteAddressHeader)
     {
@@ -144,7 +138,6 @@ public class ForwardedRequestCustomizer implements Customizer
      * Get the forwardedProtoHeader.
      *
      * @return the forwardedProtoHeader (default X-Forwarded-For)
-     * @see #setForwarded(boolean)
      */
     public String getForwardedProtoHeader()
     {
@@ -157,7 +150,6 @@ public class ForwardedRequestCustomizer implements Customizer
      *
      * @param forwardedProtoHeader
      *            the forwardedProtoHeader to set (default X-Forwarded-For)
-     * @see #setForwarded(boolean)
      */
     public void setForwardedProtoHeader(String forwardedProtoHeader)
     {

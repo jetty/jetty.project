@@ -67,7 +67,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * which are implemented to each use a NIO {@link Selector} instance to asynchronously
  * schedule a set of accepted connections.  It is the selector thread that will call the
  * {@link Callback} instances passed in the {@link EndPoint#fillInterested(Callback)} or
- * {@link EndPoint#write(Object, Callback, java.nio.ByteBuffer...)} methods.  It is expected
+ * {@link EndPoint#write(Callback, java.nio.ByteBuffer...)} methods.  It is expected
  * that these callbacks may do some non-blocking IO work, but will always dispatch to the
  * {@link Executor} service any blocking, long running or application tasks.
  * <p>

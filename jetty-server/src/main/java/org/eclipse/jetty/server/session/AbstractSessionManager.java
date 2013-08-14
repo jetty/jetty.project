@@ -416,7 +416,6 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
 
     /* ------------------------------------------------------------ */
     /**
-     * @return if true, session cookie will be marked as secure only iff
      * HTTPS request. Can be overridden by setting SessionCookieConfig.setSecure(true),
      * in which case the session cookie will be marked as secure on both HTTPS and HTTP.
      */

@@ -951,7 +951,7 @@ public class JDBCSessionManager extends AbstractSessionManager
     /**
      * Insert a session into the database.
      *
-     * @param data
+     * @param session
      * @throws Exception
      */
     protected void storeSession (Session session)

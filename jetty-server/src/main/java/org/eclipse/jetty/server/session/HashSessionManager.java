@@ -83,7 +83,7 @@ public class HashSessionManager extends AbstractSessionManager
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.servlet.AbstractSessionManager#doStart()
+     * @see AbstractSessionManager#doStart()
      */
     @Override
     public void doStart() throws Exception
@@ -116,7 +116,7 @@ public class HashSessionManager extends AbstractSessionManager
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.servlet.AbstractSessionManager#doStop()
+     * @see AbstractSessionManager#doStop()
      */
     @Override
     public void doStop() throws Exception
