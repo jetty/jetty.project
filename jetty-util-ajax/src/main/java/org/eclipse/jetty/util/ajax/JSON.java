@@ -1606,7 +1606,7 @@ public class JSON
 
         /**
          * Construct a literal JSON instance for use by
-         * {@link JSON#toString(Object)}. If {@link Log#isDebugEnabled()} is
+         * {@link JSON#toString(Object)}. If {@link Logger#isDebugEnabled()} is
          * true, the JSON will be parsed to check validity
          *
          * @param json
