@@ -71,9 +71,6 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
 
 
     /* ------------------------------------------------------------ */
-    /**
-     * @return
-     */
     public static Constraint createConstraint()
     {
         return new Constraint();
@@ -82,7 +79,6 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     /* ------------------------------------------------------------ */
     /**
      * @param constraint
-     * @return
      */
     public static Constraint createConstraint(Constraint constraint)
     {
@@ -104,7 +100,6 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      * @param authenticate
      * @param roles
      * @param dataConstraint
-     * @return
      */
     public static Constraint createConstraint (String name, boolean authenticate, String[] roles, int dataConstraint)
     {
@@ -122,7 +117,6 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     /**
      * @param name
      * @param element
-     * @return
      */
     public static Constraint createConstraint (String name, HttpConstraintElement element)
     {
@@ -136,7 +130,6 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      * @param rolesAllowed
      * @param permitOrDeny
      * @param transport
-     * @return
      */
     public static Constraint createConstraint (String name, String[] rolesAllowed, EmptyRoleSemantic permitOrDeny, TransportGuarantee transport)
     {
@@ -176,7 +169,6 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     /**
      * @param pathSpec
      * @param constraintMappings
-     * @return
      */
     public static List<ConstraintMapping> getConstraintMappingsForPath(String pathSpec, List<ConstraintMapping> constraintMappings)
     {
@@ -201,7 +193,6 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      * 
      * @param pathSpec
      * @param constraintMappings a new list minus the matching constraints
-     * @return
      */
     public static List<ConstraintMapping> removeConstraintMappingsForPath(String pathSpec, List<ConstraintMapping> constraintMappings)
     {
@@ -375,7 +366,6 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      * Set the known roles.
      * This may be overridden by a subsequent call to {@link #setConstraintMappings(ConstraintMapping[])} or
      * {@link #setConstraintMappings(List, Set)}.
-     * @see #setStrict(boolean)
      * @param roles The known roles (or null to determine them from the mappings)
      */
     public void setRoles(Set<String> roles)
@@ -895,7 +885,8 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      * Check if any http method omissions exist in the list of method
      * to auth info mappings.
      * 
-     * @param methodNames
+     * @param path
+     * @param methodMappings
      * @return
      */
     protected boolean omissionsExist (String path, Map<String, RoleInfo> methodMappings)

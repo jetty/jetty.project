@@ -112,7 +112,7 @@ public class DeferredAuthentication implements Authentication.Deferred
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.server.Authentication.Deferred#login(java.lang.String, java.lang.String)
+     * @see org.eclipse.jetty.server.Authentication.Deferred#login(String, Object, ServletRequest)
      */
     @Override
     public Authentication login(String username, Object password, ServletRequest request)
