@@ -1,4 +1,6 @@
-jetty-9.0.5.v20130813 - 13 August 2013
+jetty-9.0.5.v20130815 - 15 August 2013
+ + 414898 Only upgrade v0 to v1 cookies on dquote , ; backslash space and tab
+   in the value
  + 404468 Ported jetty-http-spi to Jetty-9
  + 405424 add X-Powered-By and Server header to SPDY
  + 405535 implement Request.isUserInRole(role) check security-role-refs
