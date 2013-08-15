@@ -69,8 +69,7 @@ public class HttpFields implements Iterable<HttpField>
     public static final TimeZone __GMT = TimeZone.getTimeZone("GMT");
     public static final DateCache __dateCache = new DateCache("EEE, dd MMM yyyy HH:mm:ss 'GMT'", Locale.US);
 
-    public static final String __COOKIE_DELIM_PATH="\"\\\t%+ :;,@?=()<>{}[]";
-    public static final String __COOKIE_DELIM=__COOKIE_DELIM_PATH+"/";
+    public static final String __COOKIE_DELIM="\",;\\ \t";
     
     static
     {
@@ -822,7 +821,7 @@ public class HttpFields implements Iterable<HttpField>
         // Format value and params
         StringBuilder buf = new StringBuilder(128);
         
-        // Name is checked by servlet spec, but can also be passed directly so check again
+        // Name is checked for legality by servlet spec, but can also be passed directly so check again for quoting
         boolean quote_name=isQuoteNeededForCookie(name);
         quoteOnlyOrAppend(buf,name,quote_name);
         
@@ -839,7 +838,7 @@ public class HttpFields implements Iterable<HttpField>
         boolean has_domain = domain!=null && domain.length()>0;
         boolean quote_domain = has_domain && isQuoteNeededForCookie(domain);
         boolean has_path = path!=null && path.length()>0;
-        boolean quote_path = has_path && isQuoteNeededForCookiePath(path);
+        boolean quote_path = has_path && isQuoteNeededForCookie(path);
         
         // Upgrade the version if we have a comment or we need to quote value/path/domain or if they were already quoted
         if (version==0 && ( comment!=null || quote_name || quote_value || quote_domain || quote_path || isQuoted(name) || isQuoted(value) || isQuoted(path) || isQuoted(domain)))
@@ -1177,32 +1176,6 @@ public class HttpFields implements Iterable<HttpField>
         return false;
     }
     
-    /* ------------------------------------------------------------ */
-    /** Does a cookie path need to be quoted?
-     * @param s value string
-     * @return true if quoted;
-     * @throws IllegalArgumentException If there a control characters in the string
-     */
-    public static boolean isQuoteNeededForCookiePath(String s)
-    {
-        if (s==null || s.length()==0)
-            return true;
-
-        if (QuotedStringTokenizer.isQuoted(s))
-            return false;
-        
-        for (int i=0;i<s.length();i++)
-        {
-            char c = s.charAt(i);
-            if (__COOKIE_DELIM_PATH.indexOf(c)>=0)
-                return true;
-            
-            if (c<0x20 || c>=0x7f)
-                throw new IllegalArgumentException("Illegal character in cookie value");
-        }
-
-        return false;
-    }
     
     private static void quoteOnlyOrAppend(StringBuilder buf, String s, boolean quote)
     {
