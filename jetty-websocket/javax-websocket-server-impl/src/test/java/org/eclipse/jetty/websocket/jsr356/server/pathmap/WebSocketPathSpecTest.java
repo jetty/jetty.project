@@ -25,7 +25,6 @@ import java.util.Map;
 
 import org.eclipse.jetty.websocket.server.pathmap.PathSpec;
 import org.eclipse.jetty.websocket.server.pathmap.PathSpecGroup;
-import org.eclipse.jetty.websocket.server.pathmap.ServletPathSpec;
 import org.junit.Test;
 
 /**
@@ -81,6 +80,22 @@ public class WebSocketPathSpecTest
         assertMatches(spec,"/a");
         assertNotMatches(spec,"/a/b");
         assertNotMatches(spec,"/a/");
+
+        assertEquals("Spec.variableCount",0,spec.getVariableCount());
+        assertEquals("Spec.variable.length",0,spec.getVariables().length);
+    }
+    
+    @Test
+    public void testExactPathSpec_TestWebapp()
+    {
+        WebSocketPathSpec spec = new WebSocketPathSpec("/javax.websocket/");
+        assertEquals("Spec.pathSpec","/javax.websocket/",spec.getPathSpec());
+        assertEquals("Spec.pattern","^/javax\\.websocket/$",spec.getPattern().pattern());
+        assertEquals("Spec.pathDepth",1,spec.getPathDepth());
+        assertEquals("Spec.group",PathSpecGroup.EXACT,spec.getGroup());
+        
+        assertMatches(spec,"/javax.websocket/");
+        assertNotMatches(spec,"/javax.websocket");
 
         assertEquals("Spec.variableCount",0,spec.getVariableCount());
         assertEquals("Spec.variable.length",0,spec.getVariables().length);

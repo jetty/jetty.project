@@ -31,7 +31,7 @@ import javax.websocket.RemoteEndpoint;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 
-@ServerEndpoint(value="/javax.websocket")
+@ServerEndpoint(value="/javax.websocket/")
 public class JavaxWebSocketChat
 {
     private static final List<JavaxWebSocketChat> members = new CopyOnWriteArrayList<>();
@@ -43,7 +43,7 @@ public class JavaxWebSocketChat
     public void onOpen(Session sess)
     {
         this.session = sess;
-        this.session.getAsyncRemote();
+        this.remote = this.session.getAsyncRemote();
         members.add(this);
     }
     

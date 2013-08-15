@@ -32,16 +32,28 @@ import java.util.regex.Pattern;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 
+import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.server.pathmap.PathSpecGroup;
 import org.eclipse.jetty.websocket.server.pathmap.RegexPathSpec;
 
 /**
  * PathSpec for WebSocket &#064;{@link ServerEndpoint} declarations with support for URI templates and &#064;{@link PathParam} annotations
+ * 
+ * @see javax.websocket spec (JSR-356) Section 3.1.1 URI Mapping
+ * @see <a href="https://tools.ietf.org/html/rfc6570">URI Templates (Level 1)</a>
  */
 public class WebSocketPathSpec extends RegexPathSpec
 {
+    private static final Logger LOG = Log.getLogger(WebSocketPathSpec.class);
+    
     private static final Pattern VARIABLE_PATTERN = Pattern.compile("\\{(.*)\\}");
-    private static final Pattern VALID_VARIABLE_NAME = Pattern.compile("[a-zA-Z0-9._-]+");
+    /** Reserved Symbols in URI Template variable */
+    private static final String VARIABLE_RESERVED = ":/?#[]@" + // gen-delims
+                                                    "!$&'()*+,;="; // sub-delims
+    /** Allowed Symboles in a URI Template variable */
+    private static final String VARIABLE_SYMBOLS="-._";
     private static final Set<String> FORBIDDEN_SEGMENTS;
 
     static
@@ -122,24 +134,14 @@ public class WebSocketPathSpec extends RegexPathSpec
                     err.append(pathParamSpec);
                     throw new IllegalArgumentException(err.toString());
                 }
-                else if (VALID_VARIABLE_NAME.matcher(variable).matches())
-                {
-                    segmentSignature[i] = 'v'; // variable
-                    // valid variable name
-                    varNames.add(variable);
-                    // build regex
-                    regex.append("/([^/]+)");
-                }
-                else
-                {
-                    // invalid variable name
-                    StringBuilder err = new StringBuilder();
-                    err.append("Syntax Error: variable {");
-                    err.append(variable);
-                    err.append("} an invalid variable name: ");
-                    err.append(pathParamSpec);
-                    throw new IllegalArgumentException(err.toString());
-                }
+
+                assertIsValidVariableLiteral(variable);
+
+                segmentSignature[i] = 'v'; // variable
+                // valid variable name
+                varNames.add(variable);
+                // build regex
+                regex.append("/([^/]+)");
             }
             else if (mat.find(0))
             {
@@ -167,7 +169,7 @@ public class WebSocketPathSpec extends RegexPathSpec
                 StringBuilder err = new StringBuilder();
                 err.append("Syntax Error: path segment /");
                 err.append(segment);
-                err.append("/ contains a wildcard symbol: ");
+                err.append("/ contains a wildcard symbol (not supported by javax.websocket): ");
                 err.append(pathParamSpec);
                 throw new IllegalArgumentException(err.toString());
             }
@@ -176,8 +178,23 @@ public class WebSocketPathSpec extends RegexPathSpec
                 // valid path segment
                 segmentSignature[i] = 'e'; // exact
                 // build regex
-                regex.append('/').append(segment);
+                regex.append('/');
+                // escape regex special characters
+                for (char c : segment.toCharArray())
+                {
+                    if ((c == '.') || (c == '[') || (c == ']') || (c == '\\'))
+                    {
+                        regex.append('\\');
+                    }
+                    regex.append(c);
+                }
             }
+        }
+        
+        // Handle trailing slash (which is not picked up during split)
+        if(pathParamSpec.charAt(pathParamSpec.length()-1) == '/')
+        {
+            regex.append('/');
         }
 
         regex.append('$');
@@ -206,6 +223,96 @@ public class WebSocketPathSpec extends RegexPathSpec
         {
             this.group = PathSpecGroup.MIDDLE_GLOB;
         }
+    }
+
+    /**
+     * Validate variable literal name, per RFC6570, Section 2.1 Literals
+     * @param variable
+     * @param pathParamSpec
+     */
+    private void assertIsValidVariableLiteral(String variable)
+    {
+        int len = variable.length();
+        
+        int i = 0;
+        int codepoint;
+        boolean valid = (len > 0); // must not be zero length
+        
+        while (valid && i < len)
+        {
+            codepoint = variable.codePointAt(i);
+            i += Character.charCount(codepoint);
+
+            // basic letters, digits, or symbols
+            if (isValidBasicLiteralCodepoint(codepoint))
+            {
+                continue;
+            }
+
+            // The ucschar and iprivate pieces
+            if (Character.isSupplementaryCodePoint(codepoint))
+            {
+                continue;
+            }
+
+            // pct-encoded
+            if (codepoint == '%')
+            {
+                if (i + 2 > len)
+                {
+                    // invalid percent encoding, missing extra 2 chars
+                    valid = false;
+                    continue;
+                }
+                codepoint = TypeUtil.convertHexDigit(variable.codePointAt(i++)) << 4;
+                codepoint |= TypeUtil.convertHexDigit(variable.codePointAt(i++));
+
+                // validate basic literal
+                if (isValidBasicLiteralCodepoint(codepoint))
+                {
+                    continue;
+                }
+            }
+            
+            valid = false;
+        }
+
+        if (!valid)
+        {
+            // invalid variable name
+            StringBuilder err = new StringBuilder();
+            err.append("Syntax Error: variable {");
+            err.append(variable);
+            err.append("} an invalid variable name: ");
+            err.append(pathSpec);
+            throw new IllegalArgumentException(err.toString());
+        }
+    }
+    
+    private boolean isValidBasicLiteralCodepoint(int codepoint)
+    {
+        // basic letters or digits
+        if((codepoint >= 'a' && codepoint <= 'z') ||
+           (codepoint >= 'A' && codepoint <= 'Z') ||
+           (codepoint >= '0' && codepoint <= '9'))
+        {
+            return true;
+        }
+        
+        // basic allowed symbols
+        if(VARIABLE_SYMBOLS.indexOf(codepoint) >= 0)
+        {
+            return true; // valid simple value
+        }
+        
+        // basic reserved symbols
+        if(VARIABLE_RESERVED.indexOf(codepoint) >= 0)
+        {
+            LOG.warn("Detected URI Template reserved symbol [{}] in path spec \"{}\"",(char)codepoint,pathSpec);
+            return false; // valid simple value
+        }
+
+        return false;
     }
 
     public Map<String, String> getPathParams(String path)

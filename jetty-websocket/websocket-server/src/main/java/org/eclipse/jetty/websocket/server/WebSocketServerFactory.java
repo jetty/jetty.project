@@ -328,7 +328,6 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         if (connection == null)
         {
             // no "Connection: upgrade" header present.
-            LOG.debug("No 'Connection' header found");
             return false;
         }
 
@@ -347,7 +346,6 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
 
         if (!foundUpgradeToken)
         {
-            LOG.debug("No a `Upgrade` token found in 'Connection' header (was [Connection: {}])",request.getHeader("connection"));
             return false;
         }
 

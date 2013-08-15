@@ -20,6 +20,8 @@ package org.eclipse.jetty.websocket.jsr356.server;
 
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
 import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -32,6 +34,8 @@ import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
  */
 public class WebSocketConfiguration extends AbstractConfiguration
 {
+    private static final Logger LOG = Log.getLogger(WebSocketConfiguration.class);
+    
     public static ServerContainer configureContext(ServletContextHandler context)
     {
         WebSocketUpgradeFilter filter = WebSocketUpgradeFilter.configureContext(context);
@@ -52,12 +56,14 @@ public class WebSocketConfiguration extends AbstractConfiguration
     @Override
     public void configure(WebAppContext context) throws Exception
     {
+        LOG.debug("Configure javax.websocket for WebApp {}",context);
         WebSocketConfiguration.configureContext(context);
     }
 
     @Override
     public void preConfigure(WebAppContext context) throws Exception
     {
+        boolean scanningAdded = false;
         // Add the annotation scanning handlers (if annotation scanning enabled)
         for (Configuration config : context.getConfigurations())
         {
@@ -65,7 +71,9 @@ public class WebSocketConfiguration extends AbstractConfiguration
             {
                 AnnotationConfiguration annocfg = (AnnotationConfiguration)config;
                 annocfg.addDiscoverableAnnotationHandler(new ServerEndpointAnnotationHandler(context));
+                scanningAdded = true;
             }
         }
+        LOG.debug("@ServerEndpoint scanning added: {}", scanningAdded);
     }
 }

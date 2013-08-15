@@ -51,7 +51,7 @@ public class DiscoveredEndpoints
         public String toString()
         {
             StringBuilder builder = new StringBuilder();
-            builder.append("LocatedClas[");
+            builder.append("LocatedClass[");
             builder.append(clazz.getName());
             builder.append("]");
             return builder.toString();

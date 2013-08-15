@@ -53,7 +53,7 @@ import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter, MappedWebSocketCreator, Dumpable
 {
     private static final Logger LOG = Log.getLogger(WebSocketUpgradeFilter.class);
-    
+
     public static WebSocketUpgradeFilter configureContext(ServletContextHandler context)
     {
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
@@ -71,7 +71,7 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
 
         return filter;
     }
-    
+
     private final WebSocketServerFactory factory;
     private final PathMappings<WebSocketCreator> pathmap = new PathMappings<>();
 
@@ -111,14 +111,19 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
             HttpServletRequest httpreq = (HttpServletRequest)request;
             HttpServletResponse httpresp = (HttpServletResponse)response;
             String target = httpreq.getServletPath();
-            LOG.debug("target = [{}]",target);
 
             if (factory.isUpgradeRequest(httpreq,httpresp))
             {
+                LOG.debug("target = [{}]",target);
+
                 MappedResource<WebSocketCreator> resource = pathmap.getMatch(target);
                 if (resource == null)
                 {
-                    LOG.debug("WebSocket Upgrade on {} has no associated endpoint",target);
+                    if (LOG.isDebugEnabled())
+                    {
+                        LOG.debug("WebSocket Upgrade on {} has no associated endpoint",target);
+                        LOG.debug("PathMappings: {}",pathmap.dump());
+                    }
                     // no match.
                     chain.doFilter(request,response);
                     return;
