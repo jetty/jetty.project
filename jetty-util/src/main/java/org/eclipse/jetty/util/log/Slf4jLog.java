@@ -88,6 +88,12 @@ public class Slf4jLog extends AbstractLogger
     {
         _logger.debug(msg, args);
     }
+    
+    public void debug(String msg, long arg)
+    {
+        if (isDebugEnabled())
+            _logger.debug(msg, new Object[]{new Long(arg)});
+    }
 
     public void debug(Throwable thrown)
     {

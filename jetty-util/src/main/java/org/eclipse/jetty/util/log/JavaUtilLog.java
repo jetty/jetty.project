@@ -111,6 +111,12 @@ public class JavaUtilLog extends AbstractLogger
             _logger.log(Level.FINE,format(msg, args));
     }
 
+    public void debug(String msg, long arg)
+    {
+        if (_logger.isLoggable(Level.FINE))
+            _logger.log(Level.FINE,format(msg, arg));
+    }
+
     public void debug(Throwable thrown)
     {
         debug("", thrown);

@@ -75,4 +75,10 @@ public abstract class AbstractLogger implements Logger
         }
         return true;
     }
+    
+    public void debug(String msg, long arg)
+    {
+        if (isDebugEnabled())
+            debug(msg,new Long(arg));
+    }
 }

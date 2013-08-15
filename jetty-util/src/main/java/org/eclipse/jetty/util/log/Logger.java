@@ -85,6 +85,15 @@ public interface Logger
      * @param args the optional arguments
      */
     public void debug(String msg, Object... args);
+    
+
+    /**
+     * Formats and logs at debug level.
+     * avoids autoboxing of integers
+     * @param msg the formatting string
+     * @param args the optional arguments
+     */
+    public void debug(String msg, long value);
 
     /**
      * Logs the given Throwable information at debug level

@@ -519,6 +519,16 @@ public class StdErrLog extends AbstractLogger
         }
     }
 
+    public void debug(String msg, long arg)
+    {
+        if (isDebugEnabled())
+        {
+            StringBuilder buffer = new StringBuilder(64);
+            format(buffer,":DBUG:",msg,arg);
+            (_stderr==null?System.err:_stderr).println(buffer);
+        }
+    }
+    
     public void debug(Throwable thrown)
     {
         debug("",thrown);
