@@ -49,7 +49,16 @@ Command Line Options:
   --download=<http-uri>:location
                    If the file does not exist at the given location, then
                    download it from the given http URI
-
+                   
+  --enable=name    Enable a module in start.d by renaming NNN-name.ini.disabled
+                   to NNN-name.ini.  NNN is a prefix to control start 
+                   order.
+                   
+  --disable=name   Disable a module in start.d by renaming NNN-name.ini 
+                   to NNN-name.ini.disabled.  NNN is a prefix to control start 
+                   order.
+                   
+                   
 System Properties:
   These are set with a command line like "java -Dname=value ..." and are
   accessible via the java.lang.System#getProperty(String) API.

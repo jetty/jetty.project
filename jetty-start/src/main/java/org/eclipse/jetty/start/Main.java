@@ -50,6 +50,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /*-------------------------------------------*/
 /**
@@ -77,12 +78,16 @@ public class Main
     private boolean _dumpVersions = false;
     private boolean _listConfig = false;
     private boolean _listOptions = false;
+    private boolean _noRun=false;
     private boolean _dryRun = false;
     private boolean _exec = false;
     private final Config _config = new Config();
     private final Set<String> _sysProps = new HashSet<>();
     private final List<String> _jvmArgs = new ArrayList<>();
+    private final List<String> _enable = new ArrayList<>();
+    private final List<String> _disable = new ArrayList<>();
     private final List<File> _iniFiles = new ArrayList<>();
+    private final List<File> _iniDirs = new ArrayList<>();
     private String _startConfig = null;
 
     public static void main(String[] args)
@@ -135,6 +140,7 @@ public class Main
             if ("--help".equals(arg) || "-?".equals(arg))
             {
                 _showUsage = true;
+                _noRun=true;
                 continue;
             }
 
@@ -144,7 +150,7 @@ public class Main
                 String key = _config.getProperty("STOP.KEY",null);
                 int timeout = Integer.parseInt(_config.getProperty("STOP.WAIT","0"));
                 stop(port,key,timeout);
-                return null;
+                _noRun=true;
             }
             
             if (arg.startsWith("--download="))
@@ -156,24 +162,28 @@ public class Main
             if ("--version".equals(arg) || "-v".equals(arg) || "--info".equals(arg))
             {
                 _dumpVersions = true;
+                _noRun=true;
                 continue;
             }
 
             if ("--list-modes".equals(arg) || "--list-options".equals(arg))
             {
                 _listOptions = true;
+                _noRun=true;
                 continue;
             }
 
             if ("--list-config".equals(arg))
             {
                 _listConfig = true;
+                _noRun=true;
                 continue;
             }
 
             if ("--exec-print".equals(arg) || "--dry-run".equals(arg))
             {
                 _dryRun = true;
+                _noRun=true;
                 continue;
             }
 
@@ -184,6 +194,20 @@ public class Main
             }
 
 
+            if (arg.startsWith("--enable=") || arg.equals("--enable"))
+            {
+                String module=arg.length()>8?arg.substring(9):arguments.get(++i);
+                _noRun=true;
+                _enable.add(module);
+            }
+
+            if (arg.startsWith("--disable=") || arg.equals("--disable"))
+            {
+                String module=arg.length()>9?arg.substring(10):arguments.get(++i);
+                _noRun=true;
+                _disable.add(module);
+            }
+            
             if (arg.startsWith("--ini=") || arg.equals("--ini"))
             {
                 ini = true;
@@ -286,8 +310,8 @@ public class Main
                                 opt=opt.trim();
                                 if (!_config.getOptions().contains(opt))                                
                                 {
-                                    System.err.printf("Missing Dependency: %s DEPEND %s%n",path(source),opt );
-                                    usageExit(ERR_LOGGING);
+                                    System.err.printf("ERROR: Missing Dependency: %s DEPEND %s%n",path(source),opt );
+                                    _noRun=true;
                                 }
                             }
                         }
@@ -299,8 +323,8 @@ public class Main
                                 opt=opt.trim();
                                 if (_config.getOptions().contains(opt))                                
                                 {
-                                    System.err.printf("Excluded Dependency: %s EXCLUDE %s%n",path(source),opt );
-                                    usageExit(ERR_LOGGING);
+                                    System.err.printf("ERROR: Excluded Dependency: %s EXCLUDE %s%n",path(source),opt );
+                                    _noRun=true;
                                 }
                             }
                         }
@@ -476,17 +500,20 @@ public class Main
                         for (File file : _iniFiles)
                         {
                             String path=path(file);
-                            System.out.printf("%s%s:%n",indent,path);
+                            System.out.printf("%s%s%n",indent,path);
 
-                            try (FileReader reader=new FileReader(file); BufferedReader in = new BufferedReader(reader);)
+                            if (Config.isDebug())
                             {
-                                String arg;
-                                while ((arg = in.readLine()) != null)
+                                try (FileReader reader=new FileReader(file); BufferedReader in = new BufferedReader(reader);)
                                 {
-                                    arg = arg.trim();
-                                    if (arg.length() == 0 || arg.startsWith("#"))
-                                        continue;
-                                    System.out.printf("%s  %s%n",indent,arg);
+                                    String arg;
+                                    while ((arg = in.readLine()) != null)
+                                    {
+                                        arg = arg.trim();
+                                        if (arg.length() == 0 || arg.startsWith("#"))
+                                            continue;
+                                        System.out.printf("%s +-- %s%n",indent,arg);
+                                    }
                                 }
                             }
                         }
@@ -625,40 +652,36 @@ public class Main
             System.err.println("properties=" + _config.getProperties());
         }
 
+        for (String m : _enable)
+            enable(m);
+        for (String m : _disable)
+            disable(m);
+        
         // Show the usage information and return
         if (_showUsage)
-        {
             usage();
-            return;
-        }
 
         // Show the version information and return
         if (_dumpVersions)
-        {
             showClasspathWithVersions(classpath);
-            return;
-        }
 
         // Show all options with version information
         if (_listOptions)
-        {
             showAllOptionsWithVersions();
-            return;
-        }
 
         if (_listConfig)
-        {
             listConfig();
-            return;
-        }
 
         // Show Command Line to execute Jetty
         if (_dryRun)
         {
             CommandLineBuilder cmd = buildCommandLine(classpath,configuredXmls);
             System.out.println(cmd.toString());
-            return;
         }
+        
+        
+        if (_noRun)
+            return;
 
         // execute Jetty in another JVM
         if (_exec)
@@ -1230,6 +1253,7 @@ public class Main
                         File start_d = _config.getFileBaseHomeAbs(arg);
                         if (start_d!=null && start_d.isDirectory())
                         {
+                            _iniDirs.add(start_d);
                             File[] inis = start_d.listFiles(new FilenameFilter()
                             {
                                 @Override
@@ -1272,5 +1296,93 @@ public class Main
     void addJvmArgs(List<String> jvmArgs)
     {
         _jvmArgs.addAll(jvmArgs);
+    }
+    
+    private void enable(final String module)
+    {
+        final String mini=module+".ini";
+        final String disable=module+".ini.disabled";
+        final AtomicBoolean found=new AtomicBoolean(false);
+        FileFilter filter =new FileFilter()
+        {
+            public boolean accept(File path)
+            {
+                if (!path.isFile())
+                    return false;
+                String n=path.getName();
+                int i=n.indexOf(mini);
+                if (i<0)
+                    return false;
+                if (i>0 && i!=4 && n.charAt(i-1)!='-')
+                    return false;
+                    
+                found.set(true);
+                if (n.endsWith(mini))
+                {
+                    System.err.printf("Module %s already enabled in %s as %s%n",module,path(path.getParent()),n);
+                }
+                else if (n.endsWith(disable))
+                {
+                    String enabled=n.substring(0,n.length()-9);
+                    System.err.printf("Enable %s in %s as %s%n",module,path(path.getParent()),enabled);
+                    path.renameTo(new File(path.getParentFile(),enabled));
+                }
+                else 
+                    System.err.printf("Bad module %s in %s as %s%n",module,path(path.getParent()),n);
+                    
+                return false;
+            }
+        };
+        
+        for (File dir : _iniDirs)
+            dir.listFiles(filter);
+        
+        if (!found.get())
+            for (File dir : _iniDirs)
+                System.err.printf("Module %s not found in %s%n",module,path(dir));
+    }
+    
+    private void disable(final String module)
+    {
+        final String mini=module+".ini";
+        final String disable=module+".ini.disabled";
+        final AtomicBoolean found=new AtomicBoolean(false);
+        FileFilter filter =new FileFilter()
+        {
+            public boolean accept(File path)
+            {
+                if (!path.isFile())
+                    return false;
+                String n=path.getName();
+                int i=n.indexOf(mini);
+                if (i<0)
+                    return false;
+                if (i>0 && i!=4 && n.charAt(i-1)!='-')
+                    return false;
+
+                found.set(true);
+                if (n.endsWith(disable))
+                {
+                    System.err.printf("Module %s already disabled in %s as %s%n",module,path(path.getParent()),n);
+                }
+                else if (n.endsWith(mini))
+                {
+                    String disabled=n+".disabled";
+                    System.err.printf("Disable %s in %s as %s%n",module,path(path.getParent()),disabled);
+                    path.renameTo(new File(path.getParentFile(),disabled));
+                }
+                else 
+                    System.err.printf("Bad module %s in %s as %s%n",module,path(path.getParent()),n);
+                    
+                return false;
+            }
+        };
+        
+        for (File dir : _iniDirs)
+            dir.listFiles(filter);
+        
+        if (!found.get())
+            for (File dir : _iniDirs)
+                System.err.printf("Module %s not found in %s%n",module,path(dir));
     }
 }
