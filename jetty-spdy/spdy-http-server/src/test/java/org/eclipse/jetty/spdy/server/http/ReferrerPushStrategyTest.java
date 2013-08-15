@@ -122,6 +122,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
         final CountDownLatch pushDataLatch = new CountDownLatch(1);
         final CountDownLatch pushSynHeadersValid = new CountDownLatch(1);
         Session session = startClient(version, serverAddress, null);
+        ((StdErrLog)LOG.getLogger("org.eclipse.jetty.spdy.StandardSession")).setHideStacks(true);
         // Send main request. That should initiate the push push's which get reset by the client
         sendRequest(session, mainRequestHeaders, pushSynHeadersValid, pushDataLatch, true);
 
@@ -129,6 +130,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
         assertThat("Push push headers valid", pushSynHeadersValid.await(5, TimeUnit.SECONDS), is(true));
 
         sendRequest(session, associatedCSSRequestHeaders, pushSynHeadersValid, pushDataLatch, true);
+        ((StdErrLog)LOG.getLogger("org.eclipse.jetty.spdy.StandardSession")).setHideStacks(false);
     }
 
     @Test
