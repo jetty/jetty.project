@@ -46,6 +46,15 @@ import org.eclipse.jetty.util.log.Logger;
  * <p>
  * If adding a bean that is shared between multiple {@link ContainerLifeCycle} instances, then it should be started before being added, so it is unmanaged, or
  * the API must be used to explicitly set it as unmanaged.
+ * <p>
+ * This class also provides utility methods to dump deep structures of objects.  It the dump, the following symbols are used to indicate the type of contained object:
+ * <pre>
+ * SomeContainerLifeCycleInstance
+ *   +- contained POJO instance
+ *   += contained MANAGED object, started and stopped with this instance
+ *   +~ referenced UNMANAGED object, with separate lifecycle
+ *   +? referenced AUTO object that could become MANAGED or UNMANAGED.
+ * </pre>
  */
 @ManagedObject("Implementation of Container and LifeCycle")
 public class ContainerLifeCycle extends AbstractLifeCycle implements Container, Destroyable, Dumpable
