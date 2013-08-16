@@ -57,7 +57,7 @@ public class JettyTrackingSocket extends WebSocketAdapter
     public void assertCloseCode(int expectedCode) throws InterruptedException
     {
         Assert.assertThat("Was Closed",closeLatch.await(50,TimeUnit.MILLISECONDS),is(true));
-        Assert.assertThat("Close Code",closeCode,is(expectedCode));
+        Assert.assertThat("Close Code / Received [" + closeMessage + "]",closeCode,is(expectedCode));
     }
 
     private void assertCloseReason(String expectedReason)

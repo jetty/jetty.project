@@ -70,6 +70,22 @@ public class WriteBytesProvider implements Callback
             }
         }
 
+        public void notifySucceeded()
+        {
+            if (callback == null)
+            {
+                return;
+            }
+            try
+            {
+                callback.succeeded();
+            }
+            catch (Throwable t)
+            {
+                LOG.debug(t);
+            }
+        }
+
         /**
          * Indicate that the frame entry is done generating
          */
@@ -178,42 +194,39 @@ public class WriteBytesProvider implements Callback
 
     public void failAll(Throwable t)
     {
-        synchronized (this)
+        boolean notified = false;
+
+        // fail active (if set)
+        if (active != null)
         {
-            boolean notified = false;
+            FrameEntry entry = active;
+            active = null;
+            entry.notifyFailure(t);
+            notified = true;
+        }
 
-            // fail active (if set)
-            if (active != null)
-            {
-                active.notifyFailure(t);
-                notified = true;
-            }
+        failure = t;
 
-            failure = t;
+        // fail past
+        while(!past.isEmpty())
+        {
+            FrameEntry entry = past.pop();
+            entry.notifyFailure(t);
+            notified = true;
+        }
 
-            // fail past
-            for (FrameEntry fe : past)
-            {
-                fe.notifyFailure(t);
-                notified = true;
-            }
+        // fail others
+        while(!queue.isEmpty())
+        {
+            FrameEntry entry = queue.pop();
+            entry.notifyFailure(t);
+            notified = true;
+        }
 
-            past.clear();
-
-            // fail others
-            for (FrameEntry fe : queue)
-            {
-                fe.notifyFailure(t);
-                notified = true;
-            }
-
-            queue.clear();
-
-            if (notified)
-            {
-                // notify flush callback
-                flushCallback.failed(t);
-            }
+        if (notified)
+        {
+            // notify flush callback
+            flushCallback.failed(t);
         }
     }
 
@@ -243,7 +256,7 @@ public class WriteBytesProvider implements Callback
      */
     public List<ByteBuffer> getByteBuffers()
     {
-        List<ByteBuffer> bufs = new ArrayList<>();
+        List<ByteBuffer> bufs = null;
         int count = 0;
         synchronized (this)
         {
@@ -261,11 +274,19 @@ public class WriteBytesProvider implements Callback
                     active = queue.pop();
 
                     // generate header
+                    if (bufs == null)
+                    {
+                        bufs = new ArrayList<>();
+                    }
                     bufs.add(active.getHeaderBytes());
                     count++;
                 }
 
                 // collect payload window
+                if (bufs == null)
+                {
+                    bufs = new ArrayList<>();
+                }
                 bufs.add(active.getPayloadWindow());
                 if (active.isDone())
                 {
@@ -327,44 +348,25 @@ public class WriteBytesProvider implements Callback
     @Override
     public void succeeded()
     {
-        List<Callback> successNotifiers = new ArrayList<>();
+        // Release the active byte buffer first
+        generator.getBufferPool().release(buffer);
 
-        synchronized (this)
+        if ((active != null) && (active.frame.remaining() <= 0))
         {
-            // Release the active byte buffer first
-            generator.getBufferPool().release(buffer);
+            // All done with active FrameEntry
+            FrameEntry entry = active;
+            active = null;
+            entry.notifySucceeded();
+        }
 
-            if ((active != null) && (active.frame.remaining() <= 0))
-            {
-                // All done with active FrameEntry
-                successNotifiers.add(active.callback);
-                // Forget active
-                active = null;
-            }
-
-            for (FrameEntry entry : past)
-            {
-                successNotifiers.add(entry.callback);
-            }
-            past.clear();
+        while (!past.isEmpty())
+        {
+            FrameEntry entry = past.pop();
+            entry.notifySucceeded();
         }
 
         // notify flush callback
         flushCallback.succeeded();
-
-        // Notify success (outside of synchronize lock)
-        for (Callback successCallback : successNotifiers)
-        {
-            try
-            {
-                // notify of success
-                successCallback.succeeded();
-            }
-            catch (Throwable t)
-            {
-                LOG.warn("Callback failure",t);
-            }
-        }
     }
 
     @Override

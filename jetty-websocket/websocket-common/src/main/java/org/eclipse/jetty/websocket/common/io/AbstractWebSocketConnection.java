@@ -349,6 +349,11 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
 
             buffers = writeBytes.getByteBuffers();
 
+            if ((buffers == null) || (buffers.size() <= 0))
+            {
+                return;
+            }
+
             flushing = true;
         }
 
@@ -668,12 +673,6 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     private <C> void write(List<ByteBuffer> buffer)
     {
         EndPoint endpoint = getEndPoint();
-
-        if (!isOpen())
-        {
-            writeBytes.failAll(new IOException("Connection closed"));
-            return;
-        }
 
         try
         {
