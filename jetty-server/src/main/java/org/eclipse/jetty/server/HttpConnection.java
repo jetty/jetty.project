@@ -228,9 +228,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         }
         catch (Exception e)
         {
-            if (!_connector.isRunning())
-                LOG.ignore(e);
-            else if (_parser.isIdle())
+            if (_parser.isIdle())
                 LOG.debug(e);
             else
                 LOG.warn(this.toString(), e);
