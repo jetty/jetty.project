@@ -60,7 +60,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 {
     protected static final Logger LOG = Log.getLogger(SelectorManager.class);
     protected static final int SELECT_PERIOD=Integer.valueOf(System.getProperty("org.eclipse.jetty.io.SELECT_PERIOD","1000"));
-
+    protected static final int WAKEUP_SPIN_PERIOD=Integer.valueOf(System.getProperty("org.eclipse.jetty.io.WAKEUP_SPIN_PERIOD","1"));
     /**
      * The default connect timeout, in milliseconds
      */
@@ -324,9 +324,10 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dumpable
     {
         private final Queue<Runnable> _changes = new ConcurrentArrayQueue<>();
-        private final AtomicReference<SelectorState> _state = new AtomicReference<>(null);
+        private final AtomicReference<SelectorState> _state = new AtomicReference<>(SelectorState.PROCESSING);
         private final int _id;
         private Selector _selector;
+        private volatile int _sequence;
         private Thread _thread;
         
 
@@ -367,7 +368,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             {
                 // If we are already iterating over the changes, just add this change to the list.
                 // No race here because it is this thread that is iterating over the changes.
-                if (_state.compareAndSet(SelectorState.CHANGING,SelectorState.MORE_CHANGES))
+                if (_state.get()==SelectorState.CHANGING)
                     _changes.offer(change);
                 else
                 {
@@ -399,7 +400,29 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                             // If we are SELECTING, goto WAKING state so only one caller will spin on wakeup.
                             if (!_state.compareAndSet(SelectorState.SELECTING,SelectorState.WAKING))
                                 continue;
-                            wakeup();
+                            
+                            // Spin doing wakeups until we see the select has moved to the next sequence.  
+                            // This spin handles the race of doing a wakeup just before a select call.
+                            final long sequence=_sequence;
+                            try
+                            {
+                                do
+                                {
+                                    wakeup();
+                                    
+                                    // We don't want to spin too fast as wakeup is not cheap, but sleeping might sleep for a long
+                                    // time, so this might need to be profiled and tuned?
+                                    if (WAKEUP_SPIN_PERIOD==0)
+                                        Thread.yield();
+                                    else
+                                        Thread.sleep(WAKEUP_SPIN_PERIOD); 
+                                }
+                                while(sequence==_sequence);
+                            }
+                            catch(InterruptedException e)
+                            {
+                                LOG.ignore(e);
+                            }
                             break loop;
                             
                         default:
@@ -427,7 +450,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         public void run()
         {
             _thread = Thread.currentThread();
-            _state.set(SelectorState.PROCESSING);
+            _sequence++; // volatile increment for memory barrier
             String name = _thread.getName();
             try
             {
@@ -442,7 +465,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 LOG.debug("Stopped {} on {}", _thread, this);
                 _thread.setName(name);
                 _thread=null;
-                _state.set(null);
+                _sequence++; // volatile increment for memory barrier
             }
         }
 
@@ -488,6 +511,9 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 if (debug)
                     LOG.debug("Selector loop waiting on select");
                 int selected = _selector.select(SELECT_PERIOD);
+                
+                // increment the sequence number to end any spinning wakeups
+                _sequence++;
 
                 // we are now definitely switching to PROCESSING state
                 _state.set(SelectorState.PROCESSING);
@@ -680,11 +706,10 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         public String toString()
         {
             Selector selector = _selector;
-            return String.format("%s state=%s keys=%d/%d",
+            return String.format("%s keys=%d selected=%d",
                     super.toString(),
-                    _state.get(),
-                    selector != null && selector.isOpen() ? selector.selectedKeys().size() : -1,
-                    selector != null && selector.isOpen() ? selector.keys().size() : -1);
+                    selector != null && selector.isOpen() ? selector.keys().size() : -1,
+                    selector != null && selector.isOpen() ? selector.selectedKeys().size() : -1);
         }
 
         private class DumpKeys implements Runnable
