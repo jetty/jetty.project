@@ -366,11 +366,12 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             if (_thread==Thread.currentThread())
             {
                 // If we are already iterating over the changes, just add this change to the list.
-                if (_state.get()==SelectorState.CHANGING)
+                // No race here because it is this thread that is iterating over the changes.
+                if (_state.compareAndSet(SelectorState.CHANGING,SelectorState.MORE_CHANGES))
                     _changes.offer(change);
                 else
                 {
-                    // Otherwise we run the queued changes, list should mostly be empty
+                    // Otherwise we run the queued changes
                     runChanges();
                     // and then directly run the passed change
                     runChange(change);
