@@ -45,8 +45,6 @@ import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.TreeSet;
 
-import org.omg.CORBA._PolicyStub;
-
 /**
  * <p>
  * It allows an application to be started with the command <code>"java -jar start.jar"</code>.
@@ -332,6 +330,14 @@ public class Config
         if (DEBUG)
         {
             System.err.println(msg);
+        }
+    }
+    
+    public static void debug(String format, Object ... args)
+    {
+        if (DEBUG)
+        {
+            System.err.printf(format+"%n",args);
         }
     }
 
