@@ -26,7 +26,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -51,17 +50,17 @@ import java.util.Locale;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
 
 /*-------------------------------------------*/
 /**
  * <p>
- * Main start class. This class is intended to be the main class listed in the MANIFEST.MF of the start.jar archive. It
- * allows an application to be started with the command "java -jar start.jar".
+ * Main start class. This class is intended to be the main class listed in the MANIFEST.MF of the start.jar archive. It allows an application to be started with
+ * the command "java -jar start.jar".
  * </p>
  * 
  * <p>
- * The behaviour of Main is controlled by the parsing of the {@link Config} "org/eclipse/start/start.config" file
- * obtained as a resource or file.
+ * The behaviour of Main is controlled by the parsing of the {@link Config} "org/eclipse/start/start.config" file obtained as a resource or file.
  * </p>
  */
 public class Main
@@ -78,10 +77,10 @@ public class Main
     private boolean _dumpVersions = false;
     private boolean _listConfig = false;
     private boolean _listOptions = false;
-    private boolean _noRun=false;
+    private boolean _noRun = false;
     private boolean _dryRun = false;
     private boolean _exec = false;
-    private final Config _config = new Config();
+    private final Config _config;
     private final Set<String> _sysProps = new HashSet<>();
     private final List<String> _jvmArgs = new ArrayList<>();
     private final List<String> _enable = new ArrayList<>();
@@ -107,40 +106,39 @@ public class Main
 
     Main() throws IOException
     {
-        String jetty_home=new File(System.getProperty("jetty.home",".")).getCanonicalPath();
-        _config.setProperty("jetty.home",jetty_home);
+        _config = new Config();
     }
 
     Config getConfig()
     {
         return _config;
     }
-    
+
     public List<String> processCommandLine(String[] args) throws Exception
     {
-        String source="";
-        
+        String source = "";
+
         // Handle default ini args
         ArrayList<String> arguments = new ArrayList<>(Arrays.asList(args));
-        boolean ini=false;
-        for(String arg : arguments)
+        boolean ini = false;
+        for (String arg : arguments)
             if (arg.startsWith("--ini=") || arg.equals("--ini"))
                 ini = true;
         if (!ini)
             arguments.add(0,"--ini=start.ini");
-        
+
         // The XML Configuration Files to initialize with
         List<String> xmls = new ArrayList<String>();
 
         // Process the arguments in for loop so list of args can be extended.
-        for (int i=0;i<arguments.size();i++)
+        for (int i = 0; i < arguments.size(); i++)
         {
-            String arg=arguments.get(i);
-            
+            String arg = arguments.get(i);
+
             if ("--help".equals(arg) || "-?".equals(arg))
             {
                 _showUsage = true;
-                _noRun=true;
+                _noRun = true;
                 continue;
             }
 
@@ -150,9 +148,9 @@ public class Main
                 String key = _config.getProperty("STOP.KEY",null);
                 int timeout = Integer.parseInt(_config.getProperty("STOP.WAIT","0"));
                 stop(port,key,timeout);
-                _noRun=true;
+                _noRun = true;
             }
-            
+
             if (arg.startsWith("--download="))
             {
                 download(arg);
@@ -162,28 +160,28 @@ public class Main
             if ("--version".equals(arg) || "-v".equals(arg) || "--info".equals(arg))
             {
                 _dumpVersions = true;
-                _noRun=true;
+                _noRun = true;
                 continue;
             }
 
             if ("--list-modes".equals(arg) || "--list-options".equals(arg))
             {
                 _listOptions = true;
-                _noRun=true;
+                _noRun = true;
                 continue;
             }
 
             if ("--list-config".equals(arg))
             {
                 _listConfig = true;
-                _noRun=true;
+                _noRun = true;
                 continue;
             }
 
             if ("--exec-print".equals(arg) || "--dry-run".equals(arg))
             {
                 _dryRun = true;
-                _noRun=true;
+                _noRun = true;
                 continue;
             }
 
@@ -193,42 +191,54 @@ public class Main
                 continue;
             }
 
-
             if (arg.startsWith("--enable=") || arg.equals("--enable"))
             {
-                String module=arg.length()>8?arg.substring(9):arguments.get(++i);
-                _noRun=true;
+                String module = arg.length() > 8?arg.substring(9):arguments.get(++i);
+                _noRun = true;
                 _enable.add(module);
             }
 
             if (arg.startsWith("--disable=") || arg.equals("--disable"))
             {
-                String module=arg.length()>9?arg.substring(10):arguments.get(++i);
-                _noRun=true;
+                String module = arg.length() > 9?arg.substring(10):arguments.get(++i);
+                _noRun = true;
                 _disable.add(module);
             }
-            
+
             if (arg.startsWith("--ini=") || arg.equals("--ini"))
             {
                 ini = true;
                 if (arg.length() > 6)
                 {
-                    String name=arg.substring(6);
-                    File file=_config.getFileBaseHomeAbs(name);
-                    arguments.addAll(i+1,loadStartIni(file,name));
+                    String name = arg.substring(6);
+                    File file = _config.getHomeBase().getFile(name);
+                    StartIni startini = new StartIni(file);
+                    int idx;
+                    while ((idx = startini.lineIndexOf(0,Pattern.compile("^.*/$"))) >= 0)
+                    {
+                        String subPath = startini.getLines().get(idx);
+                        startini.getLines().remove(idx);
+                        // find the sub ini files (based on HomeBase)
+                        List<File> childInis = _config.getHomeBase().listFiles(subPath,new FS.IniFilter());
+                        for (File childIni : childInis)
+                        {
+                            StartIni cini = new StartIni(childIni);
+                            idx += startini.overlayAt(idx,cini);
+                        }
+                    }
+                    arguments.addAll(i + 1,startini.getLines());
                 }
-                
+
                 continue;
             }
-            
+
             // Alternative start.config file
             if (arg.startsWith("--config="))
             {
                 _startConfig = arg.substring(9);
                 continue;
             }
-            
-            
+
             // Special internal indicator that jetty was started by the jetty.sh Daemon
             // All this does is setup a start.log that captures startup console output
             // in the tiny window of time before the real logger kicks in.
@@ -299,7 +309,7 @@ public class Main
                     case 2:
                         if ("_SRC_".equals(assign[0]))
                         {
-                            source=assign[1].trim();
+                            source = assign[1].trim();
                         }
                         else if ("DEFINE".equals(assign[0]))
                         {
@@ -307,29 +317,29 @@ public class Main
                             for (String opt : opts)
                                 _config.defineOption(opt.trim());
                         }
-                        else  if ("DEPEND".equals(assign[0]))
+                        else if ("DEPEND".equals(assign[0]))
                         {
                             String opts[] = assign[1].split(",");
                             for (String opt : opts)
                             {
-                                opt=opt.trim();
-                                if (!_config.getOptions().contains(opt))                                
+                                opt = opt.trim();
+                                if (!_config.getOptions().contains(opt))
                                 {
-                                    System.err.printf("ERROR: Missing Dependency: %s DEPEND %s%n",path(source),opt );
-                                    _noRun=true;
+                                    System.err.printf("ERROR: Missing Dependency: %s DEPEND %s%n",path(source),opt);
+                                    _noRun = true;
                                 }
                             }
                         }
-                        else  if ("EXCLUDE".equals(assign[0]))
+                        else if ("EXCLUDE".equals(assign[0]))
                         {
                             String opts[] = assign[1].split(",");
                             for (String opt : opts)
                             {
-                                opt=opt.trim();
-                                if (_config.getOptions().contains(opt))                                
+                                opt = opt.trim();
+                                if (_config.getOptions().contains(opt))
                                 {
-                                    System.err.printf("ERROR: Excluded Dependency: %s EXCLUDE %s%n",path(source),opt );
-                                    _noRun=true;
+                                    System.err.printf("ERROR: Excluded Dependency: %s EXCLUDE %s%n",path(source),opt);
+                                    _noRun = true;
                                 }
                             }
                         }
@@ -348,7 +358,7 @@ public class Main
                             this._config.setProperty(assign[0],assign[1]);
                         }
                         break;
-                        
+
                     case 1:
                         this._config.setProperty(assign[0],null);
                         break;
@@ -376,42 +386,42 @@ public class Main
         try
         {
             String[] split = arg.split(":",3);
-            if (split.length!=3 || "http".equalsIgnoreCase(split[0]) || !split[1].startsWith("//"))
+            if (split.length != 3 || "http".equalsIgnoreCase(split[0]) || !split[1].startsWith("//"))
                 throw new IllegalArgumentException("Not --download=<http uri>:<location>");
-            
-            String location=split[2];
-            if (File.separatorChar!='/')
+
+            String location = split[2];
+            if (File.separatorChar != '/')
                 location.replaceAll("/",File.separator);
             File file = new File(location);
-            
+
             Config.debug("Download to %s %s",file.getAbsolutePath(),(file.exists()?"[Exists!]":""));
             if (file.exists())
                 return;
-            
-            URL url = new URL(split[0].substring(11)+":"+split[1]);
 
-            System.err.println("DOWNLOAD: "+url+" to "+location);
+            URL url = new URL(split[0].substring(11) + ":" + split[1]);
+
+            System.err.println("DOWNLOAD: " + url + " to " + location);
 
             if (!file.getParentFile().exists())
                 file.getParentFile().mkdirs();
 
-            byte[] buf=new byte[8192];
+            byte[] buf = new byte[8192];
             try (InputStream in = url.openStream(); OutputStream out = new FileOutputStream(file);)
             {
-                while(true)
+                while (true)
                 {
                     int len = in.read(buf);
 
-                    if (len>0)
+                    if (len > 0)
                         out.write(buf,0,len);
-                    if (len<0)
+                    if (len < 0)
                         break;
                 }
             }
         }
-        catch(Exception e)
+        catch (Exception e)
         {
-            System.err.println("ERROR: processing "+arg+"\n"+e);
+            System.err.println("ERROR: processing " + arg + "\n" + e);
             e.printStackTrace();
             usageExit(EXIT_USAGE);
         }
@@ -457,7 +467,7 @@ public class Main
                     }
                     else if (info.equals("@CONFIGS"))
                     {
-                        FileFilter filter =new FileFilter()
+                        FileFilter filter = new FileFilter()
                         {
                             public boolean accept(File path)
                             {
@@ -470,45 +480,25 @@ public class Main
                                 return (name.startsWith("jetty") && name.endsWith(".xml"));
                             }
                         };
-                        
-                        // list home etc
-                        File etc = new File(_config.getJettyHome(),"etc");
-                        if (!etc.exists() || !etc.isDirectory())
-                        {
-                            System.out.print(indent);
-                            System.out.println("Unable to find/list " + etc);
-                            continue;
-                        }
-                        List<File> configFiles = new ArrayList<File>();
-                        File[] configs = etc.listFiles(filter);
-                        configFiles.addAll(Arrays.asList(configs));
-                        
-                        // list base etc
-                        if (!_config.getJettyHome().equals(_config.getJettyBase()))
-                        {
-                            etc = new File(_config.getJettyBase(),"etc");
-                            if (etc.exists() && etc.isDirectory())
-                            {
-                                configs = etc.listFiles(filter);
-                                configFiles.addAll(Arrays.asList(configs));
-                            }
-                        }
-                        
-                        Collections.sort(configFiles);
+
+                        // list etc
+                        List<File> configFiles = _config.getHomeBase().listFiles("etc",filter);
 
                         for (File configFile : configFiles)
+                        {
                             System.out.printf("%s%s%n",indent,path(configFile));
+                        }
                     }
                     else if (info.equals("@STARTINI"))
                     {
                         for (File file : _iniFiles)
                         {
-                            String path=path(file);
+                            String path = path(file);
                             System.out.printf("%s%s%n",indent,path);
 
                             if (Config.isDebug())
                             {
-                                try (FileReader reader=new FileReader(file); BufferedReader in = new BufferedReader(reader);)
+                                try (FileReader reader = new FileReader(file); BufferedReader in = new BufferedReader(reader);)
                                 {
                                     String arg;
                                     while ((arg = in.readLine()) != null)
@@ -540,45 +530,16 @@ public class Main
         System.exit(EXIT_USAGE);
     }
 
-    /**
-     * Replace/Shorten arbitrary path with property strings "${jetty.home}" or "${jetty.base}" where appropriate.
-     * 
-     * @param path
-     *            the path to shorten
-     * @return the potentially shortened path
-     */
     private String path(String path)
     {
-        if (path == null)
-        {
-            return path;
-        }
-        if (path.startsWith(_config.getJettyHome()))
-        {
-            return "${jetty.home}" + path.substring(_config.getJettyHome().length());
-        }
-        if (_config.getJettyBase() != null && path.startsWith(_config.getJettyBase()))
-        {
-            return "${jetty.base}" + path.substring(_config.getJettyBase().length());
-        }
-        return path;
+        return _config.getHomeBase().toShortForm(path);
     }
-    
-    /**
-     * Convenience method for <code>path(file.getCanonicalPath())</code>
-     */
-    private String path(File file) 
+
+    private String path(File file)
     {
-        try
-        {
-            return path(file.getCanonicalPath());
-        }
-        catch (IOException e)
-        {
-        }
-        return path(file.getAbsolutePath());
+        return _config.getHomeBase().toShortForm(file);
     }
-    
+
     public void invokeMain(ClassLoader classloader, String classname, List<String> args) throws IllegalAccessException, InvocationTargetException,
             NoSuchMethodException, ClassNotFoundException
     {
@@ -622,24 +583,11 @@ public class Main
         main.invoke(null,method_params);
     }
 
-    /* ------------------------------------------------------------ */
     public static void close(Closeable c)
     {
-        if (c == null)
-        {
-            return;
-        }
-        try
-        {
-            c.close();
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace(System.err);
-        }
+        FS.close(c);
     }
 
-    /* ------------------------------------------------------------ */
     public void start(List<String> xmls) throws IOException, InterruptedException
     {
         // Load potential Config (start.config)
@@ -676,7 +624,7 @@ public class Main
             enable(m);
         for (String m : _disable)
             disable(m);
-        
+
         // Show the usage information and return
         if (_showUsage)
             usage();
@@ -698,7 +646,7 @@ public class Main
             CommandLineBuilder cmd = buildCommandLine(classpath,configuredXmls);
             System.out.println(cmd.toString());
         }
-        
+
         // Informational command line, don't run jetty
         if (_noRun)
             return;
@@ -793,26 +741,25 @@ public class Main
 
     private String resolveXmlConfig(String xmlFilename) throws FileNotFoundException
     {
-        if (!xmlFilename.toLowerCase(Locale.ENGLISH).endsWith(".xml"))
+        if (!FS.isXml(xmlFilename))
         {
             // Nothing to resolve.
             return xmlFilename;
         }
 
-        // Look for the file as absolute, jetty-base or jetty-home
-        File xml = _config.getFileBaseHomeAbs(xmlFilename);
-        if (xml!=null && xml.isFile())
+        // Try normal locations
+        File xml = _config.getHomeBase().getFile(xmlFilename);
+        if (FS.isFile(xml))
+        {
             return xml.getAbsolutePath();
-        
-        // Try corrected / for \
-        xml = _config.getFileBaseHomeAbs(fixPath(xmlFilename));
-        if (xml!=null && xml.isFile())
+        }
+
+        // Try again, but prefixed with "etc/"
+        xml = _config.getHomeBase().getFile("etc/" + xmlFilename);
+        if (FS.isFile(xml))
+        {
             return xml.getAbsolutePath();
-        
-        // Try in etc
-        xml = _config.getFileBaseHomeAbs("etc/"+xmlFilename);
-        if (xml!=null && xml.isFile())
-            return xml.getAbsolutePath();
+        }
 
         throw new FileNotFoundException("Unable to find XML Config: " + xmlFilename);
     }
@@ -825,9 +772,11 @@ public class Main
         {
             cmd.addArg(x);
         }
-        cmd.addRawArg("-Djetty.home=" + _config.getJettyHome());
-        if (_config.getJettyBase()!=null)
-            cmd.addRawArg("-Djetty.base=" + _config.getJettyBase());
+        cmd.addRawArg("-Djetty.home=" + _config.getHomeBase().getHome());
+        if (_config.getHomeBase().hasBase())
+        {
+            cmd.addRawArg("-Djetty.base=" + _config.getHomeBase().getBase());
+        }
 
         // Special Stop/Shutdown properties
         ensureSystemPropertySet("STOP.PORT");
@@ -857,14 +806,13 @@ public class Main
 
         for (String xml : xmls)
         {
-           cmd.addRawArg(xml);
+            cmd.addRawArg(xml);
         }
         return cmd;
     }
 
     /**
-     * Ensure that the System Properties are set (if defined as a System property, or start.config property, or
-     * start.ini property)
+     * Ensure that the System Properties are set (if defined as a System property, or start.config property, or start.ini property)
      * 
      * @param key
      *            the key to be sure of
@@ -950,8 +898,13 @@ public class Main
         System.out.println("Note: If using multiple options (eg: 'Server,servlet,webapp,jms,jmx') "
                 + "then overlapping entries will not be repeated in the eventual classpath.");
         System.out.println();
-        System.out.printf("${jetty.home} = %s%n",_config.getJettyHome());
-        System.out.printf("${jetty.base} = %s%n",_config.getJettyBase());
+        System.out.printf("${jetty.home} = %s%n",_config.getHomeBase().getHome());
+        String base = "<undefined>";
+        if (_config.getHomeBase().hasBase())
+        {
+            base = _config.getHomeBase().getBase();
+        }
+        System.out.printf("${jetty.base} = %s%n",base);
         System.out.println();
 
         for (String sectionId : sectionIds)
@@ -1014,11 +967,6 @@ public class Main
             System.out.printf("%2d: %20s | %s\n",i++,getVersion(element),path(element));
     }
 
-    private String fixPath(String path)
-    {
-        return path.replace('/',File.separatorChar);
-    }
-
     private String getVersion(File element)
     {
         if (element.isDirectory())
@@ -1079,8 +1027,8 @@ public class Main
     /**
      * Load Configuration.
      * 
-     * No specific configuration is real until a {@link Config#getCombinedClasspath(java.util.Collection)} is used to
-     * execute the {@link Class} specified by {@link Config#getMainClassname()} is executed.
+     * No specific configuration is real until a {@link Config#getCombinedClasspath(java.util.Collection)} is used to execute the {@link Class} specified by
+     * {@link Config#getMainClassname()} is executed.
      * 
      * @param xmls
      *            the command line specified xml configuration options.
@@ -1228,114 +1176,32 @@ public class Main
 
     static void usageExit(int exit)
     {
-        usageExit(null, exit);
-    }
-
-    /**
-     * Convert a start.ini format file into an argument list.
-     */
-    private List<String> loadStartIni(File ini,String name)
-    {
-        if (ini==null || !ini.exists() || ini.isDirectory() || !ini.canRead())
-        {
-            System.err.println("Warning - bad ini file: " + name);
-            // No start.ini found, skip load.
-            return Collections.emptyList();
-        }
-
-        ini=ini.getAbsoluteFile();
-        if (!_iniFiles.contains(ini))
-            _iniFiles.add(ini);
-        List<String> args = new ArrayList<String>();
-
-        args.add("_SRC_="+name);
-        
-        FileReader reader = null;
-        BufferedReader buf = null;
-        try
-        {
-            reader = new FileReader(ini);
-            buf = new BufferedReader(reader);
-
-            String arg;
-            while ((arg = buf.readLine()) != null)
-            {
-                arg = arg.trim();
-                if (arg.length() == 0 || arg.startsWith("#"))
-                {
-                    continue;
-                }
-                
-                if (arg.endsWith("/"))
-                {
-                    try
-                    {
-                        File start_d = _config.getFileBaseHomeAbs(arg);
-                        if (start_d!=null && start_d.isDirectory())
-                        {
-                            _iniDirs.add(start_d);
-                            File[] inis = start_d.listFiles(new FilenameFilter()
-                            {
-                                @Override
-                                public boolean accept(File dir, String name)
-                                {
-                                    return name.toLowerCase(Locale.ENGLISH).endsWith(".ini");
-                                }
-                            });
-                            Arrays.sort(inis);
-                            
-                            for (File i : inis)
-                                args.addAll(loadStartIni(i,i.getAbsolutePath()));
-
-                            args.add("_SRC_="+name);
-                            continue;
-                        }
-                    }
-                    catch(Exception e)
-                    {
-                        e.printStackTrace();
-                    }
-                }
-                
-                args.add(arg);
-            }
-        }
-        catch (IOException e)
-        {
-            usageExit(e,ERR_UNKNOWN);
-        }
-        finally
-        {
-            Main.close(buf);
-            Main.close(reader);
-        }
-
-        return args;
+        usageExit(null,exit);
     }
 
     void addJvmArgs(List<String> jvmArgs)
     {
         _jvmArgs.addAll(jvmArgs);
     }
-    
+
     private void enable(final String module)
     {
-        final String mini=module+".ini";
-        final String disable=module+".ini.disabled";
-        final AtomicBoolean found=new AtomicBoolean(false);
-        FileFilter filter =new FileFilter()
+        final String mini = module + ".ini";
+        final String disable = module + ".ini.disabled";
+        final AtomicBoolean found = new AtomicBoolean(false);
+        FileFilter filter = new FileFilter()
         {
             public boolean accept(File path)
             {
                 if (!path.isFile())
                     return false;
-                String n=path.getName();
-                int i=n.indexOf(mini);
-                if (i<0)
+                String n = path.getName();
+                int i = n.indexOf(mini);
+                if (i < 0)
                     return false;
-                if (i>0 && i!=4 && n.charAt(i-1)!='-')
+                if (i > 0 && i != 4 && n.charAt(i - 1) != '-')
                     return false;
-                    
+
                 found.set(true);
                 if (n.endsWith(mini))
                 {
@@ -1343,41 +1209,41 @@ public class Main
                 }
                 else if (n.endsWith(disable))
                 {
-                    String enabled=n.substring(0,n.length()-9);
+                    String enabled = n.substring(0,n.length() - 9);
                     System.err.printf("Enable %s in %s as %s%n",module,path(path.getParent()),enabled);
                     path.renameTo(new File(path.getParentFile(),enabled));
                 }
-                else 
+                else
                     System.err.printf("Bad module %s in %s as %s%n",module,path(path.getParent()),n);
-                    
+
                 return false;
             }
         };
-        
+
         for (File dir : _iniDirs)
             dir.listFiles(filter);
-        
+
         if (!found.get())
             for (File dir : _iniDirs)
                 System.err.printf("Module %s not found in %s%n",module,path(dir));
     }
-    
+
     private void disable(final String module)
     {
-        final String mini=module+".ini";
-        final String disable=module+".ini.disabled";
-        final AtomicBoolean found=new AtomicBoolean(false);
-        FileFilter filter =new FileFilter()
+        final String mini = module + ".ini";
+        final String disable = module + ".ini.disabled";
+        final AtomicBoolean found = new AtomicBoolean(false);
+        FileFilter filter = new FileFilter()
         {
             public boolean accept(File path)
             {
                 if (!path.isFile())
                     return false;
-                String n=path.getName();
-                int i=n.indexOf(mini);
-                if (i<0)
+                String n = path.getName();
+                int i = n.indexOf(mini);
+                if (i < 0)
                     return false;
-                if (i>0 && i!=4 && n.charAt(i-1)!='-')
+                if (i > 0 && i != 4 && n.charAt(i - 1) != '-')
                     return false;
 
                 found.set(true);
@@ -1387,20 +1253,20 @@ public class Main
                 }
                 else if (n.endsWith(mini))
                 {
-                    String disabled=n+".disabled";
+                    String disabled = n + ".disabled";
                     System.err.printf("Disable %s in %s as %s%n",module,path(path.getParent()),disabled);
                     path.renameTo(new File(path.getParentFile(),disabled));
                 }
-                else 
+                else
                     System.err.printf("Bad module %s in %s as %s%n",module,path(path.getParent()),n);
-                    
+
                 return false;
             }
         };
-        
+
         for (File dir : _iniDirs)
             dir.listFiles(filter);
-        
+
         if (!found.get())
             for (File dir : _iniDirs)
                 System.err.printf("Module %s not found in %s%n",module,path(dir));

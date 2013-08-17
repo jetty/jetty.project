@@ -23,6 +23,7 @@ import java.io.FileFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -42,87 +43,6 @@ public class HomeBase
         }
     }
 
-    private final File homeDir;
-    private final File baseDir;
-
-    public HomeBase(File homeDir, File baseDir)
-    {
-        this.homeDir = homeDir;
-        this.baseDir = baseDir;
-    }
-
-    /**
-     * Replace/Shorten arbitrary path with property strings <code>"${jetty.home}"</code> or <code>"${jetty.base}"</code> where appropriate.
-     * 
-     * @param path
-     *            the path to shorten
-     * @return the potentially shortened path
-     */
-    public String toShortForm(String path)
-    {
-        if (path == null)
-        {
-            return path;
-        }
-
-        String value = homeDir.getAbsolutePath();
-
-        if (path.startsWith(value))
-        {
-            return "${jetty.home}" + path.substring(value.length());
-        }
-
-        if (baseDir != null)
-        {
-            value = baseDir.getAbsolutePath();
-            if (path.startsWith(value))
-            {
-                return "${jetty.base}" + path.substring(value.length());
-            }
-        }
-        return path;
-    }
-
-    /**
-     * Convenience method for <code>toShortForm(file.getCanonicalPath())</code>
-     */
-    public String toShortForm(File path)
-    {
-        try
-        {
-            return toShortForm(path.getCanonicalPath());
-        }
-        catch (IOException ignore)
-        {
-            /* ignore */
-        }
-        return toShortForm(path.getAbsolutePath());
-    }
-
-    /**
-     * Get a specific file reference.
-     * <p>
-     * If file exists in <code>${jetty.base}</code>, return its reference, otherwise return the <code>${jetty.home}</code> references.
-     * 
-     * @param relPath
-     *            the path to get.
-     * @return the file references.
-     */
-    public File getFile(String relPath)
-    {
-        String rpath = separators(relPath);
-
-        if (baseDir != null)
-        {
-            File file = new File(baseDir,rpath);
-            if (file.exists())
-            {
-                return file;
-            }
-        }
-        return new File(homeDir,rpath);
-    }
-
     public static String separators(String path)
     {
         StringBuilder ret = new StringBuilder();
@@ -138,6 +58,104 @@ public class HomeBase
             }
         }
         return ret.toString();
+    }
+
+    private File homeDir;
+    private File baseDir;
+
+    public HomeBase()
+    {
+        String userDir = System.getProperty("user.dir");
+        this.homeDir = new File(System.getProperty("jetty.home",userDir));
+        String base = System.getProperty("jetty.base");
+        if (base != null)
+        {
+            this.baseDir = new File(base);
+        }
+    }
+
+    public HomeBase(File homeDir, File baseDir)
+    {
+        this.homeDir = homeDir;
+        this.baseDir = baseDir;
+    }
+    
+    public boolean hasBase()
+    {
+        return this.baseDir != null;
+    }
+    
+    public void setBaseDir(File dir)
+    {
+        this.baseDir = dir;
+    }
+
+    public File getBaseDir()
+    {
+        return baseDir;
+    }
+
+    public String getBase()
+    {
+        if (baseDir == null)
+        {
+            return null;
+        }
+        return baseDir.getAbsolutePath();
+    }
+
+    /**
+     * Get a specific file reference.
+     * <p>
+     * File references go through 3 possibly scenarios.
+     * <ol>
+     * <li>If exists relative to <code>${jetty.base}</code>, return that reference</li>
+     * <li>If exists relative to <code>${jetty.home}</code>, return that reference</li>
+     * <li>Otherwise return absolute path reference</li>
+     * </ol>
+     * 
+     * @param path
+     *            the path to get.
+     * @return the file reference.
+     */
+    public File getFile(String path)
+    {
+        String rpath = separators(path);
+
+        // Relative to Base Directory First
+        if (baseDir != null)
+        {
+            File file = new File(baseDir,rpath);
+            if (file.exists())
+            {
+                return file;
+            }
+        }
+
+        // Then relative to Home Directory
+        File file = new File(homeDir,rpath);
+        if (file.exists())
+        {
+            return file;
+        }
+
+        // Finally, as an absolute path
+        return new File(rpath);
+    }
+    
+    public void setHomeDir(File dir)
+    {
+        this.homeDir = dir;
+    }
+
+    public File getHomeDir()
+    {
+        return homeDir;
+    }
+
+    public String getHome()
+    {
+        return homeDir.getAbsolutePath();
     }
 
     /**
@@ -196,11 +214,13 @@ public class HomeBase
             // add any remaining home files.
             ret.addAll(homeFiles);
 
+            Collections.sort(ret, new NaturalSort.Files());
             return ret;
         }
         else
         {
             // simple return
+            Collections.sort(homeFiles, new NaturalSort.Files());
             return homeFiles;
         }
     }
@@ -208,5 +228,53 @@ public class HomeBase
     private String toRelativePath(File dir, File path)
     {
         return dir.toURI().relativize(path.toURI()).toASCIIString();
+    }
+
+    /**
+     * Convenience method for <code>toShortForm(file.getCanonicalPath())</code>
+     */
+    public String toShortForm(File path)
+    {
+        try
+        {
+            return toShortForm(path.getCanonicalPath());
+        }
+        catch (IOException ignore)
+        {
+            /* ignore */
+        }
+        return toShortForm(path.getAbsolutePath());
+    }
+
+    /**
+     * Replace/Shorten arbitrary path with property strings <code>"${jetty.home}"</code> or <code>"${jetty.base}"</code> where appropriate.
+     * 
+     * @param path
+     *            the path to shorten
+     * @return the potentially shortened path
+     */
+    public String toShortForm(String path)
+    {
+        if (path == null)
+        {
+            return path;
+        }
+
+        String value = homeDir.getAbsolutePath();
+
+        if (path.startsWith(value))
+        {
+            return "${jetty.home}" + path.substring(value.length());
+        }
+
+        if (baseDir != null)
+        {
+            value = baseDir.getAbsolutePath();
+            if (path.startsWith(value))
+            {
+                return "${jetty.base}" + path.substring(value.length());
+            }
+        }
+        return path;
     }
 }

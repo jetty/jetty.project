@@ -18,12 +18,8 @@
 
 package org.eclipse.jetty.start;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasItems;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -35,6 +31,7 @@ import java.util.Vector;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.hamcrest.Matchers;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -59,11 +56,17 @@ public class MainTest
     {
         Main main = new Main();
         List<String> xmls = main.processCommandLine(new String[] {});
-
-        assertEquals("etc/jetty.xml",xmls.get(0));
-        assertEquals("etc/jetty-jmx.xml",xmls.get(1));
-        assertEquals("start.d","etc/jetty-testrealm.xml",xmls.get(2));
-        assertEquals("start.d","etc/jetty-contexts.xml",xmls.get(5));
+        
+        List<String> expectedXmls = new ArrayList<String>();
+        expectedXmls.add("etc/jetty.xml"); // from start.ini
+        expectedXmls.add("etc/jetty-jmx.xml"); // from start.d/10-jmx.ini
+        // nothing from start.d/20-websocket.xml
+        expectedXmls.add("etc/jetty-testrealm.xml"); // from start.d/90-testrealm.ini
+        expectedXmls.add("etc/jetty-deploy.xml"); // from start.ini
+        expectedXmls.add("etc/jetty-webapps.xml"); // from start.ini
+        expectedXmls.add("etc/jetty-contexts.xml"); // from start.ini
+        
+        Assert.assertThat("XML Resolution Order "+xmls, xmls, contains(expectedXmls.toArray()));
 
         Set<String> options = main.getConfig().getOptions();
         assertThat(options,Matchers.contains("Server","ext","jmx","jsp","newOption","resources","websocket"));
