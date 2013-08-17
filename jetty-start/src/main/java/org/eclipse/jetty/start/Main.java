@@ -221,7 +221,7 @@ public class Main
                 continue;
             }
             
-            
+            // Alternative start.config file
             if (arg.startsWith("--config="))
             {
                 _startConfig = arg.substring(9);
@@ -230,6 +230,9 @@ public class Main
             
             
             // Special internal indicator that jetty was started by the jetty.sh Daemon
+            // All this does is setup a start.log that captures startup console output
+            // in the tiny window of time before the real logger kicks in.
+            // Useful for capturing when things go horribly wrong
             if ("--daemon".equals(arg))
             {
                 File startDir = new File(System.getProperty("jetty.logs","logs"));
@@ -260,6 +263,7 @@ public class Main
                 continue;
             }
 
+            // Start Property (syntax similar to System Property)
             if (arg.startsWith("-D"))
             {
                 String[] assign = arg.substring(2).split("=",2);
@@ -278,6 +282,7 @@ public class Main
                 continue;
             }
 
+            // Anything else is a JVM argument
             if (arg.startsWith("-"))
             {
                 _jvmArgs.add(arg);
@@ -379,8 +384,7 @@ public class Main
                 location.replaceAll("/",File.separator);
             File file = new File(location);
             
-            if (Config.isDebug())
-                System.err.println("Download to "+file.getAbsolutePath()+(file.exists()?" Exists!":""));
+            Config.debug("Download to %s %s",file.getAbsolutePath(),(file.exists()?"[Exists!]":""));
             if (file.exists())
                 return;
             
@@ -536,18 +540,34 @@ public class Main
         System.exit(EXIT_USAGE);
     }
 
-    String path(String path) 
+    /**
+     * Replace/Shorten arbitrary path with property strings "${jetty.home}" or "${jetty.base}" where appropriate.
+     * 
+     * @param path
+     *            the path to shorten
+     * @return the potentially shortened path
+     */
+    private String path(String path)
     {
-        if (path==null)
+        if (path == null)
+        {
             return path;
+        }
         if (path.startsWith(_config.getJettyHome()))
-            path = "${jetty.home}" + path.substring(_config.getJettyHome().length());
-        if (_config.getJettyBase()!=null && path.startsWith(_config.getJettyBase()))
-            path = "${jetty.base}" + path.substring(_config.getJettyBase().length());
+        {
+            return "${jetty.home}" + path.substring(_config.getJettyHome().length());
+        }
+        if (_config.getJettyBase() != null && path.startsWith(_config.getJettyBase()))
+        {
+            return "${jetty.base}" + path.substring(_config.getJettyBase().length());
+        }
         return path;
     }
     
-    String path(File file) 
+    /**
+     * Convenience method for <code>path(file.getCanonicalPath())</code>
+     */
+    private String path(File file) 
     {
         try
         {
@@ -679,7 +699,7 @@ public class Main
             System.out.println(cmd.toString());
         }
         
-        
+        // Informational command line, don't run jetty
         if (_noRun)
             return;
 
@@ -1214,7 +1234,7 @@ public class Main
     /**
      * Convert a start.ini format file into an argument list.
      */
-    List<String> loadStartIni(File ini,String name)
+    private List<String> loadStartIni(File ini,String name)
     {
         if (ini==null || !ini.exists() || ini.isDirectory() || !ini.canRead())
         {
