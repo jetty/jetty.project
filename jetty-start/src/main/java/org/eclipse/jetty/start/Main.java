@@ -1216,7 +1216,10 @@ public class Main
 
     static void usageExit(Throwable t, int exit)
     {
-        t.printStackTrace(System.err);
+        if (t != null)
+        {
+            t.printStackTrace(System.err);
+        }
         System.err.println();
         System.err.println("Usage: java -jar start.jar [options] [properties] [configs]");
         System.err.println("       java -jar start.jar --help  # for more information");
@@ -1225,10 +1228,7 @@ public class Main
 
     static void usageExit(int exit)
     {
-        System.err.println();
-        System.err.println("Usage: java -jar start.jar [options] [properties] [configs]");
-        System.err.println("       java -jar start.jar --help  # for more information");
-        System.exit(exit);
+        usageExit(null, exit);
     }
 
     /**
