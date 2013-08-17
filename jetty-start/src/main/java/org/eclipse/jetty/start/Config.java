@@ -170,20 +170,11 @@ public class Config
     /**
      * Natural language sorting for key names.
      */
-    private final Comparator<String> keySorter = new Comparator<String>()
-    {
-        private final Collator collator = Collator.getInstance();
-
-        public int compare(String o1, String o2)
-        {
-            CollationKey key1 = collator.getCollationKey(o1);
-            CollationKey key2 = collator.getCollationKey(o2);
-            return key1.compareTo(key2);
-        }
-    };
+    private final Comparator<String> keySorter = new NaturalSort.Strings();
 
     private static final String _version;
     private static boolean DEBUG = false;
+    private final HomeBase _homebase;
     private final Map<String, String> _properties = new HashMap<String, String>();
     private final Map<String, Classpath> _classpaths = new HashMap<String, Classpath>();
     private final List<String> _xml = new ArrayList<String>();
@@ -207,6 +198,20 @@ public class Config
             return o1.compareTo(o2);
         }
     });
+    
+    public Config()
+    {
+        _homebase = new HomeBase();
+        setProperty("jetty.home",_homebase.getHome());
+        if(_homebase.hasBase()) {
+            setProperty("jetty.base",_homebase.getBase());
+        }
+    }
+    
+    public HomeBase getHomeBase()
+    {
+        return _homebase;
+    }
 
     public Classpath defineOption(String option)
     {
@@ -286,32 +291,12 @@ public class Config
 
     private void close(InputStream stream)
     {
-        if (stream == null)
-            return;
-
-        try
-        {
-            stream.close();
-        }
-        catch (IOException ignore)
-        {
-            /* ignore */
-        }
+        FS.close(stream);
     }
 
     private void close(Reader reader)
     {
-        if (reader == null)
-            return;
-
-        try
-        {
-            reader.close();
-        }
-        catch (IOException ignore)
-        {
-            /* ignore */
-        }
+        FS.close(reader);
     }
 
     public static boolean isDebug()
@@ -1023,39 +1008,5 @@ public class Config
         }
 
         return buf.toString();
-    }
-
-    public String getJettyHome()
-    {
-        return getProperty("jetty.home");
-    }
-    
-    public String getJettyBase()
-    {
-        return getProperty("jetty.base");
-    }
-
-    public File getFileBaseHomeAbs(String filename)
-    {
-        File file;
-        
-        String base = getJettyBase();
-        if (base!=null)
-        {
-            file=new File(base,filename);
-            if (file.exists())
-                return file;
-        }
-        
-        file=new File(getJettyHome(),filename);
-        if (file.exists())
-            return file;
-
-        file=new File(filename);
-        if (file.exists())
-            return file;
-        
-        return null;
-        
     }
 }

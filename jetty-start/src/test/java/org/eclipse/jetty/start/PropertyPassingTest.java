@@ -190,6 +190,8 @@ public class PropertyPassingTest
         System.out.println("Command line: " + cline);
 
         ProcessBuilder builder = new ProcessBuilder(commands);
+        // Set PWD
+        builder.directory(MavenTestingUtils.getTestResourceDir("empty.home"));
         Process pid = builder.start();
 
         ConsoleCapture stdOutPump = new ConsoleCapture("STDOUT",pid.getInputStream()).start();

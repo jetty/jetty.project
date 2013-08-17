@@ -78,6 +78,25 @@ public class HomeBaseTest
     }
     
     @Test
+    public void testListFiles_Filtered_OnlyHome() throws IOException
+    {
+        File homeDir = MavenTestingUtils.getTestResourceDir("hb.1/home");
+        File baseDir = null;
+
+        HomeBase hb = new HomeBase(homeDir,baseDir);
+        List<File> files = hb.listFiles("/start.d", new FS.IniFilter());
+
+        List<String> expected = new ArrayList<>();
+        expected.add("${jetty.home}/start.d/jmx.ini");
+        expected.add("${jetty.home}/start.d/jndi.ini");
+        expected.add("${jetty.home}/start.d/jsp.ini");
+        expected.add("${jetty.home}/start.d/logging.ini");
+        expected.add("${jetty.home}/start.d/ssl.ini");
+
+        assertFileList(hb,"Files found",expected,files);
+    }
+
+    @Test
     public void testListFiles_Both() throws IOException
     {
         File homeDir = MavenTestingUtils.getTestResourceDir("hb.1/home");
@@ -96,7 +115,7 @@ public class HomeBaseTest
 
         assertFileList(hb,"Files found",expected,files);
     }
-
+    
     @Test
     public void testGetFile_Both() throws IOException
     {
