@@ -127,10 +127,8 @@ public class JarVersion
 
     public static String getVersion(File file)
     {
-        try
+        try(JarFile jar = new JarFile(file))
         {
-            JarFile jar = new JarFile(file);
-            
             String version = null;
             
             Manifest manifest = jar.getManifest();
