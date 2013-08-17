@@ -362,8 +362,8 @@ public class Main
             // Anything else is considered an XML file.
             if (xmls.contains(arg))
             {
-                System.out.println("WARN: Argument '" + arg + "' specified multiple times. Check start.ini?");
-                System.out.println("Use \"java -jar start.jar --help\" for more information.");
+                System.err.println("WARN: Argument '" + arg + "' specified multiple times. Check start.ini?");
+                System.err.println("Use \"java -jar start.jar --help\" for more information.");
             }
             xmls.add(arg);
         }
