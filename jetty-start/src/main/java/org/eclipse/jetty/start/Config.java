@@ -27,8 +27,6 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
 import java.net.URL;
-import java.text.CollationKey;
-import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -292,16 +290,6 @@ public class Config
         }
     }
 
-    private void close(InputStream stream)
-    {
-        FS.close(stream);
-    }
-
-    private void close(Reader reader)
-    {
-        FS.close(reader);
-    }
-
     public static boolean isDebug()
     {
         return DEBUG;
@@ -548,7 +536,10 @@ public class Config
      */
     public void parse(CharSequence buf) throws IOException
     {
-        parse(new StringReader(buf.toString()));
+        try (StringReader reader = new StringReader(buf.toString()))
+        {
+            parse(reader);
+        }
     }
 
     /**
@@ -559,15 +550,9 @@ public class Config
      */
     public void parse(InputStream stream) throws IOException
     {
-        InputStreamReader reader = null;
-        try
+        try (InputStreamReader reader = new InputStreamReader(stream))
         {
-            reader = new InputStreamReader(stream);
             parse(reader);
-        }
-        finally
-        {
-            close(reader);
         }
     }
 
@@ -575,12 +560,8 @@ public class Config
      */
     public void parse(Reader reader) throws IOException
     {
-        BufferedReader buf = null;
-
-        try
+        try(BufferedReader buf = new BufferedReader(reader))
         {
-            buf = new BufferedReader(reader);
-
             List<String> options = new ArrayList<String>();
             options.add(DEFAULT_SECTION);
             _classpaths.put(DEFAULT_SECTION,new Classpath());
@@ -853,10 +834,6 @@ public class Config
                 }
             }
         }
-        finally
-        {
-            close(buf);
-        }
     }
 
     private List<String> processDynamicSectionIdentifier(String dynamicPathId,List<String> sections) throws IOException
@@ -933,8 +910,8 @@ public class Config
         }
         finally
         {
-            close(reader);
-            close(stream);
+            FS.close(reader);
+            FS.close(stream);
         }
     }
 
