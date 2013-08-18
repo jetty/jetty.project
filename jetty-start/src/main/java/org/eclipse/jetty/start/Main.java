@@ -52,6 +52,8 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
+import org.eclipse.jetty.start.StartIni.IncludeListener;
+
 /*-------------------------------------------*/
 /**
  * <p>
@@ -63,7 +65,7 @@ import java.util.regex.Pattern;
  * The behaviour of Main is controlled by the parsing of the {@link Config} "org/eclipse/start/start.config" file obtained as a resource or file.
  * </p>
  */
-public class Main
+public class Main implements IncludeListener
 {
     private static final String START_LOG_FILENAME = "start.log";
     private static final SimpleDateFormat START_LOG_ROLLOVER_DATEFORMAT = new SimpleDateFormat("yyyy_MM_dd-HHmmSSSSS.'" + START_LOG_FILENAME + "'");
@@ -212,20 +214,7 @@ public class Main
                 {
                     String name = arg.substring(6);
                     File file = _config.getHomeBase().getFile(name);
-                    StartIni startini = new StartIni(file);
-                    int idx;
-                    while ((idx = startini.lineIndexOf(0,Pattern.compile("^.*/$"))) >= 0)
-                    {
-                        String subPath = startini.getLines().get(idx);
-                        startini.getLines().remove(idx);
-                        // find the sub ini files (based on HomeBase)
-                        List<File> childInis = _config.getHomeBase().listFiles(subPath,new FS.IniFilter());
-                        for (File childIni : childInis)
-                        {
-                            StartIni cini = new StartIni(childIni);
-                            idx += startini.overlayAt(idx,cini);
-                        }
-                    }
+                    StartIni startini = new StartIni(file,this);
                     arguments.addAll(i + 1,startini.getLines());
                 }
 
@@ -379,6 +368,17 @@ public class Main
         }
 
         return xmls;
+    }
+    
+    @Override
+    public List<StartIni> onIniInclude(String path) throws IOException
+    {
+        List<StartIni> included = new ArrayList<>();
+        for(File file: _config.getHomeBase().listFiles(path,new FS.IniFilter()))
+        {
+            included.add(new StartIni(file));
+        }
+        return included;
     }
 
     private void download(String arg)

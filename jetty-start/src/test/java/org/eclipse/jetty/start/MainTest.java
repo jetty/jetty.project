@@ -25,13 +25,12 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Vector;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.hamcrest.Matchers;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -56,7 +55,8 @@ public class MainTest
     {
         Main main = new Main();
         List<String> xmls = main.processCommandLine(new String[] {});
-        
+
+        // Order is important here
         List<String> expectedXmls = new ArrayList<String>();
         expectedXmls.add("etc/jetty.xml"); // from start.ini
         expectedXmls.add("etc/jetty-jmx.xml"); // from start.d/10-jmx.ini
@@ -65,11 +65,26 @@ public class MainTest
         expectedXmls.add("etc/jetty-deploy.xml"); // from start.ini
         expectedXmls.add("etc/jetty-webapps.xml"); // from start.ini
         expectedXmls.add("etc/jetty-contexts.xml"); // from start.ini
-        
-        Assert.assertThat("XML Resolution Order "+xmls, xmls, contains(expectedXmls.toArray()));
 
+        assertThat("XML Resolution Order " + xmls,xmls,contains(expectedXmls.toArray()));
+
+        // Order is irrelevant here
         Set<String> options = main.getConfig().getOptions();
-        assertThat(options,Matchers.contains("Server","ext","jmx","jsp","newOption","resources","websocket"));
+        Set<String> expectedOptions = new HashSet<>();
+        // from start.ini
+        expectedOptions.add("Server");
+        expectedOptions.add("jsp");
+        expectedOptions.add("resources");
+        expectedOptions.add("websocket");
+        expectedOptions.add("ext");
+        expectedOptions.add("newOption");
+        // from start.d/10-jmx.ini
+        expectedOptions.add("jmx");
+        // from start.d/20-websocket.ini
+        expectedOptions.add("websocket");
+        // no options from start.d/90-testrealm.ini
+
+        assertThat("Options " + options,options,containsInAnyOrder(expectedOptions.toArray()));
     }
 
     @Test
@@ -99,14 +114,14 @@ public class MainTest
                 hasItems("/jetty/home with spaces/somejar.jar:/jetty/home with spaces/someotherjar.jar"));
         assertThat("args does not contain --exec",commandArgs,hasItems("--exec"));
         assertThat("CommandLine should contain jvmArgs",commandArgs,hasItems("-Xms1024m"));
-        assertThat("CommandLine should contain jvmArgs", commandArgs, hasItems("-Xmx1024m"));
+        assertThat("CommandLine should contain jvmArgs",commandArgs,hasItems("-Xmx1024m"));
         assertThat("CommandLine should contain xmls",commandArgs,hasItems("jetty.xml"));
         assertThat("CommandLine should contain xmls",commandArgs,hasItems("jetty-jmx.xml"));
-        assertThat("CommandLine should contain xmls", commandArgs, hasItems("jetty-logging.xml"));
+        assertThat("CommandLine should contain xmls",commandArgs,hasItems("jetty-logging.xml"));
 
         String commandLine = cmd.toString();
-        assertThat("cmd.toString() should be properly escaped",commandLine,containsString("-cp /jetty/home\\ with\\ " +
-                "spaces/somejar.jar:/jetty/home\\ with\\ spaces/someotherjar.jar"));
+        assertThat("cmd.toString() should be properly escaped",commandLine,containsString("-cp /jetty/home\\ with\\ "
+                + "spaces/somejar.jar:/jetty/home\\ with\\ spaces/someotherjar.jar"));
         assertThat("cmd.toString() doesn't contain xml config files",commandLine,containsString(" jetty.xml jetty-jmx.xml jetty-logging.xml"));
     }
 
