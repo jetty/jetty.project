@@ -28,21 +28,10 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * File access for <code>${jetty.home}</code>, and optional <code>${jetty.base}</code>, directories
+ * File access for <code>${jetty.home}</code>, and optional <code>${jetty.base}</code>, directories.
  */
 public class HomeBase
 {
-    private static class AllFilter implements FileFilter
-    {
-        public static final AllFilter INSTANCE = new AllFilter();
-
-        @Override
-        public boolean accept(File pathname)
-        {
-            return true;
-        }
-    }
-
     private File homeDir;
     private File baseDir;
 
@@ -153,7 +142,7 @@ public class HomeBase
      */
     public List<File> listFiles(String relPathToDirectory)
     {
-        return listFiles(relPathToDirectory,AllFilter.INSTANCE);
+        return listFiles(relPathToDirectory,FS.AllFilter.INSTANCE);
     }
 
     /**
