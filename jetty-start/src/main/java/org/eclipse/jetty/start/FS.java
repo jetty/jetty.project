@@ -22,6 +22,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
+import java.util.Locale;
 import java.util.regex.Pattern;
 
 public class FS
@@ -122,7 +123,7 @@ public class FS
 
     public static boolean isXml(String filename)
     {
-        return Pattern.compile(".xml$",Pattern.CASE_INSENSITIVE).matcher(filename).matches();
+        return filename.toLowerCase(Locale.ENGLISH).endsWith(".xml");
     }
 
     public static String separators(String path)

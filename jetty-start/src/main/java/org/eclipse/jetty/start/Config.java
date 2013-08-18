@@ -201,9 +201,7 @@ public class Config
     {
         _homebase = new HomeBase();
         setProperty("jetty.home",_homebase.getHome());
-        if(_homebase.hasBase()) {
-            setProperty("jetty.base",_homebase.getBase());
-        }
+        setProperty("jetty.base",_homebase.getBase());
     }
     
     public HomeBase getHomeBase()

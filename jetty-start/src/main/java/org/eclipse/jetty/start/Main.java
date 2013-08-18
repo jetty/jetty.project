@@ -775,10 +775,7 @@ public class Main implements IncludeListener
             cmd.addArg(x);
         }
         cmd.addRawArg("-Djetty.home=" + _config.getHomeBase().getHome());
-        if (_config.getHomeBase().hasBase())
-        {
-            cmd.addRawArg("-Djetty.base=" + _config.getHomeBase().getBase());
-        }
+        cmd.addRawArg("-Djetty.base=" + _config.getHomeBase().getBase());
 
         // Special Stop/Shutdown properties
         ensureSystemPropertySet("STOP.PORT");
@@ -901,12 +898,7 @@ public class Main implements IncludeListener
                 + "then overlapping entries will not be repeated in the eventual classpath.");
         System.out.println();
         System.out.printf("${jetty.home} = %s%n",_config.getHomeBase().getHome());
-        String base = "<undefined>";
-        if (_config.getHomeBase().hasBase())
-        {
-            base = _config.getHomeBase().getBase();
-        }
-        System.out.printf("${jetty.base} = %s%n",base);
+        System.out.printf("${jetty.base} = %s%n",_config.getHomeBase().getBase());
         System.out.println();
 
         for (String sectionId : sectionIds)
