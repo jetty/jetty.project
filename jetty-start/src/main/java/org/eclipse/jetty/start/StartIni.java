@@ -34,10 +34,20 @@ import java.util.regex.Pattern;
  */
 public class StartIni implements Iterable<String>
 {
+    public static interface IncludeListener
+    {
+        public List<StartIni> onIniInclude(String path) throws IOException;
+    }
+
     private final File file;
     private final LinkedList<String> lines;
 
     public StartIni(File file) throws FileNotFoundException, IOException
+    {
+        this(file,null);
+    }
+
+    public StartIni(File file, IncludeListener listener) throws FileNotFoundException, IOException
     {
         this.file = file;
         this.lines = new LinkedList<>();
@@ -54,46 +64,66 @@ public class StartIni implements Iterable<String>
                         // skip (empty line)
                         continue;
                     }
+
                     if (line.charAt(0) == '#')
                     {
                         // skip (comment)
                         continue;
                     }
 
-                    // Smart Handling, split into multiple OPTIONS lines
+                    // Smart Handling, split into multiple OPTIONS lines (for dup check reasons)
                     if (line.startsWith("OPTIONS="))
                     {
-                        for (String part : line.split(","))
+                        int idx = line.indexOf('=');
+                        String value = line.substring(idx + 1);
+                        for (String part : value.split(","))
                         {
-                            lines.add("OPTIONS=" + part);
+                            addUniqueLine("OPTION=" + part);
+                        }
+                    }
+                    // Smart Handling, includes
+                    else if (line.endsWith("/"))
+                    {
+                        if (listener == null)
+                        {
+                            System.err.printf("Nested includes not supported: %s (found in %s)%n",line,file.getAbsolutePath());
+                        }
+                        else
+                        {
+                            // Collect HomeBase resolved included StartIni's
+                            for (StartIni included : listener.onIniInclude(line))
+                            {
+                                // Merge each line with prior lines to prevent duplicates
+                                for (String includedLine : included)
+                                {
+                                    addUniqueLine(includedLine);
+                                }
+                            }
                         }
                     }
                     else
                     {
                         // Add line as-is
-                        lines.add(line);
+                        addUniqueLine(line);
                     }
                 }
             }
         }
     }
 
+    private void addUniqueLine(String line)
+    {
+        if (lines.contains(line))
+        {
+            // skip
+            return;
+        }
+        lines.add(line);
+    }
+
     public File getFile()
     {
         return file;
-    }
-
-    public int lineIndexOf(int offset, Pattern pattern)
-    {
-        int len = lines.size();
-        for (int i = offset; i < len; i++)
-        {
-            if (pattern.matcher(lines.get(i)).matches())
-            {
-                return i;
-            }
-        }
-        return -1;
     }
 
     public List<String> getLineMatches(Pattern pattern)
@@ -118,32 +148,5 @@ public class StartIni implements Iterable<String>
     public Iterator<String> iterator()
     {
         return lines.iterator();
-    }
-
-    public int overlayAt(int index, StartIni child)
-    {
-        int idx = index;
-        int count = 0;
-        for (String line : child)
-        {
-            if (this.hasLine(line))
-            {
-                // skip
-                continue;
-            }
-            lines.add(idx++,line);
-            count++;
-        }
-        return count;
-    }
-
-    private boolean hasLine(String line)
-    {
-        return lines.contains(line);
-    }
-
-    public void removeLine(String line)
-    {
-        lines.remove(line);
     }
 }
