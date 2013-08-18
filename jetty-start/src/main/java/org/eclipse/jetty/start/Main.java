@@ -24,7 +24,6 @@ import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -48,7 +47,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.start.StartIni.IncludeListener;
 
@@ -85,8 +83,10 @@ public class Main implements IncludeListener
     private final List<String> _jvmArgs = new ArrayList<>();
     private final List<String> _enable = new ArrayList<>();
     private final List<String> _disable = new ArrayList<>();
+    // Actively being used ini files
     private final List<File> _iniFiles = new ArrayList<>();
-    private final List<File> _iniDirs = new ArrayList<>();
+    // Actively being referenced ini include paths
+    private final List<String> _iniIncludePaths = new ArrayList<>();
     private String _startConfig = null;
 
     public static void main(String[] args)
@@ -122,10 +122,16 @@ public class Main implements IncludeListener
         ArrayList<String> arguments = new ArrayList<>(Arrays.asList(args));
         boolean ini = false;
         for (String arg : arguments)
+        {
             if (arg.startsWith("--ini=") || arg.equals("--ini"))
+            {
                 ini = true;
+            }
+        }
         if (!ini)
+        {
             arguments.add(0,"--ini=start.ini");
+        }
 
         // The XML Configuration Files to initialize with
         List<String> xmls = new ArrayList<String>();
@@ -213,6 +219,7 @@ public class Main implements IncludeListener
                     String name = arg.substring(6);
                     File file = _config.getHomeBase().getFile(name);
                     StartIni startini = new StartIni(file,this);
+                    _iniFiles.add(file);
                     arguments.addAll(i + 1,startini.getLines());
                 }
 
@@ -367,13 +374,21 @@ public class Main implements IncludeListener
 
         return xmls;
     }
-    
+
     @Override
     public List<StartIni> onIniInclude(String path) throws IOException
     {
         List<StartIni> included = new ArrayList<>();
-        for(File file: _config.getHomeBase().listFiles(path,new FS.IniFilter()))
+
+        HomeBase hb = _config.getHomeBase();
+
+        // Allow --enable and --disable to work
+        _iniIncludePaths.add(path);
+
+        // Scan for ini files
+        for (File file : hb.listFiles(path,new FS.IniFilter()))
         {
+            _iniFiles.add(file);
             included.add(new StartIni(file));
         }
         return included;
@@ -491,21 +506,15 @@ public class Main implements IncludeListener
                     {
                         for (File file : _iniFiles)
                         {
-                            String path = path(file);
+                            String path = _config.getHomeBase().toShortForm(file);
                             System.out.printf("%s%s%n",indent,path);
 
                             if (Config.isDebug())
                             {
-                                try (FileReader reader = new FileReader(file); BufferedReader in = new BufferedReader(reader);)
+                                StartIni ini = new StartIni(file);
+                                for (String arg : ini)
                                 {
-                                    String arg;
-                                    while ((arg = in.readLine()) != null)
-                                    {
-                                        arg = arg.trim();
-                                        if (arg.length() == 0 || arg.startsWith("#"))
-                                            continue;
-                                        System.out.printf("%s +-- %s%n",indent,arg);
-                                    }
+                                    System.out.printf("%s +-- %s%n",indent,arg);
                                 }
                             }
                         }
@@ -1181,87 +1190,79 @@ public class Main implements IncludeListener
     {
         final String mini = module + ".ini";
         final String disable = module + ".ini.disabled";
-        final AtomicBoolean found = new AtomicBoolean(false);
-        FileFilter filter = new FileFilter()
+
+        FileFilter disabledModuleFilter = new FS.FileNamesFilter(mini, disable);
+
+        HomeBase hb = _config.getHomeBase();
+
+        // walk all ini include paths that were used
+        boolean found = false;
+        for (String includedPath : _iniIncludePaths)
         {
-            public boolean accept(File path)
+            Config.debug("Searching ${jetty.home}/%s and ${jetty.base}/% for %s",includedPath,includedPath,mini);
+            for (File file : hb.rawListFiles(includedPath,disabledModuleFilter))
             {
-                if (!path.isFile())
-                    return false;
-                String n = path.getName();
-                int i = n.indexOf(mini);
-                if (i < 0)
-                    return false;
-                if (i > 0 && i != 4 && n.charAt(i - 1) != '-')
-                    return false;
-
-                found.set(true);
-                if (n.endsWith(mini))
+                String n = file.getName();
+                if (n.equalsIgnoreCase(mini))
                 {
-                    System.err.printf("Module %s already enabled in %s as %s%n",module,path(path.getParent()),n);
+                    System.err.printf("Module %s already enabled in %s%n",module,hb.toShortForm(file.getParent()));
+                    found = true;
                 }
-                else if (n.endsWith(disable))
+                else if (n.equals(disable))
                 {
-                    String enabled = n.substring(0,n.length() - 9);
-                    System.err.printf("Enable %s in %s as %s%n",module,path(path.getParent()),enabled);
-                    path.renameTo(new File(path.getParentFile(),enabled));
+                    System.err.printf("Enabling Module %s in %s%n",module,hb.toShortForm(file.getParent()));
+                    file.renameTo(new File(file.getParentFile(),mini));
+                    found = true;
                 }
-                else
-                    System.err.printf("Bad module %s in %s as %s%n",module,path(path.getParent()),n);
-
-                return false;
             }
-        };
+        }
 
-        for (File dir : _iniDirs)
-            dir.listFiles(filter);
-
-        if (!found.get())
-            for (File dir : _iniDirs)
-                System.err.printf("Module %s not found in %s%n",module,path(dir));
+        if (!found)
+        {
+            for (String includedPath : _iniIncludePaths)
+            {
+                System.err.printf("Module %s not found in %s%n",module,includedPath);
+            }
+        }
     }
 
     private void disable(final String module)
     {
         final String mini = module + ".ini";
         final String disable = module + ".ini.disabled";
-        final AtomicBoolean found = new AtomicBoolean(false);
-        FileFilter filter = new FileFilter()
+
+        FileFilter disabledModuleFilter = new FS.FileNamesFilter(mini, disable);
+
+        HomeBase hb = _config.getHomeBase();
+
+        // walk all ini include paths that were used
+        boolean found = false;
+        for (String includedPath : _iniIncludePaths)
         {
-            public boolean accept(File path)
+            Config.debug("Searching ${jetty.home}/%s and ${jetty.base}/% for %s",includedPath,includedPath,mini);
+            for (File file : hb.rawListFiles(includedPath,disabledModuleFilter))
             {
-                if (!path.isFile())
-                    return false;
-                String n = path.getName();
-                int i = n.indexOf(mini);
-                if (i < 0)
-                    return false;
-                if (i > 0 && i != 4 && n.charAt(i - 1) != '-')
-                    return false;
-
-                found.set(true);
-                if (n.endsWith(disable))
+                String n = file.getName();
+                if (n.equalsIgnoreCase(disable))
                 {
-                    System.err.printf("Module %s already disabled in %s as %s%n",module,path(path.getParent()),n);
+                    System.err.printf("Module %s already disabled in %s%n",module,hb.toShortForm(file.getParent()));
+                    found = true;
                 }
-                else if (n.endsWith(mini))
+                else if (n.equals(mini))
                 {
-                    String disabled = n + ".disabled";
-                    System.err.printf("Disable %s in %s as %s%n",module,path(path.getParent()),disabled);
-                    path.renameTo(new File(path.getParentFile(),disabled));
+                    System.err.printf("Disabling Module %s in %s%n",module,hb.toShortForm(file.getParent()));
+                    file.renameTo(new File(file.getParentFile(),disable));
+                    found = true;
                 }
-                else
-                    System.err.printf("Bad module %s in %s as %s%n",module,path(path.getParent()),n);
-
-                return false;
             }
-        };
+        }
 
-        for (File dir : _iniDirs)
-            dir.listFiles(filter);
-
-        if (!found.get())
-            for (File dir : _iniDirs)
-                System.err.printf("Module %s not found in %s%n",module,path(dir));
+        if (!found)
+        {
+            for (String includedPath : _iniIncludePaths)
+            {
+                System.err.printf("Module %s not found in %s%n",module,includedPath);
+            }
+        }
     }
 }

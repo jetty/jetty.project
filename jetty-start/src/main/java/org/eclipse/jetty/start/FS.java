@@ -26,6 +26,44 @@ import java.util.regex.Pattern;
 
 public class FS
 {
+    public static class AllFilter implements FileFilter
+    {
+        public static final AllFilter INSTANCE = new AllFilter();
+
+        @Override
+        public boolean accept(File pathname)
+        {
+            return true;
+        }
+    }
+
+    public static class FileNamesFilter implements FileFilter
+    {
+        private final String filenames[];
+
+        public FileNamesFilter(String... names)
+        {
+            this.filenames = names;
+        }
+
+        @Override
+        public boolean accept(File path)
+        {
+            if (!path.isFile())
+            {
+                return false;
+            }
+            for (String name : filenames)
+            {
+                if (name.equalsIgnoreCase(path.getName()))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
     public static class FilenameRegexFilter implements FileFilter
     {
         private final Pattern pattern;
@@ -38,7 +76,7 @@ public class FS
         @Override
         public boolean accept(File path)
         {
-            return pattern.matcher(path.getName()).matches();
+            return path.isFile() && pattern.matcher(path.getName()).matches();
         }
     }
 
@@ -58,20 +96,6 @@ public class FS
         }
     }
 
-    public static boolean isXml(String filename)
-    {
-        return Pattern.compile(".xml$",Pattern.CASE_INSENSITIVE).matcher(filename).matches();
-    }
-
-    public static boolean isFile(File file)
-    {
-        if (file == null)
-        {
-            return false;
-        }
-        return file.exists() && file.isFile();
-    }
-
     public static void close(Closeable c)
     {
         if (c == null)
@@ -85,5 +109,36 @@ public class FS
         {
             /* ignore */
         }
+    }
+
+    public static boolean isFile(File file)
+    {
+        if (file == null)
+        {
+            return false;
+        }
+        return file.exists() && file.isFile();
+    }
+
+    public static boolean isXml(String filename)
+    {
+        return Pattern.compile(".xml$",Pattern.CASE_INSENSITIVE).matcher(filename).matches();
+    }
+
+    public static String separators(String path)
+    {
+        StringBuilder ret = new StringBuilder();
+        for (char c : path.toCharArray())
+        {
+            if ((c == '/') || (c == '\\'))
+            {
+                ret.append(File.separatorChar);
+            }
+            else
+            {
+                ret.append(c);
+            }
+        }
+        return ret.toString();
     }
 }

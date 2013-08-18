@@ -43,23 +43,6 @@ public class HomeBase
         }
     }
 
-    public static String separators(String path)
-    {
-        StringBuilder ret = new StringBuilder();
-        for (char c : path.toCharArray())
-        {
-            if ((c == '/') || (c == '\\'))
-            {
-                ret.append(File.separatorChar);
-            }
-            else
-            {
-                ret.append(c);
-            }
-        }
-        return ret.toString();
-    }
-
     private File homeDir;
     private File baseDir;
 
@@ -120,7 +103,7 @@ public class HomeBase
      */
     public File getFile(String path)
     {
-        String rpath = separators(path);
+        String rpath = FS.separators(path);
 
         // Relative to Base Directory First
         if (baseDir != null)
@@ -189,21 +172,21 @@ public class HomeBase
     {
         Objects.requireNonNull(filter,"FileFilter cannot be null");
 
-        File homePath = new File(homeDir,separators(relPathToDirectory));
+        File homePath = new File(homeDir,FS.separators(relPathToDirectory));
         List<File> homeFiles = new ArrayList<>();
         homeFiles.addAll(Arrays.asList(homePath.listFiles(filter)));
 
         if (baseDir != null)
         {
             // merge
-            File basePath = new File(baseDir,separators(relPathToDirectory));
+            File basePath = new File(baseDir,FS.separators(relPathToDirectory));
             File baseFiles[] = basePath.listFiles(filter);
             List<File> ret = new ArrayList<>();
 
             for (File base : baseFiles)
             {
                 String relpath = toRelativePath(baseDir,base);
-                File home = new File(homeDir,separators(relpath));
+                File home = new File(homeDir,FS.separators(relpath));
                 if (home.exists())
                 {
                     homeFiles.remove(home);
@@ -223,6 +206,32 @@ public class HomeBase
             Collections.sort(homeFiles, new NaturalSort.Files());
             return homeFiles;
         }
+    }
+    
+    /**
+     * Collect the list of files in both <code>${jetty.base}</code> and <code>${jetty.home}</code>, with
+     * , even if the same file shows up in both places. 
+     */
+    public List<File> rawListFiles(String relPathToDirectory, FileFilter filter)
+    {
+        Objects.requireNonNull(filter,"FileFilter cannot be null");
+
+        List<File> ret = new ArrayList<>();
+
+        // Home Dir
+        File homePath = new File(homeDir,FS.separators(relPathToDirectory));
+        ret.addAll(Arrays.asList(homePath.listFiles(filter)));
+
+        if (baseDir != null)
+        {
+            // Base Dir
+            File basePath = new File(baseDir,FS.separators(relPathToDirectory));
+            ret.addAll(Arrays.asList(basePath.listFiles(filter)));
+        }
+
+        // Sort
+        Collections.sort(ret, new NaturalSort.Files());
+        return ret;
     }
 
     private String toRelativePath(File dir, File path)

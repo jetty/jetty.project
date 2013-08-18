@@ -86,7 +86,7 @@ public class StartIni implements Iterable<String>
                     {
                         if (listener == null)
                         {
-                            System.err.printf("Nested includes not supported: %s (found in %s)%n",line,file.getAbsolutePath());
+                            Config.debug("Nested include ignored: %s (found in %s)",line,file.getAbsolutePath());
                         }
                         else
                         {
