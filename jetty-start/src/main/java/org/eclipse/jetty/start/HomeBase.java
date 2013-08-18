@@ -28,7 +28,13 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * File access for <code>${jetty.home}</code>, and optional <code>${jetty.base}</code>, directories.
+ * File access for <code>${jetty.home}</code>, <code>${jetty.base}</code>, directories.
+ * <p>
+ * By default, both <code>${jetty.home}</code> and <code>${jetty.base}</code> are the same directory, but they can point at different directories.
+ * <p>
+ * The <code>${jetty.home}</code> directory is where the main Jetty binaries and default configuration is housed.
+ * <p>
+ * The <code>${jetty.base}</code> directory is where the execution specific configuration and webapps are obtained from.
  */
 public class HomeBase
 {
@@ -39,11 +45,7 @@ public class HomeBase
     {
         String userDir = System.getProperty("user.dir");
         this.homeDir = new File(System.getProperty("jetty.home",userDir));
-        String base = System.getProperty("jetty.base");
-        if (base != null)
-        {
-            this.baseDir = new File(base);
-        }
+        this.baseDir = new File(System.getProperty("jetty.base",homeDir.getAbsolutePath()));
     }
 
     public HomeBase(File homeDir, File baseDir)
@@ -51,12 +53,12 @@ public class HomeBase
         this.homeDir = homeDir;
         this.baseDir = baseDir;
     }
-    
-    public boolean hasBase()
+
+    public boolean isBaseDifferent()
     {
-        return this.baseDir != null;
+        return homeDir.compareTo(baseDir) != 0;
     }
-    
+
     public void setBaseDir(File dir)
     {
         this.baseDir = dir;
@@ -95,7 +97,7 @@ public class HomeBase
         String rpath = FS.separators(path);
 
         // Relative to Base Directory First
-        if (baseDir != null)
+        if (isBaseDifferent())
         {
             File file = new File(baseDir,rpath);
             if (file.exists())
@@ -114,7 +116,7 @@ public class HomeBase
         // Finally, as an absolute path
         return new File(rpath);
     }
-    
+
     public void setHomeDir(File dir)
     {
         this.homeDir = dir;
@@ -165,7 +167,7 @@ public class HomeBase
         List<File> homeFiles = new ArrayList<>();
         homeFiles.addAll(Arrays.asList(homePath.listFiles(filter)));
 
-        if (baseDir != null)
+        if (isBaseDifferent())
         {
             // merge
             File basePath = new File(baseDir,FS.separators(relPathToDirectory));
@@ -186,20 +188,19 @@ public class HomeBase
             // add any remaining home files.
             ret.addAll(homeFiles);
 
-            Collections.sort(ret, new NaturalSort.Files());
+            Collections.sort(ret,new NaturalSort.Files());
             return ret;
         }
         else
         {
             // simple return
-            Collections.sort(homeFiles, new NaturalSort.Files());
+            Collections.sort(homeFiles,new NaturalSort.Files());
             return homeFiles;
         }
     }
-    
+
     /**
-     * Collect the list of files in both <code>${jetty.base}</code> and <code>${jetty.home}</code>, with
-     * , even if the same file shows up in both places. 
+     * Collect the list of files in both <code>${jetty.base}</code> and <code>${jetty.home}</code>, with , even if the same file shows up in both places.
      */
     public List<File> rawListFiles(String relPathToDirectory, FileFilter filter)
     {
@@ -211,7 +212,7 @@ public class HomeBase
         File homePath = new File(homeDir,FS.separators(relPathToDirectory));
         ret.addAll(Arrays.asList(homePath.listFiles(filter)));
 
-        if (baseDir != null)
+        if (isBaseDifferent())
         {
             // Base Dir
             File basePath = new File(baseDir,FS.separators(relPathToDirectory));
@@ -219,7 +220,7 @@ public class HomeBase
         }
 
         // Sort
-        Collections.sort(ret, new NaturalSort.Files());
+        Collections.sort(ret,new NaturalSort.Files());
         return ret;
     }
 
@@ -265,7 +266,7 @@ public class HomeBase
             return "${jetty.home}" + path.substring(value.length());
         }
 
-        if (baseDir != null)
+        if (isBaseDifferent())
         {
             value = baseDir.getAbsolutePath();
             if (path.startsWith(value))
