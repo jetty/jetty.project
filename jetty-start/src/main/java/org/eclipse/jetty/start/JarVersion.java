@@ -102,7 +102,7 @@ public class JarVersion
         }
         finally
         {
-            Main.close(stream);
+            FS.close(stream);
         }
     }
 

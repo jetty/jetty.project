@@ -19,7 +19,6 @@
 package org.eclipse.jetty.start;
 
 import java.io.BufferedReader;
-import java.io.Closeable;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
@@ -50,7 +49,6 @@ import java.util.Locale;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.regex.Pattern;
 
 import org.eclipse.jetty.start.StartIni.IncludeListener;
 
@@ -525,7 +523,7 @@ public class Main implements IncludeListener
         }
         finally
         {
-            close(buf);
+            FS.close(buf);
         }
         System.exit(EXIT_USAGE);
     }
@@ -581,11 +579,6 @@ public class Main implements IncludeListener
         Object[] method_params = new Object[]
         { argArray };
         main.invoke(null,method_params);
-    }
-
-    public static void close(Closeable c)
-    {
-        FS.close(c);
     }
 
     public void start(List<String> xmls) throws IOException, InterruptedException
@@ -1020,7 +1013,7 @@ public class Main implements IncludeListener
         }
         finally
         {
-            close(cfgstream);
+            FS.close(cfgstream);
         }
     }
 
@@ -1068,7 +1061,7 @@ public class Main implements IncludeListener
         }
         finally
         {
-            close(cfgstream);
+            FS.close(cfgstream);
         }
     }
 
