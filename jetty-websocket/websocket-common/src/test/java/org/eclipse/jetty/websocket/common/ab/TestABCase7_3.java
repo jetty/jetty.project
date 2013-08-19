@@ -31,12 +31,13 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.ByteBufferAssert;
 import org.eclipse.jetty.websocket.common.CloseInfo;
+import org.eclipse.jetty.websocket.common.Hex;
 import org.eclipse.jetty.websocket.common.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.UnitGenerator;
 import org.eclipse.jetty.websocket.common.UnitParser;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.frames.CloseFrame;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -88,8 +89,8 @@ public class TestABCase7_3
     @Test(expected = ProtocolException.class)
     public void testCase7_3_2Generate1BytePayloadClose()
     {
-        WebSocketFrame closeFrame = new WebSocketFrame(OpCode.CLOSE).setPayload(new byte[]
-                { 0x00 });
+        CloseFrame closeFrame = new CloseFrame();
+        closeFrame.setPayload(Hex.asByteBuffer("00"));
 
         UnitGenerator.generate(closeFrame);
     }
@@ -97,12 +98,7 @@ public class TestABCase7_3
     @Test
     public void testCase7_3_2Parse1BytePayloadClose()
     {
-        ByteBuffer expected = ByteBuffer.allocate(32);
-
-        expected.put(new byte[]
-                { (byte)0x88, 0x01, 0x00 });
-
-        expected.flip();
+        ByteBuffer expected = Hex.asByteBuffer("880100");
 
         UnitParser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
@@ -293,16 +289,16 @@ public class TestABCase7_3
 
         byte[] messageBytes = message.toString().getBytes();
 
-        WebSocketFrame closeFrame = new WebSocketFrame(OpCode.CLOSE);
+        CloseFrame closeFrame = new CloseFrame();
 
-        ByteBuffer bb = ByteBuffer.allocate(WebSocketFrame.MAX_CONTROL_PAYLOAD + 1); // 126 which is too big for control
+        ByteBuffer bb = ByteBuffer.allocate(CloseFrame.MAX_CONTROL_PAYLOAD + 1); // 126 which is too big for control
 
         bb.putChar((char)1000);
         bb.put(messageBytes);
 
         BufferUtil.flipToFlush(bb,0);
 
-        closeFrame.setPayload(BufferUtil.toArray(bb));
+        closeFrame.setPayload(bb);
 
         UnitGenerator.generate(closeFrame);
     }

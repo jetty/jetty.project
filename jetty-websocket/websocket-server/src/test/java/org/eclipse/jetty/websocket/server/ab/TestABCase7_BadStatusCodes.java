@@ -29,8 +29,8 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.common.CloseInfo;
-import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.frames.CloseFrame;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -92,7 +92,7 @@ public class TestABCase7_BadStatusCodes extends AbstractABCase
         BufferUtil.flipToFlush(payload,0);
 
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.CLOSE).setPayload(payload.slice()));
+        send.add(new CloseFrame().setPayload(payload.slice()));
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
@@ -125,7 +125,7 @@ public class TestABCase7_BadStatusCodes extends AbstractABCase
         BufferUtil.flipToFlush(payload,0);
 
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.CLOSE).setPayload(payload.slice()));
+        send.add(new CloseFrame().setPayload(payload.slice()));
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());

@@ -434,7 +434,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames, Connecti
             ioState.onCloseRemote(close);
         }
 
-        WebSocketFrame copy = new WebSocketFrame(frame);
+        WebSocketFrame copy = WebSocketFrame.copy(frame);
         incomingFrames.incomingFrame(copy);
     }
 

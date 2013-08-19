@@ -33,11 +33,15 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Extension;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
-import org.eclipse.jetty.websocket.common.io.payload.CloseReasonValidator;
+import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
+import org.eclipse.jetty.websocket.common.frames.CloseFrame;
+import org.eclipse.jetty.websocket.common.frames.ContinuationFrame;
+import org.eclipse.jetty.websocket.common.frames.ControlFrame;
+import org.eclipse.jetty.websocket.common.frames.PingFrame;
+import org.eclipse.jetty.websocket.common.frames.PongFrame;
+import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.io.payload.DeMaskProcessor;
-import org.eclipse.jetty.websocket.common.io.payload.NoOpValidator;
 import org.eclipse.jetty.websocket.common.io.payload.PayloadProcessor;
-import org.eclipse.jetty.websocket.common.io.payload.UTF8Validator;
 
 /**
  * Parsing of a frames in WebSocket land.
@@ -70,7 +74,7 @@ public class Parser
     private ByteBuffer payload;
     private int payloadLength;
     private PayloadProcessor maskProcessor = new DeMaskProcessor();
-    private PayloadProcessor strictnessProcessor;
+    // private PayloadProcessor strictnessProcessor;
 
     /** Is there an extension using RSV1 */
     private boolean rsv1InUse = false;
@@ -78,8 +82,6 @@ public class Parser
     private boolean rsv2InUse = false;
     /** Is there an extension using RSV3 */
     private boolean rsv3InUse = false;
-    /** Is there an extension that processes invalid UTF8 text messages (such as compressed content) */
-    private boolean isTextFrameValidated = true;
 
     private IncomingFrames incomingFramesHandler;
 
@@ -113,10 +115,10 @@ public class Parser
                 // fall thru
             case OpCode.PING:
             case OpCode.PONG:
-                if (len > WebSocketFrame.MAX_CONTROL_PAYLOAD)
+                if (len > ControlFrame.MAX_CONTROL_PAYLOAD)
                 {
                     throw new ProtocolException("Invalid control frame payload length, [" + payloadLength + "] cannot exceed ["
-                            + WebSocketFrame.MAX_CONTROL_PAYLOAD + "]");
+                            + ControlFrame.MAX_CONTROL_PAYLOAD + "]");
                 }
                 break;
             case OpCode.TEXT:
@@ -134,7 +136,6 @@ public class Parser
         this.rsv1InUse = false;
         this.rsv2InUse = false;
         this.rsv3InUse = false;
-        this.isTextFrameValidated = true;
 
         // configure from list of extensions in use
         for (Extension ext : exts)
@@ -150,10 +151,6 @@ public class Parser
             if (ext.isRsv3User())
             {
                 this.rsv3InUse = true;
-            }
-            if (ext.isTextDataDecoder())
-            {
-                this.isTextFrameValidated = false;
             }
         }
     }
@@ -343,63 +340,64 @@ public class Parser
                         throw new ProtocolException("RSV3 not allowed to be set");
                     }
 
-                    boolean isContinuation = false;
-
-                    switch (opcode)
-                    {
+                    // base framing flags
+                    switch(opcode) {
                         case OpCode.TEXT:
-                            if (isTextFrameValidated)
+                            frame = new TextFrame();
+                            // data validation
+                            if ((priorDataFrame != null) && (!priorDataFrame.isFin()))
                             {
-                                strictnessProcessor = new UTF8Validator();
+                                throw new ProtocolException("Unexpected " + OpCode.name(opcode) + " frame, was expecting CONTINUATION");
                             }
-                            else
+                            break;
+                        case OpCode.BINARY:
+                            frame = new BinaryFrame();
+                            // data validation
+                            if ((priorDataFrame != null) && (!priorDataFrame.isFin()))
                             {
-                                strictnessProcessor = NoOpValidator.INSTANCE;
+                                throw new ProtocolException("Unexpected " + OpCode.name(opcode) + " frame, was expecting CONTINUATION");
                             }
+                            break;
+                        case OpCode.CONTINUATION:
+                            frame = new ContinuationFrame();
+                            // continuation validation
+                            if (priorDataFrame == null)
+                            {
+                                throw new ProtocolException("CONTINUATION frame without prior !FIN");
+                            }
+                            // Be careful to use the original opcode
+                            opcode = lastDataOpcode;
                             break;
                         case OpCode.CLOSE:
-                            strictnessProcessor = new CloseReasonValidator();
+                            frame = new CloseFrame();
+                            // control frame validation
+                            if (!fin)
+                            {
+                                throw new ProtocolException("Fragmented Close Frame [" + OpCode.name(opcode) + "]");
+                            }
                             break;
-                        default:
-                            strictnessProcessor = NoOpValidator.INSTANCE;
+                        case OpCode.PING:
+                            frame = new PingFrame();
+                            // control frame validation
+                            if (!fin)
+                            {
+                                throw new ProtocolException("Fragmented Ping Frame [" + OpCode.name(opcode) + "]");
+                            }
+                            break;
+                        case OpCode.PONG:
+                            frame = new PongFrame();
+                            // control frame validation
+                            if (!fin)
+                            {
+                                throw new ProtocolException("Fragmented Pong Frame [" + OpCode.name(opcode) + "]");
+                            }
                             break;
                     }
-
-                    if (OpCode.isControlFrame(opcode))
-                    {
-                        // control frame validation
-                        if (!fin)
-                        {
-                            throw new ProtocolException("Fragmented Control Frame [" + OpCode.name(opcode) + "]");
-                        }
-                    }
-                    else if (opcode == OpCode.CONTINUATION)
-                    {
-                        isContinuation = true;
-                        // continuation validation
-                        if (priorDataFrame == null)
-                        {
-                            throw new ProtocolException("CONTINUATION frame without prior !FIN");
-                        }
-                        // Be careful to use the original opcode
-                        opcode = lastDataOpcode;
-                    }
-                    else if (OpCode.isDataFrame(opcode))
-                    {
-                        // data validation
-                        if ((priorDataFrame != null) && (!priorDataFrame.isFin()))
-                        {
-                            throw new ProtocolException("Unexpected " + OpCode.name(opcode) + " frame, was expecting CONTINUATION");
-                        }
-                    }
-
-                    // base framing flags
-                    frame = new WebSocketFrame(opcode);
+                    
                     frame.setFin(fin);
                     frame.setRsv1(rsv1);
                     frame.setRsv2(rsv2);
                     frame.setRsv3(rsv3);
-                    frame.setContinuation(isContinuation);
 
                     if (frame.isDataFrame())
                     {
@@ -581,7 +579,6 @@ public class Parser
             }
 
             maskProcessor.process(window);
-            strictnessProcessor.process(window);
             int len = BufferUtil.put(window,payload);
 
             buffer.position(buffer.position() + len); // update incoming buffer position

@@ -43,7 +43,7 @@ public interface MuxAddServer
      *            the channel to attach the {@link WebSocketSession} to.
      * @param requestHandshake
      *            the request handshake (request headers)
-     * @throws AbstractMuxException
+     * @throws MuxException
      *             if unable to handshake
      * @throws IOException
      *             if unable to parse request headers

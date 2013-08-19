@@ -23,8 +23,8 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.extensions.AbstractExtension;
+import org.eclipse.jetty.websocket.common.frames.DataFrame;
 
 /**
  * Per Message Deflate Compression extension for WebSocket.
@@ -60,7 +60,9 @@ public class MessageDeflateCompressionExtension extends AbstractExtension
             {
                 continue;
             }
-            WebSocketFrame out = new WebSocketFrame(frame).setPayload(uncompressed);
+            
+            DataFrame out = new DataFrame(frame);
+            out.setPayload(uncompressed);
             if (!method.decompress().isDone())
             {
                 out.setFin(false);
@@ -86,13 +88,6 @@ public class MessageDeflateCompressionExtension extends AbstractExtension
     }
 
     @Override
-    public boolean isTextDataDecoder()
-    {
-        // this extension is responsible for text data frames
-        return true;
-    }
-
-    @Override
     public void outgoingFrame(Frame frame, WriteCallback callback)
     {
         if (frame.getType().isControl())
@@ -108,7 +103,8 @@ public class MessageDeflateCompressionExtension extends AbstractExtension
         while (!method.compress().isDone())
         {
             ByteBuffer buf = method.compress().process();
-            WebSocketFrame out = new WebSocketFrame(frame).setPayload(buf);
+            DataFrame out = new DataFrame(frame);
+            out.setPayload(buf);
             out.setRsv1(true);
             if (!method.compress().isDone())
             {

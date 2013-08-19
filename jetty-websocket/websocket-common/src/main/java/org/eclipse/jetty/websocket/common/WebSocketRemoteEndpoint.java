@@ -33,6 +33,12 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
+import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
+import org.eclipse.jetty.websocket.common.frames.ContinuationFrame;
+import org.eclipse.jetty.websocket.common.frames.DataFrame;
+import org.eclipse.jetty.websocket.common.frames.PingFrame;
+import org.eclipse.jetty.websocket.common.frames.PongFrame;
+import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.io.FutureWriteCallback;
 
 /**
@@ -142,7 +148,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
         WebSocketFrame frame = WebSocketFrame.binary().setPayload(data);
         return sendAsyncFrame(frame);
     }
-    
+
     @Override
     public void sendBytes(ByteBuffer data, WriteCallback callback)
     {
@@ -186,10 +192,13 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
                 {
                     LOG.debug("sendPartialBytes({}, {})",BufferUtil.toDetailString(fragment),isLast);
                 }
-                WebSocketFrame frame = WebSocketFrame.binary().setPayload(fragment).setFin(isLast);
+                DataFrame frame = null;
                 if(partialStarted) {
-                    frame.setContinuation(true);
+                    frame = new ContinuationFrame(fragment);
+                } else {
+                    frame = new BinaryFrame(fragment);
                 }
+                frame.setFin(isLast);
                 blockingWrite(frame);
                 partialStarted = !isLast;
             }
@@ -225,10 +234,13 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
                 {
                     LOG.debug("sendPartialString({}, {})",fragment,isLast);
                 }
-                WebSocketFrame frame = WebSocketFrame.text(fragment).setFin(isLast);
+                DataFrame frame = null;
                 if(partialStarted) {
-                    frame.setContinuation(true);
+                    frame = new ContinuationFrame(fragment);
+                } else {
+                    frame = new TextFrame(fragment);
                 }
+                frame.setFin(isLast);
                 blockingWrite(frame);
                 partialStarted = !isLast;
             }
@@ -259,7 +271,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
                 {
                     LOG.debug("sendPing with {}",BufferUtil.toDetailString(applicationData));
                 }
-                WebSocketFrame frame = WebSocketFrame.ping().setPayload(applicationData);
+                WebSocketFrame frame = new PingFrame(applicationData);
                 blockingWrite(frame);
             }
             finally
@@ -286,7 +298,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
                 {
                     LOG.debug("sendPong with {}",BufferUtil.toDetailString(applicationData));
                 }
-                WebSocketFrame frame = WebSocketFrame.pong().setPayload(applicationData);
+                WebSocketFrame frame = new PongFrame(applicationData);
                 blockingWrite(frame);
             }
             finally
@@ -339,7 +351,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
         }
         return sendAsyncFrame(frame);
     }
-    
+
     @Override
     public void sendString(String text, WriteCallback callback)
     {

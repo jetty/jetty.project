@@ -92,8 +92,6 @@ public interface Frame
 
     public boolean hasPayload();
 
-    public boolean isContinuation();
-
     public boolean isFin();
 
     /**

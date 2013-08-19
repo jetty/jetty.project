@@ -26,8 +26,10 @@ import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.CloseInfo;
-import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
+import org.eclipse.jetty.websocket.common.frames.PingFrame;
+import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.io.LocalWebSocketSession;
 import org.junit.Rule;
 import org.junit.Test;
@@ -47,7 +49,7 @@ public class EventDriverTest
 
     private Frame makeBinaryFrame(String content, boolean fin)
     {
-        return WebSocketFrame.binary().setFin(fin).setPayload(content);
+        return new BinaryFrame(content).setFin(fin);
     }
 
     @Test
@@ -114,9 +116,9 @@ public class EventDriverTest
         try (LocalWebSocketSession conn = new LocalWebSocketSession(testname,driver))
         {
             conn.open();
-            driver.incomingFrame(new WebSocketFrame(OpCode.PING).setPayload("PING"));
-            driver.incomingFrame(WebSocketFrame.text("Text Me"));
-            driver.incomingFrame(WebSocketFrame.binary().setPayload("Hello Bin"));
+            driver.incomingFrame(new PingFrame("PING"));
+            driver.incomingFrame(new TextFrame("Text Me"));
+            driver.incomingFrame(new BinaryFrame("Hello Bin"));
             driver.incomingFrame(new CloseInfo(StatusCode.SHUTDOWN,"testcase").asFrame());
 
             socket.capture.assertEventCount(6);
@@ -140,7 +142,7 @@ public class EventDriverTest
             conn.open();
             driver.incomingFrame(makeBinaryFrame("Hello World",true));
             driver.incomingFrame(new CloseInfo(StatusCode.NORMAL).asFrame());
-            
+
             socket.capture.assertEventCount(3);
             socket.capture.pop().assertEventStartsWith("onConnect");
             socket.capture.pop().assertEventRegex("^onBinary\\(.*InputStream.*");

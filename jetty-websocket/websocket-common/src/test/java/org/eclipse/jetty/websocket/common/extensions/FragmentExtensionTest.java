@@ -38,6 +38,9 @@ import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.OutgoingFramesCapture;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.extensions.fragment.FragmentExtension;
+import org.eclipse.jetty.websocket.common.frames.ContinuationFrame;
+import org.eclipse.jetty.websocket.common.frames.PingFrame;
+import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -112,7 +115,7 @@ public class FragmentExtensionTest
         ext.setNextIncomingFrames(capture);
 
         String payload = "Are you there?";
-        Frame ping = WebSocketFrame.ping().setPayload(payload);
+        Frame ping = new PingFrame(payload);
         ext.incomingFrame(ping);
 
         capture.assertFrameCount(1);
@@ -161,16 +164,16 @@ public class FragmentExtensionTest
 
         // Expected Frames
         List<WebSocketFrame> expectedFrames = new ArrayList<>();
-        expectedFrames.add(new WebSocketFrame(OpCode.TEXT).setPayload("No amount of experim").setFin(false));
-        expectedFrames.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("entation can ever pr").setFin(false));
-        expectedFrames.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("ove me right;").setFin(true));
+        expectedFrames.add(new TextFrame("No amount of experim").setFin(false));
+        expectedFrames.add(new ContinuationFrame("entation can ever pr").setFin(false));
+        expectedFrames.add(new ContinuationFrame("ove me right;").setFin(true));
 
-        expectedFrames.add(new WebSocketFrame(OpCode.TEXT).setPayload("a single experiment ").setFin(false));
-        expectedFrames.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("can prove me wrong.").setFin(true));
+        expectedFrames.add(new TextFrame("a single experiment ").setFin(false));
+        expectedFrames.add(new ContinuationFrame("can prove me wrong.").setFin(true));
 
-        expectedFrames.add(new WebSocketFrame(OpCode.TEXT).setPayload("-- Albert Einstein").setFin(true));
+        expectedFrames.add(new TextFrame("-- Albert Einstein").setFin(true));
 
-        // capture.dump();
+        capture.dump();
 
         int len = expectedFrames.size();
         capture.assertFrameCount(len);
@@ -182,6 +185,9 @@ public class FragmentExtensionTest
             prefix = "Frame[" + i + "]";
             WebSocketFrame actualFrame = frames.get(i);
             WebSocketFrame expectedFrame = expectedFrames.get(i);
+
+            System.out.printf("actual: %s%n",actualFrame);
+            System.out.printf("expect: %s%n",expectedFrame);
 
             // Validate Frame
             Assert.assertThat(prefix + ".opcode",actualFrame.getOpCode(),is(expectedFrame.getOpCode()));
@@ -230,9 +236,9 @@ public class FragmentExtensionTest
 
         // Expected Frames
         List<WebSocketFrame> expectedFrames = new ArrayList<>();
-        expectedFrames.add(new WebSocketFrame(OpCode.TEXT).setPayload("No amount of experimentation can ever prove me right;"));
-        expectedFrames.add(new WebSocketFrame(OpCode.TEXT).setPayload("a single experiment can prove me wrong."));
-        expectedFrames.add(new WebSocketFrame(OpCode.TEXT).setPayload("-- Albert Einstein"));
+        expectedFrames.add(new TextFrame("No amount of experimentation can ever prove me right;"));
+        expectedFrames.add(new TextFrame("a single experiment can prove me wrong."));
+        expectedFrames.add(new TextFrame("-- Albert Einstein"));
 
         // capture.dump();
 
@@ -280,7 +286,7 @@ public class FragmentExtensionTest
         ext.setNextOutgoingFrames(capture);
 
         String payload = "Are you there?";
-        Frame ping = WebSocketFrame.ping().setPayload(payload);
+        Frame ping = new PingFrame(payload);
 
         ext.outgoingFrame(ping,null);
 

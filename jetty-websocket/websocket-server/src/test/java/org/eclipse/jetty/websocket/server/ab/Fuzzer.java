@@ -109,7 +109,6 @@ public class Fuzzer
             buflen += f.getPayloadLength() + Generator.OVERHEAD;
         }
         ByteBuffer buf = ByteBuffer.allocate(buflen);
-        BufferUtil.clearToFill(buf);
 
         // Generate frames
         for (WebSocketFrame f : send)
@@ -117,7 +116,7 @@ public class Fuzzer
             setClientMask(f);
             generator.generateWholeFrame(f,buf);
         }
-        BufferUtil.flipToFlush(buf,0);
+        buf.flip();
         return buf;
     }
 

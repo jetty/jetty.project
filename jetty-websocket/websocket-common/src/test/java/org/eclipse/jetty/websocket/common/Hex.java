@@ -56,6 +56,11 @@ public final class Hex
         return buf;
     }
 
+    public static ByteBuffer asByteBuffer(String hstr)
+    {
+        return ByteBuffer.wrap(asByteArray(hstr));
+    }
+
     public static String asHex(byte buf[])
     {
         int len = buf.length;
