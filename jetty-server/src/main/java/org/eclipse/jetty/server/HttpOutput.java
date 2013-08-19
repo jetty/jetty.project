@@ -57,6 +57,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private long _written;
     private ByteBuffer _aggregate;
     private int _bufferSize;
+    private int _commitSize;
     private WriteListener _writeListener;
     private volatile Throwable _onError;
 
@@ -79,6 +80,7 @@ write completed    -          -          -          ASYNC         READY->owp
     {
         _channel = channel;
         _bufferSize = _channel.getHttpConfiguration().getOutputBufferSize();
+        _commitSize=_bufferSize/4;
     }
 
     public boolean isWritten()
@@ -231,7 +233,7 @@ write completed    -          -          -          ASYNC         READY->owp
 
                     // Should we aggregate?
                     int capacity = getBufferSize();
-                    if (!complete && len<=capacity/4)
+                    if (!complete && len<=_commitSize)
                     {
                         if (_aggregate == null)
                             _aggregate = _channel.getByteBufferPool().acquire(capacity, false);
@@ -271,7 +273,7 @@ write completed    -          -          -          ASYNC         READY->owp
 
     	// Should we aggregate?
     	int capacity = getBufferSize();
-    	if (!complete && len<=capacity/4)
+    	if (!complete && len<=_commitSize)
     	{
     	    if (_aggregate == null)
     	        _aggregate = _channel.getByteBufferPool().acquire(capacity, false);
@@ -294,7 +296,7 @@ write completed    -          -          -          ASYNC         READY->owp
     	    _channel.write(_aggregate, complete && len==0);
 
     	    // should we fill aggregate again from the buffer?
-    	    if (len>0 && !complete && len<=_aggregate.capacity()/4)
+    	    if (len>0 && !complete && len<=_commitSize)
     	    {
     	        BufferUtil.append(_aggregate, b, off, len);
     	        return;
@@ -596,7 +598,8 @@ write completed    -          -          -          ASYNC         READY->owp
 
     public void setBufferSize(int size)
     {
-        this._bufferSize = size;
+        _bufferSize = size;
+        _commitSize = size;
     }
 
     public void resetBuffer()
@@ -704,12 +707,10 @@ write completed    -          -          -          ASYNC         READY->owp
                 return false;
             }
 
-            // TODO write comments
-            if (!_complete && _len<BufferUtil.space(_aggregate) && _len<_aggregate.capacity()/4)
+            if (!_complete && _len<BufferUtil.space(_aggregate) && _len<_commitSize)
             {
                 BufferUtil.put(_buffer,_aggregate);
             }
-            // TODO write comments
             else if (_len>0 && !_flushed)
             {
                 _flushed=true;
