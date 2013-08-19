@@ -127,7 +127,7 @@ public class Main
             if (arg.startsWith("--ini=") || arg.equals("--ini"))
                 ini = true;
         if (!ini)
-            arguments.add("--ini=start.ini");
+            arguments.add(0,"--ini=start.ini");
         
         // The XML Configuration Files to initialize with
         List<String> xmls = new ArrayList<String>();
