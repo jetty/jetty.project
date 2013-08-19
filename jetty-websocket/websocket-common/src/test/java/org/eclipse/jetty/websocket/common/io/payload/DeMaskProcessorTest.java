@@ -27,7 +27,6 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.ByteBufferAssert;
 import org.eclipse.jetty.websocket.common.UnitGenerator;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
-import org.eclipse.jetty.websocket.common.io.payload.DeMaskProcessor;
 import org.junit.Test;
 
 public class DeMaskProcessorTest
@@ -37,7 +36,8 @@ public class DeMaskProcessorTest
     @Test
     public void testDeMaskText()
     {
-        String message = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
+        // Use a string that is not multiple of 4 in length to test if/else branches in DeMaskProcessor
+        String message = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF01";
 
         WebSocketFrame frame = WebSocketFrame.text(message);
         frame.setMask(TypeUtil.fromHexString("11223344"));

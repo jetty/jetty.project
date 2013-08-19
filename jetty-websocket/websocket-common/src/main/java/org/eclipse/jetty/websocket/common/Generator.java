@@ -282,24 +282,29 @@ public class Generator
         {
             byte[] mask = frame.getMask();
             buffer.put(mask);
+            int maskInt = ByteBuffer.wrap(mask).getInt();
 
             // perform data masking here
-            byte mb;
             ByteBuffer payload = frame.getPayload();
             if ((payload != null) && (payload.remaining() > 0))
             {
-                int pos = payload.position();
-                int limit = payload.limit();
-                for (int i = pos; i < limit; i++)
+                int maskOffset = 0;
+                int start = payload.position();
+                int end = payload.limit();
+                int remaining;
+                while ((remaining = end - start) > 0)
                 {
-                    // get raw byte from buffer.
-                    mb = payload.get(i);
-
-                    // mask, using offset information from frame windowing.
-                    mb ^= mask[(i - pos) % 4];
-
-                    // Mask each byte by its absolute position in the payload bytebuffer
-                    payload.put(i,mb);
+                    if (remaining >= 4)
+                    {
+                        payload.putInt(start, payload.getInt(start) ^ maskInt);
+                        start += 4;
+                    }
+                    else
+                    {
+                        payload.put(start, (byte)(payload.get(start) ^ mask[maskOffset & 3]));
+                        ++start;
+                        ++maskOffset;
+                    }
                 }
             }
         }
