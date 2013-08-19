@@ -121,21 +121,26 @@ public class Main implements IncludeListener
     {
         String source = "";
 
-        // Handle default ini args
         ArrayList<String> arguments = new ArrayList<>(Arrays.asList(args));
-        boolean ini = false;
-        for (String arg : arguments)
-        {
-            if (arg.startsWith("--ini=") || arg.equals("--ini"))
-            {
-                ini = true;
-            }
-        }
-        if (!ini)
-        {
+        
+        // Ensure ini is declared
+        if(findArgumentPrefix(arguments, "--ini=") == null) {
             arguments.add(0,"--ini=start.ini");
         }
-
+        
+        // Set Home and Base at the start, as all other paths encountered
+        // will be based off of them.
+        String home = findArgumentPrefix(arguments, "-Djetty.home=");
+        if(home != null) {
+            String value = home.replaceFirst("^[^=]*=","");
+            _config.getBaseHome().setHomeDir(new File(value));
+        }
+        String base = findArgumentPrefix(arguments, "-Djetty.base=");
+        if(base != null) {
+            String value = base.replaceFirst("^[^=]*=","");
+            _config.getBaseHome().setBaseDir(new File(value));
+        }
+        
         // The XML Configuration Files to initialize with
         List<String> xmls = new ArrayList<String>();
 
@@ -216,11 +221,10 @@ public class Main implements IncludeListener
 
             if (arg.startsWith("--ini=") || arg.equals("--ini"))
             {
-                ini = true;
                 if (arg.length() > 6)
                 {
                     String name = arg.substring(6);
-                    File file = _config.getHomeBase().getFile(name);
+                    File file = _config.getBaseHome().getFile(name);
                     StartIni startini = new StartIni(file,this);
                     _iniFiles.add(file);
                     arguments.addAll(i + 1,startini.getLines());
@@ -374,8 +378,20 @@ public class Main implements IncludeListener
             }
             xmls.add(arg);
         }
-
+        
         return xmls;
+    }
+
+    private String findArgumentPrefix(ArrayList<String> arguments, String prefix)
+    {
+        for (String arg : arguments)
+        {
+            if (arg.startsWith(prefix))
+            {
+                return arg;
+            }
+        }
+        return null;
     }
 
     @Override
@@ -383,7 +399,7 @@ public class Main implements IncludeListener
     {
         List<StartIni> included = new ArrayList<>();
 
-        HomeBase hb = _config.getHomeBase();
+        BaseHome hb = _config.getBaseHome();
 
         // Allow --enable and --disable to work
         _iniIncludePaths.add(path);
@@ -498,7 +514,7 @@ public class Main implements IncludeListener
                         };
 
                         // list etc
-                        List<File> configFiles = _config.getHomeBase().listFiles("etc",filter);
+                        List<File> configFiles = _config.getBaseHome().listFiles("etc",filter);
 
                         for (File configFile : configFiles)
                         {
@@ -509,7 +525,7 @@ public class Main implements IncludeListener
                     {
                         for (File file : _iniFiles)
                         {
-                            String path = _config.getHomeBase().toShortForm(file);
+                            String path = _config.getBaseHome().toShortForm(file);
                             System.out.printf("%s%s%n",indent,path);
 
                             if (Config.isDebug())
@@ -542,12 +558,12 @@ public class Main implements IncludeListener
 
     private String path(String path)
     {
-        return _config.getHomeBase().toShortForm(path);
+        return _config.getBaseHome().toShortForm(path);
     }
 
     private String path(File file)
     {
-        return _config.getHomeBase().toShortForm(file);
+        return _config.getBaseHome().toShortForm(file);
     }
 
     public void invokeMain(ClassLoader classloader, String classname, List<String> args) throws IllegalAccessException, InvocationTargetException,
@@ -622,7 +638,7 @@ public class Main implements IncludeListener
             System.err.println("java.class.path=" + classpath);
             System.err.println("classloader=" + cl);
             System.err.println("classloader.parent=" + cl.getParent());
-            System.err.println("properties=" + _config.getProperties());
+            System.err.println("properties=" + Config.getProperties());
         }
 
         for (String m : _enable)
@@ -753,14 +769,14 @@ public class Main implements IncludeListener
         }
 
         // Try normal locations
-        File xml = _config.getHomeBase().getFile(xmlFilename);
+        File xml = _config.getBaseHome().getFile(xmlFilename);
         if (FS.isFile(xml))
         {
             return xml.getAbsolutePath();
         }
 
         // Try again, but prefixed with "etc/"
-        xml = _config.getHomeBase().getFile("etc/" + xmlFilename);
+        xml = _config.getBaseHome().getFile("etc/" + xmlFilename);
         if (FS.isFile(xml))
         {
             return xml.getAbsolutePath();
@@ -777,8 +793,8 @@ public class Main implements IncludeListener
         {
             cmd.addArg(x);
         }
-        cmd.addRawArg("-Djetty.home=" + _config.getHomeBase().getHome());
-        cmd.addRawArg("-Djetty.base=" + _config.getHomeBase().getBase());
+        cmd.addRawArg("-Djetty.home=" + _config.getBaseHome().getHome());
+        cmd.addRawArg("-Djetty.base=" + _config.getBaseHome().getBase());
 
         // Special Stop/Shutdown properties
         ensureSystemPropertySet("STOP.PORT");
@@ -796,7 +812,7 @@ public class Main implements IncludeListener
         cmd.addRawArg(_config.getMainClassname());
 
         // Check if we need to pass properties as a file
-        Properties properties = _config.getProperties();
+        Properties properties = Config.getProperties();
         if (properties.size() > 0)
         {
             File prop_file = File.createTempFile("start",".properties");
@@ -826,7 +842,7 @@ public class Main implements IncludeListener
             return; // done
         }
 
-        Properties props = _config.getProperties();
+        Properties props = Config.getProperties();
         if (props.containsKey(key))
         {
             String val = props.getProperty(key,null);
@@ -900,8 +916,8 @@ public class Main implements IncludeListener
         System.out.println("Note: If using multiple options (eg: 'Server,servlet,webapp,jms,jmx') "
                 + "then overlapping entries will not be repeated in the eventual classpath.");
         System.out.println();
-        System.out.printf("${jetty.home} = %s%n",_config.getHomeBase().getHome());
-        System.out.printf("${jetty.base} = %s%n",_config.getHomeBase().getBase());
+        System.out.printf("${jetty.home} = %s%n",_config.getBaseHome().getHome());
+        System.out.printf("${jetty.base} = %s%n",_config.getBaseHome().getBase());
         System.out.println();
 
         for (String sectionId : sectionIds)
@@ -1188,7 +1204,7 @@ public class Main implements IncludeListener
 
         FileFilter disabledModuleFilter = new FS.FilenameRegexFilter("(\\d\\d\\d-)?"+Pattern.quote(module)+"\\.ini(\\.disabled)?");
 
-        HomeBase hb = _config.getHomeBase();
+        BaseHome hb = _config.getBaseHome();
 
         // walk all ini include paths that were used
         boolean found = false;
@@ -1247,7 +1263,7 @@ public class Main implements IncludeListener
 
         FileFilter disabledModuleFilter = new FS.FilenameRegexFilter("(\\d\\d\\d-)?"+Pattern.quote(module)+"\\.ini(\\.disabled)?");
 
-        HomeBase hb = _config.getHomeBase();
+        BaseHome hb = _config.getBaseHome();
 
         // walk all ini include paths that were used
         boolean found = false;

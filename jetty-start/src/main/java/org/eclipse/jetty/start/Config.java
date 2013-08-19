@@ -49,8 +49,8 @@ import java.util.TreeSet;
  * </p>
  * 
  * <p>
- * The behaviour of Main is controlled by the <code>"org/eclipse/start/start.config"</code> file obtained as a resource
- * or file. This can be overridden with the START system property. The format of each line in this file is:
+ * The behaviour of Main is controlled by the <code>"org/eclipse/start/start.config"</code> file obtained as a resource or file. This can be overridden with the
+ * START system property. The format of each line in this file is:
  * </p>
  * 
  * <p>
@@ -101,18 +101,15 @@ import java.util.TreeSet;
  * <li><code>exists file</code> - true if file/dir exists</li>
  * <li><code>java OPERATOR version</code> - java version compared to literal</li>
  * <li><code>nargs OPERATOR number</code> - number of command line args compared to literal</li>
- * <li>OPERATOR := one of <code>"&lt;"</code>,<code>"&gt;"</code>,<code>"&lt;="</code>,<code>"&gt;="</code>,
- * <code>"=="</code>,<code>"!="</code></li>
+ * <li>OPERATOR := one of <code>"&lt;"</code>,<code>"&gt;"</code>,<code>"&lt;="</code>,<code>"&gt;="</code>, <code>"=="</code>,<code>"!="</code></li>
  * </ul>
  * 
  * <p>
- * CONDITIONS can be combined with <code>AND</code> <code>OR</code> or <code>!</code>, with <code>AND</code> being the
- * assume operator for a list of CONDITIONS.
+ * CONDITIONS can be combined with <code>AND</code> <code>OR</code> or <code>!</code>, with <code>AND</code> being the assume operator for a list of CONDITIONS.
  * </p>
  * 
  * <p>
- * Classpath operations are evaluated on the fly, so once a class or jar is added to the classpath, subsequent available
- * conditions will see that class.
+ * Classpath operations are evaluated on the fly, so once a class or jar is added to the classpath, subsequent available conditions will see that class.
  * </p>
  * 
  * <p>
@@ -120,13 +117,13 @@ import java.util.TreeSet;
  * </p>
  * 
  * <p>
- * Note: a special discovered section identifier <code>[=path_to_directory/*]</code> is allowed to auto-create section
- * IDs, based on directory names found in the path specified in the "path_to_directory/" part of the identifier.
+ * Note: a special discovered section identifier <code>[=path_to_directory/*]</code> is allowed to auto-create section IDs, based on directory names found in
+ * the path specified in the "path_to_directory/" part of the identifier.
  * </p>
  * 
  * <p>
- * Clauses after a section header will only be included if they match one of the tags in the options property. By
- * default options are set to "default,*" or the OPTIONS property may be used to pass in a list of tags, eg. :
+ * Clauses after a section header will only be included if they match one of the tags in the options property. By default options are set to "default,*" or the
+ * OPTIONS property may be used to pass in a list of tags, eg. :
  * </p>
  * 
  * <pre>
@@ -146,13 +143,12 @@ public class Config
     public static final String DEFAULT_SECTION = "";
     static
     {
-        String ver = System.getProperty("jetty.version", null);
-        
-        if(ver == null) {
+        String ver = System.getProperty("jetty.version",null);
+
+        if (ver == null)
+        {
             Package pkg = Config.class.getPackage();
-            if (pkg != null && 
-                    "Eclipse.org - Jetty".equals(pkg.getImplementationVendor()) &&
-                    (pkg.getImplementationVersion() != null))
+            if (pkg != null && "Eclipse.org - Jetty".equals(pkg.getImplementationVendor()) && (pkg.getImplementationVersion() != null))
             {
                 ver = pkg.getImplementationVersion();
             }
@@ -173,15 +169,15 @@ public class Config
     private static final String __version;
     private static boolean DEBUG = false;
     private static Config __instance;
-    
-    private final HomeBase _homebase;
+
+    private final BaseHome _homebase;
     private final Map<String, String> _properties = new HashMap<String, String>();
     private final Map<String, Classpath> _classpaths = new HashMap<String, Classpath>();
     private final List<String> _xml = new ArrayList<String>();
     private String _classname = null;
 
     private int argCount = 0;
-    
+
     private final Set<String> _options = new TreeSet<String>(new Comparator<String>()
     {
         // Make sure "*" is always at the end of the list
@@ -198,16 +194,16 @@ public class Config
             return o1.compareTo(o2);
         }
     });
-    
+
     public Config()
     {
-        __instance=this;
-        _homebase = new HomeBase();
+        __instance = this;
+        _homebase = new BaseHome();
         setProperty("jetty.home",_homebase.getHome());
         setProperty("jetty.base",_homebase.getBase());
     }
-    
-    public HomeBase getHomeBase()
+
+    public BaseHome getBaseHome()
     {
         return _homebase;
     }
@@ -222,7 +218,7 @@ public class Config
         }
         return cp;
     }
-    
+
     private boolean addClasspathComponent(List<String> sections, String component)
     {
         for (String section : sections)
@@ -300,12 +296,12 @@ public class Config
             System.err.println(msg);
         }
     }
-    
-    public static void debug(String format, Object ... args)
+
+    public static void debug(String format, Object... args)
     {
         if (DEBUG)
         {
-            System.err.printf(format+"%n",args);
+            System.err.printf(format + "%n",args);
         }
     }
 
@@ -380,8 +376,7 @@ public class Config
      * 
      * @param optionIds
      *            the list of section ids to fetch
-     * @return the {@link Classpath} representing combination all of the selected sectionIds, combined with the default
-     *         section id, and '*' special id.
+     * @return the {@link Classpath} representing combination all of the selected sectionIds, combined with the default section id, and '*' special id.
      */
     public Classpath getCombinedClasspath(Collection<String> optionIds)
     {
@@ -410,31 +405,35 @@ public class Config
     {
         _properties.clear();
     }
-    
-    /* This method is static so it can be accessed by XmlConfiguration */ 
+
+    /* This method is static so it can be accessed by XmlConfiguration */
     public static Properties getProperties()
     {
         Properties properties = new Properties();
         // Add System Properties First
         Enumeration<?> ensysprop = System.getProperties().propertyNames();
-        while(ensysprop.hasMoreElements()) {
+        while (ensysprop.hasMoreElements())
+        {
             String name = (String)ensysprop.nextElement();
-            properties.put(name, System.getProperty(name));
+            properties.put(name,System.getProperty(name));
         }
         // Add Config Properties Next (overwriting any System Properties that exist)
-        for (String key : __instance._properties.keySet()) {
+        for (String key : __instance._properties.keySet())
+        {
             properties.put(key,__instance._properties.get(key));
         }
         return properties;
     }
-    
+
     public String getProperty(String name)
     {
-        if ("version".equalsIgnoreCase(name)) {
+        if ("version".equalsIgnoreCase(name))
+        {
             return __version;
         }
         // Search Config Properties First
-        if (_properties.containsKey(name)) {
+        if (_properties.containsKey(name))
+        {
             return _properties.get(name);
         }
         // Return what exists in System.Properties otherwise.
@@ -447,7 +446,7 @@ public class Config
         if (_properties.containsKey(name))
             return _properties.get(name);
         // Return what exists in System.Properties otherwise.
-        return System.getProperty(name, defaultValue);
+        return System.getProperty(name,defaultValue);
     }
 
     /**
@@ -543,7 +542,8 @@ public class Config
     /**
      * Parse the configuration
      * 
-     * @param stream the stream to read from
+     * @param stream
+     *            the stream to read from
      * @throws IOException
      */
     public void parse(InputStream stream) throws IOException
@@ -558,7 +558,7 @@ public class Config
      */
     public void parse(Reader reader) throws IOException
     {
-        try(BufferedReader buf = new BufferedReader(reader))
+        try (BufferedReader buf = new BufferedReader(reader))
         {
             List<String> options = new ArrayList<String>();
             options.add(DEFAULT_SECTION);
@@ -583,8 +583,8 @@ public class Config
 
                     // Normal case: section identifier (possibly separated by commas)
                     options = Arrays.asList(identifier.split(","));
-                    List<String> option_ids=new ArrayList<String>();
-                    
+                    List<String> option_ids = new ArrayList<String>();
+
                     // Ensure section classpaths exist
                     for (String optionId : options)
                     {
@@ -593,23 +593,22 @@ public class Config
 
                         if (!_classpaths.containsKey(optionId))
                             _classpaths.put(optionId,new Classpath());
-                        
+
                         if (!option_ids.contains(optionId))
                             option_ids.add(optionId);
                     }
-                    
 
                     // Process Dynamic
                     for (String optionId : options)
                     {
                         if (optionId.charAt(0) != '=')
                             continue;
-                        
+
                         option_ids = processDynamicSectionIdentifier(optionId.substring(1),option_ids);
                     }
-                    
+
                     options = option_ids;
-                    
+
                     continue;
                 }
 
@@ -685,18 +684,18 @@ public class Config
                             String version = st.nextToken();
                             ver.parse(version);
                             eval = (operator.equals("<") && java_version.compare(ver) < 0) || (operator.equals(">") && java_version.compare(ver) > 0)
-                            || (operator.equals("<=") && java_version.compare(ver) <= 0) || (operator.equals("=<") && java_version.compare(ver) <= 0)
-                            || (operator.equals("=>") && java_version.compare(ver) >= 0) || (operator.equals(">=") && java_version.compare(ver) >= 0)
-                            || (operator.equals("==") && java_version.compare(ver) == 0) || (operator.equals("!=") && java_version.compare(ver) != 0);
+                                    || (operator.equals("<=") && java_version.compare(ver) <= 0) || (operator.equals("=<") && java_version.compare(ver) <= 0)
+                                    || (operator.equals("=>") && java_version.compare(ver) >= 0) || (operator.equals(">=") && java_version.compare(ver) >= 0)
+                                    || (operator.equals("==") && java_version.compare(ver) == 0) || (operator.equals("!=") && java_version.compare(ver) != 0);
                         }
                         else if (condition.equals("nargs"))
                         {
                             String operator = st.nextToken();
                             int number = Integer.parseInt(st.nextToken());
                             eval = (operator.equals("<") && argCount < number) || (operator.equals(">") && argCount > number)
-                            || (operator.equals("<=") && argCount <= number) || (operator.equals("=<") && argCount <= number)
-                            || (operator.equals("=>") && argCount >= number) || (operator.equals(">=") && argCount >= number)
-                            || (operator.equals("==") && argCount == number) || (operator.equals("!=") && argCount != number);
+                                    || (operator.equals("<=") && argCount <= number) || (operator.equals("=<") && argCount <= number)
+                                    || (operator.equals("=>") && argCount >= number) || (operator.equals(">=") && argCount >= number)
+                                    || (operator.equals("==") && argCount == number) || (operator.equals("!=") && argCount != number);
                         }
                         else
                         {
@@ -758,7 +757,7 @@ public class Config
                     // Recursively add all unconsidered JAR and ZIP files to classpath
                     if (subject.endsWith("/**"))
                     {
-                        //directory hierarchy of jar files - recursively add all jars and zips in the hierarchy
+                        // directory hierarchy of jar files - recursively add all jars and zips in the hierarchy
                         File dir = new File(fixPath(file.substring(0,file.length() - 2)));
                         addJars(options,dir,true);
                         continue;
@@ -834,27 +833,27 @@ public class Config
         }
     }
 
-    private List<String> processDynamicSectionIdentifier(String dynamicPathId,List<String> sections) throws IOException
+    private List<String> processDynamicSectionIdentifier(String dynamicPathId, List<String> sections) throws IOException
     {
         String rawPath;
         boolean deep;
-        
+
         if (dynamicPathId.endsWith("/*"))
         {
-            deep=false;
+            deep = false;
             rawPath = fixPath(dynamicPathId.substring(0,dynamicPathId.length() - 1));
         }
         else if (dynamicPathId.endsWith("/**"))
         {
-            deep=true;
+            deep = true;
             rawPath = fixPath(dynamicPathId.substring(0,dynamicPathId.length() - 2));
         }
-        else 
+        else
         {
             String msg = "Illegal dynamic path [" + dynamicPathId + "]";
             throw new IOException(msg);
         }
-        
+
         File parentDir = new File(expand(rawPath));
         if (!parentDir.exists())
             return sections;
@@ -870,24 +869,24 @@ public class Config
 
         List<String> dyn_sections = new ArrayList<String>();
         List<String> super_sections = new ArrayList<String>();
-        if (sections!=null)
+        if (sections != null)
             super_sections.addAll(sections);
-        
+
         for (File dir : dirs)
         {
             String id = dir.getName();
             if (!_classpaths.keySet().contains(id))
-                _classpaths.put(id, new Classpath());
-            
+                _classpaths.put(id,new Classpath());
+
             dyn_sections.clear();
-            if (sections!=null)
+            if (sections != null)
                 dyn_sections.addAll(sections);
             dyn_sections.add(id);
             super_sections.add(id);
             debug("dynamic: " + dyn_sections);
             addJars(dyn_sections,dir,deep);
         }
-        
+
         return super_sections;
     }
 
@@ -938,12 +937,12 @@ public class Config
         }
         if (name.equals("jetty.base"))
         {
-            File base=new File(value);
+            File base = new File(value);
             try
             {
-                value=base.getCanonicalPath();
+                value = base.getCanonicalPath();
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 e.printStackTrace();
             }
@@ -953,10 +952,10 @@ public class Config
 
     public void addOption(String option)
     {
-        _options.add(option); 
+        _options.add(option);
         _properties.put("OPTIONS",join(_options,","));
     }
-    
+
     public Set<String> getKnownOptions()
     {
         return _classpaths.keySet();
@@ -972,7 +971,7 @@ public class Config
         _options.remove(option);
         _properties.put("OPTIONS",join(_options,","));
     }
-    
+
     private String join(Collection<?> coll, String delim)
     {
         StringBuffer buf = new StringBuffer();

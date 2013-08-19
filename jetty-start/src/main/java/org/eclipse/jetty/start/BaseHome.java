@@ -36,19 +36,19 @@ import java.util.Objects;
  * <p>
  * The <code>${jetty.base}</code> directory is where the execution specific configuration and webapps are obtained from.
  */
-public class HomeBase
+public class BaseHome
 {
     private File homeDir;
     private File baseDir;
 
-    public HomeBase()
+    public BaseHome()
     {
         String userDir = System.getProperty("user.dir");
         this.homeDir = new File(System.getProperty("jetty.home",userDir));
         this.baseDir = new File(System.getProperty("jetty.base",homeDir.getAbsolutePath()));
     }
 
-    public HomeBase(File homeDir, File baseDir)
+    public BaseHome(File homeDir, File baseDir)
     {
         this.homeDir = homeDir;
         this.baseDir = baseDir==null?homeDir:baseDir;
@@ -258,13 +258,8 @@ public class HomeBase
         {
             return path;
         }
-
-        String value = homeDir.getAbsolutePath();
-
-        if (path.startsWith(value))
-        {
-            return "${jetty.home}" + path.substring(value.length());
-        }
+        
+        String value;
 
         if (isBaseDifferent())
         {
@@ -274,6 +269,14 @@ public class HomeBase
                 return "${jetty.base}" + path.substring(value.length());
             }
         }
+
+        value = homeDir.getAbsolutePath();
+
+        if (path.startsWith(value))
+        {
+            return "${jetty.home}" + path.substring(value.length());
+        }
+
         return path;
     }
 }

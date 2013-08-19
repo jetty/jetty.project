@@ -90,7 +90,7 @@ public class StartIni implements Iterable<String>
                         }
                         else
                         {
-                            // Collect HomeBase resolved included StartIni's
+                            // Collect BaseHome resolved included StartIni's
                             for (StartIni included : listener.onIniInclude(line))
                             {
                                 // Merge each line with prior lines to prevent duplicates
