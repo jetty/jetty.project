@@ -51,7 +51,7 @@ public class HomeBase
     public HomeBase(File homeDir, File baseDir)
     {
         this.homeDir = homeDir;
-        this.baseDir = baseDir;
+        this.baseDir = baseDir==null?homeDir:baseDir;
     }
 
     public boolean isBaseDifferent()

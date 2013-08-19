@@ -162,7 +162,7 @@ public class Config
         {
             ver = "Unknown";
         }
-        _version = ver;
+        __version = ver;
     }
 
     /**
@@ -170,8 +170,10 @@ public class Config
      */
     private final Comparator<String> keySorter = new NaturalSort.Strings();
 
-    private static final String _version;
+    private static final String __version;
     private static boolean DEBUG = false;
+    private static Config __instance;
+    
     private final HomeBase _homebase;
     private final Map<String, String> _properties = new HashMap<String, String>();
     private final Map<String, Classpath> _classpaths = new HashMap<String, Classpath>();
@@ -199,6 +201,7 @@ public class Config
     
     public Config()
     {
+        __instance=this;
         _homebase = new HomeBase();
         setProperty("jetty.home",_homebase.getHome());
         setProperty("jetty.base",_homebase.getBase());
@@ -408,7 +411,8 @@ public class Config
         _properties.clear();
     }
     
-    public Properties getProperties()
+    /* This method is static so it can be accessed by XmlConfiguration */ 
+    public static Properties getProperties()
     {
         Properties properties = new Properties();
         // Add System Properties First
@@ -418,8 +422,8 @@ public class Config
             properties.put(name, System.getProperty(name));
         }
         // Add Config Properties Next (overwriting any System Properties that exist)
-        for (String key : _properties.keySet()) {
-            properties.put(key,_properties.get(key));
+        for (String key : __instance._properties.keySet()) {
+            properties.put(key,__instance._properties.get(key));
         }
         return properties;
     }
@@ -427,7 +431,7 @@ public class Config
     public String getProperty(String name)
     {
         if ("version".equalsIgnoreCase(name)) {
-            return _version;
+            return __version;
         }
         // Search Config Properties First
         if (_properties.containsKey(name)) {

@@ -47,6 +47,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Properties;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.eclipse.jetty.start.StartIni.IncludeListener;
 
@@ -65,6 +67,7 @@ public class Main implements IncludeListener
 {
     private static final String START_LOG_FILENAME = "start.log";
     private static final SimpleDateFormat START_LOG_ROLLOVER_DATEFORMAT = new SimpleDateFormat("yyyy_MM_dd-HHmmSSSSS.'" + START_LOG_FILENAME + "'");
+    private static final Pattern NNN_MODULE_INI = Pattern.compile("^(\\d\\d\\d-)(.*?\\.ini)(\\.disabled)?$");
 
     private static final int EXIT_USAGE = 1;
     private static final int ERR_LOGGING = -1;
@@ -130,7 +133,7 @@ public class Main implements IncludeListener
         }
         if (!ini)
         {
-            arguments.add("--ini=start.ini");
+            arguments.add(0,"--ini=start.ini");
         }
 
         // The XML Configuration Files to initialize with
@@ -1183,7 +1186,7 @@ public class Main implements IncludeListener
         final String mini = module + ".ini";
         final String disable = module + ".ini.disabled";
 
-        FileFilter disabledModuleFilter = new FS.FileNamesFilter(mini, disable);
+        FileFilter disabledModuleFilter = new FS.FilenameRegexFilter("(\\d\\d\\d-)?"+Pattern.quote(module)+"\\.ini(\\.disabled)?");
 
         HomeBase hb = _config.getHomeBase();
 
@@ -1206,6 +1209,25 @@ public class Main implements IncludeListener
                     file.renameTo(new File(file.getParentFile(),mini));
                     found = true;
                 }
+                else
+                {
+                    Matcher matcher = NNN_MODULE_INI.matcher(n);
+                    if (matcher.matches())
+                    {
+                        if (matcher.group(3)==null)
+                        {
+                            System.err.printf("Module %s already enabled in %s as %s%n",module,hb.toShortForm(file.getParent()),n);
+                            found = true;
+                        }
+                        else
+                        {
+                            String enabled=matcher.group(1)+mini;
+                            System.err.printf("Enabling Module %s in %s as %s%n",module,hb.toShortForm(file.getParent()),enabled);
+                            file.renameTo(new File(file.getParentFile(),enabled));
+                            found = true;
+                        }
+                    }
+                }
             }
         }
 
@@ -1223,7 +1245,7 @@ public class Main implements IncludeListener
         final String mini = module + ".ini";
         final String disable = module + ".ini.disabled";
 
-        FileFilter disabledModuleFilter = new FS.FileNamesFilter(mini, disable);
+        FileFilter disabledModuleFilter = new FS.FilenameRegexFilter("(\\d\\d\\d-)?"+Pattern.quote(module)+"\\.ini(\\.disabled)?");
 
         HomeBase hb = _config.getHomeBase();
 
@@ -1245,6 +1267,25 @@ public class Main implements IncludeListener
                     System.err.printf("Disabling Module %s in %s%n",module,hb.toShortForm(file.getParent()));
                     file.renameTo(new File(file.getParentFile(),disable));
                     found = true;
+                }
+                else
+                {
+                    Matcher matcher = NNN_MODULE_INI.matcher(n);
+                    if (matcher.matches())
+                    {
+                        if (matcher.group(3)!=null)
+                        {
+                            System.err.printf("Module %s already disabled in %s as %s%n",module,hb.toShortForm(file.getParent()),n);
+                            found = true;
+                        }
+                        else
+                        {
+                            String disabled=matcher.group(1)+disable;
+                            System.err.printf("Disabling Module %s in %s as %s%n",module,hb.toShortForm(file.getParent()),disabled);
+                            file.renameTo(new File(file.getParentFile(),disabled));
+                            found = true;
+                        }
+                    }
                 }
             }
         }
