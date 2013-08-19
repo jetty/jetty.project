@@ -108,7 +108,7 @@ public class MainTest
         assertThat("CommandLineBuilder shouldn't be null",cmd,notNullValue());
 
         List<String> commandArgs = cmd.getArgs();
-        assertThat("commandArgs should contain 11 elements",commandArgs.size(),equalTo(11));
+        assertThat("commandArgs elements",commandArgs.size(),equalTo(12));
         assertThat("args does not contain -cp",commandArgs,hasItems("-cp"));
         assertThat("Classpath should be correctly quoted and match expected value",commandArgs,
                 hasItems("/jetty/home with spaces/somejar.jar:/jetty/home with spaces/someotherjar.jar"));
