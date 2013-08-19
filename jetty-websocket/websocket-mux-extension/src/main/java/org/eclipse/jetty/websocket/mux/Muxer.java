@@ -38,6 +38,7 @@ import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.frames.ControlFrame;
 import org.eclipse.jetty.websocket.mux.add.MuxAddClient;
 import org.eclipse.jetty.websocket.mux.add.MuxAddServer;
 import org.eclipse.jetty.websocket.mux.op.MuxAddChannelRequest;
@@ -196,7 +197,7 @@ public class Muxer implements IncomingFrames, MuxParser.Listener
         }
 
         String reason = "Mux[MUST FAIL]" + drop.getPhrase();
-        reason = StringUtil.truncate(reason,WebSocketFrame.MAX_CONTROL_PAYLOAD);
+        reason = StringUtil.truncate(reason,ControlFrame.MAX_CONTROL_PAYLOAD);
         this.physicalConnection.close(StatusCode.SERVER_ERROR,reason);
 
         // TODO: trigger abnormal close for all sub-channels.
@@ -308,7 +309,7 @@ public class Muxer implements IncomingFrames, MuxParser.Listener
         MuxChannel channel = getChannel(channelId,false);
 
         String reason = "Mux " + drop.toString();
-        reason = StringUtil.truncate(reason,(WebSocketFrame.MAX_CONTROL_PAYLOAD - 2));
+        reason = StringUtil.truncate(reason,(ControlFrame.MAX_CONTROL_PAYLOAD - 2));
         channel.close(StatusCode.PROTOCOL,reason);
         // TODO: set channel to inactive?
     }

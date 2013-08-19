@@ -24,8 +24,8 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.extensions.AbstractExtension;
+import org.eclipse.jetty.websocket.common.frames.DataFrame;
 
 /**
  * Implementation of the <a href="https://tools.ietf.org/id/draft-tyoshino-hybi-websocket-perframe-deflate-05.txt">x-webkit-deflate-frame</a> extension seen out
@@ -56,7 +56,8 @@ public class FrameCompressionExtension extends AbstractExtension
         while (!method.decompress().isDone())
         {
             ByteBuffer uncompressed = method.decompress().process();
-            WebSocketFrame out = new WebSocketFrame(frame).setPayload(uncompressed);
+            DataFrame out = new DataFrame(frame);
+            out.setPayload(uncompressed);
             if (!method.decompress().isDone())
             {
                 out.setFin(false);
@@ -80,15 +81,6 @@ public class FrameCompressionExtension extends AbstractExtension
         return true;
     }
 
-    /**
-     * Indicate that this extensions is now responsible for TEXT Data Frame compliance to the WebSocket spec.
-     */
-    @Override
-    public boolean isTextDataDecoder()
-    {
-        return true;
-    }
-
     @Override
     public synchronized void outgoingFrame(Frame frame, WriteCallback callback)
     {
@@ -106,7 +98,8 @@ public class FrameCompressionExtension extends AbstractExtension
         while (!method.compress().isDone())
         {
             ByteBuffer buf = method.compress().process();
-            WebSocketFrame out = new WebSocketFrame(frame).setPayload(buf);
+            DataFrame out = new DataFrame(frame);
+            out.setPayload(buf);
             out.setRsv1(true);
             if (!method.compress().isDone())
             {

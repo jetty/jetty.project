@@ -30,13 +30,15 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.websocket.common.frames.CloseFrame;
+import org.eclipse.jetty.websocket.common.frames.PingFrame;
 import org.junit.Assert;
 import org.junit.Test;
 
 public class GeneratorTest
 {
     private static final Logger LOG = Log.getLogger(GeneratorTest.WindowHelper.class);
-    
+
     public static class WindowHelper
     {
         final int windowSize;
@@ -110,14 +112,14 @@ public class GeneratorTest
         // Validate
         Assert.assertThat("Buffer",actual,is(expectedBytes.toString()));
     }
-    
+
     private String asMaskedHex(String str, byte[] maskingKey)
     {
         byte utf[] = StringUtil.getUtf8Bytes(str);
-        mask(utf, maskingKey);
+        mask(utf,maskingKey);
         return Hex.asHex(utf);
     }
-    
+
     private void mask(byte[] buf, byte[] maskingKey)
     {
         int size = buf.length;
@@ -131,7 +133,7 @@ public class GeneratorTest
     public void testClose_Empty()
     {
         // 0 byte payload (no status code)
-        assertGeneratedBytes("8800",new WebSocketFrame(OpCode.CLOSE));
+        assertGeneratedBytes("8800",new CloseFrame());
     }
 
     @Test
@@ -164,16 +166,16 @@ public class GeneratorTest
         WebSocketFrame frame = WebSocketFrame.text("Hello");
         byte maskingKey[] = Hex.asByteArray("11223344");
         frame.setMask(maskingKey);
-        
+
         // what is expected
         StringBuilder expected = new StringBuilder();
         expected.append("8185").append("11223344");
         expected.append(asMaskedHex("Hello",maskingKey));
-        
+
         // validate
         assertGeneratedBytes(expected,frame);
     }
-    
+
     @Test
     public void testText_Masked_OffsetSourceByteBuffer()
     {
@@ -186,16 +188,16 @@ public class GeneratorTest
         // but only a few bytes in the middle are made available for the payload.
         // we are testing that masking works as intended, even if the provided
         // payload does not start at position 0.
-        LOG.debug("Payload = {}", BufferUtil.toDetailString(payload));
+        LOG.debug("Payload = {}",BufferUtil.toDetailString(payload));
         WebSocketFrame frame = WebSocketFrame.text().setPayload(payload);
         byte maskingKey[] = Hex.asByteArray("11223344");
         frame.setMask(maskingKey);
-        
+
         // what is expected
         StringBuilder expected = new StringBuilder();
         expected.append("8185").append("11223344");
         expected.append(asMaskedHex("Hello",maskingKey));
-        
+
         // validate
         assertGeneratedBytes(expected,frame);
     }
@@ -212,8 +214,7 @@ public class GeneratorTest
         WebSocketFrame[] frames = new WebSocketFrame[pingCount + 1];
         for (int i = 0; i < pingCount; i++)
         {
-            String payload = String.format("ping-%d",i);
-            frames[i] = WebSocketFrame.ping().setPayload(payload);
+            frames[i] = new PingFrame(String.format("ping-%d",i));
         }
         frames[pingCount] = new CloseInfo(StatusCode.NORMAL).asFrame();
 
@@ -232,9 +233,9 @@ public class GeneratorTest
         expected.append(asMaskedHex("ping-1",maskingKey)); // ping 1
         expected.append("8882").append("11223344");
         byte closure[] = Hex.asByteArray("03E8");
-        mask(closure, maskingKey);
+        mask(closure,maskingKey);
         expected.append(Hex.asHex(closure)); // normal closure
-        
+
         assertGeneratedBytes(expected,frames);
     }
 
@@ -278,7 +279,7 @@ public class GeneratorTest
 
         WebSocketFrame frame = WebSocketFrame.binary(payload);
         frame.setMask(mask); // masking!
-        
+
         // Generate
         int windowSize = 2929;
         WindowHelper helper = new WindowHelper(windowSize);

@@ -71,11 +71,11 @@ public class MuxAddHandler implements MuxAddServer
     /**
      * An incoming MuxAddChannel request.
      * 
-     * @param the
+     * @param muxer the muxer handling this
+     * @param channel the
      *            channel this request should be bound to
      * @param request
      *            the incoming request headers (complete and merged if delta encoded)
-     * @return the outgoing response headers
      */
     @Override
     public void handshake(Muxer muxer, MuxChannel channel, UpgradeRequest request) throws MuxException, IOException

@@ -67,19 +67,6 @@ public interface Extension extends IncomingFrames, OutgoingFrames
     public abstract boolean isRsv3User();
 
     /**
-     * Used to indicate that the extension works as a decoder of TEXT Data Frames.
-     * <p>
-     * This is used to adjust validation during parsing/generating, as per spec TEXT Data Frames can only contain UTF8 encoded String data.
-     * <p>
-     * Example: a compression extension will process a compressed set of text data, the parser/generator should no longer be concerned about the validity of the
-     * TEXT Data Frames as this is now the responsibility of the extension.
-     * 
-     * @return true if extension will process TEXT Data Frames, false if extension makes no modifications of TEXT Data Frames. If false, the parser/generator is
-     *         now free to validate the conformance to spec of TEXT Data Frames.
-     */
-    public abstract boolean isTextDataDecoder();
-
-    /**
      * Set the next {@link IncomingFrames} to call in the chain.
      * 
      * @param nextIncoming

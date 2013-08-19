@@ -169,7 +169,8 @@ public class TextPayloadParserTest
         parser.parse(buf);
 
         capture.assertNoErrors();
-        capture.assertHasFrame(OpCode.TEXT,2);
+        capture.assertHasFrame(OpCode.TEXT,1);
+        capture.assertHasFrame(OpCode.CONTINUATION,1);
         WebSocketFrame txt = capture.getFrames().get(0);
         Assert.assertThat("TextFrame[0].data",txt.getPayloadAsUTF8(),is(part1));
         txt = capture.getFrames().get(1);

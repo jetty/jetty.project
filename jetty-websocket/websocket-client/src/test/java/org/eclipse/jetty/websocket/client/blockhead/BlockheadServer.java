@@ -64,6 +64,7 @@ import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionFactory;
+import org.eclipse.jetty.websocket.common.frames.CloseFrame;
 import org.junit.Assert;
 
 /**
@@ -117,7 +118,7 @@ public class BlockheadServer
 
         public void close() throws IOException
         {
-            write(new WebSocketFrame(OpCode.CLOSE));
+            write(new CloseFrame());
             flush();
             disconnect();
         }
@@ -217,8 +218,7 @@ public class BlockheadServer
             {
                 LOG.info("Server parsed {} frames",count);
             }
-            WebSocketFrame copy = new WebSocketFrame(frame);
-            incomingFrames.incomingFrame(copy);
+            incomingFrames.incomingFrame(WebSocketFrame.copy(frame));
 
             if (frame.getType() == Type.CLOSE)
             {

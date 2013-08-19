@@ -39,6 +39,8 @@ import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.OutgoingFramesCapture;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.extensions.compress.CompressionMethod.Process;
+import org.eclipse.jetty.websocket.common.frames.PingFrame;
+import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -64,9 +66,9 @@ public class MessageCompressionExtensionTest
         // Receive frame
         String hex = hexStr.replaceAll("\\s*0x","");
         byte net[] = TypeUtil.fromHexString(hex);
-        WebSocketFrame frame = WebSocketFrame.text();
+        TextFrame frame = new TextFrame();
         frame.setRsv1(true);
-        frame.setPayload(net);
+        frame.setPayload(ByteBuffer.wrap(net));
 
         // Send frame into stack
         ext.incomingFrame(frame);
@@ -175,7 +177,7 @@ public class MessageCompressionExtensionTest
         ext.setNextIncomingFrames(capture);
 
         String payload = "Are you there?";
-        Frame ping = WebSocketFrame.ping().setPayload(payload);
+        Frame ping = new PingFrame(payload);
         ext.incomingFrame(ping);
 
         capture.assertFrameCount(1);
@@ -220,8 +222,7 @@ public class MessageCompressionExtensionTest
         // leave frames as-is, no compression, and pass into extension
         for (String q : quote)
         {
-            WebSocketFrame frame = new WebSocketFrame(OpCode.TEXT);
-            frame.setPayload(q);
+            TextFrame frame = new TextFrame(q);
             frame.setRsv1(false); // indication to extension that frame is not compressed (ie: a normal frame)
             ext.incomingFrame(frame);
         }
@@ -338,7 +339,7 @@ public class MessageCompressionExtensionTest
         ext.setNextOutgoingFrames(capture);
 
         String payload = "Are you there?";
-        Frame ping = WebSocketFrame.ping().setPayload(payload);
+        Frame ping = new PingFrame(payload);
 
         ext.outgoingFrame(ping,null);
 

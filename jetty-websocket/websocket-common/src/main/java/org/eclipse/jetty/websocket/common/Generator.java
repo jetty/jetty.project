@@ -224,7 +224,7 @@ public class Generator
         // NOTE: using .getOpCode() here, not .getType().getOpCode() for testing reasons
         byte opcode = frame.getOpCode();
 
-        if (frame.isContinuation())
+        if (frame.getOpCode() == OpCode.CONTINUATION)
         {
             // Continuations are not the same OPCODE
             opcode = OpCode.CONTINUATION;

@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.server.helper;
 
+import java.nio.ByteBuffer;
+
 public final class Hex
 {
     private static final char[] hexcodes = "0123456789ABCDEF".toCharArray();
@@ -50,6 +52,11 @@ public final class Hex
         }
 
         return buf;
+    }
+    
+    public static ByteBuffer asByteBuffer(String hstr)
+    {
+        return ByteBuffer.wrap(asByteArray(hstr));
     }
 
     public static String asHex(byte buf[])

@@ -16,28 +16,40 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common.io.payload;
+package org.eclipse.jetty.websocket.common.frames;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.websocket.common.OpCode;
 
-/**
- * payload validator does no validation.
- */
-public class NoOpValidator implements PayloadProcessor
+public class PingFrame extends ControlFrame
 {
-    public static final NoOpValidator INSTANCE = new NoOpValidator();
-
-    @Override
-    public void process(ByteBuffer payload)
+    public PingFrame()
     {
-        /* all payloads are valid in this case */
+        super(OpCode.PING);
+    }
+
+    public PingFrame(ByteBuffer buf)
+    {
+        this();
+        setPayload(buf);
+    }
+
+    public PingFrame(byte[] bytes)
+    {
+        this();
+        setPayload(ByteBuffer.wrap(bytes));
+    }
+
+    public PingFrame(String payload)
+    {
+        this(StringUtil.getUtf8Bytes(payload));
     }
 
     @Override
-    public void reset(Frame frame)
+    public Type getType()
     {
-        /* do nothing */
+        return Type.PING;
     }
 }

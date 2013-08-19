@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 
 public class UnitParser extends Parser
@@ -33,12 +34,12 @@ public class UnitParser extends Parser
 
     public UnitParser(ByteBufferPool bufferPool, WebSocketPolicy policy)
     {
-        super(policy, bufferPool);
+        super(policy,bufferPool);
     }
 
     public UnitParser(WebSocketPolicy policy)
     {
-        this(new MappedByteBufferPool(), policy);
+        this(new MappedByteBufferPool(),policy);
     }
 
     private void parsePartial(ByteBuffer buf, int numBytes)
@@ -56,14 +57,13 @@ public class UnitParser extends Parser
      */
     public void parseQuietly(ByteBuffer buf)
     {
-        try
+        try (StacklessLogging suppress = new StacklessLogging(Parser.class))
         {
-            LogShush.disableStacks(Parser.class);
             parse(buf);
         }
-        finally
+        catch (Exception ignore)
         {
-            LogShush.enableStacks(Parser.class);
+            /* ignore */
         }
     }
 
