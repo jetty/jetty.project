@@ -45,6 +45,8 @@ public class WriteBytesProvider implements Callback
         protected final AtomicBoolean failed = new AtomicBoolean(false);
         protected final Frame frame;
         protected final Callback callback;
+        /** holds reference to header ByteBuffer, as it needs to be released on success/failure */
+        private ByteBuffer headerBuffer;
 
         public FrameEntry(Frame frame, Callback callback)
         {
@@ -54,16 +56,20 @@ public class WriteBytesProvider implements Callback
 
         public ByteBuffer getHeaderBytes()
         {
-            return generator.generateHeaderBytes(frame);
+            ByteBuffer buf = generator.generateHeaderBytes(frame);
+            headerBuffer = buf;
+            return buf;
         }
 
         public ByteBuffer getPayloadWindow()
         {
+            // There is no need to release this ByteBuffer, as it is just a slice of the user provided payload
             return generator.getPayloadWindow(bufferSize,frame);
         }
 
         public void notifyFailure(Throwable t)
         {
+            freeBuffers();
             if (failed.getAndSet(true) == false)
             {
                 notifySafeFailure(callback,t);
@@ -72,6 +78,7 @@ public class WriteBytesProvider implements Callback
 
         public void notifySucceeded()
         {
+            freeBuffers();
             if (callback == null)
             {
                 return;
@@ -83,6 +90,15 @@ public class WriteBytesProvider implements Callback
             catch (Throwable t)
             {
                 LOG.debug(t);
+            }
+        }
+
+        public void freeBuffers()
+        {
+            if (headerBuffer != null)
+            {
+                generator.getBufferPool().release(headerBuffer);
+                headerBuffer = null;
             }
         }
 
@@ -113,8 +129,6 @@ public class WriteBytesProvider implements Callback
     private FrameEntry active;
     /** Tracking for failure */
     private Throwable failure;
-    /** The last requested buffer */
-    private ByteBuffer buffer;
     /** Is WriteBytesProvider closed to more WriteBytes being enqueued? */
     private AtomicBoolean closed;
 
@@ -208,7 +222,7 @@ public class WriteBytesProvider implements Callback
         failure = t;
 
         // fail past
-        while(!past.isEmpty())
+        while (!past.isEmpty())
         {
             FrameEntry entry = past.pop();
             entry.notifyFailure(t);
@@ -216,7 +230,7 @@ public class WriteBytesProvider implements Callback
         }
 
         // fail others
-        while(!queue.isEmpty())
+        while (!queue.isEmpty())
         {
             FrameEntry entry = queue.pop();
             entry.notifyFailure(t);
@@ -348,9 +362,6 @@ public class WriteBytesProvider implements Callback
     @Override
     public void succeeded()
     {
-        // Release the active byte buffer first
-        generator.getBufferPool().release(buffer);
-
         if ((active != null) && (active.frame.remaining() <= 0))
         {
             // All done with active FrameEntry
