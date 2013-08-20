@@ -169,7 +169,7 @@ public class TestABCase7 extends AbstractABCase
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("an").setFin(false));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
-        send.add(new ContinuationFrame("ticipation").setFin(true));
+        send.add(new ContinuationFrame().setPayload("ticipation").setFin(true));
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());

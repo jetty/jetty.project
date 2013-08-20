@@ -47,8 +47,8 @@ public class ParserTest
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("fragment1").setFin(false));
-        send.add(new ContinuationFrame("fragment2").setFin(true));
-        send.add(new ContinuationFrame("fragment3").setFin(false)); // bad frame
+        send.add(new ContinuationFrame().setPayload("fragment2").setFin(true));
+        send.add(new ContinuationFrame().setPayload("fragment3").setFin(false)); // bad frame
         send.add(new TextFrame().setPayload("fragment4").setFin(true));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
@@ -93,12 +93,12 @@ public class ParserTest
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("f1").setFin(false));
-        send.add(new ContinuationFrame(",f2").setFin(false));
+        send.add(new ContinuationFrame().setPayload(",f2").setFin(false));
         send.add(new PingFrame().setPayload("pong-1"));
-        send.add(new ContinuationFrame(",f3").setFin(false));
-        send.add(new ContinuationFrame(",f4").setFin(false));
+        send.add(new ContinuationFrame().setPayload(",f3").setFin(false));
+        send.add(new ContinuationFrame().setPayload(",f4").setFin(false));
         send.add(new PingFrame().setPayload("pong-2"));
-        send.add(new ContinuationFrame(",f5").setFin(true));
+        send.add(new ContinuationFrame().setPayload(",f5").setFin(true));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         ByteBuffer completeBuf = UnitGenerator.generate(send);

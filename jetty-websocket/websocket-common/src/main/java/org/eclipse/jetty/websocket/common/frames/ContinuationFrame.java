@@ -30,21 +30,20 @@ public class ContinuationFrame extends DataFrame
         super(OpCode.CONTINUATION);
     }
 
-    public ContinuationFrame(byte[] buf)
+    public ContinuationFrame setPayload(ByteBuffer buf)
     {
-        this();
-        setPayload(ByteBuffer.wrap(buf));
+        super.setPayload(buf);
+        return this;
     }
 
-    public ContinuationFrame(ByteBuffer buf)
+    public ContinuationFrame setPayload(byte buf[])
     {
-        this();
-        setPayload(buf);
+        return this.setPayload(ByteBuffer.wrap(buf));
     }
 
-    public ContinuationFrame(String payload)
+    public ContinuationFrame setPayload(String message)
     {
-        this(StringUtil.getBytes(payload));
+        return this.setPayload(StringUtil.getUtf8Bytes(message));
     }
 
     @Override

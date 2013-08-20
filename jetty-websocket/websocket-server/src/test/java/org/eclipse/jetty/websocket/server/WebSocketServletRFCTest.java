@@ -107,11 +107,11 @@ public class WebSocketServletRFCTest
 
             client.write(bin); // write buf1 (fin=false)
 
-            bin = new ContinuationFrame(buf2).setFin(false);
+            bin = new ContinuationFrame().setPayload(buf2).setFin(false);
 
             client.write(bin); // write buf2 (fin=false)
 
-            bin = new ContinuationFrame(buf3).setFin(true);
+            bin = new ContinuationFrame().setPayload(buf3).setFin(true);
 
             client.write(bin); // write buf3 (fin=true)
 

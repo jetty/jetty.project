@@ -165,11 +165,11 @@ public class FragmentExtensionTest
         // Expected Frames
         List<WebSocketFrame> expectedFrames = new ArrayList<>();
         expectedFrames.add(new TextFrame().setPayload("No amount of experim").setFin(false));
-        expectedFrames.add(new ContinuationFrame("entation can ever pr").setFin(false));
-        expectedFrames.add(new ContinuationFrame("ove me right;").setFin(true));
+        expectedFrames.add(new ContinuationFrame().setPayload("entation can ever pr").setFin(false));
+        expectedFrames.add(new ContinuationFrame().setPayload("ove me right;").setFin(true));
 
         expectedFrames.add(new TextFrame().setPayload("a single experiment ").setFin(false));
-        expectedFrames.add(new ContinuationFrame("can prove me wrong.").setFin(true));
+        expectedFrames.add(new ContinuationFrame().setPayload("can prove me wrong.").setFin(true));
 
         expectedFrames.add(new TextFrame().setPayload("-- Albert Einstein").setFin(true));
 

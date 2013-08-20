@@ -192,7 +192,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
                 DataFrame frame = null;
                 if (partialStarted)
                 {
-                    frame = new ContinuationFrame(fragment);
+                    frame = new ContinuationFrame().setPayload(fragment);
                 }
                 else
                 {
@@ -237,7 +237,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
                 DataFrame frame = null;
                 if (partialStarted)
                 {
-                    frame = new ContinuationFrame(fragment);
+                    frame = new ContinuationFrame().setPayload(fragment);
                 }
                 else
                 {

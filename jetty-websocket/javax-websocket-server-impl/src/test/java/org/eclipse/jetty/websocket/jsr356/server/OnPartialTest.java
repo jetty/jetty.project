@@ -90,8 +90,8 @@ public class OnPartialTest
     {
         List<WebSocketFrame> frames = new ArrayList<>();
         frames.add(new TextFrame().setPayload("Saved").setFin(false));
-        frames.add(new ContinuationFrame(" by ").setFin(false));
-        frames.add(new ContinuationFrame("zero").setFin(true));
+        frames.add(new ContinuationFrame().setPayload(" by ").setFin(false));
+        frames.add(new ContinuationFrame().setPayload("zero").setFin(true));
 
         PartialTrackingSocket socket = new PartialTrackingSocket();
 
