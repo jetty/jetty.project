@@ -195,7 +195,7 @@ public class Generator
         assertFrameValid(frame);
 
         ByteBuffer buffer = bufferPool.acquire(OVERHEAD,true);
-        BufferUtil.flipToFill(buffer);
+        BufferUtil.clearToFill(buffer);
 
         /*
          * start the generation process

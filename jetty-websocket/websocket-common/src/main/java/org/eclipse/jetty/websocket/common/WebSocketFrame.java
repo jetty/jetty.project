@@ -248,10 +248,6 @@ public abstract class WebSocketFrame implements Frame
     @Override
     public byte[] getMask()
     {
-        if (!masked)
-        {
-            throw new IllegalStateException("Frame is not masked");
-        }
         return mask;
     }
 

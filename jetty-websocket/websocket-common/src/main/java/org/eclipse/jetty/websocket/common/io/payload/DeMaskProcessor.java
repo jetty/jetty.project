@@ -42,24 +42,31 @@ public class DeMaskProcessor implements PayloadProcessor
         int remaining;
         while ((remaining = end - start) > 0)
         {
-            if (remaining >= 4 && offset == 0)
+            if (remaining >= 4 && (offset % 4) == 0)
             {
-                payload.putInt(start, payload.getInt(start) ^ maskInt);
-                start +=4;
+                payload.putInt(start,payload.getInt(start) ^ maskInt);
+                start += 4;
+                offset += 4;
             }
             else
             {
-                payload.put(start, (byte)(payload.get(start) ^ maskBytes[offset & 3]));
+                payload.put(start,(byte)(payload.get(start) ^ maskBytes[offset & 3]));
                 ++start;
                 ++offset;
             }
         }
+        maskOffset = offset;
+    }
+
+    public void reset(byte mask[])
+    {
+        this.maskBytes = mask;
+        this.maskOffset = 0;
     }
 
     @Override
     public void reset(Frame frame)
     {
-        this.maskBytes = frame.isMasked() ? frame.getMask() : null;
-        this.maskOffset = 0;
+        reset(frame.getMask());
     }
 }
