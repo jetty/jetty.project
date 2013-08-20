@@ -63,16 +63,57 @@ public class NoSqlSession extends AbstractSession
     {
         synchronized (this)
         {
-            if (_dirty==null)
-                _dirty=new HashSet<String>();
-            _dirty.add(name);
             Object old = super.doPutOrRemove(name,value);
+            
             if (_manager.getSavePeriod()==-2)
+            {
                 save(true);
+            }
             return old;
         }
     }
+    
+    
 
+    @Override
+    public void setAttribute(String name, Object value)
+    {
+        if ( updateAttribute(name,value) )
+        {
+            if (_dirty==null)
+            {
+                _dirty=new HashSet<String>();
+            }
+            
+            _dirty.add(name);
+        }
+    }
+
+    /*
+     * a boolean version of the setAttribute method that lets us manage the _dirty set
+     */
+    protected boolean updateAttribute (String name, Object value)
+    {
+        Object old=null;
+        synchronized (this)
+        {
+            checkValid();
+            old=doPutOrRemove(name,value);
+        }
+
+        if (value==null || !value.equals(old))
+        {
+            if (old!=null)
+                unbindValue(name,old);
+            if (value!=null)
+                bindValue(name,value);
+
+            _manager.doSessionAttributeListeners(this,name,old,value);
+            return true;
+        }
+        return false;
+    }
+    
     /* ------------------------------------------------------------ */
     @Override
     protected void checkValid() throws IllegalStateException
