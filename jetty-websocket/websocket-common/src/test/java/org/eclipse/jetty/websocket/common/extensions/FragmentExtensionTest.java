@@ -71,7 +71,7 @@ public class FragmentExtensionTest
         // Manually create frame and pass into extension
         for (String q : quote)
         {
-            Frame frame = WebSocketFrame.text(q);
+            Frame frame = new TextFrame().setPayload(q);
             ext.incomingFrame(frame);
         }
 
@@ -158,7 +158,7 @@ public class FragmentExtensionTest
         // Write quote as separate frames
         for (String section : quote)
         {
-            Frame frame = WebSocketFrame.text(section);
+            Frame frame = new TextFrame().setPayload(section);
             ext.outgoingFrame(frame,null);
         }
 
@@ -230,7 +230,7 @@ public class FragmentExtensionTest
         // Write quote as separate frames
         for (String section : quote)
         {
-            Frame frame = WebSocketFrame.text(section);
+            Frame frame = new TextFrame().setPayload(section);
             ext.outgoingFrame(frame,null);
         }
 

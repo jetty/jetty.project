@@ -23,6 +23,7 @@ import static org.hamcrest.Matchers.*;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
 import org.eclipse.jetty.websocket.server.blockhead.HttpResponse;
 import org.eclipse.jetty.websocket.server.helper.EchoServlet;
@@ -70,7 +71,7 @@ public class IdentityExtensionTest
 
             Assert.assertThat("Response",resp.getExtensionsHeader(),containsString("identity"));
 
-            client.write(WebSocketFrame.text("Hello"));
+            client.write(new TextFrame().setPayload("Hello"));
 
             IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,1000);
             WebSocketFrame frame = capture.getFrames().poll();

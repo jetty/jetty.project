@@ -28,6 +28,7 @@ import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.mux.op.MuxAddChannelRequest;
 import org.eclipse.jetty.websocket.mux.op.MuxAddChannelResponse;
 import org.eclipse.jetty.websocket.mux.op.MuxDropChannel;
@@ -66,12 +67,12 @@ public class MuxGenerator
         b |= (byte)(frame.isRsv1()?0x40:0x00); // rsv1
         b |= (byte)(frame.isRsv2()?0x20:0x00); // rsv2
         b |= (byte)(frame.isRsv3()?0x10:0x00); // rsv3
-        b |= (byte)(frame.getType().getOpCode() & 0x0F); // opcode
+        b |= (byte)(frame.getOpCode() & 0x0F); // opcode
         muxPayload.put(b);
         BufferUtil.put(frame.getPayload(),muxPayload);
 
         // build muxed frame
-        WebSocketFrame muxFrame = WebSocketFrame.binary();
+        WebSocketFrame muxFrame = new BinaryFrame();
         BufferUtil.flipToFlush(muxPayload,0);
         muxFrame.setPayload(muxPayload);
         // NOTE: the physical connection will handle masking rules for this frame.
@@ -164,7 +165,7 @@ public class MuxGenerator
             }
         }
         BufferUtil.flipToFlush(payload,0);
-        WebSocketFrame frame = WebSocketFrame.binary();
+        WebSocketFrame frame = new BinaryFrame();
         frame.setPayload(payload);
         outgoing.outgoingFrame(frame,callback);
     }

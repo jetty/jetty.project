@@ -179,7 +179,7 @@ public class WebSocketServletRFCTest
 
             // Generate text frame
             String msg = "this is an echo ... cho ... ho ... o";
-            client.write(WebSocketFrame.text(msg));
+            client.write(new TextFrame().setPayload(msg));
 
             // Read frame (hopefully text frame)
             IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
@@ -212,7 +212,7 @@ public class WebSocketServletRFCTest
             try (StacklessLogging context = new StacklessLogging(EventDriver.class))
             {
                 // Generate text frame
-                client.write(WebSocketFrame.text("CRASH"));
+                client.write(new TextFrame().setPayload("CRASH"));
 
                 // Read frame (hopefully close frame)
                 IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
@@ -258,7 +258,7 @@ public class WebSocketServletRFCTest
 
             // Generate text frame
             String msg = "this is an echo ... cho ... ho ... o";
-            client.write(WebSocketFrame.text(msg));
+            client.write(new TextFrame().setPayload(msg));
 
             // Read frame (hopefully text frame)
             IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
@@ -337,7 +337,7 @@ public class WebSocketServletRFCTest
 
             // Generate text frame
             String msg = "this is an echo ... cho ... ho ... o";
-            client.write(WebSocketFrame.text(msg));
+            client.write(new TextFrame().setPayload(msg));
 
             // Read frame (hopefully text frame)
             IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);

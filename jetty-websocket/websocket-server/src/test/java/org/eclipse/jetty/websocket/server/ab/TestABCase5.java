@@ -226,7 +226,7 @@ public class TestABCase5 extends AbstractABCase
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(WebSocketFrame.text("fragment1fragment2"));
+        expect.add(new TextFrame().setPayload("fragment1fragment2"));
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
@@ -361,7 +361,7 @@ public class TestABCase5 extends AbstractABCase
 
         List<WebSocketFrame> expect2 = new ArrayList<>();
         expect2.add(new PongFrame("pong-2"));
-        expect2.add(WebSocketFrame.text("f1,f2,f3,f4,f5"));
+        expect2.add(new TextFrame().setPayload("f1,f2,f3,f4,f5"));
         expect2.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
@@ -438,7 +438,7 @@ public class TestABCase5 extends AbstractABCase
 
         List<WebSocketFrame> expect2 = new ArrayList<>();
         expect2.add(new PongFrame("pong-2"));
-        expect2.add(WebSocketFrame.text("f1,f2,f3,f4,f5"));
+        expect2.add(new TextFrame().setPayload("f1,f2,f3,f4,f5"));
         expect2.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
@@ -484,7 +484,7 @@ public class TestABCase5 extends AbstractABCase
 
         List<WebSocketFrame> expect2 = new ArrayList<>();
         expect2.add(new PongFrame("pong-2"));
-        expect2.add(WebSocketFrame.text("f1,f2,f3,f4,f5"));
+        expect2.add(new TextFrame().setPayload("f1,f2,f3,f4,f5"));
         expect2.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
@@ -520,7 +520,7 @@ public class TestABCase5 extends AbstractABCase
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(WebSocketFrame.text("hello, world"));
+        expect.add(new TextFrame().setPayload("hello, world"));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
@@ -549,7 +549,7 @@ public class TestABCase5 extends AbstractABCase
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(WebSocketFrame.text("hello, world"));
+        expect.add(new TextFrame().setPayload("hello, world"));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
@@ -578,7 +578,7 @@ public class TestABCase5 extends AbstractABCase
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(WebSocketFrame.text("hello, world"));
+        expect.add(new TextFrame().setPayload("hello, world"));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
@@ -610,7 +610,7 @@ public class TestABCase5 extends AbstractABCase
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new PongFrame("ping"));
-        expect.add(WebSocketFrame.text("hello, world"));
+        expect.add(new TextFrame().setPayload("hello, world"));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
@@ -641,7 +641,7 @@ public class TestABCase5 extends AbstractABCase
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new PongFrame("ping"));
-        expect.add(WebSocketFrame.text("hello, world"));
+        expect.add(new TextFrame().setPayload("hello, world"));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
@@ -672,7 +672,7 @@ public class TestABCase5 extends AbstractABCase
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new PongFrame("ping"));
-        expect.add(WebSocketFrame.text("hello, world"));
+        expect.add(new TextFrame().setPayload("hello, world"));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);

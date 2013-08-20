@@ -45,9 +45,9 @@ public class TestABCase2 extends AbstractABCase
     @Test
     public void testCase2_1() throws Exception
     {
-        WebSocketFrame send = WebSocketFrame.ping();
+        WebSocketFrame send = new PingFrame();
 
-        WebSocketFrame expect = WebSocketFrame.pong();
+        WebSocketFrame expect = new PongFrame();
 
         Fuzzer fuzzer = new Fuzzer(this);
         try
@@ -309,7 +309,7 @@ public class TestABCase2 extends AbstractABCase
     public void testCase2_7() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(WebSocketFrame.pong()); // unsolicited pong
+        send.add(new PongFrame()); // unsolicited pong
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();

@@ -30,8 +30,10 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.common.frames.CloseFrame;
 import org.eclipse.jetty.websocket.common.frames.PingFrame;
+import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -155,7 +157,7 @@ public class GeneratorTest
     @Test
     public void testText_Hello()
     {
-        WebSocketFrame frame = WebSocketFrame.text("Hello");
+        WebSocketFrame frame = new TextFrame().setPayload("Hello");
         byte utf[] = StringUtil.getUtf8Bytes("Hello");
         assertGeneratedBytes("8105" + Hex.asHex(utf),frame);
     }
@@ -163,7 +165,7 @@ public class GeneratorTest
     @Test
     public void testText_Masked()
     {
-        WebSocketFrame frame = WebSocketFrame.text("Hello");
+        WebSocketFrame frame = new TextFrame().setPayload("Hello");
         byte maskingKey[] = Hex.asByteArray("11223344");
         frame.setMask(maskingKey);
 
@@ -189,7 +191,7 @@ public class GeneratorTest
         // we are testing that masking works as intended, even if the provided
         // payload does not start at position 0.
         LOG.debug("Payload = {}",BufferUtil.toDetailString(payload));
-        WebSocketFrame frame = WebSocketFrame.text().setPayload(payload);
+        WebSocketFrame frame = new TextFrame().setPayload(payload);
         byte maskingKey[] = Hex.asByteArray("11223344");
         frame.setMask(maskingKey);
 
@@ -249,7 +251,7 @@ public class GeneratorTest
         byte payload[] = new byte[10240];
         Arrays.fill(payload,(byte)0x44);
 
-        WebSocketFrame frame = WebSocketFrame.binary(payload);
+        WebSocketFrame frame = new BinaryFrame(payload);
 
         // Generate
         int windowSize = 1024;
@@ -277,7 +279,7 @@ public class GeneratorTest
         byte mask[] = new byte[]
         { 0x2A, (byte)0xF0, 0x0F, 0x00 };
 
-        WebSocketFrame frame = WebSocketFrame.binary(payload);
+        WebSocketFrame frame = new BinaryFrame(payload);
         frame.setMask(mask); // masking!
 
         // Generate

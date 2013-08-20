@@ -102,7 +102,7 @@ public class TestABCase2
     @Test
     public void testGenerateEmptyPingCase2_1()
     {
-        WebSocketFrame pingFrame = WebSocketFrame.ping();
+        WebSocketFrame pingFrame = new PingFrame();
 
         ByteBuffer actual = UnitGenerator.generate(pingFrame);
 

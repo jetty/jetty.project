@@ -45,7 +45,7 @@ public class DeMaskProcessorTest
         // Use a string that is not multiple of 4 in length to test if/else branches in DeMaskProcessor
         String message = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF01";
 
-        WebSocketFrame frame = WebSocketFrame.text(message);
+        WebSocketFrame frame = new TextFrame().setPayload(message);
         frame.setMask(TypeUtil.fromHexString("11223344"));
 
         ByteBuffer buf = UnitGenerator.generate(frame);

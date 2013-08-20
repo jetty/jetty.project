@@ -56,21 +56,6 @@ import org.eclipse.jetty.websocket.common.frames.TextFrame;
  */
 public abstract class WebSocketFrame implements Frame
 {
-    public static BinaryFrame binary()
-    {
-        return new BinaryFrame();
-    }
-
-    public static BinaryFrame binary(byte buf[])
-    {
-        return new BinaryFrame(buf);
-    }
-
-    public static BinaryFrame binary(ByteBuffer buf)
-    {
-        return new BinaryFrame(buf);
-    }
-
     public static WebSocketFrame copy(Frame copy)
     {
         WebSocketFrame frame = null;
@@ -104,26 +89,6 @@ public abstract class WebSocketFrame implements Frame
         return frame;
     }
 
-    public static PingFrame ping()
-    {
-        return new PingFrame();
-    }
-
-    public static PongFrame pong()
-    {
-        return new PongFrame();
-    }
-
-    public static TextFrame text()
-    {
-        return new TextFrame();
-    }
-
-    public static TextFrame text(String msg)
-    {
-        return new TextFrame(msg);
-    }
-
     /**
      * Combined FIN + RSV1 + RSV2 + RSV3 + OpCode byte.
      * <p>
@@ -148,9 +113,6 @@ public abstract class WebSocketFrame implements Frame
     protected ByteBuffer data;
 
     protected int payloadLength = 0;
-
-    // FIXME: Remove
-    private Type type;
 
     /**
      * Construct form opcode
@@ -178,7 +140,6 @@ public abstract class WebSocketFrame implements Frame
         finRsvOp |= frame.isRsv3()?0x10:0x00;
         finRsvOp |= frame.getOpCode() & 0x0F;
 
-        type = frame.getType();
         masked = frame.isMasked();
         if (masked)
         {
@@ -193,7 +154,6 @@ public abstract class WebSocketFrame implements Frame
     protected void copyHeaders(WebSocketFrame copy)
     {
         finRsvOp = copy.finRsvOp;
-        type = copy.type;
         masked = copy.masked;
         mask = null;
         if (copy.mask != null)
@@ -289,7 +249,7 @@ public abstract class WebSocketFrame implements Frame
     @Override
     public Type getType()
     {
-        return type;
+        return Type.from(getOpCode());
     }
 
     @Override
@@ -414,15 +374,6 @@ public abstract class WebSocketFrame implements Frame
     protected WebSocketFrame setOpCode(byte op)
     {
         this.finRsvOp = (byte)((finRsvOp & 0xF0) | (op & 0x0F));
-
-        if (op == OpCode.UNDEFINED)
-        {
-            this.type = null;
-        }
-        else
-        {
-            this.type = Frame.Type.from(op);
-        }
         return this;
     }
 

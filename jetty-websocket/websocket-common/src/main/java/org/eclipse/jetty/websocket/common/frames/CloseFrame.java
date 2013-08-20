@@ -28,6 +28,12 @@ public class CloseFrame extends ControlFrame
         super(OpCode.CLOSE);
     }
 
+    @Override
+    public Type getType()
+    {
+        return Type.CLOSE;
+    }
+
     /**
      * Truncate arbitrary reason into something that will fit into the CloseFrame limits.
      * 

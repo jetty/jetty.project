@@ -33,6 +33,7 @@ import org.eclipse.jetty.websocket.common.Hex;
 import org.eclipse.jetty.websocket.common.UnitGenerator;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
+import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -56,7 +57,7 @@ public class WriteBytesProviderTest
         bytesProvider = new WriteBytesProvider(generator,flushCallback);
 
         TrackingCallback frameCallback = new TrackingCallback();
-        Frame frame = WebSocketFrame.text("Test");
+        Frame frame = new TextFrame().setPayload("Test");
 
         // place in to bytes provider
         bytesProvider.enqueue(frame,frameCallback);
@@ -86,7 +87,7 @@ public class WriteBytesProviderTest
         // Create frames for provider
         TrackingCallback textCallback = new TrackingCallback();
         TrackingCallback closeCallback = new TrackingCallback();
-        bytesProvider.enqueue(WebSocketFrame.text("Bye"),textCallback);
+        bytesProvider.enqueue(new TextFrame().setPayload("Bye"),textCallback);
         bytesProvider.enqueue(new CloseInfo().asFrame(),closeCallback);
 
         // get bytes out

@@ -81,7 +81,7 @@ public class MuxParser
             return; // nothing to parse
         }
 
-        if (frame.getType().getOpCode() != OpCode.BINARY)
+        if (frame.getOpCode() != OpCode.BINARY)
         {
             LOG.debug("Not a binary opcode (base frame), skipping");
             return; // not a binary opcode

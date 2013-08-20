@@ -82,11 +82,11 @@ public class TestABCase6 extends AbstractABCase
     public void testCase6_1_1() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(WebSocketFrame.text());
+        send.add(new TextFrame());
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(WebSocketFrame.text());
+        expect.add(new TextFrame());
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
@@ -116,7 +116,7 @@ public class TestABCase6 extends AbstractABCase
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(WebSocketFrame.text());
+        expect.add(new TextFrame());
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
@@ -146,7 +146,7 @@ public class TestABCase6 extends AbstractABCase
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(WebSocketFrame.text("middle"));
+        expect.add(new TextFrame().setPayload("middle"));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);

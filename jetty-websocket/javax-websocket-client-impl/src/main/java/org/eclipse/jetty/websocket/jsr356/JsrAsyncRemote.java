@@ -32,6 +32,8 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
+import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.message.MessageOutputStream;
 import org.eclipse.jetty.websocket.common.message.MessageWriter;
 import org.eclipse.jetty.websocket.common.util.TextUtil;
@@ -73,7 +75,7 @@ public class JsrAsyncRemote extends AbstractJsrRemote implements RemoteEndpoint.
         {
             LOG.debug("sendBinary({},{})",BufferUtil.toDetailString(data),handler);
         }
-        WebSocketFrame frame = WebSocketFrame.binary().setPayload(data).setFin(true);
+        WebSocketFrame frame = new BinaryFrame().setPayload(data).setFin(true);
         jettyRemote.sendFrame(frame,new SendHandlerWriteCallback(handler));
     }
 
@@ -183,7 +185,7 @@ public class JsrAsyncRemote extends AbstractJsrRemote implements RemoteEndpoint.
         {
             LOG.debug("sendText({},{})",TextUtil.hint(text),handler);
         }
-        WebSocketFrame frame = WebSocketFrame.text(text).setFin(true);
+        WebSocketFrame frame = new TextFrame().setPayload(text).setFin(true);
         jettyRemote.sendFrame(frame,new SendHandlerWriteCallback(handler));
     }
 

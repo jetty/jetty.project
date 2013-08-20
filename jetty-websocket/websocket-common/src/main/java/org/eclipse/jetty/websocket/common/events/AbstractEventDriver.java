@@ -110,7 +110,7 @@ public abstract class AbstractEventDriver implements IncomingFrames, EventDriver
         {
             onFrame(frame);
 
-            byte opcode = frame.getType().getOpCode();
+            byte opcode = frame.getOpCode();
             switch (opcode)
             {
                 case OpCode.CLOSE:

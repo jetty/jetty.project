@@ -34,6 +34,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.Generator;
+import org.eclipse.jetty.websocket.common.OpCode;
 
 /**
  * Interface for working with bytes destined for {@link EndPoint#write(Callback, ByteBuffer...)}
@@ -190,12 +191,12 @@ public class WriteBytesProvider implements Callback
 
             FrameEntry entry = new FrameEntry(frame,callback);
 
-            switch (frame.getType())
+            switch (frame.getOpCode())
             {
-                case PING:
+                case OpCode.PING:
                     queue.addFirst(entry);
                     break;
-                case CLOSE:
+                case OpCode.CLOSE:
                     closed.set(true);
                     // drop the rest of the queue?
                     queue.addLast(entry);

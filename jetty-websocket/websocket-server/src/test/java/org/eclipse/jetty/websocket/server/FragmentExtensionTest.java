@@ -23,6 +23,7 @@ import static org.hamcrest.Matchers.*;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
 import org.eclipse.jetty.websocket.server.blockhead.HttpResponse;
 import org.eclipse.jetty.websocket.server.helper.EchoServlet;
@@ -86,7 +87,7 @@ public class FragmentExtensionTest
             Assert.assertThat("Response",resp.getExtensionsHeader(),containsString("fragment"));
 
             String msg = "Sent as a long message that should be split";
-            client.write(WebSocketFrame.text(msg));
+            client.write(new TextFrame().setPayload(msg));
 
             String parts[] = split(msg,fragSize);
             IncomingFramesCapture capture = client.readFrames(parts.length,TimeUnit.MILLISECONDS,1000);

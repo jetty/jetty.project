@@ -129,7 +129,7 @@ public class Generator
             throw new ProtocolException("RSV3 not allowed to be set");
         }
 
-        if (frame.getType().isControl())
+        if (OpCode.isControlFrame(frame.getOpCode()))
         {
             /*
              * RFC 6455 Section 5.5
@@ -151,7 +151,7 @@ public class Generator
              * 
              * close frame payload is specially formatted which is checked in CloseInfo
              */
-            if (frame.getType().getOpCode() == OpCode.CLOSE)
+            if (frame.getOpCode() == OpCode.CLOSE)
             {
 
                 ByteBuffer payload = frame.getPayload();

@@ -149,11 +149,11 @@ public class TestABCase9 extends AbstractABCase
         String msg = StringUtil.toUTF8String(utf,0,utf.length);
 
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(WebSocketFrame.text(msg));
+        send.add(new TextFrame().setPayload(msg));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(WebSocketFrame.text(msg));
+        expect.add(new TextFrame().setPayload(msg));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
@@ -185,7 +185,7 @@ public class TestABCase9 extends AbstractABCase
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(WebSocketFrame.text().setPayload(clone(buf)));
+        expect.add(new TextFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
@@ -214,11 +214,11 @@ public class TestABCase9 extends AbstractABCase
         ByteBuffer buf = ByteBuffer.wrap(utf);
 
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(WebSocketFrame.text().setPayload(buf));
+        send.add(new TextFrame().setPayload(buf));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(WebSocketFrame.text().setPayload(clone(buf)));
+        expect.add(new TextFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
@@ -247,11 +247,11 @@ public class TestABCase9 extends AbstractABCase
         ByteBuffer buf = ByteBuffer.wrap(utf);
 
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(WebSocketFrame.text().setPayload(buf));
+        send.add(new TextFrame().setPayload(buf));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(WebSocketFrame.text().setPayload(clone(buf)));
+        expect.add(new TextFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
@@ -280,11 +280,11 @@ public class TestABCase9 extends AbstractABCase
         ByteBuffer buf = ByteBuffer.wrap(utf);
 
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(WebSocketFrame.text().setPayload(buf));
+        send.add(new TextFrame().setPayload(buf));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(WebSocketFrame.text().setPayload(clone(buf)));
+        expect.add(new TextFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
@@ -313,11 +313,11 @@ public class TestABCase9 extends AbstractABCase
         ByteBuffer buf = ByteBuffer.wrap(utf);
 
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(WebSocketFrame.text().setPayload(buf));
+        send.add(new TextFrame().setPayload(buf));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(WebSocketFrame.text().setPayload(clone(buf)));
+        expect.add(new TextFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
@@ -344,11 +344,11 @@ public class TestABCase9 extends AbstractABCase
         Arrays.fill(data,(byte)0x21);
 
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(WebSocketFrame.binary(data));
+        send.add(new BinaryFrame(data));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(WebSocketFrame.binary(copyOf(data)));
+        expect.add(new BinaryFrame().setPayload(copyOf(data)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
@@ -376,11 +376,11 @@ public class TestABCase9 extends AbstractABCase
         ByteBuffer buf = ByteBuffer.wrap(data);
 
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(WebSocketFrame.binary().setPayload(buf));
+        send.add(new BinaryFrame().setPayload(buf));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(WebSocketFrame.binary().setPayload(clone(buf)));
+        expect.add(new BinaryFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
@@ -409,11 +409,11 @@ public class TestABCase9 extends AbstractABCase
         ByteBuffer buf = ByteBuffer.wrap(data);
 
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(WebSocketFrame.binary().setPayload(buf));
+        send.add(new BinaryFrame().setPayload(buf));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(WebSocketFrame.binary().setPayload(clone(buf)));
+        expect.add(new BinaryFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
@@ -442,11 +442,11 @@ public class TestABCase9 extends AbstractABCase
         ByteBuffer buf = ByteBuffer.wrap(data);
 
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(WebSocketFrame.binary().setPayload(buf));
+        send.add(new BinaryFrame().setPayload(buf));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(WebSocketFrame.binary().setPayload(clone(buf)));
+        expect.add(new BinaryFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
@@ -475,11 +475,11 @@ public class TestABCase9 extends AbstractABCase
         ByteBuffer buf = ByteBuffer.wrap(data);
 
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(WebSocketFrame.binary().setPayload(buf));
+        send.add(new BinaryFrame().setPayload(buf));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(WebSocketFrame.binary().setPayload(clone(buf)));
+        expect.add(new BinaryFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
@@ -508,11 +508,11 @@ public class TestABCase9 extends AbstractABCase
         ByteBuffer buf = ByteBuffer.wrap(data);
 
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(WebSocketFrame.binary().setPayload(buf));
+        send.add(new BinaryFrame().setPayload(buf));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(WebSocketFrame.binary().setPayload(clone(buf)));
+        expect.add(new BinaryFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);

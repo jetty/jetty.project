@@ -80,7 +80,7 @@ public class RFC6455ExamplesGeneratorTest
     @Test
     public void testSingleMaskedTextMessage()
     {
-        WebSocketFrame text = WebSocketFrame.text("Hello");
+        WebSocketFrame text = new TextFrame().setPayload("Hello");
         text.setMask(new byte[]
                 { 0x37, (byte)0xfa, 0x21, 0x3d });
 
@@ -173,7 +173,7 @@ public class RFC6455ExamplesGeneratorTest
     @Test
     public void testSingleUnmaskedTextMessage()
     {
-        WebSocketFrame text = WebSocketFrame.text("Hello");
+        WebSocketFrame text = new TextFrame().setPayload("Hello");
 
         ByteBuffer actual = UnitGenerator.generate(text);
 

@@ -288,7 +288,7 @@ public class MessageCompressionExtensionTest
         // Write quote as separate frames
         for (String section : quote)
         {
-            Frame frame = WebSocketFrame.text(section);
+            Frame frame = new TextFrame().setPayload(section);
             ext.outgoingFrame(frame,null);
         }
 

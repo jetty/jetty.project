@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.extensions.AbstractExtension;
 import org.eclipse.jetty.websocket.common.frames.DataFrame;
 
@@ -57,7 +58,7 @@ public class FragmentExtension extends AbstractExtension
     @Override
     public void outgoingFrame(Frame frame, WriteCallback callback)
     {
-        if (frame.getType().isControl())
+        if (OpCode.isControlFrame(frame.getOpCode()))
         {
             // Cannot fragment Control Frames
             nextOutgoingFrame(frame,callback);

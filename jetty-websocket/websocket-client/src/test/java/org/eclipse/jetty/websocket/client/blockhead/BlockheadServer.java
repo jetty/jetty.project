@@ -53,7 +53,6 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.api.extensions.Frame.Type;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.AcceptHash;
@@ -220,7 +219,7 @@ public class BlockheadServer
             }
             incomingFrames.incomingFrame(WebSocketFrame.copy(frame));
 
-            if (frame.getType() == Type.CLOSE)
+            if (frame.getOpCode() == OpCode.CLOSE)
             {
                 CloseInfo close = new CloseInfo(frame);
                 LOG.debug("Close frame: {}",close);
@@ -246,7 +245,7 @@ public class BlockheadServer
                     callback.writeSuccess();
                 }
 
-                if (frame.getType().getOpCode() == OpCode.CLOSE)
+                if (frame.getOpCode() == OpCode.CLOSE)
                 {
                     disconnect();
                 }

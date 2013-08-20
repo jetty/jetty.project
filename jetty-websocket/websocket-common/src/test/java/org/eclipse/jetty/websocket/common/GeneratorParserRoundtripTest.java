@@ -50,7 +50,7 @@ public class GeneratorParserRoundtripTest
         {
             // Generate Buffer
             BufferUtil.flipToFill(out);
-            WebSocketFrame frame = WebSocketFrame.text(message);
+            WebSocketFrame frame = new TextFrame().setPayload(message);
             ByteBuffer header = gen.generateHeaderBytes(frame);
             ByteBuffer payload = gen.getPayloadWindow(frame.getPayloadLength(),frame);
             out.put(header);
@@ -90,7 +90,7 @@ public class GeneratorParserRoundtripTest
         try
         {
             // Setup Frame
-            WebSocketFrame frame = WebSocketFrame.text(message);
+            WebSocketFrame frame = new TextFrame().setPayload(message);
 
             // Add masking
             byte mask[] = new byte[4];

@@ -160,7 +160,7 @@ public class EventDriverTest
         {
             conn.start();
             conn.open();
-            driver.incomingFrame(WebSocketFrame.text("Hello World"));
+            driver.incomingFrame(new TextFrame().setPayload("Hello World"));
             driver.incomingFrame(new CloseInfo(StatusCode.NORMAL).asFrame());
 
             socket.capture.assertEventCount(3);
