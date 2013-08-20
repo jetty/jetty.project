@@ -302,6 +302,14 @@
       <param-name>xpoweredBy</param-name>
       <param-value>false</param-value>
     </init-param>
+    <init-param>
+      <param-name>compilerTargetVM</param-name>
+      <param-value>1.7</param-value>
+    </init-param>
+    <init-param>
+      <param-name>compilerSourceVM</param-name>
+      <param-value>1.7</param-value>
+    </init-param>
     <!--  
     <init-param>
         <param-name>classpath</param-name>

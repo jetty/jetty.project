@@ -376,7 +376,7 @@
         <artifactId>maven-pmd-plugin</artifactId>
         <version>2.7.1</version>
         <configuration>
-          <targetJdk>1.5</targetJdk>
+          <targetJdk>1.7</targetJdk>
           <rulesets>
             <ruleset>jetty/pmd_ruleset.xml</ruleset>
           </rulesets>
