@@ -26,6 +26,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * File access for <code>${jetty.home}</code>, <code>${jetty.base}</code>, directories.
@@ -54,6 +56,23 @@ public class BaseHome
         this.baseDir = baseDir==null?homeDir:baseDir;
     }
 
+
+    public void initialize(ArrayList<String> arguments)
+    {
+        Pattern jetty_home=Pattern.compile("(-D)?jetty.home=(.*)");
+        Pattern jetty_base=Pattern.compile("(-D)?jetty.base=(.*)");
+        for (String arg : arguments)
+        {
+            Matcher home_match=jetty_home.matcher(arg);
+            if (home_match.matches())
+                setHomeDir(new File(home_match.group(2)));
+            Matcher base_match=jetty_base.matcher(arg);
+            if (base_match.matches())
+                setBaseDir(new File(base_match.group(2)));
+        }
+    }
+    
+    
     public boolean isBaseDifferent()
     {
         return homeDir.compareTo(baseDir) != 0;
@@ -62,6 +81,14 @@ public class BaseHome
     public void setBaseDir(File dir)
     {
         this.baseDir = dir;
+        try
+        {
+            System.setProperty("jetty.base",dir.getCanonicalPath());
+        }
+        catch(IOException e)
+        {
+            e.printStackTrace();
+        }
     }
 
     public File getBaseDir()
@@ -120,6 +147,14 @@ public class BaseHome
     public void setHomeDir(File dir)
     {
         this.homeDir = dir;
+        try
+        {
+            System.setProperty("jetty.home",dir.getCanonicalPath());
+        }
+        catch(IOException e)
+        {
+            e.printStackTrace();
+        }
     }
 
     public File getHomeDir()
@@ -174,15 +209,18 @@ public class BaseHome
             File baseFiles[] = basePath.listFiles(filter);
             List<File> ret = new ArrayList<>();
 
-            for (File base : baseFiles)
+            if (baseFiles!=null)
             {
-                String relpath = toRelativePath(baseDir,base);
-                File home = new File(homeDir,FS.separators(relpath));
-                if (home.exists())
+                for (File base : baseFiles)
                 {
-                    homeFiles.remove(home);
+                    String relpath = toRelativePath(baseDir,base);
+                    File home = new File(homeDir,FS.separators(relpath));
+                    if (home.exists())
+                    {
+                        homeFiles.remove(home);
+                    }
+                    ret.add(base);
                 }
-                ret.add(base);
             }
 
             // add any remaining home files.
@@ -279,4 +317,5 @@ public class BaseHome
 
         return path;
     }
+
 }

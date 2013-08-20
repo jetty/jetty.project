@@ -25,7 +25,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -40,74 +39,51 @@ public class StartIni implements Iterable<String>
     }
 
     private final File file;
-    private final LinkedList<String> lines;
+    private final List<String> lines= new ArrayList<>();
 
     public StartIni(File file) throws FileNotFoundException, IOException
     {
-        this(file,null);
-    }
-
-    public StartIni(File file, IncludeListener listener) throws FileNotFoundException, IOException
-    {
         this.file = file;
-        this.lines = new LinkedList<>();
         try (FileReader reader = new FileReader(file))
         {
             try (BufferedReader buf = new BufferedReader(reader))
             {
                 String line;
                 while ((line = buf.readLine()) != null)
-                {
-                    line = line.trim();
-                    if (line.length() == 0)
-                    {
-                        // skip (empty line)
-                        continue;
-                    }
-
-                    if (line.charAt(0) == '#')
-                    {
-                        // skip (comment)
-                        continue;
-                    }
-
-                    // Smart Handling, split into multiple OPTIONS lines (for dup check reasons)
-                    if (line.startsWith("OPTIONS="))
-                    {
-                        int idx = line.indexOf('=');
-                        String value = line.substring(idx + 1);
-                        for (String part : value.split(","))
-                        {
-                            addUniqueLine("OPTION=" + part);
-                        }
-                    }
-                    // Smart Handling, includes
-                    else if (line.endsWith("/"))
-                    {
-                        if (listener == null)
-                        {
-                            Config.debug("Nested include ignored: %s (found in %s)",line,file.getAbsolutePath());
-                        }
-                        else
-                        {
-                            // Collect BaseHome resolved included StartIni's
-                            for (StartIni included : listener.onIniInclude(line))
-                            {
-                                // Merge each line with prior lines to prevent duplicates
-                                for (String includedLine : included)
-                                {
-                                    addUniqueLine(includedLine);
-                                }
-                            }
-                        }
-                    }
-                    else
-                    {
-                        // Add line as-is
-                        addUniqueLine(line);
-                    }
-                }
+                    process(line.trim());
             }
+        }
+    }
+
+    public StartIni(ArrayList<String> arguments)
+    {
+        file=null;
+        for (String line: arguments)
+            process(line);
+    }
+    
+    private void process(String line)
+    {
+        if (line.length() == 0)
+            return;
+
+        if (line.charAt(0) == '#')
+            return;
+
+        // Smart Handling, split into multiple OPTIONS lines (for dup check reasons)
+        if (line.startsWith("OPTIONS="))
+        {
+            int idx = line.indexOf('=');
+            String value = line.substring(idx + 1);
+            for (String part : value.split(","))
+            {
+                addUniqueLine("OPTION=" + part);
+            }
+        }
+        else
+        {
+            // Add line as-is
+            addUniqueLine(line);
         }
     }
 

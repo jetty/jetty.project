@@ -27,7 +27,7 @@ import java.util.Comparator;
  * Natural Language Sorting
  */
 public class NaturalSort
-{
+{   
     public static class Strings implements Comparator<String>
     {
         private final Collator collator = Collator.getInstance();
