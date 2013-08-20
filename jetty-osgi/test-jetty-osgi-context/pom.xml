@@ -102,8 +102,6 @@
  *
                         </Import-Package>
                         <DynamicImport-Package>org.eclipse.jetty.*;version="[9.0,10.0)"</DynamicImport-Package>
-                        <!--Require-Bundle/-->
-                        <!-- Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment --> 
                     </instructions>
                 </configuration>
             </plugin>
