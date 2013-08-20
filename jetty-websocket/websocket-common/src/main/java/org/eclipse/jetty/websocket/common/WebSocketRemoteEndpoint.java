@@ -274,7 +274,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
                 {
                     LOG.debug("sendPing with {}",BufferUtil.toDetailString(applicationData));
                 }
-                blockingWrite(new PingFrame(applicationData));
+                blockingWrite(new PingFrame().setPayload(applicationData));
             }
             finally
             {
@@ -300,7 +300,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
                 {
                     LOG.debug("sendPong with {}",BufferUtil.toDetailString(applicationData));
                 }
-                blockingWrite(new PongFrame(applicationData));
+                blockingWrite(new PongFrame().setPayload(applicationData));
             }
             finally
             {

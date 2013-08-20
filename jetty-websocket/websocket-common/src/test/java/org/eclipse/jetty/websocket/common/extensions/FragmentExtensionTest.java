@@ -115,7 +115,7 @@ public class FragmentExtensionTest
         ext.setNextIncomingFrames(capture);
 
         String payload = "Are you there?";
-        Frame ping = new PingFrame(payload);
+        Frame ping = new PingFrame().setPayload(payload);
         ext.incomingFrame(ping);
 
         capture.assertFrameCount(1);
@@ -286,7 +286,7 @@ public class FragmentExtensionTest
         ext.setNextOutgoingFrames(capture);
 
         String payload = "Are you there?";
-        Frame ping = new PingFrame(payload);
+        Frame ping = new PingFrame().setPayload(payload);
 
         ext.outgoingFrame(ping,null);
 

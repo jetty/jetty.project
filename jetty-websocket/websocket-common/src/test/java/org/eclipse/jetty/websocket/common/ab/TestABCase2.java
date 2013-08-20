@@ -55,7 +55,7 @@ public class TestABCase2
             bytes[i] = Integer.valueOf(Integer.toOctalString(i)).byteValue();
         }
 
-        PingFrame pingFrame = new PingFrame(bytes);
+        WebSocketFrame pingFrame = new PingFrame().setPayload(bytes);
 
         ByteBuffer actual = UnitGenerator.generate(pingFrame);
 
@@ -79,7 +79,7 @@ public class TestABCase2
     {
         byte[] bytes = new byte[] { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 };
 
-        PingFrame pingFrame = new PingFrame(bytes);
+        PingFrame pingFrame = new PingFrame().setPayload(bytes);
 
         ByteBuffer actual = UnitGenerator.generate(pingFrame);
 
@@ -122,7 +122,7 @@ public class TestABCase2
         String message = "Hello, world!";
         byte[] messageBytes = StringUtil.getUtf8Bytes(message);
 
-        PingFrame pingFrame = new PingFrame(messageBytes);
+        PingFrame pingFrame = new PingFrame().setPayload(messageBytes);
 
         ByteBuffer actual = UnitGenerator.generate(pingFrame);
 

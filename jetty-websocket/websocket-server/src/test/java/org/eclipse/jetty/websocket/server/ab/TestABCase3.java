@@ -71,7 +71,7 @@ public class TestABCase3 extends AbstractABCase
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("small"));
         send.add(new TextFrame().setPayload("small").setRsv2(true)); // intentionally bad
-        send.add(new PingFrame("ping"));
+        send.add(new PingFrame().setPayload("ping"));
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new TextFrame().setPayload("small")); // echo on good frame
@@ -100,7 +100,7 @@ public class TestABCase3 extends AbstractABCase
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("small"));
         send.add(new TextFrame().setPayload("small").setRsv1(true).setRsv2(true)); // intentionally bad
-        send.add(new PingFrame("ping"));
+        send.add(new PingFrame().setPayload("ping"));
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new TextFrame().setPayload("small")); // echo on good frame
@@ -129,7 +129,7 @@ public class TestABCase3 extends AbstractABCase
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("small"));
         send.add(new TextFrame().setPayload("small").setRsv3(true)); // intentionally bad
-        send.add(new PingFrame("ping"));
+        send.add(new PingFrame().setPayload("ping"));
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new TextFrame().setPayload("small")); // echo on good frame
@@ -189,7 +189,7 @@ public class TestABCase3 extends AbstractABCase
         Arrays.fill(payload,(byte)0xFF);
 
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new PingFrame(payload).setRsv3(true).setRsv2(true)); // intentionally bad
+        send.add(new PingFrame().setPayload(payload).setRsv3(true).setRsv2(true)); // intentionally bad
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());

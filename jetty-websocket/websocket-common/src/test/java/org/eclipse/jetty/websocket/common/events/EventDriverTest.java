@@ -26,7 +26,6 @@ import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.CloseInfo;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.common.frames.PingFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
@@ -116,7 +115,7 @@ public class EventDriverTest
         try (LocalWebSocketSession conn = new LocalWebSocketSession(testname,driver))
         {
             conn.open();
-            driver.incomingFrame(new PingFrame("PING"));
+            driver.incomingFrame(new PingFrame().setPayload("PING"));
             driver.incomingFrame(new TextFrame("Text Me"));
             driver.incomingFrame(new BinaryFrame("Hello Bin"));
             driver.incomingFrame(new CloseInfo(StatusCode.SHUTDOWN,"testcase").asFrame());

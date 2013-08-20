@@ -49,7 +49,7 @@ public class TestABCase5 extends AbstractABCase
     public void testCase5_1() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new PingFrame("hello, ").setFin(false));
+        send.add(new PingFrame().setPayload("hello, ").setFin(false));
         send.add(new ContinuationFrame("world"));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
@@ -346,21 +346,21 @@ public class TestABCase5 extends AbstractABCase
         List<WebSocketFrame> send1 = new ArrayList<>();
         send1.add(new TextFrame("f1").setFin(false));
         send1.add(new ContinuationFrame(",f2").setFin(false));
-        send1.add(new PingFrame("pong-1"));
+        send1.add(new PingFrame().setPayload("pong-1"));
 
         List<WebSocketFrame> expect1 = new ArrayList<>();
-        expect1.add(new PongFrame("pong-1"));
+        expect1.add(new PongFrame().setPayload("pong-1"));
 
         // phase 2
         List<WebSocketFrame> send2 = new ArrayList<>();
         send2.add(new ContinuationFrame(",f3").setFin(false));
         send2.add(new ContinuationFrame(",f4").setFin(false));
-        send2.add(new PingFrame("pong-2"));
+        send2.add(new PingFrame().setPayload("pong-2"));
         send2.add(new ContinuationFrame(",f5").setFin(true));
         send2.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect2 = new ArrayList<>();
-        expect2.add(new PongFrame("pong-2"));
+        expect2.add(new PongFrame().setPayload("pong-2"));
         expect2.add(new TextFrame().setPayload("f1,f2,f3,f4,f5"));
         expect2.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
@@ -394,7 +394,7 @@ public class TestABCase5 extends AbstractABCase
     public void testCase5_2() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new PongFrame("hello, ").setFin(false));
+        send.add(new PongFrame().setPayload("hello, ").setFin(false));
         send.add(new ContinuationFrame("world"));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
@@ -424,20 +424,20 @@ public class TestABCase5 extends AbstractABCase
         List<WebSocketFrame> send1 = new ArrayList<>();
         send1.add(new TextFrame("f1").setFin(false));
         send1.add(new ContinuationFrame(",f2").setFin(false));
-        send1.add(new PingFrame("pong-1"));
+        send1.add(new PingFrame().setPayload("pong-1"));
 
         List<WebSocketFrame> send2 = new ArrayList<>();
         send2.add(new ContinuationFrame(",f3").setFin(false));
         send2.add(new ContinuationFrame(",f4").setFin(false));
-        send2.add(new PingFrame("pong-2"));
+        send2.add(new PingFrame().setPayload("pong-2"));
         send2.add(new ContinuationFrame(",f5").setFin(true));
         send2.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect1 = new ArrayList<>();
-        expect1.add(new PongFrame("pong-1"));
+        expect1.add(new PongFrame().setPayload("pong-1"));
 
         List<WebSocketFrame> expect2 = new ArrayList<>();
-        expect2.add(new PongFrame("pong-2"));
+        expect2.add(new PongFrame().setPayload("pong-2"));
         expect2.add(new TextFrame().setPayload("f1,f2,f3,f4,f5"));
         expect2.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
@@ -470,20 +470,20 @@ public class TestABCase5 extends AbstractABCase
         List<WebSocketFrame> send1 = new ArrayList<>();
         send1.add(new TextFrame("f1").setFin(false));
         send1.add(new ContinuationFrame(",f2").setFin(false));
-        send1.add(new PingFrame("pong-1"));
+        send1.add(new PingFrame().setPayload("pong-1"));
 
         List<WebSocketFrame> send2 = new ArrayList<>();
         send2.add(new ContinuationFrame(",f3").setFin(false));
         send2.add(new ContinuationFrame(",f4").setFin(false));
-        send2.add(new PingFrame("pong-2"));
+        send2.add(new PingFrame().setPayload("pong-2"));
         send2.add(new ContinuationFrame(",f5").setFin(true));
         send2.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect1 = new ArrayList<>();
-        expect1.add(new PongFrame("pong-1"));
+        expect1.add(new PongFrame().setPayload("pong-1"));
 
         List<WebSocketFrame> expect2 = new ArrayList<>();
-        expect2.add(new PongFrame("pong-2"));
+        expect2.add(new PongFrame().setPayload("pong-2"));
         expect2.add(new TextFrame().setPayload("f1,f2,f3,f4,f5"));
         expect2.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
@@ -604,12 +604,12 @@ public class TestABCase5 extends AbstractABCase
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame("hello, ").setFin(false));
-        send.add(new PingFrame("ping"));
+        send.add(new PingFrame().setPayload("ping"));
         send.add(new ContinuationFrame("world").setFin(true));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new PongFrame("ping"));
+        expect.add(new PongFrame().setPayload("ping"));
         expect.add(new TextFrame().setPayload("hello, world"));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
@@ -635,12 +635,12 @@ public class TestABCase5 extends AbstractABCase
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame("hello, ").setFin(false));
-        send.add(new PingFrame("ping"));
+        send.add(new PingFrame().setPayload("ping"));
         send.add(new ContinuationFrame("world").setFin(true));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new PongFrame("ping"));
+        expect.add(new PongFrame().setPayload("ping"));
         expect.add(new TextFrame().setPayload("hello, world"));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
@@ -666,12 +666,12 @@ public class TestABCase5 extends AbstractABCase
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame("hello, ").setFin(false));
-        send.add(new PingFrame("ping"));
+        send.add(new PingFrame().setPayload("ping"));
         send.add(new ContinuationFrame("world").setFin(true));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new PongFrame("ping"));
+        expect.add(new PongFrame().setPayload("ping"));
         expect.add(new TextFrame().setPayload("hello, world"));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 

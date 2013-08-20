@@ -94,10 +94,10 @@ public class ParserTest
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame("f1").setFin(false));
         send.add(new ContinuationFrame(",f2").setFin(false));
-        send.add(new PingFrame("pong-1"));
+        send.add(new PingFrame().setPayload("pong-1"));
         send.add(new ContinuationFrame(",f3").setFin(false));
         send.add(new ContinuationFrame(",f4").setFin(false));
-        send.add(new PingFrame("pong-2"));
+        send.add(new PingFrame().setPayload("pong-2"));
         send.add(new ContinuationFrame(",f5").setFin(true));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
@@ -121,7 +121,7 @@ public class ParserTest
     public void testParseCase5_6()
     {
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new PongFrame("ping"));
+        send.add(new PongFrame().setPayload("ping"));
         send.add(new TextFrame("hello, world"));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 

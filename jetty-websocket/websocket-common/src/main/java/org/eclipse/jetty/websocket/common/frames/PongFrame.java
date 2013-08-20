@@ -30,21 +30,16 @@ public class PongFrame extends ControlFrame
         super(OpCode.PONG);
     }
     
-    public PongFrame(ByteBuffer buf)
+    public PongFrame setPayload(byte[] bytes)
     {
-        this();
-        setPayload(buf);
-    }
-
-    public PongFrame(byte[] bytes)
-    {
-        this();
         setPayload(ByteBuffer.wrap(bytes));
+        return this;
     }
 
-    public PongFrame(String payload)
+    public PongFrame setPayload(String payload)
     {
-        this(StringUtil.getUtf8Bytes(payload));
+        setPayload(StringUtil.getUtf8Bytes(payload));
+        return this;
     }
 
     @Override

@@ -61,7 +61,7 @@ public class RFC6455ExamplesGeneratorTest
     @Test
     public void testSingleMaskedPongRequest()
     {
-        PongFrame pong = new PongFrame("Hello");
+        PongFrame pong = new PongFrame().setPayload("Hello");
         pong.setMask(new byte[]
                 { 0x37, (byte)0xfa, 0x21, 0x3d });
 
@@ -158,7 +158,7 @@ public class RFC6455ExamplesGeneratorTest
     @Test
     public void testSingleUnmaskedPingRequest() throws Exception
     {
-        PingFrame ping = new PingFrame("Hello");
+        PingFrame ping = new PingFrame().setPayload("Hello");
 
         ByteBuffer actual = UnitGenerator.generate(ping);
 

@@ -30,21 +30,16 @@ public class PingFrame extends ControlFrame
         super(OpCode.PING);
     }
 
-    public PingFrame(ByteBuffer buf)
+    public PingFrame setPayload(byte[] bytes)
     {
-        this();
-        setPayload(buf);
-    }
-
-    public PingFrame(byte[] bytes)
-    {
-        this();
         setPayload(ByteBuffer.wrap(bytes));
+        return this;
     }
 
-    public PingFrame(String payload)
+    public PingFrame setPayload(String payload)
     {
-        this(StringUtil.getUtf8Bytes(payload));
+        setPayload(StringUtil.getUtf8Bytes(payload));
+        return this;
     }
 
     @Override

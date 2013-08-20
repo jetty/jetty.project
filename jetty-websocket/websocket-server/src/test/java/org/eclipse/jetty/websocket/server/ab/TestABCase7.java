@@ -112,7 +112,7 @@ public class TestABCase7 extends AbstractABCase
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
-        send.add(new PingFrame("out of band ping"));
+        send.add(new PingFrame().setPayload("out of band ping"));
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
@@ -202,7 +202,7 @@ public class TestABCase7 extends AbstractABCase
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload(buf));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
-        send.add(new PingFrame("out of band"));
+        send.add(new PingFrame().setPayload("out of band"));
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new TextFrame().setPayload(clone(buf)));

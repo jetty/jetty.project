@@ -216,7 +216,7 @@ public class GeneratorTest
         WebSocketFrame[] frames = new WebSocketFrame[pingCount + 1];
         for (int i = 0; i < pingCount; i++)
         {
-            frames[i] = new PingFrame(String.format("ping-%d",i));
+            frames[i] = new PingFrame().setPayload(String.format("ping-%d",i));
         }
         frames[pingCount] = new CloseInfo(StatusCode.NORMAL).asFrame();
 
