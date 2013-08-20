@@ -21,39 +21,46 @@ package org.eclipse.jetty.websocket.jsr356.messages;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import javax.websocket.MessageHandler;
-import javax.websocket.MessageHandler.Partial;
+import javax.websocket.OnMessage;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.common.message.MessageAppender;
-import org.eclipse.jetty.websocket.jsr356.MessageHandlerWrapper;
+import org.eclipse.jetty.websocket.jsr356.endpoints.JsrAnnotatedEventDriver;
 
 /**
- * Partial TEXT MessageAppender for MessageHandler.Partial interface
+ * Partial BINARY MessageAppender for &#064;{@link OnMessage} annotated methods
  */
-public class TextPartialMessage implements MessageAppender
+public class BinaryPartialOnMessage implements MessageAppender
 {
-    @SuppressWarnings("unused")
-    private final MessageHandlerWrapper msgWrapper;
-    private final MessageHandler.Partial<String> partialHandler;
+    private final JsrAnnotatedEventDriver driver;
+    private boolean finished;
 
-    @SuppressWarnings("unchecked")
-    public TextPartialMessage(MessageHandlerWrapper wrapper)
+    public BinaryPartialOnMessage(JsrAnnotatedEventDriver driver)
     {
-        this.msgWrapper = wrapper;
-        this.partialHandler = (Partial<String>)wrapper.getHandler();
+        this.driver = driver;
+        this.finished = false;
     }
 
     @Override
     public void appendMessage(ByteBuffer payload, boolean isLast) throws IOException
     {
-        // No decoders for Partial messages per JSR-356 (PFD1 spec)
-        partialHandler.onMessage(BufferUtil.toUTF8String(payload.slice()),isLast);
+        if (finished)
+        {
+            throw new IOException("Cannot append to finished buffer");
+        }
+        if (payload == null)
+        {
+            driver.onPartialBinaryMessage(BufferUtil.EMPTY_BUFFER,isLast);
+        }
+        else
+        {
+            driver.onPartialBinaryMessage(payload,isLast);
+        }
     }
 
     @Override
     public void messageComplete()
     {
-        /* nothing to do here */
+        finished = true;
     }
 }

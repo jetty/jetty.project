@@ -186,14 +186,12 @@ public class EchoTest
                 .expect("Hello World|OhMy");
 
         // Partial message based
-        /*
         EchoCase.add(TESTCASES,PartialTextSocket.class)
           .addSplitMessage("Saved"," by ","zero")
           .expect("('Saved',false)(' by ',false)('zero',true)");
         EchoCase.add(TESTCASES,PartialTextSessionSocket.class)
           .addSplitMessage("Built"," for"," the"," future")
           .expect("('Built',false)(' for',false)(' the',false)(' future',true)");
-         */
     }
 
     @BeforeClass

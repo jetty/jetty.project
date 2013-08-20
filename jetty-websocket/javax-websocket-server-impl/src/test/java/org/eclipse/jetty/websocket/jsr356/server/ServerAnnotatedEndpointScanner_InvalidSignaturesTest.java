@@ -43,7 +43,6 @@ import org.eclipse.jetty.websocket.jsr356.server.samples.InvalidErrorIntSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.InvalidOpenCloseReasonSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.InvalidOpenIntSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.InvalidOpenSessionIntSocket;
-import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -57,8 +56,6 @@ import org.junit.runners.Parameterized.Parameters;
 public class ServerAnnotatedEndpointScanner_InvalidSignaturesTest
 {
     private static final Logger LOG = Log.getLogger(ServerAnnotatedEndpointScanner_InvalidSignaturesTest.class);
-
-    private static ServerContainer container = new ServerContainer(new DummyCreator(), new WebSocketServerFactory());
 
     @Parameters
     public static Collection<Class<?>[]> data()
@@ -97,7 +94,7 @@ public class ServerAnnotatedEndpointScanner_InvalidSignaturesTest
     @Test
     public void testScan_InvalidSignature() throws DeploymentException
     {
-        AnnotatedServerEndpointMetadata metadata = new AnnotatedServerEndpointMetadata(container,pojo,null);
+        AnnotatedServerEndpointMetadata metadata = new AnnotatedServerEndpointMetadata(pojo,null);
         AnnotatedEndpointScanner<ServerEndpoint,ServerEndpointConfig> scanner = new AnnotatedEndpointScanner<>(metadata);
 
         try

@@ -68,7 +68,6 @@ import org.eclipse.jetty.websocket.jsr356.server.samples.primitives.ShortObjectT
 import org.eclipse.jetty.websocket.jsr356.server.samples.primitives.ShortTextSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.streaming.ReaderParamSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.streaming.StringReturnReaderParamSocket;
-import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -103,8 +102,6 @@ public class ServerAnnotatedEndpointScanner_GoodSignaturesTest
             this.expectedParameters = expectedParams;
         }
     }
-
-    private static ServerContainer container = new ServerContainer(new DummyCreator(), new WebSocketServerFactory());
 
     @Parameters
     public static Collection<Case[]> data() throws Exception
@@ -185,7 +182,7 @@ public class ServerAnnotatedEndpointScanner_GoodSignaturesTest
     @Test
     public void testScan_Basic() throws Exception
     {
-        AnnotatedServerEndpointMetadata metadata = new AnnotatedServerEndpointMetadata(container,testcase.pojo,null);
+        AnnotatedServerEndpointMetadata metadata = new AnnotatedServerEndpointMetadata(testcase.pojo,null);
         AnnotatedEndpointScanner<ServerEndpoint, ServerEndpointConfig> scanner = new AnnotatedEndpointScanner<>(metadata);
         scanner.scan();
 
