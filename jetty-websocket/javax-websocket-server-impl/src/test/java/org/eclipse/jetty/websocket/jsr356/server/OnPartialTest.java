@@ -89,7 +89,7 @@ public class OnPartialTest
     public void testOnTextPartial() throws Throwable
     {
         List<WebSocketFrame> frames = new ArrayList<>();
-        frames.add(new TextFrame("Saved").setFin(false));
+        frames.add(new TextFrame().setPayload("Saved").setFin(false));
         frames.add(new ContinuationFrame(" by ").setFin(false));
         frames.add(new ContinuationFrame("zero").setFin(true));
 

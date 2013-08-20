@@ -222,7 +222,7 @@ public class MessageCompressionExtensionTest
         // leave frames as-is, no compression, and pass into extension
         for (String q : quote)
         {
-            TextFrame frame = new TextFrame(q);
+            TextFrame frame = new TextFrame().setPayload(q);
             frame.setRsv1(false); // indication to extension that frame is not compressed (ie: a normal frame)
             ext.incomingFrame(frame);
         }

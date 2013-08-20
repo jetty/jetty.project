@@ -344,7 +344,7 @@ public class TestABCase9 extends AbstractABCase
         Arrays.fill(data,(byte)0x21);
 
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new BinaryFrame(data));
+        send.add(new BinaryFrame().setPayload(data));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();

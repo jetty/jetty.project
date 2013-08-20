@@ -251,7 +251,7 @@ public class GeneratorTest
         byte payload[] = new byte[10240];
         Arrays.fill(payload,(byte)0x44);
 
-        WebSocketFrame frame = new BinaryFrame(payload);
+        WebSocketFrame frame = new BinaryFrame().setPayload(payload);
 
         // Generate
         int windowSize = 1024;
@@ -279,7 +279,7 @@ public class GeneratorTest
         byte mask[] = new byte[]
         { 0x2A, (byte)0xF0, 0x0F, 0x00 };
 
-        WebSocketFrame frame = new BinaryFrame(payload);
+        WebSocketFrame frame = new BinaryFrame().setPayload(payload);
         frame.setMask(mask); // masking!
 
         // Generate

@@ -290,7 +290,7 @@ public class TestABCase1_2
     @Test
     public void testGenerateEmptyBinaryCase1_2_1()
     {
-        WebSocketFrame binaryFrame = new BinaryFrame(new byte[] {});
+        WebSocketFrame binaryFrame = new BinaryFrame().setPayload(new byte[] {});
 
         ByteBuffer actual = UnitGenerator.generate(binaryFrame);
 

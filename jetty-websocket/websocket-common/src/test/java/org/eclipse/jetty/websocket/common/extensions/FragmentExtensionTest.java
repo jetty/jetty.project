@@ -164,14 +164,14 @@ public class FragmentExtensionTest
 
         // Expected Frames
         List<WebSocketFrame> expectedFrames = new ArrayList<>();
-        expectedFrames.add(new TextFrame("No amount of experim").setFin(false));
+        expectedFrames.add(new TextFrame().setPayload("No amount of experim").setFin(false));
         expectedFrames.add(new ContinuationFrame("entation can ever pr").setFin(false));
         expectedFrames.add(new ContinuationFrame("ove me right;").setFin(true));
 
-        expectedFrames.add(new TextFrame("a single experiment ").setFin(false));
+        expectedFrames.add(new TextFrame().setPayload("a single experiment ").setFin(false));
         expectedFrames.add(new ContinuationFrame("can prove me wrong.").setFin(true));
 
-        expectedFrames.add(new TextFrame("-- Albert Einstein").setFin(true));
+        expectedFrames.add(new TextFrame().setPayload("-- Albert Einstein").setFin(true));
 
         capture.dump();
 
@@ -236,9 +236,9 @@ public class FragmentExtensionTest
 
         // Expected Frames
         List<WebSocketFrame> expectedFrames = new ArrayList<>();
-        expectedFrames.add(new TextFrame("No amount of experimentation can ever prove me right;"));
-        expectedFrames.add(new TextFrame("a single experiment can prove me wrong."));
-        expectedFrames.add(new TextFrame("-- Albert Einstein"));
+        expectedFrames.add(new TextFrame().setPayload("No amount of experimentation can ever prove me right;"));
+        expectedFrames.add(new TextFrame().setPayload("a single experiment can prove me wrong."));
+        expectedFrames.add(new TextFrame().setPayload("-- Albert Einstein"));
 
         // capture.dump();
 

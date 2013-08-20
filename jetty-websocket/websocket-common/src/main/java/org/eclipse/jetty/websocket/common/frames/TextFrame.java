@@ -23,7 +23,6 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.common.OpCode;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
 
 public class TextFrame extends DataFrame
 {
@@ -32,19 +31,13 @@ public class TextFrame extends DataFrame
         super(OpCode.TEXT);
     }
 
-    public TextFrame(String msg)
-    {
-        this();
-        setPayload(msg);
-    }
-
     @Override
     public Type getType()
     {
         return Type.TEXT;
     }
 
-    public WebSocketFrame setPayload(String str)
+    public TextFrame setPayload(String str)
     {
         setPayload(ByteBuffer.wrap(StringUtil.getUtf8Bytes(str)));
         return this;

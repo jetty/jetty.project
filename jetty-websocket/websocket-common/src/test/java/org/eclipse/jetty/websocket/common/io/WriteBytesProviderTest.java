@@ -123,7 +123,7 @@ public class WriteBytesProviderTest
         int binPayloadSize = 50;
         byte bin[] = new byte[binPayloadSize];
         Arrays.fill(bin,(byte)0x00);
-        BinaryFrame binFrame = new BinaryFrame(bin);
+        BinaryFrame binFrame = new BinaryFrame().setPayload(bin);
         byte maskingKey[] = Hex.asByteArray("11223344");
         binFrame.setMask(maskingKey);
         bytesProvider.enqueue(binFrame,binCallback);

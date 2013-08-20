@@ -30,21 +30,22 @@ public class BinaryFrame extends DataFrame
         super(OpCode.BINARY);
     }
 
-    public BinaryFrame(byte[] buf)
+    public BinaryFrame setPayload(ByteBuffer buf)
     {
-        this();
+        super.setPayload(buf);
+        return this;
+    }
+
+    public BinaryFrame setPayload(byte[] buf)
+    {
         setPayload(ByteBuffer.wrap(buf));
+        return this;
     }
 
-    public BinaryFrame(ByteBuffer buf)
+    public BinaryFrame setPayload(String payload)
     {
-        this();
-        setPayload(buf);
-    }
-
-    public BinaryFrame(String payload)
-    {
-        this(StringUtil.getBytes(payload));
+        setPayload(StringUtil.getUtf8Bytes(payload));
+        return this;
     }
 
     @Override

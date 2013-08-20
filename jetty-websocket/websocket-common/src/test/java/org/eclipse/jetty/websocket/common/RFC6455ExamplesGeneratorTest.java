@@ -35,7 +35,7 @@ public class RFC6455ExamplesGeneratorTest
     @Test
     public void testFragmentedUnmaskedTextMessage()
     {
-        WebSocketFrame text1 = new TextFrame("Hel").setFin(false);
+        WebSocketFrame text1 = new TextFrame().setPayload("Hel").setFin(false);
         WebSocketFrame text2 = new ContinuationFrame("lo");
 
         ByteBuffer actual1 = UnitGenerator.generate(text1);

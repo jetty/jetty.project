@@ -48,7 +48,7 @@ public class EventDriverTest
 
     private Frame makeBinaryFrame(String content, boolean fin)
     {
-        return new BinaryFrame(content).setFin(fin);
+        return new BinaryFrame().setPayload(content).setFin(fin);
     }
 
     @Test
@@ -116,8 +116,8 @@ public class EventDriverTest
         {
             conn.open();
             driver.incomingFrame(new PingFrame().setPayload("PING"));
-            driver.incomingFrame(new TextFrame("Text Me"));
-            driver.incomingFrame(new BinaryFrame("Hello Bin"));
+            driver.incomingFrame(new TextFrame().setPayload("Text Me"));
+            driver.incomingFrame(new BinaryFrame().setPayload("Hello Bin"));
             driver.incomingFrame(new CloseInfo(StatusCode.SHUTDOWN,"testcase").asFrame());
 
             socket.capture.assertEventCount(6);

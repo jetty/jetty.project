@@ -103,7 +103,7 @@ public class WebSocketServletRFCTest
 
             WebSocketFrame bin;
 
-            bin = new BinaryFrame(buf1).setFin(false);
+            bin = new BinaryFrame().setPayload(buf1).setFin(false);
 
             client.write(bin); // write buf1 (fin=false)
 

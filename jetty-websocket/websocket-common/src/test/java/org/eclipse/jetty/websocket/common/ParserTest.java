@@ -46,10 +46,10 @@ public class ParserTest
     public void testParseCase5_15()
     {
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new TextFrame("fragment1").setFin(false));
+        send.add(new TextFrame().setPayload("fragment1").setFin(false));
         send.add(new ContinuationFrame("fragment2").setFin(true));
         send.add(new ContinuationFrame("fragment3").setFin(false)); // bad frame
-        send.add(new TextFrame("fragment4").setFin(true));
+        send.add(new TextFrame().setPayload("fragment4").setFin(true));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         ByteBuffer completeBuf = UnitGenerator.generate(send);
@@ -71,8 +71,8 @@ public class ParserTest
     public void testParseCase5_18()
     {
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new TextFrame("fragment1").setFin(false));
-        send.add(new TextFrame("fragment2").setFin(true)); // bad frame, must be continuation
+        send.add(new TextFrame().setPayload("fragment1").setFin(false));
+        send.add(new TextFrame().setPayload("fragment2").setFin(true)); // bad frame, must be continuation
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         ByteBuffer completeBuf = UnitGenerator.generate(send);
@@ -92,7 +92,7 @@ public class ParserTest
     public void testParseCase5_19()
     {
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new TextFrame("f1").setFin(false));
+        send.add(new TextFrame().setPayload("f1").setFin(false));
         send.add(new ContinuationFrame(",f2").setFin(false));
         send.add(new PingFrame().setPayload("pong-1"));
         send.add(new ContinuationFrame(",f3").setFin(false));
@@ -122,7 +122,7 @@ public class ParserTest
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new PongFrame().setPayload("ping"));
-        send.add(new TextFrame("hello, world"));
+        send.add(new TextFrame().setPayload("hello, world"));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         ByteBuffer completeBuf = UnitGenerator.generate(send);

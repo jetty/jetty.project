@@ -160,7 +160,7 @@ public class TestABCase3 extends AbstractABCase
         Arrays.fill(payload,(byte)0xFF);
 
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new BinaryFrame(payload).setRsv3(true).setRsv1(true)); // intentionally bad
+        send.add(new BinaryFrame().setPayload(payload).setRsv3(true).setRsv1(true)); // intentionally bad
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
