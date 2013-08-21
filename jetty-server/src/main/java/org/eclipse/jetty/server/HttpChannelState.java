@@ -89,8 +89,8 @@ public class HttpChannelState
 
     private final boolean DEBUG=LOG.isDebugEnabled();
     private final HttpChannel<?> _channel;
-    private List<AsyncListener> _asyncListeners;
 
+    private List<AsyncListener> _asyncListeners;
     private State _state;
     private Async _async;
     private boolean _initial;
@@ -497,13 +497,15 @@ public class HttpChannelState
                 default:
                     break;
             }
+            _asyncListeners=null;
             _state=State.IDLE;
             _async=null;
-            _initial = true;
-            cancelTimeout();
-            _timeoutMs=DEFAULT_TIMEOUT;
-            _event=null;
+            _initial=true;
+            _asyncRead=false;
             _asyncWrite=false;
+            _timeoutMs=DEFAULT_TIMEOUT;
+            cancelTimeout();
+            _event=null;
         }
     }
 
