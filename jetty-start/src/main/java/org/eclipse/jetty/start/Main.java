@@ -51,9 +51,6 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.eclipse.jetty.start.StartIni.IncludeListener;
-
-/*-------------------------------------------*/
 /**
  * <p>
  * Main start class. This class is intended to be the main class listed in the MANIFEST.MF of the start.jar archive. It allows an application to be started with
