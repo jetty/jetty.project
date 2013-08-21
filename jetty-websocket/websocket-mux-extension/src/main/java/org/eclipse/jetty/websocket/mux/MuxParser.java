@@ -81,7 +81,7 @@ public class MuxParser
             return; // nothing to parse
         }
 
-        if (frame.getType().getOpCode() != OpCode.BINARY)
+        if (frame.getOpCode() != OpCode.BINARY)
         {
             LOG.debug("Not a binary opcode (base frame), skipping");
             return; // not a binary opcode
@@ -98,14 +98,14 @@ public class MuxParser
                 return;
             }
 
-            if (frame.isContinuation())
+            if (frame.getOpCode() == OpCode.CONTINUATION)
             {
                 muxframe.reset();
                 muxframe.setFin(frame.isFin());
                 muxframe.setFin(frame.isRsv1());
                 muxframe.setFin(frame.isRsv2());
                 muxframe.setFin(frame.isRsv3());
-                muxframe.setContinuation(true);
+                muxframe.setIsContinuation();
                 parseDataFramePayload(buffer);
             }
             else
@@ -223,12 +223,12 @@ public class MuxParser
 
         if (opcode == OpCode.CONTINUATION)
         {
-            muxframe.setContinuation(true);
+            muxframe.setIsContinuation();
         }
         else
         {
             muxframe.reset();
-            muxframe.setOpCode(opcode);
+            muxframe.setOp(opcode);
         }
 
         muxframe.setChannelId(channelId);

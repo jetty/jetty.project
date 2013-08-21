@@ -29,6 +29,7 @@ import org.eclipse.jetty.websocket.api.BadPayloadException;
 import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.websocket.common.frames.CloseFrame;
 
 public class CloseInfo
 {
@@ -128,7 +129,7 @@ public class CloseInfo
         this.reason = reason;
     }
 
-    private byte[] asByteBuffer()
+    private ByteBuffer asByteBuffer()
     {
         if ((statusCode == StatusCode.NO_CLOSE) || (statusCode == StatusCode.NO_CODE) || (statusCode == (-1)))
         {
@@ -143,22 +144,23 @@ public class CloseInfo
             utf = StringUtil.getUtf8Bytes(reason);
             len += utf.length;
         }
-
-        byte buf[] = new byte[len];
-        buf[0] = (byte)((statusCode >>> 8) & 0xFF);
-        buf[1] = (byte)((statusCode >>> 0) & 0xFF);
+        
+        ByteBuffer buf = ByteBuffer.allocate(len);
+        buf.put((byte)((statusCode >>> 8) & 0xFF));
+        buf.put((byte)((statusCode >>> 0) & 0xFF));
 
         if (utf != null)
         {
-            System.arraycopy(utf,0,buf,2,utf.length);
+            buf.put(utf,0,utf.length);
         }
+        buf.flip();
 
         return buf;
     }
 
-    public WebSocketFrame asFrame()
+    public CloseFrame asFrame()
     {
-        WebSocketFrame frame = new WebSocketFrame(OpCode.CLOSE);
+        CloseFrame frame = new CloseFrame();
         frame.setFin(true);
         frame.setPayload(asByteBuffer());
         return frame;

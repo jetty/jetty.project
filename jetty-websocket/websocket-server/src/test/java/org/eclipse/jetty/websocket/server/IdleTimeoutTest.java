@@ -18,23 +18,15 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import static org.hamcrest.Matchers.*;
-
-import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.common.CloseInfo;
-import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
-import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.server.helper.RFCSocket;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -90,7 +82,7 @@ public class IdleTimeoutTest
             // Server could be in a half-closed state at this point.
             // Where the server read is closed (due to timeout), but the server write is still open.
             // The server could not read this frame, if it is in this half closed state
-            client.write(WebSocketFrame.text("Hello"));
+            client.write(new TextFrame().setPayload("Hello"));
 
             // Expect server to be disconnected at this point
             client.expectServerDisconnect();

@@ -42,6 +42,7 @@ import org.eclipse.jetty.websocket.common.OutgoingNetworkBytesCapture;
 import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.UnitParser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -109,7 +110,7 @@ public class FrameCompressionExtensionTest
         OutgoingNetworkBytesCapture capture = new OutgoingNetworkBytesCapture(generator);
         ext.setNextOutgoingFrames(capture);
 
-        Frame frame = WebSocketFrame.text(text);
+        Frame frame = new TextFrame().setPayload(text);
         ext.outgoingFrame(frame,null);
 
         capture.assertBytes(0,expectedHex);
@@ -228,8 +229,8 @@ public class FrameCompressionExtensionTest
         OutgoingNetworkBytesCapture capture = new OutgoingNetworkBytesCapture(generator);
         ext.setNextOutgoingFrames(capture);
 
-        ext.outgoingFrame(WebSocketFrame.text("Hello"),null);
-        ext.outgoingFrame(WebSocketFrame.text("There"),null);
+        ext.outgoingFrame(new TextFrame().setPayload("Hello"),null);
+        ext.outgoingFrame(new TextFrame().setPayload("There"),null);
 
         capture.assertBytes(0,"c107f248cdc9c90700");
         capture.assertBytes(1,"c1070ac9482d4a0500");

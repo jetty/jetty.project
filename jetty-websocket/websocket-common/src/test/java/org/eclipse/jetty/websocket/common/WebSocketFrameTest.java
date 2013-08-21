@@ -28,6 +28,9 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.websocket.common.frames.CloseFrame;
+import org.eclipse.jetty.websocket.common.frames.PingFrame;
+import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -54,13 +57,6 @@ public class WebSocketFrameTest
         laxGenerator = new Generator(policy,bufferPool,false);
     }
 
-    private void assertEqual(String message, ByteBuffer expected, ByteBuffer actual)
-    {
-        BufferUtil.flipToFlush(expected,0);
-
-        ByteBufferAssert.assertEquals(message,expected,actual);
-    }
-
     private void assertFrameHex(String message, String expectedHex, ByteBuffer actual)
     {
         String actualHex = Hex.asHex(actual);
@@ -70,7 +66,7 @@ public class WebSocketFrameTest
     @Test
     public void testLaxInvalidClose()
     {
-        WebSocketFrame frame = new WebSocketFrame(OpCode.CLOSE).setFin(false);
+        WebSocketFrame frame = new CloseFrame().setFin(false);
         ByteBuffer actual = generateWholeFrame(laxGenerator,frame);
         String expected = "0800";
         assertFrameHex("Lax Invalid Close Frame",expected,actual);
@@ -79,7 +75,7 @@ public class WebSocketFrameTest
     @Test
     public void testLaxInvalidPing()
     {
-        WebSocketFrame frame = new WebSocketFrame(OpCode.PING).setFin(false);
+        WebSocketFrame frame = new PingFrame().setFin(false);
         ByteBuffer actual = generateWholeFrame(laxGenerator,frame);
         String expected = "0900";
         assertFrameHex("Lax Invalid Ping Frame",expected,actual);
@@ -97,7 +93,7 @@ public class WebSocketFrameTest
     @Test
     public void testStrictValidPing()
     {
-        WebSocketFrame frame = new WebSocketFrame(OpCode.PING);
+        WebSocketFrame frame = new PingFrame();
         ByteBuffer actual = generateWholeFrame(strictGenerator,frame);
         String expected = "8900";
         assertFrameHex("Strict Valid Ping Frame",expected,actual);
@@ -106,7 +102,7 @@ public class WebSocketFrameTest
     @Test
     public void testRsv1()
     {
-        WebSocketFrame frame = new WebSocketFrame(OpCode.TEXT);
+        TextFrame frame = new TextFrame();
         frame.setPayload("Hi");
         frame.setRsv1(true);
         ByteBuffer actual = generateWholeFrame(laxGenerator,frame);
@@ -117,7 +113,7 @@ public class WebSocketFrameTest
     @Test
     public void testRsv2()
     {
-        WebSocketFrame frame = new WebSocketFrame(OpCode.TEXT);
+        TextFrame frame = new TextFrame();
         frame.setPayload("Hi");
         frame.setRsv2(true);
         ByteBuffer actual = generateWholeFrame(laxGenerator,frame);
@@ -128,7 +124,7 @@ public class WebSocketFrameTest
     @Test
     public void testRsv3()
     {
-        WebSocketFrame frame = new WebSocketFrame(OpCode.TEXT);
+        TextFrame frame = new TextFrame();
         frame.setPayload("Hi");
         frame.setRsv3(true);
         ByteBuffer actual = generateWholeFrame(laxGenerator,frame);

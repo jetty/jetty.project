@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -33,8 +32,8 @@ import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.OpCode;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
+import org.eclipse.jetty.websocket.common.frames.CloseFrame;
 import org.eclipse.jetty.websocket.common.message.MessageAppender;
 
 /**
@@ -111,13 +110,14 @@ public abstract class AbstractEventDriver implements IncomingFrames, EventDriver
         {
             onFrame(frame);
 
-            byte opcode = frame.getType().getOpCode();
+            byte opcode = frame.getOpCode();
             switch (opcode)
             {
                 case OpCode.CLOSE:
                 {
                     boolean validate = true;
-                    CloseInfo close = new CloseInfo(frame,validate);
+                    CloseFrame closeframe = (CloseFrame)frame;
+                    CloseInfo close = new CloseInfo(closeframe,validate);
 
                     // notify user websocket pojo
                     onClose(close);
@@ -224,10 +224,8 @@ public abstract class AbstractEventDriver implements IncomingFrames, EventDriver
 
     protected void terminateConnection(int statusCode, String rawreason)
     {
-        String reason = rawreason;
-        reason = StringUtil.truncate(reason,(WebSocketFrame.MAX_CONTROL_PAYLOAD - 2));
         LOG.debug("terminateConnection({},{})",statusCode,rawreason);
-        session.close(statusCode,reason);
+        session.close(statusCode,CloseFrame.truncate(rawreason));
     }
 
     private void unhandled(Throwable t)

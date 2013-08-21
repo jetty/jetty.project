@@ -16,35 +16,33 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common.io.payload;
+package org.eclipse.jetty.websocket.common.frames;
 
-import java.nio.ByteBuffer;
-
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.common.OpCode;
 
-/**
- * Validate UTF8 correctness for {@link OpCode#CLOSE} Reason message.
- */
-public class CloseReasonValidator extends UTF8Validator implements PayloadProcessor
+public class CloseFrame extends ControlFrame
 {
-    private int statusCodeBytes = 2;
+    public CloseFrame()
+    {
+        super(OpCode.CLOSE);
+    }
 
     @Override
-    public void process(ByteBuffer payload)
+    public Type getType()
     {
-        if ((payload == null) || (payload.remaining() <= 2))
-        {
-            // no validation needed
-            return;
-        }
+        return Type.CLOSE;
+    }
 
-        ByteBuffer copy = payload.slice();
-        while (statusCodeBytes > 0)
-        {
-            copy.get();
-            statusCodeBytes--;
-        }
-
-        super.process(copy);
+    /**
+     * Truncate arbitrary reason into something that will fit into the CloseFrame limits.
+     * 
+     * @param reason
+     *            the arbitrary reason to possibly truncate.
+     * @return the possibly truncated reason string.
+     */
+    public static String truncate(String reason)
+    {
+        return StringUtil.truncate(reason,(ControlFrame.MAX_CONTROL_PAYLOAD - 2));
     }
 }

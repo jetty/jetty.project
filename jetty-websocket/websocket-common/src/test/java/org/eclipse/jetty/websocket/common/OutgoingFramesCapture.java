@@ -84,8 +84,7 @@ public class OutgoingFramesCapture implements OutgoingFrames
     @Override
     public void outgoingFrame(Frame frame, WriteCallback callback)
     {
-        WebSocketFrame copy = new WebSocketFrame(frame);
-        frames.add(copy);
+        frames.add(WebSocketFrame.copy(frame));
         if (callback != null)
         {
             callback.writeSuccess();

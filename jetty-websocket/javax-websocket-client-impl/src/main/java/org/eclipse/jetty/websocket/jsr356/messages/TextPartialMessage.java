@@ -28,6 +28,9 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.common.message.MessageAppender;
 import org.eclipse.jetty.websocket.jsr356.MessageHandlerWrapper;
 
+/**
+ * Partial TEXT MessageAppender for MessageHandler.Partial interface
+ */
 public class TextPartialMessage implements MessageAppender
 {
     @SuppressWarnings("unused")

@@ -23,6 +23,7 @@ import static org.hamcrest.Matchers.*;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketException;
@@ -36,6 +37,7 @@ import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.UnitGenerator;
 import org.eclipse.jetty.websocket.common.UnitParser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.frames.PingFrame;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -53,7 +55,7 @@ public class TestABCase2
             bytes[i] = Integer.valueOf(Integer.toOctalString(i)).byteValue();
         }
 
-        WebSocketFrame pingFrame = WebSocketFrame.ping().setPayload(bytes);
+        WebSocketFrame pingFrame = new PingFrame().setPayload(bytes);
 
         ByteBuffer actual = UnitGenerator.generate(pingFrame);
 
@@ -77,7 +79,7 @@ public class TestABCase2
     {
         byte[] bytes = new byte[] { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 };
 
-        WebSocketFrame pingFrame = WebSocketFrame.ping().setPayload(bytes);
+        PingFrame pingFrame = new PingFrame().setPayload(bytes);
 
         ByteBuffer actual = UnitGenerator.generate(pingFrame);
 
@@ -100,7 +102,7 @@ public class TestABCase2
     @Test
     public void testGenerateEmptyPingCase2_1()
     {
-        WebSocketFrame pingFrame = WebSocketFrame.ping();
+        WebSocketFrame pingFrame = new PingFrame();
 
         ByteBuffer actual = UnitGenerator.generate(pingFrame);
 
@@ -118,9 +120,9 @@ public class TestABCase2
     public void testGenerateHelloPingCase2_2()
     {
         String message = "Hello, world!";
-        byte[] messageBytes = message.getBytes();
+        byte[] messageBytes = StringUtil.getUtf8Bytes(message);
 
-        WebSocketFrame pingFrame = WebSocketFrame.ping().setPayload(messageBytes);
+        PingFrame pingFrame = new PingFrame().setPayload(messageBytes);
 
         ByteBuffer actual = UnitGenerator.generate(pingFrame);
 
@@ -143,28 +145,22 @@ public class TestABCase2
     public void testGenerateOversizedBinaryPingCase2_5_A()
     {
         byte[] bytes = new byte[126];
+        Arrays.fill(bytes,(byte)0x00);
 
-        for ( int i = 0 ; i < bytes.length ; ++i )
-        {
-            bytes[i] = 0x00;
-        }
-
-        WebSocketFrame.ping().setPayload(bytes);
+        PingFrame pingFrame = new PingFrame();
+        pingFrame.setPayload(ByteBuffer.wrap(bytes)); // should throw exception
     }
 
     @Test( expected=WebSocketException.class )
     public void testGenerateOversizedBinaryPingCase2_5_B()
     {
         byte[] bytes = new byte[126];
+        Arrays.fill(bytes, (byte)0x00);
 
-        for ( int i = 0 ; i < bytes.length ; ++i )
-        {
-            bytes[i] = 0x00;
-        }
+        PingFrame pingFrame = new PingFrame();
+        pingFrame.setPayload(ByteBuffer.wrap(bytes)); // should throw exception
 
-        WebSocketFrame pingFrame = WebSocketFrame.ping().setPayload(bytes);
-
-        UnitGenerator.generate(pingFrame);
+        // FIXME: Remove? UnitGenerator.generate(pingFrame);
     }
 
     @Test

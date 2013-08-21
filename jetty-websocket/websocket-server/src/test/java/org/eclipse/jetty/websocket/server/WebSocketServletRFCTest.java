@@ -37,7 +37,11 @@ import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
+import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
+import org.eclipse.jetty.websocket.common.frames.ContinuationFrame;
+import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
+import org.eclipse.jetty.websocket.server.helper.Hex;
 import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.server.helper.RFCServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
@@ -99,15 +103,15 @@ public class WebSocketServletRFCTest
 
             WebSocketFrame bin;
 
-            bin = WebSocketFrame.binary(buf1).setFin(false);
+            bin = new BinaryFrame().setPayload(buf1).setFin(false);
 
             client.write(bin); // write buf1 (fin=false)
 
-            bin = new WebSocketFrame(OpCode.CONTINUATION).setPayload(buf2).setFin(false);
+            bin = new ContinuationFrame().setPayload(buf2).setFin(false);
 
             client.write(bin); // write buf2 (fin=false)
 
-            bin = new WebSocketFrame(OpCode.CONTINUATION).setPayload(buf3).setFin(true);
+            bin = new ContinuationFrame().setPayload(buf3).setFin(true);
 
             client.write(bin); // write buf3 (fin=true)
 
@@ -175,7 +179,7 @@ public class WebSocketServletRFCTest
 
             // Generate text frame
             String msg = "this is an echo ... cho ... ho ... o";
-            client.write(WebSocketFrame.text(msg));
+            client.write(new TextFrame().setPayload(msg));
 
             // Read frame (hopefully text frame)
             IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
@@ -208,7 +212,7 @@ public class WebSocketServletRFCTest
             try (StacklessLogging context = new StacklessLogging(EventDriver.class))
             {
                 // Generate text frame
-                client.write(WebSocketFrame.text("CRASH"));
+                client.write(new TextFrame().setPayload("CRASH"));
 
                 // Read frame (hopefully close frame)
                 IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
@@ -254,7 +258,7 @@ public class WebSocketServletRFCTest
 
             // Generate text frame
             String msg = "this is an echo ... cho ... ho ... o";
-            client.write(WebSocketFrame.text(msg));
+            client.write(new TextFrame().setPayload(msg));
 
             // Read frame (hopefully text frame)
             IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
@@ -284,7 +288,8 @@ public class WebSocketServletRFCTest
             byte buf[] = new byte[]
             { (byte)0xC2, (byte)0xC3 };
 
-            WebSocketFrame txt = WebSocketFrame.text().setPayload(buf);
+            WebSocketFrame txt = new TextFrame().setPayload(ByteBuffer.wrap(buf));
+            txt.setMask(Hex.asByteArray("11223344"));
             ByteBuffer bbHeader = generator.generateHeaderBytes(txt);
             client.writeRaw(bbHeader);
             client.writeRaw(txt.getPayload());
@@ -332,7 +337,7 @@ public class WebSocketServletRFCTest
 
             // Generate text frame
             String msg = "this is an echo ... cho ... ho ... o";
-            client.write(WebSocketFrame.text(msg));
+            client.write(new TextFrame().setPayload(msg));
 
             // Read frame (hopefully text frame)
             IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);

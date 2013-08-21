@@ -5,5 +5,6 @@
 jaas.login.conf=etc/login.conf
 
 OPTION=jaas
+EXCLUDE=demo
 
 etc/jetty-jaas.xml

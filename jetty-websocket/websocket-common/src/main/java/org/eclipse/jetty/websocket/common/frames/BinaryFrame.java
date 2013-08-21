@@ -16,28 +16,41 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common.io.payload;
+package org.eclipse.jetty.websocket.common.frames;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.websocket.common.OpCode;
 
-/**
- * payload validator does no validation.
- */
-public class NoOpValidator implements PayloadProcessor
+public class BinaryFrame extends DataFrame
 {
-    public static final NoOpValidator INSTANCE = new NoOpValidator();
-
-    @Override
-    public void process(ByteBuffer payload)
+    public BinaryFrame()
     {
-        /* all payloads are valid in this case */
+        super(OpCode.BINARY);
+    }
+
+    public BinaryFrame setPayload(ByteBuffer buf)
+    {
+        super.setPayload(buf);
+        return this;
+    }
+
+    public BinaryFrame setPayload(byte[] buf)
+    {
+        setPayload(ByteBuffer.wrap(buf));
+        return this;
+    }
+
+    public BinaryFrame setPayload(String payload)
+    {
+        setPayload(StringUtil.getUtf8Bytes(payload));
+        return this;
     }
 
     @Override
-    public void reset(Frame frame)
+    public Type getType()
     {
-        /* do nothing */
+        return Type.BINARY;
     }
 }

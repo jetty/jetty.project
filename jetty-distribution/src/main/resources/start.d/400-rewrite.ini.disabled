@@ -3,4 +3,5 @@
 # -----------------------------------------------------------
 
 OPTION=rewrite
+EXCLUDE=demo
 etc/jetty-rewrite.xml

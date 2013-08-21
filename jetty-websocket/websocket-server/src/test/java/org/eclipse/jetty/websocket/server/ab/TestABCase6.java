@@ -31,9 +31,11 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.common.CloseInfo;
-import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.frames.ContinuationFrame;
+import org.eclipse.jetty.websocket.common.frames.DataFrame;
+import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.server.helper.Hex;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -50,18 +52,26 @@ public class TestABCase6 extends AbstractABCase
     protected void fragmentText(List<WebSocketFrame> frames, byte msg[])
     {
         int len = msg.length;
-        byte opcode = OpCode.TEXT;
+        boolean continuation = false;
         byte mini[];
         for (int i = 0; i < len; i++)
         {
-            WebSocketFrame frame = new WebSocketFrame(opcode);
+            DataFrame frame = null;
+            if (continuation)
+            {
+                frame = new ContinuationFrame();
+            }
+            else
+            {
+                frame = new TextFrame();
+            }
             mini = new byte[1];
             mini[0] = msg[i];
-            frame.setPayload(mini);
+            frame.setPayload(ByteBuffer.wrap(mini));
             boolean isLast = (i >= (len - 1));
             frame.setFin(isLast);
             frames.add(frame);
-            opcode = OpCode.CONTINUATION;
+            continuation = true;
         }
     }
 
@@ -72,11 +82,11 @@ public class TestABCase6 extends AbstractABCase
     public void testCase6_1_1() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(WebSocketFrame.text());
+        send.add(new TextFrame());
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(WebSocketFrame.text());
+        expect.add(new TextFrame());
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
@@ -100,13 +110,13 @@ public class TestABCase6 extends AbstractABCase
     public void testCase6_1_2() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.TEXT).setFin(false));
-        send.add(new WebSocketFrame(OpCode.CONTINUATION).setFin(false));
-        send.add(new WebSocketFrame(OpCode.CONTINUATION).setFin(true));
+        send.add(new TextFrame().setFin(false));
+        send.add(new ContinuationFrame().setFin(false));
+        send.add(new ContinuationFrame().setFin(true));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(WebSocketFrame.text());
+        expect.add(new TextFrame());
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
@@ -130,13 +140,13 @@ public class TestABCase6 extends AbstractABCase
     public void testCase6_1_3() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.TEXT).setFin(false));
-        send.add(new WebSocketFrame(OpCode.CONTINUATION).setFin(false).setPayload("middle"));
-        send.add(new WebSocketFrame(OpCode.CONTINUATION).setFin(true));
+        send.add(new TextFrame().setFin(false));
+        send.add(new ContinuationFrame().setPayload("middle").setFin(false));
+        send.add(new ContinuationFrame().setFin(true));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(WebSocketFrame.text("middle"));
+        expect.add(new TextFrame().setPayload("middle"));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
@@ -159,16 +169,23 @@ public class TestABCase6 extends AbstractABCase
     @Test
     public void testCase6_2_2() throws Exception
     {
-        String utf8[] =
-        { "Hello-\uC2B5@\uC39F\uC3A4", "\uC3BC\uC3A0\uC3A1-UTF-8!!" };
+        String utf1 = "Hello-\uC2B5@\uC39F\uC3A4";
+        String utf2 = "\uC3BC\uC3A0\uC3A1-UTF-8!!";
+        
+        ByteBuffer b1 = ByteBuffer.wrap(StringUtil.getUtf8Bytes(utf1));
+        ByteBuffer b2 = ByteBuffer.wrap(StringUtil.getUtf8Bytes(utf2));
 
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.TEXT).setPayload(utf8[0]).setFin(false));
-        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload(utf8[1]).setFin(true));
+        send.add(new TextFrame().setPayload(b1).setFin(false));
+        send.add(new ContinuationFrame().setPayload(b2).setFin(true));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new WebSocketFrame(OpCode.TEXT).setPayload(utf8[0] + utf8[1]));
+        ByteBuffer e1 = ByteBuffer.allocate(100);
+        e1.put(StringUtil.getUtf8Bytes(utf1));
+        e1.put(StringUtil.getUtf8Bytes(utf2));
+        e1.flip();
+        expect.add(new TextFrame().setPayload(e1));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
@@ -199,7 +216,7 @@ public class TestABCase6 extends AbstractABCase
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new WebSocketFrame(OpCode.TEXT).setPayload(msg));
+        expect.add(new TextFrame().setPayload(ByteBuffer.wrap(msg)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
@@ -229,7 +246,7 @@ public class TestABCase6 extends AbstractABCase
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new WebSocketFrame(OpCode.TEXT).setPayload(msg));
+        expect.add(new TextFrame().setPayload(ByteBuffer.wrap(msg)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
@@ -299,11 +316,11 @@ public class TestABCase6 extends AbstractABCase
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
 
-            fuzzer.send(new WebSocketFrame(OpCode.TEXT).setPayload(part1).setFin(false));
+            fuzzer.send(new TextFrame().setPayload(ByteBuffer.wrap(part1)).setFin(false));
             TimeUnit.SECONDS.sleep(1);
-            fuzzer.send(new WebSocketFrame(OpCode.CONTINUATION).setPayload(part2).setFin(false));
+            fuzzer.send(new ContinuationFrame().setPayload(ByteBuffer.wrap(part2)).setFin(false));
             TimeUnit.SECONDS.sleep(1);
-            fuzzer.send(new WebSocketFrame(OpCode.CONTINUATION).setPayload(part3).setFin(true));
+            fuzzer.send(new ContinuationFrame().setPayload(ByteBuffer.wrap(part3)).setFin(true));
 
             fuzzer.expect(expect);
         }
@@ -338,11 +355,11 @@ public class TestABCase6 extends AbstractABCase
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
-            fuzzer.send(new WebSocketFrame(OpCode.TEXT).setPayload(part1).setFin(false));
+            fuzzer.send(new TextFrame().setPayload(ByteBuffer.wrap(part1)).setFin(false));
             TimeUnit.SECONDS.sleep(1);
-            fuzzer.send(new WebSocketFrame(OpCode.CONTINUATION).setPayload(part2).setFin(false));
+            fuzzer.send(new ContinuationFrame().setPayload(ByteBuffer.wrap(part2)).setFin(false));
             TimeUnit.SECONDS.sleep(1);
-            fuzzer.send(new WebSocketFrame(OpCode.CONTINUATION).setPayload(part3).setFin(true));
+            fuzzer.send(new ContinuationFrame().setPayload(ByteBuffer.wrap(part3)).setFin(true));
             fuzzer.expect(expect);
         }
         finally
@@ -359,7 +376,7 @@ public class TestABCase6 extends AbstractABCase
     public void testCase6_4_3() throws Exception
     {
         // Disable Long Stacks from Parser (we know this test will throw an exception)
-        try(StacklessLogging scope = new StacklessLogging(Parser.class))
+        try (StacklessLogging scope = new StacklessLogging(Parser.class))
         {
             ByteBuffer payload = ByteBuffer.allocate(64);
             BufferUtil.clearToFill(payload);
@@ -369,7 +386,7 @@ public class TestABCase6 extends AbstractABCase
             BufferUtil.flipToFlush(payload,0);
 
             List<WebSocketFrame> send = new ArrayList<>();
-            send.add(new WebSocketFrame(OpCode.TEXT).setPayload(payload));
+            send.add(new TextFrame().setPayload(payload));
             send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
             List<WebSocketFrame> expect = new ArrayList<>();
@@ -395,13 +412,13 @@ public class TestABCase6 extends AbstractABCase
                 part3.limit(splits[2]);
 
                 fuzzer.send(part1); // the header + good utf
-                TimeUnit.SECONDS.sleep(1);
+                TimeUnit.MILLISECONDS.sleep(500);
                 fuzzer.send(part2); // the bad UTF
+                TimeUnit.MILLISECONDS.sleep(500);
+                fuzzer.send(part3); // the rest (shouldn't work)
 
                 fuzzer.expect(expect);
 
-                TimeUnit.SECONDS.sleep(1);
-                fuzzer.send(part3); // the rest (shouldn't work)
                 fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.UNCLEAN);
             }
             finally
@@ -418,20 +435,17 @@ public class TestABCase6 extends AbstractABCase
     @Slow
     public void testCase6_4_4() throws Exception
     {
-        // Disable Long Stacks from Parser (we know this test will throw an exception)
-        enableStacks(Parser.class,false);
-
         byte invalid[] = Hex.asByteArray("CEBAE1BDB9CF83CEBCCEB5F49080808080656469746564");
 
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.TEXT).setPayload(invalid));
+        send.add(new TextFrame().setPayload(ByteBuffer.wrap(invalid)));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.BAD_PAYLOAD).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(StacklessLogging scope = new StacklessLogging(Parser.class))
         {
             fuzzer.connect();
 
@@ -447,7 +461,6 @@ public class TestABCase6 extends AbstractABCase
         }
         finally
         {
-            enableStacks(Parser.class,true);
             fuzzer.close();
         }
     }

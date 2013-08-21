@@ -24,11 +24,15 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.common.CloseInfo;
-import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.frames.ContinuationFrame;
+import org.eclipse.jetty.websocket.common.frames.PingFrame;
+import org.eclipse.jetty.websocket.common.frames.PongFrame;
+import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -44,19 +48,16 @@ public class TestABCase5 extends AbstractABCase
     @Test
     public void testCase5_1() throws Exception
     {
-        // Disable Long Stacks from Parser (we know this test will throw an exception)
-        enableStacks(Parser.class,false);
-
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.PING).setPayload("hello, ").setFin(false));
-        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("world"));
+        send.add(new PingFrame().setPayload("hello, ").setFin(false));
+        send.add(new ContinuationFrame().setPayload("world"));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(StacklessLogging supress = new StacklessLogging(Parser.class))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
@@ -66,7 +67,6 @@ public class TestABCase5 extends AbstractABCase
         finally
         {
             fuzzer.close();
-            enableStacks(Parser.class,true);
         }
     }
 
@@ -76,19 +76,16 @@ public class TestABCase5 extends AbstractABCase
     @Test
     public void testCase5_10() throws Exception
     {
-        // Disable Long Stacks from Parser (we know this test will throw an exception)
-        enableStacks(Parser.class,false);
-
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("sorry").setFin(true));
-        send.add(new WebSocketFrame(OpCode.TEXT).setPayload("hello, world"));
+        send.add(new ContinuationFrame().setPayload("sorry").setFin(true));
+        send.add(new TextFrame().setPayload("hello, world"));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(StacklessLogging supress = new StacklessLogging(Parser.class))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.PER_FRAME);
@@ -97,7 +94,6 @@ public class TestABCase5 extends AbstractABCase
         }
         finally
         {
-            enableStacks(Parser.class,true);
             fuzzer.close();
         }
     }
@@ -108,19 +104,16 @@ public class TestABCase5 extends AbstractABCase
     @Test
     public void testCase5_11() throws Exception
     {
-        // Disable Long Stacks from Parser (we know this test will throw an exception)
-        enableStacks(Parser.class,false);
-
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("sorry").setFin(true));
-        send.add(new WebSocketFrame(OpCode.TEXT).setPayload("hello, world"));
+        send.add(new ContinuationFrame().setPayload("sorry").setFin(true));
+        send.add(new TextFrame().setPayload("hello, world"));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(StacklessLogging supress = new StacklessLogging(Parser.class))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.SLOW);
@@ -130,7 +123,6 @@ public class TestABCase5 extends AbstractABCase
         }
         finally
         {
-            enableStacks(Parser.class,true);
             fuzzer.close();
         }
     }
@@ -141,19 +133,16 @@ public class TestABCase5 extends AbstractABCase
     @Test
     public void testCase5_12() throws Exception
     {
-        // Disable Long Stacks from Parser (we know this test will throw an exception)
-        enableStacks(Parser.class,false);
-
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("sorry").setFin(false));
-        send.add(new WebSocketFrame(OpCode.TEXT).setPayload("hello, world"));
+        send.add(new ContinuationFrame().setPayload("sorry").setFin(false));
+        send.add(new TextFrame().setPayload("hello, world"));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(StacklessLogging supress = new StacklessLogging(Parser.class))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
@@ -162,7 +151,6 @@ public class TestABCase5 extends AbstractABCase
         }
         finally
         {
-            enableStacks(Parser.class,true);
             fuzzer.close();
         }
     }
@@ -173,18 +161,16 @@ public class TestABCase5 extends AbstractABCase
     @Test
     public void testCase5_13() throws Exception
     {
-        // Disable Long Stacks from Parser (we know this test will throw an exception)
-        enableStacks(Parser.class,false);
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("sorry").setFin(false));
-        send.add(new WebSocketFrame(OpCode.TEXT).setPayload("hello, world"));
+        send.add(new ContinuationFrame().setPayload("sorry").setFin(false));
+        send.add(new TextFrame().setPayload("hello, world"));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(StacklessLogging supress = new StacklessLogging(Parser.class))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.PER_FRAME);
@@ -193,7 +179,6 @@ public class TestABCase5 extends AbstractABCase
         }
         finally
         {
-            enableStacks(Parser.class,true);
             fuzzer.close();
         }
     }
@@ -204,19 +189,16 @@ public class TestABCase5 extends AbstractABCase
     @Test
     public void testCase5_14() throws Exception
     {
-        // Disable Long Stacks from Parser (we know this test will throw an exception)
-        enableStacks(Parser.class,false);
-
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("sorry").setFin(false));
-        send.add(new WebSocketFrame(OpCode.TEXT).setPayload("hello, world"));
+        send.add(new ContinuationFrame().setPayload("sorry").setFin(false));
+        send.add(new TextFrame().setPayload("hello, world"));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(StacklessLogging supress = new StacklessLogging(Parser.class))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.SLOW);
@@ -226,7 +208,6 @@ public class TestABCase5 extends AbstractABCase
         }
         finally
         {
-            enableStacks(Parser.class,false);
             fuzzer.close();
         }
     }
@@ -237,22 +218,19 @@ public class TestABCase5 extends AbstractABCase
     @Test
     public void testCase5_15() throws Exception
     {
-        // Disable Long Stacks from Parser (we know this test will throw an exception)
-        enableStacks(Parser.class,false);
-
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.TEXT).setPayload("fragment1").setFin(false));
-        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("fragment2").setFin(true));
-        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("fragment3").setFin(false)); // bad frame
-        send.add(new WebSocketFrame(OpCode.TEXT).setPayload("fragment4").setFin(true));
+        send.add(new TextFrame().setPayload("fragment1").setFin(false));
+        send.add(new ContinuationFrame().setPayload("fragment2").setFin(true));
+        send.add(new ContinuationFrame().setPayload("fragment3").setFin(false)); // bad frame
+        send.add(new TextFrame().setPayload("fragment4").setFin(true));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(WebSocketFrame.text("fragment1fragment2"));
+        expect.add(new TextFrame().setPayload("fragment1fragment2"));
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(StacklessLogging supress = new StacklessLogging(Parser.class))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
@@ -261,7 +239,6 @@ public class TestABCase5 extends AbstractABCase
         }
         finally
         {
-            enableStacks(Parser.class,true);
             fuzzer.close();
         }
     }
@@ -272,23 +249,20 @@ public class TestABCase5 extends AbstractABCase
     @Test
     public void testCase5_16() throws Exception
     {
-        // Disable Long Stacks from Parser (we know this test will throw an exception)
-        enableStacks(Parser.class,false);
-
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("fragment1").setFin(false)); // bad frame
-        send.add(new WebSocketFrame(OpCode.TEXT).setPayload("fragment2").setFin(false));
-        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("fragment3").setFin(true));
-        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("fragment4").setFin(false)); // bad frame
-        send.add(new WebSocketFrame(OpCode.TEXT).setPayload("fragment5").setFin(false));
-        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("fragment6").setFin(true));
+        send.add(new ContinuationFrame().setPayload("fragment1").setFin(false)); // bad frame
+        send.add(new TextFrame().setPayload("fragment2").setFin(false));
+        send.add(new ContinuationFrame().setPayload("fragment3").setFin(true));
+        send.add(new ContinuationFrame().setPayload("fragment4").setFin(false)); // bad frame
+        send.add(new TextFrame().setPayload("fragment5").setFin(false));
+        send.add(new ContinuationFrame().setPayload("fragment6").setFin(true));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(StacklessLogging supress = new StacklessLogging(Parser.class))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
@@ -297,7 +271,6 @@ public class TestABCase5 extends AbstractABCase
         }
         finally
         {
-            enableStacks(Parser.class,true);
             fuzzer.close();
         }
     }
@@ -308,23 +281,20 @@ public class TestABCase5 extends AbstractABCase
     @Test
     public void testCase5_17() throws Exception
     {
-        // Disable Long Stacks from Parser (we know this test will throw an exception)
-        enableStacks(Parser.class,false);
-
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("fragment1").setFin(true)); // nothing to continue
-        send.add(new WebSocketFrame(OpCode.TEXT).setPayload("fragment2").setFin(false));
-        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("fragment3").setFin(true));
-        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("fragment4").setFin(true)); // nothing to continue
-        send.add(new WebSocketFrame(OpCode.TEXT).setPayload("fragment5").setFin(false));
-        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("fragment6").setFin(true));
+        send.add(new ContinuationFrame().setPayload("fragment1").setFin(true)); // nothing to continue
+        send.add(new TextFrame().setPayload("fragment2").setFin(false));
+        send.add(new ContinuationFrame().setPayload("fragment3").setFin(true));
+        send.add(new ContinuationFrame().setPayload("fragment4").setFin(true)); // nothing to continue
+        send.add(new TextFrame().setPayload("fragment5").setFin(false));
+        send.add(new ContinuationFrame().setPayload("fragment6").setFin(true));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(StacklessLogging supress = new StacklessLogging(Parser.class))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
@@ -333,7 +303,6 @@ public class TestABCase5 extends AbstractABCase
         }
         finally
         {
-            enableStacks(Parser.class,true);
             fuzzer.close();
         }
     }
@@ -344,19 +313,16 @@ public class TestABCase5 extends AbstractABCase
     @Test
     public void testCase5_18() throws Exception
     {
-        // Disable Long Stacks from Parser (we know this test will throw an exception)
-        enableStacks(Parser.class,false);
-
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.TEXT).setPayload("fragment1").setFin(false));
-        send.add(new WebSocketFrame(OpCode.TEXT).setPayload("fragment2").setFin(true)); // bad frame, must be continuation
+        send.add(new TextFrame().setPayload("fragment1").setFin(false));
+        send.add(new TextFrame().setPayload("fragment2").setFin(true)); // bad frame, must be continuation
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(StacklessLogging supress = new StacklessLogging(Parser.class))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
@@ -365,7 +331,6 @@ public class TestABCase5 extends AbstractABCase
         }
         finally
         {
-            enableStacks(Parser.class,true);
             fuzzer.close();
         }
     }
@@ -379,28 +344,28 @@ public class TestABCase5 extends AbstractABCase
     {
         // phase 1
         List<WebSocketFrame> send1 = new ArrayList<>();
-        send1.add(new WebSocketFrame(OpCode.TEXT).setPayload("f1").setFin(false));
-        send1.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload(",f2").setFin(false));
-        send1.add(new WebSocketFrame(OpCode.PING).setPayload("pong-1"));
+        send1.add(new TextFrame().setPayload("f1").setFin(false));
+        send1.add(new ContinuationFrame().setPayload(",f2").setFin(false));
+        send1.add(new PingFrame().setPayload("pong-1"));
 
         List<WebSocketFrame> expect1 = new ArrayList<>();
-        expect1.add(WebSocketFrame.pong().setPayload("pong-1"));
+        expect1.add(new PongFrame().setPayload("pong-1"));
 
         // phase 2
         List<WebSocketFrame> send2 = new ArrayList<>();
-        send2.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload(",f3").setFin(false));
-        send2.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload(",f4").setFin(false));
-        send2.add(new WebSocketFrame(OpCode.PING).setPayload("pong-2"));
-        send2.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload(",f5").setFin(true));
+        send2.add(new ContinuationFrame().setPayload(",f3").setFin(false));
+        send2.add(new ContinuationFrame().setPayload(",f4").setFin(false));
+        send2.add(new PingFrame().setPayload("pong-2"));
+        send2.add(new ContinuationFrame().setPayload(",f5").setFin(true));
         send2.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect2 = new ArrayList<>();
-        expect2.add(WebSocketFrame.pong().setPayload("pong-2"));
-        expect2.add(WebSocketFrame.text("f1,f2,f3,f4,f5"));
+        expect2.add(new PongFrame().setPayload("pong-2"));
+        expect2.add(new TextFrame().setPayload("f1,f2,f3,f4,f5"));
         expect2.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(StacklessLogging supress = new StacklessLogging(Parser.class))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
@@ -428,19 +393,16 @@ public class TestABCase5 extends AbstractABCase
     @Test
     public void testCase5_2() throws Exception
     {
-        // Disable Long Stacks from Parser (we know this test will throw an exception)
-        enableStacks(Parser.class,false);
-
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.PONG).setPayload("hello, ").setFin(false));
-        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("world"));
+        send.add(new PongFrame().setPayload("hello, ").setFin(false));
+        send.add(new ContinuationFrame().setPayload("world"));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(StacklessLogging supress = new StacklessLogging(Parser.class))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
@@ -449,7 +411,6 @@ public class TestABCase5 extends AbstractABCase
         }
         finally
         {
-            enableStacks(Parser.class,true);
             fuzzer.close();
         }
     }
@@ -461,27 +422,27 @@ public class TestABCase5 extends AbstractABCase
     public void testCase5_20() throws Exception
     {
         List<WebSocketFrame> send1 = new ArrayList<>();
-        send1.add(new WebSocketFrame(OpCode.TEXT).setPayload("f1").setFin(false));
-        send1.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload(",f2").setFin(false));
-        send1.add(new WebSocketFrame(OpCode.PING).setPayload("pong-1"));
+        send1.add(new TextFrame().setPayload("f1").setFin(false));
+        send1.add(new ContinuationFrame().setPayload(",f2").setFin(false));
+        send1.add(new PingFrame().setPayload("pong-1"));
 
         List<WebSocketFrame> send2 = new ArrayList<>();
-        send2.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload(",f3").setFin(false));
-        send2.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload(",f4").setFin(false));
-        send2.add(new WebSocketFrame(OpCode.PING).setPayload("pong-2"));
-        send2.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload(",f5").setFin(true));
+        send2.add(new ContinuationFrame().setPayload(",f3").setFin(false));
+        send2.add(new ContinuationFrame().setPayload(",f4").setFin(false));
+        send2.add(new PingFrame().setPayload("pong-2"));
+        send2.add(new ContinuationFrame().setPayload(",f5").setFin(true));
         send2.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect1 = new ArrayList<>();
-        expect1.add(WebSocketFrame.pong().setPayload("pong-1"));
+        expect1.add(new PongFrame().setPayload("pong-1"));
 
         List<WebSocketFrame> expect2 = new ArrayList<>();
-        expect2.add(WebSocketFrame.pong().setPayload("pong-2"));
-        expect2.add(WebSocketFrame.text("f1,f2,f3,f4,f5"));
+        expect2.add(new PongFrame().setPayload("pong-2"));
+        expect2.add(new TextFrame().setPayload("f1,f2,f3,f4,f5"));
         expect2.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(StacklessLogging supress = new StacklessLogging(Parser.class))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.PER_FRAME);
@@ -507,27 +468,27 @@ public class TestABCase5 extends AbstractABCase
     public void testCase5_20_slow() throws Exception
     {
         List<WebSocketFrame> send1 = new ArrayList<>();
-        send1.add(new WebSocketFrame(OpCode.TEXT).setPayload("f1").setFin(false));
-        send1.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload(",f2").setFin(false));
-        send1.add(new WebSocketFrame(OpCode.PING).setPayload("pong-1"));
+        send1.add(new TextFrame().setPayload("f1").setFin(false));
+        send1.add(new ContinuationFrame().setPayload(",f2").setFin(false));
+        send1.add(new PingFrame().setPayload("pong-1"));
 
         List<WebSocketFrame> send2 = new ArrayList<>();
-        send2.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload(",f3").setFin(false));
-        send2.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload(",f4").setFin(false));
-        send2.add(new WebSocketFrame(OpCode.PING).setPayload("pong-2"));
-        send2.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload(",f5").setFin(true));
+        send2.add(new ContinuationFrame().setPayload(",f3").setFin(false));
+        send2.add(new ContinuationFrame().setPayload(",f4").setFin(false));
+        send2.add(new PingFrame().setPayload("pong-2"));
+        send2.add(new ContinuationFrame().setPayload(",f5").setFin(true));
         send2.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect1 = new ArrayList<>();
-        expect1.add(WebSocketFrame.pong().setPayload("pong-1"));
+        expect1.add(new PongFrame().setPayload("pong-1"));
 
         List<WebSocketFrame> expect2 = new ArrayList<>();
-        expect2.add(WebSocketFrame.pong().setPayload("pong-2"));
-        expect2.add(WebSocketFrame.text("f1,f2,f3,f4,f5"));
+        expect2.add(new PongFrame().setPayload("pong-2"));
+        expect2.add(new TextFrame().setPayload("f1,f2,f3,f4,f5"));
         expect2.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(StacklessLogging supress = new StacklessLogging(Parser.class))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.SLOW);
@@ -554,16 +515,16 @@ public class TestABCase5 extends AbstractABCase
     public void testCase5_3() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.TEXT).setPayload("hello, ").setFin(false));
-        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("world").setFin(true));
+        send.add(new TextFrame().setPayload("hello, ").setFin(false));
+        send.add(new ContinuationFrame().setPayload("world").setFin(true));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(WebSocketFrame.text("hello, world"));
+        expect.add(new TextFrame().setPayload("hello, world"));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(StacklessLogging supress = new StacklessLogging(Parser.class))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
@@ -583,16 +544,16 @@ public class TestABCase5 extends AbstractABCase
     public void testCase5_4() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.TEXT).setPayload("hello, ").setFin(false));
-        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("world").setFin(true));
+        send.add(new TextFrame().setPayload("hello, ").setFin(false));
+        send.add(new ContinuationFrame().setPayload("world").setFin(true));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(WebSocketFrame.text("hello, world"));
+        expect.add(new TextFrame().setPayload("hello, world"));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(StacklessLogging supress = new StacklessLogging(Parser.class))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.PER_FRAME);
@@ -612,16 +573,16 @@ public class TestABCase5 extends AbstractABCase
     public void testCase5_5() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.TEXT).setPayload("hello, ").setFin(false));
-        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("world").setFin(true));
+        send.add(new TextFrame().setPayload("hello, ").setFin(false));
+        send.add(new ContinuationFrame().setPayload("world").setFin(true));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(WebSocketFrame.text("hello, world"));
+        expect.add(new TextFrame().setPayload("hello, world"));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(StacklessLogging supress = new StacklessLogging(Parser.class))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.SLOW);
@@ -642,18 +603,18 @@ public class TestABCase5 extends AbstractABCase
     public void testCase5_6() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.TEXT).setPayload("hello, ").setFin(false));
-        send.add(new WebSocketFrame(OpCode.PING).setPayload("ping"));
-        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("world").setFin(true));
+        send.add(new TextFrame().setPayload("hello, ").setFin(false));
+        send.add(new PingFrame().setPayload("ping"));
+        send.add(new ContinuationFrame().setPayload("world").setFin(true));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(WebSocketFrame.pong().setPayload("ping"));
-        expect.add(WebSocketFrame.text("hello, world"));
+        expect.add(new PongFrame().setPayload("ping"));
+        expect.add(new TextFrame().setPayload("hello, world"));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(StacklessLogging supress = new StacklessLogging(Parser.class))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
@@ -673,18 +634,18 @@ public class TestABCase5 extends AbstractABCase
     public void testCase5_7() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.TEXT).setPayload("hello, ").setFin(false));
-        send.add(new WebSocketFrame(OpCode.PING).setPayload("ping"));
-        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("world").setFin(true));
+        send.add(new TextFrame().setPayload("hello, ").setFin(false));
+        send.add(new PingFrame().setPayload("ping"));
+        send.add(new ContinuationFrame().setPayload("world").setFin(true));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(WebSocketFrame.pong().setPayload("ping"));
-        expect.add(WebSocketFrame.text("hello, world"));
+        expect.add(new PongFrame().setPayload("ping"));
+        expect.add(new TextFrame().setPayload("hello, world"));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(StacklessLogging supress = new StacklessLogging(Parser.class))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.PER_FRAME);
@@ -704,18 +665,18 @@ public class TestABCase5 extends AbstractABCase
     public void testCase5_8() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.TEXT).setPayload("hello, ").setFin(false));
-        send.add(new WebSocketFrame(OpCode.PING).setPayload("ping"));
-        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("world").setFin(true));
+        send.add(new TextFrame().setPayload("hello, ").setFin(false));
+        send.add(new PingFrame().setPayload("ping"));
+        send.add(new ContinuationFrame().setPayload("world").setFin(true));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(WebSocketFrame.pong().setPayload("ping"));
-        expect.add(WebSocketFrame.text("hello, world"));
+        expect.add(new PongFrame().setPayload("ping"));
+        expect.add(new TextFrame().setPayload("hello, world"));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(StacklessLogging supress = new StacklessLogging(Parser.class))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.SLOW);
@@ -735,19 +696,17 @@ public class TestABCase5 extends AbstractABCase
     @Test
     public void testCase5_9() throws Exception
     {
-        // Disable Long Stacks from Parser (we know this test will throw an exception)
-        enableStacks(Parser.class,false);
 
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("sorry").setFin(true));
-        send.add(new WebSocketFrame(OpCode.TEXT).setPayload("hello, world"));
+        send.add(new ContinuationFrame().setPayload("sorry").setFin(true));
+        send.add(new TextFrame().setPayload("hello, world"));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(StacklessLogging supress = new StacklessLogging(Parser.class))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
@@ -756,7 +715,6 @@ public class TestABCase5 extends AbstractABCase
         }
         finally
         {
-            enableStacks(Parser.class,true);
             fuzzer.close();
         }
     }

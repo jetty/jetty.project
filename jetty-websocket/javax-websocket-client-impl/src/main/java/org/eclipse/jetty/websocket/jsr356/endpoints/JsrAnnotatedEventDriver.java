@@ -40,6 +40,8 @@ import org.eclipse.jetty.websocket.common.message.SimpleBinaryMessage;
 import org.eclipse.jetty.websocket.common.message.SimpleTextMessage;
 import org.eclipse.jetty.websocket.jsr356.JsrSession;
 import org.eclipse.jetty.websocket.jsr356.annotations.JsrEvents;
+import org.eclipse.jetty.websocket.jsr356.messages.BinaryPartialOnMessage;
+import org.eclipse.jetty.websocket.jsr356.messages.TextPartialOnMessage;
 
 /**
  * Base implementation for JSR-356 Annotated event drivers.
@@ -78,25 +80,17 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver implements E
         if (events.hasBinary())
         {
             handled = true;
-            if (events.isBinaryPartialSupported())
+            if (activeMessage == null)
             {
-                LOG.debug("Partial Binary Message: fin={}",fin);
-                // Partial Message Support (does not use messageAppender)
-                try
+                if (events.isBinaryPartialSupported())
                 {
-                    events.callBinary(jsrsession.getAsyncRemote(),websocket,buffer,fin);
+                    // Partial Message Support (does not use messageAppender)
+                    LOG.debug("Partial Binary Message: fin={}",fin);
+                    activeMessage = new BinaryPartialOnMessage(this);
                 }
-                catch (DecodeException e)
+                else
                 {
-                    onFatalError(e);
-                }
-                return;
-            }
-            else
-            {
-                // Whole Message Support
-                if (activeMessage == null)
-                {
+                    // Whole Message Support
                     LOG.debug("Whole Binary Message");
                     activeMessage = new SimpleBinaryMessage(this);
                 }
@@ -191,7 +185,6 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver implements E
     private void onFatalError(Throwable t)
     {
         onError(t);
-        // TODO: close connection?
     }
 
     @Override
@@ -208,6 +201,30 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver implements E
             events.callBinaryStream(jsrsession.getAsyncRemote(),websocket,stream);
         }
         catch (DecodeException | IOException e)
+        {
+            onFatalError(e);
+        }
+    }
+
+    public void onPartialBinaryMessage(ByteBuffer buffer, boolean fin)
+    {
+        try
+        {
+            events.callBinary(jsrsession.getAsyncRemote(),websocket,buffer,fin);
+        }
+        catch (DecodeException e)
+        {
+            onFatalError(e);
+        }
+    }
+
+    public void onPartialTextMessage(String message, boolean fin)
+    {
+        try
+        {
+            events.callText(jsrsession.getAsyncRemote(),websocket,message,fin);
+        }
+        catch (DecodeException e)
         {
             onFatalError(e);
         }
@@ -257,26 +274,17 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver implements E
         if (events.hasText())
         {
             handled = true;
-            if (events.isTextPartialSupported())
+            if (activeMessage == null)
             {
-                LOG.debug("Partial Text Message: fin={}",fin);
-                // Partial Message Support (does not use messageAppender)
-                try
+                if (events.isTextPartialSupported())
                 {
-                    String text = BufferUtil.toUTF8String(buffer);
-                    events.callText(jsrsession.getAsyncRemote(),websocket,text,fin);
+                    // Partial Message Support
+                    LOG.debug("Partial Text Message: fin={}",fin);
+                    activeMessage = new TextPartialOnMessage(this);
                 }
-                catch (DecodeException e)
+                else
                 {
-                    onFatalError(e);
-                }
-                return;
-            }
-            else
-            {
-                // Whole Message Support
-                if (activeMessage == null)
-                {
+                    // Whole Message Support
                     LOG.debug("Whole Text Message");
                     activeMessage = new SimpleTextMessage(this);
                 }

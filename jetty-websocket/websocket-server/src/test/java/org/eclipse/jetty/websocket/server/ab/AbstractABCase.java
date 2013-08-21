@@ -24,9 +24,12 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.Generator;
+import org.eclipse.jetty.websocket.common.OpCode;
+import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.server.SimpleServletServer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -35,9 +38,36 @@ import org.junit.rules.TestName;
 
 public abstract class AbstractABCase
 {
+    // Allow Fuzzer / Generator to create bad frames for testing frame validation
+    protected static class BadFrame extends WebSocketFrame
+    {
+        public BadFrame(byte opcode)
+        {
+            super(OpCode.CONTINUATION);
+            super.finRsvOp = (byte)((finRsvOp & 0xF0) | (opcode & 0x0F));
+            // NOTE: Not setting Frame.Type intentionally
+        }
+
+        @Override
+        public void assertValid()
+        {
+        }
+
+        @Override
+        public boolean isControlFrame()
+        {
+            return false;
+        }
+
+        @Override
+        public boolean isDataFrame()
+        {
+            return false;
+        }
+    }
+    
     protected static final byte FIN = (byte)0x80;
     protected static final byte NOFIN = 0x00;
-    private static final byte MASKED_BIT = (byte)0x80;
     protected static final byte[] MASK =
     { 0x12, 0x34, 0x56, 0x78 };
 
@@ -76,10 +106,27 @@ public abstract class AbstractABCase
      * @param payload the payload to copy
      * @return a new byte array of the payload contents
      */
-    protected byte[] copyOf(byte[] payload)
+    protected ByteBuffer copyOf(byte[] payload)
     {
         byte copy[] = new byte[payload.length];
         System.arraycopy(payload,0,copy,0,payload.length);
+        return ByteBuffer.wrap(copy);
+    }
+    
+    /**
+     * Make a copy of a byte buffer.
+     * <p>
+     * This is important in some tests, as the underlying byte buffer contained in a Frame can be modified through
+     * masking and make it difficult to compare the results in the fuzzer. 
+     * 
+     * @param payload the payload to copy
+     * @return a new byte array of the payload contents
+     */
+    protected ByteBuffer clone(ByteBuffer payload)
+    {
+        ByteBuffer copy = ByteBuffer.allocate(payload.remaining());
+        copy.put(payload.slice());
+        copy.flip();
         return copy;
     }
     
@@ -124,6 +171,10 @@ public abstract class AbstractABCase
     @Rule
     public TestName testname = new TestName();
 
+    /**
+     * @deprecated use {@link StacklessLogging} in a try-with-resources block instead
+     */
+    @Deprecated
     protected void enableStacks(Class<?> clazz, boolean enabled)
     {
         StdErrLog log = StdErrLog.getLogger(clazz);
@@ -140,57 +191,22 @@ public abstract class AbstractABCase
         return server;
     }
 
-    protected byte[] masked(final byte[] data)
+    public static byte[] masked(final byte[] data)
     {
-        int len = data.length;
-        byte ret[] = new byte[len];
-        System.arraycopy(data,0,ret,0,len);
-        for (int i = 0; i < len; i++)
-        {
-            ret[i] ^= MASK[i % 4];
-        }
-        return ret;
+        return RawFrameBuilder.mask(data,MASK);
     }
 
-    private void putLength(ByteBuffer buf, int length, boolean masked)
+    public static void putLength(ByteBuffer buf, int length, boolean masked)
     {
-        if (length < 0)
-        {
-            throw new IllegalArgumentException("Length cannot be negative");
-        }
-        byte b = (masked?MASKED_BIT:0x00);
-
-        // write the uncompressed length
-        if (length > 0xFF_FF)
-        {
-            buf.put((byte)(b | 0x7F));
-            buf.put((byte)0x00);
-            buf.put((byte)0x00);
-            buf.put((byte)0x00);
-            buf.put((byte)0x00);
-            buf.put((byte)((length >> 24) & 0xFF));
-            buf.put((byte)((length >> 16) & 0xFF));
-            buf.put((byte)((length >> 8) & 0xFF));
-            buf.put((byte)(length & 0xFF));
-        }
-        else if (length >= 0x7E)
-        {
-            buf.put((byte)(b | 0x7E));
-            buf.put((byte)(length >> 8));
-            buf.put((byte)(length & 0xFF));
-        }
-        else
-        {
-            buf.put((byte)(b | length));
-        }
+        RawFrameBuilder.putLength(buf,length,masked);
     }
 
-    public void putMask(ByteBuffer buf)
+    public static void putMask(ByteBuffer buf)
     {
         buf.put(MASK);
     }
 
-    public void putPayloadLength(ByteBuffer buf, int length)
+    public static void putPayloadLength(ByteBuffer buf, int length)
     {
         putLength(buf,length,true);
     }

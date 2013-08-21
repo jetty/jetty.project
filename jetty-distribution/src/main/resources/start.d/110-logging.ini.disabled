@@ -4,6 +4,8 @@
 # to file which is rolled over daily.
 #-----------------------------------------------------------
 
+DEPEND=jetty
+
 jetty.log.retain=90
 
 etc/jetty-logging.xml

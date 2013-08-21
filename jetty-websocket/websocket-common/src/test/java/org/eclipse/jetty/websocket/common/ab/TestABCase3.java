@@ -27,6 +27,8 @@ import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.UnitGenerator;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.frames.PingFrame;
+import org.eclipse.jetty.websocket.common.frames.PongFrame;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -45,21 +47,21 @@ public class TestABCase3
         List<WebSocketFrame[]> data = new ArrayList<>();
         // @formatter:off
         data.add(new WebSocketFrame[]
-                { WebSocketFrame.ping().setFin(false) });
+                { new PingFrame().setFin(false) });
         data.add(new WebSocketFrame[]
-                { WebSocketFrame.ping().setRsv1(true) });
+                { new PingFrame().setRsv1(true) });
         data.add(new WebSocketFrame[]
-                { WebSocketFrame.ping().setRsv2(true) });
+                { new PingFrame().setRsv2(true) });
         data.add(new WebSocketFrame[]
-                { WebSocketFrame.ping().setRsv3(true) });
+                { new PingFrame().setRsv3(true) });
         data.add(new WebSocketFrame[]
-                { WebSocketFrame.pong().setFin(false) });
+                { new PongFrame().setFin(false) });
         data.add(new WebSocketFrame[]
-                { WebSocketFrame.ping().setRsv1(true) });
+                { new PingFrame().setRsv1(true) });
         data.add(new WebSocketFrame[]
-                { WebSocketFrame.pong().setRsv2(true) });
+                { new PongFrame().setRsv2(true) });
         data.add(new WebSocketFrame[]
-                { WebSocketFrame.pong().setRsv3(true) });
+                { new PongFrame().setRsv3(true) });
         data.add(new WebSocketFrame[]
                 { new CloseInfo().asFrame().setFin(false) });
         data.add(new WebSocketFrame[]

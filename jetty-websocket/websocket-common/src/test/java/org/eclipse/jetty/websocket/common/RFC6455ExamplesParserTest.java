@@ -64,12 +64,15 @@ public class RFC6455ExamplesParserTest
         parser.parse(buf);
 
         capture.assertNoErrors();
-        capture.assertHasFrame(OpCode.TEXT,2);
+        capture.assertHasFrame(OpCode.TEXT,1);
+        capture.assertHasFrame(OpCode.CONTINUATION,1);
 
         WebSocketFrame txt = capture.getFrames().get(0);
-        Assert.assertThat("TextFrame[0].data",txt.getPayloadAsUTF8(),is("Hel"));
+        String actual = BufferUtil.toUTF8String(txt.getPayload());
+        Assert.assertThat("TextFrame[0].data",actual,is("Hel"));
         txt = capture.getFrames().get(1);
-        Assert.assertThat("TextFrame[1].data",txt.getPayloadAsUTF8(),is("lo"));
+        actual = BufferUtil.toUTF8String(txt.getPayload());
+        Assert.assertThat("TextFrame[1].data",actual,is("lo"));
     }
 
     @Test
@@ -92,7 +95,8 @@ public class RFC6455ExamplesParserTest
         capture.assertHasFrame(OpCode.PONG,1);
 
         WebSocketFrame pong = capture.getFrames().get(0);
-        Assert.assertThat("PongFrame.payload",pong.getPayloadAsUTF8(),is("Hello"));
+        String actual = BufferUtil.toUTF8String(pong.getPayload());
+        Assert.assertThat("PongFrame.payload",actual,is("Hello"));
     }
 
     @Test
@@ -115,7 +119,8 @@ public class RFC6455ExamplesParserTest
         capture.assertHasFrame(OpCode.TEXT,1);
 
         WebSocketFrame txt = capture.getFrames().get(0);
-        Assert.assertThat("TextFrame.payload",txt.getPayloadAsUTF8(),is("Hello"));
+        String actual = BufferUtil.toUTF8String(txt.getPayload());
+        Assert.assertThat("TextFrame.payload",actual,is("Hello"));
     }
 
     @Test
@@ -215,7 +220,8 @@ public class RFC6455ExamplesParserTest
         capture.assertHasFrame(OpCode.PING,1);
 
         WebSocketFrame ping = capture.getFrames().get(0);
-        Assert.assertThat("PingFrame.payload",ping.getPayloadAsUTF8(),is("Hello"));
+        String actual = BufferUtil.toUTF8String(ping.getPayload());
+        Assert.assertThat("PingFrame.payload",actual,is("Hello"));
     }
 
     @Test
@@ -238,6 +244,7 @@ public class RFC6455ExamplesParserTest
         capture.assertHasFrame(OpCode.TEXT,1);
 
         WebSocketFrame txt = capture.getFrames().get(0);
-        Assert.assertThat("TextFrame.payload",txt.getPayloadAsUTF8(),is("Hello"));
+        String actual = BufferUtil.toUTF8String(txt.getPayload());
+        Assert.assertThat("TextFrame.payload",actual,is("Hello"));
     }
 }

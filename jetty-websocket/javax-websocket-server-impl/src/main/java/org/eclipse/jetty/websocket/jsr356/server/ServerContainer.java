@@ -117,7 +117,7 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
             if (anno != null)
             {
                 // Annotated takes precedence here
-                AnnotatedServerEndpointMetadata ametadata = new AnnotatedServerEndpointMetadata(this,endpoint,config);
+                AnnotatedServerEndpointMetadata ametadata = new AnnotatedServerEndpointMetadata(endpoint,config);
                 AnnotatedEndpointScanner<ServerEndpoint,ServerEndpointConfig> scanner = new AnnotatedEndpointScanner<>(ametadata);
                 metadata = ametadata;
                 scanner.scan();

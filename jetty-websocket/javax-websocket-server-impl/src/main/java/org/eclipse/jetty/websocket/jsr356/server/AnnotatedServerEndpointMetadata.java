@@ -33,7 +33,7 @@ public class AnnotatedServerEndpointMetadata extends AnnotatedEndpointMetadata<S
     private final ServerEndpoint endpoint;
     private final AnnotatedServerEndpointConfig config;
 
-    protected AnnotatedServerEndpointMetadata(ServerContainer container, Class<?> websocket, ServerEndpointConfig baseConfig) throws DeploymentException
+    protected AnnotatedServerEndpointMetadata(Class<?> websocket, ServerEndpointConfig baseConfig) throws DeploymentException
     {
         super(websocket);
 

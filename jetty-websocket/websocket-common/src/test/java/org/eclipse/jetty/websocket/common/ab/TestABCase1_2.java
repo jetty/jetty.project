@@ -34,6 +34,7 @@ import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.UnitGenerator;
 import org.eclipse.jetty.websocket.common.UnitParser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -58,7 +59,7 @@ public class TestABCase1_2
 
         bb.flip();
 
-        WebSocketFrame binaryFrame = WebSocketFrame.binary().setPayload(bb);
+        WebSocketFrame binaryFrame = new BinaryFrame().setPayload(bb);
 
         ByteBuffer actual = UnitGenerator.generate(binaryFrame);
 
@@ -96,7 +97,7 @@ public class TestABCase1_2
 
         bb.flip();
 
-        WebSocketFrame binaryFrame = WebSocketFrame.binary().setPayload(bb);
+        WebSocketFrame binaryFrame = new BinaryFrame().setPayload(bb);
 
         ByteBuffer actual = UnitGenerator.generate(binaryFrame);
 
@@ -138,7 +139,7 @@ public class TestABCase1_2
 
         bb.flip();
 
-        WebSocketFrame binaryFrame = WebSocketFrame.binary().setPayload(bb);
+        WebSocketFrame binaryFrame = new BinaryFrame().setPayload(bb);
 
         ByteBuffer actual = UnitGenerator.generate(binaryFrame);
 
@@ -179,7 +180,7 @@ public class TestABCase1_2
         }
 
         bb.flip();
-        WebSocketFrame binaryFrame = WebSocketFrame.binary().setPayload(bb);
+        WebSocketFrame binaryFrame = new BinaryFrame().setPayload(bb);
 
         ByteBuffer actual = UnitGenerator.generate(binaryFrame);
 
@@ -222,7 +223,7 @@ public class TestABCase1_2
 
         bb.flip();
 
-        WebSocketFrame binaryFrame = WebSocketFrame.binary().setPayload(bb);
+        WebSocketFrame binaryFrame = new BinaryFrame().setPayload(bb);
 
         ByteBuffer actual = UnitGenerator.generate(binaryFrame);
 
@@ -261,7 +262,7 @@ public class TestABCase1_2
 
         bb.flip();
 
-        WebSocketFrame binaryFrame = WebSocketFrame.binary().setPayload(bb);
+        WebSocketFrame binaryFrame = new BinaryFrame().setPayload(bb);
 
         ByteBuffer actual = UnitGenerator.generate(binaryFrame);
 
@@ -289,7 +290,7 @@ public class TestABCase1_2
     @Test
     public void testGenerateEmptyBinaryCase1_2_1()
     {
-        WebSocketFrame binaryFrame = WebSocketFrame.binary(new byte[] {});
+        WebSocketFrame binaryFrame = new BinaryFrame().setPayload(new byte[] {});
 
         ByteBuffer actual = UnitGenerator.generate(binaryFrame);
 

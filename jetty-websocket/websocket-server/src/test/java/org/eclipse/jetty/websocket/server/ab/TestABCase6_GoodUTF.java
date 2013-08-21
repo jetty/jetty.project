@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.server.ab;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -26,8 +27,8 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.common.CloseInfo;
-import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.server.helper.Hex;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -118,23 +119,23 @@ public class TestABCase6_GoodUTF extends AbstractABCase
         return data;
     }
 
-    private final byte[] msg;
+    private final ByteBuffer msg;
 
     public TestABCase6_GoodUTF(String testId, String hexMsg)
     {
         LOG.debug("Test ID: {}",testId);
-        this.msg = Hex.asByteArray(hexMsg);
+        this.msg = Hex.asByteBuffer(hexMsg);
     }
 
     @Test
     public void assertEchoTextMessage() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.TEXT).setPayload(msg));
+        send.add(new TextFrame().setPayload(msg));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new WebSocketFrame(OpCode.TEXT).setPayload(copyOf(msg)));
+        expect.add(new TextFrame().setPayload(clone(msg)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);

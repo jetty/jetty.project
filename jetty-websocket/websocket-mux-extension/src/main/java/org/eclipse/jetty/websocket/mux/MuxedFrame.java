@@ -20,14 +20,15 @@ package org.eclipse.jetty.websocket.mux;
 
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.frames.DataFrame;
 
-public class MuxedFrame extends WebSocketFrame
+public class MuxedFrame extends DataFrame
 {
     private long channelId = -1;
 
     public MuxedFrame()
     {
-        super();
+        super(OpCode.BINARY);
     }
 
     public MuxedFrame(MuxedFrame frame)
@@ -66,8 +67,13 @@ public class MuxedFrame extends WebSocketFrame
         b.append(isRsv1()?'1':'.');
         b.append(isRsv2()?'1':'.');
         b.append(isRsv3()?'1':'.');
-        b.append(",continuation=").append(isContinuation());
         b.append(']');
         return b.toString();
+    }
+
+    public void setOp(byte opcode)
+    {
+        // TODO Auto-generated method stub
+        
     }
 }

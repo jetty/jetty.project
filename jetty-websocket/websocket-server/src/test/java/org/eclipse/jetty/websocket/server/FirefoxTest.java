@@ -23,6 +23,7 @@ import static org.hamcrest.Matchers.*;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
 import org.eclipse.jetty.websocket.server.examples.MyEchoServlet;
 import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
@@ -62,7 +63,7 @@ public class FirefoxTest
 
             // Generate text frame
             String msg = "this is an echo ... cho ... ho ... o";
-            client.write(WebSocketFrame.text(msg));
+            client.write(new TextFrame().setPayload(msg));
 
             // Read frame (hopefully text frame)
             IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);

@@ -23,6 +23,7 @@ import static org.hamcrest.Matchers.*;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.mux.MuxDecoder;
 import org.eclipse.jetty.websocket.mux.MuxEncoder;
 import org.eclipse.jetty.websocket.mux.MuxOp;
@@ -97,7 +98,7 @@ public class MuxerAddServerTest
         clientRead.reset();
 
         // Send simple echo request
-        clientWrite.frame(1,WebSocketFrame.text("Hello World"));
+        clientWrite.frame(1,new TextFrame().setPayload("Hello World"));
 
         // Test for echo response (is there a user echo websocket connected to the sub-channel?)
         clientRead.assertHasFrame(OpCode.TEXT,1L,1);

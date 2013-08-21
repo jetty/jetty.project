@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.server.ab;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,10 +26,9 @@ import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.common.CloseInfo;
-import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
-import org.junit.After;
-import org.junit.Before;
+import org.eclipse.jetty.websocket.common.frames.PingFrame;
+import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -38,29 +38,6 @@ import org.junit.runner.RunWith;
 @RunWith(AdvancedRunner.class)
 public class TestABCase4 extends AbstractABCase
 {
-    // Allow Fuzzer / Generator to create bad frames for testing frame validation
-    private static class BadFrame extends WebSocketFrame
-    {
-        public BadFrame(byte opcode)
-        {
-            super();
-            super.finRsvOp = (byte)((finRsvOp & 0xF0) | (opcode & 0x0F));
-            // NOTE: Not setting Frame.Type intentionally
-        }
-    }
-
-    @After
-    public void enableParserStacks()
-    {
-        enableStacks(Parser.class,true);
-    }
-
-    @Before
-    public void quietParserStacks()
-    {
-        enableStacks(Parser.class,false);
-    }
-
     /**
      * Send opcode 3 (reserved)
      */
@@ -94,9 +71,10 @@ public class TestABCase4 extends AbstractABCase
     public void testCase4_1_2() throws Exception
     {
         byte payload[] = StringUtil.getUtf8Bytes("reserved payload");
+        ByteBuffer buf = ByteBuffer.wrap(payload);
 
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new BadFrame((byte)4).setPayload(payload)); // intentionally bad
+        send.add(new BadFrame((byte)4).setPayload(buf)); // intentionally bad
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
@@ -122,12 +100,12 @@ public class TestABCase4 extends AbstractABCase
     public void testCase4_1_3() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(WebSocketFrame.text("hello"));
+        send.add(new TextFrame().setPayload("hello"));
         send.add(new BadFrame((byte)5)); // intentionally bad
-        send.add(WebSocketFrame.ping());
+        send.add(new PingFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(WebSocketFrame.text("hello")); // echo
+        expect.add(new TextFrame().setPayload("hello")); // echo
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
@@ -150,13 +128,15 @@ public class TestABCase4 extends AbstractABCase
     @Test
     public void testCase4_1_4() throws Exception
     {
+        ByteBuffer buf = ByteBuffer.wrap(StringUtil.getUtf8Bytes("bad"));
+        
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(WebSocketFrame.text("hello"));
-        send.add(new BadFrame((byte)6).setPayload("bad")); // intentionally bad
-        send.add(WebSocketFrame.ping());
+        send.add(new TextFrame().setPayload("hello"));
+        send.add(new BadFrame((byte)6).setPayload(buf)); // intentionally bad
+        send.add(new PingFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(WebSocketFrame.text("hello")); // echo
+        expect.add(new TextFrame().setPayload("hello")); // echo
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
@@ -179,13 +159,15 @@ public class TestABCase4 extends AbstractABCase
     @Test
     public void testCase4_1_5() throws Exception
     {
+        ByteBuffer buf = ByteBuffer.wrap(StringUtil.getUtf8Bytes("bad"));
+        
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(WebSocketFrame.text("hello"));
-        send.add(new BadFrame((byte)7).setPayload("bad")); // intentionally bad
-        send.add(WebSocketFrame.ping());
+        send.add(new TextFrame().setPayload("hello"));
+        send.add(new BadFrame((byte)7).setPayload(buf)); // intentionally bad
+        send.add(new PingFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(WebSocketFrame.text("hello")); // echo
+        expect.add(new TextFrame().setPayload("hello")); // echo
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
@@ -234,8 +216,10 @@ public class TestABCase4 extends AbstractABCase
     @Test
     public void testCase4_2_2() throws Exception
     {
+        ByteBuffer buf = ByteBuffer.wrap(StringUtil.getUtf8Bytes("bad"));
+        
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new BadFrame((byte)12).setPayload("bad")); // intentionally bad
+        send.add(new BadFrame((byte)12).setPayload(buf)); // intentionally bad
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
@@ -261,12 +245,12 @@ public class TestABCase4 extends AbstractABCase
     public void testCase4_2_3() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(WebSocketFrame.text("hello"));
+        send.add(new TextFrame().setPayload("hello"));
         send.add(new BadFrame((byte)13)); // intentionally bad
-        send.add(WebSocketFrame.ping());
+        send.add(new PingFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(WebSocketFrame.text("hello")); // echo
+        expect.add(new TextFrame().setPayload("hello")); // echo
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
@@ -289,13 +273,15 @@ public class TestABCase4 extends AbstractABCase
     @Test
     public void testCase4_2_4() throws Exception
     {
+        ByteBuffer buf = ByteBuffer.wrap(StringUtil.getUtf8Bytes("bad"));
+        
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(WebSocketFrame.text("hello"));
-        send.add(new BadFrame((byte)14).setPayload("bad")); // intentionally bad
-        send.add(WebSocketFrame.ping());
+        send.add(new TextFrame().setPayload("hello"));
+        send.add(new BadFrame((byte)14).setPayload(buf)); // intentionally bad
+        send.add(new PingFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(WebSocketFrame.text("hello")); // echo
+        expect.add(new TextFrame().setPayload("hello")); // echo
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
@@ -318,13 +304,15 @@ public class TestABCase4 extends AbstractABCase
     @Test
     public void testCase4_2_5() throws Exception
     {
+        ByteBuffer buf = ByteBuffer.wrap(StringUtil.getUtf8Bytes("bad"));
+        
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(WebSocketFrame.text("hello"));
-        send.add(new BadFrame((byte)15).setPayload("bad")); // intentionally bad
-        send.add(WebSocketFrame.ping());
+        send.add(new TextFrame().setPayload("hello"));
+        send.add(new BadFrame((byte)15).setPayload(buf)); // intentionally bad
+        send.add(new PingFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(WebSocketFrame.text("hello")); // echo
+        expect.add(new TextFrame().setPayload("hello")); // echo
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);

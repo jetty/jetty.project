@@ -26,11 +26,16 @@ import java.util.List;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.frames.CloseFrame;
+import org.eclipse.jetty.websocket.common.frames.ContinuationFrame;
+import org.eclipse.jetty.websocket.common.frames.PingFrame;
+import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.server.helper.Hex;
 import org.junit.Rule;
 import org.junit.Test;
@@ -50,11 +55,11 @@ public class TestABCase7 extends AbstractABCase
     public void testCase7_1_1() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(WebSocketFrame.text("Hello World"));
+        send.add(new TextFrame().setPayload("Hello World"));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(WebSocketFrame.text("Hello World"));
+        expect.add(new TextFrame().setPayload("Hello World"));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
@@ -107,7 +112,7 @@ public class TestABCase7 extends AbstractABCase
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
-        send.add(WebSocketFrame.ping().setPayload("out of band ping"));
+        send.add(new PingFrame().setPayload("out of band ping"));
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
@@ -135,7 +140,7 @@ public class TestABCase7 extends AbstractABCase
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
-        send.add(WebSocketFrame.text("out of band text"));
+        send.add(new TextFrame().setPayload("out of band text"));
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
@@ -162,9 +167,9 @@ public class TestABCase7 extends AbstractABCase
     public void testCase7_1_5() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.TEXT).setPayload("an").setFin(false));
+        send.add(new TextFrame().setPayload("an").setFin(false));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
-        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("ticipation").setFin(true));
+        send.add(new ContinuationFrame().setPayload("ticipation").setFin(true));
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
@@ -192,14 +197,15 @@ public class TestABCase7 extends AbstractABCase
     {
         byte msg[] = new byte[256 * 1024];
         Arrays.fill(msg,(byte)'*');
+        ByteBuffer buf = ByteBuffer.wrap(msg);
 
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.TEXT).setPayload(msg));
+        send.add(new TextFrame().setPayload(buf));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
-        send.add(new WebSocketFrame(OpCode.PING).setPayload("out of band"));
+        send.add(new PingFrame().setPayload("out of band"));
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new WebSocketFrame(OpCode.TEXT).setPayload(copyOf(msg)));
+        expect.add(new TextFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
@@ -224,10 +230,10 @@ public class TestABCase7 extends AbstractABCase
     public void testCase7_3_1() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.CLOSE));
+        send.add(new CloseFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new WebSocketFrame(OpCode.CLOSE));
+        expect.add(new CloseFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
         try
@@ -252,17 +258,17 @@ public class TestABCase7 extends AbstractABCase
     {
         byte payload[] = new byte[]
         { 0x00 };
+        ByteBuffer buf = ByteBuffer.wrap(payload);
 
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.CLOSE).setPayload(payload));
+        send.add(new CloseFrame().setPayload(buf));
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(StacklessLogging scope = new StacklessLogging(Parser.class))
         {
-            enableStacks(Parser.class,false);
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
@@ -271,7 +277,6 @@ public class TestABCase7 extends AbstractABCase
         }
         finally
         {
-            enableStacks(Parser.class,true);
             fuzzer.close();
         }
     }
@@ -376,18 +381,16 @@ public class TestABCase7 extends AbstractABCase
         BufferUtil.flipToFlush(payload,0);
 
         List<WebSocketFrame> send = new ArrayList<>();
-        WebSocketFrame close = new WebSocketFrame(); // anonymous (no opcode) intentionally
+        WebSocketFrame close = new BadFrame(OpCode.CLOSE);
         close.setPayload(payload); // intentionally bad payload
-        close.setOpCode(OpCode.CLOSE); // set opcode after payload (to prevent early bad payload detection)
         send.add(close);
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.BAD_PAYLOAD).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(StacklessLogging scope = new StacklessLogging(Parser.class))
         {
-            enableStacks(Parser.class,false);
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
@@ -396,7 +399,6 @@ public class TestABCase7 extends AbstractABCase
         }
         finally
         {
-            enableStacks(Parser.class,true);
             fuzzer.close();
         }
     }

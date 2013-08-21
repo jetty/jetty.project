@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.server.ab;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -30,6 +31,8 @@ import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.frames.PingFrame;
+import org.eclipse.jetty.websocket.common.frames.PongFrame;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -42,9 +45,9 @@ public class TestABCase2 extends AbstractABCase
     @Test
     public void testCase2_1() throws Exception
     {
-        WebSocketFrame send = WebSocketFrame.ping();
+        WebSocketFrame send = new PingFrame();
 
-        WebSocketFrame expect = WebSocketFrame.pong();
+        WebSocketFrame expect = new PongFrame();
 
         Fuzzer fuzzer = new Fuzzer(this);
         try
@@ -79,8 +82,8 @@ public class TestABCase2 extends AbstractABCase
         for (int i = 0; i < pingCount; i++)
         {
             String payload = String.format("ping-%d[%X]",i,i);
-            send.add(WebSocketFrame.ping().setPayload(payload));
-            expect.add(WebSocketFrame.pong().setPayload(payload));
+            send.add(new PingFrame().setPayload(payload));
+            expect.add(new PongFrame().setPayload(payload));
         }
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
@@ -118,8 +121,8 @@ public class TestABCase2 extends AbstractABCase
         for (int i = 0; i < pingCount; i++)
         {
             String payload = String.format("ping-%d[%X]",i,i);
-            send.add(WebSocketFrame.ping().setPayload(payload));
-            expect.add(WebSocketFrame.pong().setPayload(payload));
+            send.add(new PingFrame().setPayload(payload));
+            expect.add(new PongFrame().setPayload(payload));
         }
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
@@ -148,11 +151,11 @@ public class TestABCase2 extends AbstractABCase
         byte payload[] = StringUtil.getUtf8Bytes("Hello world");
 
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(WebSocketFrame.ping().setPayload(payload));
+        send.add(new PingFrame().setPayload(payload));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(WebSocketFrame.pong().setPayload(copyOf(payload)));
+        expect.add(new PongFrame().setPayload(copyOf(payload)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
@@ -179,11 +182,11 @@ public class TestABCase2 extends AbstractABCase
         { 0x00, (byte)0xFF, (byte)0xFE, (byte)0xFD, (byte)0xFC, (byte)0xFB, 0x00, (byte)0xFF };
 
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(WebSocketFrame.ping().setPayload(payload));
+        send.add(new PingFrame().setPayload(payload));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(WebSocketFrame.pong().setPayload(copyOf(payload)));
+        expect.add(new PongFrame().setPayload(copyOf(payload)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
@@ -210,11 +213,11 @@ public class TestABCase2 extends AbstractABCase
         Arrays.fill(payload,(byte)0xFE);
 
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(WebSocketFrame.ping().setPayload(payload));
+        send.add(new PingFrame().setPayload(payload));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(WebSocketFrame.pong().setPayload(copyOf(payload)));
+        expect.add(new PongFrame().setPayload(copyOf(payload)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
@@ -241,10 +244,11 @@ public class TestABCase2 extends AbstractABCase
         {
             byte payload[] = new byte[126]; // intentionally too big
             Arrays.fill(payload,(byte)'5');
+            ByteBuffer buf = ByteBuffer.wrap(payload);
     
             List<WebSocketFrame> send = new ArrayList<>();
             // trick websocket frame into making extra large payload for ping
-            send.add(WebSocketFrame.binary(payload).setOpCode(OpCode.PING));
+            send.add(new BadFrame(OpCode.PING).setPayload(buf));
             send.add(new CloseInfo(StatusCode.NORMAL,"Test 2.5").asFrame());
     
             List<WebSocketFrame> expect = new ArrayList<>();
@@ -276,11 +280,11 @@ public class TestABCase2 extends AbstractABCase
         Arrays.fill(payload,(byte)'6');
 
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(WebSocketFrame.ping().setPayload(payload));
+        send.add(new PingFrame().setPayload(payload));
         send.add(new CloseInfo(StatusCode.NORMAL,"Test 2.6").asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(WebSocketFrame.pong().setPayload(copyOf(payload)));
+        expect.add(new PongFrame().setPayload(copyOf(payload)));
         expect.add(new CloseInfo(StatusCode.NORMAL,"Test 2.6").asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
@@ -305,7 +309,7 @@ public class TestABCase2 extends AbstractABCase
     public void testCase2_7() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(WebSocketFrame.pong()); // unsolicited pong
+        send.add(new PongFrame()); // unsolicited pong
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
@@ -332,7 +336,7 @@ public class TestABCase2 extends AbstractABCase
     public void testCase2_8() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(WebSocketFrame.pong().setPayload("unsolicited")); // unsolicited pong
+        send.add(new PongFrame().setPayload("unsolicited")); // unsolicited pong
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
@@ -359,12 +363,12 @@ public class TestABCase2 extends AbstractABCase
     public void testCase2_9() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(WebSocketFrame.pong().setPayload("unsolicited")); // unsolicited pong
-        send.add(WebSocketFrame.ping().setPayload("our ping")); // our ping
+        send.add(new PongFrame().setPayload("unsolicited")); // unsolicited pong
+        send.add(new PingFrame().setPayload("our ping")); // our ping
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(WebSocketFrame.pong().setPayload("our ping")); // our pong
+        expect.add(new PongFrame().setPayload("our ping")); // our pong
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);

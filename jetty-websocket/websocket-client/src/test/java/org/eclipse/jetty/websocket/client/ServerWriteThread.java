@@ -27,6 +27,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer.ServerConnection;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.frames.TextFrame;
 
 public class ServerWriteThread extends Thread
 {
@@ -71,7 +72,7 @@ public class ServerWriteThread extends Thread
         {
             while (m.get() < messageCount)
             {
-                conn.write(WebSocketFrame.text(message));
+                conn.write(new TextFrame().setPayload(message));
 
                 if (exchanger != null)
                 {

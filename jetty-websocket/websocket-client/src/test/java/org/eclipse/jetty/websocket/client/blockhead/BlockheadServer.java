@@ -53,7 +53,6 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.api.extensions.Frame.Type;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.AcceptHash;
@@ -64,6 +63,7 @@ import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionFactory;
+import org.eclipse.jetty.websocket.common.frames.CloseFrame;
 import org.junit.Assert;
 
 /**
@@ -117,7 +117,7 @@ public class BlockheadServer
 
         public void close() throws IOException
         {
-            write(new WebSocketFrame(OpCode.CLOSE));
+            write(new CloseFrame());
             flush();
             disconnect();
         }
@@ -217,10 +217,9 @@ public class BlockheadServer
             {
                 LOG.info("Server parsed {} frames",count);
             }
-            WebSocketFrame copy = new WebSocketFrame(frame);
-            incomingFrames.incomingFrame(copy);
+            incomingFrames.incomingFrame(WebSocketFrame.copy(frame));
 
-            if (frame.getType() == Type.CLOSE)
+            if (frame.getOpCode() == OpCode.CLOSE)
             {
                 CloseInfo close = new CloseInfo(frame);
                 LOG.debug("Close frame: {}",close);
@@ -246,7 +245,7 @@ public class BlockheadServer
                     callback.writeSuccess();
                 }
 
-                if (frame.getType().getOpCode() == OpCode.CLOSE)
+                if (frame.getOpCode() == OpCode.CLOSE)
                 {
                     disconnect();
                 }

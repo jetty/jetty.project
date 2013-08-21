@@ -129,7 +129,7 @@ public class Generator
             throw new ProtocolException("RSV3 not allowed to be set");
         }
 
-        if (frame.getType().isControl())
+        if (OpCode.isControlFrame(frame.getOpCode()))
         {
             /*
              * RFC 6455 Section 5.5
@@ -151,7 +151,7 @@ public class Generator
              * 
              * close frame payload is specially formatted which is checked in CloseInfo
              */
-            if (frame.getType().getOpCode() == OpCode.CLOSE)
+            if (frame.getOpCode() == OpCode.CLOSE)
             {
 
                 ByteBuffer payload = frame.getPayload();
@@ -195,7 +195,7 @@ public class Generator
         assertFrameValid(frame);
 
         ByteBuffer buffer = bufferPool.acquire(OVERHEAD,true);
-        BufferUtil.flipToFill(buffer);
+        BufferUtil.clearToFill(buffer);
 
         /*
          * start the generation process
@@ -224,7 +224,7 @@ public class Generator
         // NOTE: using .getOpCode() here, not .getType().getOpCode() for testing reasons
         byte opcode = frame.getOpCode();
 
-        if (frame.isContinuation())
+        if (frame.getOpCode() == OpCode.CONTINUATION)
         {
             // Continuations are not the same OPCODE
             opcode = OpCode.CONTINUATION;
@@ -282,24 +282,29 @@ public class Generator
         {
             byte[] mask = frame.getMask();
             buffer.put(mask);
+            int maskInt = ByteBuffer.wrap(mask).getInt();
 
             // perform data masking here
-            byte mb;
             ByteBuffer payload = frame.getPayload();
             if ((payload != null) && (payload.remaining() > 0))
             {
-                int pos = payload.position();
-                int limit = payload.limit();
-                for (int i = pos; i < limit; i++)
+                int maskOffset = 0;
+                int start = payload.position();
+                int end = payload.limit();
+                int remaining;
+                while ((remaining = end - start) > 0)
                 {
-                    // get raw byte from buffer.
-                    mb = payload.get(i);
-
-                    // mask, using offset information from frame windowing.
-                    mb ^= mask[(i - pos) % 4];
-
-                    // Mask each byte by its absolute position in the payload bytebuffer
-                    payload.put(i,mb);
+                    if (remaining >= 4)
+                    {
+                        payload.putInt(start, payload.getInt(start) ^ maskInt);
+                        start += 4;
+                    }
+                    else
+                    {
+                        payload.put(start, (byte)(payload.get(start) ^ mask[maskOffset & 3]));
+                        ++start;
+                        ++maskOffset;
+                    }
                 }
             }
         }

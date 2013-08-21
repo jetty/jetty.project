@@ -55,16 +55,16 @@ public class MainTest
     {
         Main main = new Main();
         List<String> xmls = main.processCommandLine(new String[] {});
-
+        System.err.println(xmls);
+        
         // Order is important here
         List<String> expectedXmls = new ArrayList<String>();
         expectedXmls.add("etc/jetty.xml"); // from start.ini
-        expectedXmls.add("etc/jetty-jmx.xml"); // from start.d/10-jmx.ini
-        // nothing from start.d/20-websocket.xml
-        expectedXmls.add("etc/jetty-testrealm.xml"); // from start.d/90-testrealm.ini
         expectedXmls.add("etc/jetty-deploy.xml"); // from start.ini
         expectedXmls.add("etc/jetty-webapps.xml"); // from start.ini
         expectedXmls.add("etc/jetty-contexts.xml"); // from start.ini
+        expectedXmls.add("etc/jetty-jmx.xml"); // from start.d/10-jmx.ini
+        expectedXmls.add("etc/jetty-testrealm.xml"); // from start.d/90-testrealm.ini
 
         assertThat("XML Resolution Order " + xmls,xmls,contains(expectedXmls.toArray()));
 

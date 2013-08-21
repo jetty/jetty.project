@@ -18,17 +18,19 @@
 
 package org.eclipse.jetty.websocket.server.ab;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.common.CloseInfo;
-import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.server.helper.Hex;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -154,16 +156,15 @@ public class TestABCase6_BadUTF extends AbstractABCase
     public void assertBadTextPayload() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.TEXT).setPayload(invalid));
+        send.add(new TextFrame().setPayload(ByteBuffer.wrap(invalid)));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.BAD_PAYLOAD).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(StacklessLogging supress = new StacklessLogging(Parser.class))
         {
-            enableStacks(Parser.class,false);
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
@@ -173,7 +174,6 @@ public class TestABCase6_BadUTF extends AbstractABCase
         finally
         {
             fuzzer.close();
-            enableStacks(Parser.class,true);
         }
     }
 }

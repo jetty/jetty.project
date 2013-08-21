@@ -29,9 +29,8 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
-import org.eclipse.jetty.websocket.common.OpCode;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
+import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.common.io.FutureWriteCallback;
 
 /**
@@ -43,7 +42,7 @@ public class MessageOutputStream extends OutputStream
     private final OutgoingFrames outgoing;
     private final ByteBufferPool bufferPool;
     private long frameCount = 0;
-    private WebSocketFrame frame;
+    private BinaryFrame frame;
     private ByteBuffer buffer;
     private FutureWriteCallback blocker;
     private WriteCallback callback;
@@ -55,7 +54,7 @@ public class MessageOutputStream extends OutputStream
         this.bufferPool = bufferPool;
         this.buffer = bufferPool.acquire(bufferSize,true);
         BufferUtil.flipToFill(buffer);
-        this.frame = new WebSocketFrame(OpCode.BINARY);
+        this.frame = new BinaryFrame();
     }
 
     public MessageOutputStream(WebSocketSession session)
@@ -146,7 +145,7 @@ public class MessageOutputStream extends OutputStream
                 blocker.get();
                 // block success
                 frameCount++;
-                frame.setOpCode(OpCode.CONTINUATION);
+                frame.setIsContinuation();
             }
             catch (ExecutionException e)
             {

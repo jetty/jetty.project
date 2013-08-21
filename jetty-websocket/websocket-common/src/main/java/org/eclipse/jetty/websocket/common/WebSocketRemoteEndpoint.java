@@ -33,6 +33,12 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
+import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
+import org.eclipse.jetty.websocket.common.frames.ContinuationFrame;
+import org.eclipse.jetty.websocket.common.frames.DataFrame;
+import org.eclipse.jetty.websocket.common.frames.PingFrame;
+import org.eclipse.jetty.websocket.common.frames.PongFrame;
+import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.io.FutureWriteCallback;
 
 /**
@@ -116,8 +122,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
                 {
                     LOG.debug("sendBytes with {}",BufferUtil.toDetailString(data));
                 }
-                WebSocketFrame frame = WebSocketFrame.binary().setPayload(data);
-                blockingWrite(frame);
+                blockingWrite(new BinaryFrame().setPayload(data));
             }
             finally
             {
@@ -139,10 +144,9 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
         {
             LOG.debug("sendBytesByFuture with {}",BufferUtil.toDetailString(data));
         }
-        WebSocketFrame frame = WebSocketFrame.binary().setPayload(data);
-        return sendAsyncFrame(frame);
+        return sendAsyncFrame(new BinaryFrame().setPayload(data));
     }
-    
+
     @Override
     public void sendBytes(ByteBuffer data, WriteCallback callback)
     {
@@ -152,8 +156,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
         {
             LOG.debug("sendBytes({}, {})",BufferUtil.toDetailString(data),callback);
         }
-        WebSocketFrame frame = WebSocketFrame.binary().setPayload(data);
-        sendFrame(frame,callback);
+        sendFrame(new BinaryFrame().setPayload(data),callback);
     }
 
     public void sendFrame(WebSocketFrame frame, WriteCallback callback)
@@ -186,10 +189,16 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
                 {
                     LOG.debug("sendPartialBytes({}, {})",BufferUtil.toDetailString(fragment),isLast);
                 }
-                WebSocketFrame frame = WebSocketFrame.binary().setPayload(fragment).setFin(isLast);
-                if(partialStarted) {
-                    frame.setContinuation(true);
+                DataFrame frame = null;
+                if (partialStarted)
+                {
+                    frame = new ContinuationFrame().setPayload(fragment);
                 }
+                else
+                {
+                    frame = new BinaryFrame().setPayload(fragment);
+                }
+                frame.setFin(isLast);
                 blockingWrite(frame);
                 partialStarted = !isLast;
             }
@@ -225,10 +234,16 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
                 {
                     LOG.debug("sendPartialString({}, {})",fragment,isLast);
                 }
-                WebSocketFrame frame = WebSocketFrame.text(fragment).setFin(isLast);
-                if(partialStarted) {
-                    frame.setContinuation(true);
+                DataFrame frame = null;
+                if (partialStarted)
+                {
+                    frame = new ContinuationFrame().setPayload(fragment);
                 }
+                else
+                {
+                    frame = new TextFrame().setPayload(fragment);
+                }
+                frame.setFin(isLast);
                 blockingWrite(frame);
                 partialStarted = !isLast;
             }
@@ -259,8 +274,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
                 {
                     LOG.debug("sendPing with {}",BufferUtil.toDetailString(applicationData));
                 }
-                WebSocketFrame frame = WebSocketFrame.ping().setPayload(applicationData);
-                blockingWrite(frame);
+                blockingWrite(new PingFrame().setPayload(applicationData));
             }
             finally
             {
@@ -286,8 +300,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
                 {
                     LOG.debug("sendPong with {}",BufferUtil.toDetailString(applicationData));
                 }
-                WebSocketFrame frame = WebSocketFrame.pong().setPayload(applicationData);
-                blockingWrite(frame);
+                blockingWrite(new PongFrame().setPayload(applicationData));
             }
             finally
             {
@@ -309,12 +322,12 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
             try
             {
                 msgType.set(TEXT);
-                WebSocketFrame frame = WebSocketFrame.text(text);
+                WebSocketFrame frame = new TextFrame().setPayload(text);
                 if (LOG.isDebugEnabled())
                 {
                     LOG.debug("sendString with {}",BufferUtil.toDetailString(frame.getPayload()));
                 }
-                blockingWrite(WebSocketFrame.text(text));
+                blockingWrite(frame);
             }
             finally
             {
@@ -332,20 +345,20 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
     public Future<Void> sendStringByFuture(String text)
     {
         msgType.set(TEXT);
-        WebSocketFrame frame = WebSocketFrame.text(text);
+        TextFrame frame = new TextFrame().setPayload(text);
         if (LOG.isDebugEnabled())
         {
             LOG.debug("sendStringByFuture with {}",BufferUtil.toDetailString(frame.getPayload()));
         }
         return sendAsyncFrame(frame);
     }
-    
+
     @Override
     public void sendString(String text, WriteCallback callback)
     {
         Objects.requireNonNull(callback,"WriteCallback cannot be null");
         msgType.set(TEXT);
-        WebSocketFrame frame = WebSocketFrame.text(text);
+        TextFrame frame = new TextFrame().setPayload(text);
         if (LOG.isDebugEnabled())
         {
             LOG.debug("sendString({},{})",BufferUtil.toDetailString(frame.getPayload()),callback);

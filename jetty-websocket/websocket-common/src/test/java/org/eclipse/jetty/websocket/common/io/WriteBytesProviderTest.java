@@ -24,16 +24,21 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
 
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.Hex;
 import org.eclipse.jetty.websocket.common.UnitGenerator;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
+import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.junit.Assert;
 import org.junit.Test;
 
 public class WriteBytesProviderTest
 {
+    private static final Logger LOG = Log.getLogger(WriteBytesProviderTest.class);
     private WriteBytesProvider bytesProvider;
 
     private void assertCallbackSuccessCount(TrackingCallback callback, int expectedSuccsesCount)
@@ -51,7 +56,7 @@ public class WriteBytesProviderTest
         bytesProvider = new WriteBytesProvider(generator,flushCallback);
 
         TrackingCallback frameCallback = new TrackingCallback();
-        Frame frame = WebSocketFrame.text("Test");
+        Frame frame = new TextFrame().setPayload("Test");
 
         // place in to bytes provider
         bytesProvider.enqueue(frame,frameCallback);
@@ -81,7 +86,7 @@ public class WriteBytesProviderTest
         // Create frames for provider
         TrackingCallback textCallback = new TrackingCallback();
         TrackingCallback closeCallback = new TrackingCallback();
-        bytesProvider.enqueue(WebSocketFrame.text("Bye"),textCallback);
+        bytesProvider.enqueue(new TextFrame().setPayload("Bye"),textCallback);
         bytesProvider.enqueue(new CloseInfo().asFrame(),closeCallback);
 
         // get bytes out
@@ -109,7 +114,8 @@ public class WriteBytesProviderTest
         UnitGenerator generator = new UnitGenerator();
         TrackingCallback flushCallback = new TrackingCallback();
         bytesProvider = new WriteBytesProvider(generator,flushCallback);
-        bytesProvider.setBufferSize(30);
+        int bufferSize = 30;
+        bytesProvider.setBufferSize(bufferSize);
 
         // Create frames for provider
         TrackingCallback binCallback = new TrackingCallback();
@@ -117,7 +123,7 @@ public class WriteBytesProviderTest
         int binPayloadSize = 50;
         byte bin[] = new byte[binPayloadSize];
         Arrays.fill(bin,(byte)0x00);
-        WebSocketFrame binFrame = WebSocketFrame.binary(bin);
+        BinaryFrame binFrame = new BinaryFrame().setPayload(bin);
         byte maskingKey[] = Hex.asByteArray("11223344");
         binFrame.setMask(maskingKey);
         bytesProvider.enqueue(binFrame,binCallback);
@@ -126,6 +132,7 @@ public class WriteBytesProviderTest
         // get bytes out
         List<ByteBuffer> bytes = bytesProvider.getByteBuffers();
         Assert.assertThat("Number of buffers",bytes.size(),is(5));
+        assertBufferLengths(bytes,6,bufferSize,binPayloadSize-bufferSize,2,0);
 
         // Test byte values
         StringBuilder expected = new StringBuilder();
@@ -150,6 +157,14 @@ public class WriteBytesProviderTest
         assertCallbackSuccessCount(closeCallback,1);
     }
 
+    private void assertBufferLengths(List<ByteBuffer> bytes, int... expectedLengths)
+    {
+        for (int i = 0; i < expectedLengths.length; i++)
+        {
+            Assert.assertThat("Buffer[" + i + "].remaining",bytes.get(i).remaining(),is(expectedLengths[i]));
+        }
+    }
+
     private void assertExpectedBytes(List<ByteBuffer> bytes, String expected)
     {
         String actual = gatheredHex(bytes);
@@ -161,6 +176,7 @@ public class WriteBytesProviderTest
         int len = 0;
         for (ByteBuffer buf : bytes)
         {
+            LOG.debug("buffer[] {}", BufferUtil.toDetailString(buf));
             len += buf.remaining();
         }
         len = len * 2;

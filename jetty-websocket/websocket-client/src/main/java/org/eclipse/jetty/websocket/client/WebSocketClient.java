@@ -50,7 +50,6 @@ import org.eclipse.jetty.websocket.client.io.ConnectionManager;
 import org.eclipse.jetty.websocket.client.io.UpgradeListener;
 import org.eclipse.jetty.websocket.client.masks.Masker;
 import org.eclipse.jetty.websocket.client.masks.RandomMasker;
-import org.eclipse.jetty.websocket.client.masks.ZeroMasker;
 import org.eclipse.jetty.websocket.common.SessionFactory;
 import org.eclipse.jetty.websocket.common.WebSocketSessionFactory;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
@@ -89,12 +88,7 @@ public class WebSocketClient extends ContainerLifeCycle
         this.policy = WebSocketPolicy.newClientPolicy();
         this.bufferPool = new MappedByteBufferPool();
         this.extensionRegistry = new WebSocketExtensionFactory(policy,bufferPool);
-        if(LOG.isDebugEnabled()) {
-            LOG.debug("Using ZeroMasker (DEBUG)");
-            this.masker = new ZeroMasker();
-        } else {
-            this.masker = new RandomMasker();
-        }
+        this.masker = new RandomMasker();
         this.eventDriverFactory = new EventDriverFactory(policy);
         this.sessionFactory = new WebSocketSessionFactory();
     }

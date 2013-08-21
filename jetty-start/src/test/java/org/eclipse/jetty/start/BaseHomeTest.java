@@ -30,9 +30,9 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class HomeBaseTest
+public class BaseHomeTest
 {
-    private void assertFileList(HomeBase hb, String message, List<String> expected, List<File> files)
+    private void assertFileList(BaseHome hb, String message, List<String> expected, List<File> files)
     {
         List<String> actual = new ArrayList<>();
         for (File file : files)
@@ -48,7 +48,7 @@ public class HomeBaseTest
         File homeDir = MavenTestingUtils.getTestResourceDir("hb.1/home");
         File baseDir = null;
 
-        HomeBase hb = new HomeBase(homeDir,baseDir);
+        BaseHome hb = new BaseHome(homeDir,baseDir);
         File startIni = hb.getFile("/start.ini");
 
         String ref = hb.toShortForm(startIni);
@@ -64,7 +64,7 @@ public class HomeBaseTest
         File homeDir = MavenTestingUtils.getTestResourceDir("hb.1/home");
         File baseDir = null;
 
-        HomeBase hb = new HomeBase(homeDir,baseDir);
+        BaseHome hb = new BaseHome(homeDir,baseDir);
         List<File> files = hb.listFiles("/start.d");
 
         List<String> expected = new ArrayList<>();
@@ -83,7 +83,7 @@ public class HomeBaseTest
         File homeDir = MavenTestingUtils.getTestResourceDir("hb.1/home");
         File baseDir = null;
 
-        HomeBase hb = new HomeBase(homeDir,baseDir);
+        BaseHome hb = new BaseHome(homeDir,baseDir);
         List<File> files = hb.listFiles("/start.d", new FS.IniFilter());
 
         List<String> expected = new ArrayList<>();
@@ -102,7 +102,7 @@ public class HomeBaseTest
         File homeDir = MavenTestingUtils.getTestResourceDir("hb.1/home");
         File baseDir = MavenTestingUtils.getTestResourceDir("hb.1/base");
 
-        HomeBase hb = new HomeBase(homeDir,baseDir);
+        BaseHome hb = new BaseHome(homeDir,baseDir);
         List<File> files = hb.listFiles("/start.d");
 
         List<String> expected = new ArrayList<>();
@@ -122,7 +122,7 @@ public class HomeBaseTest
         File homeDir = MavenTestingUtils.getTestResourceDir("hb.1/home");
         File baseDir = MavenTestingUtils.getTestResourceDir("hb.1/base");
 
-        HomeBase hb = new HomeBase(homeDir,baseDir);
+        BaseHome hb = new BaseHome(homeDir,baseDir);
         File startIni = hb.getFile("/start.ini");
 
         String ref = hb.toShortForm(startIni);

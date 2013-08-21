@@ -428,13 +428,13 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames, Connecti
             LOG.info("Client parsed {} frames",count);
         }
 
-        if (frame.getType() == Frame.Type.CLOSE)
+        if (frame.getOpCode() == OpCode.CLOSE)
         {
             CloseInfo close = new CloseInfo(frame);
             ioState.onCloseRemote(close);
         }
 
-        WebSocketFrame copy = new WebSocketFrame(frame);
+        WebSocketFrame copy = WebSocketFrame.copy(frame);
         incomingFrames.incomingFrame(copy);
     }
 
@@ -495,7 +495,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames, Connecti
             bufferPool.release(headerBuf);
         }
 
-        if (frame.getType().getOpCode() == OpCode.CLOSE)
+        if (frame.getOpCode() == OpCode.CLOSE)
         {
             disconnect();
         }

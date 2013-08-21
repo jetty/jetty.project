@@ -24,39 +24,49 @@ import org.eclipse.jetty.websocket.api.extensions.Frame;
 
 public class DeMaskProcessor implements PayloadProcessor
 {
-    private boolean isMasked;
-    private byte mask[];
-    private int offset;
+    private byte maskBytes[];
+    private int maskOffset;
 
     @Override
     public void process(ByteBuffer payload)
     {
-        if (!isMasked)
+        if (maskBytes == null)
         {
             return;
         }
 
+        int maskInt = ByteBuffer.wrap(maskBytes).getInt();
         int start = payload.position();
         int end = payload.limit();
-        for (int i = start; i < end; i++, offset++)
+        int offset = this.maskOffset;
+        int remaining;
+        while ((remaining = end - start) > 0)
         {
-            payload.put(i,(byte)(payload.get(i) ^ mask[offset % 4]));
+            if (remaining >= 4 && (offset % 4) == 0)
+            {
+                payload.putInt(start,payload.getInt(start) ^ maskInt);
+                start += 4;
+                offset += 4;
+            }
+            else
+            {
+                payload.put(start,(byte)(payload.get(start) ^ maskBytes[offset & 3]));
+                ++start;
+                ++offset;
+            }
         }
+        maskOffset = offset;
+    }
+
+    public void reset(byte mask[])
+    {
+        this.maskBytes = mask;
+        this.maskOffset = 0;
     }
 
     @Override
     public void reset(Frame frame)
     {
-        this.isMasked = frame.isMasked();
-        if (isMasked)
-        {
-            this.mask = frame.getMask();
-        }
-        else
-        {
-            this.mask = null;
-        }
-
-        offset = 0;
+        reset(frame.getMask());
     }
 }

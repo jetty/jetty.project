@@ -35,6 +35,7 @@ import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.UnitGenerator;
 import org.eclipse.jetty.websocket.common.UnitParser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -53,7 +54,7 @@ public class TestABCase1_1
         Arrays.fill(buf,(byte)'*');
         String text = new String(buf,StringUtil.__UTF8_CHARSET);
 
-        Frame textFrame = WebSocketFrame.text(text);
+        Frame textFrame = new TextFrame().setPayload(text);
 
         ByteBuffer actual = UnitGenerator.generate(textFrame);
 
@@ -88,7 +89,7 @@ public class TestABCase1_1
             builder.append("*");
         }
 
-        WebSocketFrame textFrame = WebSocketFrame.text(builder.toString());
+        WebSocketFrame textFrame = new TextFrame().setPayload(builder.toString());
 
         ByteBuffer actual = UnitGenerator.generate(textFrame);
 
@@ -127,7 +128,7 @@ public class TestABCase1_1
             builder.append("*");
         }
 
-        WebSocketFrame textFrame = WebSocketFrame.text(builder.toString());
+        WebSocketFrame textFrame = new TextFrame().setPayload(builder.toString());
 
         ByteBuffer actual = UnitGenerator.generate(textFrame);
 
@@ -166,7 +167,7 @@ public class TestABCase1_1
             builder.append("*");
         }
 
-        WebSocketFrame textFrame = WebSocketFrame.text(builder.toString());
+        WebSocketFrame textFrame = new TextFrame().setPayload(builder.toString());
 
         ByteBuffer actual = UnitGenerator.generate(textFrame);
 
@@ -205,7 +206,7 @@ public class TestABCase1_1
             builder.append("*");
         }
 
-        WebSocketFrame textFrame = WebSocketFrame.text(builder.toString());
+        WebSocketFrame textFrame = new TextFrame().setPayload(builder.toString());
 
         ByteBuffer actual = UnitGenerator.generate(textFrame);
 
@@ -242,7 +243,7 @@ public class TestABCase1_1
             builder.append("*");
         }
 
-        WebSocketFrame textFrame = WebSocketFrame.text(builder.toString());
+        WebSocketFrame textFrame = new TextFrame().setPayload(builder.toString());
 
         ByteBuffer actual = UnitGenerator.generate(textFrame);
 
@@ -270,7 +271,7 @@ public class TestABCase1_1
     @Test
     public void testGenerateEmptyTextCase1_1_1()
     {
-        WebSocketFrame textFrame = WebSocketFrame.text("");
+        WebSocketFrame textFrame = new TextFrame().setPayload("");
 
         ByteBuffer actual = UnitGenerator.generate(textFrame);
 
