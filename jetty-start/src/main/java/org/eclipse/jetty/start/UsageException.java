@@ -18,34 +18,33 @@
 
 package org.eclipse.jetty.start;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-
 /**
- * Simple Start .INI handler
+ * A Usage Error has occured. Print the usage and exit with the appropriate exit code.
  */
-public class StartIni extends TextFile
+@SuppressWarnings("serial")
+public class UsageException extends RuntimeException
 {
-    public StartIni(File file) throws FileNotFoundException, IOException
+    public static final int ERR_LOGGING = -1;
+    public static final int ERR_INVOKE_MAIN = -2;
+    public static final int ERR_NOT_STOPPED = -4;
+    public static final int ERR_UNKNOWN = -5;
+    public static final int ERR_BAD_ARG = -6;
+    private int exitCode;
+
+    public UsageException(int exitCode, Throwable cause)
     {
-        super(file);
+        super(cause);
+        this.exitCode = exitCode;
     }
 
-    public void addUniqueLine(String line)
+    public UsageException(int exitCode, String format, Object... objs)
     {
-        if (line.startsWith("MODULES="))
-        {
-            int idx = line.indexOf('=');
-            String value = line.substring(idx + 1);
-            for (String part : value.split(","))
-            {
-                super.addUniqueLine("MODULE=" + part);
-            }
-        }
-        else
-        {
-            super.addUniqueLine(line);
-        }
+        super(String.format(format,objs));
+        this.exitCode = exitCode;
+    }
+
+    public int getExitCode()
+    {
+        return exitCode;
     }
 }

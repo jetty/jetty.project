@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.start;
 
+import static org.eclipse.jetty.start.UsageException.*;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileFilter;
@@ -52,14 +53,41 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
+ * Main start class.
  * <p>
- * Main start class. This class is intended to be the main class listed in the MANIFEST.MF of the start.jar archive. It allows an application to be started with
- * the command "java -jar start.jar".
- * </p>
- * 
+ * This class is intended to be the main class listed in the MANIFEST.MF of the start.jar archive. It allows the Jetty Application server to be started with the
+ * command "java -jar start.jar".
  * <p>
- * The behaviour of Main is controlled by the parsing of the {@link Config} "org/eclipse/start/start.config" file obtained as a resource or file.
- * </p>
+ * Argument processing steps:
+ * <ol>
+ * <li>Directory Locations:
+ * <ul>
+ * <li>jetty.home=[directory] (the jetty.home location)</li>
+ * <li>jetty.base=[directory] (the jetty.base location)</li>
+ * </ul>
+ * </li>
+ * <li>Start Logging behavior:
+ * <ul>
+ * <li>--debug (debugging enabled)</li>
+ * <li>--start-log-file=logs/start.log (output start logs to logs/start.log location)</li>
+ * </ul>
+ * </li>
+ * <li>Module Resolution</li>
+ * <li>Properties Resolution</li>
+ * <li>Execution
+ * <ul>
+ * <li>--list-modules</li>
+ * <li>--list-classpath</li>
+ * <li>--list-config</li>
+ * <li>--version</li>
+ * <li>--help</li>
+ * <li>--dry-run</li>
+ * <li>--exec</li>
+ * <li>--stop</li>
+ * <li>(or normal startup)</li>
+ * </ul>
+ * </li>
+ * </ol>
  */
 public class Main
 {
@@ -68,10 +96,6 @@ public class Main
     private static final Pattern NNN_MODULE_INI = Pattern.compile("^(\\d\\d\\d-)(.*?\\.ini)(\\.disabled)?$",Pattern.CASE_INSENSITIVE);
 
     private static final int EXIT_USAGE = 1;
-    private static final int ERR_LOGGING = -1;
-    private static final int ERR_INVOKE_MAIN = -2;
-    private static final int ERR_NOT_STOPPED = -4;
-    private static final int ERR_UNKNOWN = -5;
     private boolean _showUsage = false;
     private boolean _dumpVersions = false;
     private boolean _listConfig = false;
@@ -95,9 +119,13 @@ public class Main
             if (xmls != null)
                 main.start(xmls);
         }
+        catch (UsageException e)
+        {
+            usageExit(e.getCause(),e.getExitCode());
+        }
         catch (Throwable e)
         {
-            usageExit(e,ERR_UNKNOWN);
+            usageExit(e,UsageException.ERR_UNKNOWN);
         }
     }
 
@@ -111,28 +139,80 @@ public class Main
         return _config;
     }
 
-    public List<String> processCommandLine(String[] args) throws Exception
+    public List<String> processCommandLine(String[] cmdLine) throws Exception
     {
+        StartArgs args = new StartArgs(cmdLine);
+        BaseHome baseHome = _config.getBaseHome();
 
-        ArrayList<String> cmd_line = new ArrayList<>(Arrays.asList(args));
+        // Processing Order is important!
+        // ------------------------------------------------------------
+        // 1) Directory Locations
 
         // Set Home and Base at the start, as all other paths encountered
         // will be based off of them.
-        _config.getBaseHome().initialize(cmd_line);
-        
-        List<StartIni> inis = new ArrayList<>();
-        
-        
-        // Do we have a start.ini?
-        File start_ini=_config.getBaseHome().getFile("start.ini");
-        if (start_ini.exists()&& start_ini.canRead() && !start_ini.isDirectory())
-            inis.add(new StartIni(start_ini));
-        
-        // Do we have a start.d?
-        File start_d=_config.getBaseHome().getFile("start.d");
-        if (start_d.exists()&& start_d.canRead() && start_d.isDirectory())
+        _config.getBaseHome().initialize(args);
+
+        // ------------------------------------------------------------
+        // 2) Start Logging
+        StartLog.getInstance().initialize(baseHome,args);
+
+        // ------------------------------------------------------------
+        // 3) Load Inis
+        File start_ini = baseHome.getBaseFile("start.ini");
+        if (FS.canReadFile(start_ini))
         {
-            List<File> files=new ArrayList<>();
+            args.parse(new StartIni(start_ini));
+        }
+
+        File start_d = _config.getBaseHome().getBaseFile("start.d");
+        if (FS.canReadDirectory(start_d))
+        {
+            List<File> files = new ArrayList<>();
+            for (File file : start_d.listFiles(new FS.IniFilter()))
+            {
+                files.add(file);
+            }
+
+            Collections.sort(files,new NaturalSort.Files());
+            for (File file : files)
+            {
+                args.parse(new StartIni(file));
+            }
+        }
+
+        // 4) Parse everything provided.
+        // This would be the directory information +
+        // the various start inis
+        // and then the raw command line arguments
+        args.parseCommandLine();
+
+        // 5) Module Registration
+        Modules modules = new Modules();
+        modules.registerAll(baseHome);
+
+        // 6) Active Module Resolution
+        for (String enabledModule : args.getEnabledModules())
+        {
+            modules.enable(enabledModule);
+        }
+        modules.buildGraph();
+
+        List<Module> activeModules = modules.resolveEnabled();
+
+        // 7) Lib & XML Expansion / Resolution
+        args.expandModules(baseHome, activeModules);
+
+        /*
+        // Do we have a start.ini?
+        File start_ini = _config.getBaseHome().getFile("start.ini");
+        if (start_ini.exists() && start_ini.canRead() && !start_ini.isDirectory())
+            inis.add(new StartIni(start_ini));
+
+        // Do we have a start.d?
+        File start_d = _config.getBaseHome().getFile("start.d");
+        if (start_d.exists() && start_d.canRead() && start_d.isDirectory())
+        {
+            List<File> files = new ArrayList<>();
             for (File file : start_d.listFiles(new FS.IniFilter()))
                 files.add(file);
 
@@ -145,18 +225,17 @@ public class Main
         inis.add(new StartIni(cmd_line));
 
         // TODO - we could sort the StartIni files by dependency here
-        
 
         // The XML Configuration Files to initialize with
         List<String> xmls = new ArrayList<String>();
-        
+
         // Expand arguments
-        for (StartIni ini:inis)
+        for (StartIni ini : inis)
         {
             String source = "<cmdline>";
-            if (ini.getFile()!=null)
-                source=ini.getFile().getAbsolutePath();
-            
+            if (ini.getFile() != null)
+                source = ini.getFile().getAbsolutePath();
+
             for (String arg : ini.getLines())
             {
 
@@ -372,10 +451,10 @@ public class Main
                 xmls.add(arg);
             }
         }
-        
-        return xmls;
-    }
+        */
 
+        return null;
+    }
 
     private void download(String arg)
     {
@@ -487,13 +566,13 @@ public class Main
                     }
                     else if (info.equals("@STARTINI"))
                     {
-                        BaseHome hb=_config.getBaseHome();
+                        BaseHome hb = _config.getBaseHome();
                         File start_d = hb.getFile("start.d");
                         if (start_d.exists() && start_d.isDirectory())
                         {
-                            File[] files=start_d.listFiles(new FS.FilenameRegexFilter("(\\d\\d\\d-)?.*\\.ini(\\.disabled)?"));
+                            File[] files = start_d.listFiles(new FS.FilenameRegexFilter("(\\d\\d\\d-)?.*\\.ini(\\.disabled)?"));
                             Arrays.sort(files,new NaturalSort.Files());
-                            for (File file: files)
+                            for (File file : files)
                             {
                                 String path = _config.getBaseHome().toShortForm(file);
                                 System.out.printf("%s%s%n",indent,path);
@@ -1168,18 +1247,18 @@ public class Main
         _jvmArgs.addAll(jvmArgs);
     }
 
-    private void enable(final String module,boolean verbose) throws IOException
+    private void enable(final String module, boolean verbose) throws IOException
     {
         final String mini = module + ".ini";
         final String disable = module + ".ini.disabled";
 
-        BaseHome hb=_config.getBaseHome();
+        BaseHome hb = _config.getBaseHome();
         File start_d = hb.getFile("start.d");
-        boolean found=false;
-        File enabled=null;
+        boolean found = false;
+        File enabled = null;
         if (start_d.exists() && start_d.isDirectory())
         {
-            for (File file: start_d.listFiles(new FS.FilenameRegexFilter("(\\d\\d\\d-)?"+Pattern.quote(module)+"\\.ini(\\.disabled)?")))
+            for (File file : start_d.listFiles(new FS.FilenameRegexFilter("(\\d\\d\\d-)?" + Pattern.quote(module) + "\\.ini(\\.disabled)?")))
             {
                 String n = file.getName();
                 if (n.equalsIgnoreCase(mini))
@@ -1189,20 +1268,20 @@ public class Main
                     found = true;
                     break;
                 }
-                
+
                 if (n.equalsIgnoreCase(disable))
                 {
-                    enabled=new File(file.getParentFile(),mini);
+                    enabled = new File(file.getParentFile(),mini);
                     System.err.printf("Enabling Module %s as %s%n",module,hb.toShortForm(enabled));
                     file.renameTo(enabled);
                     found = true;
                     break;
                 }
-                
+
                 Matcher matcher = NNN_MODULE_INI.matcher(n);
                 if (matcher.matches())
                 {
-                    if (matcher.group(3)==null)
+                    if (matcher.group(3) == null)
                     {
                         if (verbose)
                             System.err.printf("Module %s already enabled in %s as %s%n",module,hb.toShortForm(file.getParent()),n);
@@ -1210,12 +1289,12 @@ public class Main
                     }
                     else
                     {
-                        enabled=new File(file.getParentFile(),matcher.group(1)+mini);
+                        enabled = new File(file.getParentFile(),matcher.group(1) + mini);
                         System.err.printf("Enabling Module %s as %s%n",module,hb.toShortForm(enabled));
                         file.renameTo(enabled);
                         found = true;
                     }
-                }  
+                }
             }
         }
 
@@ -1226,14 +1305,14 @@ public class Main
 
             if (start_home.exists() && start_home.isDirectory())
             {
-                for (File file: start_home.listFiles(new FS.FilenameRegexFilter("(\\d\\d\\d-)?"+Pattern.quote(module)+"\\.ini(\\.disabled)?")))
+                for (File file : start_home.listFiles(new FS.FilenameRegexFilter("(\\d\\d\\d-)?" + Pattern.quote(module) + "\\.ini(\\.disabled)?")))
                 {
                     try
                     {
                         String n = file.getName();
                         if (n.equalsIgnoreCase(mini) || n.equalsIgnoreCase(disable))
                         {
-                            enabled=new File(start_d,mini);
+                            enabled = new File(start_d,mini);
                             Files.copy(file.toPath(),enabled.toPath());
                             System.err.printf("Enabling Module %s as %s%n",module,hb.toShortForm(enabled));
                             found = true;
@@ -1243,14 +1322,14 @@ public class Main
                         Matcher matcher = NNN_MODULE_INI.matcher(n);
                         if (matcher.matches())
                         {
-                            enabled=new File(start_d,matcher.group(1)+mini);
+                            enabled = new File(start_d,matcher.group(1) + mini);
                             Files.copy(file.toPath(),enabled.toPath());
                             System.err.printf("Enabling Module %s as %s%n",module,hb.toShortForm(enabled));
                             found = true;
                             break;
                         }
                     }
-                    catch(IOException e)
+                    catch (IOException e)
                     {
                         e.printStackTrace();
                     }
@@ -1262,20 +1341,20 @@ public class Main
         {
             System.err.printf("Module %s not found!%n",module);
         }
-        else if (enabled!=null)
+        else if (enabled != null)
         {
             // handle dependencies
-            StartIni ini=new StartIni(enabled);
-            for (String line:ini.getLineMatches(Pattern.compile("^DEPEND=.*$")))
+            StartIni ini = new StartIni(enabled);
+            for (String line : ini.getLineMatches(Pattern.compile("^DEPEND=.*$")))
             {
-                String depend=line.trim().split("=")[1];
-                for (String m:depend.split(","))
+                String depend = line.trim().split("=")[1];
+                for (String m : depend.split(","))
                     enable(m,false);
             }
-            for (String line:ini.getLineMatches(Pattern.compile("^EXCLUDE=.*$")))
+            for (String line : ini.getLineMatches(Pattern.compile("^EXCLUDE=.*$")))
             {
-                String depend=line.trim().split("=")[1];
-                for (String m:depend.split(","))
+                String depend = line.trim().split("=")[1];
+                for (String m : depend.split(","))
                     disable(m,false);
             }
         }
@@ -1286,12 +1365,12 @@ public class Main
         final String mini = module + ".ini";
         final String disable = module + ".ini.disabled";
 
-        BaseHome hb=_config.getBaseHome();
+        BaseHome hb = _config.getBaseHome();
         File start_d = hb.getFile("start.d");
-        boolean found=false;
+        boolean found = false;
         if (start_d.exists() && start_d.isDirectory())
         {
-            for (File file: start_d.listFiles(new FS.FilenameRegexFilter("(\\d\\d\\d-)?"+Pattern.quote(module)+"\\.ini(\\.disabled)?")))
+            for (File file : start_d.listFiles(new FS.FilenameRegexFilter("(\\d\\d\\d-)?" + Pattern.quote(module) + "\\.ini(\\.disabled)?")))
             {
                 String n = file.getName();
                 if (n.equalsIgnoreCase(disable))
@@ -1311,7 +1390,7 @@ public class Main
                     Matcher matcher = NNN_MODULE_INI.matcher(n);
                     if (matcher.matches())
                     {
-                        if (matcher.group(3)!=null)
+                        if (matcher.group(3) != null)
                         {
                             if (verbose)
                                 System.err.printf("Module %s already disabled in %s as %s%n",module,hb.toShortForm(file.getParent()),n);
@@ -1319,7 +1398,7 @@ public class Main
                         }
                         else
                         {
-                            String disabled=matcher.group(1)+disable;
+                            String disabled = matcher.group(1) + disable;
                             System.err.printf("Disabling Module %s in %s as %s%n",module,hb.toShortForm(file.getParent()),disabled);
                             file.renameTo(new File(file.getParentFile(),disabled));
                             found = true;

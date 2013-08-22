@@ -32,11 +32,13 @@ import java.util.Vector;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /* ------------------------------------------------------------ */
 /**
  */
+@Ignore
 public class MainTest
 {
     /* ------------------------------------------------------------ */
