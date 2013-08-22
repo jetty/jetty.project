@@ -3,6 +3,7 @@
 #
 
 DEPEND=base
+DEPEND=xml
 
 LIB=lib/servlet-api-3.1.jar
 LIB=lib/jetty-schemas-3.1.jar
