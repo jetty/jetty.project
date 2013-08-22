@@ -42,7 +42,7 @@ public class TextFile implements Iterable<String>
     {
         this.file = file;
         init();
-        
+
         try (FileReader reader = new FileReader(file))
         {
             try (BufferedReader buf = new BufferedReader(reader))
@@ -64,10 +64,6 @@ public class TextFile implements Iterable<String>
                 }
             }
         }
-    }
-
-    public void init()
-    {
     }
 
     public void addUniqueLine(String line)
@@ -101,6 +97,10 @@ public class TextFile implements Iterable<String>
     public List<String> getLines()
     {
         return lines;
+    }
+
+    public void init()
+    {
     }
 
     @Override

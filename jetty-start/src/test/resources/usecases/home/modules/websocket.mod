@@ -10,5 +10,4 @@ DEPEND=annotations
 LIB=lib/websockets/*.jar
 
 # WebSocket needs websocket configuration
-etc/jetty-websocket.xml
-
+etc/jetty-websockets.xml

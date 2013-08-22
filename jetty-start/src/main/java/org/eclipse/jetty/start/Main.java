@@ -79,7 +79,6 @@ import java.util.Locale;
 public class Main
 {
     private static final int EXIT_USAGE = 1;
-    private final BaseHome baseHome;
 
     public static void main(String[] args)
     {
@@ -99,74 +98,54 @@ public class Main
         }
     }
 
+    static void usageExit(int exit)
+    {
+        usageExit(null,exit);
+    }
+
+    static void usageExit(Throwable t, int exit)
+    {
+        if (t != null)
+        {
+            t.printStackTrace(System.err);
+        }
+        System.err.println();
+        System.err.println("Usage: java -jar start.jar [options] [properties] [configs]");
+        System.err.println("       java -jar start.jar --help  # for more information");
+        System.exit(exit);
+    }
+
+    private final BaseHome baseHome;
+
     Main() throws IOException
     {
         baseHome = new BaseHome();
     }
 
-    public StartArgs processCommandLine(String[] cmdLine) throws Exception
+    private void copyInThread(final InputStream in, final OutputStream out)
     {
-        StartArgs args = new StartArgs(cmdLine);
-
-        // Processing Order is important!
-        // ------------------------------------------------------------
-        // 1) Directory Locations
-
-        // Set Home and Base at the start, as all other paths encountered
-        // will be based off of them.
-        baseHome.initialize(args);
-
-        // ------------------------------------------------------------
-        // 2) Start Logging
-        StartLog.getInstance().initialize(baseHome,args);
-
-        // ------------------------------------------------------------
-        // 3) Load Inis
-        File start_ini = baseHome.getBaseFile("start.ini");
-        if (FS.canReadFile(start_ini))
+        new Thread(new Runnable()
         {
-            args.parse(new StartIni(start_ini));
-        }
-
-        File start_d = baseHome.getBaseFile("start.d");
-        if (FS.canReadDirectory(start_d))
-        {
-            List<File> files = new ArrayList<>();
-            for (File file : start_d.listFiles(new FS.IniFilter()))
+            @Override
+            public void run()
             {
-                files.add(file);
+                try
+                {
+                    byte[] buf = new byte[1024];
+                    int len = in.read(buf);
+                    while (len > 0)
+                    {
+                        out.write(buf,0,len);
+                        len = in.read(buf);
+                    }
+                }
+                catch (IOException e)
+                {
+                    // e.printStackTrace();
+                }
             }
 
-            Collections.sort(files,new NaturalSort.Files());
-            for (File file : files)
-            {
-                args.parse(new StartIni(file));
-            }
-        }
-
-        // 4) Parse everything provided.
-        // This would be the directory information +
-        // the various start inis
-        // and then the raw command line arguments
-        args.parseCommandLine();
-
-        // 5) Module Registration
-        Modules modules = new Modules();
-        modules.registerAll(baseHome);
-
-        // 6) Active Module Resolution
-        for (String enabledModule : args.getEnabledModules())
-        {
-            modules.enable(enabledModule);
-        }
-        modules.buildGraph();
-
-        List<Module> activeModules = modules.resolveEnabled();
-
-        // 7) Lib & XML Expansion / Resolution
-        args.expandModules(baseHome,activeModules);
-
-        return args;
+        }).start();
     }
 
     private void download(String arg)
@@ -174,24 +153,32 @@ public class Main
         try
         {
             String[] split = arg.split(":",3);
-            if (split.length != 3 || "http".equalsIgnoreCase(split[0]) || !split[1].startsWith("//"))
+            if ((split.length != 3) || "http".equalsIgnoreCase(split[0]) || !split[1].startsWith("//"))
+            {
                 throw new IllegalArgumentException("Not --download=<http uri>:<location>");
+            }
 
             String location = split[2];
             if (File.separatorChar != '/')
+            {
                 location.replaceAll("/",File.separator);
+            }
             File file = new File(location);
 
             StartLog.debug("Download to %s %s",file.getAbsolutePath(),(file.exists()?"[Exists!]":""));
             if (file.exists())
+            {
                 return;
+            }
 
             URL url = new URL(split[0].substring(11) + ":" + split[1]);
 
             System.err.println("DOWNLOAD: " + url + " to " + location);
 
             if (!file.getParentFile().exists())
+            {
                 file.getParentFile().mkdirs();
+            }
 
             byte[] buf = new byte[8192];
             try (InputStream in = url.openStream(); OutputStream out = new FileOutputStream(file);)
@@ -201,9 +188,13 @@ public class Main
                     int len = in.read(buf);
 
                     if (len > 0)
+                    {
                         out.write(buf,0,len);
+                    }
                     if (len < 0)
+                    {
                         break;
+                    }
                 }
             }
         }
@@ -215,17 +206,23 @@ public class Main
         }
     }
 
-    private void usage()
+    private String getVersion(File element)
     {
-        String usageResource = "org/eclipse/jetty/start/usage.txt";
-        InputStream usageStream = getClass().getClassLoader().getResourceAsStream(usageResource);
-
-        if (usageStream == null)
+        if (element.isDirectory())
         {
-            System.err.println("ERROR: detailed usage resource unavailable");
-            usageExit(EXIT_USAGE);
+            return "(dir)";
         }
-        System.exit(EXIT_USAGE);
+
+        if (element.isFile())
+        {
+            String name = element.getName().toLowerCase(Locale.ENGLISH);
+            if (name.endsWith(".jar"))
+            {
+                return JarVersion.getVersion(element);
+            }
+        }
+
+        return "";
     }
 
     public void invokeMain(StartArgs args) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException, ClassNotFoundException, IOException
@@ -257,6 +254,128 @@ public class Main
         Object[] method_params = new Object[]
         { argArray };
         main.invoke(null,method_params);
+    }
+
+    private void listConfig()
+    {
+        // TODO
+    }
+
+    private void listModules()
+    {
+        // TODO Auto-generated method stub
+    }
+
+    public StartArgs processCommandLine(String[] cmdLine) throws Exception
+    {
+        StartArgs args = new StartArgs(cmdLine);
+
+        // Processing Order is important!
+        // ------------------------------------------------------------
+        // 1) Directory Locations
+
+        // Set Home and Base at the start, as all other paths encountered
+        // will be based off of them.
+        baseHome.initialize(args);
+
+        // ------------------------------------------------------------
+        // 2) Start Logging
+        StartLog.getInstance().initialize(baseHome,args);
+
+        StartLog.debug("jetty.home=%s",baseHome.getHome());
+        StartLog.debug("jetty.base=%s",baseHome.getBase());
+
+        // ------------------------------------------------------------
+        // 3) Load Inis
+        File start_ini = baseHome.getBaseFile("start.ini");
+        if (FS.canReadFile(start_ini))
+        {
+            StartLog.debug("Reading ${jetty.base}/start.ini) - %s",start_ini);
+            args.parse(new StartIni(start_ini));
+        }
+
+        File start_d = baseHome.getBaseFile("start.d");
+        if (FS.canReadDirectory(start_d))
+        {
+            List<File> files = new ArrayList<>();
+            for (File file : start_d.listFiles(new FS.IniFilter()))
+            {
+                files.add(file);
+            }
+
+            Collections.sort(files,new NaturalSort.Files());
+            for (File file : files)
+            {
+                StartLog.debug("Reading ${jetty.base}/start.d/%s - %s",file.getName(),file);
+                args.parse(new StartIni(file));
+            }
+        }
+
+        // 4) Parse everything provided.
+        // This would be the directory information +
+        // the various start inis
+        // and then the raw command line arguments
+        StartLog.debug("Parsing collected arguments");
+        args.parseCommandLine();
+
+        // 5) Module Registration
+        Modules modules = new Modules();
+        StartLog.debug("Registering all modules");
+        modules.registerAll(baseHome);
+
+        // 6) Active Module Resolution
+        for (String enabledModule : args.getEnabledModules())
+        {
+            StartLog.debug("Enabling module: %s",enabledModule);
+            modules.enable(enabledModule);
+        }
+        StartLog.debug("Building Module Graph");
+        modules.buildGraph();
+
+        List<Module> activeModules = modules.resolveEnabled();
+
+        // 7) Lib & XML Expansion / Resolution
+        args.expandModules(baseHome,activeModules);
+        
+        // 8) Resolve Extra XMLs
+        args.resolveExtraXmls(baseHome);
+        
+        return args;
+    }
+
+    public BaseHome getBaseHome()
+    {
+        return baseHome;
+    }
+
+    private void showAllOptionsWithVersions()
+    {
+        // TODO
+    }
+
+    private void showClasspathWithVersions(Classpath classpath)
+    {
+        // Iterate through active classpath, and fetch Implementation Version from each entry (if present)
+        // to dump to end user.
+
+        // TODO: modules instead
+        // System.out.println("Active Options: " + _config.getOptions());
+
+        if (classpath.count() == 0)
+        {
+            System.out.println("No version information available show.");
+            return;
+        }
+
+        System.out.println("Version Information on " + classpath.count() + " entr" + ((classpath.count() > 1)?"ies":"y") + " in the classpath.");
+        System.out.println("Note: order presented here is how they would appear on the classpath.");
+        System.out.println("      changes to the OPTIONS=[option,option,...] command line option will be reflected here.");
+
+        int i = 0;
+        for (File element : classpath.getElements())
+        {
+            System.out.printf("%2d: %20s | %s\n",i++,getVersion(element),baseHome.toShortForm(element));
+        }
     }
 
     public void start(StartArgs args) throws IOException, InterruptedException
@@ -363,90 +482,6 @@ public class Main
         }
     }
 
-    private void listModules()
-    {
-        // TODO Auto-generated method stub
-    }
-
-    private void copyInThread(final InputStream in, final OutputStream out)
-    {
-        new Thread(new Runnable()
-        {
-            public void run()
-            {
-                try
-                {
-                    byte[] buf = new byte[1024];
-                    int len = in.read(buf);
-                    while (len > 0)
-                    {
-                        out.write(buf,0,len);
-                        len = in.read(buf);
-                    }
-                }
-                catch (IOException e)
-                {
-                    // e.printStackTrace();
-                }
-            }
-
-        }).start();
-    }
-
-    private void showAllOptionsWithVersions()
-    {
-        // TODO
-    }
-
-    private void showClasspathWithVersions(Classpath classpath)
-    {
-        // Iterate through active classpath, and fetch Implementation Version from each entry (if present)
-        // to dump to end user.
-
-        // TODO: modules instead
-        // System.out.println("Active Options: " + _config.getOptions());
-
-        if (classpath.count() == 0)
-        {
-            System.out.println("No version information available show.");
-            return;
-        }
-
-        System.out.println("Version Information on " + classpath.count() + " entr" + ((classpath.count() > 1)?"ies":"y") + " in the classpath.");
-        System.out.println("Note: order presented here is how they would appear on the classpath.");
-        System.out.println("      changes to the OPTIONS=[option,option,...] command line option will be reflected here.");
-
-        int i = 0;
-        for (File element : classpath.getElements())
-        {
-            System.out.printf("%2d: %20s | %s\n",i++,getVersion(element),baseHome.toShortForm(element));
-        }
-    }
-
-    private String getVersion(File element)
-    {
-        if (element.isDirectory())
-        {
-            return "(dir)";
-        }
-
-        if (element.isFile())
-        {
-            String name = element.getName().toLowerCase(Locale.ENGLISH);
-            if (name.endsWith(".jar"))
-            {
-                return JarVersion.getVersion(element);
-            }
-        }
-
-        return "";
-    }
-
-    private void listConfig()
-    {
-        // TODO
-    }
-
     /**
      * Stop a running jetty instance.
      */
@@ -494,7 +529,9 @@ public class Main
                         {
                             StartLog.debug("Received \"%s\"",response);
                             if ("Stopped".equals(response))
+                            {
                                 StartLog.warn("Server reports itself as Stopped");
+                            }
                         }
                     }
                 }
@@ -515,20 +552,16 @@ public class Main
         }
     }
 
-    static void usageExit(Throwable t, int exit)
+    private void usage()
     {
-        if (t != null)
-        {
-            t.printStackTrace(System.err);
-        }
-        System.err.println();
-        System.err.println("Usage: java -jar start.jar [options] [properties] [configs]");
-        System.err.println("       java -jar start.jar --help  # for more information");
-        System.exit(exit);
-    }
+        String usageResource = "org/eclipse/jetty/start/usage.txt";
+        InputStream usageStream = getClass().getClassLoader().getResourceAsStream(usageResource);
 
-    static void usageExit(int exit)
-    {
-        usageExit(null,exit);
+        if (usageStream == null)
+        {
+            System.err.println("ERROR: detailed usage resource unavailable");
+            usageExit(EXIT_USAGE);
+        }
+        System.exit(EXIT_USAGE);
     }
 }

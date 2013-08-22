@@ -189,26 +189,32 @@ public class BaseHome
 
         File homePath = new File(homeDir,FS.separators(relPathToDirectory));
         List<File> homeFiles = new ArrayList<>();
-        homeFiles.addAll(Arrays.asList(homePath.listFiles(filter)));
+        if (FS.canReadDirectory(homePath))
+        {
+            homeFiles.addAll(Arrays.asList(homePath.listFiles(filter)));
+        }
 
         if (isBaseDifferent())
         {
             // merge
             File basePath = new File(baseDir,FS.separators(relPathToDirectory));
-            File baseFiles[] = basePath.listFiles(filter);
             List<File> ret = new ArrayList<>();
-
-            if (baseFiles != null)
+            if (FS.canReadDirectory(basePath))
             {
-                for (File base : baseFiles)
+                File baseFiles[] = basePath.listFiles(filter);
+
+                if (baseFiles != null)
                 {
-                    String relpath = toRelativePath(baseDir,base);
-                    File home = new File(homeDir,FS.separators(relpath));
-                    if (home.exists())
+                    for (File base : baseFiles)
                     {
-                        homeFiles.remove(home);
+                        String relpath = toRelativePath(baseDir,base);
+                        File home = new File(homeDir,FS.separators(relpath));
+                        if (home.exists())
+                        {
+                            homeFiles.remove(home);
+                        }
+                        ret.add(base);
                     }
-                    ret.add(base);
                 }
             }
 
@@ -253,27 +259,27 @@ public class BaseHome
 
     public void setBaseDir(File dir)
     {
-        this.baseDir = dir;
         try
         {
+            this.baseDir = dir.getCanonicalFile();
             System.setProperty("jetty.base",dir.getCanonicalPath());
         }
         catch (IOException e)
         {
-            e.printStackTrace();
+            e.printStackTrace(System.err);
         }
     }
 
     public void setHomeDir(File dir)
     {
-        this.homeDir = dir;
         try
         {
+            this.homeDir = dir.getCanonicalFile();
             System.setProperty("jetty.home",dir.getCanonicalPath());
         }
         catch (IOException e)
         {
-            e.printStackTrace();
+            e.printStackTrace(System.err);
         }
     }
 

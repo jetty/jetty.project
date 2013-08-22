@@ -32,6 +32,7 @@ public class StartIni extends TextFile
         super(file);
     }
 
+    @Override
     public void addUniqueLine(String line)
     {
         if (line.startsWith("MODULES="))

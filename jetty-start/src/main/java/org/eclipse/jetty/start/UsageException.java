@@ -31,15 +31,15 @@ public class UsageException extends RuntimeException
     public static final int ERR_BAD_ARG = -6;
     private int exitCode;
 
-    public UsageException(int exitCode, Throwable cause)
-    {
-        super(cause);
-        this.exitCode = exitCode;
-    }
-
     public UsageException(int exitCode, String format, Object... objs)
     {
         super(String.format(format,objs));
+        this.exitCode = exitCode;
+    }
+
+    public UsageException(int exitCode, Throwable cause)
+    {
+        super(cause);
         this.exitCode = exitCode;
     }
 

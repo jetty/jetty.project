@@ -27,20 +27,7 @@ import java.util.Comparator;
  * Natural Language Sorting
  */
 public class NaturalSort
-{   
-    public static class Strings implements Comparator<String>
-    {
-        private final Collator collator = Collator.getInstance();
-
-        @Override
-        public int compare(String o1, String o2)
-        {
-            CollationKey key1 = collator.getCollationKey(o1);
-            CollationKey key2 = collator.getCollationKey(o2);
-            return key1.compareTo(key2);
-        }
-    }
-
+{
     public static class Files implements Comparator<File>
     {
         private final Collator collator = Collator.getInstance();
@@ -50,6 +37,19 @@ public class NaturalSort
         {
             CollationKey key1 = collator.getCollationKey(o1.getAbsolutePath());
             CollationKey key2 = collator.getCollationKey(o2.getAbsolutePath());
+            return key1.compareTo(key2);
+        }
+    }
+
+    public static class Strings implements Comparator<String>
+    {
+        private final Collator collator = Collator.getInstance();
+
+        @Override
+        public int compare(String o1, String o2)
+        {
+            CollationKey key1 = collator.getCollationKey(o1);
+            CollationKey key2 = collator.getCollationKey(o2);
             return key1.compareTo(key2);
         }
     }

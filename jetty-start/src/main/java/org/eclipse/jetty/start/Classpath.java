@@ -34,6 +34,20 @@ import java.util.StringTokenizer;
  */
 public class Classpath implements Iterable<File>
 {
+    private static class Loader extends URLClassLoader
+    {
+        Loader(URL[] urls, ClassLoader parent)
+        {
+            super(urls,parent);
+        }
+
+        @Override
+        public String toString()
+        {
+            return "startJarLoader@" + Long.toHexString(hashCode());
+        }
+    }
+
     private final List<File> elements = new ArrayList<File>();
 
     public Classpath()
@@ -45,31 +59,18 @@ public class Classpath implements Iterable<File>
         addClasspath(initial);
     }
 
-    @Override
-    public Iterator<File> iterator()
+    public boolean addClasspath(String s)
     {
-        return elements.iterator();
-    }
-
-    public List<File> getElements()
-    {
-        return elements;
-    }
-
-    public int count()
-    {
-        return elements.size();
-    }
-
-    public boolean addComponent(String component)
-    {
-        if ((component == null) || (component.length() <= 0))
+        boolean added = false;
+        if (s != null)
         {
-            // nothing to add
-            return false;
+            StringTokenizer t = new StringTokenizer(s,File.pathSeparator);
+            while (t.hasMoreTokens())
+            {
+                added |= addComponent(t.nextToken());
+            }
         }
-
-        return addComponent(new File(component));
+        return added;
     }
 
     public boolean addComponent(File path)
@@ -97,18 +98,20 @@ public class Classpath implements Iterable<File>
         return false;
     }
 
-    public boolean addClasspath(String s)
+    public boolean addComponent(String component)
     {
-        boolean added = false;
-        if (s != null)
+        if ((component == null) || (component.length() <= 0))
         {
-            StringTokenizer t = new StringTokenizer(s,File.pathSeparator);
-            while (t.hasMoreTokens())
-            {
-                added |= addComponent(t.nextToken());
-            }
+            // nothing to add
+            return false;
         }
-        return added;
+
+        return addComponent(new File(component));
+    }
+
+    public int count()
+    {
+        return elements.size();
     }
 
     public void dump(PrintStream out)
@@ -118,23 +121,6 @@ public class Classpath implements Iterable<File>
         {
             out.printf("%2d: %s%n",i++,element.getAbsolutePath());
         }
-    }
-
-    @Override
-    public String toString()
-    {
-        StringBuffer cp = new StringBuffer(1024);
-        boolean needDelim = false;
-        for (File element : elements)
-        {
-            if (needDelim)
-            {
-                cp.append(File.pathSeparatorChar);
-            }
-            cp.append(element.getAbsolutePath());
-            needDelim = true;
-        }
-        return cp.toString();
     }
 
     public ClassLoader getClassLoader()
@@ -164,18 +150,20 @@ public class Classpath implements Iterable<File>
         return new Loader(urls,parent);
     }
 
-    private static class Loader extends URLClassLoader
+    public List<File> getElements()
     {
-        Loader(URL[] urls, ClassLoader parent)
-        {
-            super(urls,parent);
-        }
+        return elements;
+    }
 
-        @Override
-        public String toString()
-        {
-            return "startJarLoader@" + Long.toHexString(hashCode());
-        }
+    public boolean isEmpty()
+    {
+        return (elements == null) || (elements.isEmpty());
+    }
+
+    @Override
+    public Iterator<File> iterator()
+    {
+        return elements.iterator();
     }
 
     /**
@@ -197,16 +185,20 @@ public class Classpath implements Iterable<File>
         }
     }
 
-    public boolean isEmpty()
+    @Override
+    public String toString()
     {
-        return (elements == null) || (elements.isEmpty());
-    }
-
-    /**
-     * Add the System classpath to this object's tracking
-     */
-    public void addSystemClasspath()
-    {
-        addClasspath(System.getProperty("java.class.path"));
+        StringBuffer cp = new StringBuffer(1024);
+        boolean needDelim = false;
+        for (File element : elements)
+        {
+            if (needDelim)
+            {
+                cp.append(File.pathSeparatorChar);
+            }
+            cp.append(element.getAbsolutePath());
+            needDelim = true;
+        }
+        return cp.toString();
     }
 }

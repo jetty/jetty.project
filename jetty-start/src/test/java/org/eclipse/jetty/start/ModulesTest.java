@@ -39,7 +39,7 @@ public class ModulesTest
 
         Modules modules = new Modules();
         modules.registerAll(basehome);
-        Assert.assertThat("Module count",modules.count(),is(11));
+        Assert.assertThat("Module count",modules.count(),is(24));
     }
 
     @Test
@@ -141,7 +141,7 @@ public class ModulesTest
         expectedLibs.add("lib/jetty-http-${jetty.version}.jar");
         expectedLibs.add("lib/jetty-continuation-${jetty.version}.jar");
         expectedLibs.add("lib/jetty-server-${jetty.version}.jar");
-        expectedLibs.add("lib/jetty-plus-${jetty.version}.xml");
+        expectedLibs.add("lib/jetty-plus-${jetty.version}.jar");
         expectedLibs.add("lib/jetty-annotations-${jetty.version}.jar");
         expectedLibs.add("lib/annotations/*.jar");
         expectedLibs.add("lib/websockets/*.jar");
@@ -155,7 +155,7 @@ public class ModulesTest
         expectedXmls.add("etc/jetty-http.xml");
         expectedXmls.add("etc/jetty-plus.xml");
         expectedXmls.add("etc/jetty-annotations.xml");
-        expectedXmls.add("etc/jetty-websocket.xml");
+        expectedXmls.add("etc/jetty-websockets.xml");
         
         List<String> actualXmls = modules.normalizeXmls(active);
         Assert.assertThat("Resolved XMLs: " + actualXmls,actualXmls,contains(expectedXmls.toArray()));

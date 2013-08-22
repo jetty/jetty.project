@@ -63,14 +63,17 @@ public class StartLog
         System.err.printf(format + "%n",args);
     }
 
+    public static void warn(Throwable t)
+    {
+        t.printStackTrace(System.err);
+    }
+
     private boolean debug = false;
 
     public void initialize(BaseHome baseHome, StartArgs args) throws IOException
     {
         // Debug with boolean
         Pattern debugBoolPat = Pattern.compile("(-D)?debug=(.*)");
-        // Debug enable flag (no boolean)
-        Pattern debugPat = Pattern.compile("(-D)?debug");
         // Log file name
         Pattern logFilePat = Pattern.compile("(-D)?start-log-file=(.*)");
 
@@ -79,17 +82,16 @@ public class StartLog
         Matcher matcher;
         for (String arg : args.getCommandLine())
         {
+            if ("--debug".equals(arg))
+            {
+                debug = true;
+                continue;
+            }
+
             matcher = debugBoolPat.matcher(arg);
             if (matcher.matches())
             {
                 debug = Boolean.parseBoolean(matcher.group(2));
-                continue;
-            }
-
-            matcher = debugPat.matcher(arg);
-            if (matcher.matches())
-            {
-                debug = true;
                 continue;
             }
 
@@ -133,10 +135,5 @@ public class StartLog
             System.setErr(logger);
             System.out.println("Establishing " + logfile + " on " + new Date());
         }
-    }
-
-    public static void warn(Throwable t)
-    {
-        t.printStackTrace(System.err);
     }
 }

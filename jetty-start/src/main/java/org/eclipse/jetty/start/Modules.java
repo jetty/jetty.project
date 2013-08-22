@@ -37,11 +37,6 @@ public class Modules implements Iterable<Module>
 {
     private Map<String, Module> modules = new HashMap<>();
 
-    public void register(Module module)
-    {
-        modules.put(module.getName(),module);
-    }
-
     private void bfsCalculateDepth(final Module module, final int depthNow)
     {
         int depth = depthNow + 1;
@@ -95,6 +90,24 @@ public class Modules implements Iterable<Module>
         return modules.size();
     }
 
+    public void dump()
+    {
+        List<Module> ordered = new ArrayList<>();
+        ordered.addAll(modules.values());
+        Collections.sort(ordered,Collections.reverseOrder(new Module.DepthComparator()));
+
+        for (Module module : ordered)
+        {
+            System.out.printf("Module: %s%n",module.getName());
+            System.out.printf("  depth: %d%n",module.getDepth());
+            System.out.printf("  parents: [%s]%n",join(module.getParentNames(),','));
+            for (String xml : module.getXmls())
+            {
+                System.out.printf("  xml: %s%n",xml);
+            }
+        }
+    }
+
     public void enable(String name)
     {
         Module module = modules.get(name);
@@ -116,40 +129,6 @@ public class Modules implements Iterable<Module>
         }
     }
 
-    public void dump()
-    {
-        List<Module> ordered = new ArrayList<>();
-        ordered.addAll(modules.values());
-        Collections.sort(ordered,Collections.reverseOrder(new Module.DepthComparator()));
-
-        for (Module module : ordered)
-        {
-            System.out.printf("Module: %s%n",module.getName());
-            System.out.printf("  depth: %d%n",module.getDepth());
-            System.out.printf("  parents: [%s]%n",join(module.getParentNames(),','));
-            for (String xml : module.getXmls())
-            {
-                System.out.printf("  xml: %s%n",xml);
-            }
-        }
-    }
-
-    private String join(Collection<?> objs, char delim)
-    {
-        StringBuilder str = new StringBuilder();
-        boolean needDelim = false;
-        for (Object obj : objs)
-        {
-            if (needDelim)
-            {
-                str.append(delim);
-            }
-            str.append(obj);
-            needDelim = true;
-        }
-        return str.toString();
-    }
-
     public Module get(String name)
     {
         Module module = modules.get(name);
@@ -166,27 +145,20 @@ public class Modules implements Iterable<Module>
         return modules.values().iterator();
     }
 
-    /**
-     * Resolve the execution order of the enabled modules, and all dependant modules, based on depth first transitive reduction.
-     * 
-     * @return the list of active modules (plus dependant modules), in execution order.
-     */
-    public List<Module> resolveEnabled()
+    private String join(Collection<?> objs, char delim)
     {
-        Set<Module> active = new HashSet<Module>();
-
-        for (Module module : modules.values())
+        StringBuilder str = new StringBuilder();
+        boolean needDelim = false;
+        for (Object obj : objs)
         {
-            if (module.isEnabled())
+            if (needDelim)
             {
-                findParents(module,active);
+                str.append(delim);
             }
+            str.append(obj);
+            needDelim = true;
         }
-
-        List<Module> ordered = new ArrayList<>();
-        ordered.addAll(active);
-        Collections.sort(ordered,new Module.DepthComparator());
-        return ordered;
+        return str.toString();
     }
 
     // TODO: Resolve LIB names to actual java.io.File references via HomeBase
@@ -225,11 +197,39 @@ public class Modules implements Iterable<Module>
         return xmls;
     }
 
+    public void register(Module module)
+    {
+        modules.put(module.getName(),module);
+    }
+
     public void registerAll(BaseHome basehome) throws IOException
     {
         for (File file : basehome.listFiles("modules",new FS.FilenameRegexFilter("^.*\\.mod$")))
         {
             register(new Module(file));
         }
+    }
+
+    /**
+     * Resolve the execution order of the enabled modules, and all dependant modules, based on depth first transitive reduction.
+     * 
+     * @return the list of active modules (plus dependant modules), in execution order.
+     */
+    public List<Module> resolveEnabled()
+    {
+        Set<Module> active = new HashSet<Module>();
+
+        for (Module module : modules.values())
+        {
+            if (module.isEnabled())
+            {
+                findParents(module,active);
+            }
+        }
+
+        List<Module> ordered = new ArrayList<>();
+        ordered.addAll(active);
+        Collections.sort(ordered,new Module.DepthComparator());
+        return ordered;
     }
 }

@@ -82,65 +82,6 @@ public class Module extends TextFile
         // Strip .ini
         name = Pattern.compile(".mod$",Pattern.CASE_INSENSITIVE).matcher(name).replaceFirst("");
     }
-    
-    @Override
-    public void init()
-    {
-        String name = getFile().getName();
-        
-        // Strip .ini
-        this.name = Pattern.compile(".mod$",Pattern.CASE_INSENSITIVE).matcher(name).replaceFirst("");
-        
-        this.parentNames = new HashSet<>();
-        this.parentEdges = new HashSet<>();
-        this.childEdges = new HashSet<>();
-        this.xmls = new ArrayList<>();
-        this.libs = new ArrayList<>();
-    }
-    
-    @Override
-    public void process(String line)
-    {
-        boolean handled = false;
-        
-        if(line == null) {
-            
-        }
-
-        // has assignment
-        int idx = line.indexOf('=');
-        if (idx >= 0)
-        {
-            String key = line.substring(0,idx);
-            String value = line.substring(idx + 1);
-
-            switch (key.toUpperCase(Locale.ENGLISH))
-            {
-                case "DEPEND":
-                    parentNames.add(value);
-                    handled = true;
-                    break;
-                case "LIB":
-                    libs.add(value);
-                    handled = true;
-                    break;
-            }
-        }
-
-        if (handled)
-        {
-            return; // no further processing of line needed
-        }
-
-        // Is it an XML line?
-        if (FS.isXml(line))
-        {
-            xmls.add(line);
-            return;
-        }
-
-        throw new IllegalArgumentException("Unrecognized Module Metadata line [" + line + "] in Module file [" + getFile() + "]");
-    }
 
     public void addChildEdge(Module child)
     {
@@ -150,6 +91,36 @@ public class Module extends TextFile
     public void addParentEdge(Module parent)
     {
         this.parentEdges.add(parent);
+    }
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (this == obj)
+        {
+            return true;
+        }
+        if (obj == null)
+        {
+            return false;
+        }
+        if (getClass() != obj.getClass())
+        {
+            return false;
+        }
+        Module other = (Module)obj;
+        if (name == null)
+        {
+            if (other.name != null)
+            {
+                return false;
+            }
+        }
+        else if (!name.equals(other.name))
+        {
+            return false;
+        }
+        return true;
     }
 
     public Set<Module> getChildEdges()
@@ -187,38 +158,78 @@ public class Module extends TextFile
         return xmls;
     }
 
+    @Override
+    public int hashCode()
+    {
+        final int prime = 31;
+        int result = 1;
+        result = (prime * result) + ((name == null)?0:name.hashCode());
+        return result;
+    }
+
+    @Override
+    public void init()
+    {
+        String name = getFile().getName();
+
+        // Strip .ini
+        this.name = Pattern.compile(".mod$",Pattern.CASE_INSENSITIVE).matcher(name).replaceFirst("");
+
+        this.parentNames = new HashSet<>();
+        this.parentEdges = new HashSet<>();
+        this.childEdges = new HashSet<>();
+        this.xmls = new ArrayList<>();
+        this.libs = new ArrayList<>();
+    }
+
     public boolean isEnabled()
     {
         return enabled;
     }
 
     @Override
-    public int hashCode()
+    public void process(String line)
     {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((name == null)?0:name.hashCode());
-        return result;
-    }
+        boolean handled = false;
 
-    @Override
-    public boolean equals(Object obj)
-    {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        Module other = (Module)obj;
-        if (name == null)
+        if (line == null)
         {
-            if (other.name != null)
-                return false;
+
         }
-        else if (!name.equals(other.name))
-            return false;
-        return true;
+
+        // has assignment
+        int idx = line.indexOf('=');
+        if (idx >= 0)
+        {
+            String key = line.substring(0,idx);
+            String value = line.substring(idx + 1);
+
+            switch (key.toUpperCase(Locale.ENGLISH))
+            {
+                case "DEPEND":
+                    parentNames.add(value);
+                    handled = true;
+                    break;
+                case "LIB":
+                    libs.add(value);
+                    handled = true;
+                    break;
+            }
+        }
+
+        if (handled)
+        {
+            return; // no further processing of line needed
+        }
+
+        // Is it an XML line?
+        if (FS.isXml(line))
+        {
+            xmls.add(line);
+            return;
+        }
+
+        throw new IllegalArgumentException("Unrecognized Module Metadata line [" + line + "] in Module file [" + getFile() + "]");
     }
 
     public void setDepth(int depth)
@@ -231,6 +242,7 @@ public class Module extends TextFile
         this.enabled = enabled;
     }
 
+    @Override
     public String toString()
     {
         StringBuilder str = new StringBuilder();

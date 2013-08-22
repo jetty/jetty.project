@@ -26,10 +26,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
@@ -89,12 +87,45 @@ public class StartArgs
     {
         commandLine.addAll(Arrays.asList(commandLineArgs));
         classpath = new Classpath();
-        classpath.addSystemClasspath();
     }
 
-    public void buildStartCommandLine()
+    private void addUniqueXmlFile(String xmlRef, File xmlfile) throws IOException
     {
-        // TODO Auto-generated method stub
+        if (!FS.canReadFile(xmlfile))
+        {
+            throw new IOException("Cannot read file: " + xmlRef);
+        }
+        xmlfile = xmlfile.getCanonicalFile();
+        if (!xmls.contains(xmlfile))
+        {
+            xmls.add(xmlfile);
+        }
+    }
+
+    /**
+     * Ensure that the System Properties are set (if defined as a System property, or start.config property, or start.ini property)
+     * 
+     * @param key
+     *            the key to be sure of
+     */
+    private void ensureSystemPropertySet(String key)
+    {
+        if (systemPropertyKeys.contains(key))
+        {
+            return; // done
+        }
+
+        if (properties.containsKey(key))
+        {
+            String val = properties.getProperty(key,null);
+            if (val == null)
+            {
+                return; // no value to set
+            }
+            // setup system property
+            systemPropertyKeys.add(key);
+            System.setProperty(key,val);
+        }
     }
 
     /**
@@ -102,8 +133,9 @@ public class StartArgs
      * 
      * @param baseHome
      * @param activeModules
+     * @throws IOException
      */
-    public void expandModules(BaseHome baseHome, List<Module> activeModules)
+    public void expandModules(BaseHome baseHome, List<Module> activeModules) throws IOException
     {
         for (Module module : activeModules)
         {
@@ -160,6 +192,12 @@ public class StartArgs
             }
 
             // Find and Expand XML files
+            for (String xmlRef : module.getXmls())
+            {
+                // Straight Reference
+                File xmlfile = baseHome.getFile(xmlRef);
+                addUniqueXmlFile(xmlRef,xmlfile);
+            }
         }
     }
 
@@ -173,45 +211,14 @@ public class StartArgs
         return this.commandLine;
     }
 
-    public List<String> getEnabledModules()
-    {
-        return this.enabledModules;
-    }
-
     public List<String> getDownloads()
     {
         return downloads;
     }
 
-    /**
-     * Ensure that the System Properties are set (if defined as a System property, or start.config property, or start.ini property)
-     * 
-     * @param key
-     *            the key to be sure of
-     */
-    private void ensureSystemPropertySet(String key)
+    public List<String> getEnabledModules()
     {
-        if (systemPropertyKeys.contains(key))
-        {
-            return; // done
-        }
-
-        if (properties.containsKey(key))
-        {
-            String val = properties.getProperty(key,null);
-            if (val == null)
-            {
-                return; // no value to set
-            }
-            // setup system property
-            systemPropertyKeys.add(key);
-            System.setProperty(key,val);
-        }
-    }
-
-    public Properties getProperties()
-    {
-        return properties;
+        return this.enabledModules;
     }
 
     public CommandLineBuilder getMainArgs(BaseHome baseHome) throws IOException
@@ -270,6 +277,11 @@ public class StartArgs
         return System.getProperty("main.class",mainclass);
     }
 
+    public Properties getProperties()
+    {
+        return properties;
+    }
+
     private String getValue(String arg)
     {
         int idx = arg.indexOf('=');
@@ -283,6 +295,11 @@ public class StartArgs
             throw new UsageException(ERR_BAD_ARG,"Argument is missing a required value: %s",arg);
         }
         return value;
+    }
+
+    public List<File> getXmlFiles()
+    {
+        return xmls;
     }
 
     public boolean hasJvmArgs()
@@ -346,6 +363,12 @@ public class StartArgs
         {
             help = true;
             run = false;
+            return;
+        }
+
+        if ("--debug".equals(arg))
+        {
+            // valid, but handled in StartLog instead
             return;
         }
 
@@ -499,5 +522,38 @@ public class StartArgs
         {
             parse(line);
         }
+    }
+
+    public void resolveExtraXmls(BaseHome baseHome) throws IOException
+    {
+        // Find and Expand XML files
+        for (String xmlRef : xmlRefs)
+        {
+            // Straight Reference
+            File xmlfile = baseHome.getFile(xmlRef);
+            if (!xmlfile.exists())
+            {
+                xmlfile = baseHome.getFile("etc/" + xmlRef);
+            }
+            addUniqueXmlFile(xmlRef,xmlfile);
+        }
+    }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder builder = new StringBuilder();
+        builder.append("StartArgs [commandLine=");
+        builder.append(commandLine);
+        builder.append(", enabledModules=");
+        builder.append(enabledModules);
+        builder.append(", xmlRefs=");
+        builder.append(xmlRefs);
+        builder.append(", properties=");
+        builder.append(properties);
+        builder.append(", jvmArgs=");
+        builder.append(jvmArgs);
+        builder.append("]");
+        return builder.toString();
     }
 }
