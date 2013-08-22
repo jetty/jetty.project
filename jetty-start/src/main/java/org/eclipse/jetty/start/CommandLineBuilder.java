@@ -24,7 +24,7 @@ import java.util.List;
 
 public class CommandLineBuilder
 {
-    private static File findExecutable(File root, String path)
+    public static File findExecutable(File root, String path)
     {
         String npath = path.replace('/',File.separatorChar);
         File exe = new File(root,npath);
@@ -35,7 +35,7 @@ public class CommandLineBuilder
         return exe;
     }
 
-    private static String findJavaBin()
+    public static String findJavaBin()
     {
         File javaHome = new File(System.getProperty("java.home"));
         if (!javaHome.exists())
