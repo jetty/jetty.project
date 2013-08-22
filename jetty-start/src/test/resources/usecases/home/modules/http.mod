@@ -1,3 +1,6 @@
+#
+# Jetty HTTP Server
+#
 
 DEPEND=server
 
