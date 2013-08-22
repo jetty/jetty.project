@@ -39,7 +39,7 @@ public class ModulesTest
 
         Modules modules = new Modules();
         modules.registerAll(basehome);
-        Assert.assertThat("Module count",modules.count(),is(24));
+        Assert.assertThat("Module count",modules.count(),is(26));
     }
 
     @Test
@@ -63,6 +63,7 @@ public class ModulesTest
         // Assert names are correct, and in the right order
         List<String> expectedNames = new ArrayList<>();
         expectedNames.add("base");
+        expectedNames.add("xml");
         expectedNames.add("server");
         expectedNames.add("http");
 
@@ -78,6 +79,7 @@ public class ModulesTest
         List<String> expectedLibs = new ArrayList<>();
         expectedLibs.add("lib/jetty-util-${jetty.version}.jar");
         expectedLibs.add("lib/jetty-io-${jetty.version}.jar");
+        expectedLibs.add("lib/jetty-xml-${jetty.version}.jar");
         expectedLibs.add("lib/servlet-api-3.1.jar");
         expectedLibs.add("lib/jetty-schemas-3.1.jar");
         expectedLibs.add("lib/jetty-http-${jetty.version}.jar");
@@ -118,8 +120,11 @@ public class ModulesTest
         // Assert names are correct, and in the right order
         List<String> expectedNames = new ArrayList<>();
         expectedNames.add("base");
+        expectedNames.add("xml");
         expectedNames.add("server");
         expectedNames.add("http");
+        expectedNames.add("jndi");
+        expectedNames.add("security");
         expectedNames.add("plus");
         expectedNames.add("annotations");
         expectedNames.add("websocket");
@@ -136,11 +141,15 @@ public class ModulesTest
         List<String> expectedLibs = new ArrayList<>();
         expectedLibs.add("lib/jetty-util-${jetty.version}.jar");
         expectedLibs.add("lib/jetty-io-${jetty.version}.jar");
+        expectedLibs.add("lib/jetty-xml-${jetty.version}.jar");
         expectedLibs.add("lib/servlet-api-3.1.jar");
         expectedLibs.add("lib/jetty-schemas-3.1.jar");
         expectedLibs.add("lib/jetty-http-${jetty.version}.jar");
         expectedLibs.add("lib/jetty-continuation-${jetty.version}.jar");
         expectedLibs.add("lib/jetty-server-${jetty.version}.jar");
+        expectedLibs.add("lib/jetty-jndi-${jetty.version}.jar");
+        expectedLibs.add("lib/jndi/*.jar");
+        expectedLibs.add("lib/jetty-security-${jetty.version}.jar");
         expectedLibs.add("lib/jetty-plus-${jetty.version}.jar");
         expectedLibs.add("lib/jetty-annotations-${jetty.version}.jar");
         expectedLibs.add("lib/annotations/*.jar");

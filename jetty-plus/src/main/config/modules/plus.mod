@@ -3,6 +3,8 @@
 #
 
 DEPEND=server
+DEPEND=security
+DEPEND=jndi
 
 LIB=lib/jetty-plus-${jetty.version}.jar
 

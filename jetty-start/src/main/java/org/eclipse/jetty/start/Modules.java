@@ -29,6 +29,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Stack;
 
 /**
  * Access for all modules declared, as well as what is enabled.
@@ -59,8 +60,6 @@ public class Modules implements Iterable<Module>
      */
     public void buildGraph()
     {
-        // TODO: Validate / Enforce Directed Acyclic Graph
-
         // Connect edges
         for (Module module : modules.values())
         {
@@ -75,6 +74,15 @@ public class Modules implements Iterable<Module>
             }
         }
 
+        // Verify there is no cyclic references
+        Stack<String> refs = new Stack<>();
+        for (Module module : modules.values())
+        {
+            refs.push(module.getName());
+            assertNoCycle(module,refs);
+            refs.pop();
+        }
+
         // Calculate depth of all modules for sorting later
         for (Module module : modules.values())
         {
@@ -82,6 +90,33 @@ public class Modules implements Iterable<Module>
             {
                 bfsCalculateDepth(module,0);
             }
+        }
+    }
+
+    private void assertNoCycle(Module module, Stack<String> refs)
+    {
+        for (Module parent : module.getParentEdges())
+        {
+            if (refs.contains(parent.getName()))
+            {
+                // Cycle detected.
+                StringBuilder err = new StringBuilder();
+                err.append("A cyclic reference in the modules has been detected: ");
+                for (int i = 0; i < refs.size(); i++)
+                {
+                    if (i > 0)
+                    {
+                        err.append(" -> ");
+                    }
+                    err.append(refs.get(i));
+                }
+                err.append(" -> ").append(parent.getName());
+                throw new IllegalStateException(err.toString());
+            }
+
+            refs.push(parent.getName());
+            assertNoCycle(parent,refs);
+            refs.pop();
         }
     }
 

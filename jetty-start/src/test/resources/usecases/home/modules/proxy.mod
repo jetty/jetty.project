@@ -3,6 +3,7 @@
 #
 
 DEPEND=server
+DEPEND=client
 
 LIB=lib/jetty-proxy-${jetty.version}.jar
 

@@ -11,3 +11,4 @@ LIB=lib/websockets/*.jar
 
 # WebSocket needs websocket configuration
 etc/jetty-websockets.xml
+
