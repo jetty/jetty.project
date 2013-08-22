@@ -263,9 +263,9 @@ public class Main
         // TODO
     }
 
-    private void listModules()
+    private void listModules(StartArgs args)
     {
-        // TODO Auto-generated method stub
+        args.getAllModules().dump();
     }
 
     public StartArgs processCommandLine(String[] cmdLine) throws Exception
@@ -336,6 +336,7 @@ public class Main
         StartLog.debug("Building Module Graph");
         modules.buildGraph();
 
+        args.setAllModules(modules);
         List<Module> activeModules = modules.resolveEnabled();
 
         // 7) Lib & XML Expansion / Resolution
@@ -350,11 +351,6 @@ public class Main
     public BaseHome getBaseHome()
     {
         return baseHome;
-    }
-
-    private void showAllOptionsWithVersions()
-    {
-        // TODO
     }
 
     private void showClasspathWithVersions(Classpath classpath)
@@ -378,19 +374,20 @@ public class Main
         int i = 0;
         for (File element : classpath.getElements())
         {
-            System.out.printf("%2d: %20s | %s\n",i++,getVersion(element),baseHome.toShortForm(element));
+            System.out.printf("%2d: %24s | %s\n",i++,getVersion(element),baseHome.toShortForm(element));
         }
     }
 
     public void start(StartArgs args) throws IOException, InterruptedException
     {
+        StartLog.debug("StartArgs: %s",args);
+        
         // Get Desired Classpath based on user provided Active Options.
         Classpath classpath = args.getClasspath();
 
         System.setProperty("java.class.path",classpath.toString());
         ClassLoader cl = classpath.getClassLoader();
 
-        StartLog.debug("java.class.path=" + System.getProperty("java.class.path"));
         StartLog.debug("jetty.home=" + System.getProperty("jetty.home"));
         StartLog.debug("jetty.base=" + System.getProperty("jetty.base"));
         StartLog.debug("java.home=" + System.getProperty("java.home"));
@@ -407,7 +404,7 @@ public class Main
         }
 
         // Show the version information and return
-        if (args.isVersion())
+        if (args.isListClasspath())
         {
             showClasspathWithVersions(classpath);
         }
@@ -421,7 +418,7 @@ public class Main
         // Show modules
         if (args.isListModules())
         {
-            listModules();
+            listModules(args);
         }
 
         // Show Command Line to execute Jetty

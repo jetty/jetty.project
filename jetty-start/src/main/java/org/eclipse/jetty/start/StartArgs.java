@@ -71,6 +71,7 @@ public class StartArgs
     private Properties properties = new Properties();
     private Set<String> systemPropertyKeys = new HashSet<>();
     private List<String> jvmArgs = new ArrayList<>();
+    private Modules allModules;
 
     // Should the server be run?
     private boolean run = true;
@@ -205,6 +206,11 @@ public class StartArgs
                 addUniqueXmlFile(xmlRef,xmlfile);
             }
         }
+    }
+
+    public Modules getAllModules()
+    {
+        return allModules;
     }
 
     public Classpath getClasspath()
@@ -415,6 +421,13 @@ public class StartArgs
             run = false;
             return;
         }
+        
+        if ("--list-modules".equals(arg))
+        {
+            listModules = true;
+            run = false;
+            return;
+        }
 
         if ("--dry-run".equals(arg) || "--exec-print".equals(arg))
         {
@@ -548,6 +561,11 @@ public class StartArgs
             }
             addUniqueXmlFile(xmlRef,xmlfile);
         }
+    }
+
+    public void setAllModules(Modules allModules)
+    {
+        this.allModules = allModules;
     }
 
     @Override
