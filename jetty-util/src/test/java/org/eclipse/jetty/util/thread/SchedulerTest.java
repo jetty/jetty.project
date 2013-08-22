@@ -78,7 +78,7 @@ public class SchedulerTest
     public void testExecution() throws Exception
     {
         final AtomicLong executed = new AtomicLong();
-        long expected=System.currentTimeMillis()+3000;
+        long expected=System.currentTimeMillis()+1000;
         Scheduler.Task task=_scheduler.schedule(new Runnable()
         {
             @Override
@@ -86,9 +86,9 @@ public class SchedulerTest
             {
                 executed.set(System.currentTimeMillis());
             }
-        },3000,TimeUnit.MILLISECONDS);
+        },1000,TimeUnit.MILLISECONDS);
 
-        Thread.sleep(4000);
+        Thread.sleep(1500);
         Assert.assertFalse(task.cancel());
         Assert.assertThat(executed.get(),Matchers.greaterThanOrEqualTo(expected));
         Assert.assertThat(expected-executed.get(),Matchers.lessThan(1000L));
@@ -98,7 +98,7 @@ public class SchedulerTest
     public void testTwoExecution() throws Exception
     {
         final AtomicLong executed = new AtomicLong();
-        long expected=System.currentTimeMillis()+3000;
+        long expected=System.currentTimeMillis()+1000;
         Scheduler.Task task=_scheduler.schedule(new Runnable()
         {
             @Override
@@ -106,15 +106,15 @@ public class SchedulerTest
             {
                 executed.set(System.currentTimeMillis());
             }
-        },3000,TimeUnit.MILLISECONDS);
+        },1000,TimeUnit.MILLISECONDS);
 
-        Thread.sleep(4000);
+        Thread.sleep(1500);
         Assert.assertFalse(task.cancel());
         Assert.assertThat(executed.get(),Matchers.greaterThanOrEqualTo(expected));
         Assert.assertThat(expected-executed.get(),Matchers.lessThan(1000L));
 
         final AtomicLong executed1 = new AtomicLong();
-        long expected1=System.currentTimeMillis()+3000;
+        long expected1=System.currentTimeMillis()+1000;
         Scheduler.Task task1=_scheduler.schedule(new Runnable()
         {
             @Override
@@ -122,9 +122,9 @@ public class SchedulerTest
             {
                 executed1.set(System.currentTimeMillis());
             }
-        },3000,TimeUnit.MILLISECONDS);
+        },1000,TimeUnit.MILLISECONDS);
 
-        Thread.sleep(4000);
+        Thread.sleep(1500);
         Assert.assertFalse(task1.cancel());
         Assert.assertThat(executed1.get(),Matchers.greaterThanOrEqualTo(expected1));
         Assert.assertThat(expected1-executed1.get(),Matchers.lessThan(1000L));
@@ -200,9 +200,16 @@ public class SchedulerTest
 
     @Test
     @Slow
+    @Ignore
     public void testManySchedulesAndCancels() throws Exception
     {
         schedule(100,5000,3800,200);
+    }
+    
+    @Test
+    public void testFewSchedulesAndCancels() throws Exception
+    {
+        schedule(10,500,380,20);
     }
 
     @Test
