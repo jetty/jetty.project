@@ -64,7 +64,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public abstract class HttpReceiver
 {
-    protected static final Logger LOG = Log.getLogger(new Object(){}.getClass().getEnclosingClass());
+    protected static final Logger LOG = Log.getLogger(HttpReceiver.class);
 
     private final AtomicReference<ResponseState> responseState = new AtomicReference<>(ResponseState.IDLE);
     private final HttpChannel channel;
