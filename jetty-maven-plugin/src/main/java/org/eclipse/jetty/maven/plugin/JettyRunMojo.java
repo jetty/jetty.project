@@ -68,6 +68,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
 public class JettyRunMojo extends AbstractJettyMojo
 {
     public static final String DEFAULT_WEBAPP_SRC = "src"+File.separator+"main"+File.separator+"webapp";
+    public static final String FAKE_WEBAPP = "webapp-tmp";
     
     
 
@@ -181,10 +182,19 @@ public class JettyRunMojo extends AbstractJettyMojo
         try
         {
             if ((webAppSourceDirectory == null) || !webAppSourceDirectory.exists())
-            {              
-                File defaultWebAppSrcDir = new File (project.getBasedir(), DEFAULT_WEBAPP_SRC);
-                getLog().info("webAppSourceDirectory"+(webAppSourceDirectory == null ? " not set." : " does not exist.")+" Defaulting to "+defaultWebAppSrcDir.getAbsolutePath());  
-                webAppSourceDirectory = defaultWebAppSrcDir;
+            {  
+                getLog().info("webAppSourceDirectory"+(webAppSourceDirectory == null ? " not set." : (webAppSourceDirectory.getAbsolutePath()+" does not exist."))+" Trying "+DEFAULT_WEBAPP_SRC);
+                webAppSourceDirectory = new File (project.getBasedir(), DEFAULT_WEBAPP_SRC);             
+                if (!webAppSourceDirectory.exists())
+                {
+                    getLog().info("webAppSourceDirectory "+webAppSourceDirectory.getAbsolutePath()+" does not exist. Trying "+project.getBuild().getDirectory()+File.separator+FAKE_WEBAPP);
+                    
+                    //try last resort of making a fake empty dir
+                    File target = new File(project.getBuild().getDirectory());
+                    webAppSourceDirectory = new File(target, FAKE_WEBAPP);
+                    if (!webAppSourceDirectory.exists())
+                        webAppSourceDirectory.mkdirs();              
+                }
             }
             else
                 getLog().info( "Webapp source directory = " + webAppSourceDirectory.getCanonicalPath());
@@ -504,7 +514,8 @@ public class JettyRunMojo extends AbstractJettyMojo
         {
             getLog().info("Reconfiguring scanner after change to pom.xml ...");
             scanList.clear();
-            scanList.add(new File(webApp.getDescriptor()));
+            if (webApp.getDescriptor() != null)
+                scanList.add(new File(webApp.getDescriptor()));
             if (webApp.getJettyEnvXml() != null)
                 scanList.add(new File(webApp.getJettyEnvXml()));
             scanList.addAll(extraScanTargets);
@@ -599,30 +610,12 @@ public class JettyRunMojo extends AbstractJettyMojo
         
         for (Artifact a:warArtifacts)
         {
-            if (overlayMatchesArtifact (o, a))
+            if (o.matchesArtifact (a.getGroupId(), a.getArtifactId(), a.getClassifier()))
             {
                return a;
             }
         }
         
         return null;
-    }
-
-
-
-    
-    /**
-     * @param o
-     * @param a
-     * @return
-     */
-    protected boolean overlayMatchesArtifact(OverlayConfig o, Artifact a)
-    {
-        if (((o.getGroupId() == null && a.getGroupId() == null) || (o.getGroupId() != null && o.getGroupId().equals(a.getGroupId())))
-        &&  ((o.getArtifactId() == null && a.getArtifactId() == null) || (o.getArtifactId() != null && o.getArtifactId().equals(a.getArtifactId())))
-        &&  ((o.getClassifier() == null) || (o.getClassifier().equals(a.getClassifier()))))
-            return true;
-
-        return false;
     }
 }

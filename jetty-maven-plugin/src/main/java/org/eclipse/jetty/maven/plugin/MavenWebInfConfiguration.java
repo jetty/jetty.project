@@ -169,18 +169,20 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
             for (Overlay o:jwac.getOverlays())
             {
                 //can refer to the current project in list of overlays for ordering purposes
-                if (o.getConfig() != null && o.getConfig().isCurrentProject())
+                if (o.getConfig() != null && o.getConfig().isCurrentProject() && _originalResourceBase.exists())
                 {
                     resourceBaseCollection.add(_originalResourceBase); 
+                    LOG.info("Adding virtual project to resource base list");
                     continue;
                 }
 
                 Resource unpacked = unpackOverlay(jwac,o);
                 _unpackedOverlayResources.add(unpacked); //remember the unpacked overlays for later so we can delete the tmp files
                 resourceBaseCollection.add(unpacked); //add in the selectively unpacked overlay in the correct order to the webapps resource base
+                LOG.info("Adding "+unpacked+" to resource base list");
             }
 
-            if (!resourceBaseCollection.contains(_originalResourceBase))
+            if (!resourceBaseCollection.contains(_originalResourceBase) && _originalResourceBase.exists())
             {
                 if (jwac.getBaseAppFirst())
                 {
@@ -272,34 +274,5 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
         
         LOG.info("Unpacked overlay: "+overlay+" to "+unpackedOverlay);
         return  unpackedOverlay;
-    }
-    
-    protected Artifact getArtifactForOverlay (OverlayConfig o, List<Artifact> warArtifacts)
-    {
-        if (o == null || warArtifacts == null || warArtifacts.isEmpty())
-            return null;
-        
-        for (Artifact a:warArtifacts)
-        {
-            if (overlayMatchesArtifact (o, a))
-            {
-               return a;
-            }
-        }
-        
-        return null;
-    }
-    
-    protected boolean overlayMatchesArtifact(OverlayConfig o, Artifact a)
-    {
-        if ((o.getGroupId() == null && a.getGroupId() == null) || (o.getGroupId() != null && o.getGroupId().equals(a.getGroupId())))
-        {
-            if ((o.getArtifactId() == null && a.getArtifactId() == null) || (o.getArtifactId() != null && o.getArtifactId().equals(a.getArtifactId())))
-            {
-                if ((o.getClassifier() == null) || (o.getClassifier().equals(a.getClassifier())))
-                    return true;
-            }
-        }
-        return false;
     }
 }
