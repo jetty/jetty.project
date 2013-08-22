@@ -461,8 +461,9 @@ public class HttpOutput extends ServletOutputStream
      */
     private class InputStreamWritingCB extends IteratingCallback
     {
-        final InputStream _in;
-        final ByteBuffer _buffer;
+        private final InputStream _in;
+        private final ByteBuffer _buffer;
+        private boolean _eof;
         
         public InputStreamWritingCB(InputStream in, Callback callback)
         {          
@@ -474,12 +475,19 @@ public class HttpOutput extends ServletOutputStream
         @Override
         protected boolean process() throws Exception
         {
-            boolean eof=false;
+            if (_eof)
+            {
+                // Handle EOF
+                closed();
+                _channel.getByteBufferPool().release(_buffer);
+                return true;
+            }
+            
             int len=_in.read(_buffer.array(),0,_buffer.capacity());
             
             if (len<0)
             {
-                eof=true;
+                _eof=true;
                 len=0;
                 _in.close();
             }
@@ -488,24 +496,15 @@ public class HttpOutput extends ServletOutputStream
                 // read ahead for EOF to try for single commit
                 int len2=_in.read(_buffer.array(),len,_buffer.capacity()-len);
                 if (len2<0)
-                    eof=true;
+                    _eof=true;
                 else
                     len+=len2;
             }
-            
+
             // write what we have
             _buffer.position(0);
             _buffer.limit(len);
-            _channel.write(_buffer,eof,this);
-            
-            // Handle EOF
-            if (eof)
-            {
-                closed();
-                _channel.getByteBufferPool().release(_buffer);
-                return true;
-            }
-
+            _channel.write(_buffer,_eof,this);
             return false;
         }
 
@@ -537,8 +536,9 @@ public class HttpOutput extends ServletOutputStream
      */
     private class ReadableByteChannelWritingCB extends IteratingCallback
     {
-        final ReadableByteChannel _in;
-        final ByteBuffer _buffer;
+        private final ReadableByteChannel _in;
+        private final ByteBuffer _buffer;
+        private boolean _eof;
         
         public ReadableByteChannelWritingCB(ReadableByteChannel in, Callback callback)
         {          
@@ -550,13 +550,19 @@ public class HttpOutput extends ServletOutputStream
         @Override
         protected boolean process() throws Exception
         {
+            if (_eof)
+            {
+                closed();
+                _channel.getByteBufferPool().release(_buffer);
+                return true;
+            }
+            
             _buffer.clear();
-            boolean eof=false;
             int len=_in.read(_buffer);
             
             if (len<0)
             {
-                eof=true;
+                _eof=true;
                 len=0;
                 _in.close();
             }
@@ -565,23 +571,14 @@ public class HttpOutput extends ServletOutputStream
                 // read ahead for EOF to try for single commit
                 int len2=_in.read(_buffer);
                 if (len2<0)
-                    eof=true;
+                    _eof=true;
                 else
                     len+=len2;
             }
             
             // write what we have
             _buffer.flip();
-            _channel.write(_buffer,eof,this);
-            
-            // Handle EOF
-            if (eof)
-            {
-                closed();
-                _channel.getByteBufferPool().release(_buffer);
-                return true;
-            }
-
+            _channel.write(_buffer,_eof,this);
             return false;
         }
 
