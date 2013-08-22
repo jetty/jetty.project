@@ -90,6 +90,7 @@ public class Main
         }
         catch (UsageException e)
         {
+            System.err.println(e.getMessage());
             usageExit(e.getCause(),e.getExitCode());
         }
         catch (Throwable e)
@@ -244,8 +245,9 @@ public class Main
 
         StartLog.debug("%s - %s",invoked_class,invoked_class.getPackage().getImplementationVersion());
 
-        CommandLineBuilder cmd = args.getMainArgs(baseHome);
+        CommandLineBuilder cmd = args.getMainArgs(baseHome,false);
         String argArray[] = cmd.getArgs().toArray(new String[0]);
+        StartLog.debug("Command Line Args: %s",cmd.toString());
 
         Class<?>[] method_param_types = new Class[]
         { argArray.getClass() };
@@ -284,6 +286,8 @@ public class Main
 
         StartLog.debug("jetty.home=%s",baseHome.getHome());
         StartLog.debug("jetty.base=%s",baseHome.getBase());
+        args.addSystemProperty("jetty.home",baseHome.getHome());
+        args.addSystemProperty("jetty.base",baseHome.getBase());
 
         // ------------------------------------------------------------
         // 3) Load Inis
@@ -336,10 +340,10 @@ public class Main
 
         // 7) Lib & XML Expansion / Resolution
         args.expandModules(baseHome,activeModules);
-        
+
         // 8) Resolve Extra XMLs
         args.resolveExtraXmls(baseHome);
-        
+
         return args;
     }
 
@@ -423,7 +427,7 @@ public class Main
         // Show Command Line to execute Jetty
         if (args.isDryRun())
         {
-            CommandLineBuilder cmd = args.getMainArgs(baseHome);
+            CommandLineBuilder cmd = args.getMainArgs(baseHome,true);
             System.out.println(cmd.toString());
         }
 
@@ -442,7 +446,7 @@ public class Main
         // execute Jetty in another JVM
         if (args.isExec())
         {
-            CommandLineBuilder cmd = args.getMainArgs(baseHome);
+            CommandLineBuilder cmd = args.getMainArgs(baseHome,true);
             ProcessBuilder pbuilder = new ProcessBuilder(cmd.getArgs());
             final Process process = pbuilder.start();
             Runtime.getRuntime().addShutdownHook(new Thread()

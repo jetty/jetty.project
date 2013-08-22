@@ -132,11 +132,14 @@ public class Classpath implements Iterable<File>
             try
             {
                 urls[i] = elements.get(i).toURI().toURL();
+                StartLog.debug("URLClassLoader.url[%d] = %s",i,urls[i]);
             }
             catch (MalformedURLException e)
             {
+                StartLog.warn(e);
             }
         }
+        StartLog.debug("Loaded %d URLs into URLClassLoader",urls.length);
 
         ClassLoader parent = Thread.currentThread().getContextClassLoader();
         if (parent == null)

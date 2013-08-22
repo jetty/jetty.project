@@ -60,7 +60,7 @@ public class StartArgs
     }
 
     // TODO: might make sense to declare this in modules/base.mod
-    private static final String SERVER_MAIN = "org.eclipse.jetty.xml.XmlConfiguration.class";
+    private static final String SERVER_MAIN = "org.eclipse.jetty.xml.XmlConfiguration";
 
     private List<String> commandLine = new ArrayList<>();
     private List<String> enabledModules = new ArrayList<>();
@@ -87,6 +87,12 @@ public class StartArgs
     {
         commandLine.addAll(Arrays.asList(commandLineArgs));
         classpath = new Classpath();
+    }
+
+    public void addSystemProperty(String key, String value)
+    {
+        this.systemPropertyKeys.add(key);
+        System.setProperty(key,value);
     }
 
     private void addUniqueXmlFile(String xmlRef, File xmlfile) throws IOException
@@ -221,32 +227,37 @@ public class StartArgs
         return this.enabledModules;
     }
 
-    public CommandLineBuilder getMainArgs(BaseHome baseHome) throws IOException
+    public CommandLineBuilder getMainArgs(BaseHome baseHome, boolean addJavaInit) throws IOException
     {
         CommandLineBuilder cmd = new CommandLineBuilder();
 
-        for (String x : jvmArgs)
+        if (addJavaInit)
         {
-            cmd.addArg(x);
+            cmd.addArg(CommandLineBuilder.findJavaBin());
+
+            for (String x : jvmArgs)
+            {
+                cmd.addArg(x);
+            }
+
+            cmd.addRawArg("-Djetty.home=" + baseHome.getHome());
+            cmd.addRawArg("-Djetty.base=" + baseHome.getBase());
+
+            // Special Stop/Shutdown properties
+            ensureSystemPropertySet("STOP.PORT");
+            ensureSystemPropertySet("STOP.KEY");
+
+            // System Properties
+            for (String propKey : systemPropertyKeys)
+            {
+                String value = System.getProperty(propKey);
+                cmd.addEqualsArg("-D" + propKey,value);
+            }
+
+            cmd.addArg("-cp");
+            cmd.addRawArg(classpath.toString());
+            cmd.addRawArg(getMainClassname());
         }
-
-        cmd.addRawArg("-Djetty.home=" + baseHome.getHome());
-        cmd.addRawArg("-Djetty.base=" + baseHome.getBase());
-
-        // Special Stop/Shutdown properties
-        ensureSystemPropertySet("STOP.PORT");
-        ensureSystemPropertySet("STOP.KEY");
-
-        // System Properties
-        for (String propKey : systemPropertyKeys)
-        {
-            String value = System.getProperty(propKey);
-            cmd.addEqualsArg("-D" + propKey,value);
-        }
-
-        cmd.addArg("-cp");
-        cmd.addRawArg(classpath.toString());
-        cmd.addRawArg(getMainClassname());
 
         // Check if we need to pass properties as a file
         if (properties.size() > 0)

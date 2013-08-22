@@ -98,12 +98,12 @@ public class CommandLineBuilder
 
     public CommandLineBuilder()
     {
-        this(findJavaBin());
+        args = new ArrayList<String>();
     }
 
     public CommandLineBuilder(String bin)
     {
-        args = new ArrayList<String>();
+        this();
         args.add(bin);
     }
 
