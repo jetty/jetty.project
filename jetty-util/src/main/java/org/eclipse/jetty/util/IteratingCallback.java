@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.util;
 
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 
 /* ------------------------------------------------------------ */
@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * if that task completes quickly and uses the calling thread to callback
  * the success notification, this can result in a growing stack depth.
  * </p>
- * <p>To avoid this issue, this callback uses an AtomicBoolean to note 
+ * <p>To avoid this issue, this callback uses an AtomicReference to note 
  * if the success callback has been called during the processing of a 
  * sub task, and if so then the processing iterates rather than recurses.
  * </p>
@@ -41,7 +41,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public abstract class IteratingCallback implements Callback
 {
-    private final AtomicBoolean _iterating = new AtomicBoolean();
+    private enum State { WAITING, ITERATING, SUCCEEDED, FAILED };
+    private final AtomicReference<State> _state = new AtomicReference<>(State.WAITING);
     
     public IteratingCallback()
     {
@@ -71,24 +72,34 @@ public abstract class IteratingCallback implements Callback
         try
         {
             // Keep iterating as long as succeeded() is called during process()
-            while(_iterating.compareAndSet(false,true))
+            // If we are in WAITING state, either this is the first iteration or
+            // succeeded()/failed() were called already.
+            while(_state.compareAndSet(State.WAITING,State.ITERATING))
             {
-                // process and test if we are complete
+                // Make some progress by calling process()
                 if (process())
                 {
-                    completed();
+                    // A true return indicates we are finished a no further callbacks 
+                    // are scheduled. So we must still be ITERATING.
+                    if (_state.compareAndSet(State.ITERATING,State.SUCCEEDED))
+                        completed();
+                    else
+                        throw new IllegalStateException("Already "+_state.get());
                     return;
                 }
+                // else a callback has been scheduled.  If it has not happened yet,
+                // we will still be ITERATING
+                else if (_state.compareAndSet(State.ITERATING,State.WAITING))
+                    // no callback yet, so break the loop and wait for it
+                    break;
+                
+                // The callback must have happened and we are either WAITING already or FAILED
+                // the loop test will work out which
             }
         }
         catch(Exception e)
         {
-            _iterating.set(false);
             failed(e);
-        }
-        finally
-        {
-            _iterating.set(false);
         }
     }
 
@@ -96,7 +107,58 @@ public abstract class IteratingCallback implements Callback
     @Override
     public void succeeded()
     {
-        if (!_iterating.compareAndSet(true,false))
-            iterate();
+        // Try a short cut for the fast method.  If we are still iterating
+        if (_state.compareAndSet(State.ITERATING,State.WAITING))
+            // then next loop will continue processing, so nothing to do here
+            return;
+
+        // OK do it properly
+        loop: while(true)
+        {
+            switch(_state.get())
+            {
+                case ITERATING:
+                    if (_state.compareAndSet(State.ITERATING,State.WAITING))
+                        break loop;
+                    continue;
+                    
+                case WAITING:
+                    // we are really waiting, so use this callback thread to iterate some more 
+                    iterate();
+                    break loop;
+                    
+                default:
+                    throw new IllegalStateException("Already "+_state.get());
+            }
+        }
+    }
+    
+    /* ------------------------------------------------------------ */
+    /** 
+     * Derivations of this method should always call super.failed(x) 
+     * to check the state before handling the failure.
+     * @see org.eclipse.jetty.util.Callback#failed(java.lang.Throwable)
+     */
+    @Override
+    public void failed(Throwable x)
+    {
+        loop: while(true)
+        {
+            switch(_state.get())
+            {
+                case ITERATING:
+                    if (_state.compareAndSet(State.ITERATING,State.FAILED))
+                        break loop;
+                    continue;
+                    
+                case WAITING:
+                    if (_state.compareAndSet(State.WAITING,State.FAILED))
+                        break loop;
+                    continue;
+                    
+                default:
+                    throw new IllegalStateException("Already "+_state.get(),x);
+            }
+        }
     }
 }

@@ -737,6 +737,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
         @Override
         public void failed(Throwable failure)
         {
+            super.failed(failure);
             anyToFailure(failure);
         }
     }
