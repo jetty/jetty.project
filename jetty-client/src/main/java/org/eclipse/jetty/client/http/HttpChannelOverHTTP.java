@@ -103,11 +103,6 @@ public class HttpChannelOverHTTP extends HttpChannel
         }
     }
 
-    public void idleTimeout()
-    {
-        receiver.idleTimeout();
-    }
-
     @Override
     public String toString()
     {
