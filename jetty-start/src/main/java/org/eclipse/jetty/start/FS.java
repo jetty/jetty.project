@@ -96,7 +96,7 @@ public class FS
             super("^.*\\.xml$");
         }
     }
-    
+
     public static boolean canReadDirectory(File path)
     {
         return (path.exists() && path.isDirectory() && path.canRead());

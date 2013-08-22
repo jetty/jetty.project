@@ -19,28 +19,60 @@
 package org.eclipse.jetty.start;
 
 import static org.eclipse.jetty.start.UsageException.*;
+
+import java.io.File;
+import java.io.FileFilter;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
 
 /**
  * The Arguments required to start Jetty.
  */
 public class StartArgs
 {
+    public static final String VERSION;
+
+    static
+    {
+        String ver = System.getProperty("jetty.version",null);
+
+        if (ver == null)
+        {
+            Package pkg = StartArgs.class.getPackage();
+            if ((pkg != null) && "Eclipse.org - Jetty".equals(pkg.getImplementationVendor()) && (pkg.getImplementationVersion() != null))
+            {
+                ver = pkg.getImplementationVersion();
+            }
+        }
+
+        if (ver == null)
+        {
+            ver = "TEST";
+        }
+
+        VERSION = ver;
+    }
+
     // TODO: might make sense to declare this in modules/base.mod
     private static final String SERVER_MAIN = "org.eclipse.jetty.xml.XmlConfiguration.class";
 
     private List<String> commandLine = new ArrayList<>();
     private List<String> enabledModules = new ArrayList<>();
     private List<String> downloads = new ArrayList<>();
-    private List<String> classpath = new ArrayList<>();
-    private List<String> xmls = new ArrayList<>();
-    private Map<String, String> properties = new HashMap<>();
-    private Map<String, String> systemProperties = new HashMap<>();
-    private Map<String, String> jvmArgs = new HashMap<>();
+    private Classpath classpath;
+    private List<String> xmlRefs = new ArrayList<>();
+    private List<File> xmls = new ArrayList<>();
+    private Properties properties = new Properties();
+    private Set<String> systemPropertyKeys = new HashSet<>();
+    private List<String> jvmArgs = new ArrayList<>();
 
     // Should the server be run?
     private boolean run = true;
@@ -56,11 +88,84 @@ public class StartArgs
     public StartArgs(String[] commandLineArgs)
     {
         commandLine.addAll(Arrays.asList(commandLineArgs));
+        classpath = new Classpath();
+        classpath.addSystemClasspath();
     }
 
-    public List<String> getStartCommands()
+    public void buildStartCommandLine()
     {
-        return null;
+        // TODO Auto-generated method stub
+    }
+
+    /**
+     * Build up the Classpath and XML file references based on enabled Module list.
+     * 
+     * @param baseHome
+     * @param activeModules
+     */
+    public void expandModules(BaseHome baseHome, List<Module> activeModules)
+    {
+        for (Module module : activeModules)
+        {
+            // Find and Expand Libraries
+            for (String rawlibref : module.getLibs())
+            {
+                String libref = rawlibref.replace("${jetty.version}",VERSION);
+                libref = FS.separators(libref);
+
+                if (libref.contains("*"))
+                {
+                    // Glob Reference
+                    int idx = libref.lastIndexOf(File.separatorChar);
+
+                    String relativePath = "/";
+                    String filenameRef = libref;
+                    if (idx >= 0)
+                    {
+                        relativePath = libref.substring(0,idx);
+                        filenameRef = libref.substring(idx + 1);
+                    }
+
+                    StringBuilder regex = new StringBuilder();
+                    regex.append('^');
+                    for (char c : filenameRef.toCharArray())
+                    {
+                        switch (c)
+                        {
+                            case '*':
+                                regex.append(".*");
+                                break;
+                            case '.':
+                                regex.append("\\.");
+                                break;
+                            default:
+                                regex.append(c);
+                        }
+                    }
+                    regex.append('$');
+
+                    FileFilter filter = new FS.FilenameRegexFilter(regex.toString());
+
+                    for (File libfile : baseHome.listFiles(relativePath,filter))
+                    {
+                        classpath.addComponent(libfile);
+                    }
+                }
+                else
+                {
+                    // Straight Reference
+                    File libfile = baseHome.getFile(libref);
+                    classpath.addComponent(libfile);
+                }
+            }
+
+            // Find and Expand XML files
+        }
+    }
+
+    public Classpath getClasspath()
+    {
+        return classpath;
     }
 
     public List<String> getCommandLine()
@@ -68,12 +173,171 @@ public class StartArgs
         return this.commandLine;
     }
 
-    public void parse(TextFile file)
+    public List<String> getEnabledModules()
     {
-        for (String line : file)
+        return this.enabledModules;
+    }
+
+    public List<String> getDownloads()
+    {
+        return downloads;
+    }
+
+    /**
+     * Ensure that the System Properties are set (if defined as a System property, or start.config property, or start.ini property)
+     * 
+     * @param key
+     *            the key to be sure of
+     */
+    private void ensureSystemPropertySet(String key)
+    {
+        if (systemPropertyKeys.contains(key))
         {
-            parse(line);
+            return; // done
         }
+
+        if (properties.containsKey(key))
+        {
+            String val = properties.getProperty(key,null);
+            if (val == null)
+            {
+                return; // no value to set
+            }
+            // setup system property
+            systemPropertyKeys.add(key);
+            System.setProperty(key,val);
+        }
+    }
+
+    public Properties getProperties()
+    {
+        return properties;
+    }
+
+    public CommandLineBuilder getMainArgs(BaseHome baseHome) throws IOException
+    {
+        CommandLineBuilder cmd = new CommandLineBuilder();
+
+        for (String x : jvmArgs)
+        {
+            cmd.addArg(x);
+        }
+
+        cmd.addRawArg("-Djetty.home=" + baseHome.getHome());
+        cmd.addRawArg("-Djetty.base=" + baseHome.getBase());
+
+        // Special Stop/Shutdown properties
+        ensureSystemPropertySet("STOP.PORT");
+        ensureSystemPropertySet("STOP.KEY");
+
+        // System Properties
+        for (String propKey : systemPropertyKeys)
+        {
+            String value = System.getProperty(propKey);
+            cmd.addEqualsArg("-D" + propKey,value);
+        }
+
+        cmd.addArg("-cp");
+        cmd.addRawArg(classpath.toString());
+        cmd.addRawArg(getMainClassname());
+
+        // Check if we need to pass properties as a file
+        if (properties.size() > 0)
+        {
+            File prop_file = File.createTempFile("start",".properties");
+            if (!dryRun)
+            {
+                prop_file.deleteOnExit();
+            }
+            try (FileOutputStream out = new FileOutputStream(prop_file))
+            {
+                properties.store(out,"start.jar properties");
+            }
+            cmd.addArg(prop_file.getAbsolutePath());
+        }
+
+        for (File xml : xmls)
+        {
+            cmd.addRawArg(xml.getAbsolutePath());
+        }
+
+        return cmd;
+    }
+
+    public String getMainClassname()
+    {
+        String mainclass = System.getProperty("jetty.server",SERVER_MAIN);
+        return System.getProperty("main.class",mainclass);
+    }
+
+    private String getValue(String arg)
+    {
+        int idx = arg.indexOf('=');
+        if (idx == (-1))
+        {
+            throw new UsageException(ERR_BAD_ARG,"Argument is missing a required value: %s",arg);
+        }
+        String value = arg.substring(idx + 1).trim();
+        if (value.length() <= 0)
+        {
+            throw new UsageException(ERR_BAD_ARG,"Argument is missing a required value: %s",arg);
+        }
+        return value;
+    }
+
+    public boolean hasJvmArgs()
+    {
+        return jvmArgs.size() > 0;
+    }
+
+    public boolean hasSystemProperties()
+    {
+        return systemPropertyKeys.size() > 0;
+    }
+
+    public boolean isDryRun()
+    {
+        return dryRun;
+    }
+
+    public boolean isExec()
+    {
+        return exec;
+    }
+
+    public boolean isHelp()
+    {
+        return help;
+    }
+
+    public boolean isListClasspath()
+    {
+        return listClasspath;
+    }
+
+    public boolean isListConfig()
+    {
+        return listConfig;
+    }
+
+    public boolean isListModules()
+    {
+        return listModules;
+    }
+
+    public boolean isRun()
+    {
+        return run;
+    }
+
+    public boolean isStopCommand()
+    {
+        return stopCommand;
+    }
+
+    public boolean isVersion()
+    {
+        return version;
     }
 
     public void parse(String arg)
@@ -89,10 +353,12 @@ public class StartArgs
         {
             stopCommand = true;
             run = false;
-            /*
-             * int port = Integer.parseInt(_config.getProperty("STOP.PORT","-1")); String key = _config.getProperty("STOP.KEY",null); int timeout =
-             * Integer.parseInt(_config.getProperty("STOP.WAIT","0")); stop(port,key,timeout);
-             */
+            //
+            // int port = Integer.parseInt(_config.getProperty("STOP.PORT","-1"));
+            // String key = _config.getProperty("STOP.KEY",null);
+            // int timeout = Integer.parseInt(_config.getProperty("STOP.WAIT","0"));
+            // stop(port,key,timeout);
+            //
             return;
         }
 
@@ -120,6 +386,12 @@ public class StartArgs
         {
             dryRun = true;
             run = false;
+            return;
+        }
+
+        if ("--exec".equals(arg))
+        {
+            exec = true;
             return;
         }
 
@@ -157,12 +429,12 @@ public class StartArgs
             }
             return;
         }
-        
+
         // Start property (syntax similar to System property)
-        if(arg.startsWith("-D"))
+        if (arg.startsWith("-D"))
         {
             String[] assign = arg.substring(2).split("=",2);
-//          TODO  systemProperties.add(assign[0]);
+            systemPropertyKeys.add(assign[0]);
             switch (assign.length)
             {
                 case 2:
@@ -176,21 +448,49 @@ public class StartArgs
             }
             return;
         }
+
+        // Anything else with a "-" is considered a JVM argument
+        if (arg.startsWith("-"))
+        {
+            // Only add non-duplicates
+            if (!jvmArgs.contains(arg))
+            {
+                jvmArgs.add(arg);
+            }
+            return;
+        }
+
+        // Is this a raw property declaration?
+        int idx = arg.indexOf('=');
+        if (idx >= 0)
+        {
+            String key = arg.substring(0,idx);
+            String value = arg.substring(idx + 1);
+            properties.setProperty(key,value);
+            return;
+        }
+
+        // Is this an xml file?
+        if (FS.isXml(arg))
+        {
+            // only add non-duplicates
+            if (!xmlRefs.contains(arg))
+            {
+                xmlRefs.add(arg);
+            }
+            return;
+        }
+
+        // Anything else is unrecognized
+        throw new UsageException(ERR_BAD_ARG,"Unrecognized argument: %s",arg);
     }
 
-    private String getValue(String arg)
+    public void parse(TextFile file)
     {
-        int idx = arg.indexOf('=');
-        if (idx == (-1))
+        for (String line : file)
         {
-            throw new UsageException(ERR_BAD_ARG,"Argument is missing a required value: %s",arg);
+            parse(line);
         }
-        String value = arg.substring(idx + 1).trim();
-        if (value.length() <= 0)
-        {
-            throw new UsageException(ERR_BAD_ARG,"Argument is missing a required value: %s",arg);
-        }
-        return value;
     }
 
     public void parseCommandLine()
@@ -199,15 +499,5 @@ public class StartArgs
         {
             parse(line);
         }
-    }
-
-    public List<String> getEnabledModules()
-    {
-        return this.enabledModules;
-    }
-
-    public void expandModules(BaseHome baseHome, List<Module> activeModules)
-    {
-        // TODO Auto-generated method stub
     }
 }

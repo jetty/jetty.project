@@ -23,7 +23,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Date;
-import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -38,12 +37,71 @@ public class StartLog
 {
     private final static StartLog INSTANCE = new StartLog();
 
+    public static void debug(String format, Object... args)
+    {
+        if (INSTANCE.debug)
+        {
+            System.out.printf(format + "%n",args);
+        }
+    }
+
+    public static void debug(Throwable t)
+    {
+        if (INSTANCE.debug)
+        {
+            t.printStackTrace(System.out);
+        }
+    }
+
     public static StartLog getInstance()
     {
         return INSTANCE;
     }
 
+    public static void warn(String format, Object... args)
+    {
+        System.err.printf(format + "%n",args);
+    }
+
     private boolean debug = false;
+
+    public void initialize(BaseHome baseHome, StartArgs args) throws IOException
+    {
+        // Debug with boolean
+        Pattern debugBoolPat = Pattern.compile("(-D)?debug=(.*)");
+        // Debug enable flag (no boolean)
+        Pattern debugPat = Pattern.compile("(-D)?debug");
+        // Log file name
+        Pattern logFilePat = Pattern.compile("(-D)?start-log-file=(.*)");
+
+        // TODO: support backward compatible --daemon argument ??
+
+        Matcher matcher;
+        for (String arg : args.getCommandLine())
+        {
+            matcher = debugBoolPat.matcher(arg);
+            if (matcher.matches())
+            {
+                debug = Boolean.parseBoolean(matcher.group(2));
+                continue;
+            }
+
+            matcher = debugPat.matcher(arg);
+            if (matcher.matches())
+            {
+                debug = true;
+                continue;
+            }
+
+            matcher = logFilePat.matcher(arg);
+            if (matcher.matches())
+            {
+                String filename = matcher.group(2);
+                File logfile = baseHome.getBaseFile(filename);
+                initLogFile(logfile);
+            }
+        }
+    }
 
     public void initLogFile(File logfile) throws IOException
     {
@@ -77,49 +135,8 @@ public class StartLog
         }
     }
 
-    public static void debug(String format, Object... args)
+    public static void warn(Throwable t)
     {
-        if (INSTANCE.debug)
-        {
-            System.out.printf(format + "%n",args);
-        }
-    }
-
-    public static void warn(String format, Object... args)
-    {
-        System.err.printf(format + "%n",args);
-    }
-
-    public void initialize(BaseHome baseHome, StartArgs args) throws IOException
-    {
-        Pattern debugBoolPat = Pattern.compile("(-D)?debug=(.*)");
-        Pattern debugPat = Pattern.compile("(-D)?debug");
-        Pattern logFilePat = Pattern.compile("(-D)?start-log-file=(.*)");
-
-        Matcher matcher;
-        for (String arg : args.getCommandLine())
-        {
-            matcher = debugBoolPat.matcher(arg);
-            if (matcher.matches())
-            {
-                debug = Boolean.parseBoolean(matcher.group(2));
-                continue;
-            }
-
-            matcher = debugPat.matcher(arg);
-            if (matcher.matches())
-            {
-                debug = true;
-                continue;
-            }
-
-            matcher = logFilePat.matcher(arg);
-            if (matcher.matches())
-            {
-                String filename = matcher.group(2);
-                File logfile = baseHome.getBaseFile(filename);
-                initLogFile(logfile);
-            }
-        }
+        t.printStackTrace(System.err);
     }
 }

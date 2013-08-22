@@ -41,6 +41,8 @@ public class TextFile implements Iterable<String>
     public TextFile(File file) throws FileNotFoundException, IOException
     {
         this.file = file;
+        init();
+        
         try (FileReader reader = new FileReader(file))
         {
             try (BufferedReader buf = new BufferedReader(reader))
@@ -48,10 +50,24 @@ public class TextFile implements Iterable<String>
                 String line;
                 while ((line = buf.readLine()) != null)
                 {
+                    if (line.length() == 0)
+                    {
+                        continue;
+                    }
+
+                    if (line.charAt(0) == '#')
+                    {
+                        continue;
+                    }
+
                     process(line.trim());
                 }
             }
         }
+    }
+
+    public void init()
+    {
     }
 
     public void addUniqueLine(String line)
@@ -93,18 +109,8 @@ public class TextFile implements Iterable<String>
         return lines.iterator();
     }
 
-    private void process(String line)
+    public void process(String line)
     {
-        if (line.length() == 0)
-        {
-            return;
-        }
-
-        if (line.charAt(0) == '#')
-        {
-            return;
-        }
-
         addUniqueLine(line);
     }
 }
