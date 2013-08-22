@@ -70,6 +70,12 @@ public interface StreamFrameListener extends EventListener
     public void onData(Stream stream, DataInfo dataInfo);
 
     /**
+     * <p>Callback invoked on errors.</p>
+     * @param x
+     */
+    public void onFailure(Throwable x);
+
+    /**
      * <p>Empty implementation of {@link StreamFrameListener}</p>
      */
     public static class Adapter implements StreamFrameListener
@@ -92,6 +98,11 @@ public interface StreamFrameListener extends EventListener
 
         @Override
         public void onData(Stream stream, DataInfo dataInfo)
+        {
+        }
+
+        @Override
+        public void onFailure(Throwable x)
         {
         }
     }

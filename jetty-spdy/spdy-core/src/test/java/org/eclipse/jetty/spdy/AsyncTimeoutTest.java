@@ -24,7 +24,9 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.SPDYException;
@@ -47,6 +49,8 @@ import org.junit.runner.RunWith;
 @RunWith(AdvancedRunner.class)
 public class AsyncTimeoutTest
 {
+    EndPoint endPoint = new ByteArrayEndPoint();
+
     @Slow
     @Test
     public void testAsyncTimeoutInControlFrames() throws Exception
@@ -60,7 +64,7 @@ public class AsyncTimeoutTest
         scheduler.start(); // TODO need to use jetty lifecycles better here
         Generator generator = new Generator(bufferPool, new StandardCompressionFactory.StandardCompressor());
         Session session = new StandardSession(SPDY.V2, bufferPool, threadPool, scheduler, new TestController(),
-                null, null, 1, null, generator, new FlowControlStrategy.None())
+                endPoint, null, 1, null, generator, new FlowControlStrategy.None())
         {
             @Override
             public void flush()
@@ -103,7 +107,7 @@ public class AsyncTimeoutTest
         scheduler.start();
         Generator generator = new Generator(bufferPool, new StandardCompressionFactory.StandardCompressor());
         Session session = new StandardSession(SPDY.V2, bufferPool, threadPool, scheduler, new TestController(),
-                null, null, 1, null, generator, new FlowControlStrategy.None())
+                endPoint, null, 1, null, generator, new FlowControlStrategy.None())
         {
             @Override
             protected void write(ByteBuffer buffer, Callback callback)

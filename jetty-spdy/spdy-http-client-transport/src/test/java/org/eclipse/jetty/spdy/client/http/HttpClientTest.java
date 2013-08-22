@@ -42,7 +42,6 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.Ignore;
 
 public class HttpClientTest extends AbstractHttpClientServerTest
 {
@@ -324,7 +323,6 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @Slow
     @Test
-    @Ignore
     public void test_Request_IdleTimeout() throws Exception
     {
         final long idleTimeout = 1000;

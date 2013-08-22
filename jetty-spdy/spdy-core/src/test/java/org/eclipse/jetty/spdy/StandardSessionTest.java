@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
@@ -75,6 +76,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class StandardSessionTest
@@ -84,6 +86,10 @@ public class StandardSessionTest
 
     @Mock
     private Controller controller;
+
+    @Mock
+    private EndPoint endPoint;
+
     private ExecutorService threadPool;
     private StandardSession session;
     private Scheduler scheduler;
@@ -97,8 +103,9 @@ public class StandardSessionTest
         threadPool = Executors.newCachedThreadPool();
         scheduler = new TimerScheduler();
         scheduler.start();
-        session = new StandardSession(VERSION, bufferPool, threadPool, scheduler, controller, null, null, 1, null,
+        session = new StandardSession(VERSION, bufferPool, threadPool, scheduler, controller, endPoint, null, 1, null,
                 generator, new FlowControlStrategy.None());
+        when(endPoint.getIdleTimeout()).thenReturn(30000L);
         headers = new Fields();
     }
 
@@ -428,7 +435,7 @@ public class StandardSessionTest
 
         final CountDownLatch failedCalledLatch = new CountDownLatch(2);
         SynStreamFrame synStreamFrame = new SynStreamFrame(VERSION, SynInfo.FLAG_CLOSE, 1, 0, (byte)0, (short)0, null);
-        IStream stream = new StandardStream(synStreamFrame.getStreamId(), synStreamFrame.getPriority(), session, null, null);
+        IStream stream = new StandardStream(synStreamFrame.getStreamId(), synStreamFrame.getPriority(), session, null, null, null);
         stream.updateWindowSize(8192);
         Callback.Adapter callback = new Callback.Adapter()
         {
@@ -502,7 +509,7 @@ public class StandardSessionTest
     private void testHeaderFramesAreSentInOrder(final byte priority0, final byte priority1, final byte priority2) throws InterruptedException, ExecutionException
     {
         final StandardSession testLocalSession = new StandardSession(VERSION, bufferPool, threadPool, scheduler,
-                new ControllerMock(), null, null, 1, null, generator, new FlowControlStrategy.None());
+                new ControllerMock(), endPoint, null, 1, null, generator, new FlowControlStrategy.None());
         HashSet<Future> tasks = new HashSet<>();
 
         int numberOfTasksToRun = 128;

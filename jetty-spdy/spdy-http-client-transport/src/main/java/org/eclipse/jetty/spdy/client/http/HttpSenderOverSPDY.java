@@ -50,7 +50,7 @@ public class HttpSenderOverSPDY extends HttpSender
     protected void sendHeaders(HttpExchange exchange, final HttpContent content, final Callback callback)
     {
         final Request request = exchange.getRequest();
-
+        final long idleTimeout = request.getIdleTimeout();
         short spdyVersion = getHttpChannel().getSession().getVersion();
         Fields fields = new Fields();
         HttpField hostHeader = null;
@@ -81,6 +81,7 @@ public class HttpSenderOverSPDY extends HttpSender
             @Override
             public void succeeded(Stream stream)
             {
+                stream.setIdleTimeout(idleTimeout);
                 if (content.hasContent())
                     HttpSenderOverSPDY.this.stream = stream;
                 callback.succeeded();

@@ -75,17 +75,17 @@ public abstract class AbstractHTTPSPDYTest
 
     protected InetSocketAddress startHTTPServer(Handler handler) throws Exception
     {
-        return startHTTPServer(SPDY.V2, handler);
+        return startHTTPServer(SPDY.V2, handler, 30000);
     }
 
-    protected InetSocketAddress startHTTPServer(short version, Handler handler) throws Exception
+    protected InetSocketAddress startHTTPServer(short version, Handler handler, long idleTimeout) throws Exception
     {
         QueuedThreadPool threadPool = new QueuedThreadPool(256);
         threadPool.setName("serverQTP");
         server = new Server(threadPool);
         connector = newHTTPSPDYServerConnector(version);
         connector.setPort(0);
-        connector.setIdleTimeout(30000);
+        connector.setIdleTimeout(idleTimeout);
         server.addConnector(connector);
         server.setHandler(handler);
         server.start();

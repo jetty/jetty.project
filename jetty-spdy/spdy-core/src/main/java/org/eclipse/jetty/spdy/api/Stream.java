@@ -225,4 +225,16 @@ public interface Stream
      */
     public Set<Stream> getPushedStreams();
 
+    /**
+     * Get the idle timeout set for this particular stream
+     * @return the idle timeout
+     */
+    public long getIdleTimeout();
+
+    /**
+     * Set an idle timeout for this stream
+     * @param timeout
+     */
+    public void setIdleTimeout(long timeout);
+
 }

@@ -39,7 +39,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class HTTPSPDYServerConnectionFactory extends SPDYServerConnectionFactory implements HttpConfiguration.ConnectionFactory
 {
     private static final String CHANNEL_ATTRIBUTE = "org.eclipse.jetty.spdy.server.http.HTTPChannelOverSPDY";
-    private static final Logger logger = Log.getLogger(HTTPSPDYServerConnectionFactory.class);
+    private static final Logger LOG = Log.getLogger(HTTPSPDYServerConnectionFactory.class);
 
     private final PushStrategy pushStrategy;
     private final HttpConfiguration httpConfiguration;
@@ -94,7 +94,7 @@ public class HTTPSPDYServerConnectionFactory extends SPDYServerConnectionFactory
             // can arrive on the same connection, so we need to create an
             // HttpChannel for each SYN in order to run concurrently.
 
-            logger.debug("Received {} on {}", synInfo, stream);
+            LOG.debug("Received {} on {}", synInfo, stream);
 
             Fields headers = synInfo.getHeaders();
             // According to SPDY/3 spec section 3.2.1 user-agents MUST support gzip compression. Firefox omits the
@@ -136,7 +136,7 @@ public class HTTPSPDYServerConnectionFactory extends SPDYServerConnectionFactory
         @Override
         public void onHeaders(Stream stream, HeadersInfo headersInfo)
         {
-            logger.debug("Received {} on {}", headersInfo, stream);
+            LOG.debug("Received {} on {}", headersInfo, stream);
             HttpChannelOverSPDY channel = (HttpChannelOverSPDY)stream.getAttribute(CHANNEL_ATTRIBUTE);
             channel.requestHeaders(headersInfo.getHeaders(), headersInfo.isClose());
         }
@@ -150,9 +150,15 @@ public class HTTPSPDYServerConnectionFactory extends SPDYServerConnectionFactory
         @Override
         public void onData(Stream stream, final DataInfo dataInfo)
         {
-            logger.debug("Received {} on {}", dataInfo, stream);
+            LOG.debug("Received {} on {}", dataInfo, stream);
             HttpChannelOverSPDY channel = (HttpChannelOverSPDY)stream.getAttribute(CHANNEL_ATTRIBUTE);
             channel.requestContent(dataInfo, dataInfo.isClose());
+        }
+
+        @Override
+        public void onFailure(Throwable x)
+        {
+            LOG.debug(x);
         }
     }
 }
