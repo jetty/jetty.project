@@ -79,7 +79,7 @@ public class ConcurrentStreamsTest extends AbstractHTTPSPDYTest
                     throw new ServletException(x);
                 }
             }
-        }), null);
+        }, 30000), null);
 
         // Perform slow request. This will wait on server side until the fast request wakes it up
         Fields headers = createHeaders(slowPath);

@@ -357,7 +357,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
                 outputStream.write(bytes);
                 baseRequest.setHandled(true);
             }
-        });
+        }, 30000);
         Session pushCacheBuildSession = startClient(version, bigResponseServerAddress, null);
 
         Fields mainResourceHeaders = createHeadersWithoutReferrer(mainResource);
@@ -443,7 +443,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
                 baseRequest.setHandled(true);
             }
         });
-        return startHTTPServer(version, gzipHandler);
+        return startHTTPServer(version, gzipHandler, 30000);
     }
 
     private Session sendMainRequestAndCSSRequest(SessionFrameListener sessionFrameListener, boolean awaitPush) throws Exception
@@ -597,7 +597,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
                     output.print("body { background: #FFF; }");
                 baseRequest.setHandled(true);
             }
-        });
+        }, 30000);
         Session session1 = startClient(version, address, null);
 
         final CountDownLatch mainResourceLatch = new CountDownLatch(1);
@@ -688,7 +688,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
                 }
                 baseRequest.setHandled(true);
             }
-        });
+        }, 30000);
         Session session1 = startClient(version, address, null);
 
         final CountDownLatch mainResourceLatch = new CountDownLatch(1);
@@ -799,7 +799,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
                     output.print("\u0000");
                 baseRequest.setHandled(true);
             }
-        });
+        }, 30000);
         Session session1 = startClient(version, address, null);
 
         final CountDownLatch mainResourceLatch = new CountDownLatch(1);
@@ -919,7 +919,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
                     output.print("<html><head/><body>HELLO</body></html>");
                 baseRequest.setHandled(true);
             }
-        });
+        }, 30000);
         Session session1 = startClient(version, address, null);
 
         final CountDownLatch mainResourceLatch = new CountDownLatch(1);
@@ -1004,7 +1004,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
                     output.print("body { background: #FFF; }");
                 baseRequest.setHandled(true);
             }
-        });
+        }, 30000);
         Session session1 = startClient(version, address, null);
 
         final CountDownLatch mainResourceLatch = new CountDownLatch(1);

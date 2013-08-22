@@ -170,6 +170,12 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
         streamPromise.data(serverDataInfo);
     }
 
+    @Override
+    public void onFailure(Throwable x)
+    {
+        LOG.debug(x);
+    }
+
     private Session produceSession(String host, short version, InetSocketAddress address)
     {
         try
@@ -266,6 +272,12 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
             };
 
             pushStreamPromise.data(clientDataInfo);
+        }
+
+        @Override
+        public void onFailure(Throwable x)
+        {
+            LOG.debug(x);
         }
     }
 
