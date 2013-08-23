@@ -75,6 +75,8 @@ public class MainTest
 
     public void testJettyHomeWithSpaces()
     {
+        List<String> cmdLineArgs = new ArrayList<>();
+        
         // main.addJvmArgs(jvmArgs);
         //
         // Classpath classpath = nastyWayToCreateAClasspathObject("/jetty/home with spaces/");
