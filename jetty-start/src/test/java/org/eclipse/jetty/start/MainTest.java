@@ -51,6 +51,19 @@ public class MainTest
     }
 
     @Test
+    public void testListConfig() throws Exception
+    {
+        List<String> cmdLineArgs = new ArrayList<>();
+        addUseCasesHome(cmdLineArgs);
+        cmdLineArgs.add("jetty.port=9090");
+        cmdLineArgs.add("--list-config");
+
+        Main main = new Main();
+        StartArgs args = main.processCommandLine(cmdLineArgs.toArray(new String[cmdLineArgs.size()]));
+        main.listConfig(args);
+    }
+
+    @Test
     public void testWithCommandLine() throws Exception
     {
         List<String> cmdLineArgs = new ArrayList<>();

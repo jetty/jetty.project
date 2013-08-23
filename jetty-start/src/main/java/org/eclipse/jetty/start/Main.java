@@ -36,8 +36,10 @@ import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Locale;
+import java.util.Properties;
 
 /**
  * Main start class.
@@ -258,9 +260,43 @@ public class Main
         main.invoke(null,method_params);
     }
 
-    private void listConfig()
+    public void listConfig(StartArgs args)
     {
-        // TODO
+        // Dump Jetty Home / Base
+        args.dumpEnvironment();
+
+        // Dump Classpath
+        dumpClasspathWithVersions(args.getClasspath());
+
+        // Dump Enabled Modules
+        System.out.println();
+        System.out.println("Jetty Active Module Tree:");
+        System.out.println("-------------------------");
+        Modules modules = args.getAllModules();
+        modules.dumpEnabledTree();
+
+        // Dump Resolved XMLs
+        System.out.println();
+        System.out.println("Jetty Active XMLs:");
+        System.out.println("------------------");
+        for (File xml : args.getXmlFiles())
+        {
+            System.out.printf(" - %s%n",baseHome.toShortForm(xml.getAbsolutePath()));
+        }
+
+        // Dump Properties
+        System.out.println();
+        System.out.println("Properties:");
+        System.out.println("-----------");
+        Properties props = args.getProperties();
+        @SuppressWarnings("unchecked")
+        Enumeration<String> keyEnum = (Enumeration<String>)props.propertyNames();
+        while (keyEnum.hasMoreElements())
+        {
+            String name = keyEnum.nextElement();
+            String value = props.getProperty(name);
+            System.out.printf(" %s = %s%n",name,value);
+        }
     }
 
     private void listModules(StartArgs args)
@@ -353,23 +389,20 @@ public class Main
         return baseHome;
     }
 
-    private void showClasspathWithVersions(Classpath classpath)
+    private void dumpClasspathWithVersions(Classpath classpath)
     {
-        // Iterate through active classpath, and fetch Implementation Version from each entry (if present)
-        // to dump to end user.
-
-        // TODO: modules instead
-        // System.out.println("Active Options: " + _config.getOptions());
-
+        System.out.println();
+        System.out.println("Jetty Server Classpath:");
+        System.out.println("-----------------------");
         if (classpath.count() == 0)
         {
-            System.out.println("No version information available show.");
+            System.out.println("No classpath entries and/or version information available show.");
             return;
         }
 
         System.out.println("Version Information on " + classpath.count() + " entr" + ((classpath.count() > 1)?"ies":"y") + " in the classpath.");
         System.out.println("Note: order presented here is how they would appear on the classpath.");
-        System.out.println("      changes to the OPTIONS=[option,option,...] command line option will be reflected here.");
+        System.out.println("      changes to the MODULES=[name,name,...] command line option will be reflected here.");
 
         int i = 0;
         for (File element : classpath.getElements())
@@ -381,7 +414,7 @@ public class Main
     public void start(StartArgs args) throws IOException, InterruptedException
     {
         StartLog.debug("StartArgs: %s",args);
-        
+
         // Get Desired Classpath based on user provided Active Options.
         Classpath classpath = args.getClasspath();
 
@@ -406,13 +439,13 @@ public class Main
         // Show the version information and return
         if (args.isListClasspath())
         {
-            showClasspathWithVersions(classpath);
+            dumpClasspathWithVersions(classpath);
         }
 
         // Show configuration
         if (args.isListConfig())
         {
-            listConfig();
+            listConfig(args);
         }
 
         // Show modules

@@ -21,6 +21,7 @@ package org.eclipse.jetty.start;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -37,6 +38,33 @@ import java.util.Stack;
 public class Modules implements Iterable<Module>
 {
     private Map<String, Module> modules = new HashMap<>();
+
+    private void assertNoCycle(Module module, Stack<String> refs)
+    {
+        for (Module parent : module.getParentEdges())
+        {
+            if (refs.contains(parent.getName()))
+            {
+                // Cycle detected.
+                StringBuilder err = new StringBuilder();
+                err.append("A cyclic reference in the modules has been detected: ");
+                for (int i = 0; i < refs.size(); i++)
+                {
+                    if (i > 0)
+                    {
+                        err.append(" -> ");
+                    }
+                    err.append(refs.get(i));
+                }
+                err.append(" -> ").append(parent.getName());
+                throw new IllegalStateException(err.toString());
+            }
+
+            refs.push(parent.getName());
+            assertNoCycle(parent,refs);
+            refs.pop();
+        }
+    }
 
     private void bfsCalculateDepth(final Module module, final int depthNow)
     {
@@ -93,33 +121,6 @@ public class Modules implements Iterable<Module>
         }
     }
 
-    private void assertNoCycle(Module module, Stack<String> refs)
-    {
-        for (Module parent : module.getParentEdges())
-        {
-            if (refs.contains(parent.getName()))
-            {
-                // Cycle detected.
-                StringBuilder err = new StringBuilder();
-                err.append("A cyclic reference in the modules has been detected: ");
-                for (int i = 0; i < refs.size(); i++)
-                {
-                    if (i > 0)
-                    {
-                        err.append(" -> ");
-                    }
-                    err.append(refs.get(i));
-                }
-                err.append(" -> ").append(parent.getName());
-                throw new IllegalStateException(err.toString());
-            }
-
-            refs.push(parent.getName());
-            assertNoCycle(parent,refs);
-            refs.pop();
-        }
-    }
-
     public Integer count()
     {
         return modules.size();
@@ -141,6 +142,51 @@ public class Modules implements Iterable<Module>
                 System.out.printf("  xml: %s%n",xml);
             }
         }
+    }
+
+    public void dumpEnabledTree()
+    {
+        List<Module> ordered = new ArrayList<>();
+        ordered.addAll(modules.values());
+        Collections.sort(ordered,new Module.DepthComparator());
+
+        List<Module> active = resolveEnabled();
+
+        for (Module module : ordered)
+        {
+            if (active.contains(module))
+            {
+                // Show module name
+                String indent = toIndent(module.getDepth());
+                System.out.printf("%s + Module: %s",indent,module.getName());
+                if (module.isEnabled())
+                {
+                    System.out.print(" [enabled]");
+                }
+                else
+                {
+                    System.out.print(" [transitive]");
+                }
+                System.out.println();
+                // Dump lib references
+                for (String libRef : module.getLibs())
+                {
+                    System.out.printf("%s   - LIB | %s%n",indent,libRef);
+                }
+                // Dump xml references
+                for (String xmlRef : module.getXmls())
+                {
+                    System.out.printf("%s   - XML | %s%n",indent,xmlRef);
+                }
+            }
+        }
+    }
+
+    private String toIndent(int depth)
+    {
+        char indent[] = new char[depth * 2];
+        Arrays.fill(indent,' ');
+        return new String(indent);
     }
 
     public void enable(String name)
@@ -196,9 +242,6 @@ public class Modules implements Iterable<Module>
         return str.toString();
     }
 
-    // TODO: Resolve LIB names to actual java.io.File references via HomeBase
-    // TODO: Handle ${jetty.version} references here
-    // TODO: Handle *.jar filesystem glob style here
     public List<String> normalizeLibs(List<Module> active)
     {
         List<String> libs = new ArrayList<>();
@@ -215,7 +258,6 @@ public class Modules implements Iterable<Module>
         return libs;
     }
 
-    // TODO: Resolve XML names to actual java.io.File references via HomeBase
     public List<String> normalizeXmls(List<Module> active)
     {
         List<String> xmls = new ArrayList<>();

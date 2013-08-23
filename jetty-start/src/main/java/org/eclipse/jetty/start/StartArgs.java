@@ -57,6 +57,7 @@ public class StartArgs
         }
 
         VERSION = ver;
+        System.setProperty("jetty.version",VERSION);
     }
 
     // TODO: might make sense to declare this in modules/base.mod
@@ -107,6 +108,37 @@ public class StartArgs
         {
             xmls.add(xmlfile);
         }
+    }
+
+    public void dumpEnvironment()
+    {
+        System.out.println();
+        System.out.println("Jetty Environment:");
+        System.out.println("-----------------");
+        
+        dumpSystemProperty("jetty.home");
+        dumpSystemProperty("jetty.base");
+        dumpSystemProperty("jetty.version");
+        
+        // Java Details
+        System.out.println();
+        System.out.println("Java Environment:");
+        System.out.println("-----------------");
+        dumpSystemProperty("java.home");
+        dumpSystemProperty("java.vm.vendor");
+        dumpSystemProperty("java.vm.version");
+        dumpSystemProperty("java.vm.name");
+        dumpSystemProperty("java.vm.info");
+        dumpSystemProperty("java.runtime.name");
+        dumpSystemProperty("java.runtime.version");
+        
+        dumpSystemProperty("java.io.tmpdir");
+        System.out.printf("java.class.path=%s%n",classpath.toString());
+    }
+
+    private void dumpSystemProperty(String key)
+    {
+        System.out.printf("%s=%s%n",key,System.getProperty(key));
     }
 
     /**
@@ -421,7 +453,7 @@ public class StartArgs
             run = false;
             return;
         }
-        
+
         if ("--list-modules".equals(arg))
         {
             listModules = true;
