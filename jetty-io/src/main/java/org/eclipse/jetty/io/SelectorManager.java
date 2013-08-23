@@ -39,6 +39,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.ConcurrentArrayQueue;
 import org.eclipse.jetty.util.TypeUtil;
@@ -309,6 +310,8 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         ContainerLifeCycle.dump(out, indent, TypeUtil.asList(_selectors));
     }
 
+    private enum State {CHANGING, MORE_CHANGES, SELECTING, WAKING, PROCESSING };
+    
     /**
      * <p>{@link ManagedSelector} wraps a {@link Selector} simplifying non-blocking operations on channels.</p>
      * <p>{@link ManagedSelector} runs the select loop, which waits on {@link Selector#select()} until events
@@ -322,8 +325,9 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         private final int _id;
         private Selector _selector;
         private volatile Thread _thread;
-        private boolean _needsWakeup = true;
-        private boolean _runningChanges = false;
+        
+        private final AtomicReference<State> _state= new AtomicReference<>(State.PROCESSING);
+        
 
         public ManagedSelector(int id)
         {
@@ -336,6 +340,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         {
             super.doStart();
             _selector = Selector.open();
+            _state.set(State.PROCESSING);
         }
 
         @Override
@@ -360,16 +365,17 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             // if we have been called by the selector thread we can directly run the change
             if (_thread==Thread.currentThread())
             {
-                // If we are already iterating over the changes, just add this change to the list.
-                // No race here because it is this thread that is iterating over the changes.
-                if (_runningChanges)
-                    _changes.offer(change);
-                else
+                if (_state.get()==State.PROCESSING)
                 {
-                    // Otherwise we run the queued changes
+                    // We are processing, so lets handle changes without queuing
                     runChanges();
                     // and then directly run the passed change
                     runChange(change);
+                }
+                else
+                {
+                    // We must be iterating in changing state, so just append to queue
+                    _changes.offer(change);
                 }
             }
             else
@@ -377,28 +383,22 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 // otherwise we have to queue the change and wakeup the selector
                 _changes.offer(change);
                 LOG.debug("Queued change {}", change);
-                boolean wakeup = _needsWakeup;
-                if (wakeup)
+                
+                // If we were SELECTING, we do a wakeup and change state
+                if (_state.compareAndSet(State.SELECTING,State.WAKING))
                     wakeup();
+                else 
+                    // if we were CHANGING, handle MORE CHANGES
+                    _state.compareAndSet(State.CHANGING,State.MORE_CHANGES);
+                // All other states are good because changes will be handled in due course
             }
         }
 
         private void runChanges()
         {
-            try
-            {
-                if (_runningChanges)
-                    throw new IllegalStateException();
-                _runningChanges=true;
-
-                Runnable change;
-                while ((change = _changes.poll()) != null)
-                    runChange(change);
-            }
-            finally
-            {
-                _runningChanges=false;
-            }
+            Runnable change;
+            while ((change = _changes.poll()) != null)
+                runChange(change);
         }
 
         protected void runChange(Runnable change)
@@ -418,7 +418,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 LOG.debug("Starting {} on {}", _thread, this);
                 while (isRunning())
                     select();
-                processChanges();
+                runChanges();
             }
             finally
             {
@@ -437,7 +437,24 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             boolean debug = LOG.isDebugEnabled();
             try
             {
-                processChanges();
+                _state.set(State.CHANGING);
+                
+                loop: while(true)
+                {
+                    switch (_state.get())
+                    {
+                        case CHANGING:
+                            runChanges();
+                            if (_state.compareAndSet(State.CHANGING,State.SELECTING))
+                                break loop;
+                            continue;
+                        case MORE_CHANGES:
+                            _state.set(State.CHANGING);
+                            continue;
+                        default:
+                            throw new IllegalStateException();    
+                    }
+                }
 
                 if (debug)
                     LOG.debug("Selector loop waiting on select");
@@ -445,7 +462,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 if (debug)
                     LOG.debug("Selector loop woken up from select, {}/{} selected", selected, _selector.keys().size());
 
-                _needsWakeup = false;
+                _state.set(State.PROCESSING);
 
                 Set<SelectionKey> selectedKeys = _selector.selectedKeys();
                 for (SelectionKey key : selectedKeys)
@@ -472,20 +489,6 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 else
                     LOG.ignore(x);
             }
-        }
-
-        private void processChanges()
-        {
-            runChanges();
-
-            // If tasks are submitted between these 2 statements, they will not
-            // wakeup the selector, therefore below we run again the tasks
-
-            _needsWakeup = true;
-
-            // Run again the tasks to avoid the race condition where a task is
-            // submitted but will not wake up the selector
-            runChanges();
         }
 
         private void processKey(SelectionKey key)
