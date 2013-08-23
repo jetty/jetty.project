@@ -1,0 +1,11 @@
+# The XMLs we expect (order is important)
+# No XMLs in this home
+
+# The LIBs we expect (order is irrelevant)
+LIB|${jetty.home}/lib/example of a library with spaces.jar
+
+# The Properties we expect (order is irrelevant)
+PROP|test.message=Hello
+
+# JVM Args
+# no jvm args

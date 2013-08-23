@@ -19,6 +19,8 @@
 package org.eclipse.jetty.start;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
@@ -89,46 +91,19 @@ public class MainTest
         ConfigurationAssert.assertConfiguration(baseHome,args,"assert-home-with-jvm.txt");
     }
 
-    public void testJettyHomeWithSpaces()
+    @Test
+    public void testJettyHomeWithSpaces() throws Exception
     {
         List<String> cmdLineArgs = new ArrayList<>();
 
-        // main.addJvmArgs(jvmArgs);
-        //
-        // Classpath classpath = nastyWayToCreateAClasspathObject("/jetty/home with spaces/");
-        // CommandLineBuilder cmd = main.buildCommandLine(classpath,xmls);
-        // assertThat("CommandLineBuilder shouldn't be null",cmd,notNullValue());
-        //
-        // List<String> commandArgs = cmd.getArgs();
-        // assertThat("commandArgs elements",commandArgs.size(),equalTo(12));
-        // assertThat("args does not contain -cp",commandArgs,hasItems("-cp"));
-        // assertThat("Classpath should be correctly quoted and match expected value",commandArgs,
-        // hasItems("/jetty/home with spaces/somejar.jar:/jetty/home with spaces/someotherjar.jar"));
-        // assertThat("args does not contain --exec",commandArgs,hasItems("--exec"));
-        // assertThat("CommandLine should contain jvmArgs",commandArgs,hasItems("-Xms1024m"));
-        // assertThat("CommandLine should contain jvmArgs",commandArgs,hasItems("-Xmx1024m"));
-        // assertThat("CommandLine should contain xmls",commandArgs,hasItems("jetty.xml"));
-        // assertThat("CommandLine should contain xmls",commandArgs,hasItems("jetty-jmx.xml"));
-        // assertThat("CommandLine should contain xmls",commandArgs,hasItems("jetty-logging.xml"));
-        //
-        // String commandLine = cmd.toString();
-        // assertThat("cmd.toString() should be properly escaped",commandLine,containsString("-cp /jetty/home\\ with\\ "
-        // + "spaces/somejar.jar:/jetty/home\\ with\\ spaces/someotherjar.jar"));
-        // assertThat("cmd.toString() doesn't contain xml config files",commandLine,containsString(" jetty.xml jetty-jmx.xml jetty-logging.xml"));
-    }
+        File homePath = MavenTestingUtils.getTestResourceDir("jetty home with spaces");
+        cmdLineArgs.add("jetty.home=" + homePath);
 
-    private Classpath nastyWayToCreateAClasspathObject(String jettyHome) throws NoSuchFieldException, IllegalAccessException
-    {
-        Classpath classpath = new Classpath();
-        Field classpathElements = Classpath.class.getDeclaredField("_elements");
-        classpathElements.setAccessible(true);
-        File file = new File(jettyHome + "somejar.jar");
-        File file2 = new File(jettyHome + "someotherjar.jar");
-        Vector<File> elements = new Vector<File>();
-        elements.add(file);
-        elements.add(file2);
-        classpathElements.set(classpath,elements);
-        return classpath;
-    }
+        Main main = new Main();
+        StartArgs args = main.processCommandLine(cmdLineArgs.toArray(new String[cmdLineArgs.size()]));
+        BaseHome baseHome = main.getBaseHome();
+        System.err.println(args);
 
+        ConfigurationAssert.assertConfiguration(baseHome,args,"assert-home-with-spaces.txt");
+    }
 }
