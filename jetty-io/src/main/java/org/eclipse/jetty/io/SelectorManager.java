@@ -310,8 +310,11 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         ContainerLifeCycle.dump(out, indent, TypeUtil.asList(_selectors));
     }
 
-    private enum State {CHANGING, MORE_CHANGES, SELECTING, WAKING, PROCESSING };
-    
+    private enum State
+    {
+        CHANGES, MORE_CHANGES, SELECT, WAKEUP, PROCESS
+    }
+
     /**
      * <p>{@link ManagedSelector} wraps a {@link Selector} simplifying non-blocking operations on channels.</p>
      * <p>{@link ManagedSelector} runs the select loop, which waits on {@link Selector#select()} until events
@@ -320,14 +323,11 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      */
     public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dumpable
     {
+        private final AtomicReference<State> _state= new AtomicReference<>(State.PROCESS);
         private final Queue<Runnable> _changes = new ConcurrentArrayQueue<>();
-
         private final int _id;
         private Selector _selector;
         private volatile Thread _thread;
-        
-        private final AtomicReference<State> _state= new AtomicReference<>(State.PROCESSING);
-        
 
         public ManagedSelector(int id)
         {
@@ -340,7 +340,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         {
             super.doStart();
             _selector = Selector.open();
-            _state.set(State.PROCESSING);
+            _state.set(State.PROCESS);
         }
 
         @Override
@@ -362,35 +362,57 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
          */
         public void submit(Runnable change)
         {
-            // if we have been called by the selector thread we can directly run the change
-            if (_thread==Thread.currentThread())
+            if (isSelectorThread())
             {
-                if (_state.get()==State.PROCESSING)
+                if (_state.get() == State.PROCESS)
                 {
-                    // We are processing, so lets handle changes without queuing
+                    // We are processing, so lets handle existing changes
                     runChanges();
-                    // and then directly run the passed change
+                    // and then directly run the passed change without queueing it
                     runChange(change);
                 }
                 else
                 {
-                    // We must be iterating in changing state, so just append to queue
+                    // We must be iterating in CHANGES or MORE_CHANGES
+                    // state, so just append to the queue to preserve order.
                     _changes.offer(change);
                 }
             }
             else
             {
-                // otherwise we have to queue the change and wakeup the selector
+                // Otherwise we have to queue the change and possibly wakeup the selector
                 _changes.offer(change);
                 LOG.debug("Queued change {}", change);
-                
-                // If we were SELECTING, we do a wakeup and change state
-                if (_state.compareAndSet(State.SELECTING,State.WAKING))
-                    wakeup();
-                else 
-                    // if we were CHANGING, handle MORE CHANGES
-                    _state.compareAndSet(State.CHANGING,State.MORE_CHANGES);
-                // All other states are good because changes will be handled in due course
+
+                out: while (true)
+                {
+                    switch (_state.get())
+                    {
+                        case SELECT:
+                            // Avoid multiple wakeup() calls if we the CAS fails
+                            if (!_state.compareAndSet(State.SELECT, State.WAKEUP))
+                                continue;
+                            wakeup();
+                            break out;
+                        case CHANGES:
+                            // Tell the selector thread that we have more changes.
+                            // If we fail to CAS, we possibly need to wakeup(), so loop.
+                            if (_state.compareAndSet(State.CHANGES, State.MORE_CHANGES))
+                                break out;
+                            continue;
+                        case WAKEUP:
+                            // Do nothing, we have already a wakeup scheduled
+                            break out;
+                        case MORE_CHANGES:
+                            // Do nothing, we already notified the selector thread of more changes
+                            break out;
+                        case PROCESS:
+                            // Do nothing, the changes will be run after the processing
+                            break out;
+                        default:
+                            throw new IllegalStateException();
+                    }
+                }
             }
         }
 
@@ -437,24 +459,30 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             boolean debug = LOG.isDebugEnabled();
             try
             {
-                _state.set(State.CHANGING);
-                
-                loop: while(true)
+                _state.set(State.CHANGES);
+
+                // Run the changes, and only exit if we ran all changes
+                out: while(true)
                 {
                     switch (_state.get())
                     {
-                        case CHANGING:
+                        case CHANGES:
                             runChanges();
-                            if (_state.compareAndSet(State.CHANGING,State.SELECTING))
-                                break loop;
+                            if (_state.compareAndSet(State.CHANGES, State.SELECT))
+                                break out;
                             continue;
                         case MORE_CHANGES:
-                            _state.set(State.CHANGING);
+                            runChanges();
+                            _state.set(State.CHANGES);
                             continue;
                         default:
                             throw new IllegalStateException();    
                     }
                 }
+                // Must check first for SELECT and *then* for WAKEUP
+                // because we read the state twice in the assert, and
+                // it could change from SELECT to WAKEUP in between.
+                assert _state.get() == State.SELECT || _state.get() == State.WAKEUP;
 
                 if (debug)
                     LOG.debug("Selector loop waiting on select");
@@ -462,7 +490,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 if (debug)
                     LOG.debug("Selector loop woken up from select, {}/{} selected", selected, _selector.keys().size());
 
-                _state.set(State.PROCESSING);
+                _state.set(State.PROCESS);
 
                 Set<SelectionKey> selectedKeys = _selector.selectedKeys();
                 for (SelectionKey key : selectedKeys)
