@@ -44,7 +44,6 @@ import org.eclipse.jetty.util.log.Logger;
  * This class can check for aliasing in the filesystem (eg case
  * insensitivity).  By default this is turned on, or it can be controlled 
  * by calling the static method @see FileResource#setCheckAliases(boolean)
- *
  * 
  */
 public class FileResource extends URLResource
@@ -167,15 +166,16 @@ public class FileResource extends URLResource
             r=(URLResource)Resource.newResource(url);
         }
         
+        // Check for encoding aliases
+        // The encoded path should be a suffix of the resource (give or take a directory / )
         String encoded=URIUtil.encodePath(path);
         int expected=r.toString().length()-encoded.length();
         int index = r._urlString.lastIndexOf(encoded, expected);
-        
         if (expected!=index && ((expected-1)!=index || path.endsWith("/") || !r.isDirectory()))
         {
-            if (!(r instanceof BadResource))
+            if (r instanceof FileResource)
             {
-                ((FileResource)r)._alias=new URL(url);
+                ((FileResource)r)._alias=((FileResource)r)._file.getCanonicalFile().toURI().toURL();
                 ((FileResource)r)._aliasChecked=true;
             }
         }                             
