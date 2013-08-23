@@ -62,19 +62,16 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private volatile Throwable _onError;
 
     /*
-ACTION             OPEN       ASYNC      READY      PENDING       UNREADY
--------------------------------------------------------------------------------
-setWriteListener() READY->owp ise        ise        ise           ise
-write()            OPEN       ise        PENDING    wpe           wpe
-flush()            OPEN       ise        PENDING    wpe           wpe
-isReady()          OPEN:true  READY:true READY:true UNREADY:false UNREADY:false
-write completed    -          -          -          ASYNC         READY->owp
-
-     */
+    ACTION             OPEN       ASYNC      READY      PENDING       UNREADY
+    -------------------------------------------------------------------------------
+    setWriteListener() READY->owp ise        ise        ise           ise
+    write()            OPEN       ise        PENDING    wpe           wpe
+    flush()            OPEN       ise        PENDING    wpe           wpe
+    isReady()          OPEN:true  READY:true READY:true UNREADY:false UNREADY:false
+    write completed    -          -          -          ASYNC         READY->owp
+    */
     enum State { OPEN, ASYNC, READY, PENDING, UNREADY, CLOSED }
     private final AtomicReference<State> _state=new AtomicReference<>(State.OPEN);
-
-
 
     public HttpOutput(HttpChannel<?> channel)
     {
@@ -212,17 +209,17 @@ write completed    -          -          -          ASYNC         READY->owp
     @Override
     public void write(byte[] b, int off, int len) throws IOException
     {
-    	_written+=len;
-    	boolean complete=_channel.getResponse().isAllContentWritten(_written);
+        _written+=len;
+        boolean complete=_channel.getResponse().isAllContentWritten(_written);
 
-    	// Async or Blocking ?
-    	while(true)
-    	{
-    	    switch(_state.get())
-    	    {
+        // Async or Blocking ?
+        while(true)
+        {
+            switch(_state.get())
+            {
                 case OPEN:
                     // process blocking below
-    	            break;
+                    break;
 
                 case ASYNC:
                     throw new IllegalStateException("isReady() not called");
@@ -242,7 +239,7 @@ write completed    -          -          -          ASYNC         READY->owp
                         int filled = BufferUtil.fill(_aggregate, b, off, len);
 
                         // return if we are not complete, not full and filled all the content
-                        if (!complete && filled==len && !BufferUtil.isFull(_aggregate))
+                        if (filled==len && !BufferUtil.isFull(_aggregate))
                         {
                             if (!_state.compareAndSet(State.PENDING, State.ASYNC))
                                 throw new IllegalStateException();
@@ -258,61 +255,61 @@ write completed    -          -          -          ASYNC         READY->owp
                     new AsyncWrite(b,off,len,complete).process();
                     return;
 
-    	        case PENDING:
+                case PENDING:
                 case UNREADY:
-    	            throw new WritePendingException();
+                    throw new WritePendingException();
 
                 case CLOSED:
                     throw new EofException("Closed");
-    	    }
-    	    break;
-    	}
+            }
+            break;
+        }
 
 
-    	// handle blocking write
+        // handle blocking write
 
-    	// Should we aggregate?
-    	int capacity = getBufferSize();
-    	if (!complete && len<=_commitSize)
-    	{
-    	    if (_aggregate == null)
-    	        _aggregate = _channel.getByteBufferPool().acquire(capacity, false);
+        // Should we aggregate?
+        int capacity = getBufferSize();
+        if (!complete && len<=_commitSize)
+        {
+            if (_aggregate == null)
+                _aggregate = _channel.getByteBufferPool().acquire(capacity, false);
 
-    	    // YES - fill the aggregate with content from the buffer
-    	    int filled = BufferUtil.fill(_aggregate, b, off, len);
+            // YES - fill the aggregate with content from the buffer
+            int filled = BufferUtil.fill(_aggregate, b, off, len);
 
-    	    // return if we are not complete, not full and filled all the content
-    	    if (!complete && filled==len && !BufferUtil.isFull(_aggregate))
-    	        return;
+            // return if we are not complete, not full and filled all the content
+            if (filled==len && !BufferUtil.isFull(_aggregate))
+                return;
 
-    	    // adjust offset/length
-    	    off+=filled;
-    	    len-=filled;
-    	}
+            // adjust offset/length
+            off+=filled;
+            len-=filled;
+        }
 
-    	// flush any content from the aggregate
-    	if (BufferUtil.hasContent(_aggregate))
-    	{
-    	    _channel.write(_aggregate, complete && len==0);
+        // flush any content from the aggregate
+        if (BufferUtil.hasContent(_aggregate))
+        {
+            _channel.write(_aggregate, complete && len==0);
 
-    	    // should we fill aggregate again from the buffer?
-    	    if (len>0 && !complete && len<=_commitSize)
-    	    {
-    	        BufferUtil.append(_aggregate, b, off, len);
-    	        return;
-    	    }
-    	}
+            // should we fill aggregate again from the buffer?
+            if (len>0 && !complete && len<=_commitSize)
+            {
+                BufferUtil.append(_aggregate, b, off, len);
+                return;
+            }
+        }
 
-    	// write any remaining content in the buffer directly
-    	if (len>0)
-    	    _channel.write(ByteBuffer.wrap(b, off, len), complete);
+        // write any remaining content in the buffer directly
+        if (len>0)
+            _channel.write(ByteBuffer.wrap(b, off, len), complete);
         else if (complete)
             _channel.write(BufferUtil.EMPTY_BUFFER,complete);
 
-    	if (complete)
-    	{
-    	    closed();
-    	}
+        if (complete)
+        {
+            closed();
+        }
 
     }
 
@@ -763,7 +760,7 @@ write completed    -          -          -          ASYNC         READY->owp
         {
             try
             {
-                loop: while(true)
+                while(true)
                 {
                     State last=_state.get();
                     switch(last)
@@ -786,8 +783,7 @@ write completed    -          -          -          ASYNC         READY->owp
                         default:
                             throw new IllegalStateException();
                     }
-
-                    break loop;
+                    break;
                 }
             }
             catch (Exception e)
@@ -922,7 +918,6 @@ write completed    -          -          -          ASYNC         READY->owp
             if (len<0)
             {
                 _eof=true;
-                len=0;
                 _in.close();
             }
             else if (len<_buffer.capacity())
