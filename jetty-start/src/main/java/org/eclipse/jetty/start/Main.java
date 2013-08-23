@@ -265,23 +265,21 @@ public class Main
         // Dump Jetty Home / Base
         args.dumpEnvironment();
 
-        // Dump Classpath
-        dumpClasspathWithVersions(args.getClasspath());
-
-        // Dump Enabled Modules
+        // Dump JVM Properties
         System.out.println();
-        System.out.println("Jetty Active Module Tree:");
-        System.out.println("-------------------------");
-        Modules modules = args.getAllModules();
-        modules.dumpEnabledTree();
-
-        // Dump Resolved XMLs
-        System.out.println();
-        System.out.println("Jetty Active XMLs:");
-        System.out.println("------------------");
-        for (File xml : args.getXmlFiles())
+        System.out.println("JVM Arguments:");
+        System.out.println("--------------");
+        for (String jvmArgKey : args.getJvmArgs())
         {
-            System.out.printf(" - %s%n",baseHome.toShortForm(xml.getAbsolutePath()));
+            String value = System.getProperty(jvmArgKey);
+            if (value != null)
+            {
+                System.out.printf(" %s = %s%n",jvmArgKey,value);
+            }
+            else
+            {
+                System.out.printf(" %s%n",jvmArgKey);
+            }
         }
 
         // Dump Properties
@@ -297,11 +295,33 @@ public class Main
             String value = props.getProperty(name);
             System.out.printf(" %s = %s%n",name,value);
         }
+
+        // Dump Classpath
+        dumpClasspathWithVersions(args.getClasspath());
+
+        // Dump Resolved XMLs
+        System.out.println();
+        System.out.println("Jetty Active XMLs:");
+        System.out.println("------------------");
+        for (File xml : args.getXmlFiles())
+        {
+            System.out.printf(" %s%n",baseHome.toShortForm(xml.getAbsolutePath()));
+        }
     }
 
     private void listModules(StartArgs args)
     {
+        System.out.println();
+        System.out.println("Jetty All Available Modules:");
+        System.out.println("----------------------------");
         args.getAllModules().dump();
+
+        // Dump Enabled Modules
+        System.out.println();
+        System.out.println("Jetty Active Module Tree:");
+        System.out.println("-------------------------");
+        Modules modules = args.getAllModules();
+        modules.dumpEnabledTree();
     }
 
     public StartArgs processCommandLine(String[] cmdLine) throws Exception

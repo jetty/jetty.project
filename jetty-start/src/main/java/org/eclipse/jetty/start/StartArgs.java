@@ -112,14 +112,6 @@ public class StartArgs
 
     public void dumpEnvironment()
     {
-        System.out.println();
-        System.out.println("Jetty Environment:");
-        System.out.println("-----------------");
-        
-        dumpSystemProperty("jetty.home");
-        dumpSystemProperty("jetty.base");
-        dumpSystemProperty("jetty.version");
-        
         // Java Details
         System.out.println();
         System.out.println("Java Environment:");
@@ -131,14 +123,22 @@ public class StartArgs
         dumpSystemProperty("java.vm.info");
         dumpSystemProperty("java.runtime.name");
         dumpSystemProperty("java.runtime.version");
-        
         dumpSystemProperty("java.io.tmpdir");
-        System.out.printf("java.class.path=%s%n",classpath.toString());
+
+        // Jetty Environment
+        System.out.println();
+        System.out.println("Jetty Environment:");
+        System.out.println("-----------------");
+
+        dumpSystemProperty("jetty.home");
+        dumpSystemProperty("jetty.base");
+        dumpSystemProperty("jetty.version");
+
     }
 
     private void dumpSystemProperty(String key)
     {
-        System.out.printf("%s=%s%n",key,System.getProperty(key));
+        System.out.printf(" %s=%s%n",key,System.getProperty(key));
     }
 
     /**
@@ -263,6 +263,11 @@ public class StartArgs
     public List<String> getEnabledModules()
     {
         return this.enabledModules;
+    }
+
+    public List<String> getJvmArgs()
+    {
+        return jvmArgs;
     }
 
     public CommandLineBuilder getMainArgs(BaseHome baseHome, boolean addJavaInit) throws IOException

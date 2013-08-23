@@ -56,6 +56,8 @@ public class MainTest
         List<String> cmdLineArgs = new ArrayList<>();
         addUseCasesHome(cmdLineArgs);
         cmdLineArgs.add("jetty.port=9090");
+        cmdLineArgs.add("-Xms1024m");
+        cmdLineArgs.add("-Xmx1024m");
         cmdLineArgs.add("--list-config");
 
         Main main = new Main();
