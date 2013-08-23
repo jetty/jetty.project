@@ -33,7 +33,7 @@ public class ArrayByteBufferPool implements ByteBufferPool
 
     public ArrayByteBufferPool()
     {
-        this(64,2048,64*1024);
+        this(0,1024,64*1024);
     }
 
     public ArrayByteBufferPool(int minSize, int increment, int maxSize)
