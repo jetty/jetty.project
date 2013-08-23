@@ -25,24 +25,25 @@ import java.util.List;
 import java.util.Vector;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.junit.Before;
 import org.junit.Test;
 
 public class MainTest
 {
-    @Before
-    public void setUp() throws Exception
+    private void addUseCasesHome(List<String> cmdLineArgs)
     {
         File testJettyHome = MavenTestingUtils.getTestResourceDir("usecases/home");
-        System.setProperty("jetty.home",testJettyHome.getAbsolutePath());
+        cmdLineArgs.add("jetty.home=" + testJettyHome);
     }
 
     @Test
     public void testBasicProcessing() throws Exception
     {
+        List<String> cmdLineArgs = new ArrayList<>();
+        addUseCasesHome(cmdLineArgs);
+        cmdLineArgs.add("jetty.port=9090");
+
         Main main = new Main();
-        StartArgs args = main.processCommandLine(new String[]
-        { "jetty.port=9090" });
+        StartArgs args = main.processCommandLine(cmdLineArgs.toArray(new String[cmdLineArgs.size()]));
         BaseHome baseHome = main.getBaseHome();
         System.err.println(args);
 
@@ -53,6 +54,8 @@ public class MainTest
     public void testWithCommandLine() throws Exception
     {
         List<String> cmdLineArgs = new ArrayList<>();
+
+        addUseCasesHome(cmdLineArgs);
 
         // JVM args
         cmdLineArgs.add("--exec");
@@ -66,7 +69,7 @@ public class MainTest
 
         Main main = new Main();
 
-        StartArgs args = main.processCommandLine(cmdLineArgs.toArray(new String[6]));
+        StartArgs args = main.processCommandLine(cmdLineArgs.toArray(new String[cmdLineArgs.size()]));
         BaseHome baseHome = main.getBaseHome();
         System.err.println(args);
 
@@ -76,7 +79,7 @@ public class MainTest
     public void testJettyHomeWithSpaces()
     {
         List<String> cmdLineArgs = new ArrayList<>();
-        
+
         // main.addJvmArgs(jvmArgs);
         //
         // Classpath classpath = nastyWayToCreateAClasspathObject("/jetty/home with spaces/");

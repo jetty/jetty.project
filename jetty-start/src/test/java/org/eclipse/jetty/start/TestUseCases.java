@@ -28,7 +28,7 @@ import org.junit.Test;
 /**
  * Various Home + Base use cases
  */
-public class UseCases
+public class TestUseCases
 {
     private void assertUseCase(String homeName, String baseName, String assertName) throws Exception
     {

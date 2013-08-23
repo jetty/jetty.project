@@ -136,18 +136,33 @@ public class BaseHome
         Pattern jetty_home = Pattern.compile("(-D)?jetty.home=(.*)");
         Pattern jetty_base = Pattern.compile("(-D)?jetty.base=(.*)");
 
+        File homePath = null;
+        File basePath = null;
+
         for (String arg : args.getCommandLine())
         {
             Matcher home_match = jetty_home.matcher(arg);
             if (home_match.matches())
             {
-                setHomeDir(new File(home_match.group(2)));
+                homePath = new File(home_match.group(2));
             }
             Matcher base_match = jetty_base.matcher(arg);
             if (base_match.matches())
             {
-                setBaseDir(new File(base_match.group(2)));
+                basePath = new File(base_match.group(2));
             }
+        }
+
+        if (homePath != null)
+        {
+            // logic if home is specified
+            this.homeDir = homePath;
+            this.baseDir = basePath == null?homePath:basePath;
+        }
+        else if (basePath != null)
+        {
+            // logic if home is undeclared
+            this.baseDir = basePath;
         }
     }
 

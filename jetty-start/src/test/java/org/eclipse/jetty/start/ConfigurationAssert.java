@@ -23,6 +23,8 @@ import static org.hamcrest.Matchers.*;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashSet;
@@ -97,6 +99,11 @@ public class ConfigurationAssert
         while (nameEnum.hasMoreElements())
         {
             String name = nameEnum.nextElement();
+            if ("jetty.home".equals(name) || "jetty.base".equals(name))
+            {
+                // strip these out from assertion, to make assertions easier.
+                continue;
+            }
             String value = args.getProperties().getProperty(name);
             actualProperties.add(name + "=" + value);
         }
@@ -105,13 +112,107 @@ public class ConfigurationAssert
 
     private static void assertContainsUnordered(String msg, Set<String> expectedSet, Set<String> actualSet)
     {
-        boolean mismatch = true;
+        // same size?
+        boolean mismatch = expectedSet.size() != actualSet.size();
+
+        // test content
+        Set<String> missing = new HashSet<>();
+        for (String expected : expectedSet)
+        {
+            if (!actualSet.contains(expected))
+            {
+                missing.add(expected);
+            }
+        }
+
+        if (mismatch || missing.size() > 0)
+        {
+            // build up detailed error message
+            StringWriter message = new StringWriter();
+            PrintWriter err = new PrintWriter(message);
+
+            err.printf("%s: Assert Contains (Unordered)",msg);
+            if (mismatch)
+            {
+                err.print(" [size mismatch]");
+            }
+            if (missing.size() >= 0)
+            {
+                err.printf(" [%d entries missing]",missing.size());
+            }
+            err.println();
+            err.printf("Actual Entries (size: %d)%n",actualSet.size());
+            for (String actual : actualSet)
+            {
+                char indicator = expectedSet.contains(actual)?' ':'>';
+                err.printf("%s| %s%n",indicator,actual);
+            }
+            err.printf("Expected Entries (size: %d)%n",expectedSet.size());
+            for (String expected : expectedSet)
+            {
+                char indicator = actualSet.contains(expected)?' ':'>';
+                err.printf("%s| %s",indicator,expected);
+            }
+            err.flush();
+            Assert.fail(message.toString());
+        }
     }
 
     private static void assertOrdered(String msg, List<String> expectedList, List<String> actualList)
     {
-        // TODO Auto-generated method stub
+        // same size?
+        boolean mismatch = expectedList.size() != actualList.size();
 
+        // test content
+        List<Integer> badEntries = new ArrayList<>();
+        int min = Math.min(expectedList.size(),actualList.size());
+        int max = Math.max(expectedList.size(),actualList.size());
+        for (int i = 0; i < min; i++)
+        {
+            if (!expectedList.get(i).equals(actualList.get(i)))
+            {
+                badEntries.add(i);
+            }
+        }
+        for (int i = min; i < max; i++)
+        {
+            badEntries.add(i);
+        }
+
+        if (mismatch || badEntries.size() > 0)
+        {
+            // build up detailed error message
+            StringWriter message = new StringWriter();
+            PrintWriter err = new PrintWriter(message);
+
+            err.printf("%s: Assert Contains (Unordered)",msg);
+            if (mismatch)
+            {
+                err.print(" [size mismatch]");
+            }
+            if (badEntries.size() >= 0)
+            {
+                err.printf(" [%d entries not matched]",badEntries.size());
+            }
+            err.println();
+            err.printf("Actual Entries (size: %d)%n",actualList.size());
+            for (int i = 0; i < actualList.size(); i++)
+            {
+                String actual = actualList.get(i);
+                char indicator = badEntries.contains(i)?'>':' ';
+                err.printf("%s[%d] %s%n",indicator,i,actual);
+            }
+
+            err.printf("Expected Entries (size: %d)%n",expectedList.size());
+            for (int i = 0; i < expectedList.size(); i++)
+            {
+                String expected = expectedList.get(i);
+                char indicator = badEntries.contains(i)?'>':' ';
+                err.printf("%s[%d] %s%n",indicator,i,expected);
+            }
+            err.flush();
+            Assert.fail(message.toString());
+        }
     }
 
     private static String getValue(String arg)
