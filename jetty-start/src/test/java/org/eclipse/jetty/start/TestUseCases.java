@@ -50,4 +50,10 @@ public class TestUseCases
     {
         assertUseCase("home","base.barebones","assert-barebones.txt");
     }
+    
+    @Test
+    public void testJMX() throws Exception
+    {
+        assertUseCase("home","base.jmx","assert-jmx.txt");
+    }
 }

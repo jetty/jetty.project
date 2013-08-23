@@ -60,6 +60,8 @@ public class Module extends TextFile
     private String name;
     /** List of Modules, by name, that this Module depends on */
     private Set<String> parentNames;
+    /** List of Modules, by name, that this Module optionally depend on */
+    private Set<String> optionalParentNames;
     /** The Edges to parent modules */
     private Set<Module> parentEdges;
     /** The Edges to child modules */
@@ -143,6 +145,11 @@ public class Module extends TextFile
         return name;
     }
 
+    public Set<String> getOptionalParentNames()
+    {
+        return optionalParentNames;
+    }
+    
     public Set<Module> getParentEdges()
     {
         return parentEdges;
@@ -176,6 +183,7 @@ public class Module extends TextFile
         this.name = Pattern.compile(".mod$",Pattern.CASE_INSENSITIVE).matcher(name).replaceFirst("");
 
         this.parentNames = new HashSet<>();
+        this.optionalParentNames = new HashSet<>();
         this.parentEdges = new HashSet<>();
         this.childEdges = new HashSet<>();
         this.xmls = new ArrayList<>();
@@ -206,6 +214,10 @@ public class Module extends TextFile
 
             switch (key.toUpperCase(Locale.ENGLISH))
             {
+                case "OPTIONAL":
+                    optionalParentNames.add(value);
+                    handled = true;
+                    break;
                 case "DEPEND":
                     parentNames.add(value);
                     handled = true;

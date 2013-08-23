@@ -84,13 +84,13 @@ public class Modules implements Iterable<Module>
     }
 
     /**
-     * Using the provided dependenies, build the module graph
+     * Using the provided dependencies, build the module graph
      */
     public void buildGraph()
     {
         // Connect edges
         for (Module module : modules.values())
-        {
+        {   
             for (String parentName : module.getParentNames())
             {
                 Module parent = get(parentName);
@@ -98,6 +98,17 @@ public class Modules implements Iterable<Module>
                 {
                     module.addParentEdge(parent);
                     parent.addChildEdge(module);
+                }
+            }
+            
+            for (String optionalParentName : module.getOptionalParentNames())
+            {
+                Module optional = get(optionalParentName);
+                
+                if (optional != null && optional.isEnabled())
+                {
+                    module.addParentEdge(optional);
+                    optional.addChildEdge(module);
                 }
             }
         }
