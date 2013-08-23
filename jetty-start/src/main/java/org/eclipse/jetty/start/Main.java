@@ -36,10 +36,8 @@ import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Enumeration;
 import java.util.List;
 import java.util.Locale;
-import java.util.Properties;
 
 /**
  * Main start class.
@@ -265,48 +263,17 @@ public class Main
         // Dump Jetty Home / Base
         args.dumpEnvironment();
 
-        // Dump JVM Properties
-        System.out.println();
-        System.out.println("JVM Arguments:");
-        System.out.println("--------------");
-        for (String jvmArgKey : args.getJvmArgs())
-        {
-            String value = System.getProperty(jvmArgKey);
-            if (value != null)
-            {
-                System.out.printf(" %s = %s%n",jvmArgKey,value);
-            }
-            else
-            {
-                System.out.printf(" %s%n",jvmArgKey);
-            }
-        }
+        // Dump JVM Args
+        args.dumpJvmArgs();
 
         // Dump Properties
-        System.out.println();
-        System.out.println("Properties:");
-        System.out.println("-----------");
-        Properties props = args.getProperties();
-        @SuppressWarnings("unchecked")
-        Enumeration<String> keyEnum = (Enumeration<String>)props.propertyNames();
-        while (keyEnum.hasMoreElements())
-        {
-            String name = keyEnum.nextElement();
-            String value = props.getProperty(name);
-            System.out.printf(" %s = %s%n",name,value);
-        }
+        args.dumpProperties();
 
         // Dump Classpath
         dumpClasspathWithVersions(args.getClasspath());
 
         // Dump Resolved XMLs
-        System.out.println();
-        System.out.println("Jetty Active XMLs:");
-        System.out.println("------------------");
-        for (File xml : args.getXmlFiles())
-        {
-            System.out.printf(" %s%n",baseHome.toShortForm(xml.getAbsolutePath()));
-        }
+        args.dumpActiveXmls(baseHome);
     }
 
     private void listModules(StartArgs args)

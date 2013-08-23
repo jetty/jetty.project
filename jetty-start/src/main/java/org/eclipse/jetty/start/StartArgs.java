@@ -26,6 +26,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
@@ -110,6 +111,23 @@ public class StartArgs
         }
     }
 
+    public void dumpActiveXmls(BaseHome baseHome)
+    {
+        System.out.println();
+        System.out.println("Jetty Active XMLs:");
+        System.out.println("------------------");
+        if (xmls.isEmpty())
+        {
+            System.out.println(" (no xml files specified)");
+            return;
+        }
+
+        for (File xml : xmls)
+        {
+            System.out.printf(" %s%n",baseHome.toShortForm(xml.getAbsolutePath()));
+        }
+    }
+
     public void dumpEnvironment()
     {
         // Java Details
@@ -134,6 +152,53 @@ public class StartArgs
         dumpSystemProperty("jetty.base");
         dumpSystemProperty("jetty.version");
 
+    }
+
+    public void dumpJvmArgs()
+    {
+        System.out.println();
+        System.out.println("JVM Arguments:");
+        System.out.println("--------------");
+        if (jvmArgs.isEmpty())
+        {
+            System.out.println(" (no jvm args specified)");
+            return;
+        }
+
+        for (String jvmArgKey : jvmArgs)
+        {
+            String value = System.getProperty(jvmArgKey);
+            if (value != null)
+            {
+                System.out.printf(" %s = %s%n",jvmArgKey,value);
+            }
+            else
+            {
+                System.out.printf(" %s%n",jvmArgKey);
+            }
+        }
+    }
+
+    public void dumpProperties()
+    {
+        System.out.println();
+        System.out.println("Properties:");
+        System.out.println("-----------");
+
+        if (properties.isEmpty())
+        {
+            System.out.println(" (no properties specified)");
+            return;
+        }
+
+        @SuppressWarnings("unchecked")
+        Enumeration<String> keyEnum = (Enumeration<String>)properties.propertyNames();
+        while (keyEnum.hasMoreElements())
+        {
+            String name = keyEnum.nextElement();
+            String value = properties.getProperty(name);
+            System.out.printf(" %s = %s%n",name,value);
+        }
     }
 
     private void dumpSystemProperty(String key)
