@@ -69,7 +69,7 @@ public class LoadTest
         @OnWebSocketMessage
         public void onWebSocketText(String message)
         {
-            session.getRemote().sendStringByFuture(message);
+            session.getRemote().sendString(message,null);
             long iter = count.incrementAndGet();
             if ((iter % 100) == 0)
             {

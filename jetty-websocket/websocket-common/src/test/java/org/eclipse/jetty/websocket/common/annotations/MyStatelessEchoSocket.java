@@ -36,6 +36,6 @@ public class MyStatelessEchoSocket
     @OnWebSocketMessage
     public void onText(Session session, String text)
     {
-        session.getRemote().sendStringByFuture(text);
+        session.getRemote().sendString(text,null);
     }
 }

@@ -40,7 +40,7 @@ public class EchoBroadcastSocket
         ByteBuffer data = ByteBuffer.wrap(buf,offset,len);
         for (EchoBroadcastSocket sock : BROADCAST)
         {
-            sock.session.getRemote().sendBytesByFuture(data.slice());
+            sock.session.getRemote().sendBytes(data.slice(),null);
         }
     }
 
@@ -62,7 +62,7 @@ public class EchoBroadcastSocket
     {
         for (EchoBroadcastSocket sock : BROADCAST)
         {
-            sock.session.getRemote().sendStringByFuture(text);
+            sock.session.getRemote().sendString(text,null);
         }
     }
 }

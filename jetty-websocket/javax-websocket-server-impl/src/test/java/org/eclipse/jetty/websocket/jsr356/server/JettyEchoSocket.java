@@ -70,7 +70,7 @@ public class JettyEchoSocket
     public void onMessage(String msg)
     {
         incomingMessages.add(msg);
-        remote.sendStringByFuture(msg);
+        remote.sendString(msg,null);
     }
 
     @OnWebSocketConnect

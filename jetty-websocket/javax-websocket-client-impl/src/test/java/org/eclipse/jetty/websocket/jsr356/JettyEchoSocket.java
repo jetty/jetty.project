@@ -33,7 +33,7 @@ public class JettyEchoSocket extends WebSocketAdapter
     @Override
     public void onWebSocketBinary(byte[] payload, int offset, int len)
     {
-        getRemote().sendBytesByFuture(BufferUtil.toBuffer(payload,offset,len));
+        getRemote().sendBytes(BufferUtil.toBuffer(payload,offset,len),null);
     }
 
     @Override
@@ -45,6 +45,6 @@ public class JettyEchoSocket extends WebSocketAdapter
     @Override
     public void onWebSocketText(String message)
     {
-        getRemote().sendStringByFuture(message);
+        getRemote().sendString(message,null);
     }
 }

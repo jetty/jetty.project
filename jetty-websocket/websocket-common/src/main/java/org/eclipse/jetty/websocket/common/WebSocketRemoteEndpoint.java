@@ -27,6 +27,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.eclipse.jetty.util.BlockingCallback;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -52,6 +53,18 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
     private static final int TEXT = 1;
     private static final int BINARY = 2;
     private static final int CONTROL = 3;
+    private static final WriteCallback NOOP_CALLBACK = new WriteCallback()
+    {
+        @Override
+        public void writeSuccess()
+        {
+        }
+        
+        @Override
+        public void writeFailed(Throwable x)
+        {
+        }
+    };
 
     private static final Logger LOG = Log.getLogger(WebSocketRemoteEndpoint.class);
     public final LogicalConnection connection;
@@ -72,19 +85,11 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
 
     private void blockingWrite(WebSocketFrame frame) throws IOException
     {
-        Future<Void> fut = sendAsyncFrame(frame);
-        try
-        {
-            fut.get(); // block till done
-        }
-        catch (ExecutionException e)
-        {
-            throw new IOException("Failed to write bytes",e.getCause());
-        }
-        catch (InterruptedException e)
-        {
-            throw new IOException("Failed to write bytes",e);
-        }
+        // TODO Blocking callbacks can be recycled, but they do not handle concurrent calls,
+        // so if some mutual exclusion can be applied, then this callback can be reused.
+        BlockingWriteCallback callback = new BlockingWriteCallback();
+        sendFrame(frame,callback);
+        callback.block();
     }
 
     public InetSocketAddress getInetSocketAddress()
@@ -150,13 +155,12 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
     @Override
     public void sendBytes(ByteBuffer data, WriteCallback callback)
     {
-        Objects.requireNonNull(callback,"WriteCallback cannot be null");
         msgType.set(BINARY);
         if (LOG.isDebugEnabled())
         {
             LOG.debug("sendBytes({}, {})",BufferUtil.toDetailString(data),callback);
         }
-        sendFrame(new BinaryFrame().setPayload(data),callback);
+        sendFrame(new BinaryFrame().setPayload(data),callback==null?NOOP_CALLBACK:callback);
     }
 
     public void sendFrame(WebSocketFrame frame, WriteCallback callback)
@@ -356,13 +360,12 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
     @Override
     public void sendString(String text, WriteCallback callback)
     {
-        Objects.requireNonNull(callback,"WriteCallback cannot be null");
         msgType.set(TEXT);
         TextFrame frame = new TextFrame().setPayload(text);
         if (LOG.isDebugEnabled())
         {
             LOG.debug("sendString({},{})",BufferUtil.toDetailString(frame.getPayload()),callback);
         }
-        sendFrame(frame,callback);
+        sendFrame(frame,callback==null?NOOP_CALLBACK:callback);
     }
 }
