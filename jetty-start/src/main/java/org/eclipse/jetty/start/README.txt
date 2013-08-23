@@ -9,11 +9,11 @@ Jetty start.jar provides a cross platform replacement for startup scripts.
 It makes use of executable JAR that builds the classpath and then executes
 jetty.
 
-To run with all the demo options:
+To run with the demo module:
 
-  java -jar start.jar OPTIONS=All
+  java -jar start.jar MODULES=demo
 
-To run with the default options:
+To run with the default modules:
 
   java -jar start.jar
 
@@ -31,15 +31,15 @@ To see the available options
 
 To run with JSP support (if available)
 
-  java -jar start.jar OPTIONS=Server,jsp
+  java -jar start.jar MODULES=jsp
 
 To run with JMX support
 
-  java -jar start.jar OPTIONS=Server,jmx etc/jetty-jmx.xml etc/jetty.xml
+  java -jar start.jar MODULES=jmx
 
 To run with JSP & JMX support
 
-    java -jar start.jar OPTIONS=Server,jsp,jmx etc/jetty-jmx.xml etc/jetty.xml
+    java -jar start.jar MODULES=jsp,jmx
 
 Note that JSP requires the jasper jars to be within $JETTY/lib/jsp  These 
 are currently not distributed with the eclipse release and must be

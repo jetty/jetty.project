@@ -2,6 +2,8 @@
 # Deploy Feature
 #
 
+DEPEND=webapp
+
 # Deploy jars
 LIB=lib/jetty-deploy-${jetty.version}.jar
 

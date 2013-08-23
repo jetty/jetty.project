@@ -87,11 +87,21 @@ public class Module extends TextFile
 
     public void addChildEdge(Module child)
     {
+        if (childEdges.contains(child))
+        {
+            // already present, skip
+            return;
+        }
         this.childEdges.add(child);
     }
 
     public void addParentEdge(Module parent)
     {
+        if (parentEdges.contains(parent))
+        {
+            // already present, skip
+            return;
+        }
         this.parentEdges.add(parent);
     }
 
@@ -149,7 +159,7 @@ public class Module extends TextFile
     {
         return optionalParentNames;
     }
-    
+
     public Set<Module> getParentEdges()
     {
         return parentEdges;
