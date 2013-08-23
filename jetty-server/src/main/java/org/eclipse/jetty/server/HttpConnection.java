@@ -265,32 +265,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         onFillable();
     }
 
-    @Override
-    public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent) throws IOException
-    {
-        try
-        {
-            if (info==null)
-                new ContentCallback(content,lastContent,_writeBlocker).iterate();
-            else
-            {
-                // If we are still expecting a 100 continues
-                if (_channel.isExpecting100Continue())
-                    // then we can't be persistent
-                    _generator.setPersistent(false);
-                new CommitCallback(info,content,lastContent,_writeBlocker).iterate();
-            }
-            _writeBlocker.block();
-        }
-        catch (ClosedChannelException e)
-        {
-            throw new EofException(e);
-        }
-        catch (IOException e)
-        {
-            throw e;
-        }
-    }
 
     @Override
     public void send(ResponseInfo info, ByteBuffer content, boolean lastContent, Callback callback)

@@ -85,14 +85,6 @@ public class ResponseTest
         _channel = new HttpChannel<ByteBuffer>(connector, new HttpConfiguration(), endp, new HttpTransport()
         {
             @Override
-            public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent) throws IOException
-            {
-                BlockingCallback cb = new BlockingCallback();
-                send(info,content,lastContent,cb);
-                cb.block();
-            }
-
-            @Override
             public void send(ResponseInfo info, ByteBuffer content, boolean lastContent, Callback callback)
             {
                 callback.succeeded();

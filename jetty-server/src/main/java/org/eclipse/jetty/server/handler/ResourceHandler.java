@@ -522,6 +522,8 @@ public class ResourceHandler extends HandlerWrapper
                     @Override
                     public void failed(Throwable x)
                     {
+                        LOG.warn(x.toString());
+                        LOG.debug(x);
                         async.complete();
                     }   
                 };

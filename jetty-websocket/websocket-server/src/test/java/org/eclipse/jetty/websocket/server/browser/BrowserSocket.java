@@ -67,7 +67,7 @@ public class BrowserSocket
                     randomText[i] = letters[rand.nextInt(lettersLen)];
                 }
                 msg = String.format("ManyThreads [%s]",String.valueOf(randomText));
-                remote.sendStringByFuture(msg);
+                remote.sendString(msg,null);
             }
         }
     }
@@ -219,7 +219,7 @@ public class BrowserSocket
         }
 
         // Async write
-        remote.sendStringByFuture(message);
+        remote.sendString(message,null);
     }
 
     private void writeMessage(String format, Object... args)

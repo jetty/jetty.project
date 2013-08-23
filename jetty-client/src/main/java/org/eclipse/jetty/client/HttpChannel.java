@@ -26,7 +26,7 @@ import org.eclipse.jetty.util.log.Logger;
 
 public abstract class HttpChannel
 {
-    protected static final Logger LOG = Log.getLogger(new Object(){}.getClass().getEnclosingClass());
+    protected static final Logger LOG = Log.getLogger(HttpChannel.class);
 
     private final AtomicReference<HttpExchange> exchange = new AtomicReference<>();
     private final HttpDestination destination;

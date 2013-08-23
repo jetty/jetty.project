@@ -262,7 +262,7 @@ public class HttpTransportOverSPDYTest
         verify(stream, times(1)).reply(replyInfoCaptor.capture(), any(Callback.class));
         assertThat("ReplyInfo close is false", replyInfoCaptor.getValue().isClose(), is(false));
 
-        httpTransportOverSPDY.send(HttpGenerator.RESPONSE_500_INFO, null,true);
+        httpTransportOverSPDY.send(HttpGenerator.RESPONSE_500_INFO, null,true, new Callback.Adapter());
 
         verify(stream, times(1)).data(any(DataInfo.class), any(Callback.class));
 

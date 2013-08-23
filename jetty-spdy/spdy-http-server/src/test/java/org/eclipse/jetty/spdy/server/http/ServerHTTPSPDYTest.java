@@ -26,7 +26,9 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
@@ -50,6 +52,8 @@ import org.eclipse.jetty.spdy.api.StringDataInfo;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.http.HTTPSPDYHeader;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.Assert;
 import org.junit.Test;
@@ -57,6 +61,7 @@ import org.junit.Test;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
@@ -65,6 +70,8 @@ import static org.junit.Assert.fail;
 
 public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
 {
+    private static final Logger LOG = Log.getLogger(ServerHTTPSPDYTest.class);
+
     public ServerHTTPSPDYTest(short version)
     {
         super(version);
@@ -90,7 +97,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 assertThat(httpRequest.getHeader("host"), is("localhost:" + connector.getLocalPort()));
                 handlerLatch.countDown();
             }
-        }), null);
+        }, 30000), null);
 
         Fields headers = SPDYTestUtils.createHeaders("localhost", connector.getLocalPort(), version, "GET", path);
         final CountDownLatch replyLatch = new CountDownLatch(1);
@@ -131,7 +138,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 assertEquals(query, httpRequest.getQueryString());
                 handlerLatch.countDown();
             }
-        }), null);
+        }, 30000), null);
 
         Fields headers = SPDYTestUtils.createHeaders("localhost", connector.getPort(), version, "GET", uri);
         final CountDownLatch replyLatch = new CountDownLatch(1);
@@ -174,7 +181,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 assertThat("requestUri is /foo", httpRequest.getRequestURI(), is(path));
                 handlerLatch.countDown();
             }
-        }), null);
+        }, 30000), null);
 
         Fields headers = SPDYTestUtils.createHeaders("localhost", connector.getPort(), version, "GET", uri);
         final CountDownLatch replyLatch = new CountDownLatch(1);
@@ -216,7 +223,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 httpResponse.getWriter().write("body that shouldn't be sent on a HEAD request");
                 handlerLatch.countDown();
             }
-        }), null);
+        }, 30000), null);
 
         Fields headers = SPDYTestUtils.createHeaders("localhost", connector.getPort(), version, "HEAD", path);
         final CountDownLatch replyLatch = new CountDownLatch(1);
@@ -256,7 +263,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 request.setHandled(true);
                 handlerLatch.countDown();
             }
-        }), null);
+        }, 30000), null);
 
         Fields headers = SPDYTestUtils.createHeaders("localhost", connector.getPort(), version, "POST", path);
         headers.put("content-type", "application/x-www-form-urlencoded");
@@ -305,7 +312,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 assertNotNull(httpRequest.getServerName());
                 handlerLatch.countDown();
             }
-        }), null);
+        }, 30000), null);
 
         Fields headers = SPDYTestUtils.createHeaders("localhost", connector.getPort(), version, "POST", path);
         headers.put("content-type", "application/x-www-form-urlencoded");
@@ -347,7 +354,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 assertEquals("2", httpRequest.getParameter("b"));
                 handlerLatch.countDown();
             }
-        }), null);
+        }, 30000), null);
 
         Fields headers = SPDYTestUtils.createHeaders("localhost", connector.getPort(), version, "POST", path);
         headers.put("content-type", "application/x-www-form-urlencoded");
@@ -392,7 +399,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 assertEquals("2", httpRequest.getParameter("b"));
                 handlerLatch.countDown();
             }
-        }), null);
+        }, 30000), null);
 
         Fields headers = SPDYTestUtils.createHeaders("localhost", connector.getPort(), version, "POST", path);
         headers.put("content-type", "application/x-www-form-urlencoded");
@@ -434,7 +441,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 output.write(data.getBytes("UTF-8"));
                 handlerLatch.countDown();
             }
-        }), null);
+        }, 30000), null);
 
         Fields headers = SPDYTestUtils.createHeaders("localhost", connector.getPort(), version, "GET", "/foo");
         final CountDownLatch replyLatch = new CountDownLatch(1);
@@ -480,7 +487,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 output.write(data);
                 handlerLatch.countDown();
             }
-        }), null);
+        }, 30000), null);
 
         Fields headers = SPDYTestUtils.createHeaders("localhost", connector.getPort(), version, "GET", "/foo");
         final CountDownLatch replyLatch = new CountDownLatch(1);
@@ -531,7 +538,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 output.write(data2.getBytes("UTF-8"));
                 handlerLatch.countDown();
             }
-        }), null);
+        }, 30000), null);
 
         Fields headers = SPDYTestUtils.createHeaders("localhost", connector.getPort(), version, "GET", "/foo");
         final CountDownLatch replyLatch = new CountDownLatch(1);
@@ -586,7 +593,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 output.write(data);
                 handlerLatch.countDown();
             }
-        }), null);
+        }, 30000), null);
 
         Fields headers = SPDYTestUtils.createHeaders("localhost", connector.getPort(), version, "GET", "/foo");
         final CountDownLatch replyLatch = new CountDownLatch(1);
@@ -642,7 +649,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 }
                 handlerLatch.countDown();
             }
-        }), null);
+        }, 30000), null);
 
         Fields headers = SPDYTestUtils.createHeaders("localhost", connector.getPort(), version, "GET", "/foo");
         final CountDownLatch replyLatch = new CountDownLatch(1);
@@ -695,7 +702,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 output.write(data);
                 handlerLatch.countDown();
             }
-        }), null);
+        }, 30000), null);
 
         Fields headers = SPDYTestUtils.createHeaders("localhost", connector.getPort(), version, "GET", "/foo");
         final CountDownLatch replyLatch = new CountDownLatch(1);
@@ -748,7 +755,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 output.close();
                 handlerLatch.countDown();
             }
-        }), null);
+        }, 30000), null);
 
         Fields headers = SPDYTestUtils.createHeaders("localhost", connector.getPort(), version, "GET", "/foo");
         final CountDownLatch replyLatch = new CountDownLatch(1);
@@ -806,7 +813,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 output.write(data2.getBytes("UTF-8"));
                 handlerLatch.countDown();
             }
-        }), null);
+        }, 30000), null);
 
         Fields headers = SPDYTestUtils.createHeaders("localhost", connector.getPort(), version, "GET", "/foo");
         final CountDownLatch replyLatch = new CountDownLatch(1);
@@ -859,7 +866,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 httpResponse.sendRedirect(location);
                 handlerLatch.countDown();
             }
-        }), null);
+        }, 30000), null);
 
         Fields headers = SPDYTestUtils.createHeaders("localhost", connector.getPort(), version, "GET", "/foo");
         final CountDownLatch replyLatch = new CountDownLatch(1);
@@ -896,7 +903,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 httpResponse.sendError(HttpServletResponse.SC_NOT_FOUND);
                 handlerLatch.countDown();
             }
-        }), null);
+        }, 30000), null);
 
         Fields headers = SPDYTestUtils.createHeaders("localhost", connector.getPort(), version, "GET", "/foo");
         final CountDownLatch replyLatch = new CountDownLatch(1);
@@ -941,7 +948,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             {
                 throw new NullPointerException("thrown_explicitly_by_the_test");
             }
-        }), null);
+        }, 30000), null);
 
         Fields headers = SPDYTestUtils.createHeaders("localhost", connector.getPort(), version, "GET", "/foo");
         final CountDownLatch replyLatch = new CountDownLatch(1);
@@ -995,7 +1002,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 output.write(pangram2.getBytes("UTF-8"));
                 handlerLatch.countDown();
             }
-        }), null);
+        }, 30000), null);
 
         Fields headers = SPDYTestUtils.createHeaders("localhost", connector.getPort(), version, "GET", "/foo");
         final CountDownLatch replyLatch = new CountDownLatch(1);
@@ -1054,7 +1061,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 request.getResponse().getHttpOutput().sendContent(ByteBuffer.wrap(data));
                 handlerLatch.countDown();
             }
-        }), null);
+        }, 30000), null);
 
         Fields headers = SPDYTestUtils.createHeaders("localhost", connector.getPort(), version, "GET", "/foo");
         final CountDownLatch replyLatch = new CountDownLatch(1);
@@ -1110,7 +1117,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 output.write(data);
                 output.write(data);
             }
-        }), null);
+        }, 30000), null);
 
         Fields headers = SPDYTestUtils.createHeaders("localhost", connector.getPort(), version, "GET", "/foo");
         final CountDownLatch replyLatch = new CountDownLatch(1);
@@ -1174,7 +1181,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                     }
                 }.start();
             }
-        }), null);
+        }, 30000), null);
 
         Fields headers = SPDYTestUtils.createHeaders("localhost", connector.getPort(), version, "POST", "/foo");
         final CountDownLatch replyLatch = new CountDownLatch(1);
@@ -1217,7 +1224,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 }
 
             }
-        }), null);
+        }, 30000), null);
 
         Fields headers = SPDYTestUtils.createHeaders("localhost", connector.getPort(), version, "POST", "/foo");
         final CountDownLatch replyLatch = new CountDownLatch(1);
@@ -1262,7 +1269,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 }
 
             }
-        }), null);
+        }, 30000), null);
 
         Fields headers = SPDYTestUtils.createHeaders("localhost", connector.getPort(), version, "POST", "/foo");
         final CountDownLatch replyLatch = new CountDownLatch(1);
@@ -1330,7 +1337,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                     }
                 }.start();
             }
-        }), null);
+        }, 30000), null);
 
         Fields headers = SPDYTestUtils.createHeaders("localhost", connector.getPort(), version, "POST", "/foo");
         final CountDownLatch replyLatch = new CountDownLatch(1);
@@ -1398,7 +1405,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                     output.write(data);
                 }
             }
-        }), null);
+        }, 30000), null);
 
         Fields headers = SPDYTestUtils.createHeaders("localhost", connector.getPort(), version, "POST", "/foo");
         final CountDownLatch responseLatch = new CountDownLatch(2);
@@ -1439,7 +1446,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 request.setHandled(true);
                 latch.countDown();
             }
-        }), null);
+        }, 30000), null);
 
         Fields headers = SPDYTestUtils.createHeaders("localhost", connector.getPort(), version, "POST", "/foo");
         final CountDownLatch responseLatch = new CountDownLatch(1);
@@ -1458,6 +1465,147 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testIdleTimeout() throws Exception
+    {
+        final int idleTimeout = 500;
+        final CountDownLatch timeoutReceivedLatch = new CountDownLatch(1);
+
+        Session session = startClient(version, startHTTPServer(version, new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, final Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
+                    throws IOException, ServletException
+            {
+                try
+                {
+                    Thread.sleep(2 * idleTimeout);
+                }
+                catch (InterruptedException e)
+                {
+                    throw new RuntimeException(e);
+                }
+                request.setHandled(true);
+            }
+        }, 30000), null);
+
+        Fields headers = SPDYTestUtils.createHeaders("localhost", connector.getPort(), version, "GET", "/");
+        Stream stream = session.syn(new SynInfo(5, TimeUnit.SECONDS, headers, true, (byte)0),
+                new StreamFrameListener.Adapter()
+                {
+                    @Override
+                    public void onFailure(Throwable x)
+                    {
+                        assertThat("we got a TimeoutException", x, instanceOf(TimeoutException.class));
+                        timeoutReceivedLatch.countDown();
+                    }
+                });
+        stream.setIdleTimeout(idleTimeout);
+
+        assertThat("idle timeout hit", timeoutReceivedLatch.await(5, TimeUnit.SECONDS), is(true));
+    }
+
+    @Test
+    public void testIdleTimeoutSetOnConnectionOnly() throws Exception
+    {
+        final int idleTimeout = 500;
+        final CountDownLatch timeoutReceivedLatch = new CountDownLatch(1);
+        Session session = startClient(version, startHTTPServer(version, new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, final Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
+                    throws IOException, ServletException
+            {
+                try
+                {
+                    Thread.sleep(2 * idleTimeout);
+                }
+                catch (InterruptedException e)
+                {
+                    throw new RuntimeException(e);
+                }
+                request.setHandled(true);
+            }
+        }, idleTimeout), null);
+
+        Fields headers = SPDYTestUtils.createHeaders("localhost", connector.getPort(), version, "GET", "/");
+        Stream stream = session.syn(new SynInfo(5, TimeUnit.SECONDS, headers, true, (byte)0),
+                new StreamFrameListener.Adapter()
+                {
+                    @Override
+                    public void onFailure(Throwable x)
+                    {
+                        assertThat("we got a TimeoutException", x, instanceOf(TimeoutException.class));
+                        timeoutReceivedLatch.countDown();
+                    }
+                });
+
+        assertThat("idle timeout hit", timeoutReceivedLatch.await(5, TimeUnit.SECONDS), is(true));
+    }
+
+    @Test
+    public void testSingleStreamIdleTimeout() throws Exception
+    {
+        final int idleTimeout = 500;
+        final CountDownLatch timeoutReceivedLatch = new CountDownLatch(1);
+        final CountDownLatch replyReceivedLatch = new CountDownLatch(3);
+        Session session = startClient(version, startHTTPServer(version, new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, final Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
+                    throws IOException, ServletException
+            {
+                if ("true".equals(request.getHeader("slow")))
+                {
+                    try
+                    {
+                        Thread.sleep(2 * idleTimeout);
+                    }
+                    catch (InterruptedException e)
+                    {
+                        throw new RuntimeException(e);
+                    }
+                }
+                request.setHandled(true);
+            }
+        }, idleTimeout), null);
+
+        Fields headers = SPDYTestUtils.createHeaders("localhost", connector.getPort(), version, "GET", "/");
+        Fields slowHeaders = SPDYTestUtils.createHeaders("localhost", connector.getPort(), version, "GET", "/");
+        slowHeaders.add("slow", "true");
+        sendSingleRequestThatIsNotExpectedToTimeout(replyReceivedLatch, session, headers);
+        session.syn(new SynInfo(5, TimeUnit.SECONDS, slowHeaders, true, (byte)0),
+                new StreamFrameListener.Adapter()
+                {
+                    @Override
+                    public void onFailure(Throwable x)
+                    {
+                        assertThat("we got a TimeoutException", x, instanceOf(TimeoutException.class));
+                        timeoutReceivedLatch.countDown();
+                    }
+                });
+        Thread.sleep(idleTimeout / 2);
+        sendSingleRequestThatIsNotExpectedToTimeout(replyReceivedLatch, session, headers);
+        Thread.sleep(idleTimeout / 2);
+        sendSingleRequestThatIsNotExpectedToTimeout(replyReceivedLatch, session, headers);
+        assertThat("idle timeout hit", timeoutReceivedLatch.await(5, TimeUnit.SECONDS), is(true));
+        assertThat("received replies on 3 non idle requests", replyReceivedLatch.await(5, TimeUnit.SECONDS),
+                is(true));
+    }
+
+    private void sendSingleRequestThatIsNotExpectedToTimeout(final CountDownLatch replyReceivedLatch, Session session, Fields headers) throws ExecutionException, InterruptedException, TimeoutException
+    {
+        session.syn(new SynInfo(5, TimeUnit.SECONDS, headers, true, (byte)0),
+                new StreamFrameListener.Adapter()
+                {
+                    @Override
+                    public void onReply(Stream stream, ReplyInfo replyInfo)
+                    {
+                        replyReceivedLatch.countDown();
+                    }
+                });
     }
 
 }

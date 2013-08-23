@@ -47,7 +47,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public abstract class HttpDestination implements Destination, Closeable, Dumpable
 {
-    protected static final Logger LOG = Log.getLogger(new Object(){}.getClass().getEnclosingClass());
+    protected static final Logger LOG = Log.getLogger(HttpDestination.class);
 
     private final HttpClient client;
     private final String scheme;

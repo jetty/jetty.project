@@ -42,7 +42,7 @@ public class BigEchoSocket
             LOG.warn("Session is closed");
             return;
         }
-        session.getRemote().sendBytesByFuture(ByteBuffer.wrap(buf,offset,length));
+        session.getRemote().sendBytes(ByteBuffer.wrap(buf,offset,length),null);
     }
 
     @OnWebSocketMessage
@@ -53,6 +53,6 @@ public class BigEchoSocket
             LOG.warn("Session is closed");
             return;
         }
-        session.getRemote().sendStringByFuture(message);
+        session.getRemote().sendString(message,null);
     }
 }

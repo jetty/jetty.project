@@ -139,4 +139,13 @@ public class HttpReceiverOverSPDY extends HttpReceiver implements StreamFrameLis
             responseFailure(x);
         }
     }
+
+    @Override
+    public void onFailure(Throwable x)
+    {
+        HttpExchange exchange = getHttpExchange();
+        if (exchange == null)
+            return;
+        exchange.getRequest().abort(x);
+    }
 }

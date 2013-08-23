@@ -61,7 +61,7 @@ public class SessionSocket
 
                 if (values == null)
                 {
-                    session.getRemote().sendStringByFuture("<null>");
+                    session.getRemote().sendString("<null>",null);
                     return;
                 }
 
@@ -78,21 +78,21 @@ public class SessionSocket
                     delim = true;
                 }
                 valueStr.append(']');
-                session.getRemote().sendStringByFuture(valueStr.toString());
+                session.getRemote().sendString(valueStr.toString(),null);
                 return;
             }
 
             if ("session.isSecure".equals(message))
             {
                 String issecure = String.format("session.isSecure=%b",session.isSecure());
-                session.getRemote().sendStringByFuture(issecure);
+                session.getRemote().sendString(issecure,null);
                 return;
             }
 
             if ("session.upgradeRequest.requestURI".equals(message))
             {
                 String response = String.format("session.upgradeRequest.requestURI=%s",session.getUpgradeRequest().getRequestURI().toASCIIString());
-                session.getRemote().sendStringByFuture(response);
+                session.getRemote().sendString(response,null);
                 return;
             }
 
@@ -103,7 +103,7 @@ public class SessionSocket
             }
 
             // echo the message back.
-            this.session.getRemote().sendStringByFuture(message);
+            this.session.getRemote().sendString(message,null);
         }
         catch (Throwable t)
         {

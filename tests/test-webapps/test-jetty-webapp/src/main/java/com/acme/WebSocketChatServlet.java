@@ -123,7 +123,7 @@ public class WebSocketChatServlet extends WebSocketServlet implements WebSocketC
                 }
 
                 // Async write the message back.
-                member.remote.sendStringByFuture(data);
+                member.remote.sendString(data,null);
             }
         }
 

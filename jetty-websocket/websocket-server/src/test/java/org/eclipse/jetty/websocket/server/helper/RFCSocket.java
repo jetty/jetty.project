@@ -41,7 +41,7 @@ public class RFCSocket
 
         // echo the message back.
         ByteBuffer data = ByteBuffer.wrap(buf,offset,len);
-        this.session.getRemote().sendBytesByFuture(data);
+        this.session.getRemote().sendBytes(data,null);
     }
 
     @OnWebSocketConnect
@@ -62,6 +62,6 @@ public class RFCSocket
         }
 
         // echo the message back.
-        this.session.getRemote().sendStringByFuture(message);
+        this.session.getRemote().sendString(message,null);
     }
 }

@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.client.http;
 
+import java.util.concurrent.TimeoutException;
+
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpConnection;
 import org.eclipse.jetty.client.HttpDestination;
@@ -93,19 +95,10 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
 
         HttpExchange exchange = channel.getHttpExchange();
         if (exchange != null)
-            idleTimeout();
-        else
-            getHttpDestination().remove(this);
+            return exchange.getRequest().abort(new TimeoutException());
 
+        getHttpDestination().remove(this);
         return true;
-    }
-
-    protected void idleTimeout()
-    {
-        // TODO: we need to fail the exchange if we did not get an answer from the server
-        // TODO: however this mechanism does not seem to be available in SPDY if not subclassing SPDYConnection
-        // TODO: but the API (Session) does not have such facilities; perhaps we need to add a callback to ISession
-        channel.idleTimeout();
     }
 
     @Override

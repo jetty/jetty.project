@@ -74,6 +74,10 @@ import org.eclipse.jetty.util.IO;
  */
 public class JettyRunForkedMojo extends AbstractMojo
 {    
+    public static final String DEFAULT_WEBAPP_SRC = "src"+File.separator+"main"+File.separator+"webapp";
+    public static final String FAKE_WEBAPP = "webapp-tmp";
+    
+    
     public String PORT_SYSPROPERTY = "jetty.port";
     
     /**
@@ -421,8 +425,19 @@ public class JettyRunForkedMojo extends AbstractMojo
             }
 
             //sort out base dir of webapp
-            if (webAppSourceDirectory != null)
-                props.put("base.dir", webAppSourceDirectory.getAbsolutePath());
+            if (webAppSourceDirectory == null || !webAppSourceDirectory.exists())
+            {
+                webAppSourceDirectory = new File (project.getBasedir(), DEFAULT_WEBAPP_SRC);       
+                if (!webAppSourceDirectory.exists())
+                {
+                    //try last resort of making a fake empty dir
+                    File target = new File(project.getBuild().getDirectory());
+                    webAppSourceDirectory = new File(target, FAKE_WEBAPP);
+                    if (!webAppSourceDirectory.exists())
+                        webAppSourceDirectory.mkdirs();  
+                }
+            }
+            props.put("base.dir", webAppSourceDirectory.getAbsolutePath());
 
             //sort out the resource base directories of the webapp
             StringBuilder builder = new StringBuilder();

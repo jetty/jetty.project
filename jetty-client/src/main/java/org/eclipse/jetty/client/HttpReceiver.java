@@ -26,7 +26,6 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.api.Response;
@@ -65,7 +64,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public abstract class HttpReceiver
 {
-    protected static final Logger LOG = Log.getLogger(new Object(){}.getClass().getEnclosingClass());
+    protected static final Logger LOG = Log.getLogger(HttpReceiver.class);
 
     private final AtomicReference<ResponseState> responseState = new AtomicReference<>(ResponseState.IDLE);
     private final HttpChannel channel;
@@ -430,13 +429,6 @@ public abstract class HttpReceiver
     {
         decoder = null;
         responseState.set(ResponseState.FAILURE);
-    }
-
-    public void idleTimeout()
-    {
-        // If we cannot fail, it means a response arrived
-        // just when we were timeout idling, so we don't close
-        responseFailure(new TimeoutException());
     }
 
     public boolean abort(Throwable cause)

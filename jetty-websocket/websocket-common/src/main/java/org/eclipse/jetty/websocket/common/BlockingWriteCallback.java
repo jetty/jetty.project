@@ -16,26 +16,22 @@
 //  ========================================================================
 //
 
-package examples.echo;
+package org.eclipse.jetty.websocket.common;
 
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
-import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.util.BlockingCallback;
+import org.eclipse.jetty.websocket.api.WriteCallback;
 
-/**
- * Example EchoSocket using Annotations.
- */
-@WebSocket(maxTextMessageSize = 64 * 1024)
-public class AnnotatedEchoSocket
+public class BlockingWriteCallback extends BlockingCallback implements WriteCallback
 {
-    @OnWebSocketMessage
-    public void onText(Session session, String message)
+    @Override
+    public void writeFailed(Throwable x)
     {
-        if (session.isOpen())
-        {
-            System.out.printf("Echoing back message [%s]%n",message);
-            // echo the message back
-            session.getRemote().sendString(message,null);
-        }
+        failed(x);
+    }
+
+    @Override
+    public void writeSuccess()
+    {
+        succeeded();
     }
 }

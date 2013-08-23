@@ -116,7 +116,7 @@ public class WebSocketClientTest
 
         Assert.assertThat("client.connectionManager.sessions.size",client.getConnectionManager().getSessions().size(),is(1));
 
-        cliSock.getSession().getRemote().sendStringByFuture("Hello World!");
+        cliSock.getSession().getRemote().sendString("Hello World!",null);
         srvSock.echoMessage(1,TimeUnit.MILLISECONDS,500);
         // wait for response from server
         cliSock.waitForMessage(500,TimeUnit.MILLISECONDS);
