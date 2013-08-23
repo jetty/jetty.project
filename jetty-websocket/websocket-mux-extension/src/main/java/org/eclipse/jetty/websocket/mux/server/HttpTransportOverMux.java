@@ -50,15 +50,6 @@ public class HttpTransportOverMux implements HttpTransport
         LOG.debug("completed");
     }
 
-    /**
-     * Process ResponseInfo object into AddChannelResponse
-     */
-    @Override
-    public void send(ResponseInfo info, ByteBuffer responseBodyContent, boolean lastContent) throws IOException
-    {
-        send(info,responseBodyContent,lastContent,streamBlocker);
-        streamBlocker.block();
-    }
 
     @Override
     public void send(ResponseInfo info, ByteBuffer responseBodyContent, boolean lastContent, Callback callback)
