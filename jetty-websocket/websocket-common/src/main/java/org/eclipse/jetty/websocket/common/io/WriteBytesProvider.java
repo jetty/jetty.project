@@ -209,39 +209,37 @@ public class WriteBytesProvider implements Callback
 
     public void failAll(Throwable t)
     {
-        boolean notified = false;
+        // Collect entries for callback
+        List<FrameEntry> callbacks = new ArrayList<>();
 
-        // fail active (if set)
-        if (active != null)
+        synchronized (this)
         {
-            FrameEntry entry = active;
-            active = null;
-            entry.notifyFailure(t);
-            notified = true;
+            // fail active (if set)
+            if (active != null)
+            {
+                FrameEntry entry = active;
+                active = null;
+                callbacks.add(entry);
+            }
+
+            callbacks.addAll(past);
+            callbacks.addAll(queue);
+
+            past.clear();
+            queue.clear();
         }
 
-        failure = t;
-
-        // fail past
-        while (!past.isEmpty())
+        // notify flush callback
+        if (!callbacks.isEmpty())
         {
-            FrameEntry entry = past.pop();
-            entry.notifyFailure(t);
-            notified = true;
-        }
-
-        // fail others
-        while (!queue.isEmpty())
-        {
-            FrameEntry entry = queue.pop();
-            entry.notifyFailure(t);
-            notified = true;
-        }
-
-        if (notified)
-        {
-            // notify flush callback
+            // TODO: always notify instead?
             flushCallback.failed(t);
+
+            // notify entry callbacks
+            for (FrameEntry entry : callbacks)
+            {
+                entry.notifyFailure(t);
+            }
         }
     }
 
@@ -363,22 +361,31 @@ public class WriteBytesProvider implements Callback
     @Override
     public void succeeded()
     {
-        if ((active != null) && (active.frame.remaining() <= 0))
-        {
-            // All done with active FrameEntry
-            FrameEntry entry = active;
-            active = null;
-            entry.notifySucceeded();
-        }
+        // Collect entries for callback
+        List<FrameEntry> callbacks = new ArrayList<>();
 
-        while (!past.isEmpty())
+        synchronized (this)
         {
-            FrameEntry entry = past.pop();
-            entry.notifySucceeded();
+            if ((active != null) && (active.frame.remaining() <= 0))
+            {
+                // All done with active FrameEntry
+                FrameEntry entry = active;
+                active = null;
+                callbacks.add(entry);
+            }
+
+            callbacks.addAll(past);
+            past.clear();
         }
 
         // notify flush callback
         flushCallback.succeeded();
+
+        // notify entry callbacks outside of synchronize
+        for (FrameEntry entry : callbacks)
+        {
+            entry.notifySucceeded();
+        }
     }
 
     @Override
