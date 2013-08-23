@@ -1589,25 +1589,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         {
             path = URIUtil.canonicalPath(path);
             Resource resource = _baseResource.addPath(path);
-
-            System.err.println();
-            System.err.println("resource="+resource);
-            try
-            {
-                System.err.println("path="+path);
-                System.err.println("resource="+resource);
-                System.err.println("resource.getURI()="+resource.getURI());
-                System.err.println("resource.getURL()="+resource.getURL());
-                System.err.println("resource.getAlias()="+resource.getAlias());
-                System.err.println("resource.getFile() ="+resource.getFile());
-                System.err.println("resource.getFile().getCanonicalPath()="+resource.getFile().getCanonicalPath());
-                System.err.println("resource.getFile().getAbsolutePath() ="+resource.getFile().getAbsolutePath());
-                System.err.println("resource.exists() ="+resource.exists());
-            }
-            catch(Exception e)
-            {
-                e.printStackTrace();
-            }
             
             // Is the resource aliased?
             if (resource.getAlias() != null)
@@ -1615,21 +1596,17 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 if (LOG.isDebugEnabled())
                     LOG.debug("Aliased resource: " + resource + "~=" + resource.getAlias());
 
-                System.err.println("ALIAS="+resource.getAlias());
                 // alias checks
                 for (Iterator<AliasCheck> i=_aliasChecks.iterator();i.hasNext();)
                 {
                     AliasCheck check = i.next();
-                    System.err.println("check="+check);
                     if (check.check(path,resource))
                     {
-                        System.err.println("OK???");
                         if (LOG.isDebugEnabled())
                             LOG.debug("Aliased resource: " + resource + " approved by " + check);
                         return resource;
                     }
                 }
-                System.err.println("NULL ALIAS");
                 return null;
             }
 
