@@ -32,10 +32,8 @@ import java.util.List;
 
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -94,18 +92,17 @@ public class PropertyPassingTest
     @Test
     public void testAsJvmArg() throws IOException, InterruptedException
     {
-        File testCfg = MavenTestingUtils.getTestResourceFile("property-dump-start.config");
         File bogusXml = MavenTestingUtils.getTestResourceFile("bogus.xml");
 
         // Setup command line
         List<String> commands = new ArrayList<>();
         commands.add(getJavaBin());
+        commands.add("-Dmain.class=" + PropertyDump.class.getName());
         commands.add("-cp");
         commands.add(getClassPath());
         // addDebug(commands);
         commands.add("-Dtest.foo=bar"); // TESTING THIS
         commands.add(getStartJarBin());
-        commands.add("--config=" + testCfg.getAbsolutePath());
         commands.add(bogusXml.getAbsolutePath());
 
         // Run command, collect output
@@ -116,21 +113,19 @@ public class PropertyPassingTest
     }
 
     @Test
-    @Ignore("not working yet")
     public void testAsCommandLineArg() throws IOException, InterruptedException
     {
-        File testCfg = MavenTestingUtils.getTestResourceFile("property-dump-start.config");
         File bogusXml = MavenTestingUtils.getTestResourceFile("bogus.xml");
 
         // Setup command line
         List<String> commands = new ArrayList<>();
         commands.add(getJavaBin());
+        commands.add("-Dmain.class=" + PropertyDump.class.getName());
         commands.add("-cp");
         commands.add(getClassPath());
         // addDebug(commands);
         commands.add(getStartJarBin());
         commands.add("test.foo=bar"); // TESTING THIS
-        commands.add("--config=" + testCfg.getAbsolutePath());
         commands.add(bogusXml.getAbsolutePath());
 
         // Run command, collect output
@@ -143,18 +138,17 @@ public class PropertyPassingTest
     @Test
     public void testAsDashDCommandLineArg() throws IOException, InterruptedException
     {
-        File testCfg = MavenTestingUtils.getTestResourceFile("property-dump-start.config");
         File bogusXml = MavenTestingUtils.getTestResourceFile("bogus.xml");
 
         // Setup command line
         List<String> commands = new ArrayList<>();
         commands.add(getJavaBin());
+        commands.add("-Dmain.class=" + PropertyDump.class.getName());
         commands.add("-cp");
         commands.add(getClassPath());
         // addDebug(commands);
         commands.add(getStartJarBin());
         commands.add("-Dtest.foo=bar"); // TESTING THIS
-        commands.add("--config=" + testCfg.getAbsolutePath());
         commands.add(bogusXml.getAbsolutePath());
 
         // Run command, collect output
@@ -198,7 +192,8 @@ public class PropertyPassingTest
         ConsoleCapture stdErrPump = new ConsoleCapture("STDERR",pid.getErrorStream()).start();
 
         int exitCode = pid.waitFor();
-        if(exitCode != 0) {
+        if (exitCode != 0)
+        {
             System.out.printf("STDERR: [" + stdErrPump.getConsoleOutput() + "]%n");
             System.out.printf("STDOUT: [" + stdOutPump.getConsoleOutput() + "]%n");
             Assert.assertThat("Exit code",exitCode,is(0));
@@ -213,35 +208,6 @@ public class PropertyPassingTest
 
     private String getJavaBin()
     {
-        File javaHome = new File(System.getProperty("java.home"));
-        if (!javaHome.exists())
-        {
-            return null;
-        }
-
-        File javabin = findExecutable(javaHome,"bin/java");
-        if (javabin != null)
-        {
-            return javabin.getAbsolutePath();
-        }
-
-        javabin = findExecutable(javaHome,"bin/java.exe");
-        if (javabin != null)
-        {
-            return javabin.getAbsolutePath();
-        }
-
-        return "java";
-    }
-
-    private File findExecutable(File root, String path)
-    {
-        String npath = OS.separators(path);
-        File exe = new File(root,npath);
-        if (!exe.exists())
-        {
-            return null;
-        }
-        return exe;
+        return CommandLineBuilder.findJavaBin();
     }
 }

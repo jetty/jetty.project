@@ -18,9 +18,8 @@
 
 package org.eclipse.jetty.start;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.text.CollationKey;
 import java.text.Collator;
@@ -35,7 +34,7 @@ import java.util.regex.Pattern;
 /**
  * Represents a Module metadata, as defined in Jetty.
  */
-public class Module
+public class Module extends TextFile
 {
     public static class DepthComparator implements Comparator<Module>
     {
@@ -57,104 +56,31 @@ public class Module
         }
     }
 
-    public static Module fromFile(File file) throws IOException
-    {
-        String name = file.getName();
-
-        // Strip .ini
-        name = Pattern.compile(".mod$",Pattern.CASE_INSENSITIVE).matcher(name).replaceFirst("");
-
-        // XML Pattern
-        Pattern xmlPattern = Pattern.compile(".xml$",Pattern.CASE_INSENSITIVE);
-
-        Set<String> parents = new HashSet<>();
-        List<String> xmls = new ArrayList<>();
-        List<String> libs = new ArrayList<>();
-        try (FileReader reader = new FileReader(file))
-        {
-            try (BufferedReader buf = new BufferedReader(reader))
-            {
-                String line;
-                while ((line = buf.readLine()) != null)
-                {
-                    line = line.trim();
-                    if (line.length() <= 0)
-                    {
-                        continue; // skip empty lines
-                    }
-                    if (line.charAt(0) == '#')
-                    {
-                        continue; // skip lines with comments
-                    }
-
-                    // has assignment
-                    int idx = line.indexOf('=');
-                    if (idx >= 0)
-                    {
-                        String key = line.substring(0,idx);
-                        String value = line.substring(idx + 1);
-
-                        boolean handled = false;
-                        switch (key.toUpperCase(Locale.ENGLISH))
-                        {
-                            case "DEPEND":
-                                parents.add(value);
-                                handled = true;
-                                break;
-                            case "LIB":
-                                libs.add(value);
-                                handled = true;
-                                break;
-                        }
-                        if (handled)
-                        {
-                            continue; // no further processing of line needed
-                        }
-                    }
-
-                    // Is it an XML line?
-                    if (xmlPattern.matcher(line).find())
-                    {
-                        xmls.add(line);
-                        continue; // legit xml
-                    }
-
-                    throw new IllegalArgumentException("Unrecognized Module Metadata line [" + line + "] in Module file [" + file + "]");
-                }
-            }
-        }
-
-        return new Module(name,parents,xmls,libs);
-    }
-
     /** The name of this Module */
-    private final String name;
+    private String name;
     /** List of Modules, by name, that this Module depends on */
-    private final Set<String> parentNames;
+    private Set<String> parentNames;
     /** The Edges to parent modules */
-    private final Set<Module> parentEdges;
+    private Set<Module> parentEdges;
     /** The Edges to child modules */
-    private final Set<Module> childEdges;
+    private Set<Module> childEdges;
     /** The depth of the module in the tree */
     private int depth = 0;
     /** List of xml configurations for this Module */
-    private final List<String> xmls;
+    private List<String> xmls;
     /** List of library options for this Module */
-    private final List<String> libs;
+    private List<String> libs;
 
     /** Is this Module enabled via start.jar command line, start.ini, or start.d/*.ini ? */
     private boolean enabled = false;
 
-    public Module(String name, Set<String> parentNames, List<String> xmls, List<String> libs)
+    public Module(File file) throws FileNotFoundException, IOException
     {
-        this.name = name;
-        this.parentNames = parentNames;
-        this.xmls = xmls;
-        this.libs = libs;
+        super(file);
 
-        // initialize edge collections, will be filled out by Modules#buildGraph() later */
-        this.parentEdges = new HashSet<>();
-        this.childEdges = new HashSet<>();
+        String name = file.getName();
+        // Strip .ini
+        name = Pattern.compile(".mod$",Pattern.CASE_INSENSITIVE).matcher(name).replaceFirst("");
     }
 
     public void addChildEdge(Module child)
@@ -165,6 +91,36 @@ public class Module
     public void addParentEdge(Module parent)
     {
         this.parentEdges.add(parent);
+    }
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (this == obj)
+        {
+            return true;
+        }
+        if (obj == null)
+        {
+            return false;
+        }
+        if (getClass() != obj.getClass())
+        {
+            return false;
+        }
+        Module other = (Module)obj;
+        if (name == null)
+        {
+            if (other.name != null)
+            {
+                return false;
+            }
+        }
+        else if (!name.equals(other.name))
+        {
+            return false;
+        }
+        return true;
     }
 
     public Set<Module> getChildEdges()
@@ -202,38 +158,78 @@ public class Module
         return xmls;
     }
 
+    @Override
+    public int hashCode()
+    {
+        final int prime = 31;
+        int result = 1;
+        result = (prime * result) + ((name == null)?0:name.hashCode());
+        return result;
+    }
+
+    @Override
+    public void init()
+    {
+        String name = getFile().getName();
+
+        // Strip .ini
+        this.name = Pattern.compile(".mod$",Pattern.CASE_INSENSITIVE).matcher(name).replaceFirst("");
+
+        this.parentNames = new HashSet<>();
+        this.parentEdges = new HashSet<>();
+        this.childEdges = new HashSet<>();
+        this.xmls = new ArrayList<>();
+        this.libs = new ArrayList<>();
+    }
+
     public boolean isEnabled()
     {
         return enabled;
     }
 
     @Override
-    public int hashCode()
+    public void process(String line)
     {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((name == null)?0:name.hashCode());
-        return result;
-    }
+        boolean handled = false;
 
-    @Override
-    public boolean equals(Object obj)
-    {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        Module other = (Module)obj;
-        if (name == null)
+        if (line == null)
         {
-            if (other.name != null)
-                return false;
+
         }
-        else if (!name.equals(other.name))
-            return false;
-        return true;
+
+        // has assignment
+        int idx = line.indexOf('=');
+        if (idx >= 0)
+        {
+            String key = line.substring(0,idx);
+            String value = line.substring(idx + 1);
+
+            switch (key.toUpperCase(Locale.ENGLISH))
+            {
+                case "DEPEND":
+                    parentNames.add(value);
+                    handled = true;
+                    break;
+                case "LIB":
+                    libs.add(value);
+                    handled = true;
+                    break;
+            }
+        }
+
+        if (handled)
+        {
+            return; // no further processing of line needed
+        }
+
+        // Is it an XML line?
+        if (FS.isXml(line))
+        {
+            xmls.add(line);
+            return;
+        }
+
+        throw new IllegalArgumentException("Unrecognized Module Metadata line [" + line + "] in Module file [" + getFile() + "]");
     }
 
     public void setDepth(int depth)
@@ -246,6 +242,7 @@ public class Module
         this.enabled = enabled;
     }
 
+    @Override
     public String toString()
     {
         StringBuilder str = new StringBuilder();

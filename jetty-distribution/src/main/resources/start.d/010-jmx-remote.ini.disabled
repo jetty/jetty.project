@@ -1,9 +1,0 @@
-#===========================================================
-# JMX Management
-#-----------------------------------------------------------
-
-jetty.jmxrmihost=localhost
-jetty.jmxrmiport=1099
-
---exec
--Dcom.sun.management.jmxremote

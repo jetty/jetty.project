@@ -24,16 +24,31 @@ import java.io.PrintStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.StringTokenizer;
-import java.util.Vector;
 
 /**
  * Class to handle CLASSPATH construction
  */
-public class Classpath
+public class Classpath implements Iterable<File>
 {
+    private static class Loader extends URLClassLoader
+    {
+        Loader(URL[] urls, ClassLoader parent)
+        {
+            super(urls,parent);
+        }
 
-    private final Vector<File> _elements = new Vector<File>();
+        @Override
+        public String toString()
+        {
+            return "startJarLoader@" + Long.toHexString(hashCode());
+        }
+    }
+
+    private final List<File> elements = new ArrayList<File>();
 
     public Classpath()
     {
@@ -44,69 +59,12 @@ public class Classpath
         addClasspath(initial);
     }
 
-    public File[] getElements()
-    {
-        return _elements.toArray(new File[_elements.size()]);
-    }
-
-    public int count()
-    {
-        return _elements.size();
-    }
-
-    public boolean addComponent(String component)
-    {
-        if ((component != null) && (component.length() > 0))
-        {
-            try
-            {
-                File f = new File(component);
-                if (f.exists())
-                {
-                    File key = f.getCanonicalFile();
-                    if (!_elements.contains(key))
-                    {
-                        _elements.add(key);
-                        return true;
-                    }
-                }
-            }
-            catch (IOException e)
-            {
-            }
-        }
-        return false;
-    }
-
-    public boolean addComponent(File component)
-    {
-        if (component != null)
-        {
-            try
-            {
-                if (component.exists())
-                {
-                    File key = component.getCanonicalFile();
-                    if (!_elements.contains(key))
-                    {
-                        _elements.add(key);
-                        return true;
-                    }
-                }
-            }
-            catch (IOException e)
-            {
-            }
-        }
-        return false;
-    }
-
     public boolean addClasspath(String s)
     {
         boolean added = false;
         if (s != null)
         {
-            StringTokenizer t = new StringTokenizer(s, File.pathSeparator);
+            StringTokenizer t = new StringTokenizer(s,File.pathSeparator);
             while (t.hasMoreTokens())
             {
                 added |= addComponent(t.nextToken());
@@ -115,46 +73,73 @@ public class Classpath
         return added;
     }
 
+    public boolean addComponent(File path)
+    {
+        if ((path == null) || (!path.exists()))
+        {
+            // not a valid component
+            return false;
+        }
+
+        try
+        {
+            File key = path.getCanonicalFile();
+            if (!elements.contains(key))
+            {
+                elements.add(key);
+                return true;
+            }
+        }
+        catch (IOException e)
+        {
+            StartLog.debug(e);
+        }
+
+        return false;
+    }
+
+    public boolean addComponent(String component)
+    {
+        if ((component == null) || (component.length() <= 0))
+        {
+            // nothing to add
+            return false;
+        }
+
+        return addComponent(new File(component));
+    }
+
+    public int count()
+    {
+        return elements.size();
+    }
+
     public void dump(PrintStream out)
     {
         int i = 0;
-        for (File element : _elements)
+        for (File element : elements)
         {
-            out.printf("%2d: %s\n", i++, element.getAbsolutePath());
+            out.printf("%2d: %s%n",i++,element.getAbsolutePath());
         }
-    }
-
-    @Override
-    public String toString()
-    {
-        StringBuffer cp = new StringBuffer(1024);
-        int cnt = _elements.size();
-        if (cnt >= 1)
-        {
-            cp.append(((_elements.elementAt(0))).getPath());
-        }
-        for (int i = 1; i < cnt; i++)
-        {
-            cp.append(File.pathSeparatorChar);
-            cp.append(((_elements.elementAt(i))).getPath());
-        }
-        return cp.toString();
     }
 
     public ClassLoader getClassLoader()
     {
-        int cnt = _elements.size();
+        int cnt = elements.size();
         URL[] urls = new URL[cnt];
         for (int i = 0; i < cnt; i++)
         {
             try
             {
-                urls[i] = _elements.elementAt(i).toURI().toURL();
+                urls[i] = elements.get(i).toURI().toURL();
+                StartLog.debug("URLClassLoader.url[%d] = %s",i,urls[i]);
             }
             catch (MalformedURLException e)
             {
+                StartLog.warn(e);
             }
         }
+        StartLog.debug("Loaded %d URLs into URLClassLoader",urls.length);
 
         ClassLoader parent = Thread.currentThread().getContextClassLoader();
         if (parent == null)
@@ -165,46 +150,58 @@ public class Classpath
         {
             parent = ClassLoader.getSystemClassLoader();
         }
-        return new Loader(urls, parent);
+        return new Loader(urls,parent);
     }
 
-    private static class Loader extends URLClassLoader
+    public List<File> getElements()
     {
-        Loader(URL[] urls, ClassLoader parent)
-        {
-            super(urls, parent);
-        }
-
-        @Override
-        public String toString()
-        {
-            return "startJarLoader@" + Long.toHexString(hashCode());
-        }
-    }
-
-
-
-    /**
-     * Overlay another classpath, copying its elements into place on this
-     * Classpath, while eliminating duplicate entries on the classpath.
-     *
-     * @param cpOther the other classpath to overlay
-     */
-    public void overlay(Classpath cpOther)
-    {
-        for (File otherElement : cpOther._elements)
-        {
-            if (this._elements.contains(otherElement))
-            {
-                // Skip duplicate entries
-                continue;
-            }
-            this._elements.add(otherElement);
-        }
+        return elements;
     }
 
     public boolean isEmpty()
     {
-        return (_elements == null) || (_elements.isEmpty());
+        return (elements == null) || (elements.isEmpty());
+    }
+
+    @Override
+    public Iterator<File> iterator()
+    {
+        return elements.iterator();
+    }
+
+    /**
+     * Overlay another classpath, copying its elements into place on this Classpath, while eliminating duplicate entries on the classpath.
+     * 
+     * @param other
+     *            the other classpath to overlay
+     */
+    public void overlay(Classpath other)
+    {
+        for (File otherElement : other.elements)
+        {
+            if (this.elements.contains(otherElement))
+            {
+                // Skip duplicate entries
+                continue;
+            }
+            this.elements.add(otherElement);
+        }
+    }
+
+    @Override
+    public String toString()
+    {
+        StringBuffer cp = new StringBuffer(1024);
+        boolean needDelim = false;
+        for (File element : elements)
+        {
+            if (needDelim)
+            {
+                cp.append(File.pathSeparatorChar);
+            }
+            cp.append(element.getAbsolutePath());
+            needDelim = true;
+        }
+        return cp.toString();
     }
 }

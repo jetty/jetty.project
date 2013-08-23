@@ -38,6 +38,22 @@ public class FS
         }
     }
 
+    public static class FilenameRegexFilter implements FileFilter
+    {
+        private final Pattern pattern;
+
+        public FilenameRegexFilter(String regex)
+        {
+            pattern = Pattern.compile(regex,Pattern.CASE_INSENSITIVE);
+        }
+
+        @Override
+        public boolean accept(File path)
+        {
+            return path.isFile() && pattern.matcher(path.getName()).matches();
+        }
+    }
+
     public static class FileNamesFilter implements FileFilter
     {
         private final String filenames[];
@@ -65,22 +81,6 @@ public class FS
         }
     }
 
-    public static class FilenameRegexFilter implements FileFilter
-    {
-        private final Pattern pattern;
-
-        public FilenameRegexFilter(String regex)
-        {
-            pattern = Pattern.compile(regex,Pattern.CASE_INSENSITIVE);
-        }
-
-        @Override
-        public boolean accept(File path)
-        {
-            return path.isFile() && pattern.matcher(path.getName()).matches();
-        }
-    }
-
     public static class IniFilter extends FilenameRegexFilter
     {
         public IniFilter()
@@ -97,10 +97,22 @@ public class FS
         }
     }
 
+    public static boolean canReadDirectory(File path)
+    {
+        return (path.exists() && path.isDirectory() && path.canRead());
+    }
+
+    public static boolean canReadFile(File path)
+    {
+        return (path.exists() && path.isFile() && path.canRead());
+    }
+
     public static void close(Closeable c)
     {
         if (c == null)
+        {
             return;
+        }
 
         try
         {

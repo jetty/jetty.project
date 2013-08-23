@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.start;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.Enumeration;
 import java.util.Properties;
 
@@ -25,6 +29,7 @@ public class PropertyDump
 {
     public static void main(String[] args)
     {
+        // As System Properties
         Properties props = System.getProperties();
         Enumeration<?> names = props.propertyNames();
         while (names.hasMoreElements())
@@ -36,6 +41,35 @@ public class PropertyDump
                 System.out.printf("%s=%s%n",name,props.getProperty(name));
             }
         }
+
+        // As File Argument
+        for (String arg : args)
+        {
+            if (arg.endsWith(".properties"))
+            {
+                Properties aprops = new Properties();
+                File propFile = new File(arg);
+                System.out.printf("[load file %s]%n",propFile.getName());
+                try (FileReader reader = new FileReader(propFile))
+                {
+                    aprops.load(reader);
+                    Enumeration<?> anames = aprops.propertyNames();
+                    while (anames.hasMoreElements())
+                    {
+                        String name = (String)anames.nextElement();
+                        if (name.startsWith("test."))
+                        {
+                            System.out.printf("%s=%s%n",name,aprops.getProperty(name));
+                        }
+                    }
+                }
+                catch (IOException e)
+                {
+                    e.printStackTrace();
+                }
+            }
+        }
+
         System.exit(0);
     }
 }

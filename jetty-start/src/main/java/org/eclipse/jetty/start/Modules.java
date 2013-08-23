@@ -29,6 +29,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Stack;
 
 /**
  * Access for all modules declared, as well as what is enabled.
@@ -36,11 +37,6 @@ import java.util.Set;
 public class Modules implements Iterable<Module>
 {
     private Map<String, Module> modules = new HashMap<>();
-
-    public void register(Module module)
-    {
-        modules.put(module.getName(),module);
-    }
 
     private void bfsCalculateDepth(final Module module, final int depthNow)
     {
@@ -64,8 +60,6 @@ public class Modules implements Iterable<Module>
      */
     public void buildGraph()
     {
-        // TODO: Validate / Enforce Directed Acyclic Graph
-
         // Connect edges
         for (Module module : modules.values())
         {
@@ -80,6 +74,15 @@ public class Modules implements Iterable<Module>
             }
         }
 
+        // Verify there is no cyclic references
+        Stack<String> refs = new Stack<>();
+        for (Module module : modules.values())
+        {
+            refs.push(module.getName());
+            assertNoCycle(module,refs);
+            refs.pop();
+        }
+
         // Calculate depth of all modules for sorting later
         for (Module module : modules.values())
         {
@@ -90,9 +93,54 @@ public class Modules implements Iterable<Module>
         }
     }
 
+    private void assertNoCycle(Module module, Stack<String> refs)
+    {
+        for (Module parent : module.getParentEdges())
+        {
+            if (refs.contains(parent.getName()))
+            {
+                // Cycle detected.
+                StringBuilder err = new StringBuilder();
+                err.append("A cyclic reference in the modules has been detected: ");
+                for (int i = 0; i < refs.size(); i++)
+                {
+                    if (i > 0)
+                    {
+                        err.append(" -> ");
+                    }
+                    err.append(refs.get(i));
+                }
+                err.append(" -> ").append(parent.getName());
+                throw new IllegalStateException(err.toString());
+            }
+
+            refs.push(parent.getName());
+            assertNoCycle(parent,refs);
+            refs.pop();
+        }
+    }
+
     public Integer count()
     {
         return modules.size();
+    }
+
+    public void dump()
+    {
+        List<Module> ordered = new ArrayList<>();
+        ordered.addAll(modules.values());
+        Collections.sort(ordered,Collections.reverseOrder(new Module.DepthComparator()));
+
+        for (Module module : ordered)
+        {
+            System.out.printf("Module: %s%n",module.getName());
+            System.out.printf("  depth: %d%n",module.getDepth());
+            System.out.printf("  parents: [%s]%n",join(module.getParentNames(),','));
+            for (String xml : module.getXmls())
+            {
+                System.out.printf("  xml: %s%n",xml);
+            }
+        }
     }
 
     public void enable(String name)
@@ -116,40 +164,6 @@ public class Modules implements Iterable<Module>
         }
     }
 
-    public void dump()
-    {
-        List<Module> ordered = new ArrayList<>();
-        ordered.addAll(modules.values());
-        Collections.sort(ordered,Collections.reverseOrder(new Module.DepthComparator()));
-
-        for (Module module : ordered)
-        {
-            System.out.printf("Module: %s%n",module.getName());
-            System.out.printf("  depth: %d%n",module.getDepth());
-            System.out.printf("  parents: [%s]%n",join(module.getParentNames(),','));
-            for (String xml : module.getXmls())
-            {
-                System.out.printf("  xml: %s%n",xml);
-            }
-        }
-    }
-
-    private String join(Collection<?> objs, char delim)
-    {
-        StringBuilder str = new StringBuilder();
-        boolean needDelim = false;
-        for (Object obj : objs)
-        {
-            if (needDelim)
-            {
-                str.append(delim);
-            }
-            str.append(obj);
-            needDelim = true;
-        }
-        return str.toString();
-    }
-
     public Module get(String name)
     {
         Module module = modules.get(name);
@@ -166,27 +180,20 @@ public class Modules implements Iterable<Module>
         return modules.values().iterator();
     }
 
-    /**
-     * Resolve the execution order of the enabled modules, and all dependant modules, based on depth first transitive reduction.
-     * 
-     * @return the list of active modules (plus dependant modules), in execution order.
-     */
-    public List<Module> resolveEnabled()
+    private String join(Collection<?> objs, char delim)
     {
-        Set<Module> active = new HashSet<Module>();
-
-        for (Module module : modules.values())
+        StringBuilder str = new StringBuilder();
+        boolean needDelim = false;
+        for (Object obj : objs)
         {
-            if (module.isEnabled())
+            if (needDelim)
             {
-                findParents(module,active);
+                str.append(delim);
             }
+            str.append(obj);
+            needDelim = true;
         }
-
-        List<Module> ordered = new ArrayList<>();
-        ordered.addAll(active);
-        Collections.sort(ordered,new Module.DepthComparator());
-        return ordered;
+        return str.toString();
     }
 
     // TODO: Resolve LIB names to actual java.io.File references via HomeBase
@@ -225,11 +232,39 @@ public class Modules implements Iterable<Module>
         return xmls;
     }
 
+    public void register(Module module)
+    {
+        modules.put(module.getName(),module);
+    }
+
     public void registerAll(BaseHome basehome) throws IOException
     {
         for (File file : basehome.listFiles("modules",new FS.FilenameRegexFilter("^.*\\.mod$")))
         {
-            register(Module.fromFile(file));
+            register(new Module(file));
         }
+    }
+
+    /**
+     * Resolve the execution order of the enabled modules, and all dependant modules, based on depth first transitive reduction.
+     * 
+     * @return the list of active modules (plus dependant modules), in execution order.
+     */
+    public List<Module> resolveEnabled()
+    {
+        Set<Module> active = new HashSet<Module>();
+
+        for (Module module : modules.values())
+        {
+            if (module.isEnabled())
+            {
+                findParents(module,active);
+            }
+        }
+
+        List<Module> ordered = new ArrayList<>();
+        ordered.addAll(active);
+        Collections.sort(ordered,new Module.DepthComparator());
+        return ordered;
     }
 }

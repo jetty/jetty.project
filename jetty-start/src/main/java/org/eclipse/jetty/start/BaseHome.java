@@ -53,47 +53,7 @@ public class BaseHome
     public BaseHome(File homeDir, File baseDir)
     {
         this.homeDir = homeDir;
-        this.baseDir = baseDir==null?homeDir:baseDir;
-    }
-
-
-    public void initialize(ArrayList<String> arguments)
-    {
-        Pattern jetty_home=Pattern.compile("(-D)?jetty.home=(.*)");
-        Pattern jetty_base=Pattern.compile("(-D)?jetty.base=(.*)");
-        for (String arg : arguments)
-        {
-            Matcher home_match=jetty_home.matcher(arg);
-            if (home_match.matches())
-                setHomeDir(new File(home_match.group(2)));
-            Matcher base_match=jetty_base.matcher(arg);
-            if (base_match.matches())
-                setBaseDir(new File(base_match.group(2)));
-        }
-    }
-    
-    
-    public boolean isBaseDifferent()
-    {
-        return homeDir.compareTo(baseDir) != 0;
-    }
-
-    public void setBaseDir(File dir)
-    {
-        this.baseDir = dir;
-        try
-        {
-            System.setProperty("jetty.base",dir.getCanonicalPath());
-        }
-        catch(IOException e)
-        {
-            e.printStackTrace();
-        }
-    }
-
-    public File getBaseDir()
-    {
-        return baseDir;
+        this.baseDir = baseDir == null?homeDir:baseDir;
     }
 
     public String getBase()
@@ -103,6 +63,23 @@ public class BaseHome
             return null;
         }
         return baseDir.getAbsolutePath();
+    }
+
+    public File getBaseDir()
+    {
+        return baseDir;
+    }
+
+    /**
+     * Create a file reference to some content in <code>"${jetty.base}"</code>
+     * 
+     * @param path
+     *            the path to reference
+     * @return the file reference
+     */
+    public File getBaseFile(String path)
+    {
+        return new File(baseDir,FS.separators(path));
     }
 
     /**
@@ -144,17 +121,9 @@ public class BaseHome
         return new File(rpath);
     }
 
-    public void setHomeDir(File dir)
+    public String getHome()
     {
-        this.homeDir = dir;
-        try
-        {
-            System.setProperty("jetty.home",dir.getCanonicalPath());
-        }
-        catch(IOException e)
-        {
-            e.printStackTrace();
-        }
+        return homeDir.getAbsolutePath();
     }
 
     public File getHomeDir()
@@ -162,9 +131,29 @@ public class BaseHome
         return homeDir;
     }
 
-    public String getHome()
+    public void initialize(StartArgs args)
     {
-        return homeDir.getAbsolutePath();
+        Pattern jetty_home = Pattern.compile("(-D)?jetty.home=(.*)");
+        Pattern jetty_base = Pattern.compile("(-D)?jetty.base=(.*)");
+
+        for (String arg : args.getCommandLine())
+        {
+            Matcher home_match = jetty_home.matcher(arg);
+            if (home_match.matches())
+            {
+                setHomeDir(new File(home_match.group(2)));
+            }
+            Matcher base_match = jetty_base.matcher(arg);
+            if (base_match.matches())
+            {
+                setBaseDir(new File(base_match.group(2)));
+            }
+        }
+    }
+
+    public boolean isBaseDifferent()
+    {
+        return homeDir.compareTo(baseDir) != 0;
     }
 
     /**
@@ -200,26 +189,32 @@ public class BaseHome
 
         File homePath = new File(homeDir,FS.separators(relPathToDirectory));
         List<File> homeFiles = new ArrayList<>();
-        homeFiles.addAll(Arrays.asList(homePath.listFiles(filter)));
+        if (FS.canReadDirectory(homePath))
+        {
+            homeFiles.addAll(Arrays.asList(homePath.listFiles(filter)));
+        }
 
         if (isBaseDifferent())
         {
             // merge
             File basePath = new File(baseDir,FS.separators(relPathToDirectory));
-            File baseFiles[] = basePath.listFiles(filter);
             List<File> ret = new ArrayList<>();
-
-            if (baseFiles!=null)
+            if (FS.canReadDirectory(basePath))
             {
-                for (File base : baseFiles)
+                File baseFiles[] = basePath.listFiles(filter);
+
+                if (baseFiles != null)
                 {
-                    String relpath = toRelativePath(baseDir,base);
-                    File home = new File(homeDir,FS.separators(relpath));
-                    if (home.exists())
+                    for (File base : baseFiles)
                     {
-                        homeFiles.remove(home);
+                        String relpath = toRelativePath(baseDir,base);
+                        File home = new File(homeDir,FS.separators(relpath));
+                        if (home.exists())
+                        {
+                            homeFiles.remove(home);
+                        }
+                        ret.add(base);
                     }
-                    ret.add(base);
                 }
             }
 
@@ -262,6 +257,32 @@ public class BaseHome
         return ret;
     }
 
+    public void setBaseDir(File dir)
+    {
+        try
+        {
+            this.baseDir = dir.getCanonicalFile();
+            System.setProperty("jetty.base",dir.getCanonicalPath());
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace(System.err);
+        }
+    }
+
+    public void setHomeDir(File dir)
+    {
+        try
+        {
+            this.homeDir = dir.getCanonicalFile();
+            System.setProperty("jetty.home",dir.getCanonicalPath());
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace(System.err);
+        }
+    }
+
     private String toRelativePath(File dir, File path)
     {
         return dir.toURI().relativize(path.toURI()).toASCIIString();
@@ -296,7 +317,7 @@ public class BaseHome
         {
             return path;
         }
-        
+
         String value;
 
         if (isBaseDifferent())
