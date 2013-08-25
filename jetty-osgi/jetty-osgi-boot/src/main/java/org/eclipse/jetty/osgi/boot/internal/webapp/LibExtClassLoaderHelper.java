@@ -73,7 +73,7 @@ public class LibExtClassLoaderHelper
 
     
     
-    public static Set<IFilesInJettyHomeResourcesProcessor> registeredFilesInJettyHomeResourcesProcessors = new HashSet<IFilesInJettyHomeResourcesProcessor>();
+    public static final Set<IFilesInJettyHomeResourcesProcessor> registeredFilesInJettyHomeResourcesProcessors = new HashSet<IFilesInJettyHomeResourcesProcessor>();
 
     
     /* ------------------------------------------------------------ */

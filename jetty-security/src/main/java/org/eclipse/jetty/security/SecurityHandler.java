@@ -650,7 +650,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    public static Principal __NO_USER = new Principal()
+    public static final Principal __NO_USER = new Principal()
     {
         public String getName()
         {
@@ -674,7 +674,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
      * FormAuthenticator to allow access to logon and error pages within an
      * authenticated URI tree.
      */
-    public static Principal __NOBODY = new Principal()
+    public static final Principal __NOBODY = new Principal()
     {
         public String getName()
         {

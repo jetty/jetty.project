@@ -21,6 +21,7 @@ package org.eclipse.jetty.util;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -236,51 +237,52 @@ public class ScannerTest
         // Create a new file by writing to it.
         long now = System.currentTimeMillis();
         File file = new File(_directory,"st");
-        FileOutputStream out = new FileOutputStream(file,true);
-        out.write('x');
-        out.flush();
-        file.setLastModified(now);
+        try (OutputStream out = new FileOutputStream(file,true))
+        {
+            out.write('x');
+            out.flush();
+            file.setLastModified(now);
 
-        // Not stable yet so no notification.
-        _scanner.scan();
-        event = _queue.poll();
-        Assert.assertTrue(event==null);
+            // Not stable yet so no notification.
+            _scanner.scan();
+            event = _queue.poll();
+            Assert.assertTrue(event==null);
 
-        // Modify size only
-        out.write('x');
-        out.flush();
-        file.setLastModified(now);
+            // Modify size only
+            out.write('x');
+            out.flush();
+            file.setLastModified(now);
 
-        // Still not stable yet so no notification.
-        _scanner.scan();
-        event = _queue.poll();
-        Assert.assertTrue(event==null);
+            // Still not stable yet so no notification.
+            _scanner.scan();
+            event = _queue.poll();
+            Assert.assertTrue(event==null);
 
-        // now stable so finally see the ADDED
-        _scanner.scan();
-        event = _queue.poll();
-        Assert.assertTrue(event!=null);
-        Assert.assertEquals(_directory+"/st",event._filename);
-        Assert.assertEquals(Notification.ADDED,event._notification);
+            // now stable so finally see the ADDED
+            _scanner.scan();
+            event = _queue.poll();
+            Assert.assertTrue(event!=null);
+            Assert.assertEquals(_directory+"/st",event._filename);
+            Assert.assertEquals(Notification.ADDED,event._notification);
 
-        // Modify size only
-        out.write('x');
-        out.flush();
-        file.setLastModified(now);
+            // Modify size only
+            out.write('x');
+            out.flush();
+            file.setLastModified(now);
 
 
-        // Still not stable yet so no notification.
-        _scanner.scan();
-        event = _queue.poll();
-        Assert.assertTrue(event==null);
+            // Still not stable yet so no notification.
+            _scanner.scan();
+            event = _queue.poll();
+            Assert.assertTrue(event==null);
 
-        // now stable so finally see the ADDED
-        _scanner.scan();
-        event = _queue.poll();
-        Assert.assertTrue(event!=null);
-        Assert.assertEquals(_directory+"/st",event._filename);
-        Assert.assertEquals(Notification.CHANGED,event._notification);
-
+            // now stable so finally see the ADDED
+            _scanner.scan();
+            event = _queue.poll();
+            Assert.assertTrue(event!=null);
+            Assert.assertEquals(_directory+"/st",event._filename);
+            Assert.assertEquals(Notification.CHANGED,event._notification);
+        }
     }
 
     private void delete(String string) throws IOException

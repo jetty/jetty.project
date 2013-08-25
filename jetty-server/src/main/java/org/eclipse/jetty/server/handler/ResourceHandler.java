@@ -281,7 +281,7 @@ public class ResourceHandler extends HandlerWrapper
     	{
     		LOG.warn(e.toString());
             LOG.debug(e);
-            throw new IllegalArgumentException(stylesheet.toString());
+            throw new IllegalArgumentException(stylesheet);
     	}
     }
 
@@ -291,7 +291,7 @@ public class ResourceHandler extends HandlerWrapper
      */
     public String getCacheControl()
     {
-        return _cacheControl.toString();
+        return _cacheControl;
     }
 
     /* ------------------------------------------------------------ */
@@ -484,7 +484,7 @@ public class ResourceHandler extends HandlerWrapper
         String mime=_mimeTypes.getMimeByExtension(resource.toString());
         if (mime==null)
             mime=_mimeTypes.getMimeByExtension(request.getPathInfo());
-        doResponseHeaders(response,resource,mime!=null?mime.toString():null);
+        doResponseHeaders(response,resource,mime);
         if (_etags)
             baseRequest.getResponse().getHttpFields().put(HttpHeader.ETAG,etag);
         
@@ -612,7 +612,7 @@ public class ResourceHandler extends HandlerWrapper
                 response.setHeader(HttpHeader.CONTENT_LENGTH.asString(),Long.toString(length));
 
             if (_cacheControl!=null)
-                response.setHeader(HttpHeader.CACHE_CONTROL.asString(),_cacheControl.toString());
+                response.setHeader(HttpHeader.CACHE_CONTROL.asString(),_cacheControl);
         }
 
     }

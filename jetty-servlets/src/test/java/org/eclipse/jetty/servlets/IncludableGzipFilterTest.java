@@ -26,6 +26,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collection;
@@ -95,10 +96,11 @@ public class IncludableGzipFilterTest
         testdir.ensureEmpty();
 
         File testFile = testdir.getFile("file.txt");
-        BufferedOutputStream testOut = new BufferedOutputStream(new FileOutputStream(testFile));
-        ByteArrayInputStream testIn = new ByteArrayInputStream(__content.getBytes("ISO8859_1"));
-        IO.copy(testIn,testOut);
-        testOut.close();
+        try (OutputStream testOut = new BufferedOutputStream(new FileOutputStream(testFile)))
+        {
+            ByteArrayInputStream testIn = new ByteArrayInputStream(__content.getBytes("ISO8859_1"));
+            IO.copy(testIn,testOut);
+        }
 
         tester=new ServletTester("/context");
         tester.getContext().setResourceBase(testdir.getDir().getCanonicalPath());

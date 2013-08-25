@@ -21,6 +21,8 @@ package org.eclipse.jetty.server.handler;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.Socket;
 import java.net.URI;
 
@@ -58,11 +60,14 @@ public class ResourceHandlerTest
         File dir = MavenTestingUtils.getTargetFile("test-classes/simple");
         File huge = new File(dir,"huge.txt");
         File big=new File(dir,"big.txt");
-        FileOutputStream out = new FileOutputStream(huge);
-        for (int i=0;i<100;i++)
-        {       
-            FileInputStream in=new FileInputStream(big);
-            IO.copy(in,out);
+        try (OutputStream out = new FileOutputStream(huge)) {
+            for (int i=0;i<100;i++)
+            {
+                try (InputStream in=new FileInputStream(big))
+                {
+                    IO.copy(in,out);
+                }
+            }
         }
         huge.deleteOnExit();
         

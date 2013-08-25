@@ -19,7 +19,7 @@
 package org.eclipse.jetty.spdy.generator;
 
 import java.nio.ByteBuffer;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
@@ -93,7 +93,7 @@ public class DataFrameGeneratorTest
     private ByteBuffer createByteBuffer(int bufferSize)
     {
         byte[] bytes = new byte[bufferSize];
-        new Random().nextBytes(bytes);
+        ThreadLocalRandom.current().nextBytes(bytes);
         ByteBuffer byteBuffer = bufferPool.acquire(bufferSize, false);
         BufferUtil.flipToFill(byteBuffer);
         byteBuffer.put(bytes);

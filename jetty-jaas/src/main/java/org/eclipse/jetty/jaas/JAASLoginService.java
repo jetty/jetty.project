@@ -57,8 +57,8 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
 {
     private static final Logger LOG = Log.getLogger(JAASLoginService.class);
 
-    public static String DEFAULT_ROLE_CLASS_NAME = "org.eclipse.jetty.jaas.JAASRole";
-    public static String[] DEFAULT_ROLE_CLASS_NAMES = {DEFAULT_ROLE_CLASS_NAME};
+    public static final String DEFAULT_ROLE_CLASS_NAME = "org.eclipse.jetty.jaas.JAASRole";
+    public static final String[] DEFAULT_ROLE_CLASS_NAMES = {DEFAULT_ROLE_CLASS_NAME};
 
     protected String[] _roleClassNames = DEFAULT_ROLE_CLASS_NAMES;
     protected String _callbackHandlerClass;

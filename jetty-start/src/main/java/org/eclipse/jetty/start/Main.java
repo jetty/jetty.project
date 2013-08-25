@@ -742,7 +742,10 @@ public class Main
             File prop_file = File.createTempFile("start",".properties");
             if (!_dryRun)
                 prop_file.deleteOnExit();
-            properties.store(new FileOutputStream(prop_file),"start.jar properties");
+            try (OutputStream out = new FileOutputStream(prop_file))
+            {
+                properties.store(out,"start.jar properties");
+            }
             cmd.addArg(prop_file.getAbsolutePath());
         }
 

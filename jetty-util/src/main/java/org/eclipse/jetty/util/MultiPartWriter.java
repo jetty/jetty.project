@@ -35,8 +35,8 @@ public class MultiPartWriter extends FilterWriter
     private final static String __CRLF="\015\012";
     private final static String __DASHDASH="--";
     
-    public static String MULTIPART_MIXED=MultiPartOutputStream.MULTIPART_MIXED;
-    public static String MULTIPART_X_MIXED_REPLACE=MultiPartOutputStream.MULTIPART_X_MIXED_REPLACE;
+    public static final String MULTIPART_MIXED=MultiPartOutputStream.MULTIPART_MIXED;
+    public static final String MULTIPART_X_MIXED_REPLACE=MultiPartOutputStream.MULTIPART_X_MIXED_REPLACE;
     
     /* ------------------------------------------------------------ */
     private String boundary;
@@ -63,14 +63,20 @@ public class MultiPartWriter extends FilterWriter
     public void close()
          throws IOException
     {
-        if (inPart)
+        try
+        {
+            if (inPart)
+                out.write(__CRLF);
+            out.write(__DASHDASH);
+            out.write(boundary);
+            out.write(__DASHDASH);
             out.write(__CRLF);
-        out.write(__DASHDASH);
-        out.write(boundary);
-        out.write(__DASHDASH);
-        out.write(__CRLF);
-        inPart=false;
-        super.close();
+            inPart=false;
+        }
+        finally
+        {
+            super.close();
+        }
     }
     
     /* ------------------------------------------------------------ */

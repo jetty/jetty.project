@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 import java.util.Set;
@@ -192,8 +193,8 @@ public class MimeTypes
         _mimeMap.clear();
         if (mimeMap!=null)
         {
-            for (String ext : mimeMap.keySet())
-                _mimeMap.put(StringUtil.asciiToLowerCase(ext),normalizeMimeType(mimeMap.get(ext)));
+            for (Entry<String, String> ext : mimeMap.entrySet())
+                _mimeMap.put(StringUtil.asciiToLowerCase(ext.getKey()),normalizeMimeType(ext.getValue()));
         }
     }
     

@@ -25,10 +25,11 @@ import java.util.Map;
 
 public class Settings implements Iterable<Settings.Setting>
 {
-    private Map<ID, Settings.Setting> settings = new HashMap<>();
+    private final Map<ID, Settings.Setting> settings;
 
     public Settings()
     {
+        settings = new HashMap<>();
     }
 
     public Settings(Settings original, boolean immutable)
@@ -94,13 +95,13 @@ public class Settings implements Iterable<Settings.Setting>
 
     public static final class ID
     {
-        public static ID UPLOAD_BANDWIDTH = new ID(1);
-        public static ID DOWNLOAD_BANDWIDTH = new ID(2);
-        public static ID ROUND_TRIP_TIME = new ID(3);
-        public static ID MAX_CONCURRENT_STREAMS = new ID(4);
-        public static ID CURRENT_CONGESTION_WINDOW = new ID(5);
-        public static ID DOWNLOAD_RETRANSMISSION_RATE = new ID(6);
-        public static ID INITIAL_WINDOW_SIZE = new ID(7);
+        public static final ID UPLOAD_BANDWIDTH = new ID(1);
+        public static final ID DOWNLOAD_BANDWIDTH = new ID(2);
+        public static final ID ROUND_TRIP_TIME = new ID(3);
+        public static final ID MAX_CONCURRENT_STREAMS = new ID(4);
+        public static final ID CURRENT_CONGESTION_WINDOW = new ID(5);
+        public static final ID DOWNLOAD_RETRANSMISSION_RATE = new ID(6);
+        public static final ID INITIAL_WINDOW_SIZE = new ID(7);
 
         public synchronized static ID from(int code)
         {

@@ -433,13 +433,15 @@ public class JspcMojo extends AbstractMojo
     static void delete(File dir, FileFilter filter)
     {
         File[] files = dir.listFiles(filter);
-        for(int i=0; i<files.length; i++)
+        if (files != null)
         {
-            File f = files[i];
-            if(f.isDirectory())
-                delete(f, filter);
-            else
-                f.delete();
+            for(File f: files)
+            {
+                if(f.isDirectory())
+                    delete(f, filter);
+                else
+                    f.delete();
+            }
         }
     }
 
@@ -474,47 +476,45 @@ public class JspcMojo extends AbstractMojo
             }
             File mergedWebXml = new File(fragmentWebXml.getParentFile(),
             "web.xml");
-            BufferedReader webXmlReader = new BufferedReader(new FileReader(
+            try (BufferedReader webXmlReader = new BufferedReader(new FileReader(
                     webXml));
-            PrintWriter mergedWebXmlWriter = new PrintWriter(new FileWriter(
-                    mergedWebXml));
+                 PrintWriter mergedWebXmlWriter = new PrintWriter(new FileWriter(
+                    mergedWebXml))) {
 
-            // read up to the insertion marker or the </webapp> if there is no
-            // marker
-            boolean atInsertPoint = false;
-            boolean atEOF = false;
-            String marker = (insertionMarker == null
-                    || insertionMarker.equals("") ? END_OF_WEBAPP : insertionMarker);
-            while (!atInsertPoint && !atEOF)
-            {
-                String line = webXmlReader.readLine();
-                if (line == null)
-                    atEOF = true;
-                else if (line.indexOf(marker) >= 0)
+                // read up to the insertion marker or the </webapp> if there is no
+                // marker
+                boolean atInsertPoint = false;
+                boolean atEOF = false;
+                String marker = (insertionMarker == null
+                        || insertionMarker.equals("") ? END_OF_WEBAPP : insertionMarker);
+                while (!atInsertPoint && !atEOF)
                 {
-                    atInsertPoint = true;
+                    String line = webXmlReader.readLine();
+                    if (line == null)
+                        atEOF = true;
+                    else if (line.indexOf(marker) >= 0)
+                    {
+                        atInsertPoint = true;
+                    }
+                    else
+                    {
+                        mergedWebXmlWriter.println(line);
+                    }
                 }
-                else
-                {
-                    mergedWebXmlWriter.println(line);
+
+                // put in the generated fragment
+                try (BufferedReader fragmentWebXmlReader = new BufferedReader(
+                        new FileReader(fragmentWebXml))) {
+                    IO.copy(fragmentWebXmlReader, mergedWebXmlWriter);
+
+                    // if we inserted just before the </web-app>, put it back in
+                    if (marker.equals(END_OF_WEBAPP))
+                        mergedWebXmlWriter.println(END_OF_WEBAPP);
+
+                    // copy in the rest of the original web.xml file
+                    IO.copy(webXmlReader, mergedWebXmlWriter);
                 }
             }
-
-            // put in the generated fragment
-            BufferedReader fragmentWebXmlReader = new BufferedReader(
-                    new FileReader(fragmentWebXml));
-            IO.copy(fragmentWebXmlReader, mergedWebXmlWriter);
-
-            // if we inserted just before the </web-app>, put it back in
-            if (marker.equals(END_OF_WEBAPP))
-                mergedWebXmlWriter.println(END_OF_WEBAPP);
-
-            // copy in the rest of the original web.xml file
-            IO.copy(webXmlReader, mergedWebXmlWriter);
-
-            webXmlReader.close();
-            mergedWebXmlWriter.close();
-            fragmentWebXmlReader.close();
         }
     }
 

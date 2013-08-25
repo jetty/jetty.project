@@ -19,6 +19,7 @@
 package org.eclipse.jetty.jndi;
 
 import java.lang.reflect.Method;
+import java.sql.Connection;
 import java.sql.Statement;
 
 import javax.sql.DataSource;
@@ -66,9 +67,11 @@ public class DataSourceCloser implements Destroyable
             if (_shutdown!=null)
             {
                 LOG.info("Shutdown datasource {}",_datasource);
-                Statement stmt = _datasource.getConnection().createStatement();
-                stmt.executeUpdate(_shutdown);
-                stmt.close();
+                try (Connection connection = _datasource.getConnection();
+                        Statement stmt = connection.createStatement())
+                {
+                    stmt.executeUpdate(_shutdown);
+                }
             }
         }
         catch (Exception e)

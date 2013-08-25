@@ -24,7 +24,7 @@ import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -245,7 +245,7 @@ public class BufferUtilTest
         int iterations = 100;
         int testRuns = 10;
         byte[] bytes = new byte[capacity];
-        new Random().nextBytes(bytes);
+        ThreadLocalRandom.current().nextBytes(bytes);
         ByteBuffer buffer = BufferUtil.allocate(capacity);
         BufferUtil.append(buffer, bytes, 0, capacity);
         long startTest = System.nanoTime();
@@ -294,7 +294,7 @@ public class BufferUtilTest
     {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         byte[] bytes = new byte[capacity];
-        new Random().nextBytes(bytes);
+        ThreadLocalRandom.current().nextBytes(bytes);
         ByteBuffer buffer = BufferUtil.allocate(capacity);
         BufferUtil.append(buffer, bytes, 0, capacity);
         BufferUtil.writeTo(buffer.asReadOnlyBuffer(), out);

@@ -25,6 +25,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.MimeTypes;
@@ -117,11 +118,12 @@ public class ResourceCacheTest
             files[i]=File.createTempFile("R-"+i+"-",".txt");
             files[i].deleteOnExit();
             names[i]=files[i].getName();
-            FileOutputStream out = new FileOutputStream(files[i]);
-            for (int j=0;j<(i*10-1);j++)
-                out.write(' ');
-            out.write('\n');
-            out.close();
+            try (OutputStream out = new FileOutputStream(files[i]))
+            {
+                for (int j=0;j<(i*10-1);j++)
+                    out.write(' ');
+                out.write('\n');
+            }
         }
 
         directory=Resource.newResource(files[0].getParentFile().getAbsolutePath());
@@ -182,9 +184,10 @@ public class ResourceCacheTest
 
         Thread.sleep(200);
 
-        FileOutputStream out = new FileOutputStream(files[6]);
-        out.write(' ');
-        out.close();
+        try (OutputStream out = new FileOutputStream(files[6]))
+        {
+            out.write(' ');
+        }
         content=cache.lookup(names[7]);
         assertEquals(70,cache.getCachedSize());
         assertEquals(1,cache.getCachedFiles());
@@ -250,10 +253,11 @@ public class ResourceCacheTest
     {
         StringBuilder buffer = new StringBuilder();
         String line = null;
-        BufferedReader br = new BufferedReader(new InputStreamReader(r.addPath(path).getURL().openStream()));
-        while((line=br.readLine())!=null)
-            buffer.append(line);
-        br.close();
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(r.addPath(path).getURL().openStream())))
+        {
+            while((line=br.readLine())!=null)
+                buffer.append(line);
+        }
         return buffer.toString();
     }
 

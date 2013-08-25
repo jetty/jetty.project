@@ -21,6 +21,7 @@ package org.eclipse.jetty.maven.plugin;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -758,14 +759,15 @@ public abstract class AbstractJettyMojo extends AbstractMojo
     public void setSystemPropertiesFile(File file) throws Exception
     {
         this.systemPropertiesFile = file;
-        FileInputStream propFile = new FileInputStream(systemPropertiesFile);
         Properties properties = new Properties();
-        properties.load(propFile);
-        
+        try (InputStream propFile = new FileInputStream(systemPropertiesFile))
+        {
+            properties.load(propFile);
+        }
         if (this.systemProperties == null )
             this.systemProperties = new SystemProperties();
         
-        for (Enumeration keys = properties.keys(); keys.hasMoreElements();  )
+        for (Enumeration<?> keys = properties.keys(); keys.hasMoreElements();  )
         {
             String key = (String)keys.nextElement();
             if ( ! systemProperties.containsSystemProperty(key) )
@@ -791,10 +793,8 @@ public abstract class AbstractJettyMojo extends AbstractMojo
             this.systemProperties = systemProperties;
         else
         {
-            Iterator itor = systemProperties.getSystemProperties().iterator();
-            while (itor.hasNext())
+            for (SystemProperty prop: systemProperties.getSystemProperties())
             {
-                SystemProperty prop = (SystemProperty)itor.next();
                 this.systemProperties.setSystemProperty(prop);
             }   
         }
