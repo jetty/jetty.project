@@ -151,7 +151,7 @@ public class ConfigurationAssert
             for (String expected : expectedSet)
             {
                 char indicator = actualSet.contains(expected)?' ':'>';
-                err.printf("%s| %s",indicator,expected);
+                err.printf("%s| %s%n",indicator,expected);
             }
             err.flush();
             Assert.fail(message.toString());

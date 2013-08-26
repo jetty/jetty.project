@@ -56,4 +56,10 @@ public class TestUseCases
     {
         assertUseCase("home","base.jmx","assert-jmx.txt");
     }
+    
+    @Test
+    public void testWithDatabase() throws Exception
+    {
+        assertUseCase("home","base.with.db","assert-with-db.txt");
+    }
 }
