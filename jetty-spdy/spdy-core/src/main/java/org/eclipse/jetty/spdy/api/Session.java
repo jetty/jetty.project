@@ -77,7 +77,7 @@ public interface Session
      * @param synInfo  the metadata to send on stream creation
      * @param listener the listener to invoke when events happen on the stream just created
      * @return the stream that will be created
-     * @see #syn(SynInfo, StreamFrameListener, Promise
+     * @see #syn(SynInfo, StreamFrameListener, Promise)
      */
     public Stream syn(SynInfo synInfo, StreamFrameListener listener) throws ExecutionException, InterruptedException, TimeoutException;
 
@@ -98,7 +98,6 @@ public interface Session
      * <p>Sends synchronously a RST_STREAM to abort a stream.</p>
      *
      * @param rstInfo the metadata to reset the stream
-     * @return the RstInfo belonging to the reset to be sent
      * @see #rst(RstInfo, Callback)
      */
     public void rst(RstInfo rstInfo) throws InterruptedException, ExecutionException, TimeoutException;
@@ -137,7 +136,7 @@ public interface Session
     /**
      * <p>Sends synchronously a PING, normally to measure round-trip time.</p>
      *
-     * @see #ping(PingInfo, Promise
+     * @see #ping(PingInfo, Promise)
      * @param pingInfo
      */
     public PingResultInfo ping(PingInfo pingInfo) throws ExecutionException, InterruptedException, TimeoutException;

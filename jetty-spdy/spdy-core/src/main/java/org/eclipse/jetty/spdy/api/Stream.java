@@ -91,7 +91,7 @@ public interface Stream
      *
      * @param pushInfo the metadata to send on stream creation
      * @return a future containing the stream once it got established
-     * @see #push(PushInfo, Promise
+     * @see #push(PushInfo, Promise)
      */
     public Stream push(PushInfo pushInfo) throws InterruptedException, ExecutionException, TimeoutException;
 
@@ -110,7 +110,6 @@ public interface Stream
      * future to wait for the reply to be actually sent.</p>
      *
      * @param replyInfo the metadata to send
-     * @return a future to wait for the reply to be sent
      * @see #reply(ReplyInfo, Callback)
      * @see SessionFrameListener#onSyn(Stream, SynInfo)
      */
@@ -131,7 +130,6 @@ public interface Stream
      * frame.</p> <p>Callers may use the returned future to wait for the data to be actually sent.</p>
      *
      * @param dataInfo the metadata to send
-     * @return a future to wait for the data to be sent
      * @see #data(DataInfo, Callback)
      * @see #reply(ReplyInfo)
      */
@@ -153,8 +151,7 @@ public interface Stream
      * SYN_REPLY frame.</p> <p>Callers may use the returned future to wait for the headers to be actually sent.</p>
      *
      * @param headersInfo the metadata to send
-     * @return a future to wait for the headers to be sent
-     * @see #headers(HeadersInfo, Callback
+     * @see #headers(HeadersInfo, Callback)
      * @see #reply(ReplyInfo)
      */
     public void headers(HeadersInfo headersInfo) throws InterruptedException, ExecutionException, TimeoutException;
