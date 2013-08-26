@@ -600,13 +600,23 @@ public class Main
         
         // Is there a disabled ini?
         File disabled=new File(start_d,name+".ini.disabled");
+        boolean copy=false;
         if (!disabled.exists() && baseHome.isBaseDifferent())
+        {
+            copy=true;
             disabled=new File(new File(baseHome.getHomeDir(),"start.d"),name+".ini.disabled");
+            if (!disabled.exists())
+                disabled=new File(new File(baseHome.getHomeDir(),"start.d"),name+".ini");
+        }
+            
         if (disabled.exists())
         {
-            // enable module by copying ini template
+            // enable module by renaming/copying ini template
             System.err.printf("Enabling %s in %s from %s%n",name,baseHome.toShortForm(ini),baseHome.toShortForm(disabled));
-            Files.copy(disabled.toPath(),ini.toPath());
+            if (copy)
+                Files.copy(disabled.toPath(),ini.toPath());
+            else
+                disabled.renameTo(ini);
             args.parse(baseHome, new StartIni(ini));
         }
         else if (args.getAllModules().resolveEnabled().contains(args.getAllModules().get(name)))
@@ -661,7 +671,7 @@ public class Main
             }
 
             StartLog.warn("Disabling %s from %s",name,baseHome.toShortForm(ini));
-            Files.copy(ini.toPath(),disabled.toPath());
+            ini.renameTo(disabled);
             
             return;
         }
