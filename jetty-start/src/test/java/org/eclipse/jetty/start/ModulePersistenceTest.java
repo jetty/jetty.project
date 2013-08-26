@@ -99,7 +99,7 @@ public class ModulePersistenceTest
 
         // Load persistence file again
         persistence = new ModulePersistence(mfile);
-        Assert.assertThat("persistence.enabled",persistence.getEnabled(),containsInAnyOrder("websocket"));
+        Assert.assertThat("persistence.enabled",persistence.getEnabled(),containsInAnyOrder("server","websocket"));
     }
     
     @Test

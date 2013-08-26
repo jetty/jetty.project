@@ -228,11 +228,11 @@ public class Modules implements Iterable<Module>
                 err.append("The following ");
                 if (enabled.size() > 1)
                 {
-                    err.append(enabled.size()).append(" modules");
+                    err.append(enabled.size()).append("modules");
                 }
                 else
                 {
-                    err.append(" module");
+                    err.append("module");
                 }
                 err.append(", defined outside of the module persistence mechanism, ");
                 if (enabled.size() > 1)

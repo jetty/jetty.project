@@ -8,6 +8,7 @@ DEPEND=rewrite
 DEPEND=client
 DEPEND=annotations
 DEPEND=websocket
+DEPEND=deploy
 
 LIB=demo/lib/*.jar
 

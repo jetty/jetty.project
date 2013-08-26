@@ -39,7 +39,13 @@ public class ModulePersistence extends TextFile
 
     public boolean disableModule(StartArgs args, String moduleName) throws IOException
     {
+        // capture of what modules were disabled by this action
         List<String> modulesThatWereDisabled = new ArrayList<>();
+        // capture of what modules were automatically enabled by this action
+        // this list can occur if you attempt to disable a leaf node, the parent nodes
+        // of that leaf would then become enabled
+        List<String> modulesThatWereEnabled = new ArrayList<>();
+        // set of child modules that should be disabled by this action
         Set<String> resolvedModulesToDisable = args.getAllModules().resolveChildModulesOf(moduleName);
 
         // Show user what could be disabled
@@ -61,6 +67,28 @@ public class ModulePersistence extends TextFile
         }
 
         // Do the disabling
+
+        // Step 1: set parent modules to enabled.
+        // This is to handle the case where the leaf is disabled, you still
+        // want the branch itself to be active upto the step before that leaf
+        Modules modules = args.getAllModules();
+        Module leaf = modules.get(moduleName);
+        // no children, this is a leaf
+        if (leaf.getChildEdges().size() <= 0)
+        {
+            // mark all parents as enabled
+            List<String> sources = new ArrayList<>();
+            sources.add("<module-persistence>");
+            for (Module parent : leaf.getParentEdges())
+            {
+                parent.setEnabled(true);
+                parent.addSources(sources);
+                addUniqueLine(parent.getName());
+                modulesThatWereEnabled.add(parent.getName());
+            }
+        }
+
+        // Step 2: mark the leaf nodes disabled
         ListIterator<String> iter = super.listIterator();
         while (iter.hasNext())
         {
@@ -85,9 +113,14 @@ public class ModulePersistence extends TextFile
             }
             return true;
         }
+        else if (modulesThatWereEnabled.size() > 0)
+        {
+            System.out.printf("Module %s was has been effectively disabled.%n",moduleName);
+            return true;
+        }
         else
         {
-            System.out.printf("Module %s not found, nothing actually disabled.%n",moduleName);
+            System.out.printf("Module %s not found, no changes made to module persistence.%n",moduleName);
             return false;
         }
     }
@@ -137,7 +170,7 @@ public class ModulePersistence extends TextFile
         File file = getFile();
         File parent = file.getParentFile();
         FS.ensureDirectoryExists(parent);
-        
+
         try (FileWriter writer = new FileWriter(file,false))
         {
             for (String line : getLines())
