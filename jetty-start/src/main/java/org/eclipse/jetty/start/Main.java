@@ -318,7 +318,7 @@ public class Main
         File start_ini = baseHome.getBaseFile("start.ini");
         if (FS.canReadFile(start_ini))
         {
-            StartLog.debug("Reading ${jetty.base}/start.ini) - %s",start_ini);
+            StartLog.debug("Reading ${jetty.base}/start.ini - %s",start_ini);
             args.parse(baseHome, new StartIni(start_ini));
         }
 

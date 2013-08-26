@@ -101,7 +101,7 @@
                   <type>war</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/webapps.demo</outputDirectory>
+                  <outputDirectory>${assembly-directory}/demo/webapps</outputDirectory>
                   <destFileName>test.war</destFileName>
                 </artifactItem>
                 <artifactItem>
@@ -111,7 +111,7 @@
                   <type>war</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/webapps.demo</outputDirectory>
+                  <outputDirectory>${assembly-directory}/demo/webapps</outputDirectory>
                   <destFileName>test-jaas.war</destFileName>
                 </artifactItem>
                 <artifactItem>
@@ -121,7 +121,7 @@
                   <type>war</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/webapps.demo</outputDirectory>
+                  <outputDirectory>${assembly-directory}/demo/webapps</outputDirectory>
                   <destFileName>test-jndi.war</destFileName>
                 </artifactItem>
                 <artifactItem>
@@ -131,7 +131,7 @@
                   <type>war</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/webapps.demo</outputDirectory>
+                  <outputDirectory>${assembly-directory}/demo/webapps</outputDirectory>
                   <destFileName>test-spec.war</destFileName>
                 </artifactItem>
                 <artifactItem>
@@ -141,7 +141,7 @@
                   <type>war</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/webapps.demo</outputDirectory>
+                  <outputDirectory>${assembly-directory}/demo/webapps</outputDirectory>
                   <destFileName>xref-proxy.war</destFileName>
                 </artifactItem>
                 <artifactItem>
@@ -151,7 +151,7 @@
                   <type>war</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/webapps.demo</outputDirectory>
+                  <outputDirectory>${assembly-directory}/demo/webapps</outputDirectory>
                   <destFileName>async-rest.war</destFileName>
                 </artifactItem>
                 <artifactItem>
@@ -223,6 +223,7 @@
                   <outputDirectory>${assembly-directory}</outputDirectory>
                 </artifactItem>
               </artifactItems>
+              <excludes>META-INF/**</excludes>
             </configuration>
           </execution>
 
@@ -244,6 +245,7 @@
                   <outputDirectory>${assembly-directory}</outputDirectory>
                 </artifactItem>
               </artifactItems>
+              <excludes>META-INF/**</excludes>
             </configuration>
           </execution>
 
@@ -265,6 +267,7 @@
                   <outputDirectory>${assembly-directory}</outputDirectory>
                 </artifactItem>
               </artifactItems>
+              <excludes>META-INF/**</excludes>
             </configuration>
           </execution>
 
@@ -286,6 +289,7 @@
                   <outputDirectory>${assembly-directory}</outputDirectory>
                 </artifactItem>
               </artifactItems>
+              <excludes>META-INF/**</excludes>
             </configuration>
           </execution>
 
