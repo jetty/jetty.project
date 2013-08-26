@@ -11,11 +11,18 @@ Command Line Options:
   --version        Print the version information for Jetty and
                    dependent jars, then exit.
                    
-  --list-options   List the details of each classpath OPTION
-  
-  --list-config    List the start.config file.
-                            
-  --exec-print	   Same as --dry-run
+  --list-classpath Print the classpath information that will be used to start
+                   Jetty
+                   
+  --list-config    List the resolved configuration that will be used to
+                   start Jetty.
+                   Output includes:
+                     o  Java Environment
+                     o  Jetty Environment
+                     o  JVM Arguments
+                     o  Properties
+                     o  Server Classpath
+                     o  Server XML Configuration
 
   --dry-run        Print the command line that the start.jar generates,
                    then exit. This may be used to generate command lines
@@ -25,41 +32,82 @@ Command Line Options:
                    a sub process. This can be used when start.ini
                    contains -X or -D arguments, but creates an extra
                    JVM instance.
+
                      
+Debug and Start Logging:
+------------------------
+
+  --debug          Enable debug output of the startup procedure.
+  
+  --start-log-file=<filename>
+                   A filename, relative to ${jetty.base}, where all startup
+                   output will be sent.  This is useful for capturing startup
+                   issues where the jetty specific logger has not yet kicked
+                   in due to startup configuration errors.
+
+
+Module Management:
+------------------
+
+  --list-modules   List all modules defined by the system.
+                   Looking for module files in ${jetty.base}/modules/*.mod and
+                   then ${jetty.home}/modules/*.mod 
+                   Will also list enabled state based on information
+                   present on ..
+                    o  The command line
+                    o  The ${jetty.base}/start.ini
+                    o  The ${jetty.base}/start.d/*.ini files
+                    o  The module persistence file content at
+                       ${jetty.base}/modules/enabled
+                    
+  --module=<modulename>
+                   Will temporarily enable a module from the command line.
+                   Note: this can also be used in the ${jetty.base}/start.ini
+  
+  --enable-module=<modulename>
+                   Will enable a module by adding an entry in the
+                   module persistence file ${jetty.base}/modules/enabled
+                   Note: Do not use within ${jetty.base}/start.ini
+  
+  --disable-module=<modulename>
+                   Will attempt to disable a module by removing an entry in the
+                   module persistence file ${jetty.base}/modules/enabled
+                   Note: Do not use within ${jetty.base}/start.ini
+
+Startup / Shutdown Command Line:
+--------------------------------
+  
   --stop           Send a stop signal to the running Jetty instance.
                    The server must have been started with a STOP.PORT=<port>
-		   property set and the stop command must have the same property.
-  
-  --daemon         Start in daemon mode with stderr and stdout 
-                   redirected to ${jetty.log}/start.log
-  
-  --config=<file>  Specify an alternate start.config file.  
-                   The default is the start.config file inside
-                   the start.jar. The default can also be specified
-                   with the START system property.
-  
-  --ini=<file>     Load command line arguments from a file. If 
-                   no --ini options are specified, then the 
-                   start.ini file will be read if it exists in 
-                   jetty.home. If specified jetty.home/start.ini
-                   and additional .ini files in jetty.home/start.d/
-                   will NOT be read. A --ini option with no file indicates that
-                   start.ini should not be read.
+                   property set and the stop command must have the same property.
+
+Properties:
+
+    STOP.PORT=[number]
+      The port to use to stop the running Jetty server.
+      Required along with STOP.KEY if you want to use the --stop option above.
+      
+    STOP.KEY=[alphanumeric]
+      The passphrase defined to stop the server.
+      Requried along with STOP.PORT if you want to use the --stop option above.
+
+    STOP.WAIT=[number]
+      The time (in seconds) to wait for confirmation that the running 
+      Jetty server has stopped. If not specified, the stopper will wait 
+      indefinitely. Use in conjunction with the --stop option.
+
+Advanced Commands:
+------------------
                    
-  --download=<http-uri>:location
-                   If the file does not exist at the given location, then
-                   download it from the given http URI
-                   
-  --enable=name    Enable a module in start.d by renaming NNN-name.ini.disabled
-                   to NNN-name.ini.  NNN is a prefix to control start 
-                   order.
-                   
-  --disable=name   Disable a module in start.d by renaming NNN-name.ini 
-                   to NNN-name.ini.disabled.  NNN is a prefix to control start 
-                   order.
-                   
-                   
+  --download=<http-uri>:<location>
+                   Advanced usage, If the file does not exist at the given
+                   location, download it from the given http URI.
+                   Note: location is always relative to ${jetty.base}                   
+
+
 System Properties:
+------------------
+
   These are set with a command line like "java -Dname=value ..." and are
   accessible via the java.lang.System#getProperty(String) API.
   Some key system properties are:
@@ -84,73 +132,28 @@ System Properties:
       
     com.sun.management.jmxremote
       Enable remote JMX management in Sun JVMS.
-      
+
+
 Properties:
+-----------
+
   These are set with a command line like "java -jar start.jar name=value"
   and only affect the start mechanism.  Some of these are defined in the 
   default start.config and will not be available if another configuration
   file is used. NOTE: Not all properties are listed here:
 
     jetty.home=[directory]
-      Set the home directory of the jetty distribtion.
+      Set the home directory of the jetty distribution.
       
     jetty.base=[directory]
       Set the jetty configuration directory.  This is where the etc, webapps and start
       files will be looked for. If not found in jetty.base, they are looked for in 
       jetty.home.
-      
-    path=[directory]
-      An additional class path element to add to the started class path. Typically
-      this is used to add directories of classes and/or resources
-      
-    lib=[directory]
-      An additional library directory to add to the started class path. This must
-      be a (deep) directory of jars
-      
-    STOP.PORT=[number]
-      The port to use to stop the running Jetty server.
-      Required along with STOP.KEY if you want to use the --stop option above.
-      
-    STOP.KEY=[alphanumeric]
-      The passphrase defined to stop the server.
-      Requried along with STOP.PORT if you want to use the --stop option above.
-
-    STOP.WAIT=[number]
-      The time (in seconds) to wait for confirmation that the running Jetty server
-      has stopped. If not specified, the stopper will wait indefinitely. Use in 
-      conjunction with the --stop option.
-      
-    DEBUG=true
-      Enable debug on the start mechanism and sets the
-      org.eclipse.jetty.util.log.stderr.DEBUG system property to true. 
-      (default: false)
-      
-    OPTIONS=[option,option,...]
-      Enable classpath OPTIONS. Each options represents one or more jars 
-      to be added to the classpath. The options are defined in 
-      the start.config file and can be listed with --help or --list-options.
-      By convention, options starting with a capital letter (eg Server) 
-      are aggregations of other available options. Available OPTIONS:
-
-        @OPTIONS@
-
-
-Available Configurations:
-  By convention, configuration files are kept in ${jetty.base}/etc or 
-  ${jetty.home}/etc The known configuration files are:
-  
-    @CONFIGS@
 
 
 Defaults:
-  A start.ini file may be used to specify default arguments to start.jar,
-  which are used if no command line arguments are provided and override 
-  the defaults in the start.config file. If a line of start.ini contains
-  a directory (eg start.d/) then that directory is scanned for *.ini files 
-  will be processed in name sorted order.
-  
-  If --ini options are provided on  the command line, then start.ini will NOT be read. 
-  
-  The current start.ini files are:
+---------
 
-    @STARTINI@
+  A ${jetty.base}/start.ini file may be used to specify default arguments
+  to start.jar.  In case of a conflict between the command line, and 
+  the contents of ${jetty.base}/start.ini, the command line will win.

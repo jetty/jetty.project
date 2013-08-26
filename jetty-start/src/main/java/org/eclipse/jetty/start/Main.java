@@ -20,6 +20,7 @@ package org.eclipse.jetty.start;
 
 import static org.eclipse.jetty.start.UsageException.*;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -709,12 +710,24 @@ public class Main
     private void usage()
     {
         String usageResource = "org/eclipse/jetty/start/usage.txt";
-        InputStream usageStream = getClass().getClassLoader().getResourceAsStream(usageResource);
-
-        if (usageStream == null)
+        boolean usagePresented = false;
+        try (InputStream usageStream = getClass().getClassLoader().getResourceAsStream(usageResource))
+        {
+            if (usageStream != null)
+            {
+                try (InputStreamReader reader = new InputStreamReader(usageStream); BufferedReader buf = new BufferedReader(reader))
+                {
+                    usagePresented = true;
+                }
+            }
+        }
+        catch (IOException e)
+        {
+            StartLog.debug(e);
+        }
+        if (!usagePresented)
         {
             System.err.println("ERROR: detailed usage resource unavailable");
-            usageExit(EXIT_USAGE);
         }
         System.exit(EXIT_USAGE);
     }
