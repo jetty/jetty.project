@@ -354,13 +354,6 @@ public class Main
         StartLog.debug("Parsing collected arguments");
         args.parseCommandLine();
 
-        // 4.5) check if you need to continue building module resolution
-        // (ie should be able to stop server without building module tree, etc)
-        if ( !args.isRun() )
-        {
-            return args;
-        }
-        
         // 5) Module Registration
         Modules modules = new Modules();
         StartLog.debug("Registering all modules");
