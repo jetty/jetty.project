@@ -19,14 +19,11 @@
 package org.eclipse.jetty.start;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Vector;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class MainTest
@@ -52,6 +49,25 @@ public class MainTest
         ConfigurationAssert.assertConfiguration(baseHome,args,"assert-home.txt");
     }
 
+    @Test
+    public void testStopProcessing() throws Exception
+    {
+        List<String> cmdLineArgs = new ArrayList<>();
+        cmdLineArgs.add("--stop");
+        cmdLineArgs.add("STOP.PORT=10000");
+        cmdLineArgs.add("STOP.KEY=foo");
+        cmdLineArgs.add("STOP.WAIT=300");
+
+        Main main = new Main();
+        StartArgs args = main.processCommandLine(cmdLineArgs.toArray(new String[cmdLineArgs.size()]));
+        System.err.println(args);
+
+        //Assert.assertEquals("--stop should not build module tree", 0, args.getEnabledModules().size());
+        Assert.assertEquals("--stop missing port","10000",args.getProperties().get("STOP.PORT"));
+        Assert.assertEquals("--stop missing key","foo",args.getProperties().get("STOP.KEY"));
+        Assert.assertEquals("--stop missing wait","300",args.getProperties().get("STOP.WAIT"));
+    }
+    
     @Test
     public void testListConfig() throws Exception
     {

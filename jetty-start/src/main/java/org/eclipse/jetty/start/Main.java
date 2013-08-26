@@ -346,6 +346,13 @@ public class Main
         StartLog.debug("Parsing collected arguments");
         args.parseCommandLine();
 
+        // 4.5) check if you need to continue building module resolution
+        // (ie should be able to stop server without building module tree, etc)
+        if ( !args.isRun() )
+        {
+            return args;
+        }
+        
         // 5) Module Registration
         Modules modules = new Modules();
         StartLog.debug("Registering all modules");
@@ -465,6 +472,22 @@ public class Main
             enable(args,module,true);
         }
         
+        if (args.isStopCommand())
+        {
+            int stopPort = Integer.parseInt(args.getProperties().getProperty("STOP.PORT"));
+            String stopKey = args.getProperties().getProperty("STOP.KEY");
+
+            if (args.getProperties().getProperty("STOP.WAIT") != null)
+            {
+                int stopWait = Integer.parseInt(args.getProperties().getProperty("STOP.PORT"));
+
+                stop(stopPort,stopKey,stopWait);
+            }
+            else
+            {
+                stop(stopPort,stopKey);
+            }
+        }
         
         // Informational command line, don't run jetty
         if (!args.isRun())
@@ -472,6 +495,8 @@ public class Main
             return;
         }
 
+        
+        
         // execute Jetty in another JVM
         if (args.isExec())
         {

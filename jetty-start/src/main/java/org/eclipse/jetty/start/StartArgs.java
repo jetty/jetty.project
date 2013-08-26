@@ -1,6 +1,5 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -372,10 +371,6 @@ public class StartArgs
             cmd.addRawArg("-Djetty.home=" + baseHome.getHome());
             cmd.addRawArg("-Djetty.base=" + baseHome.getBase());
 
-            // Special Stop/Shutdown properties
-            ensureSystemPropertySet("STOP.PORT");
-            ensureSystemPropertySet("STOP.KEY");
-
             // System Properties
             for (String propKey : systemPropertyKeys)
             {
@@ -388,6 +383,11 @@ public class StartArgs
             cmd.addRawArg(getMainClassname());
         }
 
+        // Special Stop/Shutdown properties
+        ensureSystemPropertySet("STOP.PORT");
+        ensureSystemPropertySet("STOP.KEY");
+        ensureSystemPropertySet("STOP.WAIT");
+        
         // Check if we need to pass properties as a file
         if (properties.size() > 0)
         {
@@ -537,12 +537,6 @@ public class StartArgs
                 throw new UsageException(ERR_BAD_ARG,"%s not allowed in %s",arg,source);
             stopCommand = true;
             run = false;
-            //
-            // int port = Integer.parseInt(_config.getProperty("STOP.PORT","-1"));
-            // String key = _config.getProperty("STOP.KEY",null);
-            // int timeout = Integer.parseInt(_config.getProperty("STOP.WAIT","0"));
-            // stop(port,key,timeout);
-            //
             return;
         }
 
