@@ -27,8 +27,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
@@ -65,7 +67,8 @@ public class StartArgs
     private static final String SERVER_MAIN = "org.eclipse.jetty.xml.XmlConfiguration";
 
     private List<String> commandLine = new ArrayList<>();
-    private List<String> enabledModules = new ArrayList<>();
+    private Set<String> enabledModules = new HashSet<>();
+    private Map<String,List<String>> moduleSources = new HashMap<>();
     private List<String> downloads = new ArrayList<>();
     private Classpath classpath;
     private List<String> xmlRefs = new ArrayList<>();
@@ -325,7 +328,7 @@ public class StartArgs
         return downloads;
     }
 
-    public List<String> getEnabledModules()
+    public Set<String> getEnabledModules()
     {
         return this.enabledModules;
     }
@@ -335,6 +338,11 @@ public class StartArgs
         return jvmArgs;
     }
 
+    public List<String> getModulesSources(String enabledModule)
+    {
+        return moduleSources.get(enabledModule);
+    }
+    
     public CommandLineBuilder getMainArgs(BaseHome baseHome, boolean addJavaInit) throws IOException
     {
         CommandLineBuilder cmd = new CommandLineBuilder();
@@ -476,7 +484,7 @@ public class StartArgs
         return version;
     }
 
-    public void parse(String arg)
+    public void parse(String arg,String source)
     {
         if ("--help".equals(arg) || "-?".equals(arg))
         {
@@ -560,13 +568,7 @@ public class StartArgs
             return;
         }
 
-        if (arg.startsWith("MODULE="))
-        {
-            enabledModules.add(getValue(arg));
-            return;
-        }
-
-        if (arg.startsWith("MODULES="))
+        if (arg.startsWith("--module="))
         {
             for (String moduleName : getValue(arg).split(","))
             {
@@ -574,10 +576,25 @@ public class StartArgs
                 {
                     continue; // skip
                 }
-                enabledModules.add(moduleName.trim());
+                moduleName=moduleName.trim();
+                enabledModules.add(moduleName);
+                List<String> sources=moduleSources.get(moduleName);
+                if (sources==null)
+                {
+                    sources=new ArrayList<String>();
+                    moduleSources.put(moduleName,sources);
+                }
+                sources.add(source);
             }
             return;
         }
+        
+        if (arg.startsWith("MODULE=") || arg.startsWith("MODULES="))
+        {
+            System.err.println("ERROR: Ignored deprecated arg: "+arg);
+            return;
+        }
+
 
         // Start property (syntax similar to System property)
         if (arg.startsWith("-D"))
@@ -631,14 +648,23 @@ public class StartArgs
         }
 
         // Anything else is unrecognized
-        throw new UsageException(ERR_BAD_ARG,"Unrecognized argument: %s",arg);
+        throw new UsageException(ERR_BAD_ARG,"Unrecognized argument: %s in %s",arg,source);
     }
 
-    public void parse(TextFile file)
+    public void parse(BaseHome baseHome,TextFile file)
     {
+        String source;
+        try
+        {
+            source=baseHome.toShortForm(file.getFile());
+        }
+        catch(Exception e)
+        {
+            throw new UsageException(ERR_BAD_ARG,"Bad file: %s",file);
+        }
         for (String line : file)
         {
-            parse(line);
+            parse(line,source);
         }
     }
 
@@ -646,7 +672,7 @@ public class StartArgs
     {
         for (String line : commandLine)
         {
-            parse(line);
+            parse(line,"<cmd-line>");
         }
     }
 

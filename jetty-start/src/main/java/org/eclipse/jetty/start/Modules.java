@@ -141,16 +141,25 @@ public class Modules implements Iterable<Module>
     {
         List<Module> ordered = new ArrayList<>();
         ordered.addAll(modules.values());
-        Collections.sort(ordered,Collections.reverseOrder(new Module.DepthComparator()));
+        Collections.sort(ordered,new Module.NameComparator());
 
         for (Module module : ordered)
         {
-            System.out.printf("Module: %s%n",module.getName());
-            System.out.printf("  depth: %d%n",module.getDepth());
-            System.out.printf("  parents: [%s]%n",join(module.getParentNames(),','));
+            System.out.printf("%nModule: %s%n",module.getName());
+            for (String lib : module.getLibs())
+            {
+                System.out.printf("      LIB: %s%n",lib);
+            }
             for (String xml : module.getXmls())
             {
-                System.out.printf("  xml: %s%n",xml);
+                System.out.printf("      XML: %s%n",xml);
+            }
+            System.out.printf(    "  depends: [%s]%n",join(module.getParentNames(),','));
+            if (StartLog.isDebugEnabled())
+                System.out.printf("    depth: %d%n",module.getDepth());
+            for (String source : module.getSources())
+            {
+                System.out.printf("  enabled: %s%n",source);
             }
         }
     }
@@ -169,26 +178,7 @@ public class Modules implements Iterable<Module>
             {
                 // Show module name
                 String indent = toIndent(module.getDepth());
-                System.out.printf("%s + Module: %s",indent,module.getName());
-                if (module.isEnabled())
-                {
-                    System.out.print(" [enabled]");
-                }
-                else
-                {
-                    System.out.print(" [transitive]");
-                }
-                System.out.println();
-                // Dump lib references
-                for (String libRef : module.getLibs())
-                {
-                    System.out.printf("%s   - LIB | %s%n",indent,libRef);
-                }
-                // Dump xml references
-                for (String xmlRef : module.getXmls())
-                {
-                    System.out.printf("%s   - XML | %s%n",indent,xmlRef);
-                }
+                System.out.printf("%s + Module: %s [%s]%n",indent,module.getName(),module.isEnabled()?"enabled":"transitive");
             }
         }
     }
@@ -200,7 +190,7 @@ public class Modules implements Iterable<Module>
         return new String(indent);
     }
 
-    public void enable(String name)
+    public void enable(String name,List<String> sources)
     {
         Module module = modules.get(name);
         if (module == null)
@@ -209,6 +199,8 @@ public class Modules implements Iterable<Module>
             return;
         }
         module.setEnabled(true);
+        if (sources!=null)
+            module.addSources(sources);
     }
 
     private void findParents(Module module, Set<Module> active)

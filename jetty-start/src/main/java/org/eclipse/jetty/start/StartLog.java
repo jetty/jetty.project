@@ -67,6 +67,11 @@ public class StartLog
     {
         t.printStackTrace(System.err);
     }
+    
+    public static boolean isDebugEnabled()
+    {
+        return INSTANCE.debug;
+    }
 
     private boolean debug = false;
 

@@ -318,7 +318,7 @@ public class Main
         if (FS.canReadFile(start_ini))
         {
             StartLog.debug("Reading ${jetty.base}/start.ini) - %s",start_ini);
-            args.parse(new StartIni(start_ini));
+            args.parse(baseHome, new StartIni(start_ini));
         }
 
         File start_d = baseHome.getBaseFile("start.d");
@@ -334,7 +334,7 @@ public class Main
             for (File file : files)
             {
                 StartLog.debug("Reading ${jetty.base}/start.d/%s - %s",file.getName(),file);
-                args.parse(new StartIni(file));
+                args.parse(baseHome, new StartIni(file));
             }
         }
 
@@ -354,7 +354,7 @@ public class Main
         for (String enabledModule : args.getEnabledModules())
         {
             StartLog.debug("Enabling module: %s",enabledModule);
-            modules.enable(enabledModule);
+            modules.enable(enabledModule,args.getModulesSources(enabledModule));
         }
         StartLog.debug("Building Module Graph");
         modules.buildGraph();

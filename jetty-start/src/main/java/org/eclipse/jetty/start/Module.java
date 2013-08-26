@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.text.CollationKey;
 import java.text.Collator;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -36,6 +37,20 @@ import java.util.regex.Pattern;
  */
 public class Module extends TextFile
 {
+    public static class NameComparator implements Comparator<Module>
+    {
+        private Collator collator = Collator.getInstance();
+
+        @Override
+        public int compare(Module o1, Module o2)
+        {
+            // by name (not really needed, but makes for predictable test cases)
+            CollationKey k1 = collator.getCollationKey(o1.name);
+            CollationKey k2 = collator.getCollationKey(o2.name);
+            return k1.compareTo(k2);
+        }
+    }
+    
     public static class DepthComparator implements Comparator<Module>
     {
         private Collator collator = Collator.getInstance();
@@ -72,9 +87,13 @@ public class Module extends TextFile
     private List<String> xmls;
     /** List of library options for this Module */
     private List<String> libs;
+    
+
 
     /** Is this Module enabled via start.jar command line, start.ini, or start.d/*.ini ? */
     private boolean enabled = false;
+    /** List of sources that enabled this module */
+    private final Set<String> sources = new HashSet<>();
 
     public Module(File file) throws FileNotFoundException, IOException
     {
@@ -264,6 +283,16 @@ public class Module extends TextFile
         this.enabled = enabled;
     }
 
+    public void addSources(List<String> sources)
+    {
+        this.sources.addAll(sources);
+    }
+    
+    public Set<String> getSources()
+    {
+        return Collections.unmodifiableSet(sources);
+    }
+    
     @Override
     public String toString()
     {
@@ -276,4 +305,5 @@ public class Module extends TextFile
         str.append(']');
         return str.toString();
     }
+    
 }

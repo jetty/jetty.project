@@ -35,13 +35,13 @@ public class StartIni extends TextFile
     @Override
     public void addUniqueLine(String line)
     {
-        if (line.startsWith("MODULES="))
+        if (line.startsWith("--module="))
         {
             int idx = line.indexOf('=');
             String value = line.substring(idx + 1);
             for (String part : value.split(","))
             {
-                super.addUniqueLine("MODULE=" + part);
+                super.addUniqueLine("--module=" + part);
             }
         }
         else

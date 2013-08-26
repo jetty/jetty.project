@@ -23,6 +23,7 @@ import static org.hamcrest.Matchers.*;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -31,6 +32,8 @@ import org.junit.Test;
 
 public class ModulesTest
 {
+    private final static List<String> TEST_SOURCE=Collections.singletonList("<test>");
+    
     @Test
     public void testLoadAllModules() throws IOException
     {
@@ -54,8 +57,8 @@ public class ModulesTest
         modules.buildGraph();
 
         // Enable 2 modules
-        modules.enable("server");
-        modules.enable("http");
+        modules.enable("server",TEST_SOURCE);
+        modules.enable("http",TEST_SOURCE);
 
         // Collect active module list
         List<Module> active = modules.resolveEnabled();
@@ -111,8 +114,8 @@ public class ModulesTest
         // modules.dump();
 
         // Enable 2 modules
-        modules.enable("websocket");
-        modules.enable("http");
+        modules.enable("websocket",TEST_SOURCE);
+        modules.enable("http",TEST_SOURCE);
 
         // Collect active module list
         List<Module> active = modules.resolveEnabled();
