@@ -410,13 +410,12 @@ public class Main
         modules.registerAll(baseHome);
 
         // 6) Active Module Resolution
-        modules.enable(loadModulePersistence());
         for (String enabledModule : args.getEnabledModules())
         {
             List<String> sources = args.getSources(enabledModule);
-            StartLog.debug("Enabling module: %s (from %s)",enabledModule,join(sources,", "));
             modules.enable(enabledModule,sources);
         }
+        modules.enable(loadModulePersistence());
 
         StartLog.debug("Building Module Graph");
         modules.buildGraph();

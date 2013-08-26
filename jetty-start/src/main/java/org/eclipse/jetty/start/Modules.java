@@ -204,9 +204,63 @@ public class Modules implements Iterable<Module>
     {
         List<String> source = new ArrayList<>();
         source.add("<module-persistence>");
-        for (String module : persistence.getEnabled())
+
+        if (persistence.getEnabled().size() > 0)
         {
-            enable(module,source);
+            // show user warning about module enablement + module persistence
+            List<String> enabled = new ArrayList<>();
+            for (Module module : modules.values())
+            {
+                if (module.isEnabled())
+                {
+                    if (!persistence.getEnabled().contains(module.getName()))
+                    {
+                        // only add if not already covered by module persistence
+                        enabled.add(module.getName());
+                    }
+                }
+            }
+
+            if (enabled.size() > 0)
+            {
+                StringBuilder err = new StringBuilder();
+                err.append("WARNING: Module Persistence Mode is being used.\n");
+                err.append("The following ");
+                if (enabled.size() > 1)
+                {
+                    err.append(enabled.size()).append(" modules");
+                }
+                else
+                {
+                    err.append(" module");
+                }
+                err.append(", defined outside of the module persistence mechanism, ");
+                if (enabled.size() > 1)
+                {
+                    err.append("are ");
+                }
+                else
+                {
+                    err.append("is ");
+                }
+                err.append("being ignored.");
+                System.err.println(err);
+
+                for (int i = 0; i < enabled.size(); i++)
+                {
+                    String name = enabled.get(i);
+                    Module module = modules.get(name);
+                    System.err.printf("  [%d] \"%s\" - defined in [%s]%n",i + 1,name,Main.join(module.getSources(),", "));
+                    module.setEnabled(false);
+                    module.clearSources();
+                }
+            }
+
+            // use module persistence mode
+            for (String module : persistence.getEnabled())
+            {
+                enable(module,source);
+            }
         }
     }
 
@@ -218,6 +272,7 @@ public class Modules implements Iterable<Module>
             System.err.printf("WARNING: Cannot enable requested module [%s]: not a valid module name.%n",name);
             return;
         }
+        StartLog.debug("Enabling module: %s (via %s)",name,Main.join(sources,", "));
         module.setEnabled(true);
         if (sources != null)
         {

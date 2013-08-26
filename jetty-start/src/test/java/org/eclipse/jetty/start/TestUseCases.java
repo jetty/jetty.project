@@ -39,8 +39,7 @@ public class TestUseCases
         List<String> cmdLine = new ArrayList<>();
         cmdLine.add("jetty.home=" + homeDir.getAbsolutePath());
         cmdLine.add("jetty.base=" + baseDir.getAbsolutePath());
-        int len = cmdLine.size();
-        StartArgs args = main.processCommandLine(cmdLine.toArray(new String[len]));
+        StartArgs args = main.processCommandLine(cmdLine);
         BaseHome baseHome = main.getBaseHome();
         ConfigurationAssert.assertConfiguration(baseHome,args,"usecases/" + assertName);
     }

@@ -288,6 +288,11 @@ public class Module extends TextFile
         this.sources.addAll(sources);
     }
     
+    public void clearSources()
+    {
+        this.sources.clear();
+    }
+    
     public Set<String> getSources()
     {
         return Collections.unmodifiableSet(sources);
