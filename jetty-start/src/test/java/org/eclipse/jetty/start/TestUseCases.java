@@ -57,9 +57,9 @@ public class TestUseCases
     }
     
     @Test
-    public void testWithModuleDownload() throws Exception
+    public void testWithSpdy() throws Exception
     {
-        assertUseCase("home","base.with.module.download","assert-with-module-download.txt");
+        assertUseCase("home","base.enable.spdy","assert-enable-spdy.txt");
     }
     
     @Test
