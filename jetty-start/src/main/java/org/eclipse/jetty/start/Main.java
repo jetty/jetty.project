@@ -283,7 +283,8 @@ public class Main
         }
         catch (ClassNotFoundException e)
         {
-            StartLog.warn(e);
+            System.out.println("WARNING: Nothing to start, exiting ...");
+            StartLog.debug(e);
             usageExit(ERR_INVOKE_MAIN);
             return;
         }
