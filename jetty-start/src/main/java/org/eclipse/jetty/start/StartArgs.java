@@ -185,6 +185,25 @@ public class StartArgs
         }
     }
 
+    public void dumpSystemProperties()
+    {
+        System.out.println();
+        System.out.println("System Properties:");
+        System.out.println("------------------");
+
+        if (systemPropertyKeys.isEmpty())
+        {
+            System.out.println(" (no system properties specified)");
+            return;
+        }
+
+        for (String key : systemPropertyKeys)
+        {
+            String value = System.getProperty(key);
+            System.out.printf(" %s = %s%n",key,value);
+        }
+    }
+
     public void dumpProperties()
     {
         System.out.println();
@@ -373,7 +392,7 @@ public class StartArgs
         ensureSystemPropertySet("STOP.PORT");
         ensureSystemPropertySet("STOP.KEY");
         ensureSystemPropertySet("STOP.WAIT");
-        
+
         // Check if we need to pass properties as a file
         if (properties.size() > 0)
         {
@@ -473,7 +492,17 @@ public class StartArgs
 
     public boolean hasSystemProperties()
     {
-        return systemPropertyKeys.size() > 0;
+        for (String key : systemPropertyKeys)
+        {
+            // ignored keys
+            if ("jetty.home".equals(key) || "jetty.base".equals(key))
+            {
+                // skip
+                continue;
+            }
+            return true;
+        }
+        return false;
     }
 
     public boolean isDryRun()

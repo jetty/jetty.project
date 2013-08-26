@@ -311,6 +311,9 @@ public class Main
         // Dump JVM Args
         args.dumpJvmArgs();
 
+        // Dump System Properties
+        args.dumpSystemProperties();
+
         // Dump Properties
         args.dumpProperties();
 
