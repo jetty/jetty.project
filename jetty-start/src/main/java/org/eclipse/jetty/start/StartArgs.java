@@ -38,7 +38,7 @@ import java.util.Set;
  */
 public class StartArgs
 {
-    public static final String CMD_LINE_SOURCE="<cmd-line>";
+    public static final String CMD_LINE_SOURCE = "<cmd-line>";
     public static final String VERSION;
 
     static
@@ -68,7 +68,7 @@ public class StartArgs
 
     private List<String> commandLine = new ArrayList<>();
     private Set<String> modules = new HashSet<>();
-    private Map<String,List<String>> sources = new HashMap<>();
+    private Map<String, List<String>> sources = new HashMap<>();
     private List<String> downloads = new ArrayList<>();
     private Classpath classpath;
     private List<String> xmlRefs = new ArrayList<>();
@@ -76,8 +76,8 @@ public class StartArgs
     private Properties properties = new Properties();
     private Set<String> systemPropertyKeys = new HashSet<>();
     private List<String> jvmArgs = new ArrayList<>();
-    private List<String> enable = new ArrayList<>();
-    private List<String> disable = new ArrayList<>();
+    private List<String> modulePersistEnable = new ArrayList<>();
+    private List<String> modulePersistDisable = new ArrayList<>();
     private Modules allModules;
 
     // Should the server be run?
@@ -325,16 +325,6 @@ public class StartArgs
         return this.commandLine;
     }
 
-    public List<String> getEnable()
-    {
-        return enable;
-    }
-
-    public List<String> getDisable()
-    {
-        return disable;
-    }
-
     public List<String> getDownloads()
     {
         return downloads;
@@ -350,11 +340,6 @@ public class StartArgs
         return jvmArgs;
     }
 
-    public List<String> getSources(String module)
-    {
-        return sources.get(module);
-    }
-    
     public CommandLineBuilder getMainArgs(BaseHome baseHome, boolean addJavaInit) throws IOException
     {
         CommandLineBuilder cmd = new CommandLineBuilder();
@@ -417,9 +402,29 @@ public class StartArgs
         return System.getProperty("main.class",mainclass);
     }
 
+    public List<String> getModulePersistDisable()
+    {
+        return modulePersistDisable;
+    }
+
+    public List<String> getModulePersistEnable()
+    {
+        return modulePersistEnable;
+    }
+
+    public boolean isModulePersistenceChanging()
+    {
+        return (modulePersistDisable.size() > 0) || (modulePersistEnable.size() > 0);
+    }
+
     public Properties getProperties()
     {
         return properties;
+    }
+
+    public List<String> getSources(String module)
+    {
+        return sources.get(module);
     }
 
     private String getValue(String arg)
@@ -439,15 +444,17 @@ public class StartArgs
 
     private List<String> getValues(String arg)
     {
-        String v=getValue(arg);
-        ArrayList<String> l=new ArrayList<>();
-        for (String s:v.split(","))
+        String v = getValue(arg);
+        ArrayList<String> l = new ArrayList<>();
+        for (String s : v.split(","))
         {
-            if (s!=null)
+            if (s != null)
             {
-                s=s.trim();
-                if (s.length()>0)
+                s = s.trim();
+                if (s.length() > 0)
+                {
                     l.add(s);
+                }
             }
         }
         return l;
@@ -513,13 +520,32 @@ public class StartArgs
         return version;
     }
 
-    public void parse(String arg,String source)
+    public void parse(BaseHome baseHome, TextFile file)
+    {
+        String source;
+        try
+        {
+            source = baseHome.toShortForm(file.getFile());
+        }
+        catch (Exception e)
+        {
+            throw new UsageException(ERR_BAD_ARG,"Bad file: %s",file);
+        }
+        for (String line : file)
+        {
+            parse(line,source);
+        }
+    }
+
+    public void parse(String arg, String source)
     {
         if ("--help".equals(arg) || "-?".equals(arg))
         {
             if (!CMD_LINE_SOURCE.equals(source))
+            {
                 throw new UsageException(ERR_BAD_ARG,"%s not allowed in %s",arg,source);
-                
+            }
+
             help = true;
             run = false;
             return;
@@ -534,7 +560,9 @@ public class StartArgs
         if ("--stop".equals(arg))
         {
             if (!CMD_LINE_SOURCE.equals(source))
+            {
                 throw new UsageException(ERR_BAD_ARG,"%s not allowed in %s",arg,source);
+            }
             stopCommand = true;
             run = false;
             return;
@@ -560,17 +588,12 @@ public class StartArgs
             return;
         }
 
-        if ("--list-modules".equals(arg))
-        {
-            listModules = true;
-            run = false;
-            return;
-        }
-
         if ("--dry-run".equals(arg) || "--exec-print".equals(arg))
         {
             if (!CMD_LINE_SOURCE.equals(source))
+            {
                 throw new UsageException(ERR_BAD_ARG,"%s not allowed in %s",arg,source);
+            }
             dryRun = true;
             run = false;
             return;
@@ -582,20 +605,11 @@ public class StartArgs
             return;
         }
 
-        if (arg.startsWith("--enable="))
-        {
-            if (!CMD_LINE_SOURCE.equals(source))
-                throw new UsageException(ERR_BAD_ARG,"%s not allowed in %s",arg,source);
-            enable.addAll(getValues(arg));
-            run = false;
-            return;
-        }
+        // Module Management
 
-        if (arg.startsWith("--disable="))
+        if ("--list-modules".equals(arg))
         {
-            if (!CMD_LINE_SOURCE.equals(source))
-                throw new UsageException(ERR_BAD_ARG,"%s not allowed in %s",arg,source);
-            disable.addAll(getValues(arg));
+            listModules = true;
             run = false;
             return;
         }
@@ -605,23 +619,38 @@ public class StartArgs
             for (String moduleName : getValues(arg))
             {
                 modules.add(moduleName);
-                List<String> list=sources.get(moduleName);
-                if (list==null)
+                List<String> list = sources.get(moduleName);
+                if (list == null)
                 {
-                    list=new ArrayList<String>();
+                    list = new ArrayList<String>();
                     sources.put(moduleName,list);
                 }
                 list.add(source);
             }
             return;
         }
-        
-        if (arg.startsWith("MODULE=") || arg.startsWith("MODULES="))
+
+        if (arg.startsWith("--enable-module="))
         {
-            StartLog.warn("Ignored deprecated arg: {}",arg);
+            if (!CMD_LINE_SOURCE.equals(source))
+            {
+                throw new UsageException(ERR_BAD_ARG,"%s not allowed in %s",arg,source);
+            }
+            modulePersistEnable.addAll(getValues(arg));
+            run = false;
             return;
         }
 
+        if (arg.startsWith("--disable-module="))
+        {
+            if (!CMD_LINE_SOURCE.equals(source))
+            {
+                throw new UsageException(ERR_BAD_ARG,"%s not allowed in %s",arg,source);
+            }
+            modulePersistDisable.addAll(getValues(arg));
+            run = false;
+            return;
+        }
 
         // Start property (syntax similar to System property)
         if (arg.startsWith("-D"))
@@ -678,23 +707,6 @@ public class StartArgs
         throw new UsageException(ERR_BAD_ARG,"Unrecognized argument: %s in %s",arg,source);
     }
 
-    public void parse(BaseHome baseHome,TextFile file)
-    {
-        String source;
-        try
-        {
-            source=baseHome.toShortForm(file.getFile());
-        }
-        catch(Exception e)
-        {
-            throw new UsageException(ERR_BAD_ARG,"Bad file: %s",file);
-        }
-        for (String line : file)
-        {
-            parse(line,source);
-        }
-    }
-
     public void parseCommandLine()
     {
         for (String line : commandLine)
@@ -721,6 +733,16 @@ public class StartArgs
     public void setAllModules(Modules allModules)
     {
         this.allModules = allModules;
+    }
+
+    public void setModulePersistDisable(List<String> modulePersistDisable)
+    {
+        this.modulePersistDisable = modulePersistDisable;
+    }
+
+    public void setModulePersistEnable(List<String> modulePersistEnable)
+    {
+        this.modulePersistEnable = modulePersistEnable;
     }
 
     @Override

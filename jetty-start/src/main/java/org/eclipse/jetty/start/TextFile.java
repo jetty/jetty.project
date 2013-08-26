@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.regex.Pattern;
 
 /**
@@ -42,6 +43,12 @@ public class TextFile implements Iterable<String>
     {
         this.file = file;
         init();
+        
+        if (!FS.canReadFile(file))
+        {
+            StartLog.debug("Skipping read of missing file: %s",file.getAbsolutePath());
+            return;
+        }
 
         try (FileReader reader = new FileReader(file))
         {
@@ -107,6 +114,11 @@ public class TextFile implements Iterable<String>
     public Iterator<String> iterator()
     {
         return lines.iterator();
+    }
+    
+    public ListIterator<String> listIterator()
+    {
+        return lines.listIterator();
     }
 
     public void process(String line)

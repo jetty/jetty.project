@@ -39,6 +39,16 @@ public class Modules implements Iterable<Module>
 {
     private Map<String, Module> modules = new HashMap<>();
 
+    private Set<String> asNameSet(Set<Module> moduleSet)
+    {
+        Set<String> ret = new HashSet<>();
+        for (Module module : moduleSet)
+        {
+            ret.add(module.getName());
+        }
+        return ret;
+    }
+
     private void assertNoCycle(Module module, Stack<String> refs)
     {
         for (Module parent : module.getParentEdges())
@@ -90,7 +100,7 @@ public class Modules implements Iterable<Module>
     {
         // Connect edges
         for (Module module : modules.values())
-        {   
+        {
             for (String parentName : module.getParentNames())
             {
                 Module parent = get(parentName);
@@ -100,12 +110,12 @@ public class Modules implements Iterable<Module>
                     parent.addChildEdge(module);
                 }
             }
-            
+
             for (String optionalParentName : module.getOptionalParentNames())
             {
                 Module optional = get(optionalParentName);
-                
-                if (optional != null && optional.isEnabled())
+
+                if ((optional != null) && optional.isEnabled())
                 {
                     module.addParentEdge(optional);
                     optional.addChildEdge(module);
@@ -154,9 +164,11 @@ public class Modules implements Iterable<Module>
             {
                 System.out.printf("      XML: %s%n",xml);
             }
-            System.out.printf(    "  depends: [%s]%n",join(module.getParentNames(),','));
+            System.out.printf("  depends: [%s]%n",join(module.getParentNames(),','));
             if (StartLog.isDebugEnabled())
+            {
                 System.out.printf("    depth: %d%n",module.getDepth());
+            }
             for (String source : module.getSources())
             {
                 System.out.printf("  enabled: %s%n",source);
@@ -183,14 +195,7 @@ public class Modules implements Iterable<Module>
         }
     }
 
-    private String toIndent(int depth)
-    {
-        char indent[] = new char[depth * 2];
-        Arrays.fill(indent,' ');
-        return new String(indent);
-    }
-
-    public void enable(String name,List<String> sources)
+    public void enable(String name, List<String> sources)
     {
         Module module = modules.get(name);
         if (module == null)
@@ -199,17 +204,28 @@ public class Modules implements Iterable<Module>
             return;
         }
         module.setEnabled(true);
-        if (sources!=null)
+        if (sources != null)
+        {
             module.addSources(sources);
+        }
     }
 
-    private void findParents(Module module, Set<Module> active)
+    private void findChildren(Module module, Set<Module> ret)
     {
-        active.add(module);
+        ret.add(module);
+        for (Module child : module.getChildEdges())
+        {
+            ret.add(child);
+        }
+    }
+
+    private void findParents(Module module, Set<Module> ret)
+    {
+        ret.add(module);
         for (Module parent : module.getParentEdges())
         {
-            active.add(parent);
-            findParents(parent,active);
+            ret.add(parent);
+            findParents(parent,ret);
         }
     }
 
@@ -290,6 +306,14 @@ public class Modules implements Iterable<Module>
         }
     }
 
+    public Set<String> resolveChildModulesOf(String moduleName)
+    {
+        Set<Module> ret = new HashSet<>();
+        Module module = get(moduleName);
+        findChildren(module,ret);
+        return asNameSet(ret);
+    }
+
     /**
      * Resolve the execution order of the enabled modules, and all dependant modules, based on depth first transitive reduction.
      * 
@@ -311,5 +335,20 @@ public class Modules implements Iterable<Module>
         ordered.addAll(active);
         Collections.sort(ordered,new Module.DepthComparator());
         return ordered;
+    }
+
+    public Set<String> resolveParentModulesOf(String moduleName)
+    {
+        Set<Module> ret = new HashSet<>();
+        Module module = get(moduleName);
+        findParents(module,ret);
+        return asNameSet(ret);
+    }
+
+    private String toIndent(int depth)
+    {
+        char indent[] = new char[depth * 2];
+        Arrays.fill(indent,' ');
+        return new String(indent);
     }
 }

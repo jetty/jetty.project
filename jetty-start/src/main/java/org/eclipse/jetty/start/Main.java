@@ -35,7 +35,6 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.net.URL;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -293,6 +292,14 @@ public class Main
         modules.dumpEnabledTree();
     }
 
+    /**
+     * Convenience for <code>processCommandLine(cmdLine.toArray(new String[cmdLine.size()]))</code>
+     */
+    public StartArgs processCommandLine(List<String> cmdLine) throws Exception
+    {
+        return this.processCommandLine(cmdLine.toArray(new String[cmdLine.size()]));
+    }
+
     public StartArgs processCommandLine(String[] cmdLine) throws Exception
     {
         StartArgs args = new StartArgs(cmdLine);
@@ -320,7 +327,7 @@ public class Main
         if (FS.canReadFile(start_ini))
         {
             StartLog.debug("Reading ${jetty.base}/start.ini - %s",start_ini);
-            args.parse(baseHome, new StartIni(start_ini));
+            args.parse(baseHome,new StartIni(start_ini));
         }
 
         File start_d = baseHome.getBaseFile("start.d");
@@ -336,7 +343,7 @@ public class Main
             for (File file : files)
             {
                 StartLog.debug("Reading ${jetty.base}/start.d/%s - %s",file.getName(),file);
-                args.parse(baseHome, new StartIni(file));
+                args.parse(baseHome,new StartIni(file));
             }
         }
 
@@ -415,16 +422,6 @@ public class Main
         Classpath classpath = args.getClasspath();
 
         System.setProperty("java.class.path",classpath.toString());
-        ClassLoader cl = classpath.getClassLoader();
-
-        StartLog.debug("jetty.home=" + System.getProperty("jetty.home"));
-        StartLog.debug("jetty.base=" + System.getProperty("jetty.base"));
-        StartLog.debug("java.home=" + System.getProperty("java.home"));
-        StartLog.debug("java.io.tmpdir=" + System.getProperty("java.io.tmpdir"));
-        StartLog.debug("java.class.path=" + classpath);
-        StartLog.debug("classloader=" + cl);
-        StartLog.debug("classloader.parent=" + cl.getParent());
-        StartLog.debug("properties=" + args.getProperties());
 
         // Show the usage information and return
         if (args.isHelp())
@@ -464,15 +461,23 @@ public class Main
         }
 
         // Enables/Disable
-        for (String module : args.getDisable())
+        File file = baseHome.getBaseFile("modules/enabled");
+        ModulePersistence persistence = new ModulePersistence(file);
+        if (args.isModulePersistenceChanging())
         {
-            disable(args,module,true);
+            System.out.println("Persistent Module Management:");
+            System.out.println("-----------------------------");
+            System.out.printf("Persistence file: %s%n",baseHome.toShortForm(file));
+            for (String module : args.getModulePersistDisable())
+            {
+                persistence.disableModule(args,module);
+            }
+            for (String module : args.getModulePersistEnable())
+            {
+                persistence.enableModule(args,module);
+            }
         }
-        for (String module : args.getEnable())
-        {
-            enable(args,module,true);
-        }
-        
+                   
         if (args.isStopCommand())
         {
             int stopPort = Integer.parseInt(args.getProperties().getProperty("STOP.PORT"));
@@ -489,7 +494,6 @@ public class Main
                 stop(stopPort,stopKey);
             }
         }
-        
         // Informational command line, don't run jetty
         if (!args.isRun())
         {
@@ -528,6 +532,7 @@ public class Main
         }
 
         // Set current context class loader to what is selected.
+        ClassLoader cl = classpath.getClassLoader();
         Thread.currentThread().setContextClassLoader(cl);
 
         // Invoke the Main Class
@@ -611,102 +616,6 @@ public class Main
         }
     }
 
-    private void enable(StartArgs args, String name, boolean verbose) throws IOException
-    {
-        File start_d=baseHome.getFile("start.d");
-        File ini=new File(start_d,name+".ini");
-        
-        // Is it already enabled
-        if (ini.exists())
-        {
-            if (verbose)
-                StartLog.warn("Module %s already enabled by: %s",name,baseHome.toShortForm(ini));
-            return;
-        }
-        
-        // Is there a disabled ini?
-        File disabled=new File(start_d,name+".ini.disabled");
-        boolean copy=false;
-        if (!disabled.exists() && baseHome.isBaseDifferent())
-        {
-            copy=true;
-            disabled=new File(new File(baseHome.getHomeDir(),"start.d"),name+".ini.disabled");
-            if (!disabled.exists())
-                disabled=new File(new File(baseHome.getHomeDir(),"start.d"),name+".ini");
-        }
-            
-        if (disabled.exists())
-        {
-            // enable module by renaming/copying ini template
-            System.err.printf("Enabling %s in %s from %s%n",name,baseHome.toShortForm(ini),baseHome.toShortForm(disabled));
-            if (copy)
-                Files.copy(disabled.toPath(),ini.toPath());
-            else
-                disabled.renameTo(ini);
-            args.parse(baseHome, new StartIni(ini));
-        }
-        else if (args.getAllModules().resolveEnabled().contains(args.getAllModules().get(name)))
-        {
-            // No ini template and module is already enabled
-            List<String> sources=args.getSources(name);
-            if (sources!=null && sources.size()>0)
-                for (String s: args.getSources(name))
-                    StartLog.warn("Module %s is enabled in %s",name,s);
-            else
-                StartLog.warn("Module %s is already enabled (see --list-modules)",name);
-                
-        }
-        else if (ini.createNewFile())
-        {
-            System.err.printf("Enabling %s in %s%n",name,baseHome.toShortForm(ini));
-            // Create an ini
-            try(FileOutputStream out = new FileOutputStream(ini);)
-            {
-                out.write(("--module="+name+"\n").getBytes("ISO-8859-1"));
-            }
-            args.parse(baseHome, new StartIni(ini));
-        }
-        else
-        {
-            StartLog.warn("ERROR: Module %s cannot be enabled! ",name);
-            return;
-        }
-    
-        // Process dependencies
-        Modules modules = args.getAllModules();
-        Module module=modules.get(name);
-        
-        for (String parent:module.getParentNames())
-            enable(args,parent,false);
-    }
-
-    private void disable(StartArgs args, String name, boolean verbose) throws IOException
-    {
-        File start_d=baseHome.getFile("start.d");
-        File ini=new File(start_d,name+".ini");
-        
-        // Is it enabled?
-        if (ini.exists())
-        {
-            File disabled=new File(start_d,name+".ini.disabled");
-            
-            if (disabled.exists())
-            {
-                StartLog.warn("ERROR: Disabled ini already exists: %s",baseHome.toShortForm(disabled));
-                return;
-            }
-
-            StartLog.warn("Disabling %s from %s",name,baseHome.toShortForm(ini));
-            ini.renameTo(disabled);
-            
-            return;
-        }
-
-        if (verbose)
-            StartLog.warn("Module %s, ini file already disabled: %s",name,baseHome.toShortForm(ini));
-        
-    }
-    
     private void usage()
     {
         String usageResource = "org/eclipse/jetty/start/usage.txt";
