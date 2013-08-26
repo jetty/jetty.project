@@ -134,7 +134,11 @@ public class ModulePersistence extends TextFile
 
     private void saveFile() throws IOException
     {
-        try (FileWriter writer = new FileWriter(getFile(),false))
+        File file = getFile();
+        File parent = file.getParentFile();
+        FS.ensureDirectoryExists(parent);
+        
+        try (FileWriter writer = new FileWriter(file,false))
         {
             for (String line : getLines())
             {

@@ -124,6 +124,18 @@ public class FS
         }
     }
 
+    public static void ensureDirectoryExists(File dir) throws IOException
+    {
+        if (dir.exists())
+        {
+            return;
+        }
+        if (!dir.mkdirs())
+        {
+            throw new IOException("Unable to create directory: " + dir.getAbsolutePath());
+        }
+    }
+
     public static boolean isFile(File file)
     {
         if (file == null)
