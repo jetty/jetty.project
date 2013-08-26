@@ -36,6 +36,7 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -80,6 +81,22 @@ import java.util.Locale;
 public class Main
 {
     private static final int EXIT_USAGE = 1;
+
+    public static String join(Collection<?> objs, String delim)
+    {
+        StringBuilder str = new StringBuilder();
+        boolean needDelim = false;
+        for (Object obj : objs)
+        {
+            if (needDelim)
+            {
+                str.append(delim);
+            }
+            str.append(obj);
+            needDelim = true;
+        }
+        return str.toString();
+    }
 
     public static void main(String[] args)
     {
@@ -208,6 +225,33 @@ public class Main
         }
     }
 
+    private void dumpClasspathWithVersions(Classpath classpath)
+    {
+        System.out.println();
+        System.out.println("Jetty Server Classpath:");
+        System.out.println("-----------------------");
+        if (classpath.count() == 0)
+        {
+            System.out.println("No classpath entries and/or version information available show.");
+            return;
+        }
+
+        System.out.println("Version Information on " + classpath.count() + " entr" + ((classpath.count() > 1)?"ies":"y") + " in the classpath.");
+        System.out.println("Note: order presented here is how they would appear on the classpath.");
+        System.out.println("      changes to the MODULES=[name,name,...] command line option will be reflected here.");
+
+        int i = 0;
+        for (File element : classpath.getElements())
+        {
+            System.out.printf("%2d: %24s | %s\n",i++,getVersion(element),baseHome.toShortForm(element));
+        }
+    }
+
+    public BaseHome getBaseHome()
+    {
+        return baseHome;
+    }
+
     private String getVersion(File element)
     {
         if (element.isDirectory())
@@ -292,6 +336,12 @@ public class Main
         modules.dumpEnabledTree();
     }
 
+    private ModulePersistence loadModulePersistence() throws IOException
+    {
+        File file = baseHome.getBaseFile("modules/enabled");
+        return new ModulePersistence(file);
+    }
+
     /**
      * Convenience for <code>processCommandLine(cmdLine.toArray(new String[cmdLine.size()]))</code>
      */
@@ -360,11 +410,14 @@ public class Main
         modules.registerAll(baseHome);
 
         // 6) Active Module Resolution
+        modules.enable(loadModulePersistence());
         for (String enabledModule : args.getEnabledModules())
         {
-            StartLog.debug("Enabling module: %s",enabledModule);
-            modules.enable(enabledModule,args.getSources(enabledModule));
+            List<String> sources = args.getSources(enabledModule);
+            StartLog.debug("Enabling module: %s (from %s)",enabledModule,join(sources,", "));
+            modules.enable(enabledModule,sources);
         }
+
         StartLog.debug("Building Module Graph");
         modules.buildGraph();
 
@@ -378,33 +431,6 @@ public class Main
         args.resolveExtraXmls(baseHome);
 
         return args;
-    }
-
-    public BaseHome getBaseHome()
-    {
-        return baseHome;
-    }
-
-    private void dumpClasspathWithVersions(Classpath classpath)
-    {
-        System.out.println();
-        System.out.println("Jetty Server Classpath:");
-        System.out.println("-----------------------");
-        if (classpath.count() == 0)
-        {
-            System.out.println("No classpath entries and/or version information available show.");
-            return;
-        }
-
-        System.out.println("Version Information on " + classpath.count() + " entr" + ((classpath.count() > 1)?"ies":"y") + " in the classpath.");
-        System.out.println("Note: order presented here is how they would appear on the classpath.");
-        System.out.println("      changes to the MODULES=[name,name,...] command line option will be reflected here.");
-
-        int i = 0;
-        for (File element : classpath.getElements())
-        {
-            System.out.printf("%2d: %24s | %s\n",i++,getVersion(element),baseHome.toShortForm(element));
-        }
     }
 
     public void start(StartArgs args) throws IOException, InterruptedException
@@ -454,13 +480,12 @@ public class Main
         }
 
         // Enables/Disable
-        File file = baseHome.getBaseFile("modules/enabled");
-        ModulePersistence persistence = new ModulePersistence(file);
+        ModulePersistence persistence = loadModulePersistence();
         if (args.isModulePersistenceChanging())
         {
             System.out.println("Persistent Module Management:");
             System.out.println("-----------------------------");
-            System.out.printf("Persistence file: %s%n",baseHome.toShortForm(file));
+            System.out.printf("Persistence file: %s%n",baseHome.toShortForm(persistence.getFile()));
             for (String module : args.getModulePersistDisable())
             {
                 persistence.disableModule(args,module);

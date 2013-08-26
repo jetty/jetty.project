@@ -22,7 +22,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -164,7 +163,7 @@ public class Modules implements Iterable<Module>
             {
                 System.out.printf("      XML: %s%n",xml);
             }
-            System.out.printf("  depends: [%s]%n",join(module.getParentNames(),','));
+            System.out.printf("  depends: [%s]%n",Main.join(module.getParentNames(),", "));
             if (StartLog.isDebugEnabled())
             {
                 System.out.printf("    depth: %d%n",module.getDepth());
@@ -192,6 +191,22 @@ public class Modules implements Iterable<Module>
                 String indent = toIndent(module.getDepth());
                 System.out.printf("%s + Module: %s [%s]%n",indent,module.getName(),module.isEnabled()?"enabled":"transitive");
             }
+        }
+    }
+
+    /**
+     * Enable all modules found in module persistence
+     * 
+     * @param persistence
+     *            the module persistence to use
+     */
+    public void enable(ModulePersistence persistence)
+    {
+        List<String> source = new ArrayList<>();
+        source.add("<module-persistence>");
+        for (String module : persistence.getEnabled())
+        {
+            enable(module,source);
         }
     }
 
@@ -243,22 +258,6 @@ public class Modules implements Iterable<Module>
     public Iterator<Module> iterator()
     {
         return modules.values().iterator();
-    }
-
-    private String join(Collection<?> objs, char delim)
-    {
-        StringBuilder str = new StringBuilder();
-        boolean needDelim = false;
-        for (Object obj : objs)
-        {
-            if (needDelim)
-            {
-                str.append(delim);
-            }
-            str.append(obj);
-            needDelim = true;
-        }
-        return str.toString();
     }
 
     public List<String> normalizeLibs(List<Module> active)
