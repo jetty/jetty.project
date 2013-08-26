@@ -24,6 +24,7 @@ import java.util.List;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class MainTest
@@ -79,6 +80,14 @@ public class MainTest
         Main main = new Main();
         StartArgs args = main.processCommandLine(cmdLineArgs.toArray(new String[cmdLineArgs.size()]));
         main.listConfig(args);
+    }
+    
+    @Test
+    @Ignore("Just a bit noisy for general testing")
+    public void testHelp() throws Exception
+    {
+        Main main = new Main();
+        main.usage(false);
     }
 
     @Test

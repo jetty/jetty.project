@@ -419,7 +419,7 @@ public class Main
         // Show the usage information and return
         if (args.isHelp())
         {
-            usage();
+            usage(true);
         }
 
         // Show the version information and return
@@ -470,7 +470,7 @@ public class Main
                 persistence.enableModule(args,module);
             }
         }
-                   
+
         if (args.isStopCommand())
         {
             int stopPort = Integer.parseInt(args.getProperties().getProperty("STOP.PORT"));
@@ -493,8 +493,6 @@ public class Main
             return;
         }
 
-        
-        
         // execute Jetty in another JVM
         if (args.isExec())
         {
@@ -609,7 +607,7 @@ public class Main
         }
     }
 
-    private void usage()
+    public void usage(boolean exit)
     {
         String usageResource = "org/eclipse/jetty/start/usage.txt";
         boolean usagePresented = false;
@@ -620,17 +618,29 @@ public class Main
                 try (InputStreamReader reader = new InputStreamReader(usageStream); BufferedReader buf = new BufferedReader(reader))
                 {
                     usagePresented = true;
+                    String line;
+                    while ((line = buf.readLine()) != null)
+                    {
+                        System.out.println(line);
+                    }
                 }
+            }
+            else
+            {
+                System.out.println("No usage.txt ??");
             }
         }
         catch (IOException e)
         {
-            StartLog.debug(e);
+            StartLog.warn(e);
         }
         if (!usagePresented)
         {
             System.err.println("ERROR: detailed usage resource unavailable");
         }
-        System.exit(EXIT_USAGE);
+        if (exit)
+        {
+            System.exit(EXIT_USAGE);
+        }
     }
 }
