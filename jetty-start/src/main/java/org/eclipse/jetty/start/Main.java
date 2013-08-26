@@ -178,11 +178,7 @@ public class Main
             }
 
             String location = split[2];
-            if (File.separatorChar != '/')
-            {
-                location.replaceAll("/",File.separator);
-            }
-            File file = new File(location);
+            File file = baseHome.getBaseFile(location);
 
             StartLog.debug("Download to %s %s",file.getAbsolutePath(),(file.exists()?"[Exists!]":""));
             if (file.exists())
@@ -194,10 +190,7 @@ public class Main
 
             System.err.println("DOWNLOAD: " + url + " to " + location);
 
-            if (!file.getParentFile().exists())
-            {
-                file.getParentFile().mkdirs();
-            }
+            FS.ensureDirectoryExists(file.getParentFile());
 
             byte[] buf = new byte[8192];
             try (InputStream in = url.openStream(); OutputStream out = new FileOutputStream(file);)
@@ -219,8 +212,8 @@ public class Main
         }
         catch (Exception e)
         {
-            System.err.println("ERROR: processing " + arg + "\n" + e);
-            e.printStackTrace();
+            StartLog.warn("ERROR: processing %s%n%s",arg,e);
+            StartLog.warn(e);
             usageExit(EXIT_USAGE);
         }
     }
