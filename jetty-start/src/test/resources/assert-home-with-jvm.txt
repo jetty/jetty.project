@@ -31,4 +31,4 @@ LIB|${jetty.home}/lib/servlet-api-3.1.jar
 
 # JVM Args
 JVM|-Xms1024m
-JVM|-Xms1024m
+JVM|-Xmx1024m
