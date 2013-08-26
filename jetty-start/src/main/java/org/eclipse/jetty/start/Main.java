@@ -171,7 +171,7 @@ public class Main
     {
         try
         {
-            String[] split = arg.split(":",3);
+            String[] split = arg.split("|",3);
             if ((split.length != 3) || "http".equalsIgnoreCase(split[0]) || !split[1].startsWith("//"))
             {
                 throw new IllegalArgumentException("Not --download=<http uri>:<location>");

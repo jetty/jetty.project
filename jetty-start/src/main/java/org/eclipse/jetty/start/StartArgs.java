@@ -327,6 +327,19 @@ public class StartArgs
                 File xmlfile = baseHome.getFile(xmlRef);
                 addUniqueXmlFile(xmlRef,xmlfile);
             }
+            
+            // Register Download operations
+            for ( String download : module.getDownloads() )
+            {
+                downloads.add(download);
+            }
+            
+            // Register BootLib references
+            for ( String bootlib : module.getBootLibs() )
+            {
+                exec = true;
+                jvmArgs.add(bootlib);
+            }
         }
     }
 
@@ -346,7 +359,7 @@ public class StartArgs
     }
 
     public List<String> getDownloads()
-    {
+    {      
         return downloads;
     }
 
@@ -372,7 +385,7 @@ public class StartArgs
             {
                 cmd.addArg(x);
             }
-
+            
             cmd.addRawArg("-Djetty.home=" + baseHome.getHome());
             cmd.addRawArg("-Djetty.base=" + baseHome.getBase());
 

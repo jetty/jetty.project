@@ -108,6 +108,43 @@ public class ConfigurationAssert
             actualProperties.add(name + "=" + value);
         }
         assertContainsUnordered("Properties",expectedProperties,actualProperties);
+        
+        // Validate Downloads
+        Set<String> expectedDownloads = new HashSet<>();
+        for (String line : textFile)
+        {
+            if (line.startsWith("DOWNLOAD|"))
+            {
+                expectedDownloads.add(getValue(line));
+            }
+        }
+        Set<String> actualDownloads = new HashSet<>();
+        for (String line : args.getDownloads())
+        {
+            actualDownloads.add(line);
+        }
+        assertContainsUnordered("Downloads",expectedDownloads,actualDownloads);
+        
+        // Validate BootLib
+        Set<String> expectedBootlib = new HashSet<>();
+        for (String line : textFile)
+        {
+            if (line.startsWith("BOOTLIB|"))
+            {
+                expectedBootlib.add(getValue(line));
+            }
+        }
+        Set<String> actualBootlib = new HashSet<>();
+        for (String line : args.getJvmArgs())
+        {
+            actualBootlib.add(line);
+        }
+        assertContainsUnordered("JvmArgs",expectedBootlib,actualBootlib);
+        if ( expectedBootlib.size() > 0 )
+        {
+            Assert.assertTrue("exec has been turned on", args.isExec());
+        }
+        
     }
 
     private static void assertContainsUnordered(String msg, Set<String> expectedSet, Set<String> actualSet)

@@ -87,6 +87,10 @@ public class Module extends TextFile
     private List<String> xmls;
     /** List of library options for this Module */
     private List<String> libs;
+    /** List of downloads for this Module */
+    private List<String> downloads;
+    /** List of bootlib for this Module */
+    private List<String> bootlibs;
     
 
 
@@ -193,7 +197,17 @@ public class Module extends TextFile
     {
         return xmls;
     }
-
+    
+    public List<String> getDownloads()
+    {
+        return downloads;
+    }
+    
+    public List<String> getBootLibs()
+    {
+        return bootlibs;
+    }
+    
     @Override
     public int hashCode()
     {
@@ -217,6 +231,8 @@ public class Module extends TextFile
         this.childEdges = new HashSet<>();
         this.xmls = new ArrayList<>();
         this.libs = new ArrayList<>();
+        this.downloads = new ArrayList<>();
+        this.bootlibs = new ArrayList<>();
     }
 
     public boolean isEnabled()
@@ -243,16 +259,24 @@ public class Module extends TextFile
 
             switch (key.toUpperCase(Locale.ENGLISH))
             {
-                case "OPTIONAL":
-                    optionalParentNames.add(value);
-                    handled = true;
-                    break;
                 case "DEPEND":
                     parentNames.add(value);
                     handled = true;
                     break;
                 case "LIB":
                     libs.add(value);
+                    handled = true;
+                    break;
+                case "OPTIONAL":
+                    optionalParentNames.add(value);
+                    handled = true;
+                    break;
+                case "DOWNLOAD":
+                    downloads.add(value);
+                    handled = true;
+                    break;
+                case "BOOTLIB":
+                    bootlibs.add(value);
                     handled = true;
                     break;
             }

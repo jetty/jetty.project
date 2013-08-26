@@ -57,6 +57,12 @@ public class TestUseCases
     }
     
     @Test
+    public void testWithModuleDownload() throws Exception
+    {
+        assertUseCase("home","base.with.module.download","assert-with-module-download.txt");
+    }
+    
+    @Test
     public void testWithDatabase() throws Exception
     {
         assertUseCase("home","base.with.db","assert-with-db.txt");
