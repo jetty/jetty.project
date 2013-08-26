@@ -1,5 +1,5 @@
 
-DEPEND=server
+DEPEND=server,npn
 
 LIB=lib/spdy/*.jar
 
