@@ -34,6 +34,7 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.net.URL;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -354,7 +355,7 @@ public class Main
         for (String enabledModule : args.getEnabledModules())
         {
             StartLog.debug("Enabling module: %s",enabledModule);
-            modules.enable(enabledModule,args.getModulesSources(enabledModule));
+            modules.enable(enabledModule,args.getSources(enabledModule));
         }
         StartLog.debug("Building Module Graph");
         modules.buildGraph();
@@ -454,6 +455,17 @@ public class Main
             download(url);
         }
 
+        // Enables/Disable
+        for (String module : args.getDisable())
+        {
+            disable(args,module,true);
+        }
+        for (String module : args.getEnable())
+        {
+            enable(args,module,true);
+        }
+        
+        
         // Informational command line, don't run jetty
         if (!args.isRun())
         {
@@ -573,6 +585,92 @@ public class Main
         }
     }
 
+    private void enable(StartArgs args, String name, boolean verbose) throws IOException
+    {
+        File start_d=baseHome.getFile("start.d");
+        File ini=new File(start_d,name+".ini");
+        
+        // Is it already enabled
+        if (ini.exists())
+        {
+            if (verbose)
+                StartLog.warn("Module %s already enabled by: %s",name,baseHome.toShortForm(ini));
+            return;
+        }
+        
+        // Is there a disabled ini?
+        File disabled=new File(start_d,name+".ini.disabled");
+        if (!disabled.exists() && baseHome.isBaseDifferent())
+            disabled=new File(new File(baseHome.getHomeDir(),"start.d"),name+".ini.disabled");
+        if (disabled.exists())
+        {
+            // enable module by copying ini template
+            System.err.printf("Enabling %s in %s from %s%n",name,baseHome.toShortForm(ini),baseHome.toShortForm(disabled));
+            Files.copy(disabled.toPath(),ini.toPath());
+            args.parse(baseHome, new StartIni(ini));
+        }
+        else if (args.getAllModules().resolveEnabled().contains(args.getAllModules().get(name)))
+        {
+            // No ini template and module is already enabled
+            List<String> sources=args.getSources(name);
+            if (sources!=null && sources.size()>0)
+                for (String s: args.getSources(name))
+                    StartLog.warn("Module %s is enabled in %s",name,s);
+            else
+                StartLog.warn("Module %s is already enabled (see --list-modules)",name);
+                
+        }
+        else if (ini.createNewFile())
+        {
+            System.err.printf("Enabling %s in %s%n",name,baseHome.toShortForm(ini));
+            // Create an ini
+            try(FileOutputStream out = new FileOutputStream(ini);)
+            {
+                out.write(("--module="+name+"\n").getBytes("ISO-8859-1"));
+            }
+            args.parse(baseHome, new StartIni(ini));
+        }
+        else
+        {
+            StartLog.warn("ERROR: Module %s cannot be enabled! ",name);
+            return;
+        }
+    
+        // Process dependencies
+        Modules modules = args.getAllModules();
+        Module module=modules.get(name);
+        
+        for (String parent:module.getParentNames())
+            enable(args,parent,false);
+    }
+
+    private void disable(StartArgs args, String name, boolean verbose) throws IOException
+    {
+        File start_d=baseHome.getFile("start.d");
+        File ini=new File(start_d,name+".ini");
+        
+        // Is it enabled?
+        if (ini.exists())
+        {
+            File disabled=new File(start_d,name+".ini.disabled");
+            
+            if (disabled.exists())
+            {
+                StartLog.warn("ERROR: Disabled ini already exists: %s",baseHome.toShortForm(disabled));
+                return;
+            }
+
+            StartLog.warn("Disabling %s from %s",name,baseHome.toShortForm(ini));
+            Files.copy(ini.toPath(),disabled.toPath());
+            
+            return;
+        }
+
+        if (verbose)
+            StartLog.warn("Module %s, ini file already disabled: %s",name,baseHome.toShortForm(ini));
+        
+    }
+    
     private void usage()
     {
         String usageResource = "org/eclipse/jetty/start/usage.txt";

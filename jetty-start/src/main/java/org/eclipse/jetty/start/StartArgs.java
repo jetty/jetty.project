@@ -39,6 +39,7 @@ import java.util.Set;
  */
 public class StartArgs
 {
+    public static final String CMD_LINE_SOURCE="<cmd-line>";
     public static final String VERSION;
 
     static
@@ -67,8 +68,8 @@ public class StartArgs
     private static final String SERVER_MAIN = "org.eclipse.jetty.xml.XmlConfiguration";
 
     private List<String> commandLine = new ArrayList<>();
-    private Set<String> enabledModules = new HashSet<>();
-    private Map<String,List<String>> moduleSources = new HashMap<>();
+    private Set<String> modules = new HashSet<>();
+    private Map<String,List<String>> sources = new HashMap<>();
     private List<String> downloads = new ArrayList<>();
     private Classpath classpath;
     private List<String> xmlRefs = new ArrayList<>();
@@ -76,6 +77,8 @@ public class StartArgs
     private Properties properties = new Properties();
     private Set<String> systemPropertyKeys = new HashSet<>();
     private List<String> jvmArgs = new ArrayList<>();
+    private List<String> enable = new ArrayList<>();
+    private List<String> disable = new ArrayList<>();
     private Modules allModules;
 
     // Should the server be run?
@@ -323,6 +326,16 @@ public class StartArgs
         return this.commandLine;
     }
 
+    public List<String> getEnable()
+    {
+        return enable;
+    }
+
+    public List<String> getDisable()
+    {
+        return disable;
+    }
+
     public List<String> getDownloads()
     {
         return downloads;
@@ -330,7 +343,7 @@ public class StartArgs
 
     public Set<String> getEnabledModules()
     {
-        return this.enabledModules;
+        return this.modules;
     }
 
     public List<String> getJvmArgs()
@@ -338,9 +351,9 @@ public class StartArgs
         return jvmArgs;
     }
 
-    public List<String> getModulesSources(String enabledModule)
+    public List<String> getSources(String module)
     {
-        return moduleSources.get(enabledModule);
+        return sources.get(module);
     }
     
     public CommandLineBuilder getMainArgs(BaseHome baseHome, boolean addJavaInit) throws IOException
@@ -424,6 +437,22 @@ public class StartArgs
         return value;
     }
 
+    private List<String> getValues(String arg)
+    {
+        String v=getValue(arg);
+        ArrayList<String> l=new ArrayList<>();
+        for (String s:v.split(","))
+        {
+            if (s!=null)
+            {
+                s=s.trim();
+                if (s.length()>0)
+                    l.add(s);
+            }
+        }
+        return l;
+    }
+
     public List<File> getXmlFiles()
     {
         return xmls;
@@ -488,6 +517,9 @@ public class StartArgs
     {
         if ("--help".equals(arg) || "-?".equals(arg))
         {
+            if (!CMD_LINE_SOURCE.equals(source))
+                throw new UsageException(ERR_BAD_ARG,"%s not allowed in %s",arg,source);
+                
             help = true;
             run = false;
             return;
@@ -501,6 +533,8 @@ public class StartArgs
 
         if ("--stop".equals(arg))
         {
+            if (!CMD_LINE_SOURCE.equals(source))
+                throw new UsageException(ERR_BAD_ARG,"%s not allowed in %s",arg,source);
             stopCommand = true;
             run = false;
             //
@@ -541,6 +575,8 @@ public class StartArgs
 
         if ("--dry-run".equals(arg) || "--exec-print".equals(arg))
         {
+            if (!CMD_LINE_SOURCE.equals(source))
+                throw new UsageException(ERR_BAD_ARG,"%s not allowed in %s",arg,source);
             dryRun = true;
             run = false;
             return;
@@ -554,44 +590,41 @@ public class StartArgs
 
         if (arg.startsWith("--enable="))
         {
-            String moduleName = getValue(arg);
-            // TODO:
+            if (!CMD_LINE_SOURCE.equals(source))
+                throw new UsageException(ERR_BAD_ARG,"%s not allowed in %s",arg,source);
+            enable.addAll(getValues(arg));
             run = false;
             return;
         }
 
         if (arg.startsWith("--disable="))
         {
-            String moduleName = getValue(arg);
-            // TODO:
+            if (!CMD_LINE_SOURCE.equals(source))
+                throw new UsageException(ERR_BAD_ARG,"%s not allowed in %s",arg,source);
+            disable.addAll(getValues(arg));
             run = false;
             return;
         }
 
         if (arg.startsWith("--module="))
         {
-            for (String moduleName : getValue(arg).split(","))
+            for (String moduleName : getValues(arg))
             {
-                if (moduleName == null)
+                modules.add(moduleName);
+                List<String> list=sources.get(moduleName);
+                if (list==null)
                 {
-                    continue; // skip
+                    list=new ArrayList<String>();
+                    sources.put(moduleName,list);
                 }
-                moduleName=moduleName.trim();
-                enabledModules.add(moduleName);
-                List<String> sources=moduleSources.get(moduleName);
-                if (sources==null)
-                {
-                    sources=new ArrayList<String>();
-                    moduleSources.put(moduleName,sources);
-                }
-                sources.add(source);
+                list.add(source);
             }
             return;
         }
         
         if (arg.startsWith("MODULE=") || arg.startsWith("MODULES="))
         {
-            System.err.println("ERROR: Ignored deprecated arg: "+arg);
+            StartLog.warn("Ignored deprecated arg: {}",arg);
             return;
         }
 
@@ -672,7 +705,7 @@ public class StartArgs
     {
         for (String line : commandLine)
         {
-            parse(line,"<cmd-line>");
+            parse(line,StartArgs.CMD_LINE_SOURCE);
         }
     }
 
@@ -703,7 +736,7 @@ public class StartArgs
         builder.append("StartArgs [commandLine=");
         builder.append(commandLine);
         builder.append(", enabledModules=");
-        builder.append(enabledModules);
+        builder.append(modules);
         builder.append(", xmlRefs=");
         builder.append(xmlRefs);
         builder.append(", properties=");
