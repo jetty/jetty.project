@@ -42,7 +42,7 @@ public class ModulesTest
 
         Modules modules = new Modules();
         modules.registerAll(basehome);
-        Assert.assertThat("Module count",modules.count(),is(26));
+        Assert.assertThat("Module count",modules.count(),is(29));
     }
 
     @Test
@@ -156,7 +156,7 @@ public class ModulesTest
         expectedLibs.add("lib/jetty-plus-${jetty.version}.jar");
         expectedLibs.add("lib/jetty-annotations-${jetty.version}.jar");
         expectedLibs.add("lib/annotations/*.jar");
-        expectedLibs.add("lib/websockets/*.jar");
+        expectedLibs.add("lib/websocket/*.jar");
         
         List<String> actualLibs = modules.normalizeLibs(active);
         Assert.assertThat("Resolved Libs: " + actualLibs,actualLibs,contains(expectedLibs.toArray()));

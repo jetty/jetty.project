@@ -2,6 +2,8 @@
 # JAAS Feature
 #
 
+DEPEND=server
+
 # JAAS jars
 LIB=lib/jetty-jaas-${jetty.version}.jar
 

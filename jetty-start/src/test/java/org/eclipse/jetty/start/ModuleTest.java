@@ -46,6 +46,6 @@ public class ModuleTest
         Assert.assertThat("Module Xmls Size",Module.getXmls().size(),is(1));
         Assert.assertThat("Module Xmls",Module.getXmls(),contains("etc/jetty-websockets.xml"));
         Assert.assertThat("Module Options Size",Module.getLibs().size(),is(1));
-        Assert.assertThat("Module Options",Module.getLibs(),contains("lib/websockets/*.jar"));
+        Assert.assertThat("Module Options",Module.getLibs(),contains("lib/websocket/*.jar"));
     }
 }

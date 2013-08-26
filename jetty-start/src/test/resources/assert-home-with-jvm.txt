@@ -25,6 +25,15 @@ LIB|${jetty.home}/lib/jetty-xml-TEST.jar
 LIB|${jetty.home}/lib/jndi/javax.activation-1.1.jar
 LIB|${jetty.home}/lib/jndi/javax.transaction-api-1.2.jar
 LIB|${jetty.home}/lib/servlet-api-3.1.jar
+LIB|${jetty.home}/lib/websocket/javax.websocket-api-1.0.jar
+LIB|${jetty.home}/lib/websocket/javax-websocket-client-impl-TEST.jar
+LIB|${jetty.home}/lib/websocket/javax-websocket-server-impl-TEST.jar
+LIB|${jetty.home}/lib/websocket/websocket-api-TEST.jar
+LIB|${jetty.home}/lib/websocket/websocket-client-TEST.jar
+LIB|${jetty.home}/lib/websocket/websocket-common-TEST.jar
+LIB|${jetty.home}/lib/websocket/websocket-server-TEST.jar
+LIB|${jetty.home}/lib/websocket/websocket-servlet-TEST.jar
+
 
 # The Properties we expect (order is irrelevant)
 # PROP|jetty.port=9090
