@@ -25,8 +25,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.MultiMap;
@@ -190,7 +190,7 @@ public class ClientUpgradeRequest extends UpgradeRequest
     private final String genRandomKey()
     {
         byte[] bytes = new byte[16];
-        new Random().nextBytes(bytes);
+        ThreadLocalRandom.current().nextBytes(bytes);
         return new String(B64Code.encode(bytes));
     }
 

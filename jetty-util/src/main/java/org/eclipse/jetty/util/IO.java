@@ -52,7 +52,7 @@ public class IO
         CRLF_BYTES    = {(byte)'\015',(byte)'\012'};
 
     /* ------------------------------------------------------------------- */
-    public static int bufferSize = 64*1024;
+    public static final int bufferSize = 64*1024;
     
     /* ------------------------------------------------------------------- */
     // TODO get rid of this singleton!
@@ -298,11 +298,11 @@ public class IO
     /* ------------------------------------------------------------ */
     public static void copyFile(File from,File to) throws IOException
     {
-        FileInputStream in=new FileInputStream(from);
-        FileOutputStream out=new FileOutputStream(to);
-        copy(in,out);
-        in.close();
-        out.close();
+        try (InputStream in=new FileInputStream(from);
+                OutputStream out=new FileOutputStream(to))
+        {
+            copy(in,out);
+        }
     }
     
     /* ------------------------------------------------------------ */

@@ -208,7 +208,7 @@ public class NCSARequestLog extends AbstractNCSARequestLog implements RequestLog
         {
             if (_writer==null)
                 return;
-            _writer.write(requestEntry.toString());
+            _writer.write(requestEntry);
             _writer.write(StringUtil.__LINE_SEPARATOR);
             _writer.flush();
         }

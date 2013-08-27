@@ -53,7 +53,7 @@ public class BundleWatcher implements BundleTrackerCustomizer
 {
     private static final Logger LOG = Log.getLogger(BundleWatcher.class);
     
-    public static Collection<TldBundleDiscoverer> JSP_REGISTRATION_HELPERS = new ArrayList<TldBundleDiscoverer>();
+    public static final Collection<TldBundleDiscoverer> JSP_REGISTRATION_HELPERS = new ArrayList<TldBundleDiscoverer>();
 
 
     public static final String FILTER = "(objectclass=" + BundleProvider.class.getName() + ")";

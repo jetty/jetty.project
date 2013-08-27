@@ -33,7 +33,7 @@ public class TaskLog
 
     private static Task task;
 
-    private static SimpleDateFormat format = new SimpleDateFormat(
+    private static final SimpleDateFormat format = new SimpleDateFormat(
             "yyyy-MM-dd HH:mm:ss.SSS");
 
     public static void setTask(Task task)
@@ -48,6 +48,11 @@ public class TaskLog
 
     public static void logWithTimestamp(String message)
     {
-        task.log(format.format(new Date()) + ": " + message);
+        String date;
+        synchronized (format)
+        {
+            date = format.format(new Date());
+        }
+        task.log(date + ": " + message);
     }
 }
