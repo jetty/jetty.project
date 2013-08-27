@@ -77,6 +77,8 @@ public class StartArgs
     private Properties properties = new Properties();
     private Set<String> systemPropertyKeys = new HashSet<>();
     private List<String> jvmArgs = new ArrayList<>();
+    private List<String> enable = new ArrayList<>();
+    private List<String> disable = new ArrayList<>();
     private List<String> modulePersistEnable = new ArrayList<>();
     private List<String> modulePersistDisable = new ArrayList<>();
     private Modules allModules;
@@ -157,7 +159,6 @@ public class StartArgs
         dumpSystemProperty("jetty.home");
         dumpSystemProperty("jetty.base");
         dumpSystemProperty("jetty.version");
-
     }
 
     public void dumpJvmArgs()
@@ -356,6 +357,16 @@ public class StartArgs
     public List<String> getCommandLine()
     {
         return this.commandLine;
+    }
+
+    public List<String> getEnable()
+    {
+        return enable;
+    }
+
+    public List<String> getDisable()
+    {
+        return disable;
     }
 
     public List<String> getDownloads()
@@ -653,6 +664,24 @@ public class StartArgs
         if ("--list-modules".equals(arg))
         {
             listModules = true;
+            run = false;
+            return;
+        }
+
+        if (arg.startsWith("--enable="))
+        {
+            if (!CMD_LINE_SOURCE.equals(source))
+                throw new UsageException(ERR_BAD_ARG,"%s not allowed in %s",arg,source);
+            enable.addAll(getValues(arg));
+            run = false;
+            return;
+        }
+
+        if (arg.startsWith("--disable="))
+        {
+            if (!CMD_LINE_SOURCE.equals(source))
+                throw new UsageException(ERR_BAD_ARG,"%s not allowed in %s",arg,source);
+            disable.addAll(getValues(arg));
             run = false;
             return;
         }
