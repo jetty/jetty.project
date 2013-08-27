@@ -16,46 +16,40 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common.extensions;
+package org.eclipse.jetty.websocket.common.extensions.compress;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
-import org.junit.rules.TestName;
+import org.eclipse.jetty.websocket.common.Hex;
+import org.eclipse.jetty.websocket.common.OpCode;
 
-/**
- * Dummy implementation of {@link OutgoingFrames} used for testing
- */
-public class DummyOutgoingFrames implements OutgoingFrames
+public class CapturedHexPayloads implements OutgoingFrames
 {
-    private static final Logger LOG = Log.getLogger(DummyOutgoingFrames.class);
-    private final String id;
-
-    public DummyOutgoingFrames(String id)
-    {
-        this.id = id;
-    }
-
-    public DummyOutgoingFrames(TestName testname)
-    {
-        this(testname.getMethodName());
-    }
+    private static final Logger LOG = Log.getLogger(CapturedHexPayloads.class);
+    private List<String> captured = new ArrayList<>();
 
     @Override
     public void outgoingFrame(Frame frame, WriteCallback callback)
     {
-        LOG.debug("outgoingFrame({},{})",frame,callback);
+        String hexPayload = Hex.asHex(frame.getPayload());
+        LOG.debug("outgoingFrame({}: \"{}\", {})",
+                OpCode.name(frame.getOpCode()),
+                hexPayload, callback!=null?callback.getClass().getSimpleName():"<null>");
+        captured.add(hexPayload);
         if (callback != null)
         {
             callback.writeSuccess();
         }
     }
 
-    @Override
-    public String toString()
+    public List<String> getCaptured()
     {
-        return String.format("%s@%x[%s]",this.getClass().getSimpleName(),hashCode(),id);
+        return captured;
     }
 }

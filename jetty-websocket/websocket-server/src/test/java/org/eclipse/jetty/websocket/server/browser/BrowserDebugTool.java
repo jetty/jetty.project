@@ -23,8 +23,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.common.extensions.compress.FrameCompressionExtension;
-import org.eclipse.jetty.websocket.common.extensions.compress.MessageDeflateCompressionExtension;
 import org.eclipse.jetty.websocket.server.WebSocketHandler;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
@@ -84,6 +82,8 @@ public class BrowserDebugTool implements WebSocketCreator
 
         String ua = req.getHeader("User-Agent");
         String rexts = req.getHeader("Sec-WebSocket-Extensions");
+        LOG.debug("User-Agent: {}", ua);
+        LOG.debug("Sec-WebSocket-Extensions: {}", rexts);
         BrowserSocket socket = new BrowserSocket(ua,rexts);
         return socket;
     }
@@ -110,15 +110,11 @@ public class BrowserDebugTool implements WebSocketCreator
             {
                 LOG.debug("Configuring WebSocketServerFactory ...");
 
-                // Setup some extensions we want to test against
-                factory.getExtensionFactory().register("x-webkit-deflate-frame",FrameCompressionExtension.class);
-                factory.getExtensionFactory().register("permessage-compress",MessageDeflateCompressionExtension.class);
-
                 // Setup the desired Socket to use for all incoming upgrade requests
                 factory.setCreator(BrowserDebugTool.this);
 
                 // Set the timeout
-                factory.getPolicy().setIdleTimeout(2000);
+                factory.getPolicy().setIdleTimeout(20000);
             }
         };
 

@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.common.frames;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
@@ -27,6 +28,8 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
  */
 public class DataFrame extends WebSocketFrame
 {
+    private boolean isPooledBuffer = false;
+
     protected DataFrame(byte opcode)
     {
         super(opcode);
@@ -63,14 +66,6 @@ public class DataFrame extends WebSocketFrame
         /* no extra validation for data frames (yet) here */
     }
 
-    /**
-     * Set the data frame to continuation mode
-     */
-    public void setIsContinuation()
-    {
-        setOpCode(OpCode.CONTINUATION);
-    }
-
     @Override
     public boolean isControlFrame()
     {
@@ -81,5 +76,29 @@ public class DataFrame extends WebSocketFrame
     public boolean isDataFrame()
     {
         return true;
+    }
+
+    /**
+     * @return true if payload buffer is from a {@link ByteBufferPool} and can be released when appropriate to do so
+     */
+    public boolean isPooledBuffer()
+    {
+        return isPooledBuffer;
+    }
+
+    /**
+     * Set the data frame to continuation mode
+     */
+    public void setIsContinuation()
+    {
+        setOpCode(OpCode.CONTINUATION);
+    }
+
+    /**
+     * Sets a flag indicating that the underlying payload is from a {@link ByteBufferPool} and can be released when appropriate to do so
+     */
+    public void setPooledBuffer(boolean isPooledBuffer)
+    {
+        this.isPooledBuffer = isPooledBuffer;
     }
 }
