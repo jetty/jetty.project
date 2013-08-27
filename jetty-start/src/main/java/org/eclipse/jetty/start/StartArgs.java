@@ -39,7 +39,76 @@ import java.util.Set;
  */
 public class StartArgs
 {
+    public static class DownloadArg
+    {
+        public String uri;
+        public String location;
+
+        @Override
+        public boolean equals(Object obj)
+        {
+            if (this == obj)
+            {
+                return true;
+            }
+            if (obj == null)
+            {
+                return false;
+            }
+            if (getClass() != obj.getClass())
+            {
+                return false;
+            }
+            DownloadArg other = (DownloadArg)obj;
+            if (uri == null)
+            {
+                if (other.uri != null)
+                {
+                    return false;
+                }
+            }
+            else if (!uri.equals(other.uri))
+            {
+                return false;
+            }
+            if (location == null)
+            {
+                if (other.location != null)
+                {
+                    return false;
+                }
+            }
+            else if (!location.equals(other.location))
+            {
+                return false;
+            }
+            return true;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            final int prime = 31;
+            int result = 1;
+            result = (prime * result) + ((uri == null)?0:uri.hashCode());
+            result = (prime * result) + ((location == null)?0:location.hashCode());
+            return result;
+        }
+
+        @Override
+        public String toString()
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.append("DownloadArg [uri=");
+            builder.append(uri);
+            builder.append(", location=");
+            builder.append(location);
+            builder.append("]");
+            return builder.toString();
+        }
+    }
     public static final String CMD_LINE_SOURCE = "<cmd-line>";
+
     public static final String VERSION;
 
     static
@@ -70,7 +139,7 @@ public class StartArgs
     private List<String> commandLine = new ArrayList<>();
     private Set<String> modules = new HashSet<>();
     private Map<String, List<String>> sources = new HashMap<>();
-    private List<String> downloads = new ArrayList<>();
+    private List<DownloadArg> downloads = new ArrayList<>();
     private Classpath classpath;
     private List<String> xmlRefs = new ArrayList<>();
     private List<File> xmls = new ArrayList<>();
@@ -96,6 +165,31 @@ public class StartArgs
     {
         commandLine.addAll(Arrays.asList(commandLineArgs));
         classpath = new Classpath();
+    }
+
+    private void addDownload(String uriLocation)
+    {
+        String parts[] = uriLocation.split(":",3);
+        if (parts.length != 3)
+        {
+            throw new IllegalArgumentException("Not <http uri>:<location>");
+        }
+        if (!"http".equalsIgnoreCase(parts[0]))
+        {
+            throw new IllegalArgumentException("Download only supports http protocol");
+        }
+        if (!parts[1].startsWith("//"))
+        {
+            throw new IllegalArgumentException("Download URI invalid: " + uriLocation);
+        }
+        DownloadArg arg = new DownloadArg();
+        arg.uri = String.format("%s:%s",parts[0],parts[1]);
+        arg.location = parts[2];
+
+        if (!downloads.contains(arg))
+        {
+            downloads.add(arg);
+        }
     }
 
     public void addSystemProperty(String key, String value)
@@ -185,25 +279,6 @@ public class StartArgs
         }
     }
 
-    public void dumpSystemProperties()
-    {
-        System.out.println();
-        System.out.println("System Properties:");
-        System.out.println("------------------");
-
-        if (systemPropertyKeys.isEmpty())
-        {
-            System.out.println(" (no system properties specified)");
-            return;
-        }
-
-        for (String key : systemPropertyKeys)
-        {
-            String value = System.getProperty(key);
-            System.out.printf(" %s = %s%n",key,value);
-        }
-    }
-
     public void dumpProperties()
     {
         System.out.println();
@@ -223,6 +298,25 @@ public class StartArgs
             String name = keyEnum.nextElement();
             String value = properties.getProperty(name);
             System.out.printf(" %s = %s%n",name,value);
+        }
+    }
+
+    public void dumpSystemProperties()
+    {
+        System.out.println();
+        System.out.println("System Properties:");
+        System.out.println("------------------");
+
+        if (systemPropertyKeys.isEmpty())
+        {
+            System.out.println(" (no system properties specified)");
+            return;
+        }
+
+        for (String key : systemPropertyKeys)
+        {
+            String value = System.getProperty(key);
+            System.out.printf(" %s = %s%n",key,value);
         }
     }
 
@@ -327,16 +421,18 @@ public class StartArgs
                 File xmlfile = baseHome.getFile(xmlRef);
                 addUniqueXmlFile(xmlRef,xmlfile);
             }
-            
+
             // Register Download operations
-            for ( String download : module.getDownloads() )
+            for (String download : module.getDownloads())
             {
-                downloads.add(download);
+                StartLog.debug("Adding module specified download: %s",download);
+                addDownload(download);
             }
-            
+
             // Register BootLib references
-            for ( String bootlib : module.getBootLibs() )
+            for (String bootlib : module.getBootLibs())
             {
+                StartLog.debug("Adding module specified bootlib: %s",bootlib);
                 exec = true;
                 jvmArgs.add(bootlib);
             }
@@ -358,8 +454,8 @@ public class StartArgs
         return this.commandLine;
     }
 
-    public List<String> getDownloads()
-    {      
+    public List<DownloadArg> getDownloads()
+    {
         return downloads;
     }
 
@@ -385,7 +481,7 @@ public class StartArgs
             {
                 cmd.addArg(x);
             }
-            
+
             cmd.addRawArg("-Djetty.home=" + baseHome.getHome());
             cmd.addRawArg("-Djetty.base=" + baseHome.getBase());
 
@@ -443,11 +539,6 @@ public class StartArgs
     public List<String> getModulePersistEnable()
     {
         return modulePersistEnable;
-    }
-
-    public boolean isModulePersistenceChanging()
-    {
-        return (modulePersistDisable.size() > 0) || (modulePersistEnable.size() > 0);
     }
 
     public Properties getProperties()
@@ -548,6 +639,11 @@ public class StartArgs
         return listModules;
     }
 
+    public boolean isModulePersistenceChanging()
+    {
+        return (modulePersistDisable.size() > 0) || (modulePersistEnable.size() > 0);
+    }
+
     public boolean isRun()
     {
         return run;
@@ -613,7 +709,7 @@ public class StartArgs
 
         if (arg.startsWith("--download="))
         {
-            downloads.add(getValue(arg));
+            addDownload(getValue(arg));
             return;
         }
 

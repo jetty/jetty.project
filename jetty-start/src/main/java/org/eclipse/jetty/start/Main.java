@@ -41,6 +41,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
+import org.eclipse.jetty.start.StartArgs.DownloadArg;
+
 /**
  * Main start class.
  * <p>
@@ -167,18 +169,11 @@ public class Main
         }).start();
     }
 
-    private void download(String arg)
+    private void download(DownloadArg arg)
     {
         try
         {
-            String[] split = arg.split("|",3);
-            if ((split.length != 3) || "http".equalsIgnoreCase(split[0]) || !split[1].startsWith("//"))
-            {
-                throw new IllegalArgumentException("Not --download=<http uri>:<location>");
-            }
-
-            String location = split[2];
-            File file = baseHome.getBaseFile(location);
+            File file = baseHome.getBaseFile(arg.location);
 
             StartLog.debug("Download to %s %s",file.getAbsolutePath(),(file.exists()?"[Exists!]":""));
             if (file.exists())
@@ -186,9 +181,9 @@ public class Main
                 return;
             }
 
-            URL url = new URL(split[0].substring(11) + ":" + split[1]);
+            URL url = new URL(arg.uri);
 
-            System.err.println("DOWNLOAD: " + url + " to " + location);
+            System.err.println("DOWNLOAD: " + url + " to " + arg.location);
 
             FS.ensureDirectoryExists(file.getParentFile());
 
@@ -444,6 +439,12 @@ public class Main
             usage(true);
         }
 
+        // Various Downloads
+        for (DownloadArg url : args.getDownloads())
+        {
+            download(url);
+        }
+
         // Show the version information and return
         if (args.isListClasspath())
         {
@@ -467,12 +468,6 @@ public class Main
         {
             CommandLineBuilder cmd = args.getMainArgs(baseHome,true);
             System.out.println(cmd.toString());
-        }
-
-        // Various Downloads
-        for (String url : args.getDownloads())
-        {
-            download(url);
         }
 
         // Enables/Disable
@@ -508,6 +503,7 @@ public class Main
                 stop(stopPort,stopKey);
             }
         }
+
         // Informational command line, don't run jetty
         if (!args.isRun())
         {
