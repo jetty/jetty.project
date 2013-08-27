@@ -175,6 +175,10 @@ public class Response implements HttpServletResponse
     public void included()
     {
         _include.decrementAndGet();
+        if (_outputType == OutputType.WRITER)
+        {
+            _writer.reopen();
+        }
         _out.reopen();
     }
 
@@ -811,6 +815,8 @@ public class Response implements HttpServletResponse
         {
             case WRITER:
                 _writer.close();
+                if (!_out.isClosed())
+                    _out.close();
                 break;
             case STREAM:
                 getOutputStream().close();
