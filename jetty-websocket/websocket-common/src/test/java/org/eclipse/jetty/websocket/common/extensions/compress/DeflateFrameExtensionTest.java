@@ -23,6 +23,7 @@ import static org.hamcrest.Matchers.*;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Collections;
+import java.util.List;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
@@ -36,6 +37,7 @@ import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.ByteBufferAssert;
 import org.eclipse.jetty.websocket.common.Generator;
+import org.eclipse.jetty.websocket.common.Hex;
 import org.eclipse.jetty.websocket.common.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.OutgoingNetworkBytesCapture;
@@ -44,19 +46,24 @@ import org.eclipse.jetty.websocket.common.UnitParser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 
-public class FrameCompressionExtensionTest
+public class DeflateFrameExtensionTest
 {
+    @Rule
+    public TestName testname = new TestName();
+
     private void assertIncoming(byte[] raw, String... expectedTextDatas)
     {
         WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
 
-        FrameCompressionExtension ext = new FrameCompressionExtension();
+        DeflateFrameExtension ext = new DeflateFrameExtension();
         ext.setBufferPool(new MappedByteBufferPool());
         ext.setPolicy(policy);
 
-        ExtensionConfig config = ExtensionConfig.parse("x-webkit-deflate-frame");
+        ExtensionConfig config = ExtensionConfig.parse("deflate-frame");
         ext.setConfig(config);
 
         // Setup capture of incoming frames
@@ -95,11 +102,11 @@ public class FrameCompressionExtensionTest
     {
         WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
 
-        FrameCompressionExtension ext = new FrameCompressionExtension();
+        DeflateFrameExtension ext = new DeflateFrameExtension();
         ext.setBufferPool(new MappedByteBufferPool());
         ext.setPolicy(policy);
 
-        ExtensionConfig config = ExtensionConfig.parse("x-webkit-deflate-frame");
+        ExtensionConfig config = ExtensionConfig.parse("deflate-frame");
         ext.setConfig(config);
 
         ByteBufferPool bufferPool = new MappedByteBufferPool();
@@ -120,46 +127,90 @@ public class FrameCompressionExtensionTest
     public void testBlockheadClient_HelloThere()
     {
         // Captured from Blockhead Client - "Hello" then "There" via unit test
-        String hello = "c1 87 00 00 00 00 f2 48  cd c9 c9 07 00".replaceAll("\\s*","");
-        String there = "c1 87 00 00 00 00 0a c9  48 2d 4a 05 00".replaceAll("\\s*","");
-        byte rawbuf[] = TypeUtil.fromHexString(hello + there);
+        String hello = "c18700000000f248cdc9c90700";
+        String there = "c187000000000ac9482d4a0500";
+        byte rawbuf[] = Hex.asByteArray(hello + there);
         assertIncoming(rawbuf,"Hello","There");
     }
 
     @Test
     public void testChrome20_Hello()
     {
-        // Captured from Chrome 20.x - "Hello" (sent from browser/client)
-        byte rawbuf[] = TypeUtil.fromHexString("c187832b5c11716391d84a2c5c");
+        // Captured from Chrome 20.x - "Hello" (sent from browser)
+        byte rawbuf[] = Hex.asByteArray("c187832b5c11716391d84a2c5c");
         assertIncoming(rawbuf,"Hello");
     }
 
     @Test
     public void testChrome20_HelloThere()
     {
-        // Captured from Chrome 20.x - "Hello" then "There" (sent from browser/client)
-        String hello = "c1 87 7b 19 71 db 89 51  bc 12 b2 1e 71".replaceAll("\\s*","");
-        String there = "c1 87 59 ed c8 f4 53 24  80 d9 13 e8 c8".replaceAll("\\s*","");
-        byte rawbuf[] = TypeUtil.fromHexString(hello + there);
+        // Captured from Chrome 20.x - "Hello" then "There" (sent from browser)
+        String hello = "c1877b1971db8951bc12b21e71";
+        String there = "c18759edc8f4532480d913e8c8";
+        byte rawbuf[] = Hex.asByteArray(hello + there);
         assertIncoming(rawbuf,"Hello","There");
     }
 
     @Test
     public void testChrome20_Info()
     {
-        // Captured from Chrome 20.x - "info:" (sent from browser/client)
-        byte rawbuf[] = TypeUtil.fromHexString("c187ca4def7f0081a4b47d4fef");
+        // Captured from Chrome 20.x - "info:" (sent from browser)
+        byte rawbuf[] = Hex.asByteArray("c187ca4def7f0081a4b47d4fef");
         assertIncoming(rawbuf,"info:");
     }
 
     @Test
     public void testChrome20_TimeTime()
     {
-        // Captured from Chrome 20.x - "time:" then "time:" once more (sent from browser/client)
-        String time1 = "c1 87 82 46 74 24 a8 8f  b8 69 37 44 74".replaceAll("\\s*","");
-        String time2 = "c1 85 3c fd a1 7f 16 fc  b0 7f 3c".replaceAll("\\s*","");
-        byte rawbuf[] = TypeUtil.fromHexString(time1 + time2);
+        // Captured from Chrome 20.x - "time:" then "time:" once more (sent from browser)
+        String time1 = "c18782467424a88fb869374474";
+        String time2 = "c1853cfda17f16fcb07f3c";
+        byte rawbuf[] = Hex.asByteArray(time1 + time2);
         assertIncoming(rawbuf,"time:","time:");
+    }
+
+    @Test
+    public void testPyWebSocket_TimeTimeTime()
+    {
+        // Captured from Pywebsocket (r781) - "time:" sent 3 times.
+        String time1 = "c1876b100104" + "41d9cd49de1201";
+        String time2 = "c1852ae3ff01" + "00e2ee012a";
+        String time3 = "c18435558caa" + "37468caa";
+        byte rawbuf[] = Hex.asByteArray(time1 + time2 + time3);
+        assertIncoming(rawbuf,"time:","time:","time:");
+    }
+
+    @Test
+    public void testCompress_TimeTimeTime()
+    {
+        // What pywebsocket produces for "time:", "time:", "time:"
+        String expected[] = new String[]
+        { "2AC9CC4DB50200", "2A01110000", "02130000" };
+
+        // Lets see what we produce
+        CapturedHexPayloads capture = new CapturedHexPayloads();
+        DeflateFrameExtension ext = new DeflateFrameExtension();
+        init(ext);
+        ext.setNextOutgoingFrames(capture);
+
+        ext.outgoingFrame(new TextFrame().setPayload("time:"),null);
+        ext.outgoingFrame(new TextFrame().setPayload("time:"),null);
+        ext.outgoingFrame(new TextFrame().setPayload("time:"),null);
+
+        List<String> actual = capture.getCaptured();
+        
+        for (String entry : actual)
+        {
+            System.err.printf("actual: \"%s\"%n",entry);
+        }
+
+        Assert.assertThat("Compressed Payloads",actual,contains(expected));
+    }
+
+    private void init(DeflateFrameExtension ext)
+    {
+        ext.setConfig(new ExtensionConfig(ext.getName()));
+        ext.setBufferPool(new MappedByteBufferPool());
     }
 
     @Test
@@ -204,7 +255,6 @@ public class FrameCompressionExtensionTest
 
         String actual = TypeUtil.toHexString(compressed);
         String expected = "CaCc4bCbB70200"; // what pywebsocket produces
-        // String expected = "CbCc4bCbB70200"; // what java produces
 
         Assert.assertThat("Compressed data",actual,is(expected));
     }
@@ -214,12 +264,10 @@ public class FrameCompressionExtensionTest
     {
         WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
 
-        FrameCompressionExtension ext = new FrameCompressionExtension();
+        DeflateFrameExtension ext = new DeflateFrameExtension();
         ext.setBufferPool(new MappedByteBufferPool());
         ext.setPolicy(policy);
-
-        ExtensionConfig config = ExtensionConfig.parse("x-webkit-deflate-frame");
-        ext.setConfig(config);
+        ext.setConfig(new ExtensionConfig(ext.getName()));
 
         ByteBufferPool bufferPool = new MappedByteBufferPool();
         boolean validating = true;
@@ -233,7 +281,6 @@ public class FrameCompressionExtensionTest
         ext.outgoingFrame(new TextFrame().setPayload("There"),null);
 
         capture.assertBytes(0,"c107f248cdc9c90700");
-        capture.assertBytes(1,"c1070ac9482d4a0500");
     }
 
     @Test

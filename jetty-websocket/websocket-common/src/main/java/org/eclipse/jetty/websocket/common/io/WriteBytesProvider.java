@@ -35,6 +35,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.OpCode;
+import org.eclipse.jetty.websocket.common.frames.DataFrame;
 
 /**
  * Interface for working with bytes destined for {@link EndPoint#write(Callback, ByteBuffer...)}
@@ -101,6 +102,7 @@ public class WriteBytesProvider implements Callback
                 generator.getBufferPool().release(headerBuffer);
                 headerBuffer = null;
             }
+            releasePayloadBuffer(frame);
         }
 
         /**
@@ -339,6 +341,24 @@ public class WriteBytesProvider implements Callback
         catch (Throwable e)
         {
             LOG.warn("Uncaught exception",e);
+        }
+    }
+
+    public void releasePayloadBuffer(Frame frame)
+    {
+        if (!frame.hasPayload())
+        {
+            return;
+        }
+
+        if (frame instanceof DataFrame)
+        {
+            DataFrame data = (DataFrame)frame;
+            if (data.isPooledBuffer())
+            {
+                ByteBuffer payload = frame.getPayload();
+                generator.getBufferPool().release(payload);
+            }
         }
     }
 

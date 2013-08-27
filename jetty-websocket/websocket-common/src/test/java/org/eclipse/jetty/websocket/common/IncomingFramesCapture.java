@@ -44,6 +44,19 @@ public class IncomingFramesCapture implements IncomingFrames
 
     public void assertFrameCount(int expectedCount)
     {
+        if (frames.size() != expectedCount)
+        {
+            // dump details
+            System.err.printf("Expected %d frame(s)%n",expectedCount);
+            System.err.printf("But actually captured %d frame(s)%n",frames.size());
+            for (int i = 0; i < frames.size(); i++)
+            {
+                Frame frame = frames.get(i);
+                System.err.printf(" [%d] Frame[%s] - %s%n", i, 
+                        OpCode.name(frame.getOpCode()),
+                        BufferUtil.toDetailString(frame.getPayload()));
+            }
+        }
         Assert.assertThat("Captured frame count",frames.size(),is(expectedCount));
     }
 

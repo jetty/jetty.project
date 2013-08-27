@@ -16,19 +16,23 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common.extensions;
+package org.eclipse.jetty.websocket.common.extensions.compress;
 
-import org.eclipse.jetty.websocket.common.extensions.compress.DeflateCompressionMethodTest;
-import org.eclipse.jetty.websocket.common.extensions.compress.MessageCompressionExtensionTest;
-import org.eclipse.jetty.websocket.common.extensions.compress.DeflateFrameExtensionTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-
-@RunWith(Suite.class)
-@Suite.SuiteClasses(
-        { ExtensionStackTest.class, DeflateCompressionMethodTest.class, MessageCompressionExtensionTest.class, FragmentExtensionTest.class,
-            IdentityExtensionTest.class, DeflateFrameExtensionTest.class })
-public class AllTests
+/**
+ * Implementation of the <a href="https://tools.ietf.org/id/draft-tyoshino-hybi-websocket-perframe-deflate-05.txt">x-webkit-deflate-frame</a> extension seen out
+ * in the wild. Using the alternate extension identification
+ */
+public class XWebkitDeflateFrameExtension extends DeflateFrameExtension
 {
-    /* nothing to do here, its all done in the annotations */
+    @Override
+    public String getName()
+    {
+        return "x-webkit-deflate-frame";
+    }
+
+    @Override
+    public String toString()
+    {
+        return this.getClass().getSimpleName() + "[]";
+    }
 }
