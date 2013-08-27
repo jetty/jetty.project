@@ -28,6 +28,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.ConnectException;
@@ -41,6 +43,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.regex.Pattern;
 
 import org.eclipse.jetty.start.StartArgs.DownloadArg;
 
@@ -505,14 +508,10 @@ public class Main
             }
         }
 
-        // Enables/Disable
-        for (String module : args.getDisable())
+        // Initialize
+        for (String module : args.getInitialize())
         {
-            disable(args,module,true);
-        }
-        for (String module : args.getEnable())
-        {
-            enable(args,module,true);
+            initialize(args,module,true);
         }
         
         // Informational command line, don't run jetty
@@ -635,100 +634,59 @@ public class Main
         }
     }
 
-    private void enable(StartArgs args, String name, boolean verbose) throws IOException
+    private void initialize(StartArgs args, String name, boolean topLevel) throws IOException
     {
         File start_d=baseHome.getFile("start.d");
-        File ini=new File(start_d,name+".ini");
-        
-        // Is it already enabled
-        if (ini.exists())
+
+        // Is this a module?
+        Module module=args.getAllModules().get(name);
+        if (module==null)
         {
-            if (verbose)
-                StartLog.warn("Module %s already enabled by: %s",name,baseHome.toShortForm(ini));
+            StartLog.warn("ERROR: No known module for %s",name);
             return;
         }
-        
-        // Is there a disabled ini?
-        File disabled=new File(start_d,name+".ini.disabled");
-        boolean copy=false;
-        if (!disabled.exists() && baseHome.isBaseDifferent())
+
+        // Is it already enabled
+        File ini=new File(start_d,name+".ini");
+        if (ini.exists())
         {
-            copy=true;
-            disabled=new File(new File(baseHome.getHomeDir(),"start.d"),name+".ini.disabled");
-            if (!disabled.exists())
-                disabled=new File(new File(baseHome.getHomeDir(),"start.d"),name+".ini");
-        }
-            
-        if (disabled.exists())
-        {
-            // enable module by renaming/copying ini template
-            System.err.printf("Enabling %s in %s from %s%n",name,baseHome.toShortForm(ini),baseHome.toShortForm(disabled));
-            if (copy)
-                Files.copy(disabled.toPath(),ini.toPath());
+            if (new StartIni(ini).getLineMatches(Pattern.compile("--module=(.*, *)*"+name)).size()==0)
+                StartLog.warn("ERROR: %s not initialised in %s!",name,baseHome.toShortForm(ini));
             else
-                disabled.renameTo(ini);
-            args.parse(baseHome, new StartIni(ini));
-        }
-        else if (args.getAllModules().resolveEnabled().contains(args.getAllModules().get(name)))
-        {
-            // No ini template and module is already enabled
-            List<String> sources=args.getSources(name);
-            if (sources!=null && sources.size()>0)
-                for (String s: args.getSources(name))
-                    StartLog.warn("Module %s is enabled in %s",name,s);
-            else
-                StartLog.warn("Module %s is already enabled (see --list-modules)",name);
-                
-        }
-        else if (ini.createNewFile())
-        {
-            System.err.printf("Enabling %s in %s%n",name,baseHome.toShortForm(ini));
-            // Create an ini
-            try(FileOutputStream out = new FileOutputStream(ini);)
-            {
-                out.write(("--module="+name+"\n").getBytes("ISO-8859-1"));
-            }
-            args.parse(baseHome, new StartIni(ini));
+                StartLog.warn("%-15s initialised in %s",name,baseHome.toShortForm(ini));
+            return;
         }
         else
         {
-            StartLog.warn("ERROR: Module %s cannot be enabled! ",name);
-            return;
+            // Should we create an ini file?
+            if (topLevel || module.getInitialise().size()>0)
+            {
+                if (ini.createNewFile())
+                {
+                    StartLog.warn("%-15s initialised in %s (created)",name,baseHome.toShortForm(ini));
+
+                    // Create an ini
+                    try(PrintWriter out = new PrintWriter(ini))
+                    {
+                        out.println("# Initialize module "+name);
+                        out.println("--module="+name);
+                        for (String line : module.getInitialise())
+                            out.println(line);
+                    }
+                    args.parse(baseHome, new StartIni(ini));
+                }
+                else
+                {
+                    StartLog.warn("ERROR: %s cannot be initialised in %s! ",name,baseHome.toShortForm(ini));
+                    return;
+                }
+            }
         }
-    
+
         // Process dependencies
-        Modules modules = args.getAllModules();
-        Module module=modules.get(name);
         if (module!=null)
             for (String parent:module.getParentNames())
-                enable(args,parent,false);
-    }
-
-    private void disable(StartArgs args, String name, boolean verbose) throws IOException
-    {
-        File start_d=baseHome.getFile("start.d");
-        File ini=new File(start_d,name+".ini");
-        
-        // Is it enabled?
-        if (ini.exists())
-        {
-            File disabled=new File(start_d,name+".ini.disabled");
-            
-            if (disabled.exists())
-            {
-                StartLog.warn("ERROR: Disabled ini already exists: %s",baseHome.toShortForm(disabled));
-                return;
-            }
-
-            StartLog.warn("Disabling %s from %s",name,baseHome.toShortForm(ini));
-            ini.renameTo(disabled);
-            
-            return;
-        }
-
-        if (verbose)
-            StartLog.warn("Module %s, ini file already disabled: %s",name,baseHome.toShortForm(ini));
-        
+                initialize(args,parent,false);
     }
     
     public void usage(boolean exit)

@@ -146,8 +146,7 @@ public class StartArgs
     private Properties properties = new Properties();
     private Set<String> systemPropertyKeys = new HashSet<>();
     private List<String> jvmArgs = new ArrayList<>();
-    private List<String> enable = new ArrayList<>();
-    private List<String> disable = new ArrayList<>();
+    private List<String> initialize = new ArrayList<>();
     private List<String> modulePersistEnable = new ArrayList<>();
     private List<String> modulePersistDisable = new ArrayList<>();
     private Modules allModules;
@@ -455,14 +454,9 @@ public class StartArgs
         return this.commandLine;
     }
 
-    public List<String> getEnable()
+    public List<String> getInitialize()
     {
-        return enable;
-    }
-
-    public List<String> getDisable()
-    {
-        return disable;
+        return initialize;
     }
 
     public List<DownloadArg> getDownloads()
@@ -765,20 +759,11 @@ public class StartArgs
             return;
         }
 
-        if (arg.startsWith("--enable="))
+        if (arg.startsWith("--initialize=") || arg.startsWith("--initialise=") || arg.startsWith("--ini="))
         {
             if (!CMD_LINE_SOURCE.equals(source))
                 throw new UsageException(ERR_BAD_ARG,"%s not allowed in %s",arg,source);
-            enable.addAll(getValues(arg));
-            run = false;
-            return;
-        }
-
-        if (arg.startsWith("--disable="))
-        {
-            if (!CMD_LINE_SOURCE.equals(source))
-                throw new UsageException(ERR_BAD_ARG,"%s not allowed in %s",arg,source);
-            disable.addAll(getValues(arg));
+            initialize.addAll(getValues(arg));
             run = false;
             return;
         }

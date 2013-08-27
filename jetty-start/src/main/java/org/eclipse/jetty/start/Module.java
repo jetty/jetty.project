@@ -73,6 +73,8 @@ public class Module extends TextFile
 
     /** The name of this Module */
     private String name;
+    /** The depth of the module in the tree */
+    private int depth = 0;
     /** List of Modules, by name, that this Module depends on */
     private Set<String> parentNames;
     /** List of Modules, by name, that this Module optionally depend on */
@@ -81,10 +83,10 @@ public class Module extends TextFile
     private Set<Module> parentEdges;
     /** The Edges to child modules */
     private Set<Module> childEdges;
-    /** The depth of the module in the tree */
-    private int depth = 0;
     /** List of xml configurations for this Module */
     private List<String> xmls;
+    /** List of ini template lines */
+    private List<String> initialise;
     /** List of library options for this Module */
     private List<String> libs;
     /** List of downloads for this Module */
@@ -197,6 +199,11 @@ public class Module extends TextFile
     {
         return xmls;
     }
+
+    public List<String> getInitialise()
+    {
+        return initialise;
+    }
     
     public List<String> getDownloads()
     {
@@ -225,14 +232,15 @@ public class Module extends TextFile
         // Strip .ini
         this.name = Pattern.compile(".mod$",Pattern.CASE_INSENSITIVE).matcher(name).replaceFirst("");
 
-        this.parentNames = new HashSet<>();
-        this.optionalParentNames = new HashSet<>();
-        this.parentEdges = new HashSet<>();
-        this.childEdges = new HashSet<>();
-        this.xmls = new ArrayList<>();
-        this.libs = new ArrayList<>();
-        this.downloads = new ArrayList<>();
-        this.bootlibs = new ArrayList<>();
+        parentNames=new HashSet<>();
+        optionalParentNames=new HashSet<>();
+        parentEdges=new HashSet<>();
+        childEdges=new HashSet<>();
+        xmls=new ArrayList<>();
+        initialise=new ArrayList<>();
+        libs=new ArrayList<>();
+        downloads=new ArrayList<>();
+        bootlibs=new ArrayList<>();
     }
 
     public boolean isEnabled()
@@ -277,6 +285,10 @@ public class Module extends TextFile
                     break;
                 case "BOOTLIB":
                     bootlibs.add(value);
+                    handled = true;
+                    break;
+                case "INI":
+                    initialise.add(value);
                     handled = true;
                     break;
             }
