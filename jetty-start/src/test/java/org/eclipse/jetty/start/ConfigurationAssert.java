@@ -31,6 +31,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.eclipse.jetty.start.StartArgs.DownloadArg;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.Assert;
 
@@ -108,7 +109,7 @@ public class ConfigurationAssert
             actualProperties.add(name + "=" + value);
         }
         assertContainsUnordered("Properties",expectedProperties,actualProperties);
-        
+
         // Validate Downloads
         Set<String> expectedDownloads = new HashSet<>();
         for (String line : textFile)
@@ -119,12 +120,12 @@ public class ConfigurationAssert
             }
         }
         Set<String> actualDownloads = new HashSet<>();
-        for (String line : args.getDownloads())
+        for (DownloadArg darg : args.getDownloads())
         {
-            actualDownloads.add(line);
+            actualDownloads.add(String.format("%s:%s",darg.uri,darg.location));
         }
         assertContainsUnordered("Downloads",expectedDownloads,actualDownloads);
-        
+
         // Validate Jvm Args / BootLib Entries
         Set<String> expectedJvmArgs = new HashSet<>();
         for (String line : textFile)
@@ -140,9 +141,9 @@ public class ConfigurationAssert
             actualJvmArgs.add(line);
         }
         assertContainsUnordered("JvmArgs",expectedJvmArgs,actualJvmArgs);
-        if ( expectedJvmArgs.size() > 0 )
+        if (expectedJvmArgs.size() > 0)
         {
-            Assert.assertTrue("exec has been turned on", args.isExec());
+            Assert.assertTrue("exec has been turned on",args.isExec());
         }
     }
 
