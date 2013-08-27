@@ -103,7 +103,12 @@ public class Modules implements Iterable<Module>
             for (String parentName : module.getParentNames())
             {
                 Module parent = get(parentName);
-                if (parent != null)
+
+                if (parent == null)
+                {
+                    System.err.printf("WARNING: module not found [%s]%n",parentName);
+                }
+                else
                 {
                     module.addParentEdge(parent);
                     parent.addChildEdge(module);
@@ -113,8 +118,11 @@ public class Modules implements Iterable<Module>
             for (String optionalParentName : module.getOptionalParentNames())
             {
                 Module optional = get(optionalParentName);
-
-                if ((optional != null) && optional.isEnabled())
+                if (optional==null)
+                {
+                    System.err.printf("WARNING: module not found [%s]%n",optionalParentName);
+                }
+                else if (optional.isEnabled())
                 {
                     module.addParentEdge(optional);
                     optional.addChildEdge(module);
@@ -301,12 +309,7 @@ public class Modules implements Iterable<Module>
 
     public Module get(String name)
     {
-        Module module = modules.get(name);
-        if (module == null)
-        {
-            System.err.printf("WARNING: module not found [%s]%n",name);
-        }
-        return module;
+        return modules.get(name);
     }
 
     @Override

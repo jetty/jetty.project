@@ -704,9 +704,9 @@ public class Main
         // Process dependencies
         Modules modules = args.getAllModules();
         Module module=modules.get(name);
-        
-        for (String parent:module.getParentNames())
-            enable(args,parent,false);
+        if (module!=null)
+            for (String parent:module.getParentNames())
+                enable(args,parent,false);
     }
 
     private void disable(StartArgs args, String name, boolean verbose) throws IOException
