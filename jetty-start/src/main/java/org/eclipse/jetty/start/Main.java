@@ -614,7 +614,8 @@ public class Main
 
     private void initialize(StartArgs args, String name, boolean topLevel) throws IOException
     {
-        File start_d=baseHome.getFile("start.d");
+        // Find the start.d relative to the base directory only.
+        File start_d=baseHome.getBaseFile("start.d");
 
         // Is this a module?
         Modules modules=args.getAllModules();
@@ -624,24 +625,30 @@ public class Main
             StartLog.warn("ERROR: No known module for %s",name);
             return;
         }
-        Set<String> sources=module.getSources();
-        boolean explictly_enabled=sources!=null && sources.size()>0;
         
-        // Is it already enabled
+        // Find any named ini file and check it follows the convention
         File ini=new File(start_d,name+".ini");
         String short_ini = baseHome.toShortForm(ini);
+        StartIni start_ini=null;
         if (ini.exists())
         {
-            if (new StartIni(ini).getLineMatches(Pattern.compile("--module=(.*, *)*"+name)).size()==0)
-                StartLog.warn("WARNING: %s not initialised in %s!",name,short_ini);
-            else
-                StartLog.warn("%-15s initialised in %s",name,short_ini);
-
+            start_ini=new StartIni(ini);
+            if (start_ini.getLineMatches(Pattern.compile("--module=(.*, *)*"+name)).size()==0)
+            {
+                StartLog.warn("ERROR: %s is not enabled in %s!",name,short_ini);
+                return;
+            }
         }
         
-        // If this is a top level init, or a transitive dependency with init lines that has not already been explicitly enabled
-        else if (topLevel || (module.getInitialise().size()>0 && !explictly_enabled))
-        {       
+        boolean transitive=module.isEnabled() && module.getSources().size()==0;
+        boolean has_ini_lines = module.getInitialise().size()>0;
+                        
+        // If it is not enabled or is transitive with ini template lines or toplevel and doesn't exist
+        if (!module.isEnabled() || (transitive && has_ini_lines) || (topLevel && !ini.exists()))
+        {
+            // Create the directory if needed
+            if (!start_d.exists())
+                start_d.mkdirs();
             // Create a new ini file for it
             if (!ini.createNewFile())
             {
@@ -650,7 +657,7 @@ public class Main
             }
             StartLog.warn("%-15s initialised in %s (created)",name,short_ini);
 
-            // Create an ini
+            // Create an ini file
             try(PrintWriter out = new PrintWriter(ini))
             {
                 out.println("# Initialize module "+name);
@@ -658,31 +665,50 @@ public class Main
                 for (String line : module.getInitialise())
                     out.println(line);
             }
-            StartIni start_ini=new StartIni(ini);
+            
+            // Add the new ini file to the modules
+            start_ini=new StartIni(ini);
             args.parse(baseHome, start_ini);
             for (String enable:start_ini.getLineMatches(Pattern.compile("--module=.*")))
             {
                 modules.enable(enable.substring(enable.indexOf('=')+1).trim(),Collections.singletonList(short_ini));
             }
         }
-
-        // transitive module already enabled, so only list sources
-        for(String source:sources)
+        else if (ini.exists())
+        {
+            StartLog.info("%-15s initialised in %s",name,short_ini);
+        }
+            
+        // Also list other places this module is enabled
+        for(String source:module.getSources())
         {
             if (!short_ini.equals(source))
                 StartLog.warn("%-15s enabled in     %s",name,baseHome.toShortForm(source));
         }
-        
+
         // Do downloads now
         for (String download : module.getDownloads())
             download(StartArgs.toDownloadArg(download));
 
-        // Process dependencies
-        if (module!=null && topLevel)
+        
+        // Process dependencies from top level only
+        if (topLevel)
         {
+            List<Module> parents = new ArrayList<>();
             for (String parent:modules.resolveParentModulesOf(name))
+            {
                 if (!name.equals(parent))
-                    initialize(args,parent,false);
+                {
+                    Module m=modules.get(parent);
+                    m.setEnabled(true);
+                    parents.add(m);
+                }
+            }
+            Collections.sort(parents,Collections.reverseOrder(new Module.DepthComparator()));
+            for (Module m : parents)
+            {
+                initialize(args,m.getName(),false);
+            }
         }
     }
     

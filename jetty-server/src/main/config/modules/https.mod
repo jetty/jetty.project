@@ -6,4 +6,5 @@ DEPEND=ssl
 
 etc/jetty-https.xml
 
-INI=# jetty.https.port=8443
+INI=https.port=8443
+INI=https.timeout=30000
