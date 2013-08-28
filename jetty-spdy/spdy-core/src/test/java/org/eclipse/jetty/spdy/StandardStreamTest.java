@@ -152,7 +152,7 @@ public class StandardStreamTest
         stream.setStreamFrameListener(new StreamFrameListener.Adapter()
         {
             @Override
-            public void onFailure(Throwable x)
+            public void onFailure(Stream stream, Throwable x)
             {
                 assertThat("exception is a TimeoutException", x, is(instanceOf(TimeoutException.class)));
                 onFailCalledLatch.countDown();
@@ -173,7 +173,7 @@ public class StandardStreamTest
         stream.setStreamFrameListener(new StreamFrameListener.Adapter()
         {
             @Override
-            public void onFailure(Throwable x)
+            public void onFailure(Stream stream, Throwable x)
             {
                 assertThat("exception is a TimeoutException", x, is(instanceOf(TimeoutException.class)));
                 onFailCalledLatch.countDown();

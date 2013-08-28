@@ -156,7 +156,7 @@ public class HTTPSPDYServerConnectionFactory extends SPDYServerConnectionFactory
         }
 
         @Override
-        public void onFailure(Throwable x)
+        public void onFailure(Stream stream, Throwable x)
         {
             LOG.debug(x);
         }

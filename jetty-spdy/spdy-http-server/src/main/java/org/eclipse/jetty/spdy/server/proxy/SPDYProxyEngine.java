@@ -171,7 +171,7 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
     }
 
     @Override
-    public void onFailure(Throwable x)
+    public void onFailure(Stream stream, Throwable x)
     {
         LOG.debug(x);
     }
@@ -275,7 +275,7 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
         }
 
         @Override
-        public void onFailure(Throwable x)
+        public void onFailure(Stream stream, Throwable x)
         {
             LOG.debug(x);
         }

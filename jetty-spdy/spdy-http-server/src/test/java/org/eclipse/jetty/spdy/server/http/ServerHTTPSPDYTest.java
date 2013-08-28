@@ -1496,7 +1496,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 new StreamFrameListener.Adapter()
                 {
                     @Override
-                    public void onFailure(Throwable x)
+                    public void onFailure(Stream stream, Throwable x)
                     {
                         assertThat("we got a TimeoutException", x, instanceOf(TimeoutException.class));
                         timeoutReceivedLatch.countDown();
@@ -1535,7 +1535,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 new StreamFrameListener.Adapter()
                 {
                     @Override
-                    public void onFailure(Throwable x)
+                    public void onFailure(Stream stream, Throwable x)
                     {
                         assertThat("we got a TimeoutException", x, instanceOf(TimeoutException.class));
                         timeoutReceivedLatch.countDown();
@@ -1580,7 +1580,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 new StreamFrameListener.Adapter()
                 {
                     @Override
-                    public void onFailure(Throwable x)
+                    public void onFailure(Stream stream, Throwable x)
                     {
                         assertThat("we got a TimeoutException", x, instanceOf(TimeoutException.class));
                         timeoutReceivedLatch.countDown();
