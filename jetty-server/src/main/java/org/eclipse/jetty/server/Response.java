@@ -423,8 +423,11 @@ public class Response implements HttpServletResponse
 
                 writer.flush();
                 setContentLength(writer.size());
-                writer.writeTo(getOutputStream());
-                writer.destroy();
+                try (ServletOutputStream outputStream = getOutputStream())
+                {
+                    writer.writeTo(outputStream);
+                    writer.destroy();
+                }
             }
         }
         else if (code!=SC_PARTIAL_CONTENT)

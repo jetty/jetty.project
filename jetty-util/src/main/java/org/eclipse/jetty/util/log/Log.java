@@ -58,7 +58,7 @@ public class Log
     /**
      * Logging Configuration Properties
      */
-    protected static Properties __props;
+    protected static final Properties __props;
     /**
      * The {@link Logger} implementation class name
      */

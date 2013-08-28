@@ -664,7 +664,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                             while (!match && quoted.hasMoreTokens())
                             {
                                 String tag = quoted.nextToken();
-                                if (content.getETag().toString().equals(tag))
+                                if (content.getETag().equals(tag))
                                     match=true;
                             }
                         }
@@ -680,7 +680,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                     if (if_non_match_etag!=null && content.getETag()!=null)
                     {
                         // Look for GzipFiltered version of etag
-                        if (content.getETag().toString().equals(request.getAttribute("o.e.j.s.GzipFilter.ETag")))
+                        if (content.getETag().equals(request.getAttribute("o.e.j.s.GzipFilter.ETag")))
                         {
                             response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
                             response.setHeader(HttpHeader.ETAG.asString(),if_non_match_etag);
@@ -688,7 +688,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                         }
                         
                         // Handle special case of exact match.
-                        if (content.getETag().toString().equals(if_non_match_etag))
+                        if (content.getETag().equals(if_non_match_etag))
                         {
                             response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
                             response.setHeader(HttpHeader.ETAG.asString(),content.getETag());
@@ -700,7 +700,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                         while (quoted.hasMoreTokens())
                         {
                             String tag = quoted.nextToken();
-                            if (content.getETag().toString().equals(tag))
+                            if (content.getETag().equals(tag))
                             {
                                 response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
                                 response.setHeader(HttpHeader.ETAG.asString(),content.getETag());
@@ -923,7 +923,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             //  content-length header
             //
             writeHeaders(response,content,-1);
-            String mimetype=(content==null||content.getContentType()==null?null:content.getContentType().toString());
+            String mimetype=(content==null?null:content.getContentType());
             if (mimetype==null)
                 LOG.warn("Unknown mimetype for "+request.getRequestURI());
             MultiPartOutputStream multi = new MultiPartOutputStream(out);
@@ -1041,7 +1041,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             writeOptionHeaders(response);
 
             if (_etags)
-                response.setHeader(HttpHeader.ETAG.asString(),content.getETag().toString());
+                response.setHeader(HttpHeader.ETAG.asString(),content.getETag());
         }
     }
 

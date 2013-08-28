@@ -874,14 +874,11 @@ public class JDBCSessionManager extends AbstractSessionManager
             @SuppressWarnings("unchecked")
             public void run()
             {
-                Session session = null;
-                Connection connection=null;
-                PreparedStatement statement = null;
-                try
+                try (Connection connection = getConnection();
+                        PreparedStatement statement = _jdbcSessionIdMgr._dbAdaptor.getLoadStatement(connection, id, canonicalContextPath, vhost);
+                        ResultSet result = statement.executeQuery())
                 {
-                    connection = getConnection();
-                    statement = _jdbcSessionIdMgr._dbAdaptor.getLoadStatement(connection, id, canonicalContextPath, vhost);
-                    ResultSet result = statement.executeQuery();
+                    Session session = null;
                     if (result.next())
                     {                    
                         long maxInterval = result.getLong("maxInterval");
@@ -901,11 +898,12 @@ public class JDBCSessionManager extends AbstractSessionManager
                         session.setCanonicalContext(result.getString("contextPath"));
                         session.setVirtualHost(result.getString("virtualHost"));
                                            
-                        InputStream is = ((JDBCSessionIdManager)getSessionIdManager())._dbAdaptor.getBlobInputStream(result, "map");
-                        ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream (is);
-                        Object o = ois.readObject();
-                        session.addAttributes((Map<String,Object>)o);
-                        ois.close();
+                        try (InputStream is = ((JDBCSessionIdManager)getSessionIdManager())._dbAdaptor.getBlobInputStream(result, "map");
+                                ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(is))
+                        {
+                            Object o = ois.readObject();
+                            session.addAttributes((Map<String,Object>)o);
+                        }
 
                         if (LOG.isDebugEnabled())
                             LOG.debug("LOADED session "+session);
@@ -918,14 +916,6 @@ public class JDBCSessionManager extends AbstractSessionManager
                 catch (Exception e)
                 {
                     _exception.set(e);
-                }
-                finally
-                {
-                    if (connection!=null)
-                    {
-                        try { connection.close();}
-                        catch(Exception e) { LOG.warn(e); }
-                    }
                 }
             }
         };
@@ -959,15 +949,13 @@ public class JDBCSessionManager extends AbstractSessionManager
             return;
 
         //put into the database
-        Connection connection = getConnection();
-        PreparedStatement statement = null;
-        try
+        try (Connection connection = getConnection();
+                PreparedStatement statement = connection.prepareStatement(_jdbcSessionIdMgr._insertSession))
         {
             String rowId = calculateRowId(session);
 
             long now = System.currentTimeMillis();
             connection.setAutoCommit(true);
-            statement = connection.prepareStatement(_jdbcSessionIdMgr._insertSession);
             statement.setString(1, rowId); //rowId
             statement.setString(2, session.getId()); //session id
             statement.setString(3, session.getCanonicalContext()); //context path
@@ -984,6 +972,7 @@ public class JDBCSessionManager extends AbstractSessionManager
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ObjectOutputStream oos = new ObjectOutputStream(baos);
             oos.writeObject(session.getAttributeMap());
+            oos.flush();
             byte[] bytes = baos.toByteArray();
 
             ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
@@ -993,16 +982,9 @@ public class JDBCSessionManager extends AbstractSessionManager
             statement.executeUpdate();
             session.setRowId(rowId); //set it on the in-memory data as well as in db
             session.setLastSaved(now);
-
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("Stored session "+session);
         }
-        finally
-        {
-            if (connection!=null)
-                connection.close();
-        }
+        if (LOG.isDebugEnabled())
+            LOG.debug("Stored session "+session);
     }
 
 
@@ -1018,13 +1000,11 @@ public class JDBCSessionManager extends AbstractSessionManager
         if (data==null)
             return;
 
-        Connection connection = getConnection();
-        PreparedStatement statement = null;
-        try
+        try (Connection connection = getConnection();
+                PreparedStatement statement = connection.prepareStatement(_jdbcSessionIdMgr._updateSession))
         {
             long now = System.currentTimeMillis();
             connection.setAutoCommit(true);
-            statement = connection.prepareStatement(_jdbcSessionIdMgr._updateSession);
             statement.setString(1, data.getId());
             statement.setString(2, getSessionIdManager().getWorkerName());//my node id
             statement.setLong(3, data.getAccessed());//accessTime
@@ -1036,6 +1016,7 @@ public class JDBCSessionManager extends AbstractSessionManager
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ObjectOutputStream oos = new ObjectOutputStream(baos);
             oos.writeObject(data.getAttributeMap());
+            oos.flush();
             byte[] bytes = baos.toByteArray();
             ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
 
@@ -1044,14 +1025,9 @@ public class JDBCSessionManager extends AbstractSessionManager
             statement.executeUpdate();
 
             data.setLastSaved(now);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Updated session "+data);
         }
-        finally
-        {
-            if (connection!=null)
-                connection.close();
-        }
+        if (LOG.isDebugEnabled())
+            LOG.debug("Updated session "+data);
     }
 
 
@@ -1065,24 +1041,16 @@ public class JDBCSessionManager extends AbstractSessionManager
     throws Exception
     {
         String nodeId = getSessionIdManager().getWorkerName();
-        Connection connection = getConnection();
-        PreparedStatement statement = null;
-        try
+        try (Connection connection = getConnection();
+                PreparedStatement statement = connection.prepareStatement(_jdbcSessionIdMgr._updateSessionNode))
         {
             connection.setAutoCommit(true);
-            statement = connection.prepareStatement(_jdbcSessionIdMgr._updateSessionNode);
             statement.setString(1, nodeId);
             statement.setString(2, data.getRowId());
             statement.executeUpdate();
-            statement.close();
-            if (LOG.isDebugEnabled())
-                LOG.debug("Updated last node for session id="+data.getId()+", lastNode = "+nodeId);
         }
-        finally
-        {
-            if (connection!=null)
-                connection.close();
-        }
+        if (LOG.isDebugEnabled())
+            LOG.debug("Updated last node for session id="+data.getId()+", lastNode = "+nodeId);
     }
 
     /**
@@ -1094,13 +1062,11 @@ public class JDBCSessionManager extends AbstractSessionManager
     private void updateSessionAccessTime (Session data)
     throws Exception
     {
-        Connection connection = getConnection();
-        PreparedStatement statement = null;
-        try
+        try (Connection connection = getConnection();
+                PreparedStatement statement = connection.prepareStatement(_jdbcSessionIdMgr._updateSessionAccessTime))
         {
             long now = System.currentTimeMillis();
             connection.setAutoCommit(true);
-            statement = connection.prepareStatement(_jdbcSessionIdMgr._updateSessionAccessTime);
             statement.setString(1, getSessionIdManager().getWorkerName());
             statement.setLong(2, data.getAccessed());
             statement.setLong(3, data.getLastAccessedTime());
@@ -1111,15 +1077,9 @@ public class JDBCSessionManager extends AbstractSessionManager
           
             statement.executeUpdate();
             data.setLastSaved(now);
-            statement.close();
-            if (LOG.isDebugEnabled())
-                LOG.debug("Updated access time session id="+data.getId());
         }
-        finally
-        {
-            if (connection!=null)
-                connection.close();
-        }
+        if (LOG.isDebugEnabled())
+            LOG.debug("Updated access time session id="+data.getId());
     }
 
 
@@ -1135,21 +1095,14 @@ public class JDBCSessionManager extends AbstractSessionManager
     protected void deleteSession (Session data)
     throws Exception
     {
-        Connection connection = getConnection();
-        PreparedStatement statement = null;
-        try
+        try (Connection connection = getConnection();
+                PreparedStatement statement = connection.prepareStatement(_jdbcSessionIdMgr._deleteSession))
         {
             connection.setAutoCommit(true);
-            statement = connection.prepareStatement(_jdbcSessionIdMgr._deleteSession);
             statement.setString(1, data.getRowId());
             statement.executeUpdate();
             if (LOG.isDebugEnabled())
                 LOG.debug("Deleted Session "+data);
-        }
-        finally
-        {
-            if (connection!=null)
-                connection.close();
         }
     }
 

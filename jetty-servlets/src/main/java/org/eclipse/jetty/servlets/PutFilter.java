@@ -219,24 +219,26 @@ public class PutFilter implements Filter
                 if (_putAtomic)
                 {
                     File tmp=File.createTempFile(file.getName(),null,_tmpdir);
-                    OutputStream out = new FileOutputStream(tmp,false);
-                    if (toRead >= 0)
-                        IO.copy(in, out, toRead);
-                    else
-                        IO.copy(in, out);
-                    out.close();
+                    try (OutputStream out = new FileOutputStream(tmp,false))
+                    {
+                        if (toRead >= 0)
+                            IO.copy(in, out, toRead);
+                        else
+                            IO.copy(in, out);
+                    }
 
                     if (!tmp.renameTo(file))
                         throw new IOException("rename from "+tmp+" to "+file+" failed");
                 }
                 else
                 {
-                    OutputStream out = new FileOutputStream(file,false);
-                    if (toRead >= 0)
-                        IO.copy(in, out, toRead);
-                    else
-                        IO.copy(in, out);
-                    out.close();
+                    try (OutputStream out = new FileOutputStream(file,false))
+                    {
+                        if (toRead >= 0)
+                            IO.copy(in, out, toRead);
+                        else
+                            IO.copy(in, out);
+                    }
                 }
 
                 response.setStatus(exists ? HttpServletResponse.SC_OK : HttpServletResponse.SC_CREATED);

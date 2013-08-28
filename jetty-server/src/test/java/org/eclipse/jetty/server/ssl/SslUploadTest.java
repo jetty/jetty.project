@@ -88,7 +88,10 @@ public class SslUploadTest
     {
         KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
         SslContextFactory ctx=connector.getConnectionFactory(SslConnectionFactory.class).getSslContextFactory();
-        keystore.load(new FileInputStream(ctx.getKeyStorePath()), "storepwd".toCharArray());
+        try (InputStream stream = new FileInputStream(ctx.getKeyStorePath()))
+        {
+            keystore.load(stream, "storepwd".toCharArray());
+        }
         TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         trustManagerFactory.init(keystore);
         SSLContext sslContext = SSLContext.getInstance("SSL");

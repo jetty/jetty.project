@@ -73,45 +73,44 @@ public abstract class AbstractDatabaseLoginModule extends AbstractLoginModule
     public UserInfo getUserInfo (String userName)
         throws Exception
     {
-        Connection connection = null;
-
-        try
+        try (Connection connection = getConnection())
         {
-            connection = getConnection();
 
             //query for credential
-            PreparedStatement statement = connection.prepareStatement (userQuery);
-            statement.setString (1, userName);
-            ResultSet results = statement.executeQuery();
             String dbCredential = null;
-            if (results.next())
+            try (PreparedStatement statement = connection.prepareStatement (userQuery))
             {
-                dbCredential = results.getString(1);
+                statement.setString (1, userName);
+                try (ResultSet results = statement.executeQuery())
+                {
+                    if (results.next())
+                    {
+                        dbCredential = results.getString(1);
+                    }
+                }
             }
-            results.close();
-            statement.close();
+
+            if (dbCredential==null)
+            {
+                return null;
+            }
 
             //query for role names
-            statement = connection.prepareStatement (rolesQuery);
-            statement.setString (1, userName);
-            results = statement.executeQuery();
             List<String> roles = new ArrayList<String>();
-
-            while (results.next())
+            try (PreparedStatement statement = connection.prepareStatement (rolesQuery))
             {
-                String roleName = results.getString (1);
-                roles.add (roleName);
+                statement.setString (1, userName);
+                try (ResultSet results = statement.executeQuery())
+                {
+                    while (results.next())
+                    {
+                        String roleName = results.getString (1);
+                        roles.add (roleName);
+                    }
+                }
             }
 
-            results.close();
-            statement.close();
-
-            return dbCredential==null ? null : new UserInfo (userName,
-                    Credential.getCredential(dbCredential), roles);
-        }
-        finally
-        {
-            if (connection != null) connection.close();
+            return new UserInfo (userName, Credential.getCredential(dbCredential), roles);
         }
     }
 
