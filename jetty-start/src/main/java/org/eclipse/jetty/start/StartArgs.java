@@ -168,7 +168,7 @@ public class StartArgs
         classpath = new Classpath();
     }
 
-    private void addDownload(String uriLocation)
+    static DownloadArg toDownloadArg(String uriLocation)
     {
         String parts[] = uriLocation.split(":",3);
         if (parts.length != 3)
@@ -186,7 +186,12 @@ public class StartArgs
         DownloadArg arg = new DownloadArg();
         arg.uri = String.format("%s:%s",parts[0],parts[1]);
         arg.location = parts[2];
-
+        return arg;
+    }
+    
+    private void addDownload(String uriLocation)
+    {
+        DownloadArg arg=toDownloadArg(uriLocation);
         if (!downloads.contains(arg))
         {
             downloads.add(arg);
@@ -427,14 +432,6 @@ public class StartArgs
             {
                 StartLog.debug("Adding module specified download: %s",download);
                 addDownload(download);
-            }
-
-            // Register BootLib references
-            for (String bootlib : module.getBootLibs())
-            {
-                StartLog.debug("Adding module specified bootlib: %s",bootlib);
-                exec = true;
-                jvmArgs.add(bootlib);
             }
         }
     }

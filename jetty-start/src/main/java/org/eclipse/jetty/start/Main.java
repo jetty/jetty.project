@@ -43,6 +43,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.start.StartArgs.DownloadArg;
@@ -332,12 +333,6 @@ public class Main
         modules.dumpEnabledTree();
     }
 
-    private ModulePersistence loadModulePersistence() throws IOException
-    {
-        File file = baseHome.getBaseFile("modules/enabled");
-        return new ModulePersistence(file);
-    }
-
     /**
      * Convenience for <code>processCommandLine(cmdLine.toArray(new String[cmdLine.size()]))</code>
      */
@@ -411,7 +406,6 @@ public class Main
             List<String> sources = args.getSources(enabledModule);
             modules.enable(enabledModule,sources);
         }
-        modules.enable(loadModulePersistence());
 
         StartLog.debug("Building Module Graph");
         modules.buildGraph();
@@ -444,6 +438,7 @@ public class Main
         }
 
         // Various Downloads
+        // TODO should this only be done by init?
         for (DownloadArg url : args.getDownloads())
         {
             download(url);
@@ -472,23 +467,6 @@ public class Main
         {
             CommandLineBuilder cmd = args.getMainArgs(baseHome,true);
             System.out.println(cmd.toString());
-        }
-
-        // Enables/Disable
-        ModulePersistence persistence = loadModulePersistence();
-        if (args.isModulePersistenceChanging())
-        {
-            System.out.println("Persistent Module Management:");
-            System.out.println("-----------------------------");
-            System.out.printf("Persistence file: %s%n",baseHome.toShortForm(persistence.getFile()));
-            for (String module : args.getModulePersistDisable())
-            {
-                persistence.disableModule(args,module);
-            }
-            for (String module : args.getModulePersistEnable())
-            {
-                persistence.enableModule(args,module);
-            }
         }
 
         if (args.isStopCommand())
@@ -639,54 +617,73 @@ public class Main
         File start_d=baseHome.getFile("start.d");
 
         // Is this a module?
-        Module module=args.getAllModules().get(name);
+        Modules modules=args.getAllModules();
+        Module module=modules.get(name);
         if (module==null)
         {
             StartLog.warn("ERROR: No known module for %s",name);
             return;
         }
-
+        Set<String> sources=module.getSources();
+        boolean explictly_enabled=sources!=null && sources.size()>0;
+        
         // Is it already enabled
         File ini=new File(start_d,name+".ini");
+        String short_ini = baseHome.toShortForm(ini);
         if (ini.exists())
         {
             if (new StartIni(ini).getLineMatches(Pattern.compile("--module=(.*, *)*"+name)).size()==0)
-                StartLog.warn("ERROR: %s not initialised in %s!",name,baseHome.toShortForm(ini));
+                StartLog.warn("WARNING: %s not initialised in %s!",name,short_ini);
             else
-                StartLog.warn("%-15s initialised in %s",name,baseHome.toShortForm(ini));
-            return;
-        }
-        else
-        {
-            // Should we create an ini file?
-            if (topLevel || module.getInitialise().size()>0)
-            {
-                if (ini.createNewFile())
-                {
-                    StartLog.warn("%-15s initialised in %s (created)",name,baseHome.toShortForm(ini));
+                StartLog.warn("%-15s initialised in %s",name,short_ini);
 
-                    // Create an ini
-                    try(PrintWriter out = new PrintWriter(ini))
-                    {
-                        out.println("# Initialize module "+name);
-                        out.println("--module="+name);
-                        for (String line : module.getInitialise())
-                            out.println(line);
-                    }
-                    args.parse(baseHome, new StartIni(ini));
-                }
-                else
-                {
-                    StartLog.warn("ERROR: %s cannot be initialised in %s! ",name,baseHome.toShortForm(ini));
-                    return;
-                }
+        }
+        
+        // If this is a top level init, or a transitive dependency with init lines that has not already been explicitly enabled
+        else if (topLevel || (module.getInitialise().size()>0 && !explictly_enabled))
+        {       
+            // Create a new ini file for it
+            if (!ini.createNewFile())
+            {
+                StartLog.warn("ERROR: %s cannot be initialised in %s! ",name,short_ini);
+                return;
+            }
+            StartLog.warn("%-15s initialised in %s (created)",name,short_ini);
+
+            // Create an ini
+            try(PrintWriter out = new PrintWriter(ini))
+            {
+                out.println("# Initialize module "+name);
+                out.println("--module="+name);
+                for (String line : module.getInitialise())
+                    out.println(line);
+            }
+            StartIni start_ini=new StartIni(ini);
+            args.parse(baseHome, start_ini);
+            for (String enable:start_ini.getLineMatches(Pattern.compile("--module=.*")))
+            {
+                modules.enable(enable.substring(enable.indexOf('=')+1).trim(),Collections.singletonList(short_ini));
             }
         }
 
+        // transitive module already enabled, so only list sources
+        for(String source:sources)
+        {
+            if (!short_ini.equals(source))
+                StartLog.warn("%-15s enabled in     %s",name,baseHome.toShortForm(source));
+        }
+        
+        // Do downloads now
+        for (String download : module.getDownloads())
+            download(StartArgs.toDownloadArg(download));
+
         // Process dependencies
-        if (module!=null)
-            for (String parent:module.getParentNames())
-                initialize(args,parent,false);
+        if (module!=null && topLevel)
+        {
+            for (String parent:modules.resolveParentModulesOf(name))
+                if (!name.equals(parent))
+                    initialize(args,parent,false);
+        }
     }
     
     public void usage(boolean exit)

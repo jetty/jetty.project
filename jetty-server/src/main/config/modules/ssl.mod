@@ -3,6 +3,7 @@
 
 DEPEND=server
 etc/jetty-ssl.xml
+DOWNLOAD=http://git.eclipse.org/c/jetty/org.eclipse.jetty.project.git/plain/jetty-server/src/main/config/etc/keystore:etc/keystore
 
 INI=jetty.keystore=etc/keystore
 INI=jetty.keystore.password=OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4

@@ -90,10 +90,7 @@ public class Module extends TextFile
     /** List of library options for this Module */
     private List<String> libs;
     /** List of downloads for this Module */
-    private List<String> downloads;
-    /** List of bootlib for this Module */
-    private List<String> bootlibs;
-    
+    private List<String> downloads;    
 
 
     /** Is this Module enabled via start.jar command line, start.ini, or start.d/*.ini ? */
@@ -210,11 +207,6 @@ public class Module extends TextFile
         return downloads;
     }
     
-    public List<String> getBootLibs()
-    {
-        return bootlibs;
-    }
-    
     @Override
     public int hashCode()
     {
@@ -240,7 +232,6 @@ public class Module extends TextFile
         initialise=new ArrayList<>();
         libs=new ArrayList<>();
         downloads=new ArrayList<>();
-        bootlibs=new ArrayList<>();
     }
 
     public boolean isEnabled()
@@ -281,10 +272,6 @@ public class Module extends TextFile
                     break;
                 case "DOWNLOAD":
                     downloads.add(value);
-                    handled = true;
-                    break;
-                case "BOOTLIB":
-                    bootlibs.add(value);
                     handled = true;
                     break;
                 case "INI":
