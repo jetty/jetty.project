@@ -19,7 +19,7 @@
 package org.eclipse.jetty.websocket.server.helper;
 
 import org.eclipse.jetty.websocket.common.extensions.compress.DeflateFrameExtension;
-import org.eclipse.jetty.websocket.common.extensions.compress.MessageDeflateCompressionExtension;
+import org.eclipse.jetty.websocket.common.extensions.compress.PerMessageDeflateExtension;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 
@@ -34,7 +34,7 @@ public class EchoServlet extends WebSocketServlet
     {
         // Setup some extensions we want to test against
         factory.getExtensionFactory().register("x-webkit-deflate-frame",DeflateFrameExtension.class);
-        factory.getExtensionFactory().register("permessage-compress",MessageDeflateCompressionExtension.class);
+        factory.getExtensionFactory().register("permessage-compress",PerMessageDeflateExtension.class);
 
         // Setup the desired Socket to use for all incoming upgrade requests
         factory.register(EchoSocket.class);
