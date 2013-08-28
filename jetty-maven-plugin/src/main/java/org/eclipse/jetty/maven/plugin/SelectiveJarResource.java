@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Collections;
@@ -145,91 +146,87 @@ public class SelectiveJarResource extends JarResource
         
         URL jarFileURL = new URL(urlString.substring(startOfJarUrl, endOfJarUrl));
      
-        InputStream is = jarFileURL.openConnection().getInputStream();
-        JarInputStream jin = new JarInputStream(is);
-        JarEntry entry;
-
-        while((entry=jin.getNextJarEntry())!=null)
+        try (InputStream is = jarFileURL.openConnection().getInputStream();
+                JarInputStream jin = new JarInputStream(is))
         {
-            String entryName = entry.getName();
+            JarEntry entry;
 
-            LOG.debug("Looking at "+entryName);
-            String dotCheck = entryName.replace('\\', '/');   
-            dotCheck = URIUtil.canonicalPath(dotCheck);
-            if (dotCheck == null)
+            while((entry=jin.getNextJarEntry())!=null)
             {
-                LOG.info("Invalid entry: "+entryName);
-                continue;
-            }
+                String entryName = entry.getName();
 
-            File file=new File(directory,entryName);
-
-            if (entry.isDirectory())
-            {
-                if (isIncluded(entryName))
+                LOG.debug("Looking at "+entryName);
+                String dotCheck = entryName.replace('\\', '/');
+                dotCheck = URIUtil.canonicalPath(dotCheck);
+                if (dotCheck == null)
                 {
-                    if (!isExcluded(entryName))
+                    LOG.info("Invalid entry: "+entryName);
+                    continue;
+                }
+
+                File file=new File(directory,entryName);
+
+                if (entry.isDirectory())
+                {
+                    if (isIncluded(entryName))
                     {
-                        // Make directory
-                        if (!file.exists())
-                            file.mkdirs();
+                        if (!isExcluded(entryName))
+                        {
+                            // Make directory
+                            if (!file.exists())
+                                file.mkdirs();
+                        }
+                        else
+                            LOG.debug("{} dir is excluded", entryName);
                     }
                     else
-                        LOG.debug("{} dir is excluded", entryName);
+                        LOG.debug("{} dir is NOT included", entryName);
                 }
                 else
-                    LOG.debug("{} dir is NOT included", entryName);
-            }
-            else
-            {
-                //entry is a file, is it included?
-                if (isIncluded(entryName))
                 {
-                    if (!isExcluded(entryName))
+                    //entry is a file, is it included?
+                    if (isIncluded(entryName))
                     {
-                        // make directory (some jars don't list dirs)
-                        File dir = new File(file.getParent());
-                        if (!dir.exists())
-                            dir.mkdirs();
-
-                        // Make file
-                        FileOutputStream fout = null;
-                        try
+                        if (!isExcluded(entryName))
                         {
-                            fout = new FileOutputStream(file);
-                            IO.copy(jin,fout);
-                        }
-                        finally
-                        {
-                            IO.close(fout);
-                        }
+                            // make directory (some jars don't list dirs)
+                            File dir = new File(file.getParent());
+                            if (!dir.exists())
+                                dir.mkdirs();
 
-                        // touch the file.
-                        if (entry.getTime()>=0)
-                            file.setLastModified(entry.getTime());
+                            // Make file
+                            try (OutputStream fout = new FileOutputStream(file))
+                            {
+                                IO.copy(jin,fout);
+                            }
+
+                            // touch the file.
+                            if (entry.getTime()>=0)
+                                file.setLastModified(entry.getTime());
+                        }
+                        else
+                            LOG.debug("{} file is excluded", entryName);
                     }
                     else
-                        LOG.debug("{} file is excluded", entryName);
+                        LOG.debug("{} file is NOT included", entryName);
                 }
-                else
-                    LOG.debug("{} file is NOT included", entryName);
             }
-        }
-        
-        Manifest manifest = jin.getManifest();
-        if (manifest != null)
-        {
-            if (isIncluded("META-INF") && !isExcluded("META-INF"))
+
+            Manifest manifest = jin.getManifest();
+            if (manifest != null)
             {
-                File metaInf = new File (directory, "META-INF");
-                metaInf.mkdir();
-                File f = new File(metaInf, "MANIFEST.MF");
-                FileOutputStream fout = new FileOutputStream(f);
-                manifest.write(fout);
-                fout.close();   
+                if (isIncluded("META-INF") && !isExcluded("META-INF"))
+                {
+                    File metaInf = new File (directory, "META-INF");
+                    metaInf.mkdir();
+                    File f = new File(metaInf, "MANIFEST.MF");
+                    try (OutputStream fout = new FileOutputStream(f))
+                    {
+                        manifest.write(fout);
+                    }
+                }
             }
         }
-        IO.close(jin);
     }
     
 }

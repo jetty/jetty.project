@@ -19,6 +19,7 @@
 package org.eclipse.jetty.server.ssl;
 
 import java.io.FileInputStream;
+import java.io.InputStream;
 import java.net.Socket;
 import java.security.KeyStore;
 
@@ -55,7 +56,10 @@ public class SslSelectChannelTimeoutTest extends ConnectorTimeoutTest
         startServer(connector);
 
         KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
-        keystore.load(new FileInputStream(keystorePath), "storepwd".toCharArray());
+        try (InputStream stream = new FileInputStream(keystorePath))
+        {
+            keystore.load(stream, "storepwd".toCharArray());
+        }
         TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         trustManagerFactory.init(keystore);
         __sslContext = SSLContext.getInstance("SSL");

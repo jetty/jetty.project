@@ -24,6 +24,7 @@ import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -290,30 +291,32 @@ public class DataSourceLoginService extends MappedLoginService
     @Override
     protected UserIdentity loadUser (String userName)
     {
-        Connection connection = null;
         try
         {
             initDb();
-            connection = getConnection();
-
-            PreparedStatement statement = connection.prepareStatement(_userSql);
-            statement.setObject(1, userName);
-            ResultSet rs = statement.executeQuery();
-
-            if (rs.next())
+            try (Connection connection = getConnection();
+                    PreparedStatement statement1 = connection.prepareStatement(_userSql))
             {
-                int key = rs.getInt(_userTableKey);
-                String credentials = rs.getString(_userTablePasswordField);
-                statement.close();
-
-                statement = connection.prepareStatement(_roleSql);
-                statement.setInt(1, key);
-                rs = statement.executeQuery();
-                List<String> roles = new ArrayList<String>();
-                while (rs.next())
-                    roles.add(rs.getString(_roleTableRoleField));
-                statement.close();
-                return putUser(userName,new Password(credentials), roles.toArray(new String[roles.size()]));
+                statement1.setObject(1, userName);
+                try (ResultSet rs1 = statement1.executeQuery())
+                {
+                    if (rs1.next())
+                    {
+                        int key = rs1.getInt(_userTableKey);
+                        String credentials = rs1.getString(_userTablePasswordField);
+                        List<String> roles = new ArrayList<String>();
+                        try (PreparedStatement statement2 = connection.prepareStatement(_roleSql))
+                        {
+                            statement2.setInt(1, key);
+                            try (ResultSet rs2 = statement2.executeQuery())
+                            {
+                                while (rs2.next())
+                                    roles.add(rs2.getString(_roleTableRoleField));
+                            }
+                        }
+                        return putUser(userName,new Password(credentials), roles.toArray(new String[roles.size()]));
+                    }
+                }
             }
         }
         catch (NamingException e)
@@ -323,24 +326,6 @@ public class DataSourceLoginService extends MappedLoginService
         catch (SQLException e)
         {
             LOG.warn("Problem loading user info for "+userName, e);
-        }
-        finally
-        {
-            if (connection != null)
-            {
-                try
-                {
-                    connection.close();
-                }
-                catch (SQLException x)
-                {
-                    LOG.warn("Problem closing connection", x);
-                }
-                finally
-                {
-                    connection = null;
-                }
-            }
         }
         return null;
     }
@@ -402,92 +387,93 @@ public class DataSourceLoginService extends MappedLoginService
     private void prepareTables()
     throws NamingException, SQLException
     {
-        Connection connection = null;
-        boolean autocommit = true;
-
         if (_createTables)
         {
-            try
+            boolean autocommit = true;
+            Connection connection = getConnection();
+            try (Statement stmt = connection.createStatement())
             {
-                connection = getConnection();
                 autocommit = connection.getAutoCommit();
                 connection.setAutoCommit(false);
                 DatabaseMetaData metaData = connection.getMetaData();
 
                 //check if tables exist
                 String tableName = (metaData.storesLowerCaseIdentifiers()? _userTableName.toLowerCase(Locale.ENGLISH): (metaData.storesUpperCaseIdentifiers()?_userTableName.toUpperCase(Locale.ENGLISH): _userTableName));
-                ResultSet result = metaData.getTables(null, null, tableName, null);
-                if (!result.next())
+                try (ResultSet result = metaData.getTables(null, null, tableName, null))
                 {
-                    //user table default
-                    /*
-                     * create table _userTableName (_userTableKey integer,
-                     * _userTableUserField varchar(100) not null unique,
-                     * _userTablePasswordField varchar(20) not null, primary key(_userTableKey));
-                     */
-                    connection.createStatement().executeUpdate("create table "+_userTableName+ "("+_userTableKey+" integer,"+
-                            _userTableUserField+" varchar(100) not null unique,"+
-                            _userTablePasswordField+" varchar(20) not null, primary key("+_userTableKey+"))");
-                    if (LOG.isDebugEnabled()) LOG.debug("Created table "+_userTableName);
+                    if (!result.next())
+                    {
+                        //user table default
+                        /*
+                         * create table _userTableName (_userTableKey integer,
+                         * _userTableUserField varchar(100) not null unique,
+                         * _userTablePasswordField varchar(20) not null, primary key(_userTableKey));
+                         */
+                        stmt.executeUpdate("create table "+_userTableName+ "("+_userTableKey+" integer,"+
+                                _userTableUserField+" varchar(100) not null unique,"+
+                                _userTablePasswordField+" varchar(20) not null, primary key("+_userTableKey+"))");
+                        if (LOG.isDebugEnabled()) LOG.debug("Created table "+_userTableName);
+                    }
                 }
-
-                result.close();
 
                 tableName = (metaData.storesLowerCaseIdentifiers()? _roleTableName.toLowerCase(Locale.ENGLISH): (metaData.storesUpperCaseIdentifiers()?_roleTableName.toUpperCase(Locale.ENGLISH): _roleTableName));
-                result = metaData.getTables(null, null, tableName, null);
-                if (!result.next())
+                try (ResultSet result = metaData.getTables(null, null, tableName, null))
                 {
-                    //role table default
-                    /*
-                     * create table _roleTableName (_roleTableKey integer,
-                     * _roleTableRoleField varchar(100) not null unique, primary key(_roleTableKey));
-                     */
-                    String str = "create table "+_roleTableName+" ("+_roleTableKey+" integer, "+
-                    _roleTableRoleField+" varchar(100) not null unique, primary key("+_roleTableKey+"))";
-                    connection.createStatement().executeUpdate(str);
-                    if (LOG.isDebugEnabled()) LOG.debug("Created table "+_roleTableName);
+                    if (!result.next())
+                    {
+                        //role table default
+                        /*
+                         * create table _roleTableName (_roleTableKey integer,
+                         * _roleTableRoleField varchar(100) not null unique, primary key(_roleTableKey));
+                         */
+                        String str = "create table "+_roleTableName+" ("+_roleTableKey+" integer, "+
+                        _roleTableRoleField+" varchar(100) not null unique, primary key("+_roleTableKey+"))";
+                        stmt.executeUpdate(str);
+                        if (LOG.isDebugEnabled()) LOG.debug("Created table "+_roleTableName);
+                    }
                 }
-
-                result.close();
 
                 tableName = (metaData.storesLowerCaseIdentifiers()? _userRoleTableName.toLowerCase(Locale.ENGLISH): (metaData.storesUpperCaseIdentifiers()?_userRoleTableName.toUpperCase(Locale.ENGLISH): _userRoleTableName));
-                result = metaData.getTables(null, null, tableName, null);
-                if (!result.next())
+                try (ResultSet result = metaData.getTables(null, null, tableName, null))
                 {
-                    //user-role table
-                    /*
-                     * create table _userRoleTableName (_userRoleTableUserKey integer,
-                     * _userRoleTableRoleKey integer,
-                     * primary key (_userRoleTableUserKey, _userRoleTableRoleKey));
-                     *
-                     * create index idx_user_role on _userRoleTableName (_userRoleTableUserKey);
-                     */
-                    connection.createStatement().executeUpdate("create table "+_userRoleTableName+" ("+_userRoleTableUserKey+" integer, "+
-                            _userRoleTableRoleKey+" integer, "+
-                            "primary key ("+_userRoleTableUserKey+", "+_userRoleTableRoleKey+"))");
-                    connection.createStatement().executeUpdate("create index indx_user_role on "+_userRoleTableName+"("+_userRoleTableUserKey+")");
-                    if (LOG.isDebugEnabled()) LOG.debug("Created table "+_userRoleTableName +" and index");
+                    if (!result.next())
+                    {
+                        //user-role table
+                        /*
+                         * create table _userRoleTableName (_userRoleTableUserKey integer,
+                         * _userRoleTableRoleKey integer,
+                         * primary key (_userRoleTableUserKey, _userRoleTableRoleKey));
+                         *
+                         * create index idx_user_role on _userRoleTableName (_userRoleTableUserKey);
+                         */
+                        stmt.executeUpdate("create table "+_userRoleTableName+" ("+_userRoleTableUserKey+" integer, "+
+                                _userRoleTableRoleKey+" integer, "+
+                                "primary key ("+_userRoleTableUserKey+", "+_userRoleTableRoleKey+"))");
+                        stmt.executeUpdate("create index indx_user_role on "+_userRoleTableName+"("+_userRoleTableUserKey+")");
+                        if (LOG.isDebugEnabled()) LOG.debug("Created table "+_userRoleTableName +" and index");
+                    }
                 }
-
-                result.close();
                 connection.commit();
             }
             finally
             {
-                if (connection != null)
+                try
+                {
+                    connection.setAutoCommit(autocommit);
+                }
+                catch (SQLException e)
+                {
+                    if (LOG.isDebugEnabled()) LOG.debug("Prepare tables", e);
+                }
+                finally
                 {
                     try
                     {
-                        connection.setAutoCommit(autocommit);
                         connection.close();
                     }
                     catch (SQLException e)
                     {
                         if (LOG.isDebugEnabled()) LOG.debug("Prepare tables", e);
-                    }
-                    finally
-                    {
-                        connection = null;
                     }
                 }
             }

@@ -34,12 +34,12 @@ import java.util.Map;
  */
 public class SystemProperties
 {
-    Map properties;
-    boolean force;
+    private final Map<String, SystemProperty> properties;
+    private boolean force;
     
     public SystemProperties()
     {
-        properties = new HashMap();
+        properties = new HashMap<>();
     }
     
     public void setForce (boolean force)
@@ -64,7 +64,7 @@ public class SystemProperties
     
     public SystemProperty getSystemProperty(String name)
     {
-        return (SystemProperty)properties.get(name);
+        return properties.get(name);
     }
     
     public boolean containsSystemProperty(String name)
@@ -72,8 +72,8 @@ public class SystemProperties
        return properties.containsKey(name); 
     }
     
-    public List getSystemProperties ()
+    public List<SystemProperty> getSystemProperties ()
     {
-        return new ArrayList(properties.values());
+        return new ArrayList<>(properties.values());
     }
 }

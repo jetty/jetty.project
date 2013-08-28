@@ -231,7 +231,7 @@ public class HttpField
     public String toString()
     {
         String v=getValue();
-        return getName() + ": " + (v==null?"":v.toString());
+        return getName() + ": " + (v==null?"":v);
     }
 
     public boolean isSame(HttpField field)

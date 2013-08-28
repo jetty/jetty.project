@@ -114,7 +114,7 @@ public class DumpHandler extends AbstractHandler
         Enumeration<String> names=request.getParameterNames();
         while(names.hasMoreElements())
         {
-            String name=names.nextElement().toString();
+            String name=names.nextElement();
             String[] values=request.getParameterValues(name);
             if (values==null || values.length==0)
             {

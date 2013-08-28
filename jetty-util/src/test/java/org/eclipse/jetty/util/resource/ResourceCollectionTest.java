@@ -104,10 +104,11 @@ public class ResourceCollectionTest
     {
         StringBuilder buffer = new StringBuilder();
         String line = null;
-        BufferedReader br = new BufferedReader(new InputStreamReader(r.addPath(path).getURL().openStream()));
-        while((line=br.readLine())!=null)
-            buffer.append(line);
-        br.close();
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(r.addPath(path).getURL().openStream())))
+        {
+            while((line=br.readLine())!=null)
+                buffer.append(line);
+        }
         return buffer.toString();
     }
 

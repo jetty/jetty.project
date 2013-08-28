@@ -46,9 +46,9 @@ import java.util.TimerTask;
 
 public class DateCache
 {
-    public static String DEFAULT_FORMAT="EEE MMM dd HH:mm:ss zzz yyyy";
+    public static final String DEFAULT_FORMAT="EEE MMM dd HH:mm:ss zzz yyyy";
     
-    private String _formatString;
+    private final String _formatString;
     private String _tzFormatString;
     private SimpleDateFormat _tzFormat;
     

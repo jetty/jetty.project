@@ -623,11 +623,10 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         _deleteId = "delete from "+_sessionIdTable+" where id = ?";
         _queryId = "select * from "+_sessionIdTable+" where id = ?";
 
-        Connection connection = null;
-        try
+        try (Connection connection = getConnection();
+                Statement statement = connection.createStatement())
         {
             //make the id table
-            connection = getConnection();
             connection.setAutoCommit(true);
             DatabaseMetaData metaData = connection.getMetaData();
             _dbAdaptor = new DatabaseAdaptor(metaData);
@@ -635,80 +634,86 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
 
             //checking for table existence is case-sensitive, but table creation is not
             String tableName = _dbAdaptor.convertIdentifier(_sessionIdTable);
-            ResultSet result = metaData.getTables(null, null, tableName, null);
-            if (!result.next())
+            try (ResultSet result = metaData.getTables(null, null, tableName, null))
             {
-                //table does not exist, so create it
-                connection.createStatement().executeUpdate(_createSessionIdTable);
+                if (!result.next())
+                {
+                    //table does not exist, so create it
+                    statement.executeUpdate(_createSessionIdTable);
+                }
             }
-
             //make the session table if necessary
             tableName = _dbAdaptor.convertIdentifier(_sessionTable);
-            result = metaData.getTables(null, null, tableName, null);
-            if (!result.next())
+            try (ResultSet result = metaData.getTables(null, null, tableName, null))
             {
-                //table does not exist, so create it
-                String blobType = _dbAdaptor.getBlobType();
-                String longType = _dbAdaptor.getLongType();
-                _createSessionTable = "create table "+_sessionTable+" ("+_sessionTableRowId+" varchar(120), sessionId varchar(120), "+
-                                           " contextPath varchar(60), virtualHost varchar(60), lastNode varchar(60), accessTime "+longType+", "+
-                                           " lastAccessTime "+longType+", createTime "+longType+", cookieTime "+longType+", "+
-                                           " lastSavedTime "+longType+", expiryTime "+longType+", maxInterval "+longType+", map "+blobType+", primary key("+_sessionTableRowId+"))";
-                connection.createStatement().executeUpdate(_createSessionTable);
-            }
-            else
-            {
-                //session table exists, check it has maxinterval column
-                ResultSet colResult = null;
-                try
+                if (!result.next())
                 {
-                    colResult = metaData.getColumns(null, null,_dbAdaptor.convertIdentifier(_sessionTable), _dbAdaptor.convertIdentifier("maxInterval"));
+                    //table does not exist, so create it
+                    String blobType = _dbAdaptor.getBlobType();
+                    String longType = _dbAdaptor.getLongType();
+                    _createSessionTable = "create table "+_sessionTable+" ("+_sessionTableRowId+" varchar(120), sessionId varchar(120), "+
+                                               " contextPath varchar(60), virtualHost varchar(60), lastNode varchar(60), accessTime "+longType+", "+
+                                               " lastAccessTime "+longType+", createTime "+longType+", cookieTime "+longType+", "+
+                                               " lastSavedTime "+longType+", expiryTime "+longType+", maxInterval "+longType+", map "+blobType+", primary key("+_sessionTableRowId+"))";
+                    statement.executeUpdate(_createSessionTable);
                 }
-                catch (SQLException s)
+                else
                 {
-                    LOG.warn("Problem checking if "+_sessionTable+" table contains maxInterval column. Ensure table contains column definition: \"maxInterval long not null default -999\"");
-                    throw s;
-                }
-                
-                if (!colResult.next())
-                {
+                    //session table exists, check it has maxinterval column
+                    ResultSet colResult = null;
                     try
                     {
-                        //add the maxinterval column
-                        String longType = _dbAdaptor.getLongType();
-                        connection.createStatement().executeUpdate("alter table "+_sessionTable+" add maxInterval "+longType+" not null default "+MAX_INTERVAL_NOT_SET);
+                        colResult = metaData.getColumns(null, null,_dbAdaptor.convertIdentifier(_sessionTable), _dbAdaptor.convertIdentifier("maxInterval"));
                     }
                     catch (SQLException s)
                     {
-                        LOG.warn("Problem adding maxInterval column. Ensure table contains column definition: \"maxInterval long not null default -999\"");
+                        LOG.warn("Problem checking if "+_sessionTable+" table contains maxInterval column. Ensure table contains column definition: \"maxInterval long not null default -999\"");
                         throw s;
                     }
-                }  
+                    try
+                    {
+                        if (!colResult.next())
+                        {
+                            try
+                            {
+                                //add the maxinterval column
+                                String longType = _dbAdaptor.getLongType();
+                                statement.executeUpdate("alter table "+_sessionTable+" add maxInterval "+longType+" not null default "+MAX_INTERVAL_NOT_SET);
+                            }
+                            catch (SQLException s)
+                            {
+                                LOG.warn("Problem adding maxInterval column. Ensure table contains column definition: \"maxInterval long not null default -999\"");
+                                throw s;
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        colResult.close();
+                    }
+                }
             }
-
             //make some indexes on the JettySessions table
             String index1 = "idx_"+_sessionTable+"_expiry";
             String index2 = "idx_"+_sessionTable+"_session";
 
-            result = metaData.getIndexInfo(null, null, tableName, false, false);
             boolean index1Exists = false;
             boolean index2Exists = false;
-            while (result.next())
+            try (ResultSet result = metaData.getIndexInfo(null, null, tableName, false, false))
             {
-                String idxName = result.getString("INDEX_NAME");
-                if (index1.equalsIgnoreCase(idxName))
-                    index1Exists = true;
-                else if (index2.equalsIgnoreCase(idxName))
-                    index2Exists = true;
+                while (result.next())
+                {
+                    String idxName = result.getString("INDEX_NAME");
+                    if (index1.equalsIgnoreCase(idxName))
+                        index1Exists = true;
+                    else if (index2.equalsIgnoreCase(idxName))
+                        index2Exists = true;
+                }
             }
-            if (!(index1Exists && index2Exists))
-            {
-                Statement statement = connection.createStatement();
-                if (!index1Exists)
-                    statement.executeUpdate("create index "+index1+" on "+_sessionTable+" (expiryTime)");
-                if (!index2Exists)
-                    statement.executeUpdate("create index "+index2+" on "+_sessionTable+" (sessionId, contextPath)");
-            }
+            if (!index1Exists)
+                statement.executeUpdate("create index "+index1+" on "+_sessionTable+" (expiryTime)");
+            if (!index2Exists)
+                statement.executeUpdate("create index "+index2+" on "+_sessionTable+" (sessionId, contextPath)");
 
             //set up some strings representing the statements for session manipulation
             _insertSession = "insert into "+_sessionTable+
@@ -729,11 +734,6 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
 
 
         }
-        finally
-        {
-            if (connection != null)
-                connection.close();
-        }
     }
 
     /**
@@ -745,26 +745,23 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
     private void insert (String id)
     throws SQLException
     {
-        Connection connection = null;
-        try
+        try (Connection connection = getConnection();
+                PreparedStatement query = connection.prepareStatement(_queryId))
         {
-            connection = getConnection();
             connection.setAutoCommit(true);
-            PreparedStatement query = connection.prepareStatement(_queryId);
             query.setString(1, id);
-            ResultSet result = query.executeQuery();
-            //only insert the id if it isn't in the db already
-            if (!result.next())
+            try (ResultSet result = query.executeQuery())
             {
-                PreparedStatement statement = connection.prepareStatement(_insertId);
-                statement.setString(1, id);
-                statement.executeUpdate();
+                //only insert the id if it isn't in the db already
+                if (!result.next())
+                {
+                    try (PreparedStatement statement = connection.prepareStatement(_insertId))
+                    {
+                        statement.setString(1, id);
+                        statement.executeUpdate();
+                    }
+                }
             }
-        }
-        finally
-        {
-            if (connection != null)
-                connection.close();
         }
     }
 
@@ -777,19 +774,12 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
     private void delete (String id)
     throws SQLException
     {
-        Connection connection = null;
-        try
+        try (Connection connection = getConnection();
+                PreparedStatement statement = connection.prepareStatement(_deleteId))
         {
-            connection = getConnection();
             connection.setAutoCommit(true);
-            PreparedStatement statement = connection.prepareStatement(_deleteId);
             statement.setString(1, id);
             statement.executeUpdate();
-        }
-        finally
-        {
-            if (connection != null)
-                connection.close();
         }
     }
 
@@ -804,20 +794,15 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
     private boolean exists (String id)
     throws SQLException
     {
-        Connection connection = null;
-        try
+        try (Connection connection = getConnection();
+                PreparedStatement statement = connection.prepareStatement(_queryId))
         {
-            connection = getConnection();
             connection.setAutoCommit(true);
-            PreparedStatement statement = connection.prepareStatement(_queryId);
             statement.setString(1, id);
-            ResultSet result = statement.executeQuery();
-            return result.next();
-        }
-        finally
-        {
-            if (connection != null)
-                connection.close();
+            try (ResultSet result = statement.executeQuery())
+            {
+                return result.next();
+            }
         }
     }
 
@@ -835,7 +820,6 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
     private void scavenge ()
     {
         Connection connection = null;
-        Set<String> expiredSessionIds = new HashSet<String>();
         try
         {
             if (LOG.isDebugEnabled())
@@ -844,70 +828,78 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
             {
                 connection = getConnection();
                 connection.setAutoCommit(true);
+                Set<String> expiredSessionIds = new HashSet<String>();
                 
                 
                 //Pass 1: find sessions for which we were last managing node that have just expired since last pass
-                PreparedStatement statement = connection.prepareStatement(_selectBoundedExpiredSessions);
                 long lowerBound = (_lastScavengeTime - _scavengeIntervalMs);
                 long upperBound = _lastScavengeTime;
                 if (LOG.isDebugEnabled())
                     LOG.debug (getWorkerName()+"- Pass 1: Searching for sessions expired between "+lowerBound + " and "+upperBound);
 
-                statement.setString(1, getWorkerName());
-                statement.setLong(2, lowerBound);
-                statement.setLong(3, upperBound);
-                ResultSet result = statement.executeQuery();
-                while (result.next())
+                try (PreparedStatement statement = connection.prepareStatement(_selectBoundedExpiredSessions))
                 {
-                    String sessionId = result.getString("sessionId");
-                    expiredSessionIds.add(sessionId);
-                    if (LOG.isDebugEnabled()) LOG.debug ("Found expired sessionId="+sessionId);
+                    statement.setString(1, getWorkerName());
+                    statement.setLong(2, lowerBound);
+                    statement.setLong(3, upperBound);
+                    try (ResultSet result = statement.executeQuery())
+                    {
+                        while (result.next())
+                        {
+                            String sessionId = result.getString("sessionId");
+                            expiredSessionIds.add(sessionId);
+                            if (LOG.isDebugEnabled()) LOG.debug ("Found expired sessionId="+sessionId);
+                        }
+                    }
                 }
-                result.close();
                 scavengeSessions(expiredSessionIds, false);
-                
+
 
                 //Pass 2: find sessions that have expired a while ago for which this node was their last manager
-                PreparedStatement selectExpiredSessions = connection.prepareStatement(_selectExpiredSessions);
-                expiredSessionIds.clear();
-                upperBound = _lastScavengeTime - (2 * _scavengeIntervalMs);
-                if (upperBound > 0)
-                {             
-                    if (LOG.isDebugEnabled()) LOG.debug(getWorkerName()+"- Pass 2: Searching for sessions expired before "+upperBound);
-                    selectExpiredSessions.setLong(1, upperBound);
-                    result = selectExpiredSessions.executeQuery();
-                    while (result.next())
-                    {
-                        String sessionId = result.getString("sessionId");
-                        String lastNode = result.getString("lastNode");
-                        if ((getWorkerName() == null && lastNode == null) || (getWorkerName() != null && getWorkerName().equals(lastNode)))
-                            expiredSessionIds.add(sessionId);
-                        if (LOG.isDebugEnabled()) LOG.debug ("Found expired sessionId="+sessionId+" last managed by "+getWorkerName());
-                    }
-                    result.close();
-                    scavengeSessions(expiredSessionIds, false);
-                }
-
-
-                //Pass 3: 
-                //find all sessions that have expired at least a couple of scanIntervals ago
-                //if we did not succeed in loading them (eg their related context no longer exists, can't be loaded etc) then
-                //they are simply deleted
-                upperBound = _lastScavengeTime - (3 * _scavengeIntervalMs);
-                expiredSessionIds.clear();
-                if (upperBound > 0)
+                try (PreparedStatement selectExpiredSessions = connection.prepareStatement(_selectExpiredSessions))
                 {
-                    if (LOG.isDebugEnabled()) LOG.debug(getWorkerName()+"- Pass 3: searching for sessions expired before "+upperBound);
-                    selectExpiredSessions.setLong(1, upperBound);
-                    result = selectExpiredSessions.executeQuery();
-                    while (result.next())
+                    expiredSessionIds.clear();
+                    upperBound = _lastScavengeTime - (2 * _scavengeIntervalMs);
+                    if (upperBound > 0)
                     {
-                        String sessionId = result.getString("sessionId");
-                        expiredSessionIds.add(sessionId);
-                        if (LOG.isDebugEnabled()) LOG.debug ("Found expired sessionId="+sessionId);
-                    }                   
-                    result.close();
-                    scavengeSessions(expiredSessionIds, true);
+                        if (LOG.isDebugEnabled()) LOG.debug(getWorkerName()+"- Pass 2: Searching for sessions expired before "+upperBound);
+                        selectExpiredSessions.setLong(1, upperBound);
+                        try (ResultSet result = selectExpiredSessions.executeQuery())
+                        {
+                            while (result.next())
+                            {
+                                String sessionId = result.getString("sessionId");
+                                String lastNode = result.getString("lastNode");
+                                if ((getWorkerName() == null && lastNode == null) || (getWorkerName() != null && getWorkerName().equals(lastNode)))
+                                    expiredSessionIds.add(sessionId);
+                                if (LOG.isDebugEnabled()) LOG.debug ("Found expired sessionId="+sessionId+" last managed by "+getWorkerName());
+                            }
+                        }
+                        scavengeSessions(expiredSessionIds, false);
+                    }
+
+
+                    //Pass 3:
+                    //find all sessions that have expired at least a couple of scanIntervals ago
+                    //if we did not succeed in loading them (eg their related context no longer exists, can't be loaded etc) then
+                    //they are simply deleted
+                    upperBound = _lastScavengeTime - (3 * _scavengeIntervalMs);
+                    expiredSessionIds.clear();
+                    if (upperBound > 0)
+                    {
+                        if (LOG.isDebugEnabled()) LOG.debug(getWorkerName()+"- Pass 3: searching for sessions expired before "+upperBound);
+                        selectExpiredSessions.setLong(1, upperBound);
+                        try (ResultSet result = selectExpiredSessions.executeQuery())
+                        {
+                            while (result.next())
+                            {
+                                String sessionId = result.getString("sessionId");
+                                expiredSessionIds.add(sessionId);
+                                if (LOG.isDebugEnabled()) LOG.debug ("Found expired sessionId="+sessionId);
+                            }
+                        }
+                        scavengeSessions(expiredSessionIds, true);
+                    }
                 }
             }
         }
@@ -990,10 +982,8 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
             return;
 
         String[] ids = expiredIds.toArray(new String[expiredIds.size()]);
-        Connection con = null;
-        try
+        try (Connection con = getConnection())
         {
-            con = getConnection();   
             con.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
             con.setAutoCommit(false);
 
@@ -1002,38 +992,29 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
             int blocksize = _deleteBlockSize;
             int block = 0;
        
-            while (end < ids.length)
+            try (Statement statement = con.createStatement())
             {
-                start = block*blocksize;
-                if ((ids.length -  start)  >= blocksize)
-                    end = start + blocksize;
-                 else
-                    end = ids.length;
-                         
-                Statement statement = con.createStatement();
-                //take them out of the sessionIds table
-                statement.executeUpdate(fillInClause("delete from "+_sessionIdTable+" where id in ", ids, start, end));
-                //take them out of the sessions table
-                statement.executeUpdate(fillInClause("delete from "+_sessionTable+" where sessionId in ", ids, start, end));
-                block++;
-            }
-            con.commit();
+                while (end < ids.length)
+                {
+                    start = block*blocksize;
+                    if ((ids.length -  start)  >= blocksize)
+                        end = start + blocksize;
+                     else
+                        end = ids.length;
 
-        }
-        catch (Exception e)
-        {
-            if (con != null)
+                    //take them out of the sessionIds table
+                    statement.executeUpdate(fillInClause("delete from "+_sessionIdTable+" where id in ", ids, start, end));
+                    //take them out of the sessions table
+                    statement.executeUpdate(fillInClause("delete from "+_sessionTable+" where sessionId in ", ids, start, end));
+                    block++;
+                }
+            }
+            catch (Exception e)
             {
                 con.rollback();
                 throw e;
             }
-        }
-        finally
-        {
-            if (con != null)
-            {
-                con.close();
-            }
+            con.commit();
         }
     }
 

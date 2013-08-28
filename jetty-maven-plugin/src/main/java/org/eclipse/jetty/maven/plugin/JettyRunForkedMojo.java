@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
+import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -504,7 +505,10 @@ public class JettyRunForkedMojo extends AbstractMojo
                 props.put("maven.war.overlay."+(i++), c.toString());
             }
             
-            props.store(new BufferedOutputStream(new FileOutputStream(propsFile)), "properties for forked webapp");
+            try (OutputStream out = new BufferedOutputStream(new FileOutputStream(propsFile)))
+            {
+                props.store(out, "properties for forked webapp");
+            }
             return propsFile;
         }
         catch (Exception e)
@@ -723,18 +727,20 @@ public class JettyRunForkedMojo extends AbstractMojo
                 //child indicates it has finished starting by printing on stdout the token passed to it
                 try
                 {
-                    LineNumberReader reader = new LineNumberReader(new InputStreamReader(forkedProcess.getInputStream()));
                     String line = "";
-                    int attempts = maxStartupLines; //max lines we'll read trying to get token
-                    while (attempts>0 && line != null)
+                    try (InputStream is = forkedProcess.getInputStream();
+                            LineNumberReader reader = new LineNumberReader(new InputStreamReader(is)))
                     {
-                        --attempts;
-                        line = reader.readLine();
-                        if (line != null && line.startsWith(token))
-                            break;
-                    }
+                        int attempts = maxStartupLines; //max lines we'll read trying to get token
+                        while (attempts>0 && line != null)
+                        {
+                            --attempts;
+                            line = reader.readLine();
+                            if (line != null && line.startsWith(token))
+                                break;
+                        }
 
-                    reader.close();
+                    }
 
                     if (line != null && line.trim().equals(token))
                         PluginLog.getLog().info("Forked process started.");
