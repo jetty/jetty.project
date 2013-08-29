@@ -3,12 +3,15 @@
 #
 
 # WebSocket needs Annotations feature
-DEPEND=server
-DEPEND=annotations
+[depend]
+server
+annotations
 
 # WebSocket needs websocket jars (as defined in start.config)
-LIB=lib/websocket/*.jar
+[lib]
+lib/websocket/*.jar
 
 # WebSocket needs websocket configuration
+[xml]
 etc/jetty-websockets.xml
 

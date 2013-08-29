@@ -1,8 +1,11 @@
 
-DEPEND=server
-DEPEND=npn
+[depend]
+server
+npn
 
-LIB=lib/spdy/*.jar
+[lib]
+lib/spdy/*.jar
 
+[xml]
 etc/jetty-ssl.xml
 etc/jetty-spdy.xml

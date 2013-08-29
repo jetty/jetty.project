@@ -2,14 +2,17 @@
 # Base server
 #
 
-DEPEND=base
-DEPEND=xml
+[depend]
+base
+xml
 
-LIB=lib/servlet-api-3.1.jar
-LIB=lib/jetty-schemas-3.1.jar
-LIB=lib/jetty-http-${jetty.version}.jar
-LIB=lib/jetty-continuation-${jetty.version}.jar
-LIB=lib/jetty-server-${jetty.version}.jar
+[lib]
+lib/servlet-api-3.1.jar
+lib/jetty-schemas-3.1.jar
+lib/jetty-http-${jetty.version}.jar
+lib/jetty-continuation-${jetty.version}.jar
+lib/jetty-server-${jetty.version}.jar
 
+[xml]
 # Annotations needs annotations configuration
 etc/jetty.xml

@@ -2,8 +2,10 @@
 # JNDI Support
 #
 
-DEPEND=server
+[depend]
+server
 
-LIB=lib/jetty-jndi-${jetty.version}.jar
-LIB=lib/jndi/*.jar
+[lib]
+lib/jetty-jndi-${jetty.version}.jar
+lib/jndi/*.jar
 

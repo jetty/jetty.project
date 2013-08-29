@@ -2,6 +2,8 @@
 # Jetty Security Module
 #
 
-DEPEND=server
+[depend]
+server
 
-LIB=lib/jetty-security-${jetty.version}.jar
+[lib]
+lib/jetty-security-${jetty.version}.jar

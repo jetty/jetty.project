@@ -1,1 +1,2 @@
-LIB=lib/example*with spaces.jar
+[lib]
+lib/example*with spaces.jar

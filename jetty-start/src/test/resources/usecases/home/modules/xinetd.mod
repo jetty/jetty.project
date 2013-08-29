@@ -2,6 +2,8 @@
 # Stats module
 #
 
-DEPEND=server
+[depend]
+server
 
+[xml]
 etc/jetty-xinetd.xml

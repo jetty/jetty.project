@@ -2,6 +2,8 @@
 # Low Resources module
 #
 
-DEPEND=server
+[depend]
+server
 
+[xml]
 etc/jetty-lowresources.xml

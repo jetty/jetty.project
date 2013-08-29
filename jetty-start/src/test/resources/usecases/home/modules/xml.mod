@@ -2,7 +2,9 @@
 # Jetty XML Configuration
 #
 
-DEPEND=base
+[depend]
+base
 
-LIB=lib/jetty-xml-${jetty.version}.jar
+[lib]
+lib/jetty-xml-${jetty.version}.jar
 

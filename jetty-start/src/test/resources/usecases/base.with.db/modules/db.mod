@@ -1,8 +1,11 @@
 
-DEPEND=deploy
-DEPEND=jndi
-DEPEND=plus
+[depend]
+deploy
+jndi
+plus
 
-LIB=lib/db/*.jar
+[lib]
+lib/db/*.jar
 
+[xml]
 etc/jetty-db.xml

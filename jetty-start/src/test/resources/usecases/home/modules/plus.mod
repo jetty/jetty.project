@@ -2,11 +2,14 @@
 # Jetty Proxy module
 #
 
-DEPEND=server
-DEPEND=security
-DEPEND=jndi
+[depend]
+server
+security
+jndi
 
-LIB=lib/jetty-plus-${jetty.version}.jar
+[lib]
+lib/jetty-plus-${jetty.version}.jar
 
+[xml]
 # Plus requires configuration
 etc/jetty-plus.xml

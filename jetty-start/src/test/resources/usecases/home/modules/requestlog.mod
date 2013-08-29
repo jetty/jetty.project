@@ -2,6 +2,8 @@
 # Request Log module
 #
 
-DEPEND=server
+[depend]
+server
 
+[xml]
 etc/jetty-requestlog.xml

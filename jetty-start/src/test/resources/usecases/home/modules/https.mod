@@ -2,7 +2,9 @@
 # Jetty HTTP Server
 #
 
-DEPEND=server
+[depend]
+server
 
+[xml]
 etc/jetty-ssl.xml
 etc/jetty-https.xml
