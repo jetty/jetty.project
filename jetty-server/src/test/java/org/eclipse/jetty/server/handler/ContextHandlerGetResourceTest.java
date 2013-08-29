@@ -44,7 +44,9 @@ public class ContextHandlerGetResourceTest
     private static Server server;
     private static ContextHandler context;
     private static File docroot;
+    private static File otherroot;
     private final static AtomicBoolean allowAliases= new AtomicBoolean(false);
+    private final static AtomicBoolean allowSymlinks= new AtomicBoolean(false);
     
     @BeforeClass
     public static void beforeClass()  throws Exception
@@ -60,12 +62,25 @@ public class ContextHandlerGetResourceTest
         data.createNewFile();
         File verylong = new File(sub,"TextFile.Long.txt");
         verylong.createNewFile();
+
+        otherroot = new File("target/tests/otherroot").getCanonicalFile().getAbsoluteFile();
+        FS.ensureDirExists(otherroot);
+        FS.ensureEmpty(otherroot);
+        File other = new File(otherroot,"other.txt");
+        other.createNewFile();
         
-        if (!OS.IS_WINDOWS)
+        File transit = new File(docroot.getParentFile(),"transit");
+        System.err.println("transit "+transit);
+        transit.delete();
+        
+        if (OS.IS_UNIX)
         {
             // Create alias as 8.3 name so same test will produce an alias on both windows an normal systems
             File eightDotThree=new File(sub,"TEXTFI~1.TXT");
             Files.createSymbolicLink(eightDotThree.toPath(),verylong.toPath());
+            
+            Files.createSymbolicLink(new File(docroot,"other").toPath(),new File("../transit").toPath());
+            Files.createSymbolicLink(transit.toPath(),otherroot.toPath());
         }
         
         
@@ -74,13 +89,18 @@ public class ContextHandlerGetResourceTest
         context.setBaseResource(Resource.newResource(docroot));
         context.addAliasCheck(new ContextHandler.AliasCheck()
         {
+            final AllowSymLinkAliasChecker symlinkcheck = new AllowSymLinkAliasChecker();
             @Override
             public boolean check(String path, Resource resource)
             {
+                if (allowAliases.get())
+                    return true;
+                if (allowSymlinks.get())
+                    return symlinkcheck.check(path,resource);
                 return allowAliases.get();
             }
         });
-
+        
         server.setHandler(context);
         server.start();
     }
@@ -307,5 +327,58 @@ public class ContextHandlerGetResourceTest
             allowAliases.set(false);
         }
         
+    }
+
+    @Test
+    public void testSymlinkKnown() throws Exception
+    {
+        if (!OS.IS_UNIX)
+            return;
+        try
+        {
+            allowSymlinks.set(true);
+
+            final String path="/other/other.txt";
+
+            Resource resource=context.getResource(path);
+            assertNotNull(resource);
+            assertEquals("other.txt",resource.getFile().getName());
+            assertEquals(docroot,resource.getFile().getParentFile().getParentFile());
+            assertTrue(resource.exists());
+
+            URL url=context.getServletContext().getResource(path);
+            assertEquals(docroot,new File(url.toURI()).getParentFile().getParentFile());
+        }
+        finally
+        {
+            allowSymlinks.set(false);
+        } 
+        
+    }
+
+    @Test
+    public void testSymlinkUnknown() throws Exception
+    {
+        if (!OS.IS_UNIX)
+            return;
+        try
+        {
+            allowSymlinks.set(true);
+
+            final String path="/other/unknown.txt";
+
+            Resource resource=context.getResource(path);
+            assertNotNull(resource);
+            assertEquals("unknown.txt",resource.getFile().getName());
+            assertEquals(docroot,resource.getFile().getParentFile().getParentFile());
+            assertFalse(resource.exists());
+
+            URL url=context.getServletContext().getResource(path);
+            assertNull(url);
+        }
+        finally
+        {
+            allowSymlinks.set(false);
+        }
     }
 }

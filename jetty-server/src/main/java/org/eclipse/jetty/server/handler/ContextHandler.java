@@ -40,6 +40,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
+
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterRegistration;
@@ -2709,5 +2710,5 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 return r.startsWith(a) && r.length()==a.length()+1 && r.endsWith("/");
         }
     }
-    
+
 }
