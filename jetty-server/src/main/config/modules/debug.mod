@@ -2,6 +2,8 @@
 # Debug module
 #
 
-DEPEND=server
+[depend]
+server
 
+[xml]
 etc/jetty-debug.xml

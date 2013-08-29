@@ -2,9 +2,12 @@
 # Jetty Rewrite module
 #
 
-DEPEND=server
+[depend]
+server
 
-LIB=lib/jetty-rewrite-${jetty.version}.jar
+[lib]
+lib/jetty-rewrite-${jetty.version}.jar
 
+[xml]
 # Annotations needs annotations configuration
 etc/jetty-rewrite.xml

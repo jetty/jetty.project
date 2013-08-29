@@ -2,6 +2,8 @@
 # Jetty Nosql module
 #
 
-DEPEND=webapp
+[depend]
+webapp
 
-LIB=lib/jetty-nosql-${jetty.version}.jar
+[lib]
+lib/jetty-nosql-${jetty.version}.jar

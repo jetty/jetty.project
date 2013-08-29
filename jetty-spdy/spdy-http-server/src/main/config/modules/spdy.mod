@@ -1,12 +1,15 @@
+[depend]
+ssl
+npn
 
-DEPEND=ssl
-DEPEND=npn
+[lib]
+lib/spdy/*.jar
 
-LIB=lib/spdy/*.jar
-
+[xml]
 etc/jetty-ssl.xml
 etc/jetty-spdy.xml
 
-INI=spdy.port=8443
-INI=spdy.timeout=30000
-INI=#spdy.initialWindowSize=65536
+[ini]
+spdy.port=8443
+spdy.timeout=30000
+#spdy.initialWindowSize=65536

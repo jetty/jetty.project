@@ -2,29 +2,32 @@
 # Base server
 #
 
-OPTIONAL=jvm
-OPTIONAL=jmx
-OPTIONAL=ext
-OPTIONAL=resources
+[optional]
+jvm
+jmx
+ext
+resources
 
-LIB=lib/servlet-api-3.1.jar
-LIB=lib/jetty-schemas-3.1.jar
-LIB=lib/jetty-http-${jetty.version}.jar
-LIB=lib/jetty-continuation-${jetty.version}.jar
-LIB=lib/jetty-server-${jetty.version}.jar
-LIB=lib/jetty-xml-${jetty.version}.jar
-LIB=lib/jetty-util-${jetty.version}.jar
-LIB=lib/jetty-io-${jetty.version}.jar
+[lib]
+lib/servlet-api-3.1.jar
+lib/jetty-schemas-3.1.jar
+lib/jetty-http-${jetty.version}.jar
+lib/jetty-continuation-${jetty.version}.jar
+lib/jetty-server-${jetty.version}.jar
+lib/jetty-xml-${jetty.version}.jar
+lib/jetty-util-${jetty.version}.jar
+lib/jetty-io-${jetty.version}.jar
 
-
+[xml]
 # Annotations needs annotations configuration
 etc/jetty.xml
 
-INI=threads.min=10
-INI=threads.max=200
-INI=threads.timeout=60000
-INI=#jetty.host=myhost.com
-INI=jetty.dump.start=false
-INI=jetty.dump.stop=false
+[ini]
+threads.min=10
+threads.max=200
+threads.timeout=60000
+#jetty.host=myhost.com
+jetty.dump.start=false
+jetty.dump.stop=false
 
 

@@ -2,12 +2,15 @@
 # JMX Feature
 #
 
+[lib]
 # JMX jars (as defined in start.config)
-LIB=lib/jetty-jmx-${jetty.version}.jar
+lib/jetty-jmx-${jetty.version}.jar
 
+[xml]
 # JMX configuration
 etc/jetty-jmx.xml
 
-INI=# jetty.jmxrmihost=localhost
-INI=# jetty.jmxrmiport=1099
-INI=# -Dcom.sun.management.jmxremote
+[ini]
+# jetty.jmxrmihost=localhost
+# jetty.jmxrmiport=1099
+# -Dcom.sun.management.jmxremote

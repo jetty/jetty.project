@@ -2,9 +2,12 @@
 # Jetty Overlay module
 #
 
-DEPEND=deploy
+[depend]
+deploy
 
-LIB=lib/jetty-overlay-deployer-${jetty.version}.jar
+[lib]
+lib/jetty-overlay-deployer-${jetty.version}.jar
 
+[xml]
 # Plus requires configuration
 etc/jetty-overlay.xml

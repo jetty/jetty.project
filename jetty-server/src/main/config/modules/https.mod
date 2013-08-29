@@ -2,9 +2,12 @@
 # Jetty HTTPS Connector
 #
 
-DEPEND=ssl
+[depend]
+ssl
 
+[xml]
 etc/jetty-https.xml
 
-INI=https.port=8443
-INI=https.timeout=30000
+[ini]
+https.port=8443
+https.timeout=30000

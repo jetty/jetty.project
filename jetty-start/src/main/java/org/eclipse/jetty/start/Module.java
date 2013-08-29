@@ -274,7 +274,6 @@ public class Module // extends TextFile
                     }
                     else
                     {
-                        System.out.println("Processing: " + line);
                         // blank lines and comments are valid for initialize section
                         if (line.length() == 0 || line.startsWith("#"))
                         {

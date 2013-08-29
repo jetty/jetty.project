@@ -2,9 +2,12 @@
 # Jetty Monitor module
 #
 
-DEPEND=server
-DEPEND=client
+[depend]
+server
+client
 
-LIB=lib/jetty-monitor-${jetty.version}.jar
+[lib]
+lib/jetty-monitor-${jetty.version}.jar
 
+[xml]
 etc/jetty-monitor.xml
