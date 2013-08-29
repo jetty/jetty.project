@@ -40,6 +40,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
+
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterRegistration;
@@ -1297,7 +1298,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             LOG.warn(this+" contextPath ends with /*");
             contextPath=contextPath.substring(0,contextPath.length()-2);
         }
-        else if (contextPath.endsWith("/"))
+        else if (contextPath.length()>1 && contextPath.endsWith("/"))
         {
             LOG.warn(this+" contextPath ends with /");
             contextPath=contextPath.substring(0,contextPath.length()-1);
@@ -2651,5 +2652,5 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 return r.startsWith(a) && r.length()==a.length()+1 && r.endsWith("/");
         }
     }
-    
+
 }
