@@ -101,7 +101,7 @@
                   <type>war</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/demo/webapps</outputDirectory>
+                  <outputDirectory>${assembly-directory}/demo-base/webapps</outputDirectory>
                   <destFileName>test.war</destFileName>
                 </artifactItem>
                 <artifactItem>
@@ -111,7 +111,7 @@
                   <type>war</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/demo/webapps</outputDirectory>
+                  <outputDirectory>${assembly-directory}/demo-base/webapps</outputDirectory>
                   <destFileName>test-jaas.war</destFileName>
                 </artifactItem>
                 <artifactItem>
@@ -121,7 +121,7 @@
                   <type>war</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/demo/webapps</outputDirectory>
+                  <outputDirectory>${assembly-directory}/demo-base/webapps</outputDirectory>
                   <destFileName>test-jndi.war</destFileName>
                 </artifactItem>
                 <artifactItem>
@@ -131,7 +131,7 @@
                   <type>war</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/demo/webapps</outputDirectory>
+                  <outputDirectory>${assembly-directory}/demo-base/webapps</outputDirectory>
                   <destFileName>test-spec.war</destFileName>
                 </artifactItem>
                 <artifactItem>
@@ -141,7 +141,7 @@
                   <type>war</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/demo/webapps</outputDirectory>
+                  <outputDirectory>${assembly-directory}/demo-base/webapps</outputDirectory>
                   <destFileName>xref-proxy.war</destFileName>
                 </artifactItem>
                 <artifactItem>
@@ -151,7 +151,7 @@
                   <type>war</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/demo/webapps</outputDirectory>
+                  <outputDirectory>${assembly-directory}/demo-base/webapps</outputDirectory>
                   <destFileName>async-rest.war</destFileName>
                 </artifactItem>
                 <artifactItem>
@@ -478,8 +478,7 @@
           <arguments>
             <argument>-jar</argument>
             <argument>start.jar</argument>
-            <argument>--module-start-ini=server,ext,resources,jsp,annotations</argument>
-            <argument>--module-ini=http</argument>
+            <argument>--module-start-ini=server,deploy,http,websocket,jsp,ext,resources</argument>
           </arguments>
         </configuration>
       </plugin>
