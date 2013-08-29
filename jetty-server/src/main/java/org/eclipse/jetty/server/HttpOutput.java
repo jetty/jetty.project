@@ -832,6 +832,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             if (_eof)
             {
                 // Handle EOF
+                _in.close();
                 closed();
                 _channel.getByteBufferPool().release(_buffer);
                 return true;
@@ -843,7 +844,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             {
                 _eof=true;
                 len=0;
-                _in.close();
             }
             else if (len<_buffer.capacity())
             {
@@ -907,6 +907,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             if (_eof)
             {
+                _in.close();
                 closed();
                 _channel.getByteBufferPool().release(_buffer);
                 return true;
@@ -918,6 +919,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             if (len<0)
             {
                 _eof=true;
+                len=0;         
                 _in.close();
             }
             else if (len<_buffer.capacity())

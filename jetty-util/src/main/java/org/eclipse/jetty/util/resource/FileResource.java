@@ -45,7 +45,6 @@ import org.eclipse.jetty.util.log.Logger;
  * This class can check for aliasing in the filesystem (eg case
  * insensitivity).  By default this is turned on, or it can be controlled 
  * by calling the static method @see FileResource#setCheckAliases(boolean)
- *
  * 
  */
 public class FileResource extends Resource
@@ -169,7 +168,7 @@ public class FileResource extends Resource
             return this;
         
         path=URIUtil.encodePath(path);
-        
+        // The encoded path should be a suffix of the resource (give or take a directory / )
         URI uri;
         try
         {

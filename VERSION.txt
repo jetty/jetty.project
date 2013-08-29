@@ -76,7 +76,9 @@ jetty-9.1.0.M0 - 13 August 2013
    generation/writing
  + 414923 CompactPathRule needs to also compact the uri
 
-jetty-9.0.5.v20130813 - 13 August 2013
+jetty-9.0.5.v20130815 - 15 August 2013
+ + 414898 Only upgrade v0 to v1 cookies on dquote , ; backslash space and tab
+   in the value
  + 404468 Ported jetty-http-spi to Jetty-9
  + 405424 add X-Powered-By and Server header to SPDY
  + 405535 implement Request.isUserInRole(role) check security-role-refs
@@ -157,7 +159,7 @@ jetty-9.0.5.v20130813 - 13 August 2013
  + 414833 HttpSessionListener.destroy must be invoked in reverse order
  + 414840 Request.login() throws NPE if username is null
  + 414951 QueuedThreadPool fix constructor that missed to pass the idleTimeout
- + 414972 HttpClient may read bytes with pre-tunnelled connection.i
+ + 414972 HttpClient may read bytes with pre-tunnelled connection.
 
 jetty-9.0.4.v20130625 - 25 June 2013
  + 396706 CGI support parameters

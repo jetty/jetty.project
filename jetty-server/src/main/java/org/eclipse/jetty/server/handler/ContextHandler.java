@@ -1597,7 +1597,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         {
             path = URIUtil.canonicalPath(path);
             Resource resource = _baseResource.addPath(path);
-
+            
             // Is the resource aliased?
             if (resource.getAlias() != null)
             {
@@ -2645,8 +2645,13 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      * Eg. a symbolic link from /foobar.html to /somewhere/wibble.html would be
      * approved because both the resource and alias end with ".html".
      */
+    @Deprecated
     public static class ApproveSameSuffixAliases implements AliasCheck
     {
+        {
+            LOG.warn("ApproveSameSuffixAlias is not safe for production");
+        }
+        
         @Override
         public boolean check(String path, Resource resource)
         {
@@ -2664,8 +2669,13 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      * Eg. a symbolic link from /dirA/foobar.html to /dirB/foobar.html would be
      * approved because both the resource and alias end with "/foobar.html".
      */
+    @Deprecated
     public static class ApprovePathPrefixAliases implements AliasCheck
     {
+        {
+            LOG.warn("ApprovePathPrefixAliases is not safe for production");
+        }
+        
         @Override
         public boolean check(String path, Resource resource)
         {
@@ -2676,6 +2686,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             return resource.toString().endsWith(suffix);
         }
     }
+    
     /* ------------------------------------------------------------ */
     /** Approve Aliases of a non existent directory.
      * If a directory "/foobar/" does not exist, then the resource is
@@ -2686,11 +2697,17 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         @Override
         public boolean check(String path, Resource resource)
         {
-            int slash = path.lastIndexOf('/');
-            if (slash<0 || resource.exists())
+            if (resource.exists())
                 return false;
-            String suffix=path.substring(slash);
-            return resource.getAlias().toString().endsWith(suffix);
+            
+            String a=resource.getAlias().toString();
+            String r=resource.getURL().toString();
+            
+            if (a.length()>r.length())
+                return a.startsWith(r) && a.length()==r.length()+1 && a.endsWith("/");
+            else
+                return r.startsWith(a) && r.length()==a.length()+1 && r.endsWith("/");
         }
     }
+    
 }

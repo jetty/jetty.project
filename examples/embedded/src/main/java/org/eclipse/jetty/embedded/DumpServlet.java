@@ -43,6 +43,11 @@ public class DumpServlet extends HttpServlet
         response.getWriter().println("servletPath=" + request.getServletPath());
         response.getWriter().println("pathInfo=" + request.getPathInfo());
         response.getWriter().println("session=" + request.getSession(true).getId());
+        
+        String r=request.getParameter("resource");
+        if (r!=null)
+            response.getWriter().println("resource("+r+")=" + getServletContext().getResource(r));
+            
         response.getWriter().println("</pre>");
     }
 }
