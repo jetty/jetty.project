@@ -479,7 +479,7 @@
             <argument>-jar</argument>
             <argument>start.jar</argument>
             <argument>--module-start-ini=server,ext,resources,jsp,annotations</argument>
-            <argument>--module-ini=http,demo</argument>
+            <argument>--module-ini=http</argument>
           </arguments>
         </configuration>
       </plugin>
