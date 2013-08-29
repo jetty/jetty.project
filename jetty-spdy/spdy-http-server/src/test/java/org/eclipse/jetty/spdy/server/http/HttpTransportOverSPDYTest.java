@@ -21,6 +21,8 @@ package org.eclipse.jetty.spdy.server.http;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Random;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpStatus;
@@ -37,8 +39,6 @@ import org.eclipse.jetty.spdy.http.HTTPSPDYHeader;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -251,22 +251,29 @@ public class HttpTransportOverSPDYTest
     }
 
     @Test
-    public void testVerifyThatAStreamIsNotCommittedTwice() throws IOException
+    public void testVerifyThatAStreamIsNotCommittedTwice() throws IOException, InterruptedException
     {
-        ((StdErrLog)Log.getLogger(HttpTransportOverSPDY.class)).setHideStacks(true);
+        final CountDownLatch failedCalledLatch = new CountDownLatch(1);
         ByteBuffer content = createRandomByteBuffer();
         boolean lastContent = false;
 
-        httpTransportOverSPDY.send(responseInfo,content,lastContent, callback);
+        httpTransportOverSPDY.send(responseInfo, content, lastContent, callback);
         ArgumentCaptor<ReplyInfo> replyInfoCaptor = ArgumentCaptor.forClass(ReplyInfo.class);
         verify(stream, times(1)).reply(replyInfoCaptor.capture(), any(Callback.class));
         assertThat("ReplyInfo close is false", replyInfoCaptor.getValue().isClose(), is(false));
 
-        httpTransportOverSPDY.send(HttpGenerator.RESPONSE_500_INFO, null,true, new Callback.Adapter());
+        httpTransportOverSPDY.send(HttpGenerator.RESPONSE_500_INFO, null, true, new Callback.Adapter()
+        {
+            @Override
+            public void failed(Throwable x)
+            {
+                failedCalledLatch.countDown();
+            }
+        });
 
         verify(stream, times(1)).data(any(DataInfo.class), any(Callback.class));
 
-        ((StdErrLog)Log.getLogger(HttpTransportOverSPDY.class)).setHideStacks(false);
+        assertThat("callback.failed has been called", failedCalledLatch.await(5, TimeUnit.SECONDS), is(true));
     }
 
     private ByteBuffer createRandomByteBuffer()

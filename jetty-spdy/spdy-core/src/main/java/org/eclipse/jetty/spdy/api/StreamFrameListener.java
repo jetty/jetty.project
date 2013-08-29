@@ -54,7 +54,7 @@ public interface StreamFrameListener extends EventListener
      * <p>Callback invoked when a push syn has been received on a stream.</p>
      *
      * @param stream the push stream just created
-     * @param pushInfo
+     * @param pushInfo the push metadata
      * @return a listener for stream events or null if there is no interest in being notified of stream events
      */
     public StreamFrameListener onPush(Stream stream, PushInfo pushInfo);
@@ -71,9 +71,10 @@ public interface StreamFrameListener extends EventListener
 
     /**
      * <p>Callback invoked on errors.</p>
-     * @param x
+     * @param stream the stream
+     * @param x the failure
      */
-    public void onFailure(Throwable x);
+    public void onFailure(Stream stream, Throwable x);
 
     /**
      * <p>Empty implementation of {@link StreamFrameListener}</p>
@@ -102,7 +103,7 @@ public interface StreamFrameListener extends EventListener
         }
 
         @Override
-        public void onFailure(Throwable x)
+        public void onFailure(Stream stream, Throwable x)
         {
         }
     }

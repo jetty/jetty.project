@@ -111,7 +111,9 @@ public class StandardStream extends IdleTimeout implements IStream
     @Override
     protected void onIdleExpired(TimeoutException timeout)
     {
-        listener.onFailure(timeout);
+        StreamFrameListener listener = this.listener;
+        if (listener != null)
+            listener.onFailure(this, timeout);
     }
 
     @Override

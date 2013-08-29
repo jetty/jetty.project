@@ -57,7 +57,7 @@ public class HttpClientTransportOverSPDY implements HttpClientTransport
         SessionFrameListener.Adapter listener = new SessionFrameListener.Adapter()
         {
             @Override
-            public void onException(Throwable x)
+            public void onFailure(Session session, Throwable x)
             {
                 // TODO: is this correct ?
                 // TODO: if I get a stream error (e.g. invalid response headers)

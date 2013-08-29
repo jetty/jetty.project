@@ -35,7 +35,8 @@ public abstract class ControlFrameParser
     private short type;
     private byte flags;
     private int length;
-    private ControlFrameBodyParser parser;
+    private ControlFrameBodyParser bodyParser;
+    private int bytesToSkip = 0;
 
     public ControlFrameParser(CompressionFactory.Decompressor decompressor)
     {
@@ -64,6 +65,12 @@ public abstract class ControlFrameParser
     public int getLength()
     {
         return length;
+    }
+
+    public void skip(int bytesToSkip)
+    {
+        state = State.SKIP;
+        this.bytesToSkip = bytesToSkip;
     }
 
     public boolean parse(ByteBuffer buffer)
@@ -140,9 +147,9 @@ public abstract class ControlFrameParser
 
                     // SPEC v3, 2.2.1: unrecognized control frames must be ignored
                     if (controlFrameType == null)
-                        parser = unknownParser;
+                        bodyParser = unknownParser;
                     else
-                        parser = parsers.get(controlFrameType);
+                        bodyParser = parsers.get(controlFrameType);
 
                     state = State.BODY;
 
@@ -153,12 +160,28 @@ public abstract class ControlFrameParser
                 }
                 case BODY:
                 {
-                    if (parser.parse(buffer))
+                    if (bodyParser.parse(buffer))
                     {
                         reset();
                         return true;
                     }
                     break;
+                }
+                case SKIP:
+                {
+                    int remaining = buffer.remaining();
+                    if (remaining >= bytesToSkip)
+                    {
+                        buffer.position(buffer.position() + bytesToSkip);
+                        reset();
+                        return true;
+                    }
+                    else
+                    {
+                        buffer.position(buffer.limit());
+                        bytesToSkip = bytesToSkip - remaining;
+                        return false;
+                    }
                 }
                 default:
                 {
@@ -169,7 +192,7 @@ public abstract class ControlFrameParser
         return false;
     }
 
-    private void reset()
+    void reset()
     {
         state = State.VERSION;
         cursor = 0;
@@ -177,13 +200,14 @@ public abstract class ControlFrameParser
         type = 0;
         flags = 0;
         length = 0;
-        parser = null;
+        bodyParser = null;
+        bytesToSkip = 0;
     }
 
     protected abstract void onControlFrame(ControlFrame frame);
 
     private enum State
     {
-        VERSION, VERSION_BYTES, TYPE, TYPE_BYTES, FLAGS, LENGTH, BODY
+        VERSION, VERSION_BYTES, TYPE, TYPE_BYTES, FLAGS, LENGTH, BODY, SKIP
     }
 }

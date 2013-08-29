@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.spdy.server.http;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Queue;
 import java.util.Set;
@@ -133,7 +132,7 @@ public class HttpTransportOverSPDY implements HttpTransport
                 StreamException exception = new StreamException(stream.getId(), StreamStatus.PROTOCOL_ERROR,
                         "Stream already committed!");
                 callback.failed(exception);
-                LOG.warn("Committed response twice.", exception);
+                LOG.debug("Committed response twice.", exception);
                 return;
             }
             sendReply(info, !hasContent ? callback : new Callback.Adapter()

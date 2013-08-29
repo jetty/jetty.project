@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.spdy.StandardCompressionFactory;
 import org.eclipse.jetty.spdy.api.SPDY;
+import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.StreamStatus;
@@ -58,7 +59,7 @@ public class UnsupportedVersionTest extends AbstractTest
             }
 
             @Override
-            public void onException(Throwable x)
+            public void onFailure(Session session, Throwable x)
             {
                 // Suppress exception logging for this test
             }

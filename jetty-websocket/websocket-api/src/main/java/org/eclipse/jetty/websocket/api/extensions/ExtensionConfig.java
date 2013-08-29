@@ -96,8 +96,12 @@ public class ExtensionConfig
         {
             str.append(';');
             str.append(param);
-            str.append('=');
-            QuoteUtil.quoteIfNeeded(str,parameters.get(param),";=");
+            String value = parameters.get(param);
+            if (value != null)
+            {
+                str.append('=');
+                QuoteUtil.quoteIfNeeded(str,value,";=");
+            }
         }
         return str.toString();
     }

@@ -108,7 +108,14 @@ public class Parser
     {
         for (Listener listener : listeners)
         {
-            listener.onStreamException(x);
+            try
+            {
+                listener.onStreamException(x);
+            }
+            catch (Exception xx)
+            {
+                logger.debug("Could not notify listener " + listener, xx);
+            }
         }
     }
 
@@ -130,48 +137,51 @@ public class Parser
 
     public void parse(ByteBuffer buffer)
     {
+        logger.debug("Parsing {} bytes", buffer.remaining());
         try
         {
-            logger.debug("Parsing {} bytes", buffer.remaining());
             while (buffer.hasRemaining())
             {
-                switch (state)
+                try
                 {
-                    case CONTROL_BIT:
+                    switch (state)
                     {
-                        // We must only peek the first byte and not advance the buffer
-                        // because the 7 least significant bits may be relevant in data frames
-                        int currByte = buffer.get(buffer.position());
-                        boolean isControlFrame = (currByte & 0x80) == 0x80;
-                        state = isControlFrame ? State.CONTROL_FRAME : State.DATA_FRAME;
-                        break;
+                        case CONTROL_BIT:
+                        {
+                            // We must only peek the first byte and not advance the buffer
+                            // because the 7 least significant bits may be relevant in data frames
+                            int currByte = buffer.get(buffer.position());
+                            boolean isControlFrame = (currByte & 0x80) == 0x80;
+                            state = isControlFrame ? State.CONTROL_FRAME : State.DATA_FRAME;
+                            break;
+                        }
+                        case CONTROL_FRAME:
+                        {
+                            if (controlFrameParser.parse(buffer))
+                                reset();
+                            break;
+                        }
+                        case DATA_FRAME:
+                        {
+                            if (dataFrameParser.parse(buffer))
+                                reset();
+                            break;
+                        }
+                        default:
+                        {
+                            throw new IllegalStateException();
+                        }
                     }
-                    case CONTROL_FRAME:
-                    {
-                        if (controlFrameParser.parse(buffer))
-                            reset();
-                        break;
-                    }
-                    case DATA_FRAME:
-                    {
-                        if (dataFrameParser.parse(buffer))
-                            reset();
-                        break;
-                    }
-                    default:
-                    {
-                        throw new IllegalStateException();
-                    }
+                }
+                catch (StreamException x)
+                {
+                    notifyStreamException(x);
                 }
             }
         }
         catch (SessionException x)
         {
             notifySessionException(x);
-        }
-        catch (StreamException x)
-        {
-            notifyStreamException(x);
         }
         catch (Throwable x)
         {
@@ -227,5 +237,4 @@ public class Parser
     {
         CONTROL_BIT, CONTROL_FRAME, DATA_FRAME
     }
-
 }

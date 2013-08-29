@@ -85,8 +85,31 @@ public class SynStreamBodyParser extends ControlFrameBodyParser
                 {
                     // Now we know the streamId, we can do the version check
                     // and if it is wrong, issue a RST_STREAM
-                    checkVersion(controlFrameParser.getVersion(), streamId);
-
+                    try
+                    {
+                        checkVersion(controlFrameParser.getVersion(), streamId);
+                    }
+                    catch (StreamException e)
+                    {
+                        // We've already read 4 bytes of the streamId which are part of controlFrameParser.getLength
+                        // so we need to substract those from the bytesToSkip.
+                        int bytesToSkip = controlFrameParser.getLength() - 4;
+                        int remaining = buffer.remaining();
+                        if (remaining >= bytesToSkip)
+                        {
+                            buffer.position(buffer.position() + bytesToSkip);
+                            controlFrameParser.reset();
+                            reset();
+                        }
+                        else
+                        {
+                            int bytesToSkipInNextBuffer = bytesToSkip - remaining;
+                            buffer.position(buffer.limit());
+                            controlFrameParser.skip(bytesToSkipInNextBuffer);
+                            reset();
+                        }
+                        throw e;
+                    }
                     if (buffer.remaining() >= 4)
                     {
                         associatedStreamId = buffer.getInt() & 0x7F_FF_FF_FF;
@@ -122,8 +145,6 @@ public class SynStreamBodyParser extends ControlFrameBodyParser
                     else
                     {
                         slot = (short)(currByte & 0xFF);
-                        if (slot < 0)
-                            throw new StreamException(streamId, StreamStatus.INVALID_CREDENTIALS);
                         cursor = 0;
                         state = State.HEADERS;
                     }

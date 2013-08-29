@@ -489,7 +489,8 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
     @Override
     public void onStreamException(StreamException x)
     {
-        notifyOnException(listener, x);
+        // TODO: rename to onFailure
+        notifyOnException(listener, x); //TODO: notify StreamFrameListener if exists?
         rst(new RstInfo(x.getStreamId(), x.getStreamStatus()), new Callback.Adapter());
     }
 
@@ -804,7 +805,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
             if (listener != null)
             {
                 LOG.debug("Invoking callback with {} on listener {}", x, listener);
-                listener.onException(x);
+                listener.onFailure(this, x);
             }
         }
         catch (Exception xx)

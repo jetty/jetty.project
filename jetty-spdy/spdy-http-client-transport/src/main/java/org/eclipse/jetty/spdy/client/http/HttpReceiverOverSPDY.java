@@ -141,7 +141,7 @@ public class HttpReceiverOverSPDY extends HttpReceiver implements StreamFrameLis
     }
 
     @Override
-    public void onFailure(Throwable x)
+    public void onFailure(Stream stream, Throwable x)
     {
         HttpExchange exchange = getHttpExchange();
         if (exchange == null)

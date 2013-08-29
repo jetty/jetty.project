@@ -23,7 +23,7 @@ import static org.hamcrest.Matchers.*;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.LinkedList;
+import java.util.Collections;
 import java.util.List;
 
 import org.eclipse.jetty.io.MappedByteBufferPool;
@@ -34,27 +34,77 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.ByteBufferAssert;
+import org.eclipse.jetty.websocket.common.Hex;
 import org.eclipse.jetty.websocket.common.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.OutgoingFramesCapture;
+import org.eclipse.jetty.websocket.common.Parser;
+import org.eclipse.jetty.websocket.common.UnitParser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
-import org.eclipse.jetty.websocket.common.extensions.compress.CompressionMethod.Process;
 import org.eclipse.jetty.websocket.common.frames.PingFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 
-public class MessageCompressionExtensionTest
+public class PerMessageDeflateExtensionTest
 {
+    @Rule
+    public TestName testname = new TestName();
+
+    private void assertIncoming(byte[] raw, String... expectedTextDatas)
+    {
+        WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
+
+        PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
+        ext.setBufferPool(new MappedByteBufferPool());
+        ext.setPolicy(policy);
+
+        ExtensionConfig config = ExtensionConfig.parse("permessage-deflate; c2s_max_window_bits");
+        ext.setConfig(config);
+
+        // Setup capture of incoming frames
+        IncomingFramesCapture capture = new IncomingFramesCapture();
+
+        // Wire up stack
+        ext.setNextIncomingFrames(capture);
+
+        Parser parser = new UnitParser(policy);
+        parser.configureFromExtensions(Collections.singletonList(ext));
+        parser.setIncomingFramesHandler(ext);
+
+        parser.parse(ByteBuffer.wrap(raw));
+
+        int len = expectedTextDatas.length;
+        capture.assertFrameCount(len);
+        capture.assertHasFrame(OpCode.TEXT,len);
+
+        for (int i = 0; i < len; i++)
+        {
+            WebSocketFrame actual = capture.getFrames().get(i);
+            String prefix = "Frame[" + i + "]";
+            Assert.assertThat(prefix + ".opcode",actual.getOpCode(),is(OpCode.TEXT));
+            Assert.assertThat(prefix + ".fin",actual.isFin(),is(true));
+            Assert.assertThat(prefix + ".rsv1",actual.isRsv1(),is(false)); // RSV1 should be unset at this point
+            Assert.assertThat(prefix + ".rsv2",actual.isRsv2(),is(false));
+            Assert.assertThat(prefix + ".rsv3",actual.isRsv3(),is(false));
+
+            ByteBuffer expected = BufferUtil.toBuffer(expectedTextDatas[i],StringUtil.__UTF8_CHARSET);
+            Assert.assertThat(prefix + ".payloadLength",actual.getPayloadLength(),is(expected.remaining()));
+            ByteBufferAssert.assertEquals(prefix + ".payload",expected,actual.getPayload().slice());
+        }
+    }
+
     private void assertDraftExample(String hexStr, String expectedStr)
     {
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
 
         // Setup extension
-        MessageDeflateCompressionExtension ext = new MessageDeflateCompressionExtension();
+        PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
         ext.setBufferPool(new MappedByteBufferPool());
         ext.setPolicy(policy);
-        ExtensionConfig config = ExtensionConfig.parse("permessage-compress");
+        ExtensionConfig config = ExtensionConfig.parse("permessage-deflate");
         ext.setConfig(config);
 
         // Setup capture of incoming frames
@@ -91,6 +141,54 @@ public class MessageCompressionExtensionTest
         ByteBufferAssert.assertEquals(prefix + ".payload",expected,actual.getPayload().slice());
     }
 
+    private void assertDraft12Example(String hexStrCompleteFrame, String... expectedStrs)
+    {
+        WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
+
+        // Setup extension
+        PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
+        ext.setBufferPool(new MappedByteBufferPool());
+        ext.setPolicy(policy);
+        ExtensionConfig config = ExtensionConfig.parse("permessage-deflate");
+        ext.setConfig(config);
+
+        // Setup capture of incoming frames
+        IncomingFramesCapture capture = new IncomingFramesCapture();
+
+        // Wire up stack
+        ext.setNextIncomingFrames(capture);
+
+        // Receive frame
+        String hex = hexStrCompleteFrame.replaceAll("\\s*0x","");
+        byte net[] = TypeUtil.fromHexString(hex);
+
+        Parser parser = new UnitParser(policy);
+        parser.configureFromExtensions(Collections.singletonList(ext));
+        parser.setIncomingFramesHandler(ext);
+        parser.parse(ByteBuffer.wrap(net));
+
+        // Verify captured frames.
+        int expectedCount = expectedStrs.length;
+        capture.assertFrameCount(expectedCount);
+        capture.assertHasFrame(OpCode.TEXT,expectedCount);
+
+        for (int i = 0; i < expectedCount; i++)
+        {
+            WebSocketFrame actual = capture.getFrames().pop();
+
+            String prefix = String.format("frame[%d]",i);
+            Assert.assertThat(prefix + ".opcode",actual.getOpCode(),is(OpCode.TEXT));
+            Assert.assertThat(prefix + ".fin",actual.isFin(),is(true));
+            Assert.assertThat(prefix + ".rsv1",actual.isRsv1(),is(false)); // RSV1 should be unset at this point
+            Assert.assertThat(prefix + ".rsv2",actual.isRsv2(),is(false));
+            Assert.assertThat(prefix + ".rsv3",actual.isRsv3(),is(false));
+
+            ByteBuffer expected = BufferUtil.toBuffer(expectedStrs[i],StringUtil.__UTF8_CHARSET);
+            Assert.assertThat(prefix + ".payloadLength",actual.getPayloadLength(),is(expected.remaining()));
+            ByteBufferAssert.assertEquals(prefix + ".payload",expected,actual.getPayload().slice());
+        }
+    }
+
     /**
      * Decode payload example as seen in draft-ietf-hybi-permessage-compression-01.
      */
@@ -101,6 +199,88 @@ public class MessageCompressionExtensionTest
         // basic, 1 block, compressed with 0 compression level (aka, uncompressed).
         hex.append("0x00 0x05 0x00 0xfa 0xff 0x48 0x65 0x6c 0x6c 0x6f 0x00");
         assertDraftExample(hex.toString(),"Hello");
+    }
+
+    /**
+     * Decode payload example as seen in draft-ietf-hybi-permessage-compression-12. Section 8.2.3.1
+     */
+    @Test
+    public void testDraft12_Hello_UnCompressedBlock()
+    {
+        StringBuilder hex = new StringBuilder();
+        // basic, 1 block, compressed with 0 compression level (aka, uncompressed).
+        hex.append("0xc1 0x07 0xf2 0x48 0xcd 0xc9 0xc9 0x07 0x00");
+        assertDraft12Example(hex.toString(),"Hello");
+    }
+
+    /**
+     * Decode payload example as seen in draft-ietf-hybi-permessage-compression-12. Section 8.2.3.2
+     */
+    @Test
+    public void testDraft12_Hello_NoSharingLZ77SlidingWindow()
+    {
+        StringBuilder hex = new StringBuilder();
+        // message 1
+        hex.append("0xc1 0x07"); // (HEADER added for this test)
+        hex.append("0xf2 0x48 0xcd 0xc9 0xc9 0x07 0x00");
+        // message 2
+        hex.append("0xc1 0x07"); // (HEADER added for this test)
+        hex.append("0xf2 0x48 0xcd 0xc9 0xc9 0x07 0x00");
+        assertDraft12Example(hex.toString(),"Hello","Hello");
+    }
+    
+    /**
+     * Decode payload example as seen in draft-ietf-hybi-permessage-compression-12. Section 8.2.3.2
+     */
+    @Test
+    public void testDraft12_Hello_SharingLZ77SlidingWindow()
+    {
+        StringBuilder hex = new StringBuilder();
+        // message 1
+        hex.append("0xc1 0x07"); // (HEADER added for this test)
+        hex.append("0xf2 0x48 0xcd 0xc9 0xc9 0x07 0x00");
+        // message 2
+        hex.append("0xc1 0x05"); // (HEADER added for this test)
+        hex.append("0xf2 0x00 0x11 0x00 0x00");
+        assertDraft12Example(hex.toString(),"Hello","Hello");
+    }
+
+    /**
+     * Decode payload example as seen in draft-ietf-hybi-permessage-compression-12. Section 8.2.3.3
+     */
+    @Test
+    public void testDraft12_Hello_NoCompressionBlock()
+    {
+        StringBuilder hex = new StringBuilder();
+        // basic, 1 block, compressed with no compression.
+        hex.append("0xc1 0x0b 0x00 0x05 0x00 0xfa 0xff 0x48 0x65 0x6c 0x6c 0x6f 0x00");
+        assertDraft12Example(hex.toString(),"Hello");
+    }
+
+    /**
+     * Decode payload example as seen in draft-ietf-hybi-permessage-compression-12. Section 8.2.3.4
+     */
+    @Test
+    public void testDraft12_Hello_Bfinal1()
+    {
+        StringBuilder hex = new StringBuilder();
+        // basic, 1 block, compressed with BFINAL set to 1.
+        hex.append("0xc1 0x08"); // (HEADER added for this test)
+        hex.append("0xf3 0x48 0xcd 0xc9 0xc9 0x07 0x00 0x00");
+        assertDraft12Example(hex.toString(),"Hello");
+    }
+
+    /**
+     * Decode payload example as seen in draft-ietf-hybi-permessage-compression-12. Section 8.2.3.5
+     */
+    @Test
+    public void testDraft12_Hello_TwoDeflateBlocks()
+    {
+        StringBuilder hex = new StringBuilder();
+        hex.append("0xc1 0x0d"); // (HEADER added for this test)
+        // 2 deflate blocks
+        hex.append("0xf2 0x48 0x05 0x00 0x00 0x00 0xff 0xff 0xca 0xc9 0xc9 0x07 0x00");
+        assertDraft12Example(hex.toString(),"Hello");
     }
 
     /**
@@ -159,12 +339,24 @@ public class MessageCompressionExtensionTest
         assertDraftExample(hex.toString(),"HelloHello");
     }
 
+    @Test
+    public void testPyWebSocket_ToraToraTora()
+    {
+        // Captured from Pywebsocket (r781) - "tora" sent 3 times.
+        String tora1 = "c186b0c7fe48" + "9a0ed102b4c7";
+        String tora2 = "c185ccb6cb50" + "e6b7a950cc";
+        String tora3 = "c1847b9aac69" + "79fbac69";
+        byte rawbuf[] = Hex.asByteArray(tora1 + tora2 + tora3);
+        assertIncoming(rawbuf,"tora","tora","tora");
+    }
+
     /**
      * Incoming PING (Control Frame) should pass through extension unmodified
      */
     @Test
-    public void testIncomingPing() {
-        MessageDeflateCompressionExtension ext = new MessageDeflateCompressionExtension();
+    public void testIncomingPing()
+    {
+        PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
         ext.setBufferPool(new MappedByteBufferPool());
         ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("permessage-compress");
@@ -201,7 +393,7 @@ public class MessageCompressionExtensionTest
     @Test
     public void testIncomingUncompressedFrames()
     {
-        MessageDeflateCompressionExtension ext = new MessageDeflateCompressionExtension();
+        PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
         ext.setBufferPool(new MappedByteBufferPool());
         ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("permessage-compress");
@@ -251,82 +443,12 @@ public class MessageCompressionExtensionTest
     }
 
     /**
-     * Verify that outgoing text frames are compressed.
-     */
-    @Test
-    public void testOutgoingFrames() throws IOException
-    {
-        MessageDeflateCompressionExtension ext = new MessageDeflateCompressionExtension();
-        ext.setBufferPool(new MappedByteBufferPool());
-        ext.setPolicy(WebSocketPolicy.newServerPolicy());
-        ExtensionConfig config = ExtensionConfig.parse("permessage-compress");
-        ext.setConfig(config);
-
-        // Setup capture of outgoing frames
-        OutgoingFramesCapture capture = new OutgoingFramesCapture();
-
-        // Wire up stack
-        ext.setNextOutgoingFrames(capture);
-
-        // Quote
-        List<String> quote = new ArrayList<>();
-        quote.add("No amount of experimentation can ever prove me right;");
-        quote.add("a single experiment can prove me wrong.");
-        quote.add("-- Albert Einstein");
-
-        // Expected compressed parts
-        List<ByteBuffer> expectedBuffers = new ArrayList<>();
-        CompressionMethod method = new DeflateCompressionMethod();
-        for(String part: quote) {
-            Process process = method.compress();
-            process.begin();
-            process.input(BufferUtil.toBuffer(part,StringUtil.__UTF8_CHARSET));
-            expectedBuffers.add(process.process());
-            process.end();
-        }
-
-        // Write quote as separate frames
-        for (String section : quote)
-        {
-            Frame frame = new TextFrame().setPayload(section);
-            ext.outgoingFrame(frame,null);
-        }
-
-        int len = quote.size();
-        capture.assertFrameCount(len);
-        capture.assertHasFrame(OpCode.TEXT,len);
-
-        String prefix;
-        LinkedList<WebSocketFrame> frames = capture.getFrames();
-        for (int i = 0; i < len; i++)
-        {
-            prefix = "Frame[" + i + "]";
-            WebSocketFrame actual = frames.get(i);
-
-            // Validate Frame
-            Assert.assertThat(prefix + ".opcode",actual.getOpCode(),is(OpCode.TEXT));
-            Assert.assertThat(prefix + ".fin",actual.isFin(),is(true));
-            Assert.assertThat(prefix + ".rsv1",actual.isRsv1(),is(true));
-            Assert.assertThat(prefix + ".rsv2",actual.isRsv2(),is(false));
-            Assert.assertThat(prefix + ".rsv3",actual.isRsv3(),is(false));
-
-            // Validate Payload
-            ByteBuffer expected = expectedBuffers.get(i);
-            // Decompress payload
-            ByteBuffer compressed = actual.getPayload().slice();
-
-            Assert.assertThat(prefix + ".payloadLength",compressed.remaining(),is(expected.remaining()));
-            ByteBufferAssert.assertEquals(prefix + ".payload",expected,compressed);
-        }
-    }
-
-    /**
      * Outgoing PING (Control Frame) should pass through extension unmodified
      */
     @Test
     public void testOutgoingPing() throws IOException
     {
-        MessageDeflateCompressionExtension ext = new MessageDeflateCompressionExtension();
+        PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
         ext.setBufferPool(new MappedByteBufferPool());
         ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("permessage-compress");

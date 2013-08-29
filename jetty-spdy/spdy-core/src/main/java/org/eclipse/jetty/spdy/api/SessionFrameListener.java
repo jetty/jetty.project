@@ -115,9 +115,10 @@ public interface SessionFrameListener extends EventListener
      * SPDY session.</p>
      * <p>Examples of such conditions are invalid frames received, corrupted headers compression state, etc.</p>
      *
+     * @param session the session
      * @param x the exception that caused the event processing failure
      */
-    public void onException(Throwable x);
+    public void onFailure(Session session, Throwable x);
 
 
     /**
@@ -154,7 +155,7 @@ public interface SessionFrameListener extends EventListener
         }
 
         @Override
-        public void onException(Throwable x)
+        public void onFailure(Session session, Throwable x)
         {
             logger.info("", x);
         }
