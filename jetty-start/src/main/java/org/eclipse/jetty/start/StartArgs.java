@@ -146,8 +146,8 @@ public class StartArgs
     private Properties properties = new Properties();
     private Set<String> systemPropertyKeys = new HashSet<>();
     private List<String> jvmArgs = new ArrayList<>();
-    private List<String> enable = new ArrayList<>();
-    private List<String> disable = new ArrayList<>();
+    private List<String> moduleIni = new ArrayList<>();
+    private List<String> moduleStartIni = new ArrayList<>();
     private List<String> modulePersistEnable = new ArrayList<>();
     private List<String> modulePersistDisable = new ArrayList<>();
     private Modules allModules;
@@ -169,7 +169,7 @@ public class StartArgs
         classpath = new Classpath();
     }
 
-    private void addDownload(String uriLocation)
+    static DownloadArg toDownloadArg(String uriLocation)
     {
         String parts[] = uriLocation.split(":",3);
         if (parts.length != 3)
@@ -187,7 +187,12 @@ public class StartArgs
         DownloadArg arg = new DownloadArg();
         arg.uri = String.format("%s:%s",parts[0],parts[1]);
         arg.location = parts[2];
-
+        return arg;
+    }
+    
+    private void addDownload(String uriLocation)
+    {
+        DownloadArg arg=toDownloadArg(uriLocation);
         if (!downloads.contains(arg))
         {
             downloads.add(arg);
@@ -429,14 +434,6 @@ public class StartArgs
                 StartLog.debug("Adding module specified download: %s",download);
                 addDownload(download);
             }
-
-            // Register BootLib references
-            for (String bootlib : module.getBootLibs())
-            {
-                StartLog.debug("Adding module specified bootlib: %s",bootlib);
-                exec = true;
-                jvmArgs.add(bootlib);
-            }
         }
     }
 
@@ -455,14 +452,14 @@ public class StartArgs
         return this.commandLine;
     }
 
-    public List<String> getEnable()
+    public List<String> getModuleIni()
     {
-        return enable;
+        return moduleIni;
     }
 
-    public List<String> getDisable()
+    public List<String> getModuleStartIni()
     {
-        return disable;
+        return moduleStartIni;
     }
 
     public List<DownloadArg> getDownloads()
@@ -690,6 +687,9 @@ public class StartArgs
 
     public void parse(String arg, String source)
     {
+        if (arg.trim().startsWith("#"))
+            return;
+        
         if ("--help".equals(arg) || "-?".equals(arg))
         {
             if (!CMD_LINE_SOURCE.equals(source))
@@ -765,20 +765,20 @@ public class StartArgs
             return;
         }
 
-        if (arg.startsWith("--enable="))
+        if (arg.startsWith("--module-ini="))
         {
             if (!CMD_LINE_SOURCE.equals(source))
                 throw new UsageException(ERR_BAD_ARG,"%s not allowed in %s",arg,source);
-            enable.addAll(getValues(arg));
+            moduleIni.addAll(getValues(arg));
             run = false;
             return;
         }
 
-        if (arg.startsWith("--disable="))
+        if (arg.startsWith("--module-start-ini="))
         {
             if (!CMD_LINE_SOURCE.equals(source))
                 throw new UsageException(ERR_BAD_ARG,"%s not allowed in %s",arg,source);
-            disable.addAll(getValues(arg));
+            moduleStartIni.addAll(getValues(arg));
             run = false;
             return;
         }

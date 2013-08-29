@@ -58,6 +58,11 @@ public class StartLog
         return INSTANCE;
     }
 
+    public static void info(String format, Object... args)
+    {
+        System.err.printf(format + "%n",args);
+    }
+    
     public static void warn(String format, Object... args)
     {
         System.err.printf(format + "%n",args);

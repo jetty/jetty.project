@@ -115,6 +115,12 @@ public class BaseHomeTest
 
         assertFileList(hb,"Files found",expected,files);
     }
+
+    @Test
+    public void testDefault() throws IOException
+    {
+        BaseHome bh = new BaseHome();
+    }
     
     @Test
     public void testGetFile_Both() throws IOException

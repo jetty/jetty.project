@@ -21,6 +21,9 @@ package org.eclipse.jetty.start;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -45,9 +48,25 @@ public class BaseHome
 
     public BaseHome()
     {
-        String userDir = System.getProperty("user.dir");
-        this.homeDir = new File(System.getProperty("jetty.home",userDir));
-        this.baseDir = new File(System.getProperty("jetty.base",homeDir.getAbsolutePath()));
+        try
+        {
+            this.baseDir = new File(System.getProperty("jetty.base",System.getProperty("user.dir",".")));            
+            URL jarfile=this.getClass().getClassLoader().getResource("org/eclipse/jetty/start/BaseHome.class");
+            if (jarfile!=null)
+            {
+                Matcher m =Pattern.compile("jar:(file:.*)!/org/eclipse/jetty/start/BaseHome.class").matcher(jarfile.toString());
+                if (m.matches())
+                    homeDir=new File(new URI(m.group(1))).getParentFile();
+            }
+            homeDir = new File(System.getProperty("jetty.home",(homeDir==null?baseDir:homeDir).getAbsolutePath()));
+            
+            baseDir=baseDir.getAbsoluteFile().getCanonicalFile();
+            homeDir=homeDir.getAbsoluteFile().getCanonicalFile();
+        }
+        catch(IOException | URISyntaxException e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     public BaseHome(File homeDir, File baseDir)

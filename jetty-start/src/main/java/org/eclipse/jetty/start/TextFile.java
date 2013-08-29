@@ -67,6 +67,7 @@ public class TextFile implements Iterable<String>
                         continue;
                     }
 
+                    // TODO - bad form calling derived method from base class constructor
                     process(line.trim());
                 }
             }

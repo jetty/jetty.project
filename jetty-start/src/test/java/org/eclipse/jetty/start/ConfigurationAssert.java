@@ -126,25 +126,6 @@ public class ConfigurationAssert
         }
         assertContainsUnordered("Downloads",expectedDownloads,actualDownloads);
 
-        // Validate Jvm Args / BootLib Entries
-        Set<String> expectedJvmArgs = new HashSet<>();
-        for (String line : textFile)
-        {
-            if (line.startsWith("BOOTLIB|") || line.startsWith("JVM|"))
-            {
-                expectedJvmArgs.add(getValue(line));
-            }
-        }
-        Set<String> actualJvmArgs = new HashSet<>();
-        for (String line : args.getJvmArgs())
-        {
-            actualJvmArgs.add(line);
-        }
-        assertContainsUnordered("JvmArgs",expectedJvmArgs,actualJvmArgs);
-        if (expectedJvmArgs.size() > 0)
-        {
-            Assert.assertTrue("exec has been turned on",args.isExec());
-        }
     }
 
     private static void assertContainsUnordered(String msg, Set<String> expectedSet, Set<String> actualSet)

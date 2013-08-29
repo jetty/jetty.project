@@ -68,9 +68,4 @@ public class TestUseCases
         assertUseCase("home","base.with.db","assert-with-db.txt");
     }
 
-    @Test
-    public void testWithModulePersistence() throws Exception
-    {
-        assertUseCase("home","base.with.module.persistence","assert-with-module-persistence.txt");
-    }
 }

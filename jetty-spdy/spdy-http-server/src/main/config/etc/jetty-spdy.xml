@@ -113,7 +113,7 @@
                                 </Arg>
                                 <!-- Set the initial window size for this SPDY connector. -->
                                 <!-- See: http://www.chromium.org/spdy/spdy-protocol/spdy-protocol-draft3#TOC-2.6.8-WINDOW_UPDATE -->
-                                <Set name="initialWindowSize">65536</Set>
+                                <Set name="initialWindowSize"><Property name="spdy.initialWindowSize" default="65536"/></Set>
                                 <!-- Uncomment to enable ReferrerPushStrategy -->
                                 <!--<Arg name="pushStrategy"><Ref refid="pushStrategy"/></Arg>-->
                             </New>
@@ -128,7 +128,7 @@
                                 </Arg>
                                 <!-- Set the initial window size for this SPDY connector. -->
                                 <!-- See: http://www.chromium.org/spdy/spdy-protocol/spdy-protocol-draft3#TOC-2.6.8-WINDOW_UPDATE -->
-                                <Set name="initialWindowSize">65536</Set>
+                                <Set name="initialWindowSize"><Property name="spdy.initialWindowSize" default="65536"/></Set>
                             </New>
                         </Item>
 
@@ -143,13 +143,9 @@
                     </Array>
                 </Arg>
 
-                <Set name="host">
-                    <Property name="jetty.host"/>
-                </Set>
-                <Set name="port">
-                    <Property name="jetty.spdy.port" default="8443"/>
-                </Set>
-                <Set name="idleTimeout">30000</Set>
+                <Set name="host"><Property name="jetty.host"/></Set>
+                <Set name="port"><Property name="spdy.port" default="443"/></Set>
+                <Set name="idleTimeout"><Property name="spdy.timeout" default="0"/></Set>
             </New>
         </Arg>
     </Call>
