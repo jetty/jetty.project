@@ -39,7 +39,7 @@ public class BaseHomeTest
         {
             actual.add(hb.toShortForm(file));
         }
-        Assert.assertThat(message,actual,containsInAnyOrder(expected.toArray()));
+        Assert.assertThat(message + ": " + Main.join(actual,", "),actual,containsInAnyOrder(expected.toArray()));
     }
 
     @Test
@@ -76,7 +76,7 @@ public class BaseHomeTest
 
         assertFileList(hb,"Files found",expected,files);
     }
-    
+
     @Test
     public void testListFiles_Filtered_OnlyHome() throws IOException
     {
@@ -84,7 +84,7 @@ public class BaseHomeTest
         File baseDir = null;
 
         BaseHome hb = new BaseHome(homeDir,baseDir);
-        List<File> files = hb.listFiles("/start.d", new FS.IniFilter());
+        List<File> files = hb.listFiles("/start.d",new FS.IniFilter());
 
         List<String> expected = new ArrayList<>();
         expected.add("${jetty.home}/start.d/jmx.ini");
@@ -120,8 +120,10 @@ public class BaseHomeTest
     public void testDefault() throws IOException
     {
         BaseHome bh = new BaseHome();
+        Assert.assertThat("Home",bh.getHome(),notNullValue());
+        Assert.assertThat("Base",bh.getBase(),notNullValue());
     }
-    
+
     @Test
     public void testGetFile_Both() throws IOException
     {

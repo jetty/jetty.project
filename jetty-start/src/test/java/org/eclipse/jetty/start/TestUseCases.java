@@ -67,5 +67,4 @@ public class TestUseCases
     {
         assertUseCase("home","base.with.db","assert-with-db.txt");
     }
-
 }

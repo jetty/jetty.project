@@ -76,7 +76,7 @@ public class BaseHome
         try
         {
             this.homeDir = homeDir.getCanonicalFile();
-            this.baseDir = baseDir == null?homeDir:baseDir.getCanonicalFile();
+            this.baseDir = baseDir == null?this.homeDir:baseDir.getCanonicalFile();
         }
         catch (IOException e)
         {
