@@ -39,76 +39,7 @@ import java.util.Set;
  */
 public class StartArgs
 {
-    public static class DownloadArg
-    {
-        public String uri;
-        public String location;
-
-        @Override
-        public boolean equals(Object obj)
-        {
-            if (this == obj)
-            {
-                return true;
-            }
-            if (obj == null)
-            {
-                return false;
-            }
-            if (getClass() != obj.getClass())
-            {
-                return false;
-            }
-            DownloadArg other = (DownloadArg)obj;
-            if (uri == null)
-            {
-                if (other.uri != null)
-                {
-                    return false;
-                }
-            }
-            else if (!uri.equals(other.uri))
-            {
-                return false;
-            }
-            if (location == null)
-            {
-                if (other.location != null)
-                {
-                    return false;
-                }
-            }
-            else if (!location.equals(other.location))
-            {
-                return false;
-            }
-            return true;
-        }
-
-        @Override
-        public int hashCode()
-        {
-            final int prime = 31;
-            int result = 1;
-            result = (prime * result) + ((uri == null)?0:uri.hashCode());
-            result = (prime * result) + ((location == null)?0:location.hashCode());
-            return result;
-        }
-
-        @Override
-        public String toString()
-        {
-            StringBuilder builder = new StringBuilder();
-            builder.append("DownloadArg [uri=");
-            builder.append(uri);
-            builder.append(", location=");
-            builder.append(location);
-            builder.append("]");
-            return builder.toString();
-        }
-    }
     public static final String CMD_LINE_SOURCE = "<cmd-line>";
-
     public static final String VERSION;
 
     static
@@ -135,7 +66,7 @@ public class StartArgs
 
     // TODO: might make sense to declare this in modules/base.mod
     private static final String SERVER_MAIN = "org.eclipse.jetty.xml.XmlConfiguration";
-
+    
     private List<String> commandLine = new ArrayList<>();
     private Set<String> modules = new HashSet<>();
     private Map<String, List<String>> sources = new HashMap<>();
@@ -148,8 +79,8 @@ public class StartArgs
     private List<String> jvmArgs = new ArrayList<>();
     private List<String> moduleIni = new ArrayList<>();
     private List<String> moduleStartIni = new ArrayList<>();
-    private Modules allModules;
 
+    private Modules allModules;
     // Should the server be run?
     private boolean run = true;
     private boolean help = false;
@@ -159,6 +90,7 @@ public class StartArgs
     private boolean listConfig = false;
     private boolean version = false;
     private boolean dryRun = false;
+
     private boolean exec = false;
 
     public StartArgs(String[] commandLineArgs)
@@ -167,30 +99,9 @@ public class StartArgs
         classpath = new Classpath();
     }
 
-    static DownloadArg toDownloadArg(String uriLocation)
-    {
-        String parts[] = uriLocation.split(":",3);
-        if (parts.length != 3)
-        {
-            throw new IllegalArgumentException("Not <http uri>:<location>");
-        }
-        if (!"http".equalsIgnoreCase(parts[0]))
-        {
-            throw new IllegalArgumentException("Download only supports http protocol");
-        }
-        if (!parts[1].startsWith("//"))
-        {
-            throw new IllegalArgumentException("Download URI invalid: " + uriLocation);
-        }
-        DownloadArg arg = new DownloadArg();
-        arg.uri = String.format("%s:%s",parts[0],parts[1]);
-        arg.location = parts[2];
-        return arg;
-    }
-    
     private void addDownload(String uriLocation)
     {
-        DownloadArg arg=toDownloadArg(uriLocation);
+        DownloadArg arg = new DownloadArg(uriLocation);
         if (!downloads.contains(arg))
         {
             downloads.add(arg);
@@ -450,16 +361,6 @@ public class StartArgs
         return this.commandLine;
     }
 
-    public List<String> getModuleIni()
-    {
-        return moduleIni;
-    }
-
-    public List<String> getModuleStartIni()
-    {
-        return moduleStartIni;
-    }
-
     public List<DownloadArg> getDownloads()
 
     {
@@ -536,6 +437,16 @@ public class StartArgs
     {
         String mainclass = System.getProperty("jetty.server",SERVER_MAIN);
         return System.getProperty("main.class",mainclass);
+    }
+
+    public List<String> getModuleIni()
+    {
+        return moduleIni;
+    }
+
+    public List<String> getModuleStartIni()
+    {
+        return moduleStartIni;
     }
 
     public Properties getProperties()
@@ -671,8 +582,10 @@ public class StartArgs
     public void parse(String arg, String source)
     {
         if (arg.trim().startsWith("#"))
+        {
             return;
-        
+        }
+
         if ("--help".equals(arg) || "-?".equals(arg))
         {
             if (!CMD_LINE_SOURCE.equals(source))
@@ -751,7 +664,9 @@ public class StartArgs
         if (arg.startsWith("--module-ini="))
         {
             if (!CMD_LINE_SOURCE.equals(source))
+            {
                 throw new UsageException(ERR_BAD_ARG,"%s not allowed in %s",arg,source);
+            }
             moduleIni.addAll(getValues(arg));
             run = false;
             return;
@@ -760,7 +675,9 @@ public class StartArgs
         if (arg.startsWith("--module-start-ini="))
         {
             if (!CMD_LINE_SOURCE.equals(source))
+            {
                 throw new UsageException(ERR_BAD_ARG,"%s not allowed in %s",arg,source);
+            }
             moduleStartIni.addAll(getValues(arg));
             run = false;
             return;

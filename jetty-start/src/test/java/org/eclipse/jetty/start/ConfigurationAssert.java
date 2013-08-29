@@ -31,7 +31,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.eclipse.jetty.start.StartArgs.DownloadArg;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.Assert;
 
