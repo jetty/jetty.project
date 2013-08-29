@@ -29,7 +29,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -38,13 +37,11 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.net.URL;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -233,7 +230,7 @@ public class Main
 
         System.out.println("Version Information on " + classpath.count() + " entr" + ((classpath.count() > 1)?"ies":"y") + " in the classpath.");
         System.out.println("Note: order presented here is how they would appear on the classpath.");
-        System.out.println("      changes to the MODULES=[name,name,...] command line option will be reflected here.");
+        System.out.println("      changes to the --module=name command line options will be reflected here.");
 
         int i = 0;
         for (File element : classpath.getElements())
