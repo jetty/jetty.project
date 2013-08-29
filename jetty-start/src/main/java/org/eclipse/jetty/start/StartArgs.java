@@ -66,7 +66,7 @@ public class StartArgs
 
     // TODO: might make sense to declare this in modules/base.mod
     private static final String SERVER_MAIN = "org.eclipse.jetty.xml.XmlConfiguration";
-    
+
     private List<String> commandLine = new ArrayList<>();
     private Set<String> modules = new HashSet<>();
     private Map<String, List<String>> sources = new HashMap<>();
@@ -579,9 +579,21 @@ public class StartArgs
         }
     }
 
-    public void parse(String arg, String source)
+    public void parse(final String rawarg, String source)
     {
-        if (arg.trim().startsWith("#"))
+        if (rawarg == null)
+        {
+            return;
+        }
+
+        final String arg = rawarg.trim();
+
+        if (arg.length() <= 0)
+        {
+            return;
+        }
+
+        if (arg.startsWith("#"))
         {
             return;
         }
@@ -751,7 +763,7 @@ public class StartArgs
         }
 
         // Anything else is unrecognized
-        throw new UsageException(ERR_BAD_ARG,"Unrecognized argument: %s in %s",arg,source);
+        throw new UsageException(ERR_BAD_ARG,"Unrecognized argument: \"%s\" in %s",arg,source);
     }
 
     public void parseCommandLine()
