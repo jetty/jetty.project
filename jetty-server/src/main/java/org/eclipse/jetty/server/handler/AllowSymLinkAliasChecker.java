@@ -28,6 +28,14 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 
+
+/* ------------------------------------------------------------ */
+/** Symbolic Link AliasChecker.
+ * <p>An instance of this class can be registered with {@link ContextHandler#addAliasCheck(AliasCheck)}
+ * to check resources that are aliased to other locations.   The checker uses the 
+ * Java {@link Files#readSymbolicLink(Path)} and {@link Path#toRealPath(java.nio.file.LinkOption...)}
+ * APIs to check if a file is aliased with symbolic links.</p>
+ */
 public class AllowSymLinkAliasChecker implements AliasCheck
 {
     private static final Logger LOG = Log.getLogger(AllowSymLinkAliasChecker.class);
