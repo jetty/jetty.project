@@ -23,6 +23,7 @@ import static org.eclipse.jetty.start.UsageException.*;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -44,6 +45,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.start.StartArgs.DownloadArg;
@@ -437,13 +439,6 @@ public class Main
             usage(true);
         }
 
-        // Various Downloads
-        // TODO should this only be done by init?
-        for (DownloadArg url : args.getDownloads())
-        {
-            download(url);
-        }
-
         // Show the version information and return
         if (args.isListClasspath())
         {
@@ -486,10 +481,17 @@ public class Main
             }
         }
 
+
         // Initialize
-        for (String module : args.getInitialize())
+        for (String module : args.getModuleStartIni())
         {
-            initialize(args,module,true);
+            moduleIni(args,module,true,true);
+        }
+        
+        // Initialize
+        for (String module : args.getModuleIni())
+        {
+            moduleIni(args,module,true,false);
         }
         
         // Informational command line, don't run jetty
@@ -612,7 +614,7 @@ public class Main
         }
     }
 
-    private void initialize(StartArgs args, String name, boolean topLevel) throws IOException
+    private void moduleIni(StartArgs args, String name, boolean topLevel,boolean appendStartIni) throws IOException
     {
         // Find the start.d relative to the base directory only.
         File start_d=baseHome.getBaseFile("start.d");
@@ -627,13 +629,15 @@ public class Main
         }
         
         // Find any named ini file and check it follows the convention
+        File start_ini=baseHome.getBaseFile("start.ini");
+        String short_start_ini = baseHome.toShortForm(start_ini);
         File ini=new File(start_d,name+".ini");
         String short_ini = baseHome.toShortForm(ini);
-        StartIni start_ini=null;
+        StartIni module_ini=null;
         if (ini.exists())
         {
-            start_ini=new StartIni(ini);
-            if (start_ini.getLineMatches(Pattern.compile("--module=(.*, *)*"+name)).size()==0)
+            module_ini=new StartIni(ini);
+            if (module_ini.getLineMatches(Pattern.compile("--module=(.*, *)*"+name)).size()==0)
             {
                 StartLog.warn("ERROR: %s is not enabled in %s!",name,short_ini);
                 return;
@@ -644,34 +648,79 @@ public class Main
         boolean has_ini_lines = module.getInitialise().size()>0;
                         
         // If it is not enabled or is transitive with ini template lines or toplevel and doesn't exist
-        if (!module.isEnabled() || (transitive && has_ini_lines) || (topLevel && !ini.exists()))
+        if (!module.isEnabled() || (transitive && has_ini_lines) || (topLevel && !ini.exists() && !appendStartIni))
         {
-            // Create the directory if needed
-            if (!start_d.exists())
-                start_d.mkdirs();
-            // Create a new ini file for it
-            if (!ini.createNewFile())
+            String source=null;
+            PrintWriter out=null;
+            try
             {
-                StartLog.warn("ERROR: %s cannot be initialised in %s! ",name,short_ini);
-                return;
-            }
-            StartLog.warn("%-15s initialised in %s (created)",name,short_ini);
+                if (appendStartIni)
+                {
+                    if (!start_ini.exists() && !start_ini.createNewFile() || !start_ini.canWrite())
+                    {
+                        StartLog.warn("ERROR: Bad %s! ",start_ini);
+                        return;
+                    }
+                    source = short_start_ini;
+                    StartLog.warn("%-15s initialised in %s (appended)",name,source);
+                    out = new PrintWriter(new FileWriter(start_ini,true));
+                }
+                else
+                {
+                    // Create the directory if needed
+                    if (!start_d.exists())
+                        start_d.mkdirs();
+                    if (!start_d.isDirectory() || !start_d.canWrite())
+                    {
+                        StartLog.warn("ERROR: Bad start.d %s! ",start_d);
+                        return;
+                    }
+                    // Create a new ini file for it
+                    if (!ini.createNewFile())
+                    {
+                        StartLog.warn("ERROR: %s cannot be initialised in %s! ",name,short_ini);
+                        return;
+                    }
+                    source=short_ini;
+                    StartLog.warn("%-15s initialised in %s (created)",name,source);
+                    out = new PrintWriter(ini);
+                }
 
-            // Create an ini file
-            try(PrintWriter out = new PrintWriter(ini))
-            {
+                if (appendStartIni)
+                    out.println();
+                out.println("#");
                 out.println("# Initialize module "+name);
+                out.println("#");
+                Pattern p = Pattern.compile("--module=([^,]+)(,([^,]+))*");
+
                 out.println("--module="+name);
+                args.parse("--module="+name,source);
+                modules.enable(name,Collections.singletonList(source));
                 for (String line : module.getInitialise())
+                {
                     out.println(line);
+                    args.parse(line,source);
+                    Matcher m=p.matcher(line);
+                    if (m.matches())
+                    {
+                        for (int i=1;i<=m.groupCount();i++)
+                        {
+                            String n=m.group(i);
+                            if (n==null)
+                                continue;
+                            n=n.trim();
+                            if (n.length()==0||n.startsWith(","))
+                                continue;
+
+                            modules.enable(n,Collections.singletonList(source));
+                        }
+                    }
+                }
             }
-            
-            // Add the new ini file to the modules
-            start_ini=new StartIni(ini);
-            args.parse(baseHome, start_ini);
-            for (String enable:start_ini.getLineMatches(Pattern.compile("--module=.*")))
+            finally
             {
-                modules.enable(enable.substring(enable.indexOf('=')+1).trim(),Collections.singletonList(short_ini));
+                if (out!=null)
+                    out.close();
             }
         }
         else if (ini.exists())
@@ -689,7 +738,6 @@ public class Main
         // Do downloads now
         for (String download : module.getDownloads())
             download(StartArgs.toDownloadArg(download));
-
         
         // Process dependencies from top level only
         if (topLevel)
@@ -707,7 +755,7 @@ public class Main
             Collections.sort(parents,Collections.reverseOrder(new Module.DepthComparator()));
             for (Module m : parents)
             {
-                initialize(args,m.getName(),false);
+                moduleIni(args,m.getName(),false,appendStartIni);
             }
         }
     }

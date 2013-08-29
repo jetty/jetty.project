@@ -57,22 +57,25 @@ Module Management:
                     o  The command line
                     o  The ${jetty.base}/start.ini
                     o  The ${jetty.base}/start.d/*.ini files
-                    o  The module persistence file content at
-                       ${jetty.base}/modules/enabled
                     
   --module=<modulename>
                    Will temporarily enable a module from the command line.
                    Note: this can also be used in the ${jetty.base}/start.ini
+                   or ${jetty.base}/start.d/*.ini files.
   
-  --enable-module=<modulename>
-                   Will enable a module by adding an entry in the
-                   module persistence file ${jetty.base}/modules/enabled
-                   Note: Do not use within ${jetty.base}/start.ini
+  --module-ini=<modulename>
+                   Will enable a module by adding an ini file to the
+                   ${jetty.base}/start.d/ directory from the template
+                   contained in the module definition. Transitive 
+                   dependencies are followed and ini files are created
+                   for them if they too have a ini template.
   
-  --disable-module=<modulename>
-                   Will attempt to disable a module by removing an entry in the
-                   module persistence file ${jetty.base}/modules/enabled
-                   Note: Do not use within ${jetty.base}/start.ini
+  --module-start-ini=<modulename>
+                   Will enable a module by appending lines to the 
+                   ${jetty.base}/start.ini file from the template
+                   contained in the module definition. Transitive 
+                   dependencies are followed and lines are appended
+                   for them if they too have a ini template.
 
 Startup / Shutdown Command Line:
 --------------------------------
@@ -154,6 +157,6 @@ Properties:
 Defaults:
 ---------
 
-  A ${jetty.base}/start.ini file may be used to specify default arguments
-  to start.jar.  In case of a conflict between the command line, and 
-  the contents of ${jetty.base}/start.ini, the command line will win.
+  A ${jetty.base}/start.ini file and/or ${jetty.base|/start.d/*.ini files may be 
+  used to specify default arguments to start.jar.  In case of a conflict between 
+  the command line, and ini files, the command line will win.

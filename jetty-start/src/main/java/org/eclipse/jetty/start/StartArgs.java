@@ -146,7 +146,8 @@ public class StartArgs
     private Properties properties = new Properties();
     private Set<String> systemPropertyKeys = new HashSet<>();
     private List<String> jvmArgs = new ArrayList<>();
-    private List<String> initialize = new ArrayList<>();
+    private List<String> moduleIni = new ArrayList<>();
+    private List<String> moduleStartIni = new ArrayList<>();
     private List<String> modulePersistEnable = new ArrayList<>();
     private List<String> modulePersistDisable = new ArrayList<>();
     private Modules allModules;
@@ -451,9 +452,14 @@ public class StartArgs
         return this.commandLine;
     }
 
-    public List<String> getInitialize()
+    public List<String> getModuleIni()
     {
-        return initialize;
+        return moduleIni;
+    }
+
+    public List<String> getModuleStartIni()
+    {
+        return moduleStartIni;
     }
 
     public List<DownloadArg> getDownloads()
@@ -681,6 +687,9 @@ public class StartArgs
 
     public void parse(String arg, String source)
     {
+        if (arg.trim().startsWith("#"))
+            return;
+        
         if ("--help".equals(arg) || "-?".equals(arg))
         {
             if (!CMD_LINE_SOURCE.equals(source))
@@ -756,11 +765,20 @@ public class StartArgs
             return;
         }
 
-        if (arg.startsWith("--initialize=") || arg.startsWith("--initialise=") || arg.startsWith("--ini="))
+        if (arg.startsWith("--module-ini="))
         {
             if (!CMD_LINE_SOURCE.equals(source))
                 throw new UsageException(ERR_BAD_ARG,"%s not allowed in %s",arg,source);
-            initialize.addAll(getValues(arg));
+            moduleIni.addAll(getValues(arg));
+            run = false;
+            return;
+        }
+
+        if (arg.startsWith("--module-start-ini="))
+        {
+            if (!CMD_LINE_SOURCE.equals(source))
+                throw new UsageException(ERR_BAD_ARG,"%s not allowed in %s",arg,source);
+            moduleStartIni.addAll(getValues(arg));
             run = false;
             return;
         }
