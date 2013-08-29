@@ -478,6 +478,7 @@ public class HttpOutput extends ServletOutputStream
             if (_eof)
             {
                 // Handle EOF
+                _in.close();
                 closed();
                 _channel.getByteBufferPool().release(_buffer);
                 return true;
@@ -489,7 +490,6 @@ public class HttpOutput extends ServletOutputStream
             {
                 _eof=true;
                 len=0;
-                _in.close();
             }
             else if (len<_buffer.capacity())
             {
@@ -552,6 +552,7 @@ public class HttpOutput extends ServletOutputStream
         {
             if (_eof)
             {
+                _in.close();
                 closed();
                 _channel.getByteBufferPool().release(_buffer);
                 return true;
@@ -563,8 +564,7 @@ public class HttpOutput extends ServletOutputStream
             if (len<0)
             {
                 _eof=true;
-                len=0;
-                _in.close();
+                len=0;         
             }
             else if (len<_buffer.capacity())
             {
