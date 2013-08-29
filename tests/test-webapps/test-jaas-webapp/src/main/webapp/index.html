@@ -24,7 +24,7 @@
      etc/jetty-jaas.xml
     </pre>
   </p>
-  <p>For the jetty distribution demos, jaas is already enabled in the start.d/900-demo.ini file and sets the jaas.login.conf property to demo/login.conf  for use with the demo/webapps/test-jaas.war web application.  </p>
+  <p>For the jetty distribution demos, jaas is already enabled in the demo-base/start.ini file and sets the jaas.login.conf property to ${jetty.base}/etc/login.conf  for use with the demo-base/webapps/test-jaas.war web application.  </p>
 
 <p>The full source of this demonstration is available <a
 href="http://git.eclipse.org/c/jetty/org.eclipse.jetty.project.git/tree/tests/test-webapps/test-jaas-webapp">here</a>.</p>
