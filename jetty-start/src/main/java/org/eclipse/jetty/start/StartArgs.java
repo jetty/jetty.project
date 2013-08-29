@@ -148,8 +148,6 @@ public class StartArgs
     private List<String> jvmArgs = new ArrayList<>();
     private List<String> moduleIni = new ArrayList<>();
     private List<String> moduleStartIni = new ArrayList<>();
-    private List<String> modulePersistEnable = new ArrayList<>();
-    private List<String> modulePersistDisable = new ArrayList<>();
     private Modules allModules;
 
     // Should the server be run?
@@ -540,16 +538,6 @@ public class StartArgs
         return System.getProperty("main.class",mainclass);
     }
 
-    public List<String> getModulePersistDisable()
-    {
-        return modulePersistDisable;
-    }
-
-    public List<String> getModulePersistEnable()
-    {
-        return modulePersistEnable;
-    }
-
     public Properties getProperties()
     {
         return properties;
@@ -646,11 +634,6 @@ public class StartArgs
     public boolean isListModules()
     {
         return listModules;
-    }
-
-    public boolean isModulePersistenceChanging()
-    {
-        return (modulePersistDisable.size() > 0) || (modulePersistEnable.size() > 0);
     }
 
     public boolean isRun()
@@ -799,28 +782,6 @@ public class StartArgs
             return;
         }
 
-        if (arg.startsWith("--enable-module="))
-        {
-            if (!CMD_LINE_SOURCE.equals(source))
-            {
-                throw new UsageException(ERR_BAD_ARG,"%s not allowed in %s",arg,source);
-            }
-            modulePersistEnable.addAll(getValues(arg));
-            run = false;
-            return;
-        }
-
-        if (arg.startsWith("--disable-module="))
-        {
-            if (!CMD_LINE_SOURCE.equals(source))
-            {
-                throw new UsageException(ERR_BAD_ARG,"%s not allowed in %s",arg,source);
-            }
-            modulePersistDisable.addAll(getValues(arg));
-            run = false;
-            return;
-        }
-
         // Start property (syntax similar to System property)
         if (arg.startsWith("-D"))
         {
@@ -902,16 +863,6 @@ public class StartArgs
     public void setAllModules(Modules allModules)
     {
         this.allModules = allModules;
-    }
-
-    public void setModulePersistDisable(List<String> modulePersistDisable)
-    {
-        this.modulePersistDisable = modulePersistDisable;
-    }
-
-    public void setModulePersistEnable(List<String> modulePersistEnable)
-    {
-        this.modulePersistEnable = modulePersistEnable;
     }
 
     @Override
