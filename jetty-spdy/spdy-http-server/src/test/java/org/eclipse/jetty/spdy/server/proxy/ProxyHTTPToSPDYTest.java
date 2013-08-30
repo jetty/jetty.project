@@ -144,6 +144,8 @@ public class ProxyHTTPToSPDYTest
     @After
     public void destroy() throws Exception
     {
+        httpClient.stop();
+        httpClient2.stop();
         if (server != null)
         {
             server.stop();
@@ -417,6 +419,6 @@ public class ProxyHTTPToSPDYTest
         }));
 
         ContentResponse response = httpClient.newRequest("localhost", proxyAddress.getPort()).method(HttpMethod.GET).send();
-        assertThat("response code is 500 OK", response.getStatus(), is(500));
+        assertThat("response code is 502 Gateway Error", response.getStatus(), is(502));
     }
 }

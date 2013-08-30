@@ -199,8 +199,9 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
         @Override
         public void rst(RstInfo rstInfo, Callback handler)
         {
-            // Not much we can do in HTTP land: just close the connection
-            goAway(new GoAwayInfo(rstInfo.getTimeout(), rstInfo.getUnit()), handler);
+            HttpGenerator.ResponseInfo info = new HttpGenerator.ResponseInfo(HttpVersion.fromString(headers.get
+                    ("version").value()), null, 0, 502, "SPDY reset received from upstream server", false);
+            send(info, null, true, new Callback.Adapter());
         }
 
         @Override
