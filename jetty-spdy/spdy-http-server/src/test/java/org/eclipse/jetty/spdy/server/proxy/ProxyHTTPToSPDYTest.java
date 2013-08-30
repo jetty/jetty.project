@@ -33,6 +33,8 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.StringContentProvider;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.spdy.api.BytesDataInfo;
@@ -90,6 +92,7 @@ public class ProxyHTTPToSPDYTest
 
     private final short version;
     private HttpClient httpClient;
+    private HttpClient httpClient2;
 
     @Parameterized.Parameters
     public static Collection<Short[]> parameters()
@@ -139,6 +142,8 @@ public class ProxyHTTPToSPDYTest
         factory.start();
         httpClient = new HttpClient();
         httpClient.start();
+        httpClient2 = new HttpClient();
+        httpClient2.start();
     }
 
     @After
@@ -211,43 +216,14 @@ public class ProxyHTTPToSPDYTest
             }
         }));
 
-        Socket client1 = new Socket();
-        client1.connect(proxyAddress);
-        OutputStream output1 = client1.getOutputStream();
-
-        String request = "" +
-                "GET / HTTP/1.1\r\n" +
-                "Host: localhost:" + proxyAddress.getPort() + "\r\n" +
-                "\r\n";
-        output1.write(request.getBytes("UTF-8"));
-        output1.flush();
-
-        InputStream input1 = client1.getInputStream();
-        BufferedReader reader1 = new BufferedReader(new InputStreamReader(input1, "UTF-8"));
-        String line = reader1.readLine();
-        Assert.assertTrue(line.contains(" 200"));
-        while (line.length() > 0)
-            line = reader1.readLine();
-        Assert.assertFalse(reader1.ready());
+        ContentResponse response = httpClient.newRequest("localhost", proxyAddress.getPort()).method(HttpMethod.GET)
+                .send();
+        assertThat("response code is 200 OK", response.getStatus(), is(200));
 
         // Perform another request with another client
-        Socket client2 = new Socket();
-        client2.connect(proxyAddress);
-        OutputStream output2 = client2.getOutputStream();
-
-        output2.write(request.getBytes("UTF-8"));
-        output2.flush();
-
-        InputStream input2 = client2.getInputStream();
-        BufferedReader reader2 = new BufferedReader(new InputStreamReader(input2, "UTF-8"));
-        line = reader2.readLine();
-        Assert.assertTrue(line.contains(" 200"));
-        while (line.length() > 0)
-            line = reader2.readLine();
-        Assert.assertFalse(reader2.ready());
-
-        client1.close();
-        client2.close();
+        ContentResponse response2 = httpClient2.newRequest("localhost", proxyAddress.getPort()).method(HttpMethod.GET)
+                .send();
+        assertThat("response2 code is 200 OK", response2.getStatus(), is(200));
     }
 
     @Test
@@ -271,23 +247,8 @@ public class ProxyHTTPToSPDYTest
                 return null;
             }
         }));
-        Socket client = new Socket();
-        client.connect(proxyAddress);
-        OutputStream output = client.getOutputStream();
-
-        String request = "" +
-                "HEAD / HTTP/1.1\r\n" +
-                "Host: localhost:" + proxyAddress.getPort() + "\r\n" +
-                "\r\n";
-        output.write(request.getBytes("UTF-8"));
-        output.flush();
-
-        InputStream input = client.getInputStream();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(input, "UTF-8"));
-        String line = reader.readLine();
-        Assert.assertTrue(line.contains(" 200 "));
-
-        client.close();
+        ContentResponse response = httpClient.newRequest("localhost", proxyAddress.getPort()).method(HttpMethod.HEAD).send();
+        assertThat("response code is 200 OK", response.getStatus(), is(200));
     }
 
     @Test
@@ -316,45 +277,22 @@ public class ProxyHTTPToSPDYTest
             }
         }));
 
-        Socket client = new Socket();
-        client.connect(proxyAddress);
-        OutputStream output = client.getOutputStream();
-
-        String request = "" +
-                "GET / HTTP/1.1\r\n" +
-                "Host: localhost:" + proxyAddress.getPort() + "\r\n" +
-                "\r\n";
-        output.write(request.getBytes("UTF-8"));
-        output.flush();
-
-        InputStream input = client.getInputStream();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(input, "UTF-8"));
-        String line = reader.readLine();
-        Assert.assertTrue(line.contains(" 200 "));
-        while (line.length() > 0)
-            line = reader.readLine();
-        for (byte datum : data)
-            Assert.assertEquals(datum, reader.read());
+        ContentResponse response = httpClient.newRequest("localhost", proxyAddress.getPort()).method(HttpMethod.GET)
+                .send();
+        assertThat("response code is 200 OK", response.getStatus(), is(200));
+        assertThat(Arrays.equals(response.getContent(), data), is(true));
 
         // Perform another request so that we are sure we reset the states of parsers and generators
-        output.write(request.getBytes("UTF-8"));
-        output.flush();
-
-        line = reader.readLine();
-        Assert.assertTrue(line.contains(" 200"));
-        while (line.length() > 0)
-            line = reader.readLine();
-        for (byte datum : data)
-            Assert.assertEquals(datum, reader.read());
-        Assert.assertFalse(reader.ready());
-
-        client.close();
+        ContentResponse response2 = httpClient.newRequest("localhost", proxyAddress.getPort()).method(HttpMethod.GET)
+                .send();
+        assertThat("response2 code is 200 OK", response2.getStatus(), is(200));
+        assertThat(Arrays.equals(response2.getContent(), data), is(true));
     }
 
     @Test
     public void testPOSTWithSmallRequestContentThenRedirect() throws Exception
     {
-        final byte[] data = "0123456789ABCDEF".getBytes("UTF-8");
+        final String data = "0123456789ABCDEF";
         InetSocketAddress proxyAddress = startProxy(startServer(new ServerSessionFrameListener.Adapter()
         {
             @Override
@@ -371,6 +309,7 @@ public class ProxyHTTPToSPDYTest
                             Fields headers = new Fields();
                             headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
                             headers.put(HTTPSPDYHeader.STATUS.name(version), "303 See Other");
+                            headers.put(HttpHeader.LOCATION.asString(),"http://other.location");
                             stream.reply(new ReplyInfo(headers, true), new Callback.Adapter());
                         }
                     }
@@ -378,40 +317,14 @@ public class ProxyHTTPToSPDYTest
             }
         }));
 
-        Socket client = new Socket();
-        client.connect(proxyAddress);
-        OutputStream output = client.getOutputStream();
-
-        String request = "" +
-                "POST / HTTP/1.1\r\n" +
-                "Host: localhost:" + proxyAddress.getPort() + "\r\n" +
-                "Content-Length: " + data.length + "\r\n" +
-                "Content-Type: application/octet-stream\r\n" +
-                "\r\n";
-        output.write(request.getBytes("UTF-8"));
-        output.write(data);
-        output.flush();
-
-        InputStream input = client.getInputStream();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(input, "UTF-8"));
-        String line = reader.readLine();
-        Assert.assertTrue(line.contains(" 303"));
-        while (line.length() > 0)
-            line = reader.readLine();
-        Assert.assertFalse(reader.ready());
+        ContentResponse response = httpClient.newRequest("localhost", proxyAddress.getPort()).method(HttpMethod.POST).content(new
+                StringContentProvider(data)).followRedirects(false).send();
+        assertThat("response code is 303", response.getStatus(), is(303));
 
         // Perform another request so that we are sure we reset the states of parsers and generators
-        output.write(request.getBytes("UTF-8"));
-        output.write(data);
-        output.flush();
-
-        line = reader.readLine();
-        Assert.assertTrue(line.contains(" 303"));
-        while (line.length() > 0)
-            line = reader.readLine();
-        Assert.assertFalse(reader.ready());
-
-        client.close();
+        ContentResponse response2 = httpClient.newRequest("localhost", proxyAddress.getPort()).method(HttpMethod
+                .POST).content(new StringContentProvider(data)).followRedirects(false).send();
+        assertThat("response2 code is 303", response2.getStatus(), is(303));
     }
 
     @Test
