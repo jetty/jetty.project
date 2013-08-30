@@ -2,10 +2,13 @@
 # Deploy Feature
 #
 
-DEPEND=webapp
+[depend]
+webapp
 
+[lib]
 # Deploy jars
-LIB=lib/jetty-deploy-${jetty.version}.jar
+lib/jetty-deploy-${jetty.version}.jar
 
+[xml]
 # Deploy configuration
 etc/jetty-deploy.xml

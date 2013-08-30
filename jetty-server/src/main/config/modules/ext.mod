@@ -1,2 +1,2 @@
-
-LIB=lib/ext/*
+[lib]
+lib/ext/*

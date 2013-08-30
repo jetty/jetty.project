@@ -2,13 +2,16 @@
 # Jetty Annotation Scanning Module
 #
 
+[depend]
 # Annotations needs plus, and jndi features
-DEPEND=plus
+plus
 
+[lib]
 # Annotations needs jetty annotation jars
-LIB=lib/jetty-annotations-${jetty.version}.jar
+lib/jetty-annotations-${jetty.version}.jar
 # Need annotation processing jars too
-LIB=lib/annotations/*.jar
+lib/annotations/*.jar
 
+[xml]
 # Enable annotation scanning webapp configurations
 etc/jetty-annotations.xml

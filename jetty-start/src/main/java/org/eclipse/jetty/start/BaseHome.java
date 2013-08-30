@@ -50,20 +50,22 @@ public class BaseHome
     {
         try
         {
-            this.baseDir = new File(System.getProperty("jetty.base",System.getProperty("user.dir",".")));            
-            URL jarfile=this.getClass().getClassLoader().getResource("org/eclipse/jetty/start/BaseHome.class");
-            if (jarfile!=null)
+            this.baseDir = new File(System.getProperty("jetty.base",System.getProperty("user.dir",".")));
+            URL jarfile = this.getClass().getClassLoader().getResource("org/eclipse/jetty/start/BaseHome.class");
+            if (jarfile != null)
             {
-                Matcher m =Pattern.compile("jar:(file:.*)!/org/eclipse/jetty/start/BaseHome.class").matcher(jarfile.toString());
+                Matcher m = Pattern.compile("jar:(file:.*)!/org/eclipse/jetty/start/BaseHome.class").matcher(jarfile.toString());
                 if (m.matches())
-                    homeDir=new File(new URI(m.group(1))).getParentFile();
+                {
+                    homeDir = new File(new URI(m.group(1))).getParentFile();
+                }
             }
-            homeDir = new File(System.getProperty("jetty.home",(homeDir==null?baseDir:homeDir).getAbsolutePath()));
-            
-            baseDir=baseDir.getAbsoluteFile().getCanonicalFile();
-            homeDir=homeDir.getAbsoluteFile().getCanonicalFile();
+            homeDir = new File(System.getProperty("jetty.home",(homeDir == null?baseDir:homeDir).getAbsolutePath()));
+
+            baseDir = baseDir.getAbsoluteFile().getCanonicalFile();
+            homeDir = homeDir.getAbsoluteFile().getCanonicalFile();
         }
-        catch(IOException | URISyntaxException e)
+        catch (IOException | URISyntaxException e)
         {
             throw new RuntimeException(e);
         }
@@ -71,8 +73,15 @@ public class BaseHome
 
     public BaseHome(File homeDir, File baseDir)
     {
-        this.homeDir = homeDir;
-        this.baseDir = baseDir == null?homeDir:baseDir;
+        try
+        {
+            this.homeDir = homeDir.getCanonicalFile();
+            this.baseDir = baseDir == null?this.homeDir:baseDir.getCanonicalFile();
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     public String getBase()

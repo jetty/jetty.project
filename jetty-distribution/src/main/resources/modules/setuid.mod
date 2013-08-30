@@ -1,9 +1,14 @@
-DEPEND=server
-LIB=jetty-setuid-java-1.0.1.jar
+[depend]
+server
 
+[lib]
+jetty-setuid-java-1.0.1.jar
+
+[xml]
 etc/jetty-setuid.xml
 
-INI=# jetty.startServerAsPrivileged=false
-INI=# jetty.username=jetty
-INI=# jetty.groupname=jetty
-INI=# jetty.umask=002
+[ini]
+# jetty.startServerAsPrivileged=false
+# jetty.username=jetty
+# jetty.groupname=jetty
+# jetty.umask=002

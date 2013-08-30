@@ -2,6 +2,8 @@
 # Jetty HTTP Server
 #
 
-DEPEND=server
+[depend]
+server
 
+[xml]
 etc/jetty-http.xml

@@ -2,13 +2,16 @@
 # Low Resources module
 #
 
-DEPEND=server
+[depend]
+server
 
+[xml]
 etc/jetty-lowresources.xml
 
-INI=# lowresources.period=1050
-INI=# lowresources.lowResourcesIdleTimeout=200
-INI=# lowresources.monitorThreads=true
-INI=# lowresources.maxConnections=0
-INI=# lowresources.maxMemory=0
-INI=# lowresources.maxLowResourcesTime=5000
+[ini]
+# lowresources.period=1050
+# lowresources.lowResourcesIdleTimeout=200
+# lowresources.monitorThreads=true
+# lowresources.maxConnections=0
+# lowresources.maxMemory=0
+# lowresources.maxLowResourcesTime=5000

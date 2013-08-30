@@ -18,8 +18,10 @@
 
 package org.eclipse.jetty.start;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.text.CollationKey;
 import java.text.Collator;
@@ -30,12 +32,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.omg.CORBA.INITIALIZE;
 
 /**
  * Represents a Module metadata, as defined in Jetty.
  */
-public class Module extends TextFile
+public class Module // extends TextFile
 {
     public static class NameComparator implements Comparator<Module>
     {
@@ -50,7 +55,7 @@ public class Module extends TextFile
             return k1.compareTo(k2);
         }
     }
-    
+
     public static class DepthComparator implements Comparator<Module>
     {
         private Collator collator = Collator.getInstance();
@@ -71,6 +76,8 @@ public class Module extends TextFile
         }
     }
 
+    /** The file of the module */
+    private File file;
     /** The name of this Module */
     private String name;
     /** The depth of the module in the tree */
@@ -90,8 +97,7 @@ public class Module extends TextFile
     /** List of library options for this Module */
     private List<String> libs;
     /** List of downloads for this Module */
-    private List<String> downloads;    
-
+    private List<String> downloads;
 
     /** Is this Module enabled via start.jar command line, start.ini, or start.d/*.ini ? */
     private boolean enabled = false;
@@ -100,11 +106,14 @@ public class Module extends TextFile
 
     public Module(File file) throws FileNotFoundException, IOException
     {
-        super(file);
+        this.file = file;
 
         String name = file.getName();
         // Strip .ini
         name = Pattern.compile(".mod$",Pattern.CASE_INSENSITIVE).matcher(name).replaceFirst("");
+
+        init();
+        process();
     }
 
     public void addChildEdge(Module child)
@@ -201,12 +210,12 @@ public class Module extends TextFile
     {
         return initialise;
     }
-    
+
     public List<String> getDownloads()
     {
         return downloads;
     }
-    
+
     @Override
     public int hashCode()
     {
@@ -216,22 +225,21 @@ public class Module extends TextFile
         return result;
     }
 
-    @Override
     public void init()
     {
-        String name = getFile().getName();
+        String name = file.getName();
 
         // Strip .ini
         this.name = Pattern.compile(".mod$",Pattern.CASE_INSENSITIVE).matcher(name).replaceFirst("");
 
-        parentNames=new HashSet<>();
-        optionalParentNames=new HashSet<>();
-        parentEdges=new HashSet<>();
-        childEdges=new HashSet<>();
-        xmls=new ArrayList<>();
-        initialise=new ArrayList<>();
-        libs=new ArrayList<>();
-        downloads=new ArrayList<>();
+        parentNames = new HashSet<>();
+        optionalParentNames = new HashSet<>();
+        parentEdges = new HashSet<>();
+        childEdges = new HashSet<>();
+        xmls = new ArrayList<>();
+        initialise = new ArrayList<>();
+        libs = new ArrayList<>();
+        downloads = new ArrayList<>();
     }
 
     public boolean isEnabled()
@@ -239,61 +247,69 @@ public class Module extends TextFile
         return enabled;
     }
 
-    @Override
-    public void process(String line)
+    public void process() throws FileNotFoundException, IOException
     {
-        boolean handled = false;
+        Pattern section = Pattern.compile("\\s*\\[([^]]*)\\]\\s*");
 
-        if (line == null)
+        if (!FS.canReadFile(file))
         {
-
-        }
-
-        // has assignment
-        int idx = line.indexOf('=');
-        if (idx >= 0)
-        {
-            String key = line.substring(0,idx);
-            String value = line.substring(idx + 1);
-
-            switch (key.toUpperCase(Locale.ENGLISH))
-            {
-                case "DEPEND":
-                    parentNames.add(value);
-                    handled = true;
-                    break;
-                case "LIB":
-                    libs.add(value);
-                    handled = true;
-                    break;
-                case "OPTIONAL":
-                    optionalParentNames.add(value);
-                    handled = true;
-                    break;
-                case "DOWNLOAD":
-                    downloads.add(value);
-                    handled = true;
-                    break;
-                case "INI":
-                    initialise.add(value);
-                    handled = true;
-                    break;
-            }
-        }
-
-        if (handled)
-        {
-            return; // no further processing of line needed
-        }
-
-        // Is it an XML line?
-        if (FS.isXml(line))
-        {
-            xmls.add(line);
+            StartLog.debug("Skipping read of missing file: %s",file.getAbsolutePath());
             return;
         }
 
-        throw new IllegalArgumentException("Unrecognized Module Metadata line [" + line + "] in Module file [" + getFile() + "]");
+        try (FileReader reader = new FileReader(file))
+        {
+            try (BufferedReader buf = new BufferedReader(reader))
+            {
+                String line;
+                String sectionType = "";
+                while ((line = buf.readLine()) != null)
+                {
+                    line = line.trim();
+                    Matcher sectionMatcher = section.matcher(line);
+
+                    if (sectionMatcher.matches())
+                    {
+                        sectionType = sectionMatcher.group(1).trim().toUpperCase();
+                    }
+                    else
+                    {
+                        // blank lines and comments are valid for initialize section
+                        if (line.length() == 0 || line.startsWith("#"))
+                        {
+                            if ("INI".equals(sectionType))
+                            {
+                                initialise.add(line);
+                            }
+                        }
+                        else
+                        {
+                            switch (sectionType)
+                            {
+                                case "DEPEND":
+                                    parentNames.add(line);
+                                    break;
+                                case "LIB":
+                                    libs.add(line);
+                                    break;
+                                case "XML":
+                                    xmls.add(line);
+                                    break;
+                                case "OPTIONAL":
+                                    optionalParentNames.add(line);
+                                    break;
+                                case "DOWNLOAD":
+                                    downloads.add(line);
+                                    break;                             
+                                case "INI":
+                                    initialise.add(line);
+                                    break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     public void setDepth(int depth)
@@ -310,17 +326,17 @@ public class Module extends TextFile
     {
         this.sources.addAll(sources);
     }
-    
+
     public void clearSources()
     {
         this.sources.clear();
     }
-    
+
     public Set<String> getSources()
     {
         return Collections.unmodifiableSet(sources);
     }
-    
+
     @Override
     public String toString()
     {
@@ -333,5 +349,4 @@ public class Module extends TextFile
         str.append(']');
         return str.toString();
     }
-    
 }

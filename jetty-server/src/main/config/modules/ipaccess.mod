@@ -2,6 +2,8 @@
 # IPAccess module
 #
 
-DEPEND=server
+[depend]
+server
 
+[xml]
 etc/jetty-ipaccess.xml

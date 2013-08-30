@@ -2,12 +2,16 @@
 # JAAS Feature
 #
 
-DEPEND=server
+[depend]
+server
 
+[lib]
 # JAAS jars
-LIB=lib/jetty-jaas-${jetty.version}.jar
+lib/jetty-jaas-${jetty.version}.jar
 
+[xml]
 # JAAS configuration
 etc/jetty-jaas.xml
 
-INI=jaas.login.conf=etc/login.conf
+[ini]
+jaas.login.conf=etc/login.conf

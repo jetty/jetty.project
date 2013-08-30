@@ -39,76 +39,7 @@ import java.util.Set;
  */
 public class StartArgs
 {
-    public static class DownloadArg
-    {
-        public String uri;
-        public String location;
-
-        @Override
-        public boolean equals(Object obj)
-        {
-            if (this == obj)
-            {
-                return true;
-            }
-            if (obj == null)
-            {
-                return false;
-            }
-            if (getClass() != obj.getClass())
-            {
-                return false;
-            }
-            DownloadArg other = (DownloadArg)obj;
-            if (uri == null)
-            {
-                if (other.uri != null)
-                {
-                    return false;
-                }
-            }
-            else if (!uri.equals(other.uri))
-            {
-                return false;
-            }
-            if (location == null)
-            {
-                if (other.location != null)
-                {
-                    return false;
-                }
-            }
-            else if (!location.equals(other.location))
-            {
-                return false;
-            }
-            return true;
-        }
-
-        @Override
-        public int hashCode()
-        {
-            final int prime = 31;
-            int result = 1;
-            result = (prime * result) + ((uri == null)?0:uri.hashCode());
-            result = (prime * result) + ((location == null)?0:location.hashCode());
-            return result;
-        }
-
-        @Override
-        public String toString()
-        {
-            StringBuilder builder = new StringBuilder();
-            builder.append("DownloadArg [uri=");
-            builder.append(uri);
-            builder.append(", location=");
-            builder.append(location);
-            builder.append("]");
-            return builder.toString();
-        }
-    }
     public static final String CMD_LINE_SOURCE = "<cmd-line>";
-
     public static final String VERSION;
 
     static
@@ -148,10 +79,8 @@ public class StartArgs
     private List<String> jvmArgs = new ArrayList<>();
     private List<String> moduleIni = new ArrayList<>();
     private List<String> moduleStartIni = new ArrayList<>();
-    private List<String> modulePersistEnable = new ArrayList<>();
-    private List<String> modulePersistDisable = new ArrayList<>();
-    private Modules allModules;
 
+    private Modules allModules;
     // Should the server be run?
     private boolean run = true;
     private boolean help = false;
@@ -161,6 +90,7 @@ public class StartArgs
     private boolean listConfig = false;
     private boolean version = false;
     private boolean dryRun = false;
+
     private boolean exec = false;
 
     public StartArgs(String[] commandLineArgs)
@@ -169,30 +99,9 @@ public class StartArgs
         classpath = new Classpath();
     }
 
-    static DownloadArg toDownloadArg(String uriLocation)
-    {
-        String parts[] = uriLocation.split(":",3);
-        if (parts.length != 3)
-        {
-            throw new IllegalArgumentException("Not <http uri>:<location>");
-        }
-        if (!"http".equalsIgnoreCase(parts[0]))
-        {
-            throw new IllegalArgumentException("Download only supports http protocol");
-        }
-        if (!parts[1].startsWith("//"))
-        {
-            throw new IllegalArgumentException("Download URI invalid: " + uriLocation);
-        }
-        DownloadArg arg = new DownloadArg();
-        arg.uri = String.format("%s:%s",parts[0],parts[1]);
-        arg.location = parts[2];
-        return arg;
-    }
-    
     private void addDownload(String uriLocation)
     {
-        DownloadArg arg=toDownloadArg(uriLocation);
+        DownloadArg arg = new DownloadArg(uriLocation);
         if (!downloads.contains(arg))
         {
             downloads.add(arg);
@@ -452,16 +361,6 @@ public class StartArgs
         return this.commandLine;
     }
 
-    public List<String> getModuleIni()
-    {
-        return moduleIni;
-    }
-
-    public List<String> getModuleStartIni()
-    {
-        return moduleStartIni;
-    }
-
     public List<DownloadArg> getDownloads()
 
     {
@@ -540,14 +439,14 @@ public class StartArgs
         return System.getProperty("main.class",mainclass);
     }
 
-    public List<String> getModulePersistDisable()
+    public List<String> getModuleIni()
     {
-        return modulePersistDisable;
+        return moduleIni;
     }
 
-    public List<String> getModulePersistEnable()
+    public List<String> getModuleStartIni()
     {
-        return modulePersistEnable;
+        return moduleStartIni;
     }
 
     public Properties getProperties()
@@ -648,11 +547,6 @@ public class StartArgs
         return listModules;
     }
 
-    public boolean isModulePersistenceChanging()
-    {
-        return (modulePersistDisable.size() > 0) || (modulePersistEnable.size() > 0);
-    }
-
     public boolean isRun()
     {
         return run;
@@ -685,11 +579,25 @@ public class StartArgs
         }
     }
 
-    public void parse(String arg, String source)
+    public void parse(final String rawarg, String source)
     {
-        if (arg.trim().startsWith("#"))
+        if (rawarg == null)
+        {
             return;
-        
+        }
+
+        final String arg = rawarg.trim();
+
+        if (arg.length() <= 0)
+        {
+            return;
+        }
+
+        if (arg.startsWith("#"))
+        {
+            return;
+        }
+
         if ("--help".equals(arg) || "-?".equals(arg))
         {
             if (!CMD_LINE_SOURCE.equals(source))
@@ -768,7 +676,9 @@ public class StartArgs
         if (arg.startsWith("--module-ini="))
         {
             if (!CMD_LINE_SOURCE.equals(source))
+            {
                 throw new UsageException(ERR_BAD_ARG,"%s not allowed in %s",arg,source);
+            }
             moduleIni.addAll(getValues(arg));
             run = false;
             return;
@@ -777,7 +687,9 @@ public class StartArgs
         if (arg.startsWith("--module-start-ini="))
         {
             if (!CMD_LINE_SOURCE.equals(source))
+            {
                 throw new UsageException(ERR_BAD_ARG,"%s not allowed in %s",arg,source);
+            }
             moduleStartIni.addAll(getValues(arg));
             run = false;
             return;
@@ -796,28 +708,6 @@ public class StartArgs
                 }
                 list.add(source);
             }
-            return;
-        }
-
-        if (arg.startsWith("--enable-module="))
-        {
-            if (!CMD_LINE_SOURCE.equals(source))
-            {
-                throw new UsageException(ERR_BAD_ARG,"%s not allowed in %s",arg,source);
-            }
-            modulePersistEnable.addAll(getValues(arg));
-            run = false;
-            return;
-        }
-
-        if (arg.startsWith("--disable-module="))
-        {
-            if (!CMD_LINE_SOURCE.equals(source))
-            {
-                throw new UsageException(ERR_BAD_ARG,"%s not allowed in %s",arg,source);
-            }
-            modulePersistDisable.addAll(getValues(arg));
-            run = false;
             return;
         }
 
@@ -873,7 +763,7 @@ public class StartArgs
         }
 
         // Anything else is unrecognized
-        throw new UsageException(ERR_BAD_ARG,"Unrecognized argument: %s in %s",arg,source);
+        throw new UsageException(ERR_BAD_ARG,"Unrecognized argument: \"%s\" in %s",arg,source);
     }
 
     public void parseCommandLine()
@@ -902,16 +792,6 @@ public class StartArgs
     public void setAllModules(Modules allModules)
     {
         this.allModules = allModules;
-    }
-
-    public void setModulePersistDisable(List<String> modulePersistDisable)
-    {
-        this.modulePersistDisable = modulePersistDisable;
-    }
-
-    public void setModulePersistEnable(List<String> modulePersistEnable)
-    {
-        this.modulePersistEnable = modulePersistEnable;
     }
 
     @Override

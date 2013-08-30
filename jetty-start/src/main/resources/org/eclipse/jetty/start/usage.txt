@@ -59,23 +59,28 @@ Module Management:
                     o  The ${jetty.base}/start.d/*.ini files
                     
   --module=<modulename>
-                   Will temporarily enable a module from the command line.
+                   Temporarily enable a module from the command line.
                    Note: this can also be used in the ${jetty.base}/start.ini
                    or ${jetty.base}/start.d/*.ini files.
   
   --module-ini=<modulename>
-                   Will enable a module by adding an ini file to the
-                   ${jetty.base}/start.d/ directory from the template
-                   contained in the module definition. Transitive 
-                   dependencies are followed and ini files are created
-                   for them if they too have a ini template.
+                   Enable a module via creation of an ini file in the
+                   ${jetty.base}/start.d/ directory.
+                   Uses ini template that the module itself maintains.
+                   Transitive module dependencies are followed and all
+                   modules that the specified module depends on are also
+                   enabled via their own ini files in the same directory.
+                   Note: not all modules have ini templates. 
   
   --module-start-ini=<modulename>
-                   Will enable a module by appending lines to the 
-                   ${jetty.base}/start.ini file from the template
-                   contained in the module definition. Transitive 
-                   dependencies are followed and lines are appended
-                   for them if they too have a ini template.
+                   Enable a module by appending lines to the 
+                   ${jetty.base}/start.ini file. 
+                   Lines that are added come from the ini template that
+                   the module itself maintains.
+                   Transitive module dependencies are followed and all
+                   modules that the specified module depends on are also
+                   enabled in the ${jetty.base}/start.ini using the same
+                   techniques.
 
 Startup / Shutdown Command Line:
 --------------------------------

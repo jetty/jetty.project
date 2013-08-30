@@ -2,10 +2,13 @@
 # Jetty Proxy module
 #
 
-DEPEND=server
-DEPEND=client
+[depend]
+server
+client
 
-LIB=lib/jetty-proxy-${jetty.version}.jar
+[lib]
+lib/jetty-proxy-${jetty.version}.jar
 
+[xml]
 # Proxy requires configuration
 etc/jetty-proxy.xml

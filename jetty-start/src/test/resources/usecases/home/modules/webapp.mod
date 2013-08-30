@@ -2,6 +2,8 @@
 # Base server
 #
 
-DEPEND=servlet
+[depend]
+servlet
 
-LIB=lib/jetty-webapp-${jetty.version}.jar
+[lib]
+lib/jetty-webapp-${jetty.version}.jar

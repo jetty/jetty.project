@@ -2,5 +2,6 @@
 # Client Feature
 #
 
+[lib]
 # Client jars
-LIB=lib/jetty-client-${jetty.version}.jar
+lib/jetty-client-${jetty.version}.jar

@@ -1,2 +1,2 @@
-
-LIB=resources
+[lib]
+resources

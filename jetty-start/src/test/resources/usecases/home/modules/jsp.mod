@@ -2,7 +2,9 @@
 # Jetty Servlet Module
 #
 
-DEPEND=servlet
+[depend]
+servlet
 
-LIB=lib/jsp/*.jar
+[lib]
+lib/jsp/*.jar
 

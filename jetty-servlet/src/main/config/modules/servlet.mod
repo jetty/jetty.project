@@ -2,6 +2,8 @@
 # Jetty Servlet Module
 #
 
-DEPEND=server
+[depend]
+server
 
-LIB=lib/jetty-servlet-${jetty.version}.jar
+[lib]
+lib/jetty-servlet-${jetty.version}.jar

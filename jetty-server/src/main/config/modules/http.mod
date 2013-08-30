@@ -2,9 +2,12 @@
 # Jetty HTTP Connector
 #
 
-DEPEND=server
+[depend]
+server
 
+[xml]
 etc/jetty-http.xml
 
-INI=jetty.port=8080
-INI=http.timeout=30000
+[ini]
+jetty.port=8080
+http.timeout=30000
