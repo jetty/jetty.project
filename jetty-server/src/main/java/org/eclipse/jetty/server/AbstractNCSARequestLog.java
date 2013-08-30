@@ -33,27 +33,25 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
- * Base implementation of the {@link RequestLog} outputs logs in the pseudo-standard
- * NCSA common log format. Configuration options allow a choice between the
- * standard Common Log Format (as used in the 3 log format) and the Combined Log
- * Format (single log format). This log format can be output by most web
- * servers, and almost all web log analysis software can understand these
- * formats.
+ * Base implementation of the {@link RequestLog} outputs logs in the pseudo-standard NCSA common log format.
+ * Configuration options allow a choice between the standard Common Log Format (as used in the 3 log format) and the
+ * Combined Log Format (single log format). This log format can be output by most web servers, and almost all web log
+ * analysis software can understand these formats.
  */
 public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implements RequestLog
 {
     protected static final Logger LOG = Log.getLogger(AbstractNCSARequestLog.class);
 
     private static ThreadLocal<StringBuilder> _buffers = new ThreadLocal<StringBuilder>()
-            {
-                @Override
-                protected StringBuilder initialValue()
-                {
-                    return new StringBuilder(256);
-                }
-            };
+    {
+        @Override
+        protected StringBuilder initialValue()
+        {
+            return new StringBuilder(256);
+        }
+    };
 
-    
+
     private String[] _ignorePaths;
     private boolean _extended;
     private transient PathMap<String> _ignorePathMap;
@@ -67,22 +65,26 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
     private String _logTimeZone = "GMT";
 
     /* ------------------------------------------------------------ */
+
     /**
      * Is logging enabled
      */
     protected abstract boolean isEnabled();
     
     /* ------------------------------------------------------------ */
+
     /**
      * Write requestEntry out. (to disk or slf4j log)
      */
     public abstract void write(String requestEntry) throws IOException;
 
     /* ------------------------------------------------------------ */
+
     /**
      * Writes the request and response information to the output stream.
      *
-     * @see org.eclipse.jetty.server.RequestLog#log(org.eclipse.jetty.server.Request, org.eclipse.jetty.server.Response)
+     * @see org.eclipse.jetty.server.RequestLog#log(org.eclipse.jetty.server.Request,
+     *      org.eclipse.jetty.server.Response)
      */
     @Override
     public void log(Request request, Response response)
@@ -95,7 +97,7 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
             if (!isEnabled())
                 return;
 
-            StringBuilder buf= _buffers.get();
+            StringBuilder buf = _buffers.get();
             buf.setLength(0);
 
             if (_logServer)
@@ -115,7 +117,7 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
 
             buf.append(addr);
             buf.append(" - ");
-            Authentication authentication=request.getAuthentication();
+            Authentication authentication = request.getAuthentication();
             if (authentication instanceof Authentication.User)
                 buf.append(((Authentication.User)authentication).getUserIdentity().getUserPrincipal().getName());
             else
@@ -134,17 +136,13 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
             buf.append(' ');
             buf.append(request.getProtocol());
             buf.append("\" ");
-            if (request.getHttpChannelState().isInitial())
-            {
-                int status = response.getStatus();
-                if (status <= 0)
-                    status = 404;
-                buf.append((char)('0' + ((status / 100) % 10)));
-                buf.append((char)('0' + ((status / 10) % 10)));
-                buf.append((char)('0' + (status % 10)));
-            }
-            else
-                buf.append("Async");
+
+            int status = response.getStatus();
+            if (status <= 0)
+                status = 404;
+            buf.append((char)('0' + ((status / 100) % 10)));
+            buf.append((char)('0' + ((status / 10) % 10)));
+            buf.append((char)('0' + (status % 10)));
 
             long responseLength = response.getLongContentLength();
             if (responseLength >= 0)
@@ -214,12 +212,13 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
     }
     
     /* ------------------------------------------------------------ */
+
     /**
      * Writes extended request and response information to the output stream.
      *
-     * @param request request object
+     * @param request  request object
      * @param response response object
-     * @param b StringBuilder to write to
+     * @param b        StringBuilder to write to
      * @throws IOException
      */
     protected void logExtended(Request request,
@@ -248,7 +247,6 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
     }
 
 
-
     /**
      * Set request paths that will not be logged.
      *
@@ -272,8 +270,8 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
     /**
      * Controls logging of the request cookies.
      *
-     * @param logCookies true - values of request cookies will be logged,
-     *                   false - values of request cookies will not be logged
+     * @param logCookies true - values of request cookies will be logged, false - values of request cookies will not be
+     *                   logged
      */
     public void setLogCookies(boolean logCookies)
     {
@@ -293,8 +291,7 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
     /**
      * Controls logging of the request hostname.
      *
-     * @param logServer true - request hostname will be logged,
-     *                  false - request hostname will not be logged
+     * @param logServer true - request hostname will be logged, false - request hostname will not be logged
      */
     public void setLogServer(boolean logServer)
     {
@@ -314,8 +311,8 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
     /**
      * Controls logging of request processing time.
      *
-     * @param logLatency true - request processing time will be logged
-     *                   false - request processing time will not be logged
+     * @param logLatency true - request processing time will be logged false - request processing time will not be
+     *                   logged
      */
     public void setLogLatency(boolean logLatency)
     {
@@ -348,11 +345,11 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
     }
 
     /**
-     * Controls whether the actual IP address of the connection or
-     * the IP address from the X-Forwarded-For header will be logged.
+     * Controls whether the actual IP address of the connection or the IP address from the X-Forwarded-For header will
+     * be logged.
      *
-     * @param preferProxiedForAddress true - IP address from header will be logged,
-     *                                false - IP address from the connection will be logged
+     * @param preferProxiedForAddress true - IP address from header will be logged, false - IP address from the
+     *                                connection will be logged
      */
     public void setPreferProxiedForAddress(boolean preferProxiedForAddress)
     {
@@ -372,8 +369,7 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
     /**
      * Set the extended request log format flag.
      *
-     * @param extended true - log the extended request information,
-     *                 false - do not log the extended request information
+     * @param extended true - log the extended request information, false - do not log the extended request information
      */
     public void setExtended(boolean extended)
     {
@@ -390,7 +386,7 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
     {
         return _extended;
     }
-    
+
     /**
      * Set up request logging and open log file.
      *
@@ -401,7 +397,7 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
     {
         if (_logDateFormat != null)
         {
-            _logDateCache = new DateCache(_logDateFormat,_logLocale);
+            _logDateCache = new DateCache(_logDateFormat, _logLocale);
             _logDateCache.setTimeZoneID(_logTimeZone);
         }
 
@@ -409,14 +405,14 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
         {
             _ignorePathMap = new PathMap<>();
             for (int i = 0; i < _ignorePaths.length; i++)
-                _ignorePathMap.put(_ignorePaths[i],_ignorePaths[i]);
+                _ignorePathMap.put(_ignorePaths[i], _ignorePaths[i]);
         }
         else
             _ignorePathMap = null;
 
         super.doStart();
     }
-    
+
     @Override
     protected void doStop() throws Exception
     {
@@ -425,8 +421,8 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
     }
 
     /**
-     * Set the timestamp format for request log entries in the file.
-     * If this is not set, the pre-formated request timestamp is used.
+     * Set the timestamp format for request log entries in the file. If this is not set, the pre-formated request
+     * timestamp is used.
      *
      * @param format timestamp format string
      */
