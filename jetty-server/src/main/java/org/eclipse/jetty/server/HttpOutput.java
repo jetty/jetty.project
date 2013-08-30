@@ -574,6 +574,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         ReadableByteChannel rbc=httpContent.getReadableByteChannel();
         if (rbc!=null)
         {
+            // Close of the rbc is done by the async sendContent
             sendContent(rbc,callback);
             return;
         }
@@ -829,6 +830,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         @Override
         protected boolean process() throws Exception
         {
+            // Only return if EOF has previously been read and thus
+            // a write done with EOF=true
             if (_eof)
             {
                 // Handle EOF
@@ -838,21 +841,15 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 return true;
             }
             
-            int len=_in.read(_buffer.array(),0,_buffer.capacity());
-
-            if (len<0)
+            // Read until buffer full or EOF
+            int len=0;
+            while (len<_buffer.capacity() && !_eof)
             {
-                _eof=true;
-                len=0;
-            }
-            else if (len<_buffer.capacity())
-            {
-                // read ahead for EOF to try for single commit
-                int len2=_in.read(_buffer.array(),len,_buffer.capacity()-len);
-                if (len2<0)
+                int r=_in.read(_buffer.array(),0,_buffer.capacity()-len);
+                if (r<0)
                     _eof=true;
                 else
-                    len+=len2;
+                    len+=r;
             }
 
             // write what we have
@@ -905,6 +902,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         @Override
         protected boolean process() throws Exception
         {
+            // Only return if EOF has previously been read and thus
+            // a write done with EOF=true
             if (_eof)
             {
                 _in.close();
@@ -913,24 +912,10 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 return true;
             }
             
+            // Read from stream until buffer full or EOF
             _buffer.clear();
-            int len=_in.read(_buffer);
-
-            if (len<0)
-            {
-                _eof=true;
-                len=0;         
-                _in.close();
-            }
-            else if (len<_buffer.capacity())
-            {
-                // read ahead for EOF to try for single commit
-                int len2=_in.read(_buffer);
-                if (len2<0)
-                    _eof=true;
-                else
-                    len+=len2;
-            }
+            while (_buffer.hasRemaining() && !_eof)
+              _eof = (_in.read(_buffer)) <  0;
 
             // write what we have
             _buffer.flip();

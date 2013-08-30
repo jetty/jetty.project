@@ -155,6 +155,7 @@ public class FastFileServer
             // send "medium" files from an input stream
             if (file.length()<MEDIUM)
             {
+                // the file channel is closed by the async send
                 ((HttpOutput)response.getOutputStream()).sendContent(FileChannel.open(file.toPath(),StandardOpenOption.READ),completionCB);
                 return;
             }
