@@ -267,6 +267,8 @@ public class WebAppProvider extends ScanningAppProvider
             XmlConfiguration xmlc = new XmlConfiguration(resource.getURL());
             
             xmlc.getIdMap().put("Server",getDeploymentManager().getServer());
+            xmlc.getProperties().put("jetty.home",System.getProperty("jetty.home","."));
+            xmlc.getProperties().put("jetty.base",System.getProperty("jetty.base","."));
             xmlc.getProperties().put("jetty.webapp",file.getCanonicalPath());
             xmlc.getProperties().put("jetty.webapps",file.getParentFile().getCanonicalPath());
             
