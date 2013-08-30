@@ -18,12 +18,8 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.RejectedExecutionException;
-
-import javax.servlet.ReadListener;
 
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
