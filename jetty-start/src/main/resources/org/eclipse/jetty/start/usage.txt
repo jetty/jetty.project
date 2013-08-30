@@ -82,6 +82,13 @@ Module Management:
                    enabled in the ${jetty.base}/start.ini using the same
                    techniques.
 
+  --write-module-graph=<filename>
+                   Create a graphviz *.dot file of the module graph as it
+                   exists for the active ${jetty.base}.
+                   See http://graphviz.org/ for details on how to post-process
+                   this file into the output best suited for your needs.
+
+
 Startup / Shutdown Command Line:
 --------------------------------
   

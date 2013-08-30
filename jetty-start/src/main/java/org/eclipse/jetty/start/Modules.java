@@ -37,6 +37,7 @@ import java.util.Stack;
 public class Modules implements Iterable<Module>
 {
     private Map<String, Module> modules = new HashMap<>();
+    private int maxDepth = -1;
 
     private Set<String> asNameSet(Set<Module> moduleSet)
     {
@@ -83,6 +84,7 @@ public class Modules implements Iterable<Module>
         for (Module child : module.getChildEdges())
         {
             child.setDepth(Math.max(depth,child.getDepth()));
+            this.maxDepth = Math.max(this.maxDepth,child.getDepth());
         }
 
         // Dive down
@@ -118,7 +120,7 @@ public class Modules implements Iterable<Module>
             for (String optionalParentName : module.getOptionalParentNames())
             {
                 Module optional = get(optionalParentName);
-                if (optional==null)
+                if (optional == null)
                 {
                     System.err.printf("WARNING: module not found [%s]%n",optionalParentName);
                 }
@@ -240,6 +242,24 @@ public class Modules implements Iterable<Module>
     public Module get(String name)
     {
         return modules.get(name);
+    }
+
+    public int getMaxDepth()
+    {
+        return maxDepth;
+    }
+
+    public Set<Module> getModulesAtDepth(int depth)
+    {
+        Set<Module> ret = new HashSet<>();
+        for (Module module : modules.values())
+        {
+            if (module.getDepth() == depth)
+            {
+                ret.add(module);
+            }
+        }
+        return ret;
     }
 
     @Override

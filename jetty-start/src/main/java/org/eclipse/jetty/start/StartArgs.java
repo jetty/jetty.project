@@ -79,6 +79,7 @@ public class StartArgs
     private List<String> jvmArgs = new ArrayList<>();
     private List<String> moduleIni = new ArrayList<>();
     private List<String> moduleStartIni = new ArrayList<>();
+    private String moduleGraphFilename;
 
     private Modules allModules;
     // Should the server be run?
@@ -439,6 +440,11 @@ public class StartArgs
         return System.getProperty("main.class",mainclass);
     }
 
+    public String getModuleGraphFilename()
+    {
+        return moduleGraphFilename;
+    }
+
     public List<String> getModuleIni()
     {
         return moduleIni;
@@ -708,6 +714,13 @@ public class StartArgs
                 }
                 list.add(source);
             }
+            return;
+        }
+
+        if (arg.startsWith("--write-module-graph="))
+        {
+            this.moduleGraphFilename = getValue(arg);
+            run = false;
             return;
         }
 

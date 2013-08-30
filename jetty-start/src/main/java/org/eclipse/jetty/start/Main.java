@@ -611,6 +611,16 @@ public class Main
         {
             listModules(args);
         }
+        
+        // Generate Module Graph File
+        if (args.getModuleGraphFilename() != null)
+        {
+            File outputFile = baseHome.getBaseFile(args.getModuleGraphFilename());
+            System.out.printf("Generating GraphViz Graph of Jetty Modules at %s%n",baseHome.toShortForm(outputFile));
+            ModuleGraphWriter writer = new ModuleGraphWriter();
+            writer.config(args.getProperties());
+            writer.write(args.getAllModules(),outputFile);
+        }
 
         // Show Command Line to execute Jetty
         if (args.isDryRun())

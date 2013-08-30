@@ -30,17 +30,14 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.omg.CORBA.INITIALIZE;
-
 /**
  * Represents a Module metadata, as defined in Jetty.
  */
-public class Module // extends TextFile
+public class Module
 {
     public static class NameComparator implements Comparator<Module>
     {
