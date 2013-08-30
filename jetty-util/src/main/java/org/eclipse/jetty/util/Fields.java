@@ -206,7 +206,7 @@ public class Fields implements Iterable<Fields.Field>
         private final String name;
         private final String[] values;
 
-        private Field(String name, String value)
+        public Field(String name, String value)
         {
             this(name, new String[]{value});
         }
