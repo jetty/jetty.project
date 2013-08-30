@@ -207,7 +207,7 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
         @Override
         public void goAway(GoAwayInfo goAwayInfo, Callback handler)
         {
-            getEndPoint().close();
+            ProxyHTTPSPDYConnection.this.close();
             handler.succeeded();
         }
     }
