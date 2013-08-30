@@ -538,6 +538,7 @@ public class ResourceHandler extends HandlerWrapper
                 }
                 else  // Do a blocking write of a channel (if available) or input stream
                 {
+                    // Close of the channel/inputstream is done by the async sendContent
                     ReadableByteChannel channel= resource.getReadableByteChannel();
                     if (channel!=null)
                         ((HttpOutput)out).sendContent(channel,callback);
