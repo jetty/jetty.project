@@ -26,6 +26,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpVersion;
@@ -143,10 +144,16 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
         {
             stream.getStreamFrameListener().onData(stream, toDataInfo(content, true));
         }
+        return false;
+    }
+
+    @Override
+    public void completed()
+    {
         headers.clear();
         stream = null;
         content = null;
-        return false;
+        super.completed();
     }
 
     @Override
@@ -235,6 +242,8 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
         {
             Fields headers = new Fields(replyInfo.getHeaders(), false);
 
+            addPersistenceHeader(headers);
+
             headers.remove(HTTPSPDYHeader.SCHEME.name(version));
 
             String status = headers.remove(HTTPSPDYHeader.STATUS.name(version)).value();
@@ -311,6 +320,43 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
                 completed();
 
             handler.succeeded();
+        }
+    }
+
+    private void addPersistenceHeader(Fields headersToAddTo)
+    {
+        HttpVersion httpVersion = HttpVersion.fromString(headers.get("version").value());
+        boolean persistent = false;
+        switch (httpVersion)
+        {
+            case HTTP_1_0:
+            {
+                Fields.Field keepAliveHeader = headers.get(HttpHeader.KEEP_ALIVE.asString());
+                if(keepAliveHeader!=null)
+                    persistent = HttpHeaderValue.KEEP_ALIVE.asString().equals(keepAliveHeader.value());
+                if (!persistent)
+                    persistent = HttpMethod.CONNECT.is(headers.get("method").value());
+                if (persistent)
+                    headersToAddTo.add(HttpHeader.CONNECTION.asString(), HttpHeaderValue.KEEP_ALIVE.asString());
+                break;
+            }
+            case HTTP_1_1:
+            {
+                Fields.Field connectionHeader = headers.get(HttpHeader.CONNECTION.asString());
+                if(connectionHeader != null)
+                    persistent = !HttpHeaderValue.CLOSE.asString().equals(connectionHeader.value());
+                else
+                    persistent = true;
+                if (!persistent)
+                    persistent = HttpMethod.CONNECT.is(headers.get("method").value());
+                if (!persistent)
+                    headersToAddTo.add(HttpHeader.CONNECTION.asString(), HttpHeaderValue.CLOSE.asString());
+                break;
+            }
+            default:
+            {
+                throw new IllegalStateException();
+            }
         }
     }
 
