@@ -845,7 +845,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             int len=0;
             while (len<_buffer.capacity() && !_eof)
             {
-                int r=_in.read(_buffer.array(),0,_buffer.capacity()-len);
+                int r=_in.read(_buffer.array(),_buffer.arrayOffset()+len,_buffer.capacity()-len);
                 if (r<0)
                     _eof=true;
                 else
