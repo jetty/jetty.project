@@ -18,8 +18,10 @@
 
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -33,10 +35,13 @@ import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.net.URI;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Random;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.servlet.ServletException;
@@ -48,7 +53,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -658,6 +662,64 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
     }
 
+    @Test
+    public void testCloseWhileWriteBlocked() throws Exception
+    {
+        configureServer(new DataHandler());
+
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
+        {
+            OutputStream os = client.getOutputStream();
+            InputStream is = client.getInputStream();
+
+            os.write((
+                    "GET /data?encoding=iso-8859-1&writes=100&block=100000 HTTP/1.1\r\n" +
+                            "host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
+                            "connection: close\r\n" +
+                            "content-type: unknown\r\n" +
+                            "\r\n"
+            ).getBytes());
+            os.flush();
+
+            // Read the first part of the response
+            byte[] buf = new byte[1024 * 8];
+            is.read(buf);
+            
+            // sleep to ensure server is blocking
+            Thread.sleep(250);
+            System.err.println("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+
+            Thread.sleep(20000);
+            System.err.println("YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY");
+            
+            // Close the client
+            client.close();            
+        }
+
+        Thread.sleep(20000);
+        System.err.println("ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ");
+        
+        Thread.sleep(200);
+        // check server is still handling requests quickly
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
+        {
+            client.setSoTimeout(500);
+            OutputStream os = client.getOutputStream();
+            InputStream is = client.getInputStream();
+
+            os.write(("GET /data?writes=1&block=1024 HTTP/1.1\r\n" +
+                            "host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
+                            "connection: close\r\n" +
+                            "content-type: unknown\r\n" +
+                            "\r\n"
+            ).getBytes());
+            os.flush();
+  
+            String response = IO.toString(is);
+            assertThat(response,startsWith("HTTP/1.1 200 OK"));
+        }
+    }
+    
     @Test
     public void testBigBlocks() throws Exception
     {
@@ -1435,7 +1497,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             os.flush();
 
             String response = readResponse(client);
-            assertThat(response, JUnitMatchers.containsString("RESUMEDHTTP/1.1 200 OK"));
+            assertThat(response, containsString("RESUMEDHTTP/1.1 200 OK"));
             assertThat((System.currentTimeMillis() - start), greaterThanOrEqualTo(1999L));
 
             // TODO This test should also check that that the CPU did not spin during the suspend.

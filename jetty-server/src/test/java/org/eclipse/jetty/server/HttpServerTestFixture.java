@@ -151,6 +151,7 @@ public class HttpServerTestFixture
 
     protected static class HelloWorldHandler extends AbstractHandler
     {
+        @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
@@ -195,20 +196,24 @@ public class HttpServerTestFixture
             else if ("true".equals(chars))
             {
                 response.setCharacterEncoding(encoding);
-                Writer out=response.getWriter();
+                PrintWriter out=response.getWriter();
                 char[] c=chunk.toCharArray();
                 for (int i=0;i<writes;i++)
                 {
                     out.write(c);
+                    if (out.checkError())
+                        break;
                 }
             }
             else
             {
                 response.setCharacterEncoding(encoding);
-                Writer out=response.getWriter();
+                PrintWriter out=response.getWriter();
                 for (int i=0;i<writes;i++)
                 {
                     out.write(chunk);
+                    if (out.checkError())
+                        break;
                 }
             }
 

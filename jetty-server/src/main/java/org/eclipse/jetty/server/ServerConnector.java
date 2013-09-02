@@ -144,6 +144,26 @@ public class ServerConnector extends AbstractNetworkConnector
     }
 
     /* ------------------------------------------------------------ */
+    /** HTTP Server Connection.
+     * <p>Construct a ServerConnector with a private instance of {@link HttpConnectionFactory} as the primary protocol</p>.
+     * @param server The {@link Server} this connector will accept connection for. 
+     * @param sslContextFactory If non null, then a {@link SslConnectionFactory} is instantiated and prepended to the 
+     * list of HTTP Connection Factory.
+     * @param acceptors 
+     *          the number of acceptor threads to use, or 0 for a default value. Acceptors accept new TCP/IP connections.
+     * @param selectors
+     *          the number of selector threads, or 0 for a default value. Selectors notice and schedule established connection that can make IO progress.
+     */
+    public ServerConnector(
+        @Name("server") Server server,
+        @Name("acceptors") int acceptors,
+        @Name("selectors") int selectors,
+        @Name("sslContextFactory") SslContextFactory sslContextFactory)
+    {
+        this(server,null,null,null,acceptors,selectors,AbstractConnectionFactory.getFactories(sslContextFactory,new HttpConnectionFactory()));
+    }
+
+    /* ------------------------------------------------------------ */
     /** Generic SSL Server Connection.
      * @param server The {@link Server} this connector will accept connection for. 
      * @param sslContextFactory If non null, then a {@link SslConnectionFactory} is instantiated and prepended to the 
