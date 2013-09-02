@@ -722,8 +722,8 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
             if (x instanceof EofException)
             {
                 LOG.debug(x);
-                _response.getHttpOutput().closed();
                 _callback.failed(x);
+                _response.getHttpOutput().closed();
             }
             else
             {
@@ -733,16 +733,16 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
                     @Override
                     public void succeeded()
                     {
-                        _response.getHttpOutput().closed();
                         _callback.failed(x);
+                        _response.getHttpOutput().closed();
                     }
 
                     @Override
                     public void failed(Throwable th)
                     {
                         LOG.ignore(th);
-                        _response.getHttpOutput().closed();
                         _callback.failed(x);
+                        _response.getHttpOutput().closed();
                     }
                 });
             }
