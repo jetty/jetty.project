@@ -104,7 +104,7 @@
  org.xml.sax.helpers,
  *
                         </Import-Package>
-                        <DynamicImport-Package>org.eclipse.jetty.*;version="[9.0,10.0)"</DynamicImport-Package>
+                        <DynamicImport-Package>org.eclipse.jetty.*;version="[9.1,10.0)"</DynamicImport-Package>
                     </instructions>
                 </configuration>
             </plugin>

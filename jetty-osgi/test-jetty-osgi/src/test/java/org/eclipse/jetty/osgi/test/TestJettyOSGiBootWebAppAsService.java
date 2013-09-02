@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.osgi.test;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 import static org.ops4j.pax.exam.CoreOptions.options;
 import static org.ops4j.pax.exam.CoreOptions.systemProperty;
@@ -28,8 +31,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import javax.inject.Inject;
-
-import junit.framework.Assert;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -82,7 +83,6 @@ public class TestJettyOSGiBootWebAppAsService
         if (LOGGING_ENABLED)
             logLevel = "INFO";
         
-
         options.addAll(Arrays.asList(options(
                                              // install log service using pax runners profile abstraction (there
                                              // are more profiles, like DS)
@@ -94,8 +94,8 @@ public class TestJettyOSGiBootWebAppAsService
 
         options.addAll(jspDependencies());
         return options.toArray(new Option[options.size()]);
-
     }
+    
 
     public static List<Option> configureJettyHomeAndPort(String jettySelectorFileName)
     {
@@ -119,16 +119,14 @@ public class TestJettyOSGiBootWebAppAsService
     public static List<Option> jspDependencies()
     {
         List<Option> res = new ArrayList<Option>();
-        /* orbit deps */
-        res.add(mavenBundle().groupId("org.eclipse.jetty.orbit").artifactId("javax.servlet.jsp").versionAsInProject());
+        
+        //jsp bundles
+        res.add(mavenBundle().groupId("javax.servlet.jsp").artifactId("javax.servlet.jsp-api").versionAsInProject());
         res.add(mavenBundle().groupId("org.eclipse.jetty.orbit").artifactId("javax.servlet.jsp.jstl").versionAsInProject());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.orbit").artifactId("javax.el").versionAsInProject());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.orbit").artifactId("com.sun.el").versionAsInProject());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.orbit").artifactId("org.apache.jasper.glassfish").versionAsInProject());
         res.add(mavenBundle().groupId("org.eclipse.jetty.orbit").artifactId("org.apache.taglibs.standard.glassfish").versionAsInProject());
+        res.add(mavenBundle().groupId("org.glassfish").artifactId("javax.el").versionAsInProject());
         res.add(mavenBundle().groupId("org.eclipse.jetty.orbit").artifactId("org.eclipse.jdt.core").versionAsInProject());
-
-        /* jetty-osgi deps */
+        res.add(mavenBundle().groupId("org.eclipse.jetty.toolchain").artifactId("jetty-jsp-fragment").versionAsInProject().noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("jetty-osgi-boot-jsp").versionAsInProject().noStart());
 
         // a bundle that registers a webapp as a service for the jetty osgi core
@@ -148,17 +146,17 @@ public class TestJettyOSGiBootWebAppAsService
     @Test
     public void testBundle() throws Exception
     {
-        // now test the jsp/dump.jsp
+        // now test getting a static file
         HttpClient client = new HttpClient();
         try
         {
             client.start();
 
             ContentResponse response = client.GET("http://127.0.0.1:" + TestJettyOSGiBootCore.DEFAULT_JETTY_HTTP_PORT + "/acme/index.html");
-            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+            assertEquals(HttpStatus.OK_200, response.getStatus());
 
             String content = new String(response.getContent());
-            Assert.assertTrue(content.indexOf("<h1>Test OSGi WebApp</h1>") != -1);
+            assertTrue(content.indexOf("<h1>Test OSGi WebApp</h1>") != -1);
         }
         finally
         {
@@ -166,10 +164,10 @@ public class TestJettyOSGiBootWebAppAsService
         }
 
         ServiceReference[] refs = bundleContext.getServiceReferences(ContextHandler.class.getName(), null);
-        Assert.assertNotNull(refs);
-        Assert.assertEquals(1, refs.length);
+        assertNotNull(refs);
+        assertEquals(1, refs.length);
         WebAppContext wac = (WebAppContext) bundleContext.getService(refs[0]);
-        Assert.assertEquals("/acme", wac.getContextPath());
+        assertEquals("/acme", wac.getContextPath());
     }
 
 }

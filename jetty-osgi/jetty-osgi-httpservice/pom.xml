@@ -96,10 +96,10 @@
                 <Bundle-SymbolicName>org.eclipse.jetty.osgi.httpservice</Bundle-SymbolicName>
                 <Bundle-Name>OSGi HttpService</Bundle-Name>
                 <Jetty-ContextFilePath>contexts/httpservice.xml</Jetty-ContextFilePath>
-                <Import-Package>org.eclipse.jetty.server.handler;version="[9.0,10.0)",
-org.eclipse.jetty.util.component;version="[9.0,10.0)",
-org.eclipse.jetty.server.session;version="[9.0,10.0)",
-org.eclipse.jetty.servlet;version="[9.0,10.0)",
+                <Import-Package>org.eclipse.jetty.server.handler;version="[9.1,10.0)",
+org.eclipse.jetty.util.component;version="[9.1,10.0)",
+org.eclipse.jetty.server.session;version="[9.1,10.0)",
+org.eclipse.jetty.servlet;version="[9.1,10.0)",
 org.eclipse.equinox.http.servlet,
 *
                  </Import-Package>

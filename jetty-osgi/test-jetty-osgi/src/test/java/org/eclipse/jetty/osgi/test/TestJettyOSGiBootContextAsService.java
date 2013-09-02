@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.osgi.test;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 import static org.ops4j.pax.exam.CoreOptions.options;
 import static org.ops4j.pax.exam.CoreOptions.systemProperty;
@@ -28,8 +31,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import javax.inject.Inject;
-
-import junit.framework.Assert;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -122,6 +123,7 @@ public class TestJettyOSGiBootContextAsService
         TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
     }
 
+
     /**
      */
     @Test
@@ -133,10 +135,10 @@ public class TestJettyOSGiBootContextAsService
         {
             client.start();
             ContentResponse response = client.GET("http://127.0.0.1:" + TestJettyOSGiBootCore.DEFAULT_JETTY_HTTP_PORT + "/acme/index.html");
-            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+            assertEquals(HttpStatus.OK_200, response.getStatus());
 
             String content = new String(response.getContent());
-            Assert.assertTrue(content.indexOf("<h1>Test OSGi Context</h1>") != -1);
+            assertTrue(content.indexOf("<h1>Test OSGi Context</h1>") != -1);
         }
         finally
         {
@@ -144,8 +146,8 @@ public class TestJettyOSGiBootContextAsService
         }
 
         ServiceReference[] refs = bundleContext.getServiceReferences(ContextHandler.class.getName(), null);
-        Assert.assertNotNull(refs);
-        Assert.assertEquals(1, refs.length);
+        assertNotNull(refs);
+        assertEquals(1, refs.length);
         //uncomment for debugging
        /*  
        String[] keys = refs[0].getPropertyKeys();
@@ -155,15 +157,15 @@ public class TestJettyOSGiBootContextAsService
                 System.err.println("service property: " + k + ", " + refs[0].getProperty(k));
         }*/
         ContextHandler ch = (ContextHandler) bundleContext.getService(refs[0]);
-        Assert.assertEquals("/acme", ch.getContextPath());
+        assertEquals("/acme", ch.getContextPath());
 
         // Stop the bundle with the ContextHandler in it and check the jetty
         // Context is destroyed for it.
         // TODO: think of a better way to communicate this to the test, other
         // than checking stderr output
         Bundle testWebBundle = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.osgi.testcontext");
-        Assert.assertNotNull("Could not find the org.eclipse.jetty.test-jetty-osgi-context.jar bundle", testWebBundle);
-        Assert.assertTrue("The bundle org.eclipse.jetty.testcontext is not correctly resolved", testWebBundle.getState() == Bundle.ACTIVE);
+        assertNotNull("Could not find the org.eclipse.jetty.test-jetty-osgi-context.jar bundle", testWebBundle);
+        assertTrue("The bundle org.eclipse.jetty.testcontext is not correctly resolved", testWebBundle.getState() == Bundle.ACTIVE);
         testWebBundle.stop();
     }
 }
