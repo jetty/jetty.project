@@ -19,6 +19,7 @@
 package org.eclipse.jetty.fcgi.generator;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.fcgi.parser.ClientParser;
@@ -34,32 +35,42 @@ public class ClientGeneratorTest
     public void testGenerateRequestWithoutContent() throws Exception
     {
         Fields fields = new Fields();
-        final String methodParamName = "REQUEST_METHOD";
-        final String methodParamValue = "GET";
-        fields.put(new Fields.Field(methodParamName, methodParamValue));
-        final String uriParamName = "REQUEST_URI";
+
+        // Short name, short value
+        final String shortShortName = "REQUEST_METHOD";
+        final String shortShortValue = "GET";
+        fields.put(new Fields.Field(shortShortName, shortShortValue));
+
+        // Short name, long value
+        final String shortLongName = "REQUEST_URI";
         // Be sure it's longer than 127 chars to test the large value
-        final String uriParamValue = "/api/0.6/map?bbox=-64.217736,-31.456810,-64.187736,-31.432322,filler=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
-        fields.put(new Fields.Field(uriParamName, uriParamValue));
-        final String protocolParamName = "SERVER_PROTOCOL";
-        final String protocolParamValue = "HTTP/1.1";
-        fields.put(new Fields.Field(protocolParamName, protocolParamValue));
+        final String shortLongValue = "/api/0.6/map?bbox=-64.217736,-31.456810,-64.187736,-31.432322,filler=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
+        fields.put(new Fields.Field(shortLongName, shortLongValue));
+
+        // Long name, short value
         // Be sure it's longer than 127 chars to test the large name
-        final String hostParamName = "FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210";
-        final String hostParamValue = "api.openstreetmap.org";
-        fields.put(new Fields.Field(hostParamName, hostParamValue));
+        final String longShortName = "FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210";
+        final String longShortValue = "api.openstreetmap.org";
+        fields.put(new Fields.Field(longShortName, longShortValue));
+
+        // Long name, long value
+        char[] chars = new char[ClientGenerator.MAX_PARAM_LENGTH];
+        Arrays.fill(chars, 'z');
+        final String longLongName = new String(chars);
+        final String longLongValue = longLongName;
+        fields.put(new Fields.Field(longLongName, longLongValue));
 
         ByteBufferPool byteBufferPool = new MappedByteBufferPool();
         ClientGenerator generator = new ClientGenerator(byteBufferPool);
-        ByteBuffer buffer = generator.generateRequestHeaders(13, fields);
+        Generator.Result result = generator.generateRequestHeaders(13, fields, null);
 
         // Use the fundamental theorem of arithmetic to test the results.
         // This way we know onParam() has been called the right number of
         // times with the right arguments, and so onParams().
         final int[] primes = new int[]{2, 3, 5, 7, 11};
-        int result = 1;
+        int value = 1;
         for (int prime : primes)
-            result *= prime;
+            value *= prime;
 
         final AtomicInteger params = new AtomicInteger(1);
         ClientParser parser = new ClientParser(new ClientParser.Listener.Adapter()
@@ -69,24 +80,23 @@ public class ClientGeneratorTest
             {
                 switch (name)
                 {
-                    case methodParamName:
-                        Assert.assertEquals(methodParamValue, value);
+                    case shortShortName:
+                        Assert.assertEquals(shortShortValue, value);
                         params.set(params.get() * primes[0]);
                         break;
-                    case uriParamName:
-                        Assert.assertEquals(uriParamValue, value);
+                    case shortLongName:
+                        Assert.assertEquals(shortLongValue, value);
                         params.set(params.get() * primes[1]);
                         break;
-                    case protocolParamName:
-                        Assert.assertEquals(protocolParamValue, value);
+                    case longShortName:
+                        Assert.assertEquals(longShortValue, value);
                         params.set(params.get() * primes[2]);
                         break;
-                    case hostParamName:
-                        Assert.assertEquals(hostParamValue, value);
+                    default:
+                        Assert.assertEquals(longLongName, name);
+                        Assert.assertEquals(longLongValue, value);
                         params.set(params.get() * primes[3]);
                         break;
-                    default:
-                        throw new IllegalStateException();
                 }
             }
 
@@ -97,19 +107,25 @@ public class ClientGeneratorTest
             }
         });
 
-        parser.parse(buffer);
+        for (ByteBuffer buffer : result.getByteBuffers())
+        {
+            parser.parse(buffer);
+            Assert.assertFalse(buffer.hasRemaining());
+        }
 
-        Assert.assertFalse(buffer.hasRemaining());
-        Assert.assertEquals(result, params.get());
+        Assert.assertEquals(value, params.get());
 
         // Parse again byte by byte
-        buffer.flip();
         params.set(1);
-        while (buffer.hasRemaining())
-            parser.parse(ByteBuffer.wrap(new byte[]{buffer.get()}));
 
-        Assert.assertFalse(buffer.hasRemaining());
-        Assert.assertEquals(result, params.get());
+        for (ByteBuffer buffer : result.getByteBuffers())
+        {
+            buffer.flip();
+            while (buffer.hasRemaining())
+                parser.parse(ByteBuffer.wrap(new byte[]{buffer.get()}));
+            Assert.assertFalse(buffer.hasRemaining());
+        }
 
+        Assert.assertEquals(value, params.get());
     }
 }

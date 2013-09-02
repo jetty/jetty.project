@@ -56,7 +56,7 @@ public class BeginRequestContentParser extends ContentParser
                 case ROLE_BYTES:
                 {
                     int halfShort = buffer.get() & 0xFF;
-                    role = (role << (8 * cursor)) + halfShort;
+                    role = (role << 8) + halfShort;
                     if (++cursor == 2)
                         state = State.FLAGS;
                     break;

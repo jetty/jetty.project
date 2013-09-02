@@ -41,7 +41,7 @@ public class ParamsContentParser extends ContentParser
     @Override
     public boolean parse(ByteBuffer buffer)
     {
-        while (buffer.hasRemaining())
+        while (buffer.hasRemaining() || state == State.PARAM)
         {
             switch (state)
             {
@@ -78,10 +78,13 @@ public class ParamsContentParser extends ContentParser
                 case NAME_LENGTH_BYTES:
                 {
                     int quarterInt = buffer.get() & 0xFF;
-                    nameLength = (nameLength << (8 * cursor)) + quarterInt;
+                    nameLength = (nameLength << 8) + quarterInt;
                     --length;
                     if (++cursor == 4)
+                    {
+                        nameLength &= 0x7F_FF;
                         state = State.VALUE_LENGTH;
+                    }
                     break;
                 }
                 case VALUE_LENGTH:
@@ -111,10 +114,13 @@ public class ParamsContentParser extends ContentParser
                 case VALUE_LENGTH_BYTES:
                 {
                     int quarterInt = buffer.get() & 0xFF;
-                    valueLength = (valueLength << (8 * cursor)) + quarterInt;
+                    valueLength = (valueLength << 8) + quarterInt;
                     --length;
                     if (++cursor == 4)
+                    {
+                        valueLength &= 0x7F_FF;
                         state = State.NAME;
+                    }
                     break;
                 }
                 case NAME:

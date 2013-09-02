@@ -54,7 +54,7 @@ public class HeaderParser
                 {
                     if (buffer.remaining() >= 2)
                     {
-                        request = buffer.getShort() & 0xFFFF;
+                        request = buffer.getShort() & 0xFF_FF;
                         state = State.LENGTH;
                     }
                     else
@@ -67,7 +67,7 @@ public class HeaderParser
                 case REQUEST_BYTES:
                 {
                     int halfShort = buffer.get() & 0xFF;
-                    request = (request << (8 * cursor)) + halfShort;
+                    request = (request << 8) + halfShort;
                     if (++cursor == 2)
                         state = State.LENGTH;
                     break;
@@ -76,7 +76,7 @@ public class HeaderParser
                 {
                     if (buffer.remaining() >= 2)
                     {
-                        length = buffer.getShort() & 0xFFFF;
+                        length = buffer.getShort() & 0xFF_FF;
                         state = State.PADDING;
                     }
                     else
@@ -89,7 +89,7 @@ public class HeaderParser
                 case LENGTH_BYTES:
                 {
                     int halfShort = buffer.get() & 0xFF;
-                    length = (length << (8 * cursor)) + halfShort;
+                    length = (length << 8) + halfShort;
                     if (++cursor == 2)
                         state = State.PADDING;
                     break;
