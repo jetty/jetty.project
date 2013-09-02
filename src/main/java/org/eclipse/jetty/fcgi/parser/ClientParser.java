@@ -32,6 +32,7 @@ public class ClientParser extends Parser
         this.listener = listener;
         contentParsers.put(FCGI.FrameType.BEGIN_REQUEST, new BeginRequestContentParser(headerParser));
         contentParsers.put(FCGI.FrameType.PARAMS, new ParamsContentParser(headerParser, listener));
+        contentParsers.put(FCGI.FrameType.STDIN, new StreamContentParser(headerParser, FCGI.StreamType.STD_IN, listener));
     }
 
     @Override
@@ -40,21 +41,21 @@ public class ClientParser extends Parser
         return contentParsers.get(frameType);
     }
 
-    public interface Listener
+    public interface Listener extends Parser.Listener
     {
-        public void onParam(String name, String value);
+        public void onParam(int request, String name, String value);
 
-        public void onParams();
+        public void onParams(int request);
 
-        public static class Adapter implements Listener
+        public static class Adapter extends Parser.Listener.Adapter implements Listener
         {
             @Override
-            public void onParam(String name, String value)
+            public void onParam(int request, String name, String value)
             {
             }
 
             @Override
-            public void onParams()
+            public void onParams(int request)
             {
             }
         }

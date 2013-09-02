@@ -73,4 +73,9 @@ public class FCGI
             this.code = code;
         }
     }
+
+    public enum StreamType
+    {
+        STD_IN, STD_OUT, STD_ERR
+    }
 }

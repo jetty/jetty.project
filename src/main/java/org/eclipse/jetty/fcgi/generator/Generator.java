@@ -27,9 +27,52 @@ import org.eclipse.jetty.util.Callback;
 
 public class Generator
 {
-    protected ByteBuffer generateContent(FCGI.FrameType frameType, int length)
+    public static final int MAX_CONTENT_LENGTH = 0xFF_FF;
+
+    protected final ByteBufferPool byteBufferPool;
+
+    public Generator(ByteBufferPool byteBufferPool)
     {
-        return BufferUtil.EMPTY_BUFFER;
+        this.byteBufferPool = byteBufferPool;
+    }
+
+    protected Result generateContent(int id, ByteBuffer content, boolean lastContent, Callback callback, FCGI.FrameType frameType)
+    {
+        id &= 0xFF_FF;
+
+        int remaining = content == null ? 0 : content.remaining();
+        int frames = 2 * (remaining / MAX_CONTENT_LENGTH + 1) + (lastContent ? 1 : 0);
+        Result result = new Result(byteBufferPool, callback, frames);
+
+        while (remaining > 0 || lastContent)
+        {
+            ByteBuffer buffer = byteBufferPool.acquire(8, false);
+            BufferUtil.clearToFill(buffer);
+            result.add(buffer, true);
+
+            // Generate the frame header
+            buffer.put((byte)0x01);
+            buffer.put((byte)frameType.code);
+            buffer.putShort((short)id);
+            int length = Math.min(MAX_CONTENT_LENGTH, remaining);
+            buffer.putShort((short)length);
+            buffer.putShort((short)0);
+            buffer.flip();
+
+            if (remaining == 0)
+                break;
+
+            // Slice to content to avoid copying
+            int limit = content.limit();
+            content.limit(content.position() + length);
+            ByteBuffer slice = content.slice();
+            result.add(slice, false);
+            content.position(content.limit());
+            content.limit(limit);
+            remaining -= length;
+        }
+
+        return result;
     }
 
     public static class Result implements Callback

@@ -89,6 +89,26 @@ public abstract class Parser
         padding = 0;
     }
 
+    public interface Listener
+    {
+        public void onContent(int request, FCGI.StreamType stream, ByteBuffer buffer);
+
+        public void onEnd(int request);
+
+        public static class Adapter implements Listener
+        {
+            @Override
+            public void onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
+            {
+            }
+
+            @Override
+            public void onEnd(int request)
+            {
+            }
+        }
+    }
+
     private enum State
     {
         HEADER, CONTENT, PADDING

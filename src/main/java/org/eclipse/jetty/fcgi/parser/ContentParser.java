@@ -36,6 +36,11 @@ public abstract class ContentParser
         throw new IllegalStateException();
     }
 
+    protected int getRequest()
+    {
+        return headerParser.getRequest();
+    }
+
     protected int getContentLength()
     {
         return headerParser.getContentLength();

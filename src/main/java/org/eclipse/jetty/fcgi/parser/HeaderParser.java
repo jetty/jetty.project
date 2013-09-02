@@ -119,6 +119,11 @@ public class HeaderParser
         return FCGI.FrameType.from(type);
     }
 
+    public int getRequest()
+    {
+        return request;
+    }
+
     public int getContentLength()
     {
         return length;

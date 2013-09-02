@@ -21,8 +21,13 @@ package org.eclipse.jetty.fcgi.parser;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+
 public class ParamsContentParser extends ContentParser
 {
+    private static final Logger logger = Log.getLogger(ParamsContentParser.class);
+
     private final ClientParser.Listener listener;
     private State state = State.LENGTH;
     private int cursor;
@@ -192,20 +197,34 @@ public class ParamsContentParser extends ContentParser
         return false;
     }
 
-    protected void onParam(String name, String value)
-    {
-        listener.onParam(name, value);
-    }
-
-    protected void onParams()
-    {
-        listener.onParams();
-    }
-
     @Override
     public void noContent()
     {
         onParams();
+    }
+
+    protected void onParam(String name, String value)
+    {
+        try
+        {
+            listener.onParam(getRequest(), name, value);
+        }
+        catch (Throwable x)
+        {
+            logger.debug("Exception while invoking listener " + listener, x);
+        }
+    }
+
+    protected void onParams()
+    {
+        try
+        {
+            listener.onParams(getRequest());
+        }
+        catch (Throwable x)
+        {
+            logger.debug("Exception while invoking listener " + listener, x);
+        }
     }
 
     private boolean isLargeLength(ByteBuffer buffer)

@@ -36,16 +36,14 @@ public class ClientGenerator extends Generator
     // 0x7F_FF - 4 (the 4 is to make room for the name (or value) length).
     public static final int MAX_PARAM_LENGTH = 0x7F_FF - 4;
 
-    private final ByteBufferPool byteBufferPool;
-
     public ClientGenerator(ByteBufferPool byteBufferPool)
     {
-        this.byteBufferPool = byteBufferPool;
+        super(byteBufferPool);
     }
 
-    public Result generateRequestHeaders(int id, Fields fields, Callback callback)
+    public Result generateRequestHeaders(int request, Fields fields, Callback callback)
     {
-        id = id & 0xFF_FF;
+        request &= 0xFF_FF;
 
         Charset utf8 = Charset.forName("UTF-8");
         List<byte[]> bytes = new ArrayList<>(fields.size() * 2);
@@ -86,7 +84,7 @@ public class ClientGenerator extends Generator
         result.add(beginRequestBuffer, true);
 
         // Generate the FCGI_BEGIN_REQUEST frame
-        beginRequestBuffer.putInt(0x01_01_00_00 + id);
+        beginRequestBuffer.putInt(0x01_01_00_00 + request);
         beginRequestBuffer.putInt(0x00_08_00_00);
         beginRequestBuffer.putLong(0x00_01_01_00_00_00_00_00L);
         beginRequestBuffer.flip();
@@ -100,7 +98,7 @@ public class ClientGenerator extends Generator
             result.add(buffer, true);
 
             // Generate the FCGI_PARAMS frame
-            buffer.putInt(0x01_04_00_00 + id);
+            buffer.putInt(0x01_04_00_00 + request);
             buffer.putShort((short)0);
             buffer.putShort((short)0);
             capacity -= 8;
@@ -138,7 +136,7 @@ public class ClientGenerator extends Generator
         result.add(lastParamsBuffer, true);
 
         // Generate the last FCGI_PARAMS frame
-        lastParamsBuffer.putInt(0x01_04_00_00 + id);
+        lastParamsBuffer.putInt(0x01_04_00_00 + request);
         lastParamsBuffer.putInt(0x00_00_00_00);
         lastParamsBuffer.flip();
 
@@ -160,8 +158,8 @@ public class ClientGenerator extends Generator
         return length > 127 ? 4 : 1;
     }
 
-    public ByteBuffer generateRequestContent(ByteBuffer content)
+    public Result generateRequestContent(int request, ByteBuffer content, boolean lastContent, Callback callback)
     {
-        return content == null ? generateContent(FCGI.FrameType.STDIN, 0) : generateContent(FCGI.FrameType.STDIN, content.remaining());
+        return generateContent(request, content, lastContent, callback, FCGI.FrameType.STDIN);
     }
 }
