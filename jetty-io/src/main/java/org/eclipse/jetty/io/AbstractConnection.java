@@ -531,15 +531,22 @@ public abstract class AbstractConnection implements Connection
         }
 
         @Override
-        public void failed(Throwable x)
+        public void failed(final Throwable x)
         {
+            _executor.execute(new Runnable()
+            {
+                @Override
+                public void run()
+                {
             while(true)
             {
                 State state=_state.get();
                 if (next(state,state.onFailed()))
                     break;
             }
-            onFillInterestedFailed(x);
+                    onFillInterestedFailed(x);
+                }
+            });
         }
         
         @Override

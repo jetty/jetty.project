@@ -68,7 +68,7 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
 
     public ProxyHTTPSPDYConnection(Connector connector, HttpConfiguration config, EndPoint endPoint, short version, ProxyEngineSelector proxyEngineSelector)
     {
-        super(config,connector,endPoint);
+        super(config, connector, endPoint);
         this.version = version;
         this.proxyEngineSelector = proxyEngineSelector;
         this.session = new HTTPSession(version, connector);
@@ -95,7 +95,7 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
     @Override
     public boolean parsedHeader(HttpField field)
     {
-        if (field.getHeader()==HttpHeader.HOST)
+        if (field.getHeader() == HttpHeader.HOST)
             headers.put(HTTPSPDYHeader.HOST.name(version), field.getValue());
         else
             headers.put(field.getName(), field.getValue());
@@ -243,7 +243,7 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
         {
             Fields headers = new Fields(replyInfo.getHeaders(), false);
 
-            addPersistenceHeader(headers);
+                addPersistenceHeader(headers);
 
             headers.remove(HTTPSPDYHeader.SCHEME.name(version));
 

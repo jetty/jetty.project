@@ -291,12 +291,12 @@ public class SslConnection extends AbstractConnection
             }
 
             @Override
-            public void failed(Throwable x)
+            public void failed(final Throwable x)
             {
                 // This means that a write of data has failed.  Writes are done
                 // only if there is an active writeflusher or a read needed to write
                 // data.  In either case the appropriate callback is passed on.
-                boolean failFiller = false;
+                boolean fail_filler = false;
                 synchronized (DecryptedEndPoint.this)
                 {
                     if (DEBUG)
@@ -309,12 +309,23 @@ public class SslConnection extends AbstractConnection
                     if (_fillRequiresFlushToProgress)
                     {
                         _fillRequiresFlushToProgress = false;
-                        failFiller = true;
+                        fail_filler = true;
                     }
                 }
-                if (failFiller)
-                    getFillInterest().onFail(x);
-                getWriteFlusher().onFail(x);
+                
+                final boolean filler_failed=fail_filler;
+
+                getExecutor().execute(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+
+                        if (filler_failed)
+                            getFillInterest().onFail(x);
+                        getWriteFlusher().onFail(x);
+                    }
+                });
             }
         };
 
