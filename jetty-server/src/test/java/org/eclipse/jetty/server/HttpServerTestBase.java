@@ -686,19 +686,12 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             is.read(buf);
             
             // sleep to ensure server is blocking
-            Thread.sleep(250);
-            System.err.println("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
-
-            Thread.sleep(20000);
-            System.err.println("YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY");
+            Thread.sleep(500);
             
             // Close the client
             client.close();            
         }
 
-        Thread.sleep(20000);
-        System.err.println("ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ");
-        
         Thread.sleep(200);
         // check server is still handling requests quickly
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
