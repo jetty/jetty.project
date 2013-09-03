@@ -24,6 +24,33 @@ public class FCGI
     {
     }
 
+    public enum Role
+    {
+        RESPONDER(1), AUTHORIZER(2), FILTER(3);
+
+        public static Role from(int code)
+        {
+            switch (code)
+            {
+                case 1:
+                    return RESPONDER;
+                case 2:
+                    return AUTHORIZER;
+                case 3:
+                    return FILTER;
+                default:
+                    throw new IllegalArgumentException();
+            }
+        }
+
+        public final int code;
+
+        private Role(int code)
+        {
+            this.code = code;
+        }
+    }
+
     public enum FrameType
     {
         BEGIN_REQUEST(1),

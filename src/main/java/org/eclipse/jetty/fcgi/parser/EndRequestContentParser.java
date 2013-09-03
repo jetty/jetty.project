@@ -20,17 +20,15 @@ package org.eclipse.jetty.fcgi.parser;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.fcgi.FCGI;
-
-public class BeginRequestContentParser extends ContentParser
+public class EndRequestContentParser extends ContentParser
 {
-    private final ServerParser.Listener listener;
-    private State state = State.ROLE;
+    private final Parser.Listener listener;
+    private State state = State.APPLICATION;
     private int cursor;
-    private int role;
-    private int flags;
+    private int application;
+    private int protocol;
 
-    public BeginRequestContentParser(HeaderParser headerParser, ServerParser.Listener listener)
+    public EndRequestContentParser(HeaderParser headerParser, Parser.Listener listener)
     {
         super(headerParser);
         this.listener = listener;
@@ -43,46 +41,46 @@ public class BeginRequestContentParser extends ContentParser
         {
             switch (state)
             {
-                case ROLE:
+                case APPLICATION:
                 {
-                    if (buffer.remaining() >= 2)
+                    if (buffer.remaining() >= 4)
                     {
-                        role = buffer.getShort();
-                        state = State.FLAGS;
+                        application = buffer.getInt();
+                        state = State.PROTOCOL;
                     }
                     else
                     {
-                        state = State.ROLE_BYTES;
+                        state = State.APPLICATION_BYTES;
                         cursor = 0;
                     }
                     break;
                 }
-                case ROLE_BYTES:
+                case APPLICATION_BYTES:
                 {
-                    int halfShort = buffer.get() & 0xFF;
-                    role = (role << 8) + halfShort;
-                    if (++cursor == 2)
-                        state = State.FLAGS;
+                    int quarterInt = buffer.get() & 0xFF;
+                    application = (application << 8) + quarterInt;
+                    if (++cursor == 4)
+                        state = State.PROTOCOL;
                     break;
                 }
-                case FLAGS:
+                case PROTOCOL:
                 {
-                    flags = buffer.get() & 0xFF;
+                    protocol = buffer.get() & 0xFF;
                     state = State.RESERVED;
                     break;
                 }
                 case RESERVED:
                 {
-                    if (buffer.remaining() >= 5)
+                    if (buffer.remaining() >= 3)
                     {
-                        buffer.position(buffer.position() + 5);
-                        onStart(getRequest(), role);
+                        buffer.position(buffer.position() + 3);
+                        onEnd();
                         reset();
                         return true;
                     }
                     else
                     {
-                        state = State.RESERVED_BYTES;
+                        state = State.APPLICATION_BYTES;
                         cursor = 0;
                         break;
                     }
@@ -90,9 +88,9 @@ public class BeginRequestContentParser extends ContentParser
                 case RESERVED_BYTES:
                 {
                     buffer.get();
-                    if (++cursor == 5)
+                    if (++cursor == 0)
                     {
-                        onStart(getRequest(), role);
+                        onEnd();
                         reset();
                         return true;
                     }
@@ -107,21 +105,22 @@ public class BeginRequestContentParser extends ContentParser
         return false;
     }
 
-    private void onStart(int request, int role)
+    private void onEnd()
     {
-        listener.onStart(request, FCGI.Role.from(role));
+        // TODO: if protocol != 0, invoke an error callback
+        listener.onEnd(getRequest());
     }
 
     private void reset()
     {
-        state = State.ROLE;
+        state = State.APPLICATION;
         cursor = 0;
-        role = 0;
-        flags = 0;
+        application = 0;
+        protocol = 0;
     }
 
     private enum State
     {
-        ROLE, ROLE_BYTES, FLAGS, RESERVED, RESERVED_BYTES
+        APPLICATION, APPLICATION_BYTES, PROTOCOL, RESERVED, RESERVED_BYTES
     }
 }

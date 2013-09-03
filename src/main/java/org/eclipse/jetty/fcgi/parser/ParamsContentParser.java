@@ -28,7 +28,7 @@ public class ParamsContentParser extends ContentParser
 {
     private static final Logger logger = Log.getLogger(ParamsContentParser.class);
 
-    private final ClientParser.Listener listener;
+    private final ServerParser.Listener listener;
     private State state = State.LENGTH;
     private int cursor;
     private int length;
@@ -37,7 +37,7 @@ public class ParamsContentParser extends ContentParser
     private byte[] nameBytes;
     private byte[] valueBytes;
 
-    public ParamsContentParser(HeaderParser headerParser, ClientParser.Listener listener)
+    public ParamsContentParser(HeaderParser headerParser, ServerParser.Listener listener)
     {
         super(headerParser);
         this.listener = listener;
@@ -207,7 +207,7 @@ public class ParamsContentParser extends ContentParser
     {
         try
         {
-            listener.onParam(getRequest(), name, value);
+            listener.onHeader(getRequest(), name, value);
         }
         catch (Throwable x)
         {
@@ -219,7 +219,7 @@ public class ParamsContentParser extends ContentParser
     {
         try
         {
-            listener.onParams(getRequest());
+            listener.onHeaders(getRequest());
         }
         catch (Throwable x)
         {

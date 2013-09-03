@@ -85,10 +85,21 @@ public class Generator
 
         public Result(ByteBufferPool byteBufferPool, Callback callback, int frames)
         {
+            this(byteBufferPool, callback, new ByteBuffer[frames], new boolean[frames], 0);
+        }
+
+        protected Result(Result that)
+        {
+            this(that.byteBufferPool, that.callback, that.buffers, that.recycles, that.index);
+        }
+        
+        private Result(ByteBufferPool byteBufferPool, Callback callback, ByteBuffer[] buffers, boolean[] recycles, int index)
+        {
             this.byteBufferPool = byteBufferPool;
             this.callback = callback;
-            this.buffers = new ByteBuffer[frames];
-            this.recycles = new boolean[frames];
+            this.buffers = buffers;
+            this.recycles = recycles;
+            this.index = index;
         }
 
         public void add(ByteBuffer buffer, boolean recycle)
@@ -117,7 +128,7 @@ public class Generator
             callback.failed(x);
         }
 
-        private void recycle()
+        protected void recycle()
         {
             for (int i = 0; i < buffers.length; ++i)
             {

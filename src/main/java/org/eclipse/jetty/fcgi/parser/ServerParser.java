@@ -22,20 +22,33 @@ import java.util.EnumMap;
 
 import org.eclipse.jetty.fcgi.FCGI;
 
-public class ClientParser extends Parser
+public class ServerParser extends Parser
 {
     private final EnumMap<FCGI.FrameType, ContentParser> contentParsers = new EnumMap<>(FCGI.FrameType.class);
 
-    public ClientParser(Listener listener)
+    public ServerParser(Listener listener)
     {
-        contentParsers.put(FCGI.FrameType.STDOUT, new ResponseContentParser(headerParser, FCGI.StreamType.STD_OUT, listener));
-        contentParsers.put(FCGI.FrameType.STDERR, new StreamContentParser(headerParser, FCGI.StreamType.STD_ERR, listener));
-        contentParsers.put(FCGI.FrameType.END_REQUEST, new EndRequestContentParser(headerParser, listener));
+        contentParsers.put(FCGI.FrameType.BEGIN_REQUEST, new BeginRequestContentParser(headerParser, listener));
+        contentParsers.put(FCGI.FrameType.PARAMS, new ParamsContentParser(headerParser, listener));
+        contentParsers.put(FCGI.FrameType.STDIN, new StreamContentParser(headerParser, FCGI.StreamType.STD_IN, listener));
     }
 
     @Override
     protected ContentParser findContentParser(FCGI.FrameType frameType)
     {
         return contentParsers.get(frameType);
+    }
+
+    public interface Listener extends Parser.Listener
+    {
+        public void onStart(int request, FCGI.Role role);
+
+        public static class Adapter extends Parser.Listener.Adapter implements Listener
+        {
+            @Override
+            public void onStart(int request, FCGI.Role role)
+            {
+            }
+        }
     }
 }

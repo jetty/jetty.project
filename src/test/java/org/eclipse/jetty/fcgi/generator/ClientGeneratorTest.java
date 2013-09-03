@@ -23,7 +23,7 @@ import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.fcgi.FCGI;
-import org.eclipse.jetty.fcgi.parser.ClientParser;
+import org.eclipse.jetty.fcgi.parser.ServerParser;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.Fields;
@@ -67,18 +67,18 @@ public class ClientGeneratorTest
         Generator.Result result = generator.generateRequestHeaders(id, fields, null);
 
         // Use the fundamental theorem of arithmetic to test the results.
-        // This way we know onParam() has been called the right number of
-        // times with the right arguments, and so onParams().
+        // This way we know onHeader() has been called the right number of
+        // times with the right arguments, and so onHeaders().
         final int[] primes = new int[]{2, 3, 5, 7, 11};
         int value = 1;
         for (int prime : primes)
             value *= prime;
 
         final AtomicInteger params = new AtomicInteger(1);
-        ClientParser parser = new ClientParser(new ClientParser.Listener.Adapter()
+        ServerParser parser = new ServerParser(new ServerParser.Listener.Adapter()
         {
             @Override
-            public void onParam(int request, String name, String value)
+            public void onHeader(int request, String name, String value)
             {
                 Assert.assertEquals(id, request);
                 switch (name)
@@ -104,7 +104,7 @@ public class ClientGeneratorTest
             }
 
             @Override
-            public void onParams(int request)
+            public void onHeaders(int request)
             {
                 Assert.assertEquals(id, request);
                 params.set(params.get() * primes[4]);
@@ -154,7 +154,7 @@ public class ClientGeneratorTest
         Generator.Result result = generator.generateRequestContent(id, content, true, null);
 
         final AtomicInteger length = new AtomicInteger();
-        ClientParser parser = new ClientParser(new ClientParser.Listener.Adapter()
+        ServerParser parser = new ServerParser(new ServerParser.Listener.Adapter()
         {
             @Override
             public void onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)

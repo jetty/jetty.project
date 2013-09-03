@@ -26,7 +26,7 @@ import org.eclipse.jetty.util.log.Logger;
 
 public class StreamContentParser extends ContentParser
 {
-    private static final Logger logger = Log.getLogger(StreamContentParser.class);
+    protected static final Logger logger = Log.getLogger(StreamContentParser.class);
 
     private final FCGI.StreamType streamType;
     private final Parser.Listener listener;

@@ -91,12 +91,26 @@ public abstract class Parser
 
     public interface Listener
     {
+        public void onHeader(int request, String name, String value);
+
+        public void onHeaders(int request);
+
         public void onContent(int request, FCGI.StreamType stream, ByteBuffer buffer);
 
         public void onEnd(int request);
 
         public static class Adapter implements Listener
         {
+            @Override
+            public void onHeader(int request, String name, String value)
+            {
+            }
+
+            @Override
+            public void onHeaders(int request)
+            {
+            }
+
             @Override
             public void onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
             {
