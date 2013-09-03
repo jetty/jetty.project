@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
@@ -49,6 +50,7 @@ public class ConfigurationAssert
      */
     public static void assertConfiguration(BaseHome baseHome, StartArgs args, String filename) throws FileNotFoundException, IOException
     {
+        File testResourcesDir = MavenTestingUtils.getTestResourcesDir();
         File file = MavenTestingUtils.getTestResourceFile(filename);
         TextFile textFile = new TextFile(file);
 
@@ -64,12 +66,12 @@ public class ConfigurationAssert
         List<String> actualXmls = new ArrayList<>();
         for (File xml : args.getXmlFiles())
         {
-            actualXmls.add(baseHome.toShortForm(xml));
+            actualXmls.add(shorten(baseHome,xml,testResourcesDir));
         }
         assertOrdered("XML Resolution Order",expectedXmls,actualXmls);
 
         // Validate LIBs (order is not important)
-        Set<String> expectedLibs = new HashSet<>();
+        List<String> expectedLibs = new ArrayList<>();
         for (String line : textFile)
         {
             if (line.startsWith("LIB|"))
@@ -77,10 +79,10 @@ public class ConfigurationAssert
                 expectedLibs.add(getValue(line));
             }
         }
-        Set<String> actualLibs = new HashSet<>();
+        List<String> actualLibs = new ArrayList<>();
         for (File path : args.getClasspath())
         {
-            actualLibs.add(baseHome.toShortForm(path));
+            actualLibs.add(shorten(baseHome,path,testResourcesDir));
         }
         assertContainsUnordered("Libs",expectedLibs,actualLibs);
 
@@ -93,7 +95,7 @@ public class ConfigurationAssert
                 expectedProperties.add(getValue(line));
             }
         }
-        Set<String> actualProperties = new HashSet<>();
+        List<String> actualProperties = new ArrayList<>();
         @SuppressWarnings("unchecked")
         Enumeration<String> nameEnum = (Enumeration<String>)args.getProperties().propertyNames();
         while (nameEnum.hasMoreElements())
@@ -110,7 +112,7 @@ public class ConfigurationAssert
         assertContainsUnordered("Properties",expectedProperties,actualProperties);
 
         // Validate Downloads
-        Set<String> expectedDownloads = new HashSet<>();
+        List<String> expectedDownloads = new ArrayList<>();
         for (String line : textFile)
         {
             if (line.startsWith("DOWNLOAD|"))
@@ -118,7 +120,7 @@ public class ConfigurationAssert
                 expectedDownloads.add(getValue(line));
             }
         }
-        Set<String> actualDownloads = new HashSet<>();
+        List<String> actualDownloads = new ArrayList<>();
         for (DownloadArg darg : args.getDownloads())
         {
             actualDownloads.add(String.format("%s:%s",darg.uri,darg.location));
@@ -127,7 +129,18 @@ public class ConfigurationAssert
 
     }
 
-    private static void assertContainsUnordered(String msg, Set<String> expectedSet, Set<String> actualSet)
+    private static String shorten(BaseHome baseHome, File path, File testResourcesDir)
+    {
+        String value = baseHome.toShortForm(path);
+        if (value.startsWith(testResourcesDir.getAbsolutePath()))
+        {
+            int len = testResourcesDir.getAbsolutePath().length();
+            value = "${maven-test-resources}" + value.substring(len);
+        }
+        return value;
+    }
+
+    private static void assertContainsUnordered(String msg, Collection<String> expectedSet, Collection<String> actualSet)
     {
         // same size?
         boolean mismatch = expectedSet.size() != actualSet.size();

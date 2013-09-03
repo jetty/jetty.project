@@ -101,6 +101,11 @@ public class MainTest
         cmdLineArgs.add("--exec");
         cmdLineArgs.add("-Xms1024m");
         cmdLineArgs.add("-Xmx1024m");
+        
+        // Arbitrary Libs
+        File extraJar = MavenTestingUtils.getTestResourceFile("extra-libs/example.jar");
+        File extraDir = MavenTestingUtils.getTestResourceDir("extra-resources");
+        cmdLineArgs.add(String.format("--lib=%s%s%s",extraJar.getAbsolutePath(),File.pathSeparatorChar,extraDir.getAbsolutePath()));
 
         // Arbitrary XMLs
         cmdLineArgs.add("jetty.xml");

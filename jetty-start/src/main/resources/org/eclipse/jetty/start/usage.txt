@@ -6,6 +6,8 @@ Usage: java -jar start.jar [options...] [properties...] [configs...]
   configured to start any java main class.
 
 Command Line Options:
+---------------------
+
   --help           This help / usage information.
   
   --version        Print the version information for Jetty and
@@ -23,7 +25,7 @@ Command Line Options:
                      o  Properties
                      o  Server Classpath
                      o  Server XML Configuration
-
+                     
   --dry-run        Print the command line that the start.jar generates,
                    then exit. This may be used to generate command lines
                    when the start.ini includes -X or -D arguments.
@@ -38,6 +40,9 @@ Debug and Start Logging:
 ------------------------
 
   --debug          Enable debug output of the startup procedure.
+                   Note: this does not setup debug for Jetty itself.
+                   If you want debug for Jetty, configure your logging
+                   (See bellow)
   
   --start-log-file=<filename>
                    A filename, relative to ${jetty.base}, where all startup
@@ -119,6 +124,8 @@ Advanced Commands:
                    location, download it from the given http URI.
                    Note: location is always relative to ${jetty.base}                   
 
+  --lib=<classpath>
+                   Add arbitrary classpath entries to the the server classpath.
 
 System Properties:
 ------------------

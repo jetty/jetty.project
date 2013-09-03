@@ -64,7 +64,6 @@ public class StartArgs
         System.setProperty("jetty.version",VERSION);
     }
 
-    // TODO: might make sense to declare this in modules/base.mod
     private static final String SERVER_MAIN = "org.eclipse.jetty.xml.XmlConfiguration";
 
     private List<String> commandLine = new ArrayList<>();
@@ -667,6 +666,15 @@ public class StartArgs
         if ("--exec".equals(arg))
         {
             exec = true;
+            return;
+        }
+        
+        // Arbitrary Libraries
+        
+        if(arg.startsWith("--lib="))
+        {
+            String cp = getValue(arg);
+            classpath.addClasspath(cp);
             return;
         }
 

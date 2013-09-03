@@ -33,7 +33,8 @@ LIB|${jetty.home}/lib/websocket/websocket-client-TEST.jar
 LIB|${jetty.home}/lib/websocket/websocket-common-TEST.jar
 LIB|${jetty.home}/lib/websocket/websocket-server-TEST.jar
 LIB|${jetty.home}/lib/websocket/websocket-servlet-TEST.jar
-
+LIB|${maven-test-resources}/extra-resources
+LIB|${maven-test-resources}/extra-libs/example.jar
 
 # The Properties we expect (order is irrelevant)
 # PROP|jetty.port=9090
