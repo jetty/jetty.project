@@ -76,8 +76,7 @@ public class ClientGenerator extends Generator
         int maxCapacity = 4 + 4 + 2 * MAX_PARAM_LENGTH;
 
         // One FCGI_BEGIN_REQUEST + N FCGI_PARAMS + one last FCGI_PARAMS
-        int numberOfFrames = 1 + (fieldsLength / maxCapacity + 1) + 1;
-        Result result = new Result(byteBufferPool, callback, numberOfFrames);
+        Result result = new Result(byteBufferPool, callback);
 
         ByteBuffer beginRequestBuffer = byteBufferPool.acquire(16, false);
         BufferUtil.clearToFill(beginRequestBuffer);

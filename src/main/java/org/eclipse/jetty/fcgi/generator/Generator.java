@@ -19,6 +19,8 @@
 package org.eclipse.jetty.fcgi.generator;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -41,8 +43,7 @@ public class Generator
         id &= 0xFF_FF;
 
         int remaining = content == null ? 0 : content.remaining();
-        int frames = 2 * (remaining / MAX_CONTENT_LENGTH + 1) + (lastContent ? 1 : 0);
-        Result result = new Result(byteBufferPool, callback, frames);
+        Result result = new Result(byteBufferPool, callback);
 
         while (remaining > 0 || lastContent)
         {
@@ -79,37 +80,34 @@ public class Generator
     {
         private final ByteBufferPool byteBufferPool;
         private final Callback callback;
-        private final ByteBuffer[] buffers;
-        private final boolean[] recycles;
-        private int index;
+        private final List<ByteBuffer> buffers;
+        private final List<Boolean> recycles;
 
-        public Result(ByteBufferPool byteBufferPool, Callback callback, int frames)
+        public Result(ByteBufferPool byteBufferPool, Callback callback)
         {
-            this(byteBufferPool, callback, new ByteBuffer[frames], new boolean[frames], 0);
+            this(byteBufferPool, callback, new ArrayList<ByteBuffer>(4), new ArrayList<Boolean>(4));
         }
 
-        protected Result(Result that)
+        public Result(Result that)
         {
-            this(that.byteBufferPool, that.callback, that.buffers, that.recycles, that.index);
+            this(that.byteBufferPool, that.callback, that.buffers, that.recycles);
         }
         
-        private Result(ByteBufferPool byteBufferPool, Callback callback, ByteBuffer[] buffers, boolean[] recycles, int index)
+        private Result(ByteBufferPool byteBufferPool, Callback callback, List<ByteBuffer> buffers, List<Boolean> recycles)
         {
             this.byteBufferPool = byteBufferPool;
             this.callback = callback;
             this.buffers = buffers;
             this.recycles = recycles;
-            this.index = index;
         }
 
         public void add(ByteBuffer buffer, boolean recycle)
         {
-            buffers[index] = buffer;
-            recycles[index] = recycle;
-            ++index;
+            buffers.add(buffer);
+            recycles.add(recycle);
         }
 
-        public ByteBuffer[] getByteBuffers()
+        public List<ByteBuffer> getByteBuffers()
         {
             return buffers;
         }
@@ -130,10 +128,10 @@ public class Generator
 
         protected void recycle()
         {
-            for (int i = 0; i < buffers.length; ++i)
+            for (int i = 0; i < buffers.size(); ++i)
             {
-                ByteBuffer buffer = buffers[i];
-                if (recycles[i])
+                ByteBuffer buffer = buffers.get(i);
+                if (recycles.get(i))
                     byteBufferPool.release(buffer);
             }
         }

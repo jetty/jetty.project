@@ -27,9 +27,9 @@ import org.eclipse.jetty.http.HttpVersion;
 
 public class ResponseContentParser extends StreamContentParser
 {
-    public ResponseContentParser(HeaderParser headerParser, FCGI.StreamType streamType, Parser.Listener listener)
+    public ResponseContentParser(HeaderParser headerParser, Parser.Listener listener)
     {
-        super(headerParser, streamType, new ResponseListener(headerParser, listener));
+        super(headerParser, FCGI.StreamType.STD_OUT, new ResponseListener(headerParser, listener));
     }
 
     private static class ResponseListener extends Parser.Listener.Adapter implements HttpParser.ResponseHandler<ByteBuffer>
@@ -37,6 +37,7 @@ public class ResponseContentParser extends StreamContentParser
         private final HeaderParser headerParser;
         private final Parser.Listener listener;
         private final FCGIHttpParser httpParser;
+        private State state = State.HEADERS;
 
         public ResponseListener(HeaderParser headerParser, Parser.Listener listener)
         {
@@ -48,14 +49,41 @@ public class ResponseContentParser extends StreamContentParser
         @Override
         public void onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
         {
-            httpParser.parseHeaders(buffer);
+            while (buffer.hasRemaining())
+            {
+                switch (state)
+                {
+                    case HEADERS:
+                    {
+                        if (httpParser.parseHeaders(buffer))
+                            state = State.CONTENT;
+                        break;
+                    }
+                    case CONTENT:
+                    {
+                        if (httpParser.parseContent(buffer))
+                            reset();
+                        break;
+                    }
+                    default:
+                    {
+                        throw new IllegalStateException();
+                    }
+                }
+            }
+        }
+
+        private void reset()
+        {
+            httpParser.reset();
+            state = State.HEADERS;
         }
 
         @Override
         public void onEnd(int request)
         {
-            // TODO
-            throw new UnsupportedOperationException();
+            // Never called for STD_OUT, since it relies on FCGI_END_REQUEST
+            throw new IllegalStateException();
         }
 
         @Override
@@ -68,6 +96,7 @@ public class ResponseContentParser extends StreamContentParser
         @Override
         public boolean startResponse(HttpVersion version, int status, String reason)
         {
+            // The HTTP request line does not exist in FCGI responses
             throw new IllegalStateException();
         }
 
@@ -76,6 +105,13 @@ public class ResponseContentParser extends StreamContentParser
         {
             try
             {
+                if ("Status".equalsIgnoreCase(field.getName()))
+                {
+                    // Need to set the response status so the
+                    // HttpParser can handle the content properly.
+                    int code = Integer.parseInt(field.getValue().split(" ")[0]);
+                    httpParser.setResponseStatus(code);
+                }
                 listener.onHeader(headerParser.getRequest(), field.getName(), field.getValue());
             }
             catch (Throwable x)
@@ -96,45 +132,81 @@ public class ResponseContentParser extends StreamContentParser
             {
                 logger.debug("Exception while invoking listener " + listener, x);
             }
-            return false;
+            // Return from parsing so that we can parse the content
+            return true;
         }
 
         @Override
-        public boolean content(ByteBuffer item)
+        public boolean content(ByteBuffer buffer)
         {
+            try
+            {
+                listener.onContent(headerParser.getRequest(), FCGI.StreamType.STD_OUT, buffer);
+            }
+            catch (Throwable x)
+            {
+                logger.debug("Exception while invoking listener " + listener, x);
+            }
             return false;
         }
 
         @Override
         public boolean messageComplete()
         {
-            return false;
+            // Return from parsing so that we can parse the next headers
+            return true;
         }
 
         @Override
         public void earlyEOF()
         {
+            // TODO
         }
 
         @Override
         public void badMessage(int status, String reason)
         {
-        }
-    }
-
-    // Methods overridden to make them visible here
-    private static class FCGIHttpParser extends HttpParser
-    {
-        private FCGIHttpParser(ResponseHandler<ByteBuffer> handler)
-        {
-            super(handler, 65 * 1024, true);
-            setState(State.HEADER);
+            // TODO
         }
 
-        @Override
-        protected boolean parseHeaders(ByteBuffer buffer)
+        // Methods overridden to make them visible here
+        private static class FCGIHttpParser extends HttpParser
         {
-            return super.parseHeaders(buffer);
+            private FCGIHttpParser(ResponseHandler<ByteBuffer> handler)
+            {
+                super(handler, 65 * 1024, true);
+                reset();
+            }
+
+            @Override
+            public void reset()
+            {
+                super.reset();
+                setState(State.HEADER);
+            }
+
+            @Override
+            protected boolean parseHeaders(ByteBuffer buffer)
+            {
+                return super.parseHeaders(buffer);
+            }
+
+            @Override
+            protected boolean parseContent(ByteBuffer buffer)
+            {
+                return super.parseContent(buffer);
+            }
+
+            @Override
+            protected void setResponseStatus(int status)
+            {
+                super.setResponseStatus(status);
+            }
+        }
+
+        private enum State
+        {
+            HEADERS, CONTENT
         }
     }
 }

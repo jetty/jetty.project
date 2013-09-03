@@ -28,7 +28,7 @@ public class ClientParser extends Parser
 
     public ClientParser(Listener listener)
     {
-        contentParsers.put(FCGI.FrameType.STDOUT, new ResponseContentParser(headerParser, FCGI.StreamType.STD_OUT, listener));
+        contentParsers.put(FCGI.FrameType.STDOUT, new ResponseContentParser(headerParser, listener));
         contentParsers.put(FCGI.FrameType.STDERR, new StreamContentParser(headerParser, FCGI.StreamType.STD_ERR, listener));
         contentParsers.put(FCGI.FrameType.END_REQUEST, new EndRequestContentParser(headerParser, listener));
     }

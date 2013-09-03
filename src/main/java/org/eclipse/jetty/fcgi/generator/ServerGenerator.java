@@ -94,4 +94,22 @@ public class ServerGenerator extends Generator
             }
         };
     }
+
+    public Result generateResponseContent(int request, ByteBuffer content, boolean lastContent, Callback callback)
+    {
+        Result result = generateContent(request, content, lastContent, callback, FCGI.FrameType.STDOUT);
+        if (lastContent)
+        {
+            // Generate the FCGI_END_REQUEST
+            request &= 0xFF_FF;
+            ByteBuffer endRequestBuffer = byteBufferPool.acquire(8, false);
+            BufferUtil.clearToFill(endRequestBuffer);
+            endRequestBuffer.putInt(0x01_03_00_00 + request);
+            endRequestBuffer.putInt(0x00_08_00_00);
+            endRequestBuffer.putLong(0x00L);
+            endRequestBuffer.flip();
+            result.add(endRequestBuffer, true);
+        }
+        return result;
+    }
 }
