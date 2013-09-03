@@ -100,7 +100,7 @@ public class HttpParser
         CHUNK,
         END,
         CLOSED
-    };
+    }
 
     private final boolean DEBUG=LOG.isDebugEnabled(); // Cache debug to help branch prediction
     private final HttpHandler<ByteBuffer> _handler;
@@ -201,6 +201,12 @@ public class HttpParser
     public void setHeadResponse(boolean head)
     {
         _headResponse=head;
+    }
+
+    /* ------------------------------------------------------------------------------- */
+    protected void setResponseStatus(int status)
+    {
+        _responseStatus=status;
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -466,7 +472,7 @@ public class HttpParser
                         if (_responseHandler!=null)
                         {
                             setState(State.STATUS);
-                            _responseStatus=ch-'0';
+                            setResponseStatus(ch-'0');
                         }
                         else
                         {
@@ -807,7 +813,7 @@ public class HttpParser
     /*
      * Parse the message headers and return true if the handler has signaled for a return
      */
-    private boolean parseHeaders(ByteBuffer buffer)
+    protected boolean parseHeaders(ByteBuffer buffer)
     {
         boolean handle=false;
 
@@ -1255,7 +1261,7 @@ public class HttpParser
         }
     }
 
-    private boolean parseContent(ByteBuffer buffer)
+    protected boolean parseContent(ByteBuffer buffer)
     {
         // Handle _content
         byte ch;
@@ -1447,7 +1453,7 @@ public class HttpParser
     }
 
     /* ------------------------------------------------------------------------------- */
-    private void setState(State state)
+    protected void setState(State state)
     {
         if (DEBUG)
             LOG.debug("{} --> {}",_state,state);
