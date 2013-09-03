@@ -82,6 +82,14 @@ public class UpgradeConnection extends AbstractConnection
             // start the interest in fill
             fillInterested();
         }
+
+        @Override
+        public void failed(Throwable cause)
+        {
+            super.failed(cause);
+            // Fail the connect promise when a fundamental exception during connect occurs.
+            connectPromise.failed(cause);
+        }
     }
 
     /** HTTP Response Code: 101 Switching Protocols */
