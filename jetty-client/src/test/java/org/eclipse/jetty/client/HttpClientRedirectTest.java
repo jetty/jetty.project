@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.UnresolvedAddressException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -33,6 +34,7 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.ByteBufferContentProvider;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.IO;
@@ -117,7 +119,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         {
             client.newRequest("localhost", connector.getLocalPort())
                     .scheme(scheme)
-                    .method(HttpMethod.POST)
+                    .method(HttpMethod.DELETE)
                     .path("/301/localhost/done")
                     .timeout(5, TimeUnit.SECONDS)
                     .send();
@@ -255,6 +257,124 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         {
             Assert.assertThat(x.getCause(), Matchers.instanceOf(UnresolvedAddressException.class));
         }
+    }
+
+    @Test
+    public void test_HEAD_301() throws Exception
+    {
+        testSameMethodRedirect(HttpMethod.HEAD, HttpStatus.MOVED_PERMANENTLY_301);
+    }
+
+    @Test
+    public void test_POST_301() throws Exception
+    {
+        testGETRedirect(HttpMethod.POST, HttpStatus.MOVED_PERMANENTLY_301);
+    }
+
+    @Test
+    public void test_PUT_301() throws Exception
+    {
+        testSameMethodRedirect(HttpMethod.PUT, HttpStatus.MOVED_PERMANENTLY_301);
+    }
+
+    @Test
+    public void test_HEAD_302() throws Exception
+    {
+        testSameMethodRedirect(HttpMethod.HEAD, HttpStatus.FOUND_302);
+    }
+
+    @Test
+    public void test_POST_302() throws Exception
+    {
+        testGETRedirect(HttpMethod.POST, HttpStatus.FOUND_302);
+    }
+
+    @Test
+    public void test_PUT_302() throws Exception
+    {
+        testSameMethodRedirect(HttpMethod.PUT, HttpStatus.FOUND_302);
+    }
+
+    @Test
+    public void test_HEAD_303() throws Exception
+    {
+        testSameMethodRedirect(HttpMethod.HEAD, HttpStatus.SEE_OTHER_303);
+    }
+
+    @Test
+    public void test_POST_303() throws Exception
+    {
+        testGETRedirect(HttpMethod.POST, HttpStatus.SEE_OTHER_303);
+    }
+
+    @Test
+    public void test_PUT_303() throws Exception
+    {
+        testGETRedirect(HttpMethod.PUT, HttpStatus.SEE_OTHER_303);
+    }
+
+    @Test
+    public void test_HEAD_307() throws Exception
+    {
+        testSameMethodRedirect(HttpMethod.HEAD, HttpStatus.TEMPORARY_REDIRECT_307);
+    }
+
+    @Test
+    public void test_POST_307() throws Exception
+    {
+        testSameMethodRedirect(HttpMethod.POST, HttpStatus.TEMPORARY_REDIRECT_307);
+    }
+
+    @Test
+    public void test_PUT_307() throws Exception
+    {
+        testSameMethodRedirect(HttpMethod.PUT, HttpStatus.TEMPORARY_REDIRECT_307);
+    }
+
+    private void testSameMethodRedirect(final HttpMethod method, int redirectCode) throws Exception
+    {
+        testMethodRedirect(method, method, redirectCode);
+    }
+
+    private void testGETRedirect(final HttpMethod method, int redirectCode) throws Exception
+    {
+        testMethodRedirect(method, HttpMethod.GET, redirectCode);
+    }
+
+    private void testMethodRedirect(final HttpMethod requestMethod, final HttpMethod redirectMethod, int redirectCode) throws Exception
+    {
+        final AtomicInteger passes = new AtomicInteger();
+        client.getRequestListeners().add(new org.eclipse.jetty.client.api.Request.Listener.Empty()
+        {
+            @Override
+            public void onBegin(org.eclipse.jetty.client.api.Request request)
+            {
+                int pass = passes.incrementAndGet();
+                if (pass == 1)
+                {
+                    if (!requestMethod.is(request.getMethod()))
+                        request.abort(new Exception());
+                }
+                else if (pass == 2)
+                {
+                    if (!redirectMethod.is(request.getMethod()))
+                        request.abort(new Exception());
+                }
+                else
+                {
+                    request.abort(new Exception());
+                }
+            }
+        });
+
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .method(requestMethod)
+                .path("/" + redirectCode + "/localhost/done")
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+
+        Assert.assertEquals(200, response.getStatus());
     }
 
     private class RedirectHandler extends AbstractHandler
