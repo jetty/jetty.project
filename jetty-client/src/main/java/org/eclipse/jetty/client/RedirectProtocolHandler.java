@@ -96,17 +96,30 @@ public class RedirectProtocolHandler extends Response.Listener.Empty implements 
                         case 301:
                         {
                             String method = request.method();
-                            if (HttpMethod.GET.is(method) || HttpMethod.HEAD.is(method))
+                            if (HttpMethod.GET.is(method) || HttpMethod.HEAD.is(method) || HttpMethod.PUT.is(method))
                                 redirect(result, method, newURI);
+                            else if (HttpMethod.POST.is(method))
+                                redirect(result, HttpMethod.GET.asString(), newURI);
                             else
-                                fail(result, new HttpResponseException("HTTP protocol violation: received 301 for non GET or HEAD request", response));
+                                fail(result, new HttpResponseException("HTTP protocol violation: received 301 for non GET/HEAD/POST/PUT request", response));
                             break;
                         }
                         case 302:
+                        {
+                            String method = request.method();
+                            if (HttpMethod.HEAD.is(method) || HttpMethod.PUT.is(method))
+                                redirect(result, method, newURI);
+                            else
+                                redirect(result, HttpMethod.GET.asString(), newURI);
+                            break;
+                        }
                         case 303:
                         {
-                            // Redirect must be done using GET
-                            redirect(result, HttpMethod.GET.asString(), newURI);
+                            String method = request.method();
+                            if (HttpMethod.HEAD.is(method))
+                                redirect(result, method, newURI);
+                            else
+                                redirect(result, HttpMethod.GET.asString(), newURI);
                             break;
                         }
                         case 307:
