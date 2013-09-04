@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -29,6 +25,10 @@ import org.eclipse.jetty.io.Connection;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class LocalConnectorTest
 {
@@ -59,7 +59,7 @@ public class LocalConnectorTest
     {
         final CountDownLatch openLatch = new CountDownLatch(1);
         final CountDownLatch closeLatch = new CountDownLatch(1);
-        _connector.addBean(new Connection.Listener.Empty()
+        _connector.addBean(new Connection.Listener.Adapter()
         {
             @Override
             public void onOpened(Connection connection)

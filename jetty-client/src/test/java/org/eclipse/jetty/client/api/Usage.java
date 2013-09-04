@@ -133,7 +133,7 @@ public class Usage
 
         Response response = client.newRequest("localhost", 8080)
                 // Add a request listener
-                .listener(new Request.Listener.Empty()
+                .listener(new Request.Listener.Adapter()
                 {
                     @Override
                     public void onSuccess(Request request)
@@ -319,7 +319,7 @@ public class Usage
         DeferredContentProvider async = new DeferredContentProvider(ByteBuffer.wrap(new byte[]{0, 1, 2}));
         client.newRequest("localhost", 8080)
                 .content(async)
-                .send(new Response.Listener.Empty()
+                .send(new Response.Listener.Adapter()
                 {
                     @Override
                     public void onBegin(Response response)

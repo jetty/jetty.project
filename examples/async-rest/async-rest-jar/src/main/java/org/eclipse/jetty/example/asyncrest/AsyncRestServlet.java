@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -163,7 +162,7 @@ public class AsyncRestServlet extends AbstractRestServlet
         out.close();
     }
 
-    private abstract class AsyncRestRequest extends Response.Listener.Empty
+    private abstract class AsyncRestRequest extends Response.Listener.Adapter
     {
         final Utf8StringBuilder _content = new Utf8StringBuilder();
 

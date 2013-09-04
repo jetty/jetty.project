@@ -98,7 +98,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
                         headersLatch.countDown();
                     }
                 })
-                .send(new Response.Listener.Empty()
+                .send(new Response.Listener.Adapter()
                 {
                     @Override
                     public void onSuccess(Response response)
@@ -139,7 +139,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
 
         final CountDownLatch beginLatch = new CountDownLatch(1);
         final CountDownLatch failureLatch = new CountDownLatch(2);
-        client.newRequest(host, port).scheme(scheme).listener(new Request.Listener.Empty()
+        client.newRequest(host, port).scheme(scheme).listener(new Request.Listener.Adapter()
         {
             @Override
             public void onBegin(Request request)
@@ -153,7 +153,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
             {
                 failureLatch.countDown();
             }
-        }).send(new Response.Listener.Empty()
+        }).send(new Response.Listener.Adapter()
         {
             @Override
             public void onComplete(Result result)
@@ -191,7 +191,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         final CountDownLatch successLatch = new CountDownLatch(3);
         client.newRequest(host, port)
                 .scheme(scheme)
-                .listener(new Request.Listener.Empty()
+                .listener(new Request.Listener.Adapter()
                 {
                     @Override
                     public void onBegin(Request request)
@@ -206,7 +206,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
                         successLatch.countDown();
                     }
                 })
-                .send(new Response.Listener.Empty()
+                .send(new Response.Listener.Adapter()
                 {
                     @Override
                     public void onSuccess(Response response)
@@ -252,7 +252,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         final CountDownLatch successLatch = new CountDownLatch(3);
         client.newRequest(host, port)
                 .scheme(scheme)
-                .listener(new Request.Listener.Empty()
+                .listener(new Request.Listener.Adapter()
                 {
                     @Override
                     public void onBegin(Request request)
@@ -280,7 +280,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
                         successLatch.countDown();
                     }
                 })
-                .send(new Response.Listener.Empty()
+                .send(new Response.Listener.Adapter()
                 {
                     @Override
                     public void onSuccess(Response response)
@@ -334,7 +334,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
                         failureLatch.countDown();
                     }
                 })
-                .send(new Response.Listener.Empty()
+                .send(new Response.Listener.Adapter()
                 {
                     @Override
                     public void onComplete(Result result)
@@ -377,7 +377,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         final CountDownLatch latch = new CountDownLatch(1);
         client.newRequest(host, port)
                 .scheme(scheme)
-                .send(new Response.Listener.Empty()
+                .send(new Response.Listener.Adapter()
                 {
                     @Override
                     public void onComplete(Result result)
@@ -432,7 +432,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
             client.newRequest(host, port)
                     .scheme(scheme)
                     .content(new ByteBufferContentProvider(buffer))
-                    .send(new Response.Listener.Empty()
+                    .send(new Response.Listener.Adapter()
                     {
                         @Override
                         public void onComplete(Result result)

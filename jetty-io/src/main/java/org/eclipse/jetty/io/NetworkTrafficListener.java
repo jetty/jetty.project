@@ -79,7 +79,7 @@ public interface NetworkTrafficListener
     /**
      * <p>A commodity class that implements {@link NetworkTrafficListener} with empty methods.</p>
      */
-    public static class Empty implements NetworkTrafficListener
+    public static class Adapter implements NetworkTrafficListener
     {
         public void opened(Socket socket)
         {

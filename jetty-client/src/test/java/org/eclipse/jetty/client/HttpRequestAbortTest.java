@@ -59,7 +59,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         {
             client.newRequest("localhost", connector.getLocalPort())
                     .scheme(scheme)
-                    .listener(new Request.Listener.Empty()
+                    .listener(new Request.Listener.Adapter()
                     {
                         @Override
                         public void onQueued(Request request)
@@ -97,7 +97,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         {
             client.newRequest("localhost", connector.getLocalPort())
                     .scheme(scheme)
-                    .listener(new Request.Listener.Empty()
+                    .listener(new Request.Listener.Adapter()
                     {
                         @Override
                         public void onBegin(Request request)
@@ -137,7 +137,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         {
             client.newRequest("localhost", connector.getLocalPort())
                     .scheme(scheme)
-                    .listener(new Request.Listener.Empty()
+                    .listener(new Request.Listener.Adapter()
                     {
                         @Override
                         public void onHeaders(Request request)

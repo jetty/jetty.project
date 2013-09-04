@@ -22,7 +22,7 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 
-public class RedirectProtocolHandler extends Response.Listener.Empty implements ProtocolHandler
+public class RedirectProtocolHandler extends Response.Listener.Adapter implements ProtocolHandler
 {
     private final HttpRedirector redirector;
 

@@ -71,7 +71,7 @@ public interface Connection extends AutoCloseable
 
         public void onClosed(Connection connection);
 
-        public static class Empty implements Listener
+        public static class Adapter implements Listener
         {
             @Override
             public void onOpened(Connection connection)

@@ -186,7 +186,7 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
         }
 
         final CountDownLatch requestLatch = new CountDownLatch(1);
-        request.send(new Response.Listener.Empty()
+        request.send(new Response.Listener.Adapter()
         {
             private final AtomicInteger contentLength = new AtomicInteger();
 

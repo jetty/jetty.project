@@ -407,7 +407,7 @@ public class HttpClientContinueTest extends AbstractHttpClientServerTest
             public Response.Listener getResponseListener()
             {
                 final Response.Listener listener = super.getResponseListener();
-                return new Response.Listener.Empty()
+                return new Response.Listener.Adapter()
                 {
                     @Override
                     public void onBegin(Response response)

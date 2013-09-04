@@ -384,7 +384,7 @@ public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
         }
     }
 
-    private class TestListener extends Response.Listener.Empty
+    private class TestListener extends Response.Listener.Adapter
     {
         @Override
         public void onComplete(Result result)

@@ -35,7 +35,7 @@ import org.eclipse.jetty.http.HttpHeader;
  * <p>The content may be retrieved from {@link #onSuccess(Response)} or {@link #onComplete(Result)}
  * via {@link #getContent()} or {@link #getContentAsString()}.</p>
  */
-public abstract class BufferingResponseListener extends Response.Listener.Empty
+public abstract class BufferingResponseListener extends Listener.Adapter
 {
     private final int maxLength;
     private volatile byte[] buffer = new byte[0];

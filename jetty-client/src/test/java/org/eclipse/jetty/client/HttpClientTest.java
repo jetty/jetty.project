@@ -402,7 +402,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                         }
                     }
                 })
-                .send(new Response.Listener.Empty()
+                .send(new Response.Listener.Adapter()
                 {
                     @Override
                     public void onSuccess(Response response)
@@ -422,7 +422,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                         latch.countDown();
                     }
                 })
-                .send(new Response.Listener.Empty()
+                .send(new Response.Listener.Adapter()
                 {
                     @Override
                     public void onSuccess(Response response)
@@ -449,7 +449,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
                 .path("/one")
-                .listener(new Request.Listener.Empty()
+                .listener(new Request.Listener.Adapter()
                 {
                     @Override
                     public void onBegin(Request request)
@@ -530,7 +530,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                         latch.countDown();
                     }
                 })
-                .send(new Response.Listener.Empty()
+                .send(new Response.Listener.Adapter()
                 {
                     @Override
                     public void onSuccess(Response response)
@@ -609,7 +609,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                         };
                     }
                 })
-                .send(new Response.Listener.Empty()
+                .send(new Response.Listener.Adapter()
                 {
                     @Override
                     public void onComplete(Result result)
@@ -640,7 +640,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                         destination.getHttpConnectionPool().getActiveConnections().peek().close();
                     }
                 })
-                .send(new Response.Listener.Empty()
+                .send(new Response.Listener.Adapter()
                 {
                     @Override
                     public void onComplete(Result result)

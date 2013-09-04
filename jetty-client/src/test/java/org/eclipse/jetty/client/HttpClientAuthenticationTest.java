@@ -115,7 +115,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         AuthenticationStore authenticationStore = client.getAuthenticationStore();
 
         final AtomicReference<CountDownLatch> requests = new AtomicReference<>(new CountDownLatch(1));
-        Request.Listener.Empty requestListener = new Request.Listener.Empty()
+        Request.Listener.Adapter requestListener = new Request.Listener.Adapter()
         {
             @Override
             public void onSuccess(Request request)
@@ -137,7 +137,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         authenticationStore.addAuthentication(authentication);
 
         requests.set(new CountDownLatch(2));
-        requestListener = new Request.Listener.Empty()
+        requestListener = new Request.Listener.Adapter()
         {
             @Override
             public void onSuccess(Request request)
@@ -156,7 +156,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         client.getRequestListeners().remove(requestListener);
 
         requests.set(new CountDownLatch(1));
-        requestListener = new Request.Listener.Empty()
+        requestListener = new Request.Listener.Adapter()
         {
             @Override
             public void onSuccess(Request request)
@@ -196,7 +196,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         client.getAuthenticationStore().addAuthentication(new BasicAuthentication(uri, realm, "basic", "basic"));
 
         final CountDownLatch requests = new CountDownLatch(3);
-        Request.Listener.Empty requestListener = new Request.Listener.Empty()
+        Request.Listener.Adapter requestListener = new Request.Listener.Adapter()
         {
             @Override
             public void onSuccess(Request request)
@@ -235,7 +235,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         client.getAuthenticationStore().addAuthentication(new BasicAuthentication(uri, realm, "basic", "basic"));
 
         final CountDownLatch requests = new CountDownLatch(3);
-        Request.Listener.Empty requestListener = new Request.Listener.Empty()
+        Request.Listener.Adapter requestListener = new Request.Listener.Adapter()
         {
             @Override
             public void onSuccess(Request request)
@@ -262,7 +262,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         startBasic(new EmptyServerHandler());
 
         final AtomicReference<CountDownLatch> requests = new AtomicReference<>(new CountDownLatch(2));
-        Request.Listener.Empty requestListener = new Request.Listener.Empty()
+        Request.Listener.Adapter requestListener = new Request.Listener.Adapter()
         {
             @Override
             public void onSuccess(Request request)

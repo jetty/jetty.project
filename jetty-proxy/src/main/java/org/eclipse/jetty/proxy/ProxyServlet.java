@@ -629,7 +629,7 @@ public class ProxyServlet extends HttpServlet
         }
     }
 
-    private class ProxyResponseListener extends Response.Listener.Empty
+    private class ProxyResponseListener extends Response.Listener.Adapter
     {
         private final HttpServletRequest request;
         private final HttpServletResponse response;

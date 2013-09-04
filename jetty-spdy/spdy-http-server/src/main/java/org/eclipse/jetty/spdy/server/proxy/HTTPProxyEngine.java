@@ -132,7 +132,7 @@ public class HTTPProxyEngine extends ProxyEngine
 
     private void sendRequest(final Stream clientStream, Request request)
     {
-        request.send(new Response.Listener.Empty()
+        request.send(new Response.Listener.Adapter()
         {
             private volatile boolean committed;
 

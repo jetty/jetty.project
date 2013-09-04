@@ -381,7 +381,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
     private void testMethodRedirect(final HttpMethod requestMethod, final HttpMethod redirectMethod, int redirectCode) throws Exception
     {
         final AtomicInteger passes = new AtomicInteger();
-        client.getRequestListeners().add(new org.eclipse.jetty.client.api.Request.Listener.Empty()
+        client.getRequestListeners().add(new org.eclipse.jetty.client.api.Request.Listener.Adapter()
         {
             @Override
             public void onBegin(org.eclipse.jetty.client.api.Request request)

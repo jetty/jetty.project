@@ -503,7 +503,7 @@ public interface Request
         /**
          * An empty implementation of {@link Listener}
          */
-        public static class Empty implements Listener
+        public static class Adapter implements Listener
         {
             @Override
             public void onQueued(Request request)

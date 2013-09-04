@@ -160,7 +160,7 @@ public class ExternalSiteTest
                             latch.countDown();
                         }
                     })
-                    .send(new Response.Listener.Empty()
+                    .send(new Response.Listener.Adapter()
                     {
                         @Override
                         public void onFailure(Response response, Throwable failure)

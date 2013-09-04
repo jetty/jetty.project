@@ -56,7 +56,7 @@ public class HttpClientSynchronizationTest extends AbstractHttpClientServerTest
 
             synchronized (this)
             {
-                request.send(new Response.Listener.Empty()
+                request.send(new Response.Listener.Adapter()
                 {
                     @Override
                     public void onFailure(Response response, Throwable failure)
@@ -88,7 +88,7 @@ public class HttpClientSynchronizationTest extends AbstractHttpClientServerTest
 
             synchronized (this)
             {
-                request.send(new Response.Listener.Empty()
+                request.send(new Response.Listener.Adapter()
                 {
                     @Override
                     public void onComplete(Result result)

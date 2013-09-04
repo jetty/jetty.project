@@ -27,7 +27,6 @@ import java.net.Socket;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -41,7 +40,6 @@ import org.eclipse.jetty.toolchain.test.http.SimpleHttpResponse;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -69,7 +67,7 @@ public class ConnectionOpenCloseTest extends AbstractHttpTest
         final AtomicInteger callbacks = new AtomicInteger();
         final CountDownLatch openLatch = new CountDownLatch(1);
         final CountDownLatch closeLatch = new CountDownLatch(1);
-        connector.addBean(new Connection.Listener.Empty()
+        connector.addBean(new Connection.Listener.Adapter()
         {
             @Override
             public void onOpened(Connection connection)
@@ -119,7 +117,7 @@ public class ConnectionOpenCloseTest extends AbstractHttpTest
         final AtomicInteger callbacks = new AtomicInteger();
         final CountDownLatch openLatch = new CountDownLatch(1);
         final CountDownLatch closeLatch = new CountDownLatch(1);
-        connector.addBean(new Connection.Listener.Empty()
+        connector.addBean(new Connection.Listener.Adapter()
         {
             @Override
             public void onOpened(Connection connection)
@@ -190,7 +188,7 @@ public class ConnectionOpenCloseTest extends AbstractHttpTest
         final AtomicInteger callbacks = new AtomicInteger();
         final CountDownLatch openLatch = new CountDownLatch(1);
         final CountDownLatch closeLatch = new CountDownLatch(1);
-        connector.addBean(new Connection.Listener.Empty()
+        connector.addBean(new Connection.Listener.Adapter()
         {
             @Override
             public void onOpened(Connection connection)

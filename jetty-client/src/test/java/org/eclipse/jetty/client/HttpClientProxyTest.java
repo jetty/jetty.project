@@ -129,7 +129,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         URI uri = URI.create(scheme + "://" + proxyHost + ":" + proxyPort);
         client.getAuthenticationStore().addAuthentication(new BasicAuthentication(uri, realm, user, password));
         final AtomicInteger requests = new AtomicInteger();
-        client.getRequestListeners().add(new Request.Listener.Empty()
+        client.getRequestListeners().add(new Request.Listener.Adapter()
         {
             @Override
             public void onSuccess(Request request)
