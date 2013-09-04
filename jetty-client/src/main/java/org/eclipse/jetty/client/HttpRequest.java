@@ -90,7 +90,6 @@ public class HttpRequest implements Request
         path = uri.getRawPath();
         query = uri.getRawQuery();
         extractParams(query);
-        this.uri = buildURI(true);
         followRedirects(client.isFollowRedirects());
         idleTimeout = client.getIdleTimeout();
         HttpField acceptEncodingField = client.getAcceptEncodingField();
@@ -115,7 +114,7 @@ public class HttpRequest implements Request
     public Request scheme(String scheme)
     {
         this.scheme = scheme;
-        this.uri = buildURI(true);
+        this.uri = null;
         return this;
     }
 
@@ -173,9 +172,9 @@ public class HttpRequest implements Request
             params.clear();
             extractParams(query);
         }
-        this.uri = buildURI(true);
         if (uri.isAbsolute())
             this.path = buildURI(false).toString();
+        this.uri = null;
         return this;
     }
 
@@ -188,7 +187,9 @@ public class HttpRequest implements Request
     @Override
     public URI getURI()
     {
-        return uri;
+        if (uri != null)
+            return uri;
+        return uri = buildURI(true);
     }
 
     @Override
@@ -209,7 +210,7 @@ public class HttpRequest implements Request
     {
         params.add(name, value);
         this.query = buildQuery();
-        this.uri = buildURI(true);
+        this.uri = null;
         return this;
     }
 
@@ -272,6 +273,7 @@ public class HttpRequest implements Request
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public <T extends RequestListener> List<T> getRequestListeners(Class<T> type)
     {
         // This method is invoked often in a request/response conversation,
