@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.URLDecoder;
 import java.nio.ByteBuffer;
 import java.nio.channels.UnresolvedAddressException;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -31,6 +32,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.ByteBufferContentProvider;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -43,8 +45,6 @@ import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.fail;
 
 public class HttpClientRedirectTest extends AbstractHttpClientServerTest
 {
@@ -123,7 +123,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
                     .path("/301/localhost/done")
                     .timeout(5, TimeUnit.SECONDS)
                     .send();
-            fail();
+            Assert.fail();
         }
         catch (ExecutionException x)
         {
@@ -164,7 +164,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
                     .path("/303/localhost/302/localhost/done")
                     .timeout(5, TimeUnit.SECONDS)
                     .send();
-            fail();
+            Assert.fail();
         }
         catch (ExecutionException x)
         {
@@ -329,6 +329,43 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
     public void test_PUT_307() throws Exception
     {
         testSameMethodRedirect(HttpMethod.PUT, HttpStatus.TEMPORARY_REDIRECT_307);
+    }
+
+    @Test
+    public void testHttpRedirector() throws Exception
+    {
+        final HttpRedirector redirector = new HttpRedirector(client);
+
+        org.eclipse.jetty.client.api.Request request1 = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .path("/303/localhost/302/localhost/done")
+                .timeout(5, TimeUnit.SECONDS)
+                .followRedirects(false);
+        ContentResponse response1 = request1.send();
+
+        Assert.assertEquals(303, response1.getStatus());
+        Assert.assertTrue(redirector.isRedirect(response1));
+
+        Result result = redirector.redirect(request1, response1);
+        org.eclipse.jetty.client.api.Request request2 = result.getRequest();
+        Response response2 = result.getResponse();
+
+        Assert.assertEquals(302, response2.getStatus());
+        Assert.assertTrue(redirector.isRedirect(response2));
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        redirector.redirect(request2, response2, new Response.CompleteListener()
+        {
+            @Override
+            public void onComplete(Result result)
+            {
+                Response response3 = result.getResponse();
+                Assert.assertEquals(200, response3.getStatus());
+                Assert.assertFalse(redirector.isRedirect(response3));
+                latch.countDown();
+            }
+        });
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     private void testSameMethodRedirect(final HttpMethod method, int redirectCode) throws Exception

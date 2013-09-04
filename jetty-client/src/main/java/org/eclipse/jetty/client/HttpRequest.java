@@ -466,12 +466,12 @@ public class HttpRequest implements Request
         FutureResponseListener listener = new FutureResponseListener(this);
         send(this, listener);
 
-        long timeout = getTimeout();
-        if (timeout <= 0)
-            return listener.get();
-
         try
         {
+            long timeout = getTimeout();
+            if (timeout <= 0)
+                return listener.get();
+
             return listener.get(timeout, TimeUnit.MILLISECONDS);
         }
         catch (InterruptedException | TimeoutException x)
