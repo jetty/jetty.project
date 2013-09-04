@@ -390,7 +390,7 @@ public class SPDYClient
     static class SessionPromise extends FuturePromise<Session>
     {
         private final SocketChannel channel;
-        private final Promise wrappedPromise;
+        private final Promise<Session> wrappedPromise;
         final SPDYClient client;
         final SessionFrameListener listener;
 
