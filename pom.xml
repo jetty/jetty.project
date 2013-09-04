@@ -7,12 +7,14 @@
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>jetty-fcgi</artifactId>
+    <groupId>org.eclipse.jetty.fcgi</groupId>
+    <artifactId>fcgi-parent</artifactId>
+    <packaging>pom</packaging>
     <name>Jetty :: FastCGI</name>
 
-    <properties>
-        <bundle-symbolic-name>${project.groupId}.fcgi</bundle-symbolic-name>
-    </properties>
+    <modules>
+        <module>fcgi-core</module>
+    </modules>
 
     <build>
         <plugins>
@@ -46,13 +48,14 @@
                         </goals>
                         <configuration>
                             <instructions>
-                                <Import-Package>javax.net.*,*</Import-Package>
+                                <Export-Package>${bundle-symbolic-name}.*;version="9.1"</Export-Package>
+                                <Import-Package>org.eclipse.jetty.*;version="[9.0,10.0)",*</Import-Package>
+                                <_nouses>true</_nouses>
                             </instructions>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
-            <!-- Required for OSGI -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
@@ -62,39 +65,18 @@
                     </archive>
                 </configuration>
             </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>findbugs-maven-plugin</artifactId>
-                <configuration>
-                    <onlyAnalyze>org.eclipse.jetty.fcgi.*</onlyAnalyze>
-                </configuration>
-            </plugin>
         </plugins>
     </build>
 
-    <dependencies>
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-util</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-io</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-http</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.11</version>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>4.11</version>
+                <scope>test</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
 </project>
