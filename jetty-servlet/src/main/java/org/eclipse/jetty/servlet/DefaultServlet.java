@@ -988,7 +988,6 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 else
                     // Handle cached resource
                     (resource).writeTo(multi,start,size);
-
             }
             if (in!=null)
                 in.close();
