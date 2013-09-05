@@ -21,11 +21,12 @@ package org.eclipse.jetty.xml;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
 import org.junit.Test;
 
-import static junit.framework.Assert.assertEquals;
+import static org.junit.Assert.assertEquals;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -127,10 +128,28 @@ public class XmlConfigurationTest
         properties.put("whatever", "xxx");
 
         URL url = XmlConfigurationTest.class.getClassLoader().getResource(_configure);
-        XmlConfiguration configuration = new XmlConfiguration(url);
+        final AtomicInteger count = new AtomicInteger(0);
+        XmlConfiguration configuration = new XmlConfiguration(url)
+        {
+            @Override
+            public void initializeDefaults(Object object)
+            {
+                if (object instanceof TestConfiguration)
+                {
+                    count.incrementAndGet();
+                    ((TestConfiguration)object).setNested(null);
+                    ((TestConfiguration)object).setTestString("NEW DEFAULT");
+                }
+            }
+        };
         configuration.getProperties().putAll(properties);
         TestConfiguration tc = (TestConfiguration)configuration.configure();
 
+        assertEquals(3,count.get());
+        assertEquals("NEW DEFAULT",tc.getTestString());
+        assertEquals("nested",tc.getNested().getTestString());
+        assertEquals("NEW DEFAULT",tc.getNested().getNested().getTestString());
+        
         assertEquals("Set String","SetValue",tc.testObject);
         assertEquals("Set Type",2,tc.testInt);
 
