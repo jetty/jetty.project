@@ -88,7 +88,10 @@ public class WebInfConfiguration extends AbstractConfiguration
                 context.getMetaData().addContainerResource(Resource.newResource(uri));
             }
         };
-        ClassLoader loader = context.getClassLoader();
+        ClassLoader loader = null;
+        if (context.getClassLoader() != null)
+            loader = context.getClassLoader().getParent();
+
         while (loader != null && (loader instanceof URLClassLoader))
         {
             URL[] urls = ((URLClassLoader)loader).getURLs();
