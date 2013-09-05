@@ -36,6 +36,7 @@ public class TestConfiguration extends HashMap<String,Object>
 
     public final String name;
     public TestConfiguration nested;
+    public String testString="default";
     public Object testObject;
     public int testInt;
     public URL url;
@@ -79,6 +80,25 @@ public class TestConfiguration extends HashMap<String,Object>
     	propValue=value;
     }
 
+    public TestConfiguration getNested()
+    {
+        return nested;
+    }
+
+    public void setNested(TestConfiguration nested)
+    {
+        this.nested = nested;
+    }
+
+    public String getTestString()
+    {
+        return testString;
+    }
+
+    public void setTestString(String testString)
+    {
+        this.testString = testString;
+    }
 
     public void call()
     {
