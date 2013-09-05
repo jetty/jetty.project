@@ -34,6 +34,8 @@ public class TestConfiguration extends HashMap<String,Object>
 {
     public static int VALUE=77;
 
+    public final Object ID = new Object();
+    
     public final String name;
     public TestConfiguration nested;
     public String testString="default";
@@ -107,7 +109,6 @@ public class TestConfiguration extends HashMap<String,Object>
 
     public TestConfiguration call(Boolean b)
     {
-        nested=new TestConfiguration("called-"+name);
         nested.put("Arg",b);
         return nested;
     }
@@ -187,4 +188,5 @@ public class TestConfiguration extends HashMap<String,Object>
     {
         this.map = map;
     }
+    
 }

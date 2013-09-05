@@ -147,6 +147,7 @@ public class XmlConfigurationTest
         TestConfiguration tc = (TestConfiguration)configuration.configure();
 
         assertEquals(3,count.get());
+        
         assertEquals("NEW DEFAULT",tc.getTestString());
         assertEquals("nested",tc.getNested().getTestString());
         assertEquals("NEW DEFAULT",tc.getNested().getNested().getTestString());

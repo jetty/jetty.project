@@ -810,7 +810,8 @@ public class XmlConfiguration
             {
                 throw new IllegalStateException("No suitable constructor: " + node + " on " + obj);
             }
-            
+
+            _configuration.initializeDefaults(n);
             configure(n,node,argIndex);
             return n;
         }
