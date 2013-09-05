@@ -195,7 +195,14 @@ public class ServletHandler extends ScopedHandler
         {
             for (int i=_filters.length; i-->0;)
             {
-                try { _filters[i].stop(); }catch(Exception e){LOG.warn(Log.EXCEPTION,e);}
+                try 
+                {
+                    _filters[i].stop(); 
+                }
+                catch(Exception e)
+                {
+                    LOG.warn(Log.EXCEPTION,e);
+                }
                 if (_filters[i].getSource() != Source.EMBEDDED)
                 {
                     //remove all of the mappings that were for non-embedded filters
@@ -232,7 +239,14 @@ public class ServletHandler extends ScopedHandler
         {
             for (int i=_servlets.length; i-->0;)
             {
-                try { _servlets[i].stop(); }catch(Exception e){LOG.warn(Log.EXCEPTION,e);}
+                try 
+                { 
+                    _servlets[i].stop(); 
+                }
+                catch(Exception e)
+                {
+                    LOG.warn(Log.EXCEPTION,e);
+                }
                 
                 if (_servlets[i].getSource() != Source.EMBEDDED)
                 {
@@ -527,16 +541,12 @@ public class ServletHandler extends ScopedHandler
 
             // unwrap cause
             Throwable th=e;
-            if (th instanceof UnavailableException)
-            {
-                LOG.debug(th);
-            }
-            else if (th instanceof ServletException)
+            if (th instanceof ServletException)
             {
                 if (th instanceof QuietServletException)
                 { 
-                    LOG.debug(th);
                     LOG.warn(th.toString());
+                    LOG.debug(th);
                 }
                 else
                     LOG.warn(th);
@@ -548,22 +558,15 @@ public class ServletHandler extends ScopedHandler
                     th=cause;
                 }
             }
-            // handle or log exception
             else if (th instanceof EofException)
+            {
                 throw (EofException)th;
-
-            else if (LOG.isDebugEnabled())
-            {
-                LOG.warn(request.getRequestURI(), th);
-                LOG.debug(request.toString());
-            }
-            else if (th instanceof IOException || th instanceof UnavailableException)
-            {
-                LOG.debug(request.getRequestURI(),th);
             }
             else
             {
                 LOG.warn(request.getRequestURI(),th);
+                if (LOG.isDebugEnabled())
+                    LOG.debug(request.toString());
             }
 
             if (!response.isCommitted())
