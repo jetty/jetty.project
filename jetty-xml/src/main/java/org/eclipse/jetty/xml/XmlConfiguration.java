@@ -227,7 +227,7 @@ public class XmlConfiguration
         {
             throw new IllegalArgumentException("Unknown XML tag:"+config.getTag());
         }
-        _processor.init(_url,config,_idMap, _propertyMap);
+        _processor.init(_url,config,this);
     }
 
 
@@ -295,52 +295,64 @@ public class XmlConfiguration
     {
         return _processor.configure();
     }
+    
+    /* ------------------------------------------------------------ */
+    /** Initialize a new Object defaults.
+     * <p>This method must be called by any {@link ConfigurationProcessor} when it 
+     * creates a new instance of an object before configuring it, so that a derived 
+     * XmlConfiguration class may inject default values.
+     * @param object
+     */
+    public void initializeDefaults(Object object)
+    {
+    }
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     private static class JettyXmlConfiguration implements ConfigurationProcessor
     {
-        XmlParser.Node _config;
-        Map<String, Object> _idMap;
-        Map<String, String> _propertyMap;
+        XmlParser.Node _root;
+        XmlConfiguration _configuration;
 
-        public void init(URL url, XmlParser.Node config, Map<String, Object> idMap, Map<String, String> properties)
+        public void init(URL url, XmlParser.Node root, XmlConfiguration configuration)
         {
-            _config=config;
-            _idMap=idMap;
-            _propertyMap=properties;
+            _root=root;
+            _configuration=configuration;
         }
 
         /* ------------------------------------------------------------ */
         public Object configure(Object obj) throws Exception
         {
             // Check the class of the object
-            Class<?> oClass = nodeClass(_config);
+            Class<?> oClass = nodeClass(_root);
             if (oClass != null && !oClass.isInstance(obj))
             {
                 String loaders = (oClass.getClassLoader()==obj.getClass().getClassLoader())?"":"Object Class and type Class are from different loaders.";
                 throw new IllegalArgumentException("Object of class '"+obj.getClass().getCanonicalName()+"' is not of type '" + oClass.getCanonicalName()+"'. "+loaders);
             }
-            configure(obj,_config,0);
+            configure(obj,_root,0);
             return obj;
         }
 
         /* ------------------------------------------------------------ */
         public Object configure() throws Exception
         {
-            Class<?> oClass = nodeClass(_config);
+            Class<?> oClass = nodeClass(_root);
 
-            String id = _config.getAttribute("id");
-            Object obj = id == null?null:_idMap.get(id);
+            String id = _root.getAttribute("id");
+            Object obj = id == null?null:_configuration.getIdMap().get(id);
 
             if (obj == null && oClass != null)
+            {
                 obj = oClass.newInstance();
+                _configuration.initializeDefaults(obj);
+            }
 
             if (oClass != null && !oClass.isInstance(obj))
                 throw new ClassCastException(oClass.toString());
 
-            configure(obj,_config,0);
+            configure(obj,_root,0);
             return obj;
         }
 
@@ -368,7 +380,7 @@ public class XmlConfiguration
         {
             String id = cfg.getAttribute("id");
             if (id != null)
-                _idMap.put(id,obj);
+                _configuration.getIdMap().put(id,obj);
 
             for (; i < cfg.size(); i++)
             {
@@ -558,6 +570,7 @@ public class XmlConfiguration
                     }
                     Constructor<?> cons = sClass.getConstructor(vClass);
                     arg[0] = cons.newInstance(arg);
+                    _configuration.initializeDefaults(arg[0]);
                     set.invoke(obj,arg);
                     return;
                 }
@@ -675,7 +688,7 @@ public class XmlConfiguration
                 }
             }
             if (id != null)
-                _idMap.put(id,obj);
+                _configuration.getIdMap().put(id,obj);
             return obj;
         }
 
@@ -730,7 +743,7 @@ public class XmlConfiguration
             {
                 Object n= TypeUtil.call(oClass,method,obj,arg);
                 if (id != null)
-                    _idMap.put(id,n);
+                    _configuration.getIdMap().put(id,n);
                 configure(n,node,argi);
                 return n;
             }
@@ -792,6 +805,7 @@ public class XmlConfiguration
                 try
                 {
                     n = constructors[c].newInstance(arg);
+                    _configuration.initializeDefaults(n);
                     called = true;
                 }
                 catch (IllegalAccessException e)
@@ -809,7 +823,7 @@ public class XmlConfiguration
                 if (called)
                 {
                     if (id != null)
-                        _idMap.put(id,n);
+                        _configuration.getIdMap().put(id,n);
                     configure(n,node,argi);
                     return n;
                 }
@@ -827,7 +841,7 @@ public class XmlConfiguration
         private Object refObj(Object obj, XmlParser.Node node) throws Exception
         {
             String id = node.getAttribute("id");
-            obj = _idMap.get(id);
+            obj = _configuration.getIdMap().get(id);
             if (obj == null)
                 throw new IllegalStateException("No object for id=" + id);
             configure(obj,node,0);
@@ -870,12 +884,12 @@ public class XmlConfiguration
                 Object v = value(obj,item);
                 al = LazyList.add(al,(v == null && aClass.isPrimitive())?0:v);
                 if (nid != null)
-                    _idMap.put(nid,v);
+                    _configuration.getIdMap().put(nid,v);
             }
 
             Object array = LazyList.toArray(al,aClass);
             if (id != null)
-                _idMap.put(id,array);
+                _configuration.getIdMap().put(id,array);
             return array;
         }
 
@@ -889,7 +903,7 @@ public class XmlConfiguration
 
             Map<Object, Object> map = new HashMap<Object, Object>();
             if (id != null)
-                _idMap.put(id,map);
+                _configuration.getIdMap().put(id,map);
 
             for (Object o : node)
             {
@@ -925,9 +939,9 @@ public class XmlConfiguration
                 map.put(k,v);
 
                 if (kid != null)
-                    _idMap.put(kid,k);
+                    _configuration.getIdMap().put(kid,k);
                 if (vid != null)
-                    _idMap.put(vid,v);
+                    _configuration.getIdMap().put(vid,v);
             }
 
             return map;
@@ -947,12 +961,13 @@ public class XmlConfiguration
             String name = node.getAttribute("name");
             String defaultValue = node.getAttribute("default");
             Object prop;
-            if (_propertyMap != null && _propertyMap.containsKey(name))
-                prop = _propertyMap.get(name);
+            Map<String,String> property_map=_configuration.getProperties();
+            if (property_map != null && property_map.containsKey(name))
+                prop = property_map.get(name);
             else
                 prop = defaultValue;
             if (id != null)
-                _idMap.put(id,prop);
+                _configuration.getIdMap().put(id,prop);
             if (prop != null)
                 configure(prop,node,0);
             return prop;
@@ -975,7 +990,7 @@ public class XmlConfiguration
             String ref = node.getAttribute("ref");
             if (ref != null)
             {
-                value = _idMap.get(ref);
+                value = _configuration.getIdMap().get(ref);
             }
             else
             {
