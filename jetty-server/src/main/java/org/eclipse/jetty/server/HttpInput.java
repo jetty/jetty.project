@@ -265,7 +265,7 @@ public abstract class HttpInput<T> extends ServletInputStream
         synchronized (lock())
         {
             T item = _inputQ.peekUnsafe();
-            while (!isShutdown() && !isEarlyEOF())
+            loop: while (!isShutdown() && !isEarlyEOF())
             {
                 while (item != null)
                 {
@@ -286,7 +286,8 @@ public abstract class HttpInput<T> extends ServletInputStream
                 }
                 catch (IOException e)
                 {
-                    throw new RuntimeIOException(e);
+                    LOG.warn(e);
+                    break loop;
                 }
             }
         }
