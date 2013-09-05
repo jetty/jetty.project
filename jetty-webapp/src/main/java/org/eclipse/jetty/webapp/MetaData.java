@@ -55,6 +55,7 @@ public class MetaData
     protected final Map<String,FragmentDescriptor> _webFragmentNameMap = new HashMap<String,FragmentDescriptor>();
     protected final Map<Resource, FragmentDescriptor> _webFragmentResourceMap = new HashMap<Resource, FragmentDescriptor>();
     protected final Map<Resource, List<DiscoveredAnnotation>> _webFragmentAnnotations = new HashMap<Resource, List<DiscoveredAnnotation>>();
+    protected final List<Resource> _webInfClasses = new ArrayList<Resource>();
     protected final List<Resource> _webInfJars = new ArrayList<Resource>();
     protected final List<Resource> _orderedWebInfJars = new ArrayList<Resource>();
     protected final List<Resource> _orderedContainerResources = new ArrayList<Resource>();
@@ -573,6 +574,17 @@ public class MetaData
     {
         _orderedContainerResources.add(jar);
     }
+    
+    public void setWebInfClassesDirs (List<Resource> dirs)
+    {
+        _webInfClasses.addAll(dirs);
+    }
+    
+    public List<Resource> getWebInfClassesDirs ()
+    {
+        return _webInfClasses;
+    }
+    
     public boolean isAllowDuplicateFragmentNames()
     {
         return allowDuplicateFragmentNames;

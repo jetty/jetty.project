@@ -752,7 +752,7 @@ public class AnnotationParser
             return;
 
         if (LOG.isDebugEnabled()) {LOG.debug("Scanning dir {}", dir);};
-        
+
         String[] files=dir.list();
         for (int f=0;files!=null && f<files.length;f++)
         {
@@ -854,7 +854,7 @@ public class AnnotationParser
     }
 
     /**
-     * Parse a particular resource
+     * Parse a particular uri
      * @param uri
      * @param resolver
      * @throws Exception
@@ -865,7 +865,24 @@ public class AnnotationParser
         if (uri == null)
             return;
 
-        Resource r = Resource.newResource(uri);
+        parse (Resource.newResource(uri), resolver);
+        
+     
+    }
+
+    
+    /**
+     * Parse a resource
+     * @param r
+     * @param resolver
+     * @throws Exception
+     */
+    public void parse (Resource r, final ClassNameResolver resolver)
+    throws Exception
+    {
+        if (r == null)
+            return;
+        
         if (r.exists() && r.isDirectory())
         {
             parseDir(r, resolver);
@@ -885,9 +902,8 @@ public class AnnotationParser
             return;
         }
         
-        if (LOG.isDebugEnabled()) LOG.warn("Resource not scannable for classes: {}", uri);
+        if (LOG.isDebugEnabled()) LOG.warn("Resource not scannable for classes: {}", r);
     }
-
 
 
     /**
@@ -904,7 +920,6 @@ public class AnnotationParser
             return;
         
         URI uri = jarResource.getURI();
-        
         if (jarResource.toString().endsWith(".jar"))
         {
             if (LOG.isDebugEnabled()) {LOG.debug("Scanning jar {}", jarResource);};
@@ -1030,7 +1045,6 @@ public class AnnotationParser
         //no path is not valid
         if (path == null || path.length()==0)
             return false;
-
 
         //skip any classfiles that are in a hidden directory
         if (path.startsWith(".") || path.contains("/."))

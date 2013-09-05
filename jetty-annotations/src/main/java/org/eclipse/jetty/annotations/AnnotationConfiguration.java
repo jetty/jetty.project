@@ -24,6 +24,7 @@ import java.util.EventListener;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ServiceLoader;
+import java.util.StringTokenizer;
 
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.annotation.HandlesTypes;
@@ -58,6 +59,81 @@ public class AnnotationConfiguration extends AbstractConfiguration
     protected ClassInheritanceHandler _classInheritanceHandler;
     protected List<ContainerInitializerAnnotationHandler> _containerInitializerAnnotationHandlers = new ArrayList<ContainerInitializerAnnotationHandler>();
    
+    
+    /**
+     * WebAppClassNameResolver
+     *
+     * Checks to see if a classname belongs to hidden or visible packages when scanning,
+     * and whether a classname that is a duplicate should override a previously
+     * scanned classname. 
+     * 
+     * This is analogous to the management of classes that the WebAppClassLoader is doing,
+     * however we don't want to load the classes at this point so we are doing it on
+     * the name only.
+     * 
+     */
+    public class WebAppClassNameResolver implements ClassNameResolver
+    {
+        private WebAppContext _context;
+
+        public WebAppClassNameResolver (WebAppContext context)
+        {
+            _context = context;
+        }
+
+        public boolean isExcluded (String name)
+        {
+            if (_context.isSystemClass(name)) return true;
+            if (_context.isServerClass(name)) return false;
+            return false;
+        }
+
+        public boolean shouldOverride (String name)
+        {
+            //looking at webapp classpath, found already-parsed class 
+            //of same name - did it come from system or duplicate in webapp?
+            if (_context.isParentLoaderPriority())
+                return false;
+            return true;
+        }
+    }
+
+    
+    /**
+     * ContainerClassNameResolver
+     *
+     * Checks to see if a classname belongs to a hidden or visible package
+     * when scanning for annotations and thus whether it should be excluded from
+     * consideration or not.
+     * 
+     * This is analogous to the management of classes that the WebAppClassLoader is doing,
+     * however we don't want to load the classes at this point so we are doing it on
+     * the name only.
+     * 
+     */
+    public class ContainerClassNameResolver implements ClassNameResolver
+    { 
+        private WebAppContext _context;
+        
+        public ContainerClassNameResolver (WebAppContext context)
+        {
+            _context = context;
+        }
+        public boolean isExcluded (String name)
+        {
+            if (_context.isSystemClass(name)) return false;
+            if (_context.isServerClass(name)) return true;
+            return false;
+        }
+
+        public boolean shouldOverride (String name)
+        {
+            //visiting the container classpath, 
+            if (_context.isParentLoaderPriority())
+                return true;
+            return false;
+        }
+    }
     
     @Override
     public void preConfigure(final WebAppContext context) throws Exception
@@ -356,25 +432,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
         }
 
         parser.parse (containerUris.toArray(new URI[containerUris.size()]),
-                new ClassNameResolver ()
-                {
-                    public boolean isExcluded (String name)
-                    {
-                        if (context.isSystemClass(name)) return false;
-                        if (context.isServerClass(name)) return true;
-                        return false;
-                    }
-
-                    public boolean shouldOverride (String name)
-                    {
-                        //looking at system classpath
-                        if (context.isParentLoaderPriority())
-                            return true;
-                        return false;
-                    }
-                });   
-
-         
+                      new ContainerClassNameResolver (context));   
     }
 
 
@@ -432,24 +490,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
                     parser.registerHandlers(_discoverableAnnotationHandlers);
                 }
 
-                parser.parse(uri,
-                             new ClassNameResolver()
-                             {
-                                 public boolean isExcluded (String name)
-                                 {
-                                     if (context.isSystemClass(name)) return true;
-                                     if (context.isServerClass(name)) return false;
-                                     return false;
-                                 }
-
-                                 public boolean shouldOverride (String name)
-                                 {
-                                    //looking at webapp classpath, found already-parsed class of same name - did it come from system or duplicate in webapp?
-                                    if (context.isParentLoaderPriority())
-                                        return false;
-                                    return true;
-                                 }
-                             });
+                parser.parse(uri, new WebAppClassNameResolver(context));
             }
         }
     }
@@ -465,45 +506,26 @@ public class AnnotationConfiguration extends AbstractConfiguration
     throws Exception
     {
         LOG.debug("Scanning classes in WEB-INF/classes");
-        if (context.getWebInf() != null)
-        {
-            Resource classesDir = context.getWebInf().addPath("classes/");
-            if (classesDir.exists())
-            {
-                parser.clearHandlers();
-                for (DiscoverableAnnotationHandler h:_discoverableAnnotationHandlers)
-                {
-                    if (h instanceof AbstractDiscoverableAnnotationHandler)
-                        ((AbstractDiscoverableAnnotationHandler)h).setResource(null); //
-                }
-                parser.registerHandlers(_discoverableAnnotationHandlers);
-                parser.registerHandler(_classInheritanceHandler);
-                parser.registerHandlers(_containerInitializerAnnotationHandlers);
-                
-                parser.parseDir(classesDir,
-                                new ClassNameResolver()
-                                {
-                                    public boolean isExcluded (String name)
-                                    {
-                                        if (context.isSystemClass(name)) return true;
-                                        if (context.isServerClass(name)) return false;
-                                        return false;
-                                    }
 
-                                    public boolean shouldOverride (String name)
-                                    {
-                                        //looking at webapp classpath, found already-parsed class of same name - did it come from system or duplicate in webapp?
-                                        if (context.isParentLoaderPriority()) return false;
-                                        return true;
-                                    }
-                                });
-            }
+        parser.clearHandlers();
+        for (DiscoverableAnnotationHandler h:_discoverableAnnotationHandlers)
+        {
+            if (h instanceof AbstractDiscoverableAnnotationHandler)
+                ((AbstractDiscoverableAnnotationHandler)h).setResource(null); //
+        }
+        parser.registerHandlers(_discoverableAnnotationHandlers);
+        parser.registerHandler(_classInheritanceHandler);
+        parser.registerHandlers(_containerInitializerAnnotationHandlers);
+
+        for (Resource dir : context.getMetaData().getWebInfClassesDirs())
+        {
+            parser.parseDir(dir, new WebAppClassNameResolver(context));
         }
     }
 
 
 
-    /**
+        /**
      * Get the web-fragment.xml from a jar
      * 
      * @param jar

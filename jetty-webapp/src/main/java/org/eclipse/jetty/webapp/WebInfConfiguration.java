@@ -27,6 +27,7 @@ import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.StringTokenizer;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.server.Connector;
@@ -139,6 +140,9 @@ public class WebInfConfiguration extends AbstractConfiguration
             }
         }
         webInfJarNameMatcher.match(webInfPattern, uris, true); //null is inclusive, no pattern == all jars match
+        
+        //No pattern to appy to classes, just add to metadata
+        context.getMetaData().setWebInfClassesDirs(findClassDirs(context));
     }
 
 
@@ -694,8 +698,29 @@ public class WebInfConfiguration extends AbstractConfiguration
         return canonicalName.toString();
     }
 
+    
+    protected List<Resource> findClassDirs (WebAppContext context)
+    throws Exception
+    {
+        if (context == null)
+            return null;
+        
+        List<Resource> classDirs = new ArrayList<Resource>();
+
+        Resource webInfClasses = findWebInfClassesDir(context);
+        if (webInfClasses != null)
+            classDirs.add(webInfClasses);
+        List<Resource> extraClassDirs = findExtraClasspathDirs(context);
+        if (extraClassDirs != null)
+            classDirs.addAll(extraClassDirs);
+        
+        return classDirs;
+    }
+    
+    
     /**
-     * Look for jars in WEB-INF/lib
+     * Look for jars that should be treated as if they are in WEB-INF/lib
+     * 
      * @param context
      * @return the list of jar resources found within context
      * @throws Exception
@@ -704,14 +729,31 @@ public class WebInfConfiguration extends AbstractConfiguration
     throws Exception
     {
         List<Resource> jarResources = new ArrayList<Resource>();
-
+        List<Resource> webInfLibJars = findWebInfLibJars(context);
+        if (webInfLibJars != null)
+            jarResources.addAll(webInfLibJars);
+        List<Resource> extraClasspathJars = findExtraClasspathJars(context);
+        if (extraClasspathJars != null)
+            jarResources.addAll(extraClasspathJars);
+        return jarResources;
+    }
+    
+    /**
+     *  Look for jars in WEB-INF/lib
+     *  
+     * @param context
+     * @return
+     * @throws Exception
+     */
+    protected List<Resource> findWebInfLibJars(WebAppContext context)
+    throws Exception
+    {
         Resource web_inf = context.getWebInf();
         if (web_inf==null || !web_inf.exists())
             return null;
 
+        List<Resource> jarResources = new ArrayList<Resource>();
         Resource web_inf_lib = web_inf.addPath("/lib");
-
-
         if (web_inf_lib.exists() && web_inf_lib.isDirectory())
         {
             String[] files=web_inf_lib.list();
@@ -736,4 +778,90 @@ public class WebInfConfiguration extends AbstractConfiguration
         }
         return jarResources;
     }
+    
+    
+    
+    /**
+     * Get jars from WebAppContext.getExtraClasspath as resources
+     * 
+     * @param context
+     * @return
+     * @throws Exception
+     */
+    protected List<Resource>  findExtraClasspathJars(WebAppContext context)
+    throws Exception
+    { 
+        if (context == null || context.getExtraClasspath() == null)
+            return null;
+        
+        List<Resource> jarResources = new ArrayList<Resource>();
+        StringTokenizer tokenizer = new StringTokenizer(context.getExtraClasspath(), ",;");
+        while (tokenizer.hasMoreTokens())
+        {
+            Resource resource = context.newResource(tokenizer.nextToken().trim());
+            String fnlc = resource.getName().toLowerCase(Locale.ENGLISH);
+            int dot = fnlc.lastIndexOf('.');
+            String extension = (dot < 0 ? null : fnlc.substring(dot));
+            if (extension != null && (extension.equals(".jar") || extension.equals(".zip")))
+            {
+                jarResources.add(resource);
+            }
+        }
+        
+        return jarResources;
+    }
+    
+    /**
+     * Get WEB-INF/classes dir
+     * 
+     * @param context
+     * @return
+     * @throws Exception
+     */
+    protected Resource findWebInfClassesDir (WebAppContext context)
+    throws Exception
+    {
+        if (context == null)
+            return null;
+        
+        Resource web_inf = context.getWebInf();
+
+        // Find WEB-INF/classes
+        if (web_inf != null && web_inf.isDirectory())
+        {
+            // Look for classes directory
+            Resource classes= web_inf.addPath("classes/");
+            if (classes.exists())
+                return classes;
+        }
+        return null;
+    }
+    
+    
+    /**
+     * Get class dirs from WebAppContext.getExtraClasspath as resources
+     * 
+     * @param context
+     * @return
+     * @throws Exception
+     */
+    protected List<Resource>  findExtraClasspathDirs(WebAppContext context)
+    throws Exception
+    { 
+        if (context == null || context.getExtraClasspath() == null)
+            return null;
+        
+        List<Resource> dirResources = new ArrayList<Resource>();
+        StringTokenizer tokenizer = new StringTokenizer(context.getExtraClasspath(), ",;");
+        while (tokenizer.hasMoreTokens())
+        {
+            Resource resource = context.newResource(tokenizer.nextToken().trim());
+            if (resource.exists() && resource.isDirectory())
+                dirResources.add(resource);
+        }
+        
+        return dirResources;
+    }
+    
+    
 }
