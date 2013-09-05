@@ -602,19 +602,20 @@ public class ResourceHandler extends HandlerWrapper
             HttpFields fields = ((Response)response).getHttpFields();
 
             if (length>0)
-                fields.putLongField(HttpHeader.CONTENT_LENGTH,length);
+                ((Response)response).setLongContentLength(length);
 
             if (_cacheControl!=null)
                 fields.put(HttpHeader.CACHE_CONTROL,_cacheControl);
         }
         else
         {
-            if (length>0)
+            if (length>Integer.MAX_VALUE)
                 response.setHeader(HttpHeader.CONTENT_LENGTH.asString(),Long.toString(length));
+            else if (length>0)
+                response.setContentLength((int)length);
 
             if (_cacheControl!=null)
                 response.setHeader(HttpHeader.CACHE_CONTROL.asString(),_cacheControl.toString());
         }
-
     }
 }

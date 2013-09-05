@@ -137,10 +137,10 @@ public class Response implements HttpServletResponse
         Response response = _channel.getResponse();
         String contentType = httpContent.getContentType();
         if (contentType != null && !response.getHttpFields().containsKey(HttpHeader.CONTENT_TYPE.asString()))
-            response.getHttpFields().put(HttpHeader.CONTENT_TYPE, contentType);
-
+            setContentType(contentType);
+        
         if (httpContent.getContentLength() > 0)
-            response.getHttpFields().putLongField(HttpHeader.CONTENT_LENGTH, httpContent.getContentLength());
+            setLongContentLength(httpContent.getContentLength());
 
         String lm = httpContent.getLastModified();
         if (lm != null)
