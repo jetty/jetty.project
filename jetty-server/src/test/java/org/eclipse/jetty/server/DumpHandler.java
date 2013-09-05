@@ -71,11 +71,14 @@ public class DumpHandler extends AbstractHandler
         if (!isStarted())
             return;
 
+        StringBuilder read = null;
         if (request.getParameter("read")!=null)
         {
+            read=new StringBuilder();
+            int len=Integer.parseInt(request.getParameter("read"));
             Reader in = request.getReader();
-            for (int i=Integer.parseInt(request.getParameter("read"));i-->0;)
-                in.read();
+            for (int i=len;i-->0;)
+                read.append((char)in.read());
         }
 
         if (request.getParameter("ISE")!=null)
@@ -190,16 +193,23 @@ public class DumpHandler extends AbstractHandler
 
         writer.write("</pre>\n<h3>Content:</h3>\n<pre>");
 
-        char[] content= new char[4096];
-        int len;
-        try{
-            Reader in=request.getReader();
-            while((len=in.read(content))>=0)
-                writer.write(new String(content,0,len));
-        }
-        catch(IOException e)
+        if (read!=null)
         {
-            writer.write(e.toString());
+            writer.write(read.toString());
+        }
+        else
+        {
+            char[] content= new char[4096];
+            int len;
+            try{
+                Reader in=request.getReader();
+                while((len=in.read(content))>=0)
+                    writer.write(new String(content,0,len));
+            }
+            catch(IOException e)
+            {
+                writer.write(e.toString());
+            }
         }
 
         writer.write("</pre>\n");

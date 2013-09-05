@@ -68,6 +68,7 @@ public class HttpConnectionTest
         http.getHttpConfiguration().setResponseHeaderSize(1024);
         
         connector = new LocalConnector(server,http,null);
+        connector.setIdleTimeout(500);
         server.addConnector(connector);
         server.setHandler(new DumpHandler());
         server.start();
@@ -384,6 +385,73 @@ public class HttpConnectionTest
         }
     }
 
+    @Test
+    public void testUnconsumed() throws Exception
+    {
+        String response=null;
+        String requests=null;
+        int offset=0;
+
+        offset=0;
+        requests=
+        "GET /R1?read=4 HTTP/1.1\n"+
+        "Host: localhost\n"+
+        "Transfer-Encoding: chunked\n"+
+        "Content-Type: text/plain; charset=utf-8\n"+
+        "\015\012"+
+        "5;\015\012"+
+        "12345\015\012"+
+        "5;\015\012"+
+        "67890\015\012"+
+        "0;\015\012\015\012"+
+        "GET /R2 HTTP/1.1\n"+
+        "Host: localhost\n"+
+        "Content-Type: text/plain; charset=utf-8\n"+
+        "Content-Length: 10\n"+
+        "Connection: close\n"+
+        "\n"+
+        "abcdefghij\n";
+
+        response=connector.getResponses(requests);
+        
+        offset = checkContains(response,offset,"HTTP/1.1 200");
+        offset = checkContains(response,offset,"pathInfo=/R1");
+        offset = checkContains(response,offset,"1234");
+        checkNotContained(response,offset,"56789");
+        offset = checkContains(response,offset,"HTTP/1.1 200");
+        offset = checkContains(response,offset,"pathInfo=/R2");
+        offset = checkContains(response,offset,"encoding=UTF-8");
+        offset = checkContains(response,offset,"abcdefghij");
+    }
+
+    @Test
+    public void testUnconsumedTimeout() throws Exception
+    {
+        String response=null;
+        String requests=null;
+        int offset=0;
+
+        offset=0;
+        requests=
+        "GET /R1?read=4 HTTP/1.1\n"+
+        "Host: localhost\n"+
+        "Transfer-Encoding: chunked\n"+
+        "Content-Type: text/plain; charset=utf-8\n"+
+        "\015\012"+
+        "5;\015\012"+
+        "12345\015\012";
+
+        long start=System.currentTimeMillis();
+        response=connector.getResponses(requests,2000,TimeUnit.MILLISECONDS);
+        if ((System.currentTimeMillis()-start)>=2000)
+            Assert.fail();
+        
+        offset = checkContains(response,offset,"HTTP/1.1 200");
+        offset = checkContains(response,offset,"pathInfo=/R1");
+        offset = checkContains(response,offset,"1234");
+        checkNotContained(response,offset,"56789");
+    }
+    
     @Test
     public void testUnconsumedErrorRead() throws Exception
     {
