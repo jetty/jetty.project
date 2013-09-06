@@ -1,4 +1,10 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
+<web-app 
+   xmlns="http://java.sun.com/xml/ns/javaee" 
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_1.xsd"
+   metadata-complete="false"
+   version="3.1"> 
 
   <!-- ===================================================================== -->
   <!-- This file contains the default descriptor for web applications.       -->
@@ -17,13 +23,6 @@
   <!-- by the jetty.xml file.                                                -->
   <!--                                                                       -->
   <!-- ===================================================================== -->
-<web-app
-  xmlns="http://java.sun.com/xml/ns/javaee"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
-  metadata-complete="true"
-  version="2.5"
->
 
   <description>
     Default web.xml file.  
@@ -524,6 +523,13 @@
       <http-method>TRACE</http-method>
     </web-resource-collection>
     <auth-constraint/>
+  </security-constraint>
+  <security-constraint>
+    <web-resource-collection>
+      <web-resource-name>Enable everything but TRACE</web-resource-name>
+      <url-pattern/>/</url-pattern>
+      <http-method-ommission>TRACE</http-method-ommission>
+    </web-resource-collection>
   </security-constraint>
 
 </web-app>
