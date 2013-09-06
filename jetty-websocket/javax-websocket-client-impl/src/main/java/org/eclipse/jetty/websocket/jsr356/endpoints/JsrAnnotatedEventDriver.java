@@ -58,7 +58,7 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver implements E
     }
 
     @Override
-    protected void init(JsrSession jsrsession)
+    public void init(JsrSession jsrsession)
     {
         this.events.init(jsrsession);
     }
@@ -349,9 +349,10 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver implements E
         }
     }
 
-    public void setRequestParameters(Map<String, String> requestParameters)
+    @Override
+    public void setPathParameters(Map<String, String> pathParameters)
     {
-        events.setRequestParameters(requestParameters);
+        events.setPathParameters(pathParameters);
     }
 
     @Override

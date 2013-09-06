@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.jsr356.endpoints;
 
+import java.util.Map;
+
 import javax.websocket.CloseReason;
 import javax.websocket.CloseReason.CloseCode;
 import javax.websocket.CloseReason.CloseCodes;
@@ -62,9 +64,7 @@ public abstract class AbstractJsrEventDriver extends AbstractEventDriver impleme
         return metadata;
     }
 
-    protected void init(JsrSession jsrsession)
-    {
-    }
+    public abstract void init(JsrSession jsrsession);
 
     @Override
     public final void onClose(CloseInfo close)
@@ -110,4 +110,6 @@ public abstract class AbstractJsrEventDriver extends AbstractEventDriver impleme
         throw new RuntimeException("Why are you reconfiguring the endpoint?");
         // this.config = endpointconfig;
     }
+
+    public abstract void setPathParameters(Map<String, String> pathParameters);
 }

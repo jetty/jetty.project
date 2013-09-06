@@ -30,7 +30,6 @@ import org.eclipse.jetty.websocket.jsr356.ClientContainer;
 import org.eclipse.jetty.websocket.jsr356.JsrSessionFactory;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
 import org.eclipse.jetty.websocket.jsr356.endpoints.EndpointInstance;
-import org.eclipse.jetty.websocket.jsr356.endpoints.JsrEndpointImpl;
 import org.eclipse.jetty.websocket.jsr356.metadata.EndpointMetadata;
 import org.eclipse.jetty.websocket.jsr356.server.pathmap.WebSocketPathSpec;
 import org.eclipse.jetty.websocket.server.MappedWebSocketCreator;
@@ -50,7 +49,7 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
         this.webSocketServerFactory = factory;
         EventDriverFactory eventDriverFactory = this.webSocketServerFactory.getEventDriverFactory();
         eventDriverFactory.addImplementation(new JsrServerEndpointImpl());
-        eventDriverFactory.addImplementation(new JsrEndpointImpl());
+        eventDriverFactory.addImplementation(new JsrServerExtendsEndpointImpl());
         this.webSocketServerFactory.addSessionFactory(new JsrSessionFactory(this));
     }
 

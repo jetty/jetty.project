@@ -80,47 +80,92 @@ public class SessionTest
     }
 
     @Test
-    public void testPathParams_Empty() throws Exception
+    public void testPathParams_Annotated_Empty() throws Exception
     {
         assertResponse("info/","pathParams","pathParams[0]");
     }
 
     @Test
-    public void testPathParams_Single() throws Exception
+    public void testPathParams_Annotated_Single() throws Exception
     {
         assertResponse("info/apple/","pathParams","pathParams[1]: 'a'=apple");
     }
 
     @Test
-    public void testPathParams_Double() throws Exception
+    public void testPathParams_Annotated_Double() throws Exception
     {
         assertResponse("info/apple/pear/","pathParams","pathParams[2]: 'a'=apple: 'b'=pear");
     }
 
     @Test
-    public void testPathParams_Triple() throws Exception
+    public void testPathParams_Annotated_Triple() throws Exception
     {
         assertResponse("info/apple/pear/cherry/","pathParams","pathParams[3]: 'a'=apple: 'b'=pear: 'c'=cherry");
     }
 
     @Test
-    public void testRequestUri_Basic() throws Exception
+    public void testPathParams_Endpoint_Empty() throws Exception
+    {
+        assertResponse("einfo/","pathParams","pathParams[0]");
+    }
+
+    @Test
+    public void testPathParams_Endpoint_Single() throws Exception
+    {
+        assertResponse("einfo/apple/","pathParams","pathParams[1]: 'a'=apple");
+    }
+
+    @Test
+    public void testPathParams_Endpoint_Double() throws Exception
+    {
+        assertResponse("einfo/apple/pear/","pathParams","pathParams[2]: 'a'=apple: 'b'=pear");
+    }
+
+    @Test
+    public void testPathParams_Endpoint_Triple() throws Exception
+    {
+        assertResponse("einfo/apple/pear/cherry/","pathParams","pathParams[3]: 'a'=apple: 'b'=pear: 'c'=cherry");
+    }
+
+    @Test
+    public void testRequestUri_Annotated_Basic() throws Exception
     {
         URI expectedUri = serverUri.resolve("info/");
         assertResponse("info/","requestUri","requestUri=" + expectedUri.toASCIIString());
     }
-    
+
     @Test
-    public void testRequestUri_WithPathParam() throws Exception
+    public void testRequestUri_Annotated_WithPathParam() throws Exception
     {
         URI expectedUri = serverUri.resolve("info/apple/banana/");
         assertResponse("info/apple/banana/","requestUri","requestUri=" + expectedUri.toASCIIString());
     }
-    
+
     @Test
-    public void testRequestUri_WithPathParam_WithQuery() throws Exception
+    public void testRequestUri_Annotated_WithPathParam_WithQuery() throws Exception
     {
         URI expectedUri = serverUri.resolve("info/apple/banana/?fruit=fresh&store=grandmasfarm");
         assertResponse("info/apple/banana/?fruit=fresh&store=grandmasfarm","requestUri","requestUri=" + expectedUri.toASCIIString());
+    }
+
+    @Test
+    public void testRequestUri_Endpoint_Basic() throws Exception
+    {
+        URI expectedUri = serverUri.resolve("einfo/");
+        assertResponse("einfo/","requestUri","requestUri=" + expectedUri.toASCIIString());
+    }
+
+    @Test
+    public void testRequestUri_Endpoint_WithPathParam() throws Exception
+    {
+        URI expectedUri = serverUri.resolve("einfo/apple/banana/");
+        assertResponse("einfo/apple/banana/","requestUri","requestUri=" + expectedUri.toASCIIString());
+    }
+
+    @Test
+    public void testRequestUri_Endpoint_WithPathParam_WithQuery() throws Exception
+    {
+        URI expectedUri = serverUri.resolve("einfo/apple/banana/?fruit=fresh&store=grandmasfarm");
+        assertResponse("einfo/apple/banana/?fruit=fresh&store=grandmasfarm","requestUri","requestUri=" + expectedUri.toASCIIString());
     }
 }

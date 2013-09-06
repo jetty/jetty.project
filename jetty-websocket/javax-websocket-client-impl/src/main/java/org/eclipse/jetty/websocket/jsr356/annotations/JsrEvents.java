@@ -89,7 +89,7 @@ public class JsrEvents<T extends Annotation, C extends EndpointConfig>
     /**
      * The Request Parameters (from resolved javax.websocket.server.PathParam entries)
      */
-    private Map<String, String> requestParameters;
+    private Map<String, String> pathParameters;
 
     public JsrEvents(AnnotatedEndpointMetadata<T, C> metadata)
     {
@@ -231,7 +231,7 @@ public class JsrEvents<T extends Annotation, C extends EndpointConfig>
 
     public void init(JsrSession session)
     {
-        session.setPathParameters(requestParameters);
+        session.setPathParameters(pathParameters);
 
         if (onOpen != null)
         {
@@ -285,8 +285,8 @@ public class JsrEvents<T extends Annotation, C extends EndpointConfig>
         return onText.isPartialMessageSupported();
     }
 
-    public void setRequestParameters(Map<String, String> requestParameters)
+    public void setPathParameters(Map<String, String> pathParameters)
     {
-        this.requestParameters = requestParameters;
+        this.pathParameters = pathParameters;
     }
 }

@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.nio.ByteBuffer;
+import java.util.Map;
 
 import javax.websocket.CloseReason;
 import javax.websocket.Endpoint;
@@ -35,6 +36,7 @@ import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.message.MessageInputStream;
 import org.eclipse.jetty.websocket.common.message.MessageReader;
+import org.eclipse.jetty.websocket.jsr356.JsrSession;
 import org.eclipse.jetty.websocket.jsr356.MessageHandlerWrapper;
 import org.eclipse.jetty.websocket.jsr356.MessageType;
 import org.eclipse.jetty.websocket.jsr356.messages.BinaryPartialMessage;
@@ -50,11 +52,18 @@ public class JsrEndpointEventDriver extends AbstractJsrEventDriver implements Ev
     private static final Logger LOG = Log.getLogger(JsrEndpointEventDriver.class);
 
     private final Endpoint endpoint;
+    private Map<String, String> pathParameters;
 
     public JsrEndpointEventDriver(WebSocketPolicy policy, EndpointInstance endpointInstance)
     {
         super(policy,endpointInstance);
         this.endpoint = (Endpoint)endpointInstance.getEndpoint();
+    }
+
+    @Override
+    public void init(JsrSession jsrsession)
+    {
+        jsrsession.setPathParameters(pathParameters);
     }
 
     @Override
@@ -202,6 +211,12 @@ public class JsrEndpointEventDriver extends AbstractJsrEventDriver implements Ev
     public void onTextMessage(String message)
     {
         /* Ignored, handled by TextWholeMessage */
+    }
+
+    @Override
+    public void setPathParameters(Map<String, String> pathParameters)
+    {
+        this.pathParameters = pathParameters;
     }
 
     @Override

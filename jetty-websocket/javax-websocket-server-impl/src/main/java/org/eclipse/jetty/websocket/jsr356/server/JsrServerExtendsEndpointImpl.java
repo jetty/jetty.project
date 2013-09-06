@@ -18,34 +18,27 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.events.EventDriverImpl;
-import org.eclipse.jetty.websocket.jsr356.annotations.JsrEvents;
 import org.eclipse.jetty.websocket.jsr356.endpoints.EndpointInstance;
-import org.eclipse.jetty.websocket.jsr356.endpoints.JsrAnnotatedEventDriver;
+import org.eclipse.jetty.websocket.jsr356.endpoints.JsrEndpointEventDriver;
 
-/**
- * Event Driver for classes annotated with &#064;{@link ServerEndpoint}
- */
-public class JsrServerEndpointImpl implements EventDriverImpl
+public class JsrServerExtendsEndpointImpl implements EventDriverImpl
 {
     @Override
-    public EventDriver create(Object websocket, WebSocketPolicy policy) throws Throwable
+    public EventDriver create(Object websocket, WebSocketPolicy policy)
     {
         if (!(websocket instanceof EndpointInstance))
         {
             throw new IllegalStateException(String.format("Websocket %s must be an %s",websocket.getClass().getName(),EndpointInstance.class.getName()));
         }
-
+        
         EndpointInstance ei = (EndpointInstance)websocket;
-        AnnotatedServerEndpointMetadata metadata = (AnnotatedServerEndpointMetadata)ei.getMetadata();
-        JsrEvents<ServerEndpoint, ServerEndpointConfig> events = new JsrEvents<>(metadata);
-        JsrAnnotatedEventDriver driver = new JsrAnnotatedEventDriver(policy,ei,events);
-
+        JsrEndpointEventDriver driver = new JsrEndpointEventDriver(policy, ei);
+        
         ServerEndpointConfig config = (ServerEndpointConfig)ei.getConfig();
         if (config instanceof PathParamServerEndpointConfig)
         {
@@ -59,7 +52,7 @@ public class JsrServerEndpointImpl implements EventDriverImpl
     @Override
     public String describeRule()
     {
-        return "class is annotated with @" + ServerEndpoint.class.getName();
+        return "class extends " + javax.websocket.Endpoint.class.getName();
     }
 
     @Override
@@ -73,7 +66,6 @@ public class JsrServerEndpointImpl implements EventDriverImpl
         EndpointInstance ei = (EndpointInstance)websocket;
         Object endpoint = ei.getEndpoint();
 
-        ServerEndpoint anno = endpoint.getClass().getAnnotation(ServerEndpoint.class);
-        return (anno != null);
+        return (endpoint instanceof javax.websocket.Endpoint);
     }
 }
