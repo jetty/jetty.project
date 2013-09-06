@@ -288,12 +288,6 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
     }
 
     @Override
-    public URI getRequestURI()
-    {
-        return getUpgradeRequest().getRequestURI();
-    }
-
-    @Override
     public Principal getUserPrincipal()
     {
         return getUpgradeRequest().getUserPrincipal();
