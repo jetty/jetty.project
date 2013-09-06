@@ -19,15 +19,18 @@
 package org.eclipse.jetty.fcgi.parser;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpParser;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 
 public class ResponseContentParser extends StreamContentParser
 {
-    public ResponseContentParser(HeaderParser headerParser, Parser.Listener listener)
+    public ResponseContentParser(HeaderParser headerParser, ClientParser.Listener listener)
     {
         super(headerParser, FCGI.StreamType.STD_OUT, new ResponseListener(headerParser, listener));
     }
@@ -35,11 +38,13 @@ public class ResponseContentParser extends StreamContentParser
     private static class ResponseListener extends Parser.Listener.Adapter implements HttpParser.ResponseHandler<ByteBuffer>
     {
         private final HeaderParser headerParser;
-        private final Parser.Listener listener;
+        private final ClientParser.Listener listener;
         private final FCGIHttpParser httpParser;
         private State state = State.HEADERS;
+        private boolean begun;
+        private List<HttpField> fields;
 
-        public ResponseListener(HeaderParser headerParser, Parser.Listener listener)
+        public ResponseListener(HeaderParser headerParser, ClientParser.Listener listener)
         {
             this.headerParser = headerParser;
             this.listener = listener;
@@ -77,6 +82,8 @@ public class ResponseContentParser extends StreamContentParser
         {
             httpParser.reset();
             state = State.HEADERS;
+            begun = false;
+            fields = null;
         }
 
         @Override
@@ -101,18 +108,46 @@ public class ResponseContentParser extends StreamContentParser
         }
 
         @Override
-        public boolean parsedHeader(HttpField field)
+        public boolean parsedHeader(HttpField httpField)
         {
             try
             {
-                if ("Status".equalsIgnoreCase(field.getName()))
+                if ("Status".equalsIgnoreCase(httpField.getName()))
                 {
-                    // Need to set the response status so the
-                    // HttpParser can handle the content properly.
-                    int code = Integer.parseInt(field.getValue().split(" ")[0]);
-                    httpParser.setResponseStatus(code);
+                    if (!begun)
+                    {
+                        begun = true;
+
+                        // Need to set the response status so the
+                        // HttpParser can handle the content properly.
+                        String[] parts = httpField.getValue().split(" ");
+                        int code = Integer.parseInt(parts[0]);
+                        httpParser.setResponseStatus(code);
+
+                        String reason = parts.length > 1 ? parts[1] : HttpStatus.getMessage(code);
+                        listener.onBegin(headerParser.getRequest(), code, reason);
+
+                        if (fields != null)
+                        {
+                            for (HttpField field : fields)
+                                listener.onHeader(headerParser.getRequest(), field);
+                            fields = null;
+                        }
+                    }
                 }
-                listener.onHeader(headerParser.getRequest(), field.getName(), field.getValue());
+                else
+                {
+                    if (begun)
+                    {
+                        listener.onHeader(headerParser.getRequest(), httpField);
+                    }
+                    else
+                    {
+                        if (fields == null)
+                            fields = new ArrayList<>();
+                        fields.add(httpField);
+                    }
+                }
             }
             catch (Throwable x)
             {
@@ -126,7 +161,15 @@ public class ResponseContentParser extends StreamContentParser
         {
             try
             {
-                listener.onHeaders(headerParser.getRequest());
+                if (begun)
+                {
+                    listener.onHeaders(headerParser.getRequest());
+                }
+                else
+                {
+                    fields = null;
+                    // TODO: what here ?
+                }
             }
             catch (Throwable x)
             {

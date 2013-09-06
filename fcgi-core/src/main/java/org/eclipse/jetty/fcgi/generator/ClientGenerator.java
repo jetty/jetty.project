@@ -24,10 +24,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.fcgi.FCGI;
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.Fields;
 
 public class ClientGenerator extends Generator
 {
@@ -41,22 +42,22 @@ public class ClientGenerator extends Generator
         super(byteBufferPool);
     }
 
-    public Result generateRequestHeaders(int request, Fields fields, Callback callback)
+    public Result generateRequestHeaders(int request, HttpFields fields, Callback callback)
     {
         request &= 0xFF_FF;
 
         Charset utf8 = Charset.forName("UTF-8");
         List<byte[]> bytes = new ArrayList<>(fields.size() * 2);
         int fieldsLength = 0;
-        for (Fields.Field field : fields)
+        for (HttpField field : fields)
         {
-            String name = field.name();
+            String name = field.getName();
             byte[] nameBytes = name.getBytes(utf8);
             if (nameBytes.length > MAX_PARAM_LENGTH)
                 throw new IllegalArgumentException("Field name " + name + " exceeds max length " + MAX_PARAM_LENGTH);
             bytes.add(nameBytes);
 
-            String value = field.value();
+            String value = field.getValue();
             byte[] valueBytes = value.getBytes(utf8);
             if (valueBytes.length > MAX_PARAM_LENGTH)
                 throw new IllegalArgumentException("Field value " + value + " exceeds max length " + MAX_PARAM_LENGTH);

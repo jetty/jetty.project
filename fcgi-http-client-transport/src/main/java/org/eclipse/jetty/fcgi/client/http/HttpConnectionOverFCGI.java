@@ -1,0 +1,318 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
+package org.eclipse.jetty.fcgi.client.http;
+
+import java.nio.ByteBuffer;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpConnection;
+import org.eclipse.jetty.client.HttpDestination;
+import org.eclipse.jetty.client.HttpExchange;
+import org.eclipse.jetty.client.api.Connection;
+import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.fcgi.FCGI;
+import org.eclipse.jetty.fcgi.generator.Generator;
+import org.eclipse.jetty.fcgi.parser.ClientParser;
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.ConcurrentArrayQueue;
+import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+
+public class HttpConnectionOverFCGI extends AbstractConnection implements Connection
+{
+    private static final Logger LOG = Log.getLogger(HttpConnectionOverFCGI.class);
+
+    private final LinkedList<Integer> requests = new LinkedList<>();
+    private final Map<Integer, HttpChannelOverFCGI> channels = new ConcurrentHashMap<>();
+    private final Queue<Generator.Result> queue = new ConcurrentArrayQueue<>();
+    private final Callback flushCallback = new FlushCallback();
+    private final HttpDestination destination;
+    private final Delegate delegate;
+    private final ClientParser parser;
+    private boolean flushing;
+
+    public HttpConnectionOverFCGI(EndPoint endPoint, HttpDestination destination)
+    {
+        super(endPoint, destination.getHttpClient().getExecutor(), destination.getHttpClient().isDispatchIO());
+        this.destination = destination;
+        this.delegate = new Delegate(destination);
+        this.parser = new ClientParser(new ResponseListener());
+        requests.addLast(0);
+    }
+
+    public HttpDestination getHttpDestination()
+    {
+        return destination;
+    }
+
+    @Override
+    public void send(Request request, Response.CompleteListener listener)
+    {
+        delegate.send(request, listener);
+    }
+
+    protected void send(HttpExchange exchange)
+    {
+        delegate.send(exchange);
+    }
+
+    @Override
+    public void onOpen()
+    {
+        super.onOpen();
+        fillInterested();
+    }
+
+    @Override
+    public void onFillable()
+    {
+        EndPoint endPoint = getEndPoint();
+        HttpClient client = destination.getHttpClient();
+        ByteBufferPool bufferPool = client.getByteBufferPool();
+        ByteBuffer buffer = bufferPool.acquire(client.getResponseBufferSize(), true);
+        try
+        {
+            while (true)
+            {
+                int read = endPoint.fill(buffer);
+                if (LOG.isDebugEnabled()) // Avoid boxing of variable 'read'
+                    LOG.debug("Read {} bytes from {}", read, endPoint);
+                if (read > 0)
+                {
+                    parse(buffer);
+                }
+                else if (read == 0)
+                {
+                    fillInterested();
+                    break;
+                }
+                else
+                {
+                    shutdown();
+                    break;
+                }
+            }
+        }
+        catch (Exception x)
+        {
+            LOG.debug(x);
+            // TODO: fail and close ?
+        }
+        finally
+        {
+            bufferPool.release(buffer);
+        }
+    }
+
+    private void parse(ByteBuffer buffer)
+    {
+        while (buffer.hasRemaining())
+            parser.parse(buffer);
+    }
+
+    protected void write(Generator.Result result)
+    {
+        synchronized (queue)
+        {
+            queue.offer(result);
+            if (flushing)
+                return;
+            flushing = true;
+        }
+        getEndPoint().write(flushCallback);
+    }
+
+    private void shutdown()
+    {
+        // TODO: we must signal to the HttpParser that we are at EOF
+    }
+
+    @Override
+    public void close()
+    {
+        getEndPoint().shutdownOutput();
+        LOG.debug("{} oshut", this);
+        getEndPoint().close();
+        LOG.debug("{} closed", this);
+    }
+
+    private int acquireRequest()
+    {
+        synchronized (requests)
+        {
+            int last = requests.getLast();
+            int request = last + 1;
+            requests.addLast(request);
+            return request;
+        }
+    }
+
+    private void releaseRequest(int request)
+    {
+        synchronized (requests)
+        {
+            requests.removeFirstOccurrence(request);
+        }
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x(l:%s <-> r:%s)",
+                HttpConnection.class.getSimpleName(),
+                hashCode(),
+                getEndPoint().getLocalAddress(),
+                getEndPoint().getRemoteAddress());
+    }
+
+    private class Delegate extends HttpConnection
+    {
+        private Delegate(HttpDestination destination)
+        {
+            super(destination);
+        }
+
+        @Override
+        protected void send(HttpExchange exchange)
+        {
+            Request request = exchange.getRequest();
+            normalizeRequest(request);
+
+            // FCGI may be multiplexed, so create one channel for each request.
+            int id = acquireRequest();
+            HttpChannelOverFCGI channel = new HttpChannelOverFCGI(getHttpDestination(), HttpConnectionOverFCGI.this, id);
+            channels.put(id, channel);
+            channel.associate(exchange);
+            channel.send();
+        }
+
+        @Override
+        public void close()
+        {
+            HttpConnectionOverFCGI.this.close();
+        }
+    }
+
+    private class ResponseListener implements ClientParser.Listener
+    {
+        @Override
+        public void onBegin(int request, int code, String reason)
+        {
+            HttpChannelOverFCGI channel = channels.get(request);
+            if (channel != null)
+                channel.responseBegin();
+            else
+                noChannel(request);
+        }
+
+        @Override
+        public void onHeader(int request, HttpField field)
+        {
+            HttpChannelOverFCGI channel = channels.get(request);
+            if (channel != null)
+                channel.responseHeader(field);
+            else
+                noChannel(request);
+        }
+
+        @Override
+        public void onHeaders(int request)
+        {
+        }
+
+        @Override
+        public void onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
+        {
+        }
+
+        @Override
+        public void onEnd(int request)
+        {
+            // TODO:
+
+            channels.remove(request);
+            releaseRequest(request);
+        }
+
+        private void noChannel(int request)
+        {
+            // TODO: what here ?
+        }
+    }
+
+    private class FlushCallback extends IteratingCallback
+    {
+        private Generator.Result active;
+
+        @Override
+        protected boolean process() throws Exception
+        {
+            // We are flushing, we completed a write, notify
+            if (active != null)
+                active.succeeded();
+
+            // Look if other writes are needed.
+            Generator.Result result;
+            synchronized (queue)
+            {
+                if (queue.isEmpty())
+                {
+                    // No more writes to do, switch to non-flushing
+                    flushing = false;
+                    return true;
+                }
+                // TODO: here is where we want to gather more results to perform gathered writes
+                result = queue.poll();
+            }
+
+            active = result;
+            List<ByteBuffer> buffers = result.getByteBuffers();
+            getEndPoint().write(this, buffers.toArray(new ByteBuffer[buffers.size()]));
+            return false;
+        }
+
+        @Override
+        protected void completed()
+        {
+            active = null;
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            super.failed(x);
+            if (active != null)
+            {
+                active.failed(x);
+                active = null;
+            }
+        }
+    }
+}

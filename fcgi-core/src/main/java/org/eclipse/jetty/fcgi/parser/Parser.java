@@ -21,6 +21,7 @@ package org.eclipse.jetty.fcgi.parser;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.fcgi.FCGI;
+import org.eclipse.jetty.http.HttpField;
 
 public abstract class Parser
 {
@@ -91,7 +92,7 @@ public abstract class Parser
 
     public interface Listener
     {
-        public void onHeader(int request, String name, String value);
+        public void onHeader(int request, HttpField field);
 
         public void onHeaders(int request);
 
@@ -102,7 +103,7 @@ public abstract class Parser
         public static class Adapter implements Listener
         {
             @Override
-            public void onHeader(int request, String name, String value)
+            public void onHeader(int request, HttpField field)
             {
             }
 

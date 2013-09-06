@@ -24,11 +24,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.fcgi.FCGI;
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.Fields;
 
 public class ServerGenerator extends Generator
 {
@@ -41,7 +42,7 @@ public class ServerGenerator extends Generator
         super(byteBufferPool);
     }
 
-    public Result generateResponseHeaders(int request, int code, String reason, Fields fields, Callback callback)
+    public Result generateResponseHeaders(int request, int code, String reason, HttpFields fields, Callback callback)
     {
         request &= 0xFF_FF;
 
@@ -59,13 +60,13 @@ public class ServerGenerator extends Generator
         length += responseBytes.length + EOL.length;
 
         // Other headers
-        for (Fields.Field field : fields)
+        for (HttpField field : fields)
         {
-            String name = field.name();
+            String name = field.getName();
             byte[] nameBytes = name.getBytes(utf8);
             bytes.add(nameBytes);
 
-            String value = field.value();
+            String value = field.getValue();
             byte[] valueBytes = value.getBytes(utf8);
             bytes.add(valueBytes);
 

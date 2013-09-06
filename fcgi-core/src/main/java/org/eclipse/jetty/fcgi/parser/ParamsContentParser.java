@@ -21,6 +21,7 @@ package org.eclipse.jetty.fcgi.parser;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -207,7 +208,7 @@ public class ParamsContentParser extends ContentParser
     {
         try
         {
-            listener.onHeader(getRequest(), name, value);
+            listener.onHeader(getRequest(), new HttpField(name, value));
         }
         catch (Throwable x)
         {

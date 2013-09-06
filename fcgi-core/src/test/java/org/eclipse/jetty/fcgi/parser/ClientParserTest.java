@@ -25,9 +25,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.fcgi.generator.Generator;
 import org.eclipse.jetty.fcgi.generator.ServerGenerator;
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.util.Fields;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -37,7 +38,7 @@ public class ClientParserTest
     public void testParseResponseHeaders() throws Exception
     {
         final int id = 13;
-        Fields fields = new Fields();
+        HttpFields fields = new HttpFields();
 
         final String statusName = "Status";
         final int code = 200;
@@ -58,20 +59,20 @@ public class ClientParserTest
             value *= prime;
 
         final AtomicInteger params = new AtomicInteger(1);
-        ClientParser parser = new ClientParser(new Parser.Listener.Adapter()
+        ClientParser parser = new ClientParser(new ClientParser.Listener.Adapter()
         {
             @Override
-            public void onHeader(int request, String name, String value)
+            public void onHeader(int request, HttpField field)
             {
                 Assert.assertEquals(id, request);
-                switch (name)
+                switch (field.getName())
                 {
                     case statusName:
-                        Assert.assertTrue(value.startsWith(String.valueOf(code)));
+                        Assert.assertTrue(field.getValue().startsWith(String.valueOf(code)));
                         params.set(params.get() * primes[0]);
                         break;
                     case contentTypeName:
-                        Assert.assertEquals(contentTypeValue, value);
+                        Assert.assertEquals(contentTypeValue, field.getValue());
                         params.set(params.get() * primes[1]);
                         break;
                 }
@@ -98,7 +99,7 @@ public class ClientParserTest
     public void testParseNoResponseContent() throws Exception
     {
         final int id = 13;
-        Fields fields = new Fields();
+        HttpFields fields = new HttpFields();
 
         final int code = 200;
         final String contentTypeName = "Content-Length";
@@ -111,7 +112,7 @@ public class ClientParserTest
         Generator.Result result2 = generator.generateResponseContent(id, null, true, null);
 
         final AtomicInteger verifier = new AtomicInteger();
-        ClientParser parser = new ClientParser(new Parser.Listener.Adapter()
+        ClientParser parser = new ClientParser(new ClientParser.Listener.Adapter()
         {
             @Override
             public void onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
@@ -146,7 +147,7 @@ public class ClientParserTest
     public void testParseSmallResponseContent() throws Exception
     {
         final int id = 13;
-        Fields fields = new Fields();
+        HttpFields fields = new HttpFields();
 
         ByteBuffer content = ByteBuffer.wrap(new byte[1024]);
         final int contentLength = content.remaining();
@@ -162,7 +163,7 @@ public class ClientParserTest
         Generator.Result result2 = generator.generateResponseContent(id, content, true, null);
 
         final AtomicInteger verifier = new AtomicInteger();
-        ClientParser parser = new ClientParser(new Parser.Listener.Adapter()
+        ClientParser parser = new ClientParser(new ClientParser.Listener.Adapter()
         {
             @Override
             public void onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
@@ -198,7 +199,7 @@ public class ClientParserTest
     public void testParseLargeResponseContent() throws Exception
     {
         final int id = 13;
-        Fields fields = new Fields();
+        HttpFields fields = new HttpFields();
 
         ByteBuffer content = ByteBuffer.wrap(new byte[128 * 1024]);
         final int contentLength = content.remaining();
@@ -215,7 +216,7 @@ public class ClientParserTest
 
         final AtomicInteger length = new AtomicInteger();
         final AtomicBoolean verifier = new AtomicBoolean();
-        ClientParser parser = new ClientParser(new Parser.Listener.Adapter()
+        ClientParser parser = new ClientParser(new ClientParser.Listener.Adapter()
         {
             @Override
             public void onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)

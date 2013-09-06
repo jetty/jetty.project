@@ -24,9 +24,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.fcgi.parser.ServerParser;
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.util.Fields;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -35,31 +36,31 @@ public class ClientGeneratorTest
     @Test
     public void testGenerateRequestHeaders() throws Exception
     {
-        Fields fields = new Fields();
+        HttpFields fields = new HttpFields();
 
         // Short name, short value
         final String shortShortName = "REQUEST_METHOD";
         final String shortShortValue = "GET";
-        fields.put(new Fields.Field(shortShortName, shortShortValue));
+        fields.put(new HttpField(shortShortName, shortShortValue));
 
         // Short name, long value
         final String shortLongName = "REQUEST_URI";
         // Be sure it's longer than 127 chars to test the large value
         final String shortLongValue = "/api/0.6/map?bbox=-64.217736,-31.456810,-64.187736,-31.432322,filler=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
-        fields.put(new Fields.Field(shortLongName, shortLongValue));
+        fields.put(new HttpField(shortLongName, shortLongValue));
 
         // Long name, short value
         // Be sure it's longer than 127 chars to test the large name
         final String longShortName = "FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210";
         final String longShortValue = "api.openstreetmap.org";
-        fields.put(new Fields.Field(longShortName, longShortValue));
+        fields.put(new HttpField(longShortName, longShortValue));
 
         // Long name, long value
         char[] chars = new char[ClientGenerator.MAX_PARAM_LENGTH];
         Arrays.fill(chars, 'z');
         final String longLongName = new String(chars);
         final String longLongValue = new String(chars);
-        fields.put(new Fields.Field(longLongName, longLongValue));
+        fields.put(new HttpField(longLongName, longLongValue));
 
         ByteBufferPool byteBufferPool = new MappedByteBufferPool();
         ClientGenerator generator = new ClientGenerator(byteBufferPool);
@@ -78,26 +79,26 @@ public class ClientGeneratorTest
         ServerParser parser = new ServerParser(new ServerParser.Listener.Adapter()
         {
             @Override
-            public void onHeader(int request, String name, String value)
+            public void onHeader(int request, HttpField field)
             {
                 Assert.assertEquals(id, request);
-                switch (name)
+                switch (field.getName())
                 {
                     case shortShortName:
-                        Assert.assertEquals(shortShortValue, value);
+                        Assert.assertEquals(shortShortValue, field.getValue());
                         params.set(params.get() * primes[0]);
                         break;
                     case shortLongName:
-                        Assert.assertEquals(shortLongValue, value);
+                        Assert.assertEquals(shortLongValue, field.getValue());
                         params.set(params.get() * primes[1]);
                         break;
                     case longShortName:
-                        Assert.assertEquals(longShortValue, value);
+                        Assert.assertEquals(longShortValue, field.getValue());
                         params.set(params.get() * primes[2]);
                         break;
                     default:
-                        Assert.assertEquals(longLongName, name);
-                        Assert.assertEquals(longLongValue, value);
+                        Assert.assertEquals(longLongName, field.getName());
+                        Assert.assertEquals(longLongValue, field.getValue());
                         params.set(params.get() * primes[3]);
                         break;
                 }

@@ -38,4 +38,17 @@ public class ClientParser extends Parser
     {
         return contentParsers.get(frameType);
     }
+
+    public interface Listener extends Parser.Listener
+    {
+        public void onBegin(int request, int code, String reason);
+
+        public static class Adapter extends Parser.Listener.Adapter implements Listener
+        {
+            @Override
+            public void onBegin(int request, int code, String reason)
+            {
+            }
+        }
+    }
 }
