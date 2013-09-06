@@ -84,6 +84,16 @@
   <Put name="Float" type="Float">2.3</Put>
   <Put name="Env"><Env name="HOME"/></Put>
 
+  <Set name="nested">
+    <New class="org.eclipse.jetty.xml.TestConfiguration">
+      <Set name="testString">nested</Set>
+      <Set name="nested">
+        <New class="org.eclipse.jetty.xml.TestConfiguration">
+        </New>
+      </Set>
+    </New>
+  </Set>
+
   <Call name="call">
   </Call>
 

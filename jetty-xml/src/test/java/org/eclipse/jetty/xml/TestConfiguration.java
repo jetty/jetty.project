@@ -34,8 +34,11 @@ public class TestConfiguration extends HashMap<String,Object>
 {
     public static int VALUE=77;
 
+    public final Object ID = new Object();
+    
     public final String name;
     public TestConfiguration nested;
+    public String testString="default";
     public Object testObject;
     public int testInt;
     public URL url;
@@ -79,6 +82,25 @@ public class TestConfiguration extends HashMap<String,Object>
     	propValue=value;
     }
 
+    public TestConfiguration getNested()
+    {
+        return nested;
+    }
+
+    public void setNested(TestConfiguration nested)
+    {
+        this.nested = nested;
+    }
+
+    public String getTestString()
+    {
+        return testString;
+    }
+
+    public void setTestString(String testString)
+    {
+        this.testString = testString;
+    }
 
     public void call()
     {
@@ -87,7 +109,6 @@ public class TestConfiguration extends HashMap<String,Object>
 
     public TestConfiguration call(Boolean b)
     {
-        nested=new TestConfiguration("called-"+name);
         nested.put("Arg",b);
         return nested;
     }
@@ -167,4 +188,5 @@ public class TestConfiguration extends HashMap<String,Object>
     {
         this.map = map;
     }
+    
 }

@@ -21,15 +21,17 @@ package org.eclipse.jetty.spring;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.xml.XmlConfiguration;
-import org.junit.Assert;
-import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
+
+import static junit.framework.Assert.assertEquals;
+import static org.junit.Assume.assumeTrue;
 
 public class SpringXmlConfigurationTest
 {
@@ -48,7 +50,7 @@ public class SpringXmlConfigurationTest
         if (matcher.matches())
         {
             String minor = matcher.group(1);
-            Assume.assumeTrue(Integer.parseInt(minor) > 5);
+            assumeTrue(Integer.parseInt(minor) > 5);
         }
     }
 
@@ -74,54 +76,71 @@ public class SpringXmlConfigurationTest
 
         tc=(TestConfiguration)configuration.configure(tc);
 
-        Assert.assertEquals("preconfig", tc.getTestString0());
-        Assert.assertEquals(42, tc.getTestInt0());
-        Assert.assertEquals("SetValue", tc.getTestString1());
-        Assert.assertEquals(1, tc.getTestInt1());
+        assertEquals("preconfig", tc.getTestString0());
+        assertEquals(42, tc.getTestInt0());
+        assertEquals("SetValue", tc.getTestString1());
+        assertEquals(1, tc.getTestInt1());
 
-        Assert.assertEquals("nested", tc.getNested().getTestString0());
-        Assert.assertEquals("nested", tc.getNested().getTestString1());
-        Assert.assertEquals("default", tc.getNested().getNested().getTestString0());
-        Assert.assertEquals("deep", tc.getNested().getNested().getTestString1());
+        assertEquals("nested", tc.getNested().getTestString0());
+        assertEquals("nested", tc.getNested().getTestString1());
+        assertEquals("default", tc.getNested().getNested().getTestString0());
+        assertEquals("deep", tc.getNested().getNested().getTestString1());
 
-        Assert.assertEquals("deep", ((TestConfiguration)configuration.getIdMap().get("nestedDeep")).getTestString1());
-        Assert.assertEquals(2, ((TestConfiguration)configuration.getIdMap().get("nestedDeep")).getTestInt2());
+        assertEquals("deep", ((TestConfiguration)configuration.getIdMap().get("nestedDeep")).getTestString1());
+        assertEquals(2, ((TestConfiguration)configuration.getIdMap().get("nestedDeep")).getTestInt2());
 
-        Assert.assertEquals("xxx", tc.getTestString2());
+        assertEquals("xxx", tc.getTestString2());
     }
 
     @Test
     public void testNewObject() throws Exception
     {
+        final String newDefaultValue = "NEW DEFAULT";
         TestConfiguration.VALUE=71;
 
         URL url = SpringXmlConfigurationTest.class.getClassLoader().getResource(_configure);
-        XmlConfiguration configuration = new XmlConfiguration(url);
+        final AtomicInteger count = new AtomicInteger(0);
+        XmlConfiguration configuration = new XmlConfiguration(url)
+        {
+            @Override
+            public void initializeDefaults(Object object)
+            {
+                super.initializeDefaults(object);
+                if (object instanceof TestConfiguration)
+                {
+                    count.incrementAndGet();
+                    ((TestConfiguration)object).setTestString0(newDefaultValue);
+                    ((TestConfiguration)object).setTestString1("WILL BE OVERRIDDEN");
+                }
+            }
+        };
 
-        Map<String,String> properties = new HashMap<>();
+        Map<String,String> properties = new HashMap<String,String>();
         properties.put("test", "xxx");
 
         TestConfiguration nested = new TestConfiguration();
         nested.setTestString0("nested");
-        configuration.getIdMap().put("nested",nested);
+        configuration.getIdMap().put("nested", nested);
 
         configuration.getProperties().putAll(properties);
         TestConfiguration tc = (TestConfiguration)configuration.configure();
 
-        Assert.assertEquals("default", tc.getTestString0());
-        Assert.assertEquals(-1, tc.getTestInt0());
-        Assert.assertEquals("SetValue", tc.getTestString1());
-        Assert.assertEquals(1, tc.getTestInt1());
+        assertEquals(3,count.get());
 
-        Assert.assertEquals("nested", tc.getNested().getTestString0());
-        Assert.assertEquals("nested", tc.getNested().getTestString1());
-        Assert.assertEquals("default", tc.getNested().getNested().getTestString0());
-        Assert.assertEquals("deep", tc.getNested().getNested().getTestString1());
+        assertEquals(newDefaultValue, tc.getTestString0());
+        assertEquals(-1, tc.getTestInt0());
+        assertEquals("SetValue", tc.getTestString1());
+        assertEquals(1, tc.getTestInt1());
 
-        Assert.assertEquals("deep", ((TestConfiguration)configuration.getIdMap().get("nestedDeep")).getTestString1());
-        Assert.assertEquals(2, ((TestConfiguration)configuration.getIdMap().get("nestedDeep")).getTestInt2());
+        assertEquals(newDefaultValue, tc.getNested().getTestString0());
+        assertEquals("nested", tc.getNested().getTestString1());
+        assertEquals(newDefaultValue, tc.getNested().getNested().getTestString0());
+        assertEquals("deep", tc.getNested().getNested().getTestString1());
 
-        Assert.assertEquals("xxx", tc.getTestString2());
+        assertEquals("deep", ((TestConfiguration)configuration.getIdMap().get("nestedDeep")).getTestString1());
+        assertEquals(2, ((TestConfiguration)configuration.getIdMap().get("nestedDeep")).getTestInt2());
+
+        assertEquals("xxx", tc.getTestString2());
     }
 
     @Test
