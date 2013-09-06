@@ -272,8 +272,6 @@
       <web-resource-name>relax</web-resource-name>
       <url-pattern>/dump/auth/relax/*</url-pattern>
       <url-pattern>/auth/relax.txt</url-pattern>
-      <http-method>GET</http-method>
-      <http-method>HEAD</http-method>
     </web-resource-collection>
   </security-constraint>
 
