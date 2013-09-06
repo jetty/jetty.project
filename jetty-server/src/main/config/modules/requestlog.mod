@@ -8,6 +8,9 @@ server
 [xml]
 etc/jetty-requestlog.xml
 
+[files]
+logs/
+
 [ini]
 # requestlog.retain=90
 # requestlog.append=true

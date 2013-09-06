@@ -18,28 +18,32 @@
 
 package org.eclipse.jetty.start;
 
-public class DownloadArg
+public class FileArg
 {
     public String uri;
     public String location;
 
-    public DownloadArg(String uriLocation)
+    public FileArg(String uriLocation)
     {
         String parts[] = uriLocation.split(":",3);
-        if (parts.length != 3)
+        if (parts.length == 3)
         {
-            throw new IllegalArgumentException("Not <http uri>:<location>");
+            if (!"http".equalsIgnoreCase(parts[0]))
+            {
+                throw new IllegalArgumentException("Download only supports http protocol");
+            }
+            if (!parts[1].startsWith("//"))
+            {
+                throw new IllegalArgumentException("Download URI invalid: " + uriLocation);
+            }
+            this.uri = String.format("%s:%s",parts[0],parts[1]);
+            this.location = parts[2];
         }
-        if (!"http".equalsIgnoreCase(parts[0]))
+        else
         {
-            throw new IllegalArgumentException("Download only supports http protocol");
+            this.uri = null;
+            this.location = uriLocation;
         }
-        if (!parts[1].startsWith("//"))
-        {
-            throw new IllegalArgumentException("Download URI invalid: " + uriLocation);
-        }
-        this.uri = String.format("%s:%s",parts[0],parts[1]);
-        this.location = parts[2];
     }
 
     @Override
@@ -57,7 +61,7 @@ public class DownloadArg
         {
             return false;
         }
-        DownloadArg other = (DownloadArg)obj;
+        FileArg other = (FileArg)obj;
         if (uri == null)
         {
             if (other.uri != null)

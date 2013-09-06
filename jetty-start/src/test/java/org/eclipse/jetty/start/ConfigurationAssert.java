@@ -121,7 +121,7 @@ public class ConfigurationAssert
             }
         }
         List<String> actualDownloads = new ArrayList<>();
-        for (DownloadArg darg : args.getDownloads())
+        for (FileArg darg : args.getFiles())
         {
             actualDownloads.add(String.format("%s:%s",darg.uri,darg.location));
         }

@@ -93,8 +93,8 @@ public class Module
     private List<String> initialise;
     /** List of library options for this Module */
     private List<String> libs;
-    /** List of downloads for this Module */
-    private List<String> downloads;
+    /** List of files for this Module */
+    private List<String> files;
 
     /** Is this Module enabled via start.jar command line, start.ini, or start.d/*.ini ? */
     private boolean enabled = false;
@@ -208,9 +208,9 @@ public class Module
         return initialise;
     }
 
-    public List<String> getDownloads()
+    public List<String> getFiles()
     {
-        return downloads;
+        return files;
     }
 
     @Override
@@ -236,7 +236,7 @@ public class Module
         xmls = new ArrayList<>();
         initialise = new ArrayList<>();
         libs = new ArrayList<>();
-        downloads = new ArrayList<>();
+        files = new ArrayList<>();
     }
 
     public boolean isEnabled()
@@ -295,8 +295,8 @@ public class Module
                                 case "OPTIONAL":
                                     optionalParentNames.add(line);
                                     break;
-                                case "DOWNLOAD":
-                                    downloads.add(line);
+                                case "FILES":
+                                    files.add(line);
                                     break;                             
                                 case "INI":
                                     initialise.add(line);

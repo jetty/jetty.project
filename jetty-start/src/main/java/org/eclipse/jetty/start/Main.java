@@ -171,7 +171,7 @@ public class Main
         }).start();
     }
 
-    private void download(DownloadArg arg)
+    private void initFile(FileArg arg)
     {
         try
         {
@@ -183,29 +183,40 @@ public class Main
                 return;
             }
 
-            URL url = new URL(arg.uri);
-
-            System.err.println("DOWNLOAD: " + url + " to " + arg.location);
-
-            FS.ensureDirectoryExists(file.getParentFile());
-
-            byte[] buf = new byte[8192];
-            try (InputStream in = url.openStream(); OutputStream out = new FileOutputStream(file);)
+            if (arg.uri!=null)
             {
-                while (true)
-                {
-                    int len = in.read(buf);
+                URL url = new URL(arg.uri);
 
-                    if (len > 0)
+                System.err.println("DOWNLOAD: " + url + " to " + arg.location);
+
+                FS.ensureDirectoryExists(file.getParentFile());
+
+                byte[] buf = new byte[8192];
+                try (InputStream in = url.openStream(); OutputStream out = new FileOutputStream(file);)
+                {
+                    while (true)
                     {
-                        out.write(buf,0,len);
-                    }
-                    if (len < 0)
-                    {
-                        break;
+                        int len = in.read(buf);
+
+                        if (len > 0)
+                        {
+                            out.write(buf,0,len);
+                        }
+                        if (len < 0)
+                        {
+                            break;
+                        }
                     }
                 }
             }
+            else if (arg.location.endsWith("/"))
+            {
+                System.err.println("MKDIR: " + baseHome.toShortForm(file));
+                file.mkdirs();
+            }
+            else
+                StartLog.warn("MISSING: required file "+ baseHome.toShortForm(file));
+            
         }
         catch (Exception e)
         {
@@ -464,9 +475,9 @@ public class Main
         }
 
         // Do downloads now
-        for (String download : module.getDownloads())
+        for (String file : module.getFiles())
         {
-            download(new DownloadArg(download));
+            initFile(new FileArg(file));
         }
 
         // Process dependencies from top level only

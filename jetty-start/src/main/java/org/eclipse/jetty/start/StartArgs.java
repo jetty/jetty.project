@@ -69,7 +69,7 @@ public class StartArgs
     private List<String> commandLine = new ArrayList<>();
     private Set<String> modules = new HashSet<>();
     private Map<String, List<String>> sources = new HashMap<>();
-    private List<DownloadArg> downloads = new ArrayList<>();
+    private List<FileArg> files = new ArrayList<>();
     private Classpath classpath;
     private List<String> xmlRefs = new ArrayList<>();
     private List<File> xmls = new ArrayList<>();
@@ -99,12 +99,12 @@ public class StartArgs
         classpath = new Classpath();
     }
 
-    private void addDownload(String uriLocation)
+    private void addFile(String uriLocation)
     {
-        DownloadArg arg = new DownloadArg(uriLocation);
-        if (!downloads.contains(arg))
+        FileArg arg = new FileArg(uriLocation);
+        if (!files.contains(arg))
         {
-            downloads.add(arg);
+            files.add(arg);
         }
     }
 
@@ -338,10 +338,10 @@ public class StartArgs
             }
 
             // Register Download operations
-            for (String download : module.getDownloads())
+            for (String file : module.getFiles())
             {
-                StartLog.debug("Adding module specified download: %s",download);
-                addDownload(download);
+                StartLog.debug("Adding module specified file: %s",file);
+                addFile(file);
             }
         }
     }
@@ -361,10 +361,9 @@ public class StartArgs
         return this.commandLine;
     }
 
-    public List<DownloadArg> getDownloads()
-
+    public List<FileArg> getFiles()
     {
-        return downloads;
+        return files;
     }
 
     public Set<String> getEnabledModules()
@@ -634,7 +633,7 @@ public class StartArgs
 
         if (arg.startsWith("--download="))
         {
-            addDownload(getValue(arg));
+            addFile(getValue(arg));
             return;
         }
 

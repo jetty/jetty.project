@@ -239,7 +239,7 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
             }
             catch (IOException e)
             {
-                throw new RuntimeIOException(e);
+                LOG.debug(e);
             }
         }
     }
