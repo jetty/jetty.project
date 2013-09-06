@@ -59,7 +59,7 @@ public class SessionTest
         server.stop();
     }
 
-    private void assertPathParams(String requestPath, String expectedResponse) throws Exception
+    private void assertResponse(String requestPath, String requestMessage, String expectedResponse) throws Exception
     {
         WebSocketClient client = new WebSocketClient();
         try
@@ -69,7 +69,7 @@ public class SessionTest
             Future<Session> future = client.connect(clientEcho,serverUri.resolve(requestPath));
             // wait for connect
             future.get(1,TimeUnit.SECONDS);
-            clientEcho.sendMessage("pathParams");
+            clientEcho.sendMessage(requestMessage);
             Queue<String> msgs = clientEcho.awaitMessages(1);
             Assert.assertThat("Expected message",msgs.poll(),is(expectedResponse));
         }
@@ -82,24 +82,45 @@ public class SessionTest
     @Test
     public void testPathParams_Empty() throws Exception
     {
-        assertPathParams("info/","pathParams[0]");
+        assertResponse("info/","pathParams","pathParams[0]");
     }
 
     @Test
     public void testPathParams_Single() throws Exception
     {
-        assertPathParams("info/apple/","pathParams[1]: 'a'=apple");
+        assertResponse("info/apple/","pathParams","pathParams[1]: 'a'=apple");
     }
 
     @Test
     public void testPathParams_Double() throws Exception
     {
-        assertPathParams("info/apple/pear/","pathParams[2]: 'a'=apple: 'b'=pear");
+        assertResponse("info/apple/pear/","pathParams","pathParams[2]: 'a'=apple: 'b'=pear");
     }
-    
+
     @Test
     public void testPathParams_Triple() throws Exception
     {
-        assertPathParams("info/apple/pear/cherry/","pathParams[3]: 'a'=apple: 'b'=pear: 'c'=cherry");
+        assertResponse("info/apple/pear/cherry/","pathParams","pathParams[3]: 'a'=apple: 'b'=pear: 'c'=cherry");
+    }
+
+    @Test
+    public void testRequestUri_Basic() throws Exception
+    {
+        URI expectedUri = serverUri.resolve("info/");
+        assertResponse("info/","requestUri","requestUri=" + expectedUri.toASCIIString());
+    }
+    
+    @Test
+    public void testRequestUri_WithPathParam() throws Exception
+    {
+        URI expectedUri = serverUri.resolve("info/apple/banana/");
+        assertResponse("info/apple/banana/","requestUri","requestUri=" + expectedUri.toASCIIString());
+    }
+    
+    @Test
+    public void testRequestUri_WithPathParam_WithQuery() throws Exception
+    {
+        URI expectedUri = serverUri.resolve("info/apple/banana/?fruit=fresh&store=grandmasfarm");
+        assertResponse("info/apple/banana/?fruit=fresh&store=grandmasfarm","requestUri","requestUri=" + expectedUri.toASCIIString());
     }
 }

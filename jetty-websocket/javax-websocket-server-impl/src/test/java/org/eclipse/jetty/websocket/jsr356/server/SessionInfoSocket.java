@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -56,6 +57,22 @@ public class SessionInfoSocket
                     String value = pathParams.get(key);
                     ret.append(": '").append(key).append("'=").append(value);
                 }
+            }
+            return ret.toString();
+        }
+
+        if ("requestUri".equalsIgnoreCase(message))
+        {
+            StringBuilder ret = new StringBuilder();
+            ret.append("requestUri=");
+            URI uri = session.getRequestURI();
+            if (uri == null)
+            {
+                ret.append("=<null>");
+            }
+            else
+            {
+                ret.append(uri.toASCIIString());
             }
             return ret.toString();
         }
