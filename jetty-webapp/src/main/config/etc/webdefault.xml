@@ -284,9 +284,7 @@
   <!--   If you get an error reporting that jikes can't use UTF-8 encoding, -->
   <!--   try setting the init parameter "javaEncoding" to "ISO-8859-1".     -->
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  -->
-  <servlet
-    id="jsp"
-  >
+  <servlet id="jsp">
     <servlet-name>jsp</servlet-name>
     <servlet-class>org.apache.jasper.servlet.JspServlet</servlet-class>
     <init-param>
@@ -527,7 +525,7 @@
   <security-constraint>
     <web-resource-collection>
       <web-resource-name>Enable everything but TRACE</web-resource-name>
-      <url-pattern/>/</url-pattern>
+      <url-pattern>/</url-pattern>
       <http-method-ommission>TRACE</http-method-ommission>
     </web-resource-collection>
   </security-constraint>
