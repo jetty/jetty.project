@@ -274,7 +274,7 @@ public class Module
                         // blank lines and comments are valid for initialize section
                         if (line.length() == 0 || line.startsWith("#"))
                         {
-                            if ("INI".equals(sectionType))
+                            if ("INI-TEMPLATE".equals(sectionType))
                             {
                                 initialise.add(line);
                             }
@@ -298,7 +298,7 @@ public class Module
                                 case "FILES":
                                     files.add(line);
                                     break;                             
-                                case "INI":
+                                case "INI-TEMPLATE":
                                     initialise.add(line);
                                     break;
                             }

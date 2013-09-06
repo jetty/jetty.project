@@ -478,7 +478,8 @@
             <argument>--debug</argument>
             <argument>jetty.home=${assembly-directory}</argument>
             <argument>jetty.base=${assembly-directory}</argument>
-            <argument>--module-start-ini=server,deploy,http,websocket,jsp,ext,resources</argument>
+            <argument>--module-start-ini=server,deploy,websocket,jsp,ext,resources</argument>
+            <argument>--module-ini=http</argument>
           </arguments>
         </configuration>
       </plugin>

@@ -6,6 +6,6 @@
 
 etc/jetty-logging.xml
 
-[ini]
+[ini-template]
 # Number of days to retain logs
 # jetty.log.retain=90

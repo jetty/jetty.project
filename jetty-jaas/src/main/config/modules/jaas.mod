@@ -13,5 +13,5 @@ lib/jetty-jaas-${jetty.version}.jar
 # JAAS configuration
 etc/jetty-jaas.xml
 
-[ini]
+[ini-template]
 jaas.login.conf=etc/login.conf

@@ -1,4 +1,4 @@
-[ini]
+[ini-template]
 #===========================================================
 # Configure JVM arguments.
 # If JVM args are include in an ini file then --exec is needed

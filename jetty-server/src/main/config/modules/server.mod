@@ -22,7 +22,7 @@ lib/jetty-io-${jetty.version}.jar
 # Annotations needs annotations configuration
 etc/jetty.xml
 
-[ini]
+[ini-template]
 threads.min=10
 threads.max=200
 threads.timeout=60000

@@ -78,6 +78,7 @@ public class StartArgs
     private List<String> jvmArgs = new ArrayList<>();
     private List<String> moduleIni = new ArrayList<>();
     private List<String> moduleStartIni = new ArrayList<>();
+    private Map<String,String> propertySource = new HashMap<>();
     private String moduleGraphFilename;
 
     private Modules allModules;
@@ -767,6 +768,13 @@ public class StartArgs
         {
             String key = arg.substring(0,idx);
             String value = arg.substring(idx + 1);
+            
+            if (source!=CMD_LINE_SOURCE)
+            {
+                if (propertySource.containsKey(key))
+                    throw new UsageException(ERR_BAD_ARG,"Property %s in %s already set in %s",key,source,propertySource.get(key));
+                propertySource.put(key,source);
+            }
             properties.setProperty(key,value);
             return;
         }

@@ -10,7 +10,7 @@ lib/jetty-jmx-${jetty.version}.jar
 # JMX configuration
 etc/jetty-jmx.xml
 
-[ini]
+[ini-template]
 # jetty.jmxrmihost=localhost
 # jetty.jmxrmiport=1099
 # -Dcom.sun.management.jmxremote

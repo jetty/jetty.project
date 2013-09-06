@@ -8,7 +8,7 @@ server
 [xml]
 etc/jetty-lowresources.xml
 
-[ini]
+[ini-template]
 # lowresources.period=1050
 # lowresources.lowResourcesIdleTimeout=200
 # lowresources.monitorThreads=true

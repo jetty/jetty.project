@@ -7,7 +7,7 @@ jetty-setuid-java-1.0.1.jar
 [xml]
 etc/jetty-setuid.xml
 
-[ini]
+[ini-template]
 # jetty.startServerAsPrivileged=false
 # jetty.username=jetty
 # jetty.groupname=jetty

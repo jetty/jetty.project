@@ -9,7 +9,7 @@ lib/spdy/*.jar
 etc/jetty-ssl.xml
 etc/jetty-spdy.xml
 
-[ini]
+[ini-template]
 spdy.port=8443
 spdy.timeout=30000
 #spdy.initialWindowSize=65536

@@ -177,7 +177,7 @@ public class Main
         {
             File file = baseHome.getBaseFile(arg.location);
 
-            StartLog.debug("Download to %s %s",file.getAbsolutePath(),(file.exists()?"[Exists!]":""));
+            StartLog.debug("Module file %s %s",file.getAbsolutePath(),(file.exists()?"[Exists!]":""));
             if (file.exists())
             {
                 return;

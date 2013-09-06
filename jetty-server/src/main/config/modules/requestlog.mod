@@ -11,7 +11,7 @@ etc/jetty-requestlog.xml
 [files]
 logs/
 
-[ini]
+[ini-template]
 # requestlog.retain=90
 # requestlog.append=true
 # requestlog.extended=true
