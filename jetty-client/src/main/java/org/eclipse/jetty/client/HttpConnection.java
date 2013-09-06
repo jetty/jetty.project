@@ -39,18 +39,16 @@ public abstract class HttpConnection implements Connection
 {
     private static final HttpField CHUNKED_FIELD = new HttpField(HttpHeader.TRANSFER_ENCODING, HttpHeaderValue.CHUNKED);
 
-    private final HttpClient client;
     private final HttpDestination destination;
 
-    protected HttpConnection(HttpClient client, HttpDestination destination)
+    protected HttpConnection(HttpDestination destination)
     {
-        this.client = client;
         this.destination = destination;
     }
 
     public HttpClient getHttpClient()
     {
-        return client;
+        return destination.getHttpClient();
     }
 
     public HttpDestination getHttpDestination()
@@ -65,13 +63,13 @@ public abstract class HttpConnection implements Connection
         if (request.getTimeout() > 0)
         {
             TimeoutCompleteListener timeoutListener = new TimeoutCompleteListener(request);
-            timeoutListener.schedule(client.getScheduler());
+            timeoutListener.schedule(getHttpClient().getScheduler());
             listeners.add(timeoutListener);
         }
         if (listener != null)
             listeners.add(listener);
 
-        HttpConversation conversation = client.getConversation(request.getConversationID(), true);
+        HttpConversation conversation = getHttpClient().getConversation(request.getConversationID(), true);
         HttpExchange exchange = new HttpExchange(conversation, getHttpDestination(), request, listeners);
 
         send(exchange);
@@ -123,7 +121,7 @@ public abstract class HttpConnection implements Connection
         }
 
         // Cookies
-        List<HttpCookie> cookies = client.getCookieStore().get(request.getURI());
+        List<HttpCookie> cookies = getHttpClient().getCookieStore().get(request.getURI());
         StringBuilder cookieString = null;
         for (int i = 0; i < cookies.size(); ++i)
         {
@@ -139,7 +137,7 @@ public abstract class HttpConnection implements Connection
 
         // Authorization
         URI authenticationURI = destination.isProxied() ? destination.getProxyURI() : request.getURI();
-        Authentication.Result authnResult = client.getAuthenticationStore().findAuthenticationResult(authenticationURI);
+        Authentication.Result authnResult = getHttpClient().getAuthenticationStore().findAuthenticationResult(authenticationURI);
         if (authnResult != null)
             authnResult.apply(request);
     }

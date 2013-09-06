@@ -359,8 +359,10 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
      * content needs to be sent, this method is invoked again; subclasses need only to send the content
      * at the {@link HttpContent} cursor position.
      * <p />
-     * This method is invoked one last time when {@link HttpContent#isConsumed()} is true; subclasses
-     * needs to skip sending content in this case, and just complete their content generation.
+     * This method is invoked one last time when {@link HttpContent#isConsumed()} is true and therefore
+     * there is no actual content to send.
+     * This is done to allow subclasses to write "terminal" bytes (such as the terminal chunk when the
+     * transfer encoding is chunked) if their protocol needs to.
      *
      * @param exchange the exchange to send
      * @param content the content to send
@@ -615,7 +617,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
                             }
                             else
                             {
-                                if (content.isLast())
+                                if (content.isConsumed())
                                 {
                                     sendContent(exchange, content, lastCallback);
                                 }
@@ -685,7 +687,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
             }
             else
             {
-                if (content.isLast())
+                if (content.isConsumed())
                 {
                     sendContent(exchange, content, lastCallback);
                 }

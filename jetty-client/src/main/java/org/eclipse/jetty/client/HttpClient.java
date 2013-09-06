@@ -450,7 +450,7 @@ public class HttpClient extends ContainerLifeCycle
         HttpDestination destination = destinations.get(address);
         if (destination == null)
         {
-            destination = transport.newHttpDestination(this, scheme, host, port);
+            destination = transport.newHttpDestination(scheme, host, port);
             if (isRunning())
             {
                 HttpDestination existing = destinations.putIfAbsent(address, destination);

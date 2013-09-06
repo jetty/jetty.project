@@ -46,7 +46,7 @@ public class HttpClientTransportOverSPDY implements HttpClientTransport
     }
 
     @Override
-    public HttpDestination newHttpDestination(HttpClient httpClient, String scheme, String host, int port)
+    public HttpDestination newHttpDestination(String scheme, String host, int port)
     {
         return new HttpDestinationOverSPDY(httpClient, scheme, host, port);
     }
@@ -75,7 +75,7 @@ public class HttpClientTransportOverSPDY implements HttpClientTransport
                     @Override
                     public void succeeded(Session session)
                     {
-                        Connection result = new HttpConnectionOverSPDY(httpClient, destination, session);
+                        Connection result = new HttpConnectionOverSPDY(destination, session);
                         promise.succeeded(result);
                     }
 

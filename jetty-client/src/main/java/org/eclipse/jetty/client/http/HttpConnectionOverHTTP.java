@@ -20,7 +20,6 @@ package org.eclipse.jetty.client.http;
 
 import java.util.concurrent.TimeoutException;
 
-import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpConnection;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpExchange;
@@ -41,10 +40,10 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
     private boolean closed;
     private long idleTimeout;
 
-    public HttpConnectionOverHTTP(HttpClient client, EndPoint endPoint, HttpDestination destination)
+    public HttpConnectionOverHTTP(EndPoint endPoint, HttpDestination destination)
     {
-        super(endPoint, client.getExecutor(), client.isDispatchIO());
-        this.delegate = new Delegate(client, destination);
+        super(endPoint, destination.getHttpClient().getExecutor(), destination.getHttpClient().isDispatchIO());
+        this.delegate = new Delegate(destination);
         this.channel = new HttpChannelOverHTTP(this);
     }
 
@@ -146,9 +145,9 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
 
     private class Delegate extends HttpConnection
     {
-        private Delegate(HttpClient client, HttpDestination destination)
+        private Delegate(HttpDestination destination)
         {
-            super(client, destination);
+            super(destination);
         }
 
         @Override

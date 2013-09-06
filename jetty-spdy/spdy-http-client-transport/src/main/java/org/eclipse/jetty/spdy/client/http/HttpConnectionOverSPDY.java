@@ -19,7 +19,6 @@
 package org.eclipse.jetty.spdy.client.http;
 
 import org.eclipse.jetty.client.HttpChannel;
-import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpConnection;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpExchange;
@@ -31,9 +30,9 @@ public class HttpConnectionOverSPDY extends HttpConnection
 {
     private final Session session;
 
-    public HttpConnectionOverSPDY(HttpClient client, HttpDestination destination, Session session)
+    public HttpConnectionOverSPDY(HttpDestination destination, Session session)
     {
-        super(client, destination);
+        super(destination);
         this.session = session;
     }
 
