@@ -27,9 +27,6 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.util.MultiMap;
-import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -86,22 +83,6 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
         this.incomingHandler = websocket;
 
         this.connection.getIOState().addListener(this);
-
-        // Get the parameter map (use the jetty MultiMap to do this right)
-        MultiMap<String> params = new MultiMap<>();
-        String query = requestURI.getQuery();
-        if (StringUtil.isNotBlank(query))
-        {
-            UrlEncoded.decodeTo(query,params,StringUtil.__UTF8_CHARSET,-1);
-        }
-
-        for (String name : params.keySet())
-        {
-            List<String> valueList = params.getValues(name);
-            String valueArr[] = new String[valueList.size()];
-            valueArr = valueList.toArray(valueArr);
-            parameterMap.put(name,valueArr);
-        }
     }
 
     @Override
@@ -428,6 +409,22 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
     {
         this.upgradeRequest = request;
         this.protocolVersion = request.getProtocolVersion();
+        this.parameterMap.clear();
+        if (request.getParameterMap() != null)
+        {
+            for (Map.Entry<String, List<String>> entry : request.getParameterMap().entrySet())
+            {
+                List<String> values = entry.getValue();
+                if (values != null)
+                {
+                    this.parameterMap.put(entry.getKey(),values.toArray(new String[values.size()]));
+                }
+                else
+                {
+                    this.parameterMap.put(entry.getKey(),new String[0]);
+                }
+            }
+        }
     }
 
     public void setUpgradeResponse(UpgradeResponse response)

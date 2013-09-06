@@ -91,7 +91,6 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
         if (LOG.isDebugEnabled())
         {
             LOG.debug("addEndpoint({}) path={} endpoint={}",config,config.getPath(),config.getEndpointClass());
-            LOG.debug("Occurred from stack",new Throwable("stack"));
         }
         ServerEndpointMetadata metadata = getServerEndpointMetadata(config.getEndpointClass(),config);
         addEndpoint(metadata);

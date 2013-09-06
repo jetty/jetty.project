@@ -89,6 +89,7 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
         this.messageHandlerFactory = new MessageHandlerFactory();
         this.wrappers = new MessageHandlerWrapper[MessageType.values().length];
         this.messageHandlerSet = new HashSet<>();
+
     }
 
     @Override

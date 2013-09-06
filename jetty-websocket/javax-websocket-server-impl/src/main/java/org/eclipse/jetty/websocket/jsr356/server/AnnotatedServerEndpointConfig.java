@@ -51,37 +51,64 @@ public class AnnotatedServerEndpointConfig implements ServerEndpointConfig
 
     public AnnotatedServerEndpointConfig(Class<?> endpointClass, ServerEndpoint anno, ServerEndpointConfig baseConfig) throws DeploymentException
     {
-        List<Class<? extends Decoder>> compositeDecoders = new ArrayList<>();
-        List<Class<? extends Encoder>> compositeEncoders = new ArrayList<>();
-        List<String> compositeSubProtocols = new ArrayList<>();
-
         Configurator configr = null;
 
         // Copy from base config
         if (baseConfig != null)
         {
-            compositeDecoders.addAll(baseConfig.getDecoders());
-            compositeEncoders.addAll(baseConfig.getEncoders());
-            compositeSubProtocols.addAll(baseConfig.getSubprotocols());
             configr = baseConfig.getConfigurator();
         }
 
-        // now add from annotations
-        compositeDecoders.addAll(Arrays.asList(anno.decoders()));
-        compositeEncoders.addAll(Arrays.asList(anno.encoders()));
-        compositeSubProtocols.addAll(Arrays.asList(anno.subprotocols()));
+        // Decoders (favor provided config over annotation)
+        if (baseConfig != null && baseConfig.getDecoders() != null && baseConfig.getDecoders().size() > 0)
+        {
+            this.decoders = Collections.unmodifiableList(baseConfig.getDecoders());
+        }
+        else
+        {
+            this.decoders = Collections.unmodifiableList(Arrays.asList(anno.decoders()));
+        }
 
-        // Create unmodifiable lists
-        this.decoders = Collections.unmodifiableList(compositeDecoders);
-        this.encoders = Collections.unmodifiableList(compositeEncoders);
-        this.subprotocols = Collections.unmodifiableList(compositeSubProtocols);
+        // Encoders (favor provided config over annotation)
+        if (baseConfig != null && baseConfig.getEncoders() != null && baseConfig.getEncoders().size() > 0)
+        {
+            this.encoders = Collections.unmodifiableList(baseConfig.getEncoders());
+        }
+        else
+        {
+            this.encoders = Collections.unmodifiableList(Arrays.asList(anno.encoders()));
+        }
+
+        // Sub Protocols (favor provided config over annotation)
+        if (baseConfig != null && baseConfig.getSubprotocols() != null && baseConfig.getSubprotocols().size() > 0)
+        {
+            this.subprotocols = Collections.unmodifiableList(baseConfig.getSubprotocols());
+        }
+        else
+        {
+            this.subprotocols = Collections.unmodifiableList(Arrays.asList(anno.subprotocols()));
+        }
+
+        // Path (favor provided config over annotation)
+        if (baseConfig != null && baseConfig.getPath() != null && baseConfig.getPath().length() > 0)
+        {
+            this.path = baseConfig.getPath();
+        }
+        else
+        {
+            this.path = anno.value();
+        }
 
         // supplied by init lifecycle
         this.extensions = new ArrayList<>();
-        this.path = anno.value();
+        // always what is passed in
         this.endpointClass = endpointClass;
-        // no userProperties in annotation
+        // UserProperties in annotation
         this.userProperties = new HashMap<>();
+        if (baseConfig != null && baseConfig.getUserProperties() != null && baseConfig.getUserProperties().size() > 0)
+        {
+            userProperties.putAll(baseConfig.getUserProperties());
+        }
 
         if (anno.configurator() == null)
         {
