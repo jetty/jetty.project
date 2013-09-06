@@ -7,3 +7,4 @@ servlet
 
 [lib]
 lib/jetty-servlets-${jetty.version}.jar
+
