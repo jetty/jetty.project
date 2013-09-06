@@ -1,2 +1,2 @@
 [lib]
-lib/ext/*
+lib/ext/*.jar

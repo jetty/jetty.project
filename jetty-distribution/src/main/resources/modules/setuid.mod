@@ -2,7 +2,7 @@
 server
 
 [lib]
-jetty-setuid-java-1.0.1.jar
+lib/setuid/jetty-setuid-java-1.0.1.jar
 
 [xml]
 etc/jetty-setuid.xml
