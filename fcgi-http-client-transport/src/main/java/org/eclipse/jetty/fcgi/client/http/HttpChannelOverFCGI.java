@@ -21,28 +21,31 @@ package org.eclipse.jetty.fcgi.client.http;
 import org.eclipse.jetty.client.HttpChannel;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpExchange;
+import org.eclipse.jetty.fcgi.generator.Flusher;
 import org.eclipse.jetty.fcgi.generator.Generator;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpVersion;
 
 public class HttpChannelOverFCGI extends HttpChannel
 {
-    private final HttpConnectionOverFCGI connection;
-    private final int id;
+    private final Flusher flusher;
+    private final int request;
     private final HttpSenderOverFCGI sender;
     private final HttpReceiverOverFCGI receiver;
+    private HttpVersion version;
 
-    public HttpChannelOverFCGI(HttpDestination destination, HttpConnectionOverFCGI connection, int id)
+    public HttpChannelOverFCGI(HttpDestination destination, Flusher flusher, int request)
     {
         super(destination);
-        this.connection = connection;
-        this.id = id;
+        this.flusher = flusher;
+        this.request = request;
         this.sender = new HttpSenderOverFCGI(this);
         this.receiver = new HttpReceiverOverFCGI(this);
     }
 
-    protected int getId()
+    protected int getRequest()
     {
-        return id;
+        return request;
     }
 
     @Override
@@ -50,25 +53,32 @@ public class HttpChannelOverFCGI extends HttpChannel
     {
         HttpExchange exchange = getHttpExchange();
         if (exchange != null)
+        {
+            version = exchange.getRequest().getVersion();
             sender.send(exchange);
+        }
     }
 
     @Override
     public void proceed(HttpExchange exchange, boolean proceed)
     {
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public boolean abort(Throwable cause)
     {
-        return false;
+        throw new UnsupportedOperationException();
     }
 
-    protected void responseBegin()
+    protected void responseBegin(int code, String reason)
     {
         HttpExchange exchange = getHttpExchange();
         if (exchange != null)
+        {
+            exchange.getResponse().version(version).status(code).reason(reason);
             receiver.responseBegin(exchange);
+        }
     }
 
     protected void responseHeader(HttpField field)
@@ -78,8 +88,22 @@ public class HttpChannelOverFCGI extends HttpChannel
             receiver.responseHeader(exchange, field);
     }
 
-    protected void write(Generator.Result result)
+    protected void responseHeaders()
     {
-        connection.write(result);
+        HttpExchange exchange = getHttpExchange();
+        if (exchange != null)
+            receiver.responseHeaders(exchange);
+    }
+
+    protected void responseSuccess()
+    {
+        HttpExchange exchange = getHttpExchange();
+        if (exchange != null)
+            receiver.responseSuccess(exchange);
+    }
+
+    protected void flush(Generator.Result result)
+    {
+        flusher.flush(result);
     }
 }

@@ -14,6 +14,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.eclipse.jetty.fcgi</groupId>
+            <artifactId>fcgi-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-server</artifactId>
             <version>${project.version}</version>

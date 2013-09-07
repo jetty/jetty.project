@@ -22,17 +22,21 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.HttpConfiguration;
 
-public class FCGIServerConnectionFactory extends AbstractConnectionFactory
+public class ServerFCGIConnectionFactory extends AbstractConnectionFactory
 {
-    public FCGIServerConnectionFactory()
+    private final HttpConfiguration configuration;
+
+    public ServerFCGIConnectionFactory(HttpConfiguration configuration)
     {
         super("fcgi/1.0");
+        this.configuration = configuration;
     }
 
     @Override
     public Connection newConnection(Connector connector, EndPoint endPoint)
     {
-        return new ServerFCGIConnection(endPoint, connector.getExecutor());
+        return new ServerFCGIConnection(connector, endPoint, configuration);
     }
 }

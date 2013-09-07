@@ -20,9 +20,7 @@ package org.eclipse.jetty.fcgi.client.http;
 
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -33,15 +31,12 @@ import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.fcgi.FCGI;
-import org.eclipse.jetty.fcgi.generator.Generator;
+import org.eclipse.jetty.fcgi.generator.Flusher;
 import org.eclipse.jetty.fcgi.parser.ClientParser;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.ConcurrentArrayQueue;
-import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -51,16 +46,15 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
 
     private final LinkedList<Integer> requests = new LinkedList<>();
     private final Map<Integer, HttpChannelOverFCGI> channels = new ConcurrentHashMap<>();
-    private final Queue<Generator.Result> queue = new ConcurrentArrayQueue<>();
-    private final Callback flushCallback = new FlushCallback();
+    private final Flusher flusher;
     private final HttpDestination destination;
     private final Delegate delegate;
     private final ClientParser parser;
-    private boolean flushing;
 
     public HttpConnectionOverFCGI(EndPoint endPoint, HttpDestination destination)
     {
         super(endPoint, destination.getHttpClient().getExecutor(), destination.getHttpClient().isDispatchIO());
+        this.flusher = new Flusher(endPoint);
         this.destination = destination;
         this.delegate = new Delegate(destination);
         this.parser = new ClientParser(new ResponseListener());
@@ -137,18 +131,6 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
             parser.parse(buffer);
     }
 
-    protected void write(Generator.Result result)
-    {
-        synchronized (queue)
-        {
-            queue.offer(result);
-            if (flushing)
-                return;
-            flushing = true;
-        }
-        getEndPoint().write(flushCallback);
-    }
-
     private void shutdown()
     {
         // TODO: we must signal to the HttpParser that we are at EOF
@@ -207,7 +189,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
 
             // FCGI may be multiplexed, so create one channel for each request.
             int id = acquireRequest();
-            HttpChannelOverFCGI channel = new HttpChannelOverFCGI(getHttpDestination(), HttpConnectionOverFCGI.this, id);
+            HttpChannelOverFCGI channel = new HttpChannelOverFCGI(getHttpDestination(), flusher, id);
             channels.put(id, channel);
             channel.associate(exchange);
             channel.send();
@@ -227,7 +209,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
         {
             HttpChannelOverFCGI channel = channels.get(request);
             if (channel != null)
-                channel.responseBegin();
+                channel.responseBegin(code, reason);
             else
                 noChannel(request);
         }
@@ -245,74 +227,38 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
         @Override
         public void onHeaders(int request)
         {
+            HttpChannelOverFCGI channel = channels.get(request);
+            if (channel != null)
+                channel.responseHeaders();
+            else
+                noChannel(request);
         }
 
         @Override
         public void onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
         {
+            throw new UnsupportedOperationException();
         }
 
         @Override
         public void onEnd(int request)
         {
-            // TODO:
-
-            channels.remove(request);
-            releaseRequest(request);
+            HttpChannelOverFCGI channel = channels.get(request);
+            if (channel != null)
+            {
+                channel.responseSuccess();
+                channels.remove(request);
+                releaseRequest(request);
+            }
+            else
+            {
+                noChannel(request);
+            }
         }
 
         private void noChannel(int request)
         {
             // TODO: what here ?
-        }
-    }
-
-    private class FlushCallback extends IteratingCallback
-    {
-        private Generator.Result active;
-
-        @Override
-        protected boolean process() throws Exception
-        {
-            // We are flushing, we completed a write, notify
-            if (active != null)
-                active.succeeded();
-
-            // Look if other writes are needed.
-            Generator.Result result;
-            synchronized (queue)
-            {
-                if (queue.isEmpty())
-                {
-                    // No more writes to do, switch to non-flushing
-                    flushing = false;
-                    return true;
-                }
-                // TODO: here is where we want to gather more results to perform gathered writes
-                result = queue.poll();
-            }
-
-            active = result;
-            List<ByteBuffer> buffers = result.getByteBuffers();
-            getEndPoint().write(this, buffers.toArray(new ByteBuffer[buffers.size()]));
-            return false;
-        }
-
-        @Override
-        protected void completed()
-        {
-            active = null;
-        }
-
-        @Override
-        public void failed(Throwable x)
-        {
-            super.failed(x);
-            if (active != null)
-            {
-                active.failed(x);
-                active = null;
-            }
         }
     }
 }

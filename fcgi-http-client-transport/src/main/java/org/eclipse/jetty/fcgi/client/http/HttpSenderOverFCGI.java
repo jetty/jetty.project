@@ -27,16 +27,30 @@ public class HttpSenderOverFCGI extends HttpSender
     @Override
     protected void sendHeaders(HttpExchange exchange, HttpContent content, Callback callback)
     {
-        int request = getHttpChannel().getId();
-        Generator.Result result = generator.generateRequestHeaders(request, exchange.getRequest().getHeaders(), callback);
-        getHttpChannel().write(result);
+        int request = getHttpChannel().getRequest();
+        boolean noContent = !content.hasContent();
+        Generator.Result result = generator.generateRequestHeaders(request, exchange.getRequest().getHeaders(),
+                noContent ? new Callback.Adapter() : callback);
+        getHttpChannel().flush(result);
+        if (noContent)
+        {
+            result = generator.generateRequestContent(request, null, true, callback);
+            getHttpChannel().flush(result);
+        }
     }
 
     @Override
     protected void sendContent(HttpExchange exchange, HttpContent content, Callback callback)
     {
-        int request = getHttpChannel().getId();
-        Generator.Result result = generator.generateRequestContent(request, content.getByteBuffer(), content.isLast(), callback);
-        getHttpChannel().write(result);
+        if (content.isConsumed())
+        {
+            callback.succeeded();
+        }
+        else
+        {
+            int request = getHttpChannel().getRequest();
+            Generator.Result result = generator.generateRequestContent(request, content.getByteBuffer(), content.isLast(), callback);
+            getHttpChannel().flush(result);
+        }
     }
 }

@@ -19,10 +19,10 @@
 package org.eclipse.jetty.fcgi.client.http;
 
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.fcgi.server.FCGIServerConnectionFactory;
+import org.eclipse.jetty.fcgi.server.ServerFCGIConnectionFactory;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.NetworkConnector;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.TestTracker;
@@ -36,7 +36,7 @@ public abstract class AbstractHttpClientServerTest
     public final TestTracker tracker = new TestTracker();
 
     protected Server server;
-    protected NetworkConnector connector;
+    protected ServerConnector connector;
     protected HttpClient client;
     protected String scheme = HttpScheme.HTTP.asString();
 
@@ -44,8 +44,9 @@ public abstract class AbstractHttpClientServerTest
     {
         server = new Server();
 
-        FCGIServerConnectionFactory fcgiConnectionFactory = new FCGIServerConnectionFactory();
+        ServerFCGIConnectionFactory fcgiConnectionFactory = new ServerFCGIConnectionFactory(new HttpConfiguration());
         connector = new ServerConnector(server, fcgiConnectionFactory);
+        connector.setPort(9000);
 
         server.addConnector(connector);
         server.setHandler(handler);
