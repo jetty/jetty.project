@@ -105,4 +105,29 @@ public class FCGI
     {
         STD_IN, STD_OUT, STD_ERR
     }
+
+    public static class Headers
+    {
+        public static final String AUTH_TYPE = "AUTH_TYPE";
+        public static final String CONTENT_LENGTH = "CONTENT_LENGTH";
+        public static final String CONTENT_TYPE = "CONTENT_TYPE";
+        public static final String GATEWAY_INTERFACE = "GATEWAY_INTERFACE";
+        public static final String PATH_INFO = "PATH_INFO";
+        public static final String PATH_TRANSLATED = "PATH_TRANSLATED";
+        public static final String QUERY_STRING = "QUERY_STRING";
+        public static final String REMOTE_ADDR = "REMOTE_ADDR";
+        public static final String REMOTE_HOST = "REMOTE_HOST";
+        public static final String REMOTE_USER = "REMOTE_USER";
+        public static final String REQUEST_METHOD = "REQUEST_METHOD";
+        public static final String REQUEST_URI = "REQUEST_URI";
+        public static final String SCRIPT_NAME = "SCRIPT_NAME";
+        public static final String SERVER_NAME = "SERVER_NAME";
+        public static final String SERVER_PORT = "SERVER_PORT";
+        public static final String SERVER_PROTOCOL = "SERVER_PROTOCOL";
+        public static final String SERVER_SOFTWARE = "SERVER_SOFTWARE";
+
+        private Headers()
+        {
+        }
+    }
 }

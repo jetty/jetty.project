@@ -26,9 +26,13 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ConcurrentArrayQueue;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class Flusher
 {
+    private static final Logger LOG = Log.getLogger(Flusher.class);
+
     private final Queue<Generator.Result> queue = new ConcurrentArrayQueue<>();
     private final Callback flushCallback = new FlushCallback();
     private final EndPoint endPoint;
@@ -50,6 +54,11 @@ public class Flusher
             flushing = true;
         }
         endPoint.write(flushCallback);
+    }
+
+    public void shutdown()
+    {
+        flush(new ShutdownResult());
     }
 
     private class FlushCallback extends IteratingCallback
@@ -104,6 +113,32 @@ public class Flusher
                 active.failed(x);
                 active = null;
             }
+        }
+    }
+
+    private class ShutdownResult extends Generator.Result
+    {
+        private ShutdownResult()
+        {
+            super(null, new Adapter());
+        }
+
+        @Override
+        public void succeeded()
+        {
+            shutdown();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            shutdown();
+        }
+
+        private void shutdown()
+        {
+            LOG.debug("Shutting down {}", endPoint);
+            endPoint.shutdownOutput();
         }
     }
 }

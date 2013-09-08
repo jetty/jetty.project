@@ -80,8 +80,7 @@ public class StreamContentParser extends ContentParser
     @Override
     public void noContent()
     {
-        if (streamType == FCGI.StreamType.STD_IN)
-            onEnd();
+        onEnd();
     }
 
     protected void onContent(ByteBuffer buffer)

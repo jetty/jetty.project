@@ -109,7 +109,7 @@ public class ServerFCGIConnection extends AbstractConnection
 
     private void shutdown()
     {
-        // TODO
+        flusher.shutdown();
     }
 
     private class ServerListener implements ServerParser.Listener
@@ -122,47 +122,57 @@ public class ServerFCGIConnection extends AbstractConnection
             HttpChannelOverFCGI existing = channels.putIfAbsent(request, channel);
             if (existing != null)
                 throw new IllegalStateException();
+            if (LOG.isDebugEnabled())
+                LOG.debug("Request {} start on {}", request, channel);
         }
 
         @Override
         public void onHeader(int request, HttpField field)
         {
             HttpChannelOverFCGI channel = channels.get(request);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Request {} header {} on {}", request, field, channel);
             if (channel != null)
                 channel.header(field);
-            else
-                noChannel(request);
         }
 
         @Override
         public void onHeaders(int request)
         {
             HttpChannelOverFCGI channel = channels.get(request);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Request {} headers on {}", request, channel);
             if (channel != null)
-                channel.headerComplete();
-            else
-                noChannel(request);
+            {
+                if (channel.headerComplete())
+                    channel.dispatch();
+            }
         }
 
         @Override
         public void onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
         {
+            HttpChannelOverFCGI channel = channels.get(request);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Request {} {} content {} on {}", request, stream, buffer, channel);
+            if (channel != null)
+            {
+                if (channel.content(buffer))
+                    channel.dispatch();
+            }
         }
 
         @Override
         public void onEnd(int request)
         {
-            HttpChannelOverFCGI channel = channels.get(request);
+            HttpChannelOverFCGI channel = channels.remove(request);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Request {} end on {}", request, channel);
             if (channel != null)
+            {
                 if (channel.messageComplete())
                     channel.dispatch();
-            else
-                noChannel(request);
-        }
-
-        private void noChannel(int request)
-        {
-            // TODO
+            }
         }
     }
 }

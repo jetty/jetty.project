@@ -27,9 +27,13 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class ResponseContentParser extends StreamContentParser
 {
+    private static final Logger LOG = Log.getLogger(ResponseContentParser.class);
+
     public ResponseContentParser(HeaderParser headerParser, ClientParser.Listener listener)
     {
         super(headerParser, FCGI.StreamType.STD_OUT, new ResponseListener(headerParser, listener));
@@ -54,6 +58,8 @@ public class ResponseContentParser extends StreamContentParser
         @Override
         public void onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
         {
+            LOG.debug("Request {} {} content {} {}", request, stream, state, buffer);
+
             while (buffer.hasRemaining())
             {
                 switch (state)
@@ -89,8 +95,9 @@ public class ResponseContentParser extends StreamContentParser
         @Override
         public void onEnd(int request)
         {
-            // Never called for STD_OUT, since it relies on FCGI_END_REQUEST
-            throw new IllegalStateException();
+            // We are a STD_OUT stream so the end of the request is
+            // signaled by a END_REQUEST. Here we just reset the state.
+            reset();
         }
 
         @Override

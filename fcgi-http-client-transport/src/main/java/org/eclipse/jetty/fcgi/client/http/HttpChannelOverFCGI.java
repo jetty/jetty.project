@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.fcgi.client.http;
 
+import java.nio.ByteBuffer;
+
 import org.eclipse.jetty.client.HttpChannel;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpExchange;
@@ -93,6 +95,13 @@ public class HttpChannelOverFCGI extends HttpChannel
         HttpExchange exchange = getHttpExchange();
         if (exchange != null)
             receiver.responseHeaders(exchange);
+    }
+
+    protected void content(ByteBuffer buffer)
+    {
+        HttpExchange exchange = getHttpExchange();
+        if (exchange != null)
+            receiver.responseContent(exchange, buffer);
     }
 
     protected void responseSuccess()

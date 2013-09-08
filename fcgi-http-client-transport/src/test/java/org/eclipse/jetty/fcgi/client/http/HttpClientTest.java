@@ -39,6 +39,7 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.junit.Assert;
 import org.junit.Test;
@@ -50,10 +51,12 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     {
         start(new EmptyServerHandler());
 
-        Response response = client.GET(scheme + "://localhost:" + connector.getLocalPort());
-
-        Assert.assertNotNull(response);
-        Assert.assertEquals(200, response.getStatus());
+        for (int i = 0; i < 2; ++i)
+        {
+            Response response = client.GET(scheme + "://localhost:" + connector.getLocalPort());
+            Assert.assertNotNull(response);
+            Assert.assertEquals(200, response.getStatus());
+        }
     }
 
     @Test
@@ -70,12 +73,14 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             }
         });
 
-        ContentResponse response = client.GET(scheme + "://localhost:" + connector.getLocalPort());
-
-        Assert.assertNotNull(response);
-        Assert.assertEquals(200, response.getStatus());
-        byte[] content = response.getContent();
-        Assert.assertArrayEquals(data, content);
+        for (int i = 0; i < 2; ++i)
+        {
+            ContentResponse response = client.GET(scheme + "://localhost:" + connector.getLocalPort());
+            Assert.assertNotNull(response);
+            Assert.assertEquals(200, response.getStatus());
+            byte[] content = response.getContent();
+            Assert.assertArrayEquals(data, content);
+        }
     }
 
     @Test
@@ -226,7 +231,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 {
                     response.setCharacterEncoding("UTF-8");
                     response.setContentType("application/octet-stream");
-                    response.getOutputStream().write(content);
+                    IO.copy(request.getInputStream(), response.getOutputStream());
                 }
             }
         });
@@ -234,7 +239,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         ContentResponse response = client.POST(scheme + "://localhost:" + connector.getLocalPort() + "/?b=1")
                 .param(paramName, paramValue)
                 .content(new BytesContentProvider(content))
-                .timeout(555, TimeUnit.SECONDS)
+                .timeout(5, TimeUnit.SECONDS)
                 .send();
 
         Assert.assertNotNull(response);

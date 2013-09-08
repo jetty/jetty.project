@@ -1,11 +1,18 @@
 package org.eclipse.jetty.fcgi.client.http;
 
+import java.net.URI;
+
 import org.eclipse.jetty.client.HttpChannel;
 import org.eclipse.jetty.client.HttpContent;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpSender;
+import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.fcgi.generator.ClientGenerator;
 import org.eclipse.jetty.fcgi.generator.Generator;
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.Callback;
 
 public class HttpSenderOverFCGI extends HttpSender
@@ -27,9 +34,44 @@ public class HttpSenderOverFCGI extends HttpSender
     @Override
     protected void sendHeaders(HttpExchange exchange, HttpContent content, Callback callback)
     {
+        Request httpRequest = exchange.getRequest();
+        URI uri = httpRequest.getURI();
+        HttpFields headers = httpRequest.getHeaders();
+
+        HttpField field = headers.remove(HttpHeader.AUTHORIZATION);
+        if (field != null)
+            headers.put(FCGI.Headers.AUTH_TYPE, field.getValue());
+
+        field = headers.remove(HttpHeader.CONTENT_LENGTH);
+        if (field != null)
+            headers.put(FCGI.Headers.CONTENT_LENGTH, field.getValue());
+
+        field = headers.remove(HttpHeader.CONTENT_TYPE);
+        if (field != null)
+            headers.put(FCGI.Headers.CONTENT_TYPE, field.getValue());
+
+        headers.put(FCGI.Headers.GATEWAY_INTERFACE, "CGI/1.1");
+
+//        headers.put(Headers.PATH_INFO, ???);
+//        headers.put(Headers.PATH_TRANSLATED, ???);
+
+        headers.put(FCGI.Headers.QUERY_STRING, uri.getQuery());
+
+//        headers.put(Headers.REMOTE_ADDR, ???);
+//        headers.put(Headers.REMOTE_HOST, ???);
+//        headers.put(Headers.REMOTE_USER, ???);
+
+        headers.put(FCGI.Headers.REQUEST_METHOD, httpRequest.getMethod());
+
+        headers.put(FCGI.Headers.REQUEST_URI, uri.toString());
+
+        headers.put(FCGI.Headers.SERVER_PROTOCOL, httpRequest.getVersion().asString());
+
+        // TODO: translate remaining HTTP header into the HTTP_* format
+
         int request = getHttpChannel().getRequest();
         boolean noContent = !content.hasContent();
-        Generator.Result result = generator.generateRequestHeaders(request, exchange.getRequest().getHeaders(),
+        Generator.Result result = generator.generateRequestHeaders(request, headers,
                 noContent ? new Callback.Adapter() : callback);
         getHttpChannel().flush(result);
         if (noContent)

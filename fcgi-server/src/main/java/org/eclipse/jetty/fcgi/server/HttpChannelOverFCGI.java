@@ -23,7 +23,10 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.EndPoint;
@@ -38,10 +41,8 @@ import org.eclipse.jetty.util.log.Logger;
 public class HttpChannelOverFCGI extends HttpChannel<ByteBuffer>
 {
     private static final Logger LOG = Log.getLogger(HttpChannelOverFCGI.class);
-    private static final String METHOD_HEADER = "REQUEST_METHOD";
-    private static final String URI_HEADER = "REQUEST_URI";
-    private static final String VERSION_HEADER = "SERVER_PROTOCOL";
 
+    private final Dispatcher dispatcher;
     private String method;
     private String uri;
     private String version;
@@ -51,25 +52,24 @@ public class HttpChannelOverFCGI extends HttpChannel<ByteBuffer>
     public HttpChannelOverFCGI(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport, HttpInput<ByteBuffer> input)
     {
         super(connector, configuration, endPoint, transport, input);
+        this.dispatcher = new Dispatcher(connector.getExecutor(), this);
     }
 
-    public void header(HttpField field)
+    protected void header(HttpField field)
     {
-        LOG.debug("FCGI header {}", field);
-
-        if (METHOD_HEADER.equalsIgnoreCase(field.getName()))
+        if (FCGI.Headers.REQUEST_METHOD.equalsIgnoreCase(field.getName()))
         {
             method = field.getValue();
             if (uri != null && version != null)
                 startRequest();
         }
-        else if (URI_HEADER.equalsIgnoreCase(field.getName()))
+        else if (FCGI.Headers.REQUEST_URI.equalsIgnoreCase(field.getName()))
         {
             uri = field.getValue();
             if (method != null && version != null)
                 startRequest();
         }
-        else if (VERSION_HEADER.equalsIgnoreCase(field.getName()))
+        else if (FCGI.Headers.SERVER_PROTOCOL.equalsIgnoreCase(field.getName()))
         {
             version = field.getValue();
             if (method != null && uri != null)
@@ -126,12 +126,104 @@ public class HttpChannelOverFCGI extends HttpChannel<ByteBuffer>
             }
             field = new HttpField(httpName.toString(), field.getValue());
         }
-        LOG.debug("HTTP header {}", field);
         parsedHeader(field);
     }
 
-    public void dispatch()
+    @Override
+    public boolean headerComplete()
     {
-        getConnector().getExecutor().execute(this);
+        boolean result = super.headerComplete();
+        started = false;
+        return result;
+    }
+
+    protected void dispatch()
+    {
+        dispatcher.dispatch();
+    }
+
+    private static class Dispatcher implements Runnable
+    {
+        private final AtomicReference<State> state = new AtomicReference<>(State.IDLE);
+        private final Executor executor;
+        private final Runnable runnable;
+
+        private Dispatcher(Executor executor, Runnable runnable)
+        {
+            this.executor = executor;
+            this.runnable = runnable;
+        }
+
+        public void dispatch()
+        {
+            while (true)
+            {
+                State current = state.get();
+                switch (current)
+                {
+                    case IDLE:
+                    {
+                        if (!state.compareAndSet(current, State.DISPATCH))
+                            continue;
+                        executor.execute(this);
+                        return;
+                    }
+                    case DISPATCH:
+                    case EXECUTE:
+                    {
+                        if (state.compareAndSet(current, State.SCHEDULE))
+                            return;
+                        continue;
+                    }
+                    case SCHEDULE:
+                    {
+                        return;
+                    }
+                    default:
+                    {
+                        throw new IllegalStateException();
+                    }
+                }
+            }
+        }
+
+        @Override
+        public void run()
+        {
+            while (true)
+            {
+                State current = state.get();
+                switch (current)
+                {
+                    case DISPATCH:
+                    {
+                        if (state.compareAndSet(current, State.EXECUTE))
+                            runnable.run();
+                        continue;
+                    }
+                    case EXECUTE:
+                    {
+                        if (state.compareAndSet(current, State.IDLE))
+                            return;
+                        continue;
+                    }
+                    case SCHEDULE:
+                    {
+                        if (state.compareAndSet(current, State.DISPATCH))
+                            continue;
+                        throw new IllegalStateException();
+                    }
+                    default:
+                    {
+                        throw new IllegalStateException();
+                    }
+                }
+            }
+        }
+
+        private enum State
+        {
+            IDLE, DISPATCH, EXECUTE, SCHEDULE
+        }
     }
 }

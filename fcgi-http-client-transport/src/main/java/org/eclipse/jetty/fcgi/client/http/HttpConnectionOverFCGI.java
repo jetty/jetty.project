@@ -37,6 +37,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -133,7 +134,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
 
     private void shutdown()
     {
-        // TODO: we must signal to the HttpParser that we are at EOF
+        getEndPoint().shutdownOutput();
     }
 
     @Override
@@ -237,17 +238,36 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
         @Override
         public void onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
         {
-            throw new UnsupportedOperationException();
+            switch (stream)
+            {
+                case STD_OUT:
+                {
+                    HttpChannelOverFCGI channel = channels.get(request);
+                    if (channel != null)
+                        channel.content(buffer);
+                    else
+                        noChannel(request);
+                    break;
+                }
+                case STD_ERR:
+                {
+                    LOG.info(BufferUtil.toUTF8String(buffer));
+                    break;
+                }
+                default:
+                {
+                    throw new IllegalArgumentException();
+                }
+            }
         }
 
         @Override
         public void onEnd(int request)
         {
-            HttpChannelOverFCGI channel = channels.get(request);
+            HttpChannelOverFCGI channel = channels.remove(request);
             if (channel != null)
             {
                 channel.responseSuccess();
-                channels.remove(request);
                 releaseRequest(request);
             }
             else
