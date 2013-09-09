@@ -110,6 +110,7 @@ public class WSServer
         WebAppContext context = new WebAppContext();
         context.setContextPath(this.contextPath);
         context.setBaseResource(Resource.newResource(this.contextDir));
+        context.setAttribute(WebSocketConfiguration.ENABLE,Boolean.TRUE);
 
         // @formatter:off
         context.setConfigurations(new Configuration[] {

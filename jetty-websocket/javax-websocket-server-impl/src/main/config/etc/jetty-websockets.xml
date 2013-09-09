@@ -16,5 +16,12 @@
       </Arg>
     </Call>
   </Call>
+  
+  <!-- Enable/Disable JSR356 Container for all contexts -->
+  <!-- This attribute may be enabled/disabled either on the server or on individual contexts -->
+  <Call name="setAttribute">
+    <Arg>org.eclipse.jetty.websocket.jsr356</Arg>
+    <Arg type="Boolean">false</Arg>
+  </Call>
 
 </Configure>
