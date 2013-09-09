@@ -140,7 +140,7 @@ public class RequestTest
                 assertNull(request.getCharacterEncoding());
                 assertEquals(0,request.getQueryString().length());
                 assertEquals(-1,request.getContentLength());
-                assertEquals(0,request.getCookies().length);
+                assertNull(request.getCookies());
                 assertNull(request.getHeader("Name"));
                 assertFalse(request.getHeaders("Name").hasMoreElements());
                 assertEquals(-1,request.getDateHeader("Name"));
