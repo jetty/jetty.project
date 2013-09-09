@@ -445,7 +445,7 @@ public class HttpFields implements Iterable<HttpField>
         {
             final HttpField f = _fields.get(i);
             
-            if (f.getName().equalsIgnoreCase(name))
+            if (f.getName().equalsIgnoreCase(name) && f.getValue()!=null)
             {
                 final int first=i;
                 return new Enumeration<String>()
@@ -461,7 +461,7 @@ public class HttpFields implements Iterable<HttpField>
                             while (i<_fields.size()) 
                             {
                                 field=_fields.get(i++);
-                                if (field.getName().equalsIgnoreCase(name))
+                                if (field.getName().equalsIgnoreCase(name) && field.getValue()!=null)
                                     return true;
                             }
                             field=null;
