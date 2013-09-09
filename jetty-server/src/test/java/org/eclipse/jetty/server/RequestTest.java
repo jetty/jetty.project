@@ -51,6 +51,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.hamcrest.Matchers;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -58,6 +59,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -122,6 +124,41 @@ public class RequestTest
         String responses=_connector.getResponses(request);
         assertTrue(responses.startsWith("HTTP/1.1 200"));
 
+    }
+
+    @Test
+    public void testEmptyHeaders() throws Exception
+    {
+        _handler._checker = new RequestTester()
+        {
+            @Override
+            public boolean check(HttpServletRequest request,HttpServletResponse response)
+            {
+                assertNotNull(request.getLocale());
+                assertTrue(request.getLocales().hasMoreElements());
+                assertNull(request.getContentType());
+                assertNull(request.getCharacterEncoding());
+                assertEquals(0,request.getQueryString().length());
+                assertEquals(-1,request.getContentLength());
+                assertEquals(0,request.getCookies().length);
+                assertNull(request.getHeader("Name"));
+                assertFalse(request.getHeaders("Name").hasMoreElements());
+                assertEquals(-1,request.getDateHeader("Name"));
+                return true;
+            }
+        };
+
+        String request="GET /? HTTP/1.1\r\n"+
+        "Host: whatever\r\n"+
+        "Connection: close\n"+
+        "Content-Type: \n"+
+        "Accept-Language: \n"+
+        "Cookie: \n"+
+        "Name: \n"+
+        "\n";
+
+        String responses=_connector.getResponses(request);
+        assertTrue(responses.startsWith("HTTP/1.1 200"));
     }
 
     @Test
