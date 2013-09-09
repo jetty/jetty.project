@@ -68,7 +68,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     /** Tracking for all declared Client endpoints */
     private final Map<Class<?>, EndpointMetadata> endpointClientMetadataCache;
     /** The jetty websocket client in use for this container */
-    private final WebSocketClient client;
+    private WebSocketClient client;
 
     public ClientContainer()
     {
@@ -177,6 +177,11 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         endpointClientMetadataCache.clear();
         ShutdownThread.deregister(client);
         super.doStop();
+    }
+
+    public WebSocketClient getClient()
+    {
+        return client;
     }
 
     public EndpointMetadata getClientEndpointMetadata(Class<?> endpoint)

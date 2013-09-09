@@ -147,6 +147,7 @@ public class WebSocketClient extends ContainerLifeCycle
         LOG.debug("connect websocket {} to {}",websocket,toUri);
 
         // Grab Connection Manager
+        initConnectionManager();
         ConnectionManager manager = getConnectionManager();
 
         // Setup Driver for user provided websocket
@@ -182,6 +183,28 @@ public class WebSocketClient extends ContainerLifeCycle
 
         // Return the future
         return promise;
+    }
+
+    private synchronized void initConnectionManager() throws IOException
+    {
+        if (connectionManager != null)
+        {
+            return;
+        }
+        try
+        {
+            connectionManager = newConnectionManager();
+            addBean(connectionManager);
+            connectionManager.start();
+        }
+        catch (IOException e)
+        {
+            throw e;
+        }
+        catch (Exception e)
+        {
+            throw new IOException(e);
+        }
     }
 
     @Override
@@ -220,9 +243,6 @@ public class WebSocketClient extends ContainerLifeCycle
         {
             cookieStore = new HttpCookieStore.Empty();
         }
-
-        this.connectionManager = newConnectionManager();
-        addBean(this.connectionManager);
 
         super.doStart();
 

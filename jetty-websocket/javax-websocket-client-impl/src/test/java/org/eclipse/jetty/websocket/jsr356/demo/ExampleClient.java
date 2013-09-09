@@ -19,13 +19,11 @@
 package org.eclipse.jetty.websocket.jsr356.demo;
 
 import java.io.IOException;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.concurrent.TimeUnit;
 
 import javax.websocket.ContainerProvider;
 import javax.websocket.DeploymentException;
-import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
 public class ExampleClient
@@ -45,13 +43,14 @@ public class ExampleClient
     private void run() throws DeploymentException, IOException, URISyntaxException, InterruptedException
     {
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
-        ExampleSocket socket = new ExampleSocket();
-        URI uri = new URI("ws://echo.websocket.org/");
-        Session session = container.connectToServer(socket,uri);
-        socket.writeMessage("Hello");
-        socket.messageLatch.await(1,TimeUnit.SECONDS); // give remote 1 second to respond
-        session.close();
-        socket.closeLatch.await(1,TimeUnit.SECONDS); // give remote 1 second to acknowledge response
-        System.exit(0);
+        TimeUnit.HOURS.sleep(1);
+        // ExampleSocket socket = new ExampleSocket();
+        // URI uri = new URI("ws://echo.websocket.org/");
+        // Session session = container.connectToServer(socket,uri);
+        // socket.writeMessage("Hello");
+        // socket.messageLatch.await(1,TimeUnit.SECONDS); // give remote 1 second to respond
+        // session.close();
+        // socket.closeLatch.await(1,TimeUnit.SECONDS); // give remote 1 second to acknowledge response
+        // System.exit(0);
     }
 }
