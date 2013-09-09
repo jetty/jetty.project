@@ -133,6 +133,8 @@ public class PathMapTest extends TestCase
         assertTrue("!match *.foo", !PathMap.match("*.foo", "anything.bar"));
 
         assertEquals("match / with ''", "10", p.getMatch("/").getValue());
+        
+        assertTrue("match \"\"", PathMap.match("", "/"));
     }
 
     /**

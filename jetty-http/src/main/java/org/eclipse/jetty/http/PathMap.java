@@ -414,6 +414,9 @@ public class PathMap extends HashMap implements Externalizable
     public static boolean match(String pathSpec, String path, boolean noDefault)
     throws IllegalArgumentException
     {
+        if (pathSpec.length()==0)
+            return "/".equals(path);
+            
         char c = pathSpec.charAt(0);
         if (c=='/')
         {
