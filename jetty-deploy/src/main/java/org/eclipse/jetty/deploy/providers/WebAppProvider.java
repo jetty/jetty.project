@@ -37,7 +37,7 @@ import org.eclipse.jetty.xml.XmlConfiguration;
 /* ------------------------------------------------------------ */
 /** The webapps directory scanning provider.
  * <p>
- * This provider scans one or more directories (typically "webapps") for contexts to 
+ * This provider scans one or more directories (typically "webapps") for contexts to
  * deploy, which may be:<ul>
  * <li>A standard WAR file (must end in ".war")</li>
  * <li>A directory containing an expanded WAR file</li>
@@ -56,7 +56,7 @@ import org.eclipse.jetty.xml.XmlConfiguration;
  * <li>If a WAR file and a matching XML exist (eg foo.war and foo.xml) then the WAR is assumed to
  * be configured by the XML and only the XML is deployed.
  * </ul>
- * <p>For XML configured contexts, the ID map will contain a reference to the {@link Server} instance called "Server" and 
+ * <p>For XML configured contexts, the ID map will contain a reference to the {@link Server} instance called "Server" and
  * properties for the webapp file as "jetty.webapp" and directory as "jetty.webapps".
  */
 @ManagedObject("Provider for start-up deployement of webapps based on presence in directory")
@@ -79,36 +79,36 @@ public class WebAppProvider extends ScanningAppProvider
                 return false;
             }
             String lowername = name.toLowerCase(Locale.ENGLISH);
-            
+
             File file = new File(dir,name);
-            
+
             // ignore hidden files
             if (lowername.startsWith("."))
                 return false;
-                        
+
             // Ignore some directories
             if (file.isDirectory())
             {
                 // is it a nominated config directory
                 if (lowername.endsWith(".d"))
                     return false;
-                
+
                 // is it an unpacked directory for an existing war file?
                 if (exists(name+".war")||exists(name+".WAR"))
                     return false;
- 
+
                 // is it a directory for an existing xml file?
                 if (exists(name+".xml")||exists(name+".XML"))
                     return false;
-                
+
                 //is it a sccs dir?
                 if ("cvs".equals(lowername) || "cvsroot".equals(lowername))
                     return false;
-                
+
                 // OK to deploy it then
                 return true;
             }
-            
+
             // else is it a war file
             if (lowername.endsWith(".war"))
             {
@@ -120,15 +120,15 @@ public class WebAppProvider extends ScanningAppProvider
                 // OK to deploy it then
                 return true;
             }
-            
+
             // else is it a context XML file 
             if (lowername.endsWith(".xml"))
                 return true;
-               
+
             return false;
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     public WebAppProvider()
     {
@@ -220,29 +220,29 @@ public class WebAppProvider extends ScanningAppProvider
     
     /* ------------------------------------------------------------ */
     /**
-     * 
+     *
      */
     @ManagedAttribute("configuration classes for webapps to be processed through")
     public String[] getConfigurationClasses()
     {
         return _configurationClasses;
     }
-    
+
     /**
      * Set the Work directory where unpacked WAR files are managed from.
      * <p>
      * Default is the same as the <code>java.io.tmpdir</code> System Property.
-     * 
+     *
      * @param directory the new work directory
      */
     public void setTempDir(File directory)
     {
         _tempDirectory = directory;
     }
-    
+
     /**
      * Get the user supplied Work Directory.
-     * 
+     *
      * @return the user supplied work directory (null if user has not set Temp Directory yet)
      */
     @ManagedAttribute("temp directory for use, null if no user set temp directory")
@@ -250,7 +250,7 @@ public class WebAppProvider extends ScanningAppProvider
     {
         return _tempDirectory;
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public ContextHandler createContextHandler(final App app) throws Exception
@@ -264,12 +264,27 @@ public class WebAppProvider extends ScanningAppProvider
 
         if (resource.exists() && FileID.isXmlFile(file))
         {
-            XmlConfiguration xmlc = new XmlConfiguration(resource.getURL());
-            
-            xmlc.getIdMap().put("Server",getDeploymentManager().getServer());
+            XmlConfiguration xmlc = new XmlConfiguration(resource.getURL())
+            {
+                @Override
+                public void initializeDefaults(Object context)
+                {
+                    super.initializeDefaults(context);
+
+                    if (context instanceof WebAppContext)
+                    {
+                        WebAppContext webapp = (WebAppContext)context;
+                        webapp.setParentLoaderPriority(_parentLoaderPriority);
+                        if (_defaultsDescriptor != null)
+                            webapp.setDefaultsDescriptor(_defaultsDescriptor);
+                    }
+                }
+            };
+
+            xmlc.getIdMap().put("Server", getDeploymentManager().getServer());
             xmlc.getProperties().put("jetty.webapp",file.getCanonicalPath());
             xmlc.getProperties().put("jetty.webapps",file.getParentFile().getCanonicalPath());
-            
+
             if (getConfigurationManager() != null)
                 xmlc.getProperties().putAll(getConfigurationManager().getProperties());
             return (ContextHandler)xmlc.configure();
@@ -283,21 +298,21 @@ public class WebAppProvider extends ScanningAppProvider
             // Context Path is the same as the archive.
             context = context.substring(0,context.length() - 4);
         }
-        else 
+        else
         {
             throw new IllegalStateException("unable to create ContextHandler for "+app);
         }
 
         // Ensure "/" is Not Trailing in context paths.
-        if (context.endsWith("/") && context.length() > 0) 
+        if (context.endsWith("/") && context.length() > 0)
         {
             context = context.substring(0,context.length() - 1);
         }
-        
+
         // Start building the webapplication
-        WebAppContext wah = new WebAppContext();
-        wah.setDisplayName(context);
-        
+        WebAppContext webAppContext = new WebAppContext();
+        webAppContext.setDisplayName(context);
+
         // special case of archive (or dir) named "root" is / context
         if (context.equalsIgnoreCase("root"))
         {
@@ -307,28 +322,28 @@ public class WebAppProvider extends ScanningAppProvider
         {
             int dash=context.toLowerCase(Locale.ENGLISH).indexOf('-');
             String virtual = context.substring(dash+1);
-            wah.setVirtualHosts(new String[]{virtual});
+            webAppContext.setVirtualHosts(new String[]{virtual});
             context = URIUtil.SLASH;
         }
 
         // Ensure "/" is Prepended to all context paths.
-        if (context.charAt(0) != '/') 
+        if (context.charAt(0) != '/')
         {
             context = "/" + context;
         }
 
 
-        wah.setContextPath(context);
-        wah.setWar(file.getAbsolutePath());
-        if (_defaultsDescriptor != null) 
+        webAppContext.setContextPath(context);
+        webAppContext.setWar(file.getAbsolutePath());
+        if (_defaultsDescriptor != null)
         {
-            wah.setDefaultsDescriptor(_defaultsDescriptor);
+            webAppContext.setDefaultsDescriptor(_defaultsDescriptor);
         }
-        wah.setExtractWAR(_extractWars);
-        wah.setParentLoaderPriority(_parentLoaderPriority);
-        if (_configurationClasses != null) 
+        webAppContext.setExtractWAR(_extractWars);
+        webAppContext.setParentLoaderPriority(_parentLoaderPriority);
+        if (_configurationClasses != null)
         {
-            wah.setConfigurationClasses(_configurationClasses);
+            webAppContext.setConfigurationClasses(_configurationClasses);
         }
 
         if (_tempDirectory != null)
@@ -340,9 +355,9 @@ public class WebAppProvider extends ScanningAppProvider
              * If we used .setTempDirectory(File) all webapps will wind up in the
              * same temp / work directory, overwriting each others work.
              */
-            wah.setAttribute(WebAppContext.BASETEMPDIR,_tempDirectory);
+            webAppContext.setAttribute(WebAppContext.BASETEMPDIR, _tempDirectory);
         }
-        return wah; 
+        return webAppContext;
     }
-    
+
 }
