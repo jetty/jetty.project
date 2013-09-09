@@ -28,13 +28,8 @@ detected.
   <Set name="copyWebDir">false</Set>
   <Set name="defaultsDescriptor"><Property name="jetty.home" default="."/>/etc/webdefault.xml</Set>
   <Set name="overrideDescriptor"><Property name="jetty.base" default="."/>/etc/override-web.xml</Set>
-
-  <!-- Enable/Disable JSR356 Container for this context -->
-  <Call name="setAttribute">
-    <Arg>org.eclipse.jetty.websocket.jsr356</Arg>
-    <Arg type="Boolean">true</Arg>
-  </Call>
   
+
   <!-- virtual hosts
   <Set name="virtualHosts">
     <Array type="String">

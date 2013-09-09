@@ -30,15 +30,10 @@ import org.eclipse.jetty.websocket.jsr356.server.deploy.ServerEndpointAnnotation
 import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
 
 /**
- * WebSocket Server Configuration component.
- * This configuration will configure a context for JSR356 Websockets if 
- * the attribute "org.eclipse.jetty.websocket.jsr356" is set to true.  This 
- * attribute may be set on an individual context or on the server to affect 
- * all deployed contexts. 
+ * WebSocket Server Configuration component
  */
 public class WebSocketConfiguration extends AbstractConfiguration
 {
-    public static final String ENABLE="org.eclipse.jetty.websocket.jsr356";
     private static final Logger LOG = Log.getLogger(WebSocketConfiguration.class);
     
     public static ServerContainer configureContext(ServletContextHandler context)
@@ -58,46 +53,27 @@ public class WebSocketConfiguration extends AbstractConfiguration
         return jettyContainer;
     }
 
-    public static boolean isJSR356Context(WebAppContext context)
-    {
-        Object enable=context.getAttribute(ENABLE);
-        if (enable instanceof Boolean)
-            return ((Boolean)enable).booleanValue();
-
-        enable=context.getServer().getAttribute(ENABLE);
-        if (enable instanceof Boolean)
-            return ((Boolean)enable).booleanValue();
-        
-        return false;
-    }
-    
     @Override
     public void configure(WebAppContext context) throws Exception
     {
-        if (isJSR356Context(context))
-        {
-            LOG.debug("Configure javax.websocket for WebApp {}",context);
-            WebSocketConfiguration.configureContext(context);
-        }
+        LOG.debug("Configure javax.websocket for WebApp {}",context);
+        WebSocketConfiguration.configureContext(context);
     }
 
     @Override
     public void preConfigure(WebAppContext context) throws Exception
     {
-        if (isJSR356Context(context))
+        boolean scanningAdded = false;
+        // Add the annotation scanning handlers (if annotation scanning enabled)
+        for (Configuration config : context.getConfigurations())
         {
-            boolean scanningAdded = false;
-            // Add the annotation scanning handlers (if annotation scanning enabled)
-            for (Configuration config : context.getConfigurations())
+            if (config instanceof AnnotationConfiguration)
             {
-                if (config instanceof AnnotationConfiguration)
-                {
-                    AnnotationConfiguration annocfg = (AnnotationConfiguration)config;
-                    annocfg.addDiscoverableAnnotationHandler(new ServerEndpointAnnotationHandler(context));
-                    scanningAdded = true;
-                }
+                AnnotationConfiguration annocfg = (AnnotationConfiguration)config;
+                annocfg.addDiscoverableAnnotationHandler(new ServerEndpointAnnotationHandler(context));
+                scanningAdded = true;
             }
-            LOG.debug("@ServerEndpoint scanning added: {}", scanningAdded);
         }
+        LOG.debug("@ServerEndpoint scanning added: {}", scanningAdded);
     }
 }

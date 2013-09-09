@@ -35,9 +35,7 @@ import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
-import org.eclipse.jetty.websocket.jsr356.server.WebSocketConfiguration;
 import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
 
 @HandlesTypes(
@@ -49,9 +47,6 @@ public class ServerApplicationConfigListener implements ServletContainerInitiali
     @Override
     public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
     {
-        if (!WebSocketConfiguration.isJSR356Context(WebAppContext.getCurrentWebAppContext()))
-            return;
-        
         WebSocketUpgradeFilter filter = (WebSocketUpgradeFilter)ctx.getAttribute(WebSocketUpgradeFilter.class.getName());
         if (filter == null)
         {
