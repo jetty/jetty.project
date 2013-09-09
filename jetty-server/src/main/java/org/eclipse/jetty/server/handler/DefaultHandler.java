@@ -169,9 +169,10 @@ public class DefaultHandler extends AbstractHandler
         writer.write("\n</BODY>\n</HTML>\n");
         writer.flush();
         response.setContentLength(writer.size());
-        OutputStream out=response.getOutputStream();
-        writer.writeTo(out);
-        out.close();
+        try (OutputStream out=response.getOutputStream())
+        {
+            writer.writeTo(out);
+        }
     }
 
     /* ------------------------------------------------------------ */

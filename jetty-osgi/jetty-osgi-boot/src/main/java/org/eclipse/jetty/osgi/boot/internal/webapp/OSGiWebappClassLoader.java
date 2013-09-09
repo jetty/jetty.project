@@ -51,13 +51,13 @@ import org.osgi.framework.BundleReference;
 public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleReference
 {
 
-    private Logger __logger = Log.getLogger(OSGiWebappClassLoader.class.getName().toString());
+    private static final Logger __logger = Log.getLogger(OSGiWebappClassLoader.class.getName());
 
     /**
      * when a logging framework is setup in the osgi classloaders, it can access
      * this and register the classes that must not be found in the jar.
      */
-    public static Set<String> JAR_WITH_SUCH_CLASS_MUST_BE_EXCLUDED = new HashSet<String>();
+    public static final Set<String> JAR_WITH_SUCH_CLASS_MUST_BE_EXCLUDED = new HashSet<String>();
 
     public static void addClassThatIdentifiesAJarThatMustBeRejected(Class<?> zclass)
     {

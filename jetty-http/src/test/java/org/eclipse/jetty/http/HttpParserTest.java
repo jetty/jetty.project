@@ -1427,7 +1427,7 @@ public class HttpParserTest
             _fields.clear();
             _methodOrVersion = version.asString();
             _uriOrStatus = Integer.toString(status);
-            _versionOrReason = reason==null?null:reason.toString();
+            _versionOrReason = reason;
 
             fields=new HttpFields();
             _hdr= new String[9];

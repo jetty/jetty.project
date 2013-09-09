@@ -75,7 +75,10 @@ public class SSLSelectChannelConnectorLoadTest
         server.start();
 
         KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
-        keystore.load(new FileInputStream(keystorePath), "storepwd".toCharArray());
+        try (InputStream stream = new FileInputStream(keystorePath))
+        {
+            keystore.load(stream, "storepwd".toCharArray());
+        }
         TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         trustManagerFactory.init(keystore);
         sslContext = SSLContext.getInstance("SSL");

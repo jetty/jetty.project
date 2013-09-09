@@ -409,9 +409,10 @@ public class CGI extends HttpServlet
             {
                 try
                 {
-                    Writer outToCgi = new OutputStreamWriter(p.getOutputStream());
-                    outToCgi.write(input);
-                    outToCgi.close();
+                    try (Writer outToCgi = new OutputStreamWriter(p.getOutputStream()))
+                    {
+                        outToCgi.write(input);
+                    }
                 }
                 catch (IOException e)
                 {

@@ -19,6 +19,7 @@
 package org.eclipse.jetty.util.component;
 
 import java.io.FileWriter;
+import java.io.Writer;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -30,7 +31,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class FileNoticeLifeCycleListener implements LifeCycle.Listener
 {
-    Logger LOG = Log.getLogger(FileNoticeLifeCycleListener.class);
+    private static final Logger LOG = Log.getLogger(FileNoticeLifeCycleListener.class);
     
     private final String _filename;
     
@@ -41,11 +42,9 @@ public class FileNoticeLifeCycleListener implements LifeCycle.Listener
 
     private void writeState(String action, LifeCycle lifecycle)
     {
-        try
+        try (Writer out = new FileWriter(_filename,true))
         {
-            FileWriter out = new FileWriter(_filename,true);
             out.append(action).append(" ").append(lifecycle.toString()).append("\n");
-            out.close();
         }
         catch(Exception e)
         {

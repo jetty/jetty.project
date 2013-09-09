@@ -615,18 +615,13 @@ public abstract class Resource implements ResourceFactory, Closeable
     public void writeTo(OutputStream out,long start,long count)
         throws IOException
     {
-        InputStream in = getInputStream();
-        try
+        try (InputStream in = getInputStream())
         {
             in.skip(start);
             if (count<0)
                 IO.copy(in,out);
             else
                 IO.copy(in,out,count);
-        }
-        finally
-        {
-            in.close();
         }
     }    
     
@@ -636,7 +631,10 @@ public abstract class Resource implements ResourceFactory, Closeable
     {
         if (destination.exists())
             throw new IllegalArgumentException(destination+" exists");
-        writeTo(new FileOutputStream(destination),0,-1);
+        try (OutputStream out = new FileOutputStream(destination))
+        {
+            writeTo(out,0,-1);
+        }
     }
 
     /* ------------------------------------------------------------ */

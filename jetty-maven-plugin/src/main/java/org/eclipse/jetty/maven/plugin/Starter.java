@@ -20,6 +20,7 @@ package org.eclipse.jetty.maven.plugin;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Enumeration;
@@ -360,7 +361,10 @@ public class Starter
             {
                 File f = new File(args[++i].trim());
                 props = new Properties();
-                props.load(new FileInputStream(f));
+                try (InputStream in = new FileInputStream(f))
+                {
+                    props.load(in);
+                }
             }
             
             //--token

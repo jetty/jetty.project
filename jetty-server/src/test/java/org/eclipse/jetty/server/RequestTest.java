@@ -999,10 +999,12 @@ public class RequestTest
         if (evil_keys.exists())
         {
             LOG.info("Using real evil keys!");
-            BufferedReader in = new BufferedReader(new FileReader(evil_keys));
-            String key=null;
-            while((key=in.readLine())!=null)
-                buf.append("&").append(key).append("=").append("x");
+            try (BufferedReader in = new BufferedReader(new FileReader(evil_keys)))
+            {
+                String key=null;
+                while((key=in.readLine())!=null)
+                    buf.append("&").append(key).append("=").append("x");
+            }
         }
         else
         {

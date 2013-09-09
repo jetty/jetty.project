@@ -21,6 +21,7 @@ package org.eclipse.jetty.security;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
+import java.io.Writer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -55,19 +56,21 @@ public class PropertyUserStoreTest
 
     private void writeInitialUsers(String testFile) throws Exception
     {
-        BufferedWriter writer = new BufferedWriter(new FileWriter(testFile));
-        writer.append("tom: tom, roleA\n");
-        writer.append("dick: dick, roleB\n");
-        writer.append("harry: harry, roleA, roleB\n");
-        writer.close();
+        try (Writer writer = new BufferedWriter(new FileWriter(testFile)))
+        {
+            writer.append("tom: tom, roleA\n");
+            writer.append("dick: dick, roleB\n");
+            writer.append("harry: harry, roleA, roleB\n");
+        }
     }
 
     private void writeAdditionalUser(String testFile) throws Exception
     {
         Thread.sleep(1001);
-        BufferedWriter writer = new BufferedWriter(new FileWriter(testFile,true));
-        writer.append("skip: skip, roleA\n");
-        writer.close();
+        try (Writer writer = new BufferedWriter(new FileWriter(testFile,true)))
+        {
+            writer.append("skip: skip, roleA\n");
+        }
     }
 
     @Test

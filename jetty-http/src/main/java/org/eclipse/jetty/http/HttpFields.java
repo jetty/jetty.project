@@ -900,7 +900,7 @@ public class HttpFields implements Iterable<HttpField>
             HttpField field=i.next();
             if (field.getHeader()==HttpHeader.SET_COOKIE)
             {
-                String val = (field.getValue() == null ? null : field.getValue().toString());
+                String val = field.getValue();
                 if (val!=null && val.startsWith(name_equals))
                 {
                     //existing cookie has same name, does it also match domain and path?

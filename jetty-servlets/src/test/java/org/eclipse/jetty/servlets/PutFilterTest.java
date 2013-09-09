@@ -23,6 +23,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.URL;
@@ -193,9 +194,10 @@ public class PutFilterTest
 
         File file=new File(_dir,"file.txt");
         assertTrue(file.exists());
-        FileInputStream fis = new FileInputStream(file);
-        assertEquals(data1,IO.toString(fis));
-        fis.close();
+        try (InputStream fis = new FileInputStream(file))
+        {
+            assertEquals(data1,IO.toString(fis));
+        }
 
         request.setMethod("DELETE");
         request.setURI("/context/file.txt");
@@ -231,9 +233,10 @@ public class PutFilterTest
 
         File file=new File(_dir,"file.txt");
         assertTrue(file.exists());
-        FileInputStream fis = new FileInputStream(file);
-        assertEquals(data1,IO.toString(fis));
-        fis.close();
+        try (InputStream fis = new FileInputStream(file))
+        {
+            assertEquals(data1,IO.toString(fis));
+        }
 
         request.setMethod("MOVE");
         request.setURI("/context/file.txt");

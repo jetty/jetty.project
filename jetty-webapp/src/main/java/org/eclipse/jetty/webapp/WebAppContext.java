@@ -94,8 +94,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     private String[] __dftProtectedTargets = {"/web-inf", "/meta-inf"};
 
-  
-    public static String[] DEFAULT_CONFIGURATION_CLASSES =
+    public static final String[] DEFAULT_CONFIGURATION_CLASSES =
     {
         "org.eclipse.jetty.webapp.WebInfConfiguration",
         "org.eclipse.jetty.webapp.WebXmlConfiguration",

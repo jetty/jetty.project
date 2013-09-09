@@ -21,6 +21,7 @@ package org.eclipse.jetty.server.ssl;
 import static org.junit.Assert.assertEquals;
 
 import java.io.FileInputStream;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.SocketException;
@@ -111,7 +112,10 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
         startServer(connector);
 
         KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
-        keystore.load(new FileInputStream(sslContextFactory.getKeyStorePath()), "storepwd".toCharArray());
+        try (InputStream stream = new FileInputStream(sslContextFactory.getKeyStorePath()))
+        {
+            keystore.load(stream, "storepwd".toCharArray());
+        }
         TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         trustManagerFactory.init(keystore);
         __sslContext = SSLContext.getInstance("TLS");

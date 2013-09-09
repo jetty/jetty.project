@@ -156,7 +156,7 @@ public class InputStreamResponseListener extends Listener.Adapter
         {
             synchronized (this)
             {
-                if (length.get() >= maxBufferSize && failure == null && !closed)
+                while (length.get() >= maxBufferSize && failure == null && !closed)
                     wait();
                 // Re-read the values as they may have changed while waiting.
                 return failure == null && !closed;
@@ -164,6 +164,7 @@ public class InputStreamResponseListener extends Listener.Adapter
         }
         catch (InterruptedException x)
         {
+            Thread.currentThread().interrupt();
             return false;
         }
     }
