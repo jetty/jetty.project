@@ -33,6 +33,8 @@ import org.eclipse.jetty.xml.XmlParser;
 import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.PropertyValues;
 import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
+import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.beans.factory.xml.XmlBeanFactory;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
@@ -63,9 +65,10 @@ public class SpringConfigurationProcessor implements ConfigurationProcessor
     private static final Logger LOG = Log.getLogger(SpringConfigurationProcessor.class);
 
     private XmlConfiguration _configuration;
-    private XmlBeanFactory _beanFactory;
+    private DefaultListableBeanFactory _beanFactory;
     private String _main;
 
+    @Override
     public void init(URL url, XmlParser.Node config, XmlConfiguration configuration)
     {
         try
@@ -79,7 +82,8 @@ public class SpringConfigurationProcessor implements ConfigurationProcessor
                     "<!DOCTYPE beans PUBLIC \"-//SPRING//DTD BEAN//EN\" \"http://www.springframework.org/dtd/spring-beans.dtd\">" +
                     config).getBytes("UTF-8"));
 
-            _beanFactory = new XmlBeanFactory(resource){
+            _beanFactory = new DefaultListableBeanFactory()
+            {
                 @Override
                 protected void applyPropertyValues(String beanName, BeanDefinition mbd, BeanWrapper bw, PropertyValues pvs)
                 {
@@ -87,6 +91,8 @@ public class SpringConfigurationProcessor implements ConfigurationProcessor
                     super.applyPropertyValues(beanName, mbd, bw, pvs);
                 }
             };
+
+            new XmlBeanDefinitionReader(_beanFactory).loadBeanDefinitions(resource);
         }
         catch (Exception e)
         {
@@ -94,6 +100,7 @@ public class SpringConfigurationProcessor implements ConfigurationProcessor
         }
     }
 
+    @Override
     public Object configure(Object obj) throws Exception
     {
         doConfigure();
@@ -105,6 +112,7 @@ public class SpringConfigurationProcessor implements ConfigurationProcessor
      *
      * @see org.eclipse.jetty.xml.ConfigurationProcessor#configure()
      */
+    @Override
     public Object configure() throws Exception
     {
         doConfigure();
