@@ -19,7 +19,6 @@
 package org.eclipse.jetty.xml;
 
 import java.net.URL;
-import java.util.Map;
 
 /**
  * A ConfigurationProcessor for non XmlConfiguration format files.
@@ -32,7 +31,7 @@ import java.util.Map;
  */
 public interface ConfigurationProcessor
 {
-    public void init(URL url, XmlParser.Node config, Map<String, Object> idMap, Map<String, String> properties);
+    public void init(URL url, XmlParser.Node root, XmlConfiguration configuration);
     
     public Object configure( Object obj) throws Exception;
     public Object configure() throws Exception;

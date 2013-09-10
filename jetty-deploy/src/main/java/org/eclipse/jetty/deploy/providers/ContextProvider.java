@@ -27,6 +27,7 @@ import org.eclipse.jetty.deploy.ConfigurationManager;
 import org.eclipse.jetty.deploy.util.FileID;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
 /** Context directory App Provider.
@@ -37,6 +38,8 @@ import org.eclipse.jetty.xml.XmlConfiguration;
 public class ContextProvider extends ScanningAppProvider
 {
     private ConfigurationManager _configurationManager;
+    private boolean _parentLoaderPriority = false;
+    private String _defaultsDescriptor;
 
     public ContextProvider()
     {
@@ -79,7 +82,22 @@ public class ContextProvider extends ScanningAppProvider
         
         if (resource.exists() && FileID.isXmlFile(file))
         {
-            XmlConfiguration xmlc = new XmlConfiguration(resource.getURL());
+            XmlConfiguration xmlc = new XmlConfiguration(resource.getURL())
+            {
+                @Override
+                public void initializeDefaults(Object context)
+                {
+                    super.initializeDefaults(context);
+                    
+                    if (context instanceof WebAppContext)
+                    {
+                        WebAppContext webapp = (WebAppContext)context;
+                        webapp.setParentLoaderPriority(_parentLoaderPriority);
+                        if (_defaultsDescriptor!=null)
+                            webapp.setDefaultsDescriptor(_defaultsDescriptor);
+                    }
+                }
+            };
             
             xmlc.getIdMap().put("Server",getDeploymentManager().getServer());
             if (getConfigurationManager() != null)
@@ -89,5 +107,44 @@ public class ContextProvider extends ScanningAppProvider
         
         throw new IllegalStateException("App resouce does not exist "+resource);
     }
+
+    /* ------------------------------------------------------------ */
+    /** Get the parentLoaderPriority.
+     * @return the parentLoaderPriority
+     */
+    public boolean isParentLoaderPriority()
+    {
+        return _parentLoaderPriority;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Set the parentLoaderPriority.
+     * <p>If the context created is a WebAppContext, then set the 
+     * default value for {@link WebAppContext#setParentLoaderPriority(boolean)}.
+     * @param parentLoaderPriority the parentLoaderPriority to set
+     */
+    public void setParentLoaderPriority(boolean parentLoaderPriority)
+    {
+        _parentLoaderPriority = parentLoaderPriority;
+    }
     
+    /* ------------------------------------------------------------ */
+    /** Get the defaultsDescriptor.
+     * @return the defaultsDescriptor
+     */
+    public String getDefaultsDescriptor()
+    {
+        return _defaultsDescriptor;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Set the defaultsDescriptor.
+     * <p>If the context created is a WebAppContext, then set the 
+     * default value for {@link WebAppContext#setDefaultsDescriptor(String)}
+     * @param defaultsDescriptor the defaultsDescriptor to set
+     */
+    public void setDefaultsDescriptor(String defaultsDescriptor)
+    {
+        _defaultsDescriptor = defaultsDescriptor;
+    }
 }

@@ -151,6 +151,7 @@ public class MultiPartFilter implements Filter
                 params.add(entry.getKey(),value);
         }
         
+        boolean badFormatLogged = false;
         try
         {
             // Get first boundary
@@ -160,7 +161,7 @@ public class MultiPartFilter implements Filter
                 throw new IOException("Missing content for multipart request");
 
             line = line.trim();
-            boolean badFormatLogged = false;
+        
             while (line != null && !line.equals(boundary))
             {
                 if (!badFormatLogged)
@@ -401,6 +402,12 @@ public class MultiPartFilter implements Filter
         
             // handle request
             chain.doFilter(new Wrapper(srequest,params),response);
+        }
+        catch (IOException e)
+        {
+            if (!badFormatLogged)
+                LOG.warn("Badly formatted multipart request");
+            throw e;             
         }
         finally
         {

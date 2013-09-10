@@ -526,10 +526,10 @@ public class AnnotationParser
     public void parse (Resource dir, ClassNameResolver resolver)
     throws Exception
     {
-        if (!dir.isDirectory() || !dir.exists())
+        if (!dir.isDirectory() || !dir.exists() || dir.getName().startsWith("."))
             return;
         
-        
+
         String[] files=dir.list();
         for (int f=0;files!=null && f<files.length;f++)
         {
@@ -538,15 +538,20 @@ public class AnnotationParser
                 Resource res = dir.addPath(files[f]);
                 if (res.isDirectory())
                     parse(res, resolver);
-                String name = res.getName();
-                if (name.endsWith(".class"))
+                else
                 {
-                    if ((resolver == null)|| (!resolver.isExcluded(name) && (!isParsed(name) || resolver.shouldOverride(name))))
+                    String fullname = res.getName();
+                    String filename = res.getFile().getName();
+                   
+                    if (isValidClassFileName(filename))
                     {
-                        Resource r = Resource.newResource(res.getURL());
-                        scanClass(r.getInputStream());
-                    }
+                        if ((resolver == null)|| (!resolver.isExcluded(fullname) && (!isParsed(fullname) || resolver.shouldOverride(fullname))))
+                        {
+                            Resource r = Resource.newResource(res.getURL());
+                            scanClass(r.getInputStream());
+                        }
 
+                    }
                 }
             }
             catch (Exception ex)
@@ -581,8 +586,12 @@ public class AnnotationParser
             {   
                 try
                 {
-                    String name = entry.getName();
-                    if (name.toLowerCase(Locale.ENGLISH).endsWith(".class"))
+                    //skip directories
+                    if (entry.isDirectory())
+                        return;
+                    
+                    String name = entry.getName();                    
+                    if (isValidClassFilePath(name) && isValidClassFileName(name))
                     {
                         String shortName =  name.replace('/', '.').substring(0,name.length()-6);
                         if ((resolver == null)
@@ -625,8 +634,12 @@ public class AnnotationParser
             {   
                 try
                 {
+                    //skip directories
+                    if (entry.isDirectory())
+                        return;
+                    
                     String name = entry.getName();
-                    if (name.toLowerCase(Locale.ENGLISH).endsWith(".class"))
+                    if (isValidClassFilePath(name) && isValidClassFileName(name))
                     {
                         String shortName =  name.replace('/', '.').substring(0,name.length()-6);
 
@@ -650,6 +663,14 @@ public class AnnotationParser
         scanner.scan(null, uris, true);
     }
     
+    
+    /**
+     * Parse a single jar file for classes.
+     * 
+     * @param uri
+     * @param resolver
+     * @throws Exception
+     */
     public void parse (URI uri, final ClassNameResolver resolver)
     throws Exception
     {
@@ -658,11 +679,80 @@ public class AnnotationParser
         URI[] uris = {uri};
         parse(uris, resolver);
     }
+    
 
+    /**
+     * Scan a class for annotations.
+     * 
+     * @param is
+     * @throws IOException
+     */
     private void scanClass (InputStream is)
     throws IOException
     {
         ClassReader reader = new ClassReader(is);
         reader.accept(new MyClassVisitor(), ClassReader.SKIP_CODE|ClassReader.SKIP_DEBUG|ClassReader.SKIP_FRAMES);
+    }
+    
+    /**
+     * Check that the given path represents a valid class file name.
+     * The check is fairly cursory, checking that:
+     * <ul>
+     * <li> the name ends with .class</li>
+     * <li> it isn't a dot file or in a hidden directory </li>
+     * <li> the name of the class at least begins with a valid identifier for a class name </li>
+     * </ul>
+     * @param path
+     * @return
+     */
+    private boolean isValidClassFileName (String name)
+    {
+        //no name cannot be valid
+        if (name == null || name.length()==0)
+            return false;
+
+        //skip anything that is not a class file
+        if (!name.toLowerCase(Locale.ENGLISH).endsWith(".class"))
+        {
+            if (LOG.isDebugEnabled()) LOG.debug("Not a class: {}",name);
+            return false;
+        }
+
+        //skip any classfiles that are not a valid java identifier
+        int c0 = 0;
+        int ldir = name.lastIndexOf('/', name.length()-6);
+        c0 = (ldir > -1 ? ldir+1 : c0);
+        if (!Character.isJavaIdentifierStart(name.charAt(c0)))
+        {
+            if (LOG.isDebugEnabled()) LOG.debug("Not a java identifier: {}"+name);
+            return false;
+        }
+        
+        return true;
+    }
+
+
+
+    /**
+     * Check that the given path does not contain hidden directories
+     * 
+     * @param path
+     * @return
+     */
+    private boolean isValidClassFilePath (String path)
+    {
+        //no path is not valid
+        if (path == null || path.length()==0)
+            return false;
+        
+        
+        //skip any classfiles that are in a hidden directory
+        if (path.startsWith(".") || path.contains("/."))
+        { 
+            if (LOG.isDebugEnabled()) LOG.debug("Contains hidden dirs: {}"+path);
+            return false;
+        }
+        
+        return true;
     }
 }

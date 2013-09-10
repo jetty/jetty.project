@@ -18,14 +18,12 @@
 
 package org.eclipse.jetty.test.monitor;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-
-import javax.management.MBeanServerConnection;
 
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
@@ -40,8 +38,7 @@ import org.eclipse.jetty.monitor.jmx.MonitorAction;
 import org.eclipse.jetty.monitor.triggers.GreaterThanAttrEventTrigger;
 import org.eclipse.jetty.monitor.triggers.LessThanOrEqualToAttrEventTrigger;
 import org.eclipse.jetty.monitor.triggers.OrEventTrigger;
-import org.eclipse.jetty.toolchain.jmx.JmxServiceConnection;
-import org.eclipse.jetty.toolchain.test.JettyDistro;
+import org.eclipse.jetty.test.support.JettyDistro;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
