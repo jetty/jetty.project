@@ -653,16 +653,43 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         // <tracking-mode>
         // this is additive across web-fragments
         Iterator iter = node.iterator("tracking-mode");
-        Set<SessionTrackingMode> modes = new HashSet<SessionTrackingMode>();
-        modes.addAll(context.getSessionHandler().getSessionManager().getEffectiveSessionTrackingModes());
-        while (iter.hasNext())
-        {
-            XmlParser.Node mNode = (XmlParser.Node) iter.next();
-            String trackMode = mNode.toString(false, true);
-            modes.add(SessionTrackingMode.valueOf(trackMode));
+        if (iter.hasNext())
+        { 
+            Set<SessionTrackingMode> modes = null;
+            Origin o = context.getMetaData().getOrigin("session.tracking-mode");
+            switch (o)
+            {
+                case NotSet://not previously set, starting fresh
+                case WebDefaults://previously set in web defaults, allow this descriptor to start fresh
+                {
+                    
+                    modes = new HashSet<SessionTrackingMode>();
+                    context.getMetaData().setOrigin("session.tracking-mode", descriptor);
+                    break;
+                }
+                case WebXml:
+                case WebFragment:
+                case WebOverride:
+                {
+                    //if setting from an override descriptor, start afresh, otherwise add-in tracking-modes
+                    if (descriptor instanceof OverrideDescriptor)
+                        modes = new HashSet<SessionTrackingMode>();
+                    else
+                        modes = new HashSet<SessionTrackingMode>(context.getSessionHandler().getSessionManager().getEffectiveSessionTrackingModes());
+                    context.getMetaData().setOrigin("session.tracking-mode", descriptor);
+                    break;
+                }       
+            }
+            
+            while (iter.hasNext())
+            {
+                XmlParser.Node mNode = (XmlParser.Node) iter.next();
+                String trackMode = mNode.toString(false, true);
+                modes.add(SessionTrackingMode.valueOf(trackMode));
+            }
+            context.getSessionHandler().getSessionManager().setSessionTrackingModes(modes);   
         }
-        context.getSessionHandler().getSessionManager().setSessionTrackingModes(modes);
-
+       
 
         //Servlet Spec 3.0
         //<cookie-config>

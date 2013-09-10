@@ -265,23 +265,23 @@ public class WebAppProvider extends ScanningAppProvider
         if (resource.exists() && FileID.isXmlFile(file))
         {
             XmlConfiguration xmlc = new XmlConfiguration(resource.getURL())
-                        {
-                            @Override
-                            public void initializeDefaults(Object context)
-                            {
-                                super.initializeDefaults(context);
+            {
+                @Override
+                public void initializeDefaults(Object context)
+                {
+                    super.initializeDefaults(context);
 
-                                if (context instanceof WebAppContext)
-                                {
-                                    WebAppContext webapp = (WebAppContext)context;
-                                    webapp.setParentLoaderPriority(_parentLoaderPriority);
-                                    if (_defaultsDescriptor != null)
-                                        webapp.setDefaultsDescriptor(_defaultsDescriptor);
-                                }
-                            }
-                        };
-            
-            xmlc.getIdMap().put("Server",getDeploymentManager().getServer());
+                    if (context instanceof WebAppContext)
+                    {
+                        WebAppContext webapp = (WebAppContext)context;
+                        webapp.setParentLoaderPriority(_parentLoaderPriority);
+                        if (_defaultsDescriptor != null)
+                            webapp.setDefaultsDescriptor(_defaultsDescriptor);
+                    }
+                }
+            };
+
+            xmlc.getIdMap().put("Server", getDeploymentManager().getServer());
             xmlc.getProperties().put("jetty.home",System.getProperty("jetty.home","."));
             xmlc.getProperties().put("jetty.base",System.getProperty("jetty.base","."));
             xmlc.getProperties().put("jetty.webapp",file.getCanonicalPath());
