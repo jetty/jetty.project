@@ -30,8 +30,13 @@ import org.eclipse.jetty.websocket.jsr356.server.deploy.ServerEndpointAnnotation
 import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
 
 /**
- * WebSocket Server Configuration component. This configuration will configure a context for JSR356 Websockets if the attribute
- * "org.eclipse.jetty.websocket.jsr356" is set to true. This attribute may be set on an individual context or on the server to affect all deployed contexts.
+ * WebSocket Server Configuration component.
+ * <p>
+ * This configuration will configure a context for JSR356 Websockets.
+ * <p>
+ * It is possible to disable specific contexts with an attribute <code>"org.eclipse.jetty.websocket.jsr356"</code> (set to <code>"false"</code>)
+ * <p>
+ * This attribute may be set on an individual context, or on the server to affect all deployed contexts.
  */
 public class WebSocketConfiguration extends AbstractConfiguration
 {
@@ -70,6 +75,7 @@ public class WebSocketConfiguration extends AbstractConfiguration
         Object enable = context.getAttribute(ENABLE);
         if (enable instanceof Boolean)
         {
+            return ((Boolean)enable).booleanValue();
         }
 
         enable = context.getServer().getAttribute(ENABLE);
