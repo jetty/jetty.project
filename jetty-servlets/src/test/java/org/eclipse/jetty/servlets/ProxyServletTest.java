@@ -18,6 +18,22 @@
 
 package org.eclipse.jetty.servlets;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.net.MalformedURLException;
+import java.net.Socket;
+import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import junit.framework.Assert;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
@@ -34,22 +50,8 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
-import org.hamcrest.core.Is;
-import org.hamcrest.core.IsEqual;
 import org.junit.After;
 import org.junit.Test;
-
-import javax.servlet.ServletException;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.*;
-import java.net.MalformedURLException;
-import java.net.Socket;
-import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
@@ -138,7 +140,9 @@ public class ProxyServletTest
     public void testBigDownloadWithSlowReader() throws Exception
     {
         // Create a 6 MiB file
-        final File file = File.createTempFile("test_", null, MavenTestingUtils.getTargetTestingDir());
+        File targetTestingDir = MavenTestingUtils.getTargetTestingDir();
+        targetTestingDir.mkdir();
+        final File file = File.createTempFile("test_", null, targetTestingDir);
         file.deleteOnExit();
         FileOutputStream fos = new FileOutputStream(file);
         byte[] buffer = new byte[1024];
