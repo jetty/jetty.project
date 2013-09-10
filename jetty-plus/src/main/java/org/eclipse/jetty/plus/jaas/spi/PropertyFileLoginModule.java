@@ -20,11 +20,10 @@ package org.eclipse.jetty.plus.jaas.spi;
 
 import java.security.Principal;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.security.auth.Subject;
 import javax.security.auth.callback.CallbackHandler;
@@ -46,7 +45,7 @@ public class PropertyFileLoginModule extends AbstractLoginModule
 
     private static final Logger LOG = Log.getLogger(PropertyFileLoginModule.class);
 
-    private static Map<String, PropertyUserStore> _propertyUserStores = new HashMap<String, PropertyUserStore>();
+    private static ConcurrentHashMap<String, PropertyUserStore> _propertyUserStores = new ConcurrentHashMap<String, PropertyUserStore>();
 
     private int _refreshInterval = 0;
     private String _filename = DEFAULT_FILENAME;
@@ -69,31 +68,35 @@ public class PropertyFileLoginModule extends AbstractLoginModule
 
     private void setupPropertyUserStore(Map<String, ?> options)
     {
+        parseConfig(options);
+
         if (_propertyUserStores.get(_filename) == null)
         {
-            parseConfig(options);
+            PropertyUserStore propertyUserStore = new PropertyUserStore();
+            propertyUserStore.setConfig(_filename);
+            propertyUserStore.setRefreshInterval(_refreshInterval);
 
-            PropertyUserStore _propertyUserStore = new PropertyUserStore();
-            _propertyUserStore.setConfig(_filename);
-            _propertyUserStore.setRefreshInterval(_refreshInterval);
-            LOG.debug("setupPropertyUserStore: Starting new PropertyUserStore. PropertiesFile: " + _filename + " refreshInterval: " + _refreshInterval);
-
-            try
+            PropertyUserStore prev = _propertyUserStores.putIfAbsent(_filename, propertyUserStore);
+            if (prev == null)
             {
-                _propertyUserStore.start();
-            }
-            catch (Exception e)
-            {
-                LOG.warn("Exception while starting propertyUserStore: ",e);
-            }
+                LOG.debug("setupPropertyUserStore: Starting new PropertyUserStore. PropertiesFile: " + _filename + " refreshInterval: " + _refreshInterval);
 
-            _propertyUserStores.put(_filename,_propertyUserStore);
+                try
+                {
+                    propertyUserStore.start();
+                }
+                catch (Exception e)
+                {
+                    LOG.warn("Exception while starting propertyUserStore: ",e);
+                }
+            }
         }
     }
 
     private void parseConfig(Map<String, ?> options)
     {
-        _filename = (String)options.get("file") != null?(String)options.get("file"):DEFAULT_FILENAME;
+        _filename = (String)options.get("file");
+        _filename = (_filename == null? DEFAULT_FILENAME : _filename);
         String refreshIntervalString = (String)options.get("refreshInterval");
         _refreshInterval = refreshIntervalString == null?_refreshInterval:Integer.parseInt(refreshIntervalString);
     }

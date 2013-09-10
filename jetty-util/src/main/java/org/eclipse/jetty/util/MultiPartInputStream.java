@@ -486,7 +486,16 @@ public class MultiPartInputStream
         byte[] byteBoundary=(boundary+"--").getBytes(StringUtil.__ISO_8859_1);
 
         // Get first boundary
-        String line=((ReadLineInputStream)_in).readLine();
+        String line = null;
+        try
+        {
+            line=((ReadLineInputStream)_in).readLine();  
+        }
+        catch (IOException e)
+        {
+            LOG.warn("Badly formatted multipart request");
+            throw e;
+        }
 
         if (line == null)
             throw new IOException("Missing content for multipart request");
@@ -723,7 +732,6 @@ public class MultiPartInputStream
             }
             finally
             {
- 
                 part.close();
             }
         }
