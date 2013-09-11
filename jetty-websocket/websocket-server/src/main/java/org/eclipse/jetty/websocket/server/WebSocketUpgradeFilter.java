@@ -110,7 +110,7 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
         {
             HttpServletRequest httpreq = (HttpServletRequest)request;
             HttpServletResponse httpresp = (HttpServletResponse)response;
-            String target = httpreq.getServletPath();
+            String target = httpreq.getRequestURI();
 
             if (factory.isUpgradeRequest(httpreq,httpresp))
             {

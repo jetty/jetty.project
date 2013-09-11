@@ -78,6 +78,7 @@ public class WebSocketPathSpecTest
         assertEquals("Spec.group",PathSpecGroup.EXACT,spec.getGroup());
         
         assertMatches(spec,"/a");
+        assertMatches(spec,"/a?type=other");
         assertNotMatches(spec,"/a/b");
         assertNotMatches(spec,"/a/");
 
