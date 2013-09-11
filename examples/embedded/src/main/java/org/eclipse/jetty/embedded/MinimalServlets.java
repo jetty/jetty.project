@@ -42,6 +42,7 @@ public class MinimalServlets
         server.join();
     }
     
+    @SuppressWarnings("serial")
     public static class HelloServlet extends HttpServlet
     {
         @Override

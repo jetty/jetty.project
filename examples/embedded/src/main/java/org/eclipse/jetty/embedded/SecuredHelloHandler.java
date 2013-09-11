@@ -19,8 +19,6 @@
 package org.eclipse.jetty.embedded;
 
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;

@@ -32,6 +32,7 @@ public class ProxyServer
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server);
         connector.setPort(8888);
+        server.addConnector(connector);
 
         // Setup proxy handler to handle CONNECT methods
         ConnectHandler proxy = new ConnectHandler();

@@ -32,9 +32,10 @@ public class OneServletContext
         context.setContextPath("/");
         server.setHandler(context);
 
-        // Server content from tmp
+        // Serve content from java.io.tmpdir
         ServletHolder holder = context.addServlet(org.eclipse.jetty.servlet.DefaultServlet.class,"/tmp/*");
-        holder.setInitParameter("resourceBase","/tmp");
+        String tmpDir = System.getProperty("java.io.tmpdir");
+        holder.setInitParameter("resourceBase",tmpDir);
         holder.setInitParameter("pathInfoOnly","true");
         
         // A Dump Servlet
