@@ -110,7 +110,14 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
         {
             HttpServletRequest httpreq = (HttpServletRequest)request;
             HttpServletResponse httpresp = (HttpServletResponse)response;
+
+            // Since this is a filter, we need to be smart about determining the target path
+            String contextPath = httpreq.getContextPath();
             String target = httpreq.getRequestURI();
+            if (target.startsWith(contextPath))
+            {
+                target = target.substring(contextPath.length());
+            }
 
             if (factory.isUpgradeRequest(httpreq,httpresp))
             {

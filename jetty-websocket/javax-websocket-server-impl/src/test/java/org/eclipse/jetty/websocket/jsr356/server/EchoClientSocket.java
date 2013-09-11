@@ -45,7 +45,10 @@ public class EchoClientSocket extends TrackingSocket
 
     public void close() throws IOException
     {
-        this.session.close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE,"Test Complete"));
+        if (session != null)
+        {
+            this.session.close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE,"Test Complete"));
+        }
     }
 
     @OnClose
@@ -82,7 +85,7 @@ public class EchoClientSocket extends TrackingSocket
         addEvent(text);
         eventCountLatch.countDown();
     }
-    
+
     public boolean awaitAllEvents(long timeout, TimeUnit unit) throws InterruptedException
     {
         return eventCountLatch.await(timeout,unit);
