@@ -16,5 +16,12 @@
       </Arg>
     </Call>
   </Call>
+  
+  <!-- Should a Websocket container be initialized for each context? -->
+  <!-- Can be overridden by context attribute -->
+  <Call name="setAttribute">
+    <Arg>org.eclipse.jetty.websocket.jsr356</Arg>
+    <Arg type="Boolean"><Property name="org.eclipse.jetty.websocket.jsr356" default="true"/></Arg>
+  </Call>
 
 </Configure>

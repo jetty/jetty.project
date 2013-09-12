@@ -60,7 +60,7 @@ public class ELContextCleaner implements ServletContextListener
             //Get rid of references
             purgeEntries(field);
 
-            LOG.info("javax.el.BeanELResolver purged");
+            LOG.debug("javax.el.BeanELResolver purged");
         }
 
         catch (ClassNotFoundException e)
@@ -81,7 +81,7 @@ public class ELContextCleaner implements ServletContextListener
         }
         catch (NoSuchFieldException e)
         {
-            LOG.info("Not cleaning cached beans: no such field javax.el.BeanELResolver.properties");
+            LOG.debug("Not cleaning cached beans: no such field javax.el.BeanELResolver.properties");
         }
 
     }
@@ -113,14 +113,14 @@ public class ELContextCleaner implements ServletContextListener
         while (itor.hasNext())
         {
             Class clazz = itor.next();
-            LOG.info("Clazz: "+clazz+" loaded by "+clazz.getClassLoader());
+            LOG.debug("Clazz: "+clazz+" loaded by "+clazz.getClassLoader());
             if (Thread.currentThread().getContextClassLoader().equals(clazz.getClassLoader()))
             {
                 itor.remove();
-                LOG.info("removed");
+                LOG.debug("removed");
             }
             else
-                LOG.info("not removed: "+"contextclassloader="+Thread.currentThread().getContextClassLoader()+"clazz's classloader="+clazz.getClassLoader());
+                LOG.debug("not removed: "+"contextclassloader="+Thread.currentThread().getContextClassLoader()+"clazz's classloader="+clazz.getClassLoader());
         }
     }
 }

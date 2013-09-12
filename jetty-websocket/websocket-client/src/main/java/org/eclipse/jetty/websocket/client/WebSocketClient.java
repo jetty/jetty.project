@@ -246,7 +246,7 @@ public class WebSocketClient extends ContainerLifeCycle
 
         super.doStart();
 
-        LOG.info("Started {}",this);
+        LOG.debug("Started {}",this);
     }
 
     @Override

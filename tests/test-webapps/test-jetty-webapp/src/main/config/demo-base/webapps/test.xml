@@ -29,7 +29,12 @@ detected.
   <Set name="defaultsDescriptor"><Property name="jetty.home" default="."/>/etc/webdefault.xml</Set>
   <Set name="overrideDescriptor"><Property name="jetty.base" default="."/>/etc/override-web.xml</Set>
   
-
+  <!-- Enable WebSocket container -->
+  <Call name="setAttribute">
+    <Arg>org.eclipse.jetty.websocket.jsr356</Arg>
+    <Arg type="Boolean">true</Arg>
+  </Call>
+  
   <!-- virtual hosts
   <Set name="virtualHosts">
     <Array type="String">
