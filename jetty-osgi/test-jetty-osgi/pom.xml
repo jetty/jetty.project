@@ -20,7 +20,6 @@
     <felixversion>4.0.3</felixversion>
     <injection.bundle.version>1.0</injection.bundle.version>
     <runner.version>1.7.6</runner.version>
-    <npn-version>1.1.5.v20130313</npn-version>
   </properties>
   <dependencies>
     <!-- Pax Exam Dependencies -->
@@ -289,7 +288,7 @@
     <dependency>
       <groupId>org.mortbay.jetty.npn</groupId>
       <artifactId>npn-boot</artifactId>
-      <version>${npn-version}</version>
+      <version>${npn.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -360,9 +359,9 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <!-- No point defining -Xbootclasspath as the actual OSGi VM is run as a forked process by pax-exam -->
-          <!--argLine>-Xbootclasspath/p:${settings.localRepository}/org/mortbay/jetty/npn/npn-boot/${npn-version}/npn-boot-${npn-version}.jar</argLine-->
+          <!--argLine>-Xbootclasspath/p:${settings.localRepository}/org/mortbay/jetty/npn/npn-boot/${npn.version}/npn-boot-${npn.version}.jar</argLine-->
           <!-- But we do pass the sys property of the npn-boot jar -->
-          <argLine>-Dmortbay-npn-boot=${settings.localRepository}/org/mortbay/jetty/npn/npn-boot/${npn-version}/npn-boot-${npn-version}.jar</argLine>
+          <argLine>-Dmortbay-npn-boot=${settings.localRepository}/org/mortbay/jetty/npn/npn-boot/${npn.version}/npn-boot-${npn.version}.jar</argLine>
         </configuration>
       </plugin>
       <plugin>

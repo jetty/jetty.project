@@ -36,7 +36,7 @@
               <Bundle-SymbolicName>${bundle-symbolic-name};singleton:=true</Bundle-SymbolicName>
               <Bundle-Name>Jetty OSGi NPN Fragment</Bundle-Name>
               <Bundle-Version>${parsedVersion.osgiVersion}</Bundle-Version>
-              <Export-Package>org.eclipse.jetty.npn;version="1.1.5"</Export-Package>
+              <Export-Package>org.eclipse.jetty.npn</Export-Package>
               <Fragment-Host>system.bundle;extension:=framework</Fragment-Host>
             </manifestEntries>
           </archive>
