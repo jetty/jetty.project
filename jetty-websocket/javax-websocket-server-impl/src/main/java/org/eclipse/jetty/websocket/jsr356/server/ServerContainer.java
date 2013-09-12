@@ -80,7 +80,7 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
 
     public void addEndpoint(ServerEndpointMetadata metadata) throws DeploymentException
     {
-        JsrCreator creator = new JsrCreator(metadata);
+        JsrCreator creator = new JsrCreator(metadata,webSocketServerFactory.getExtensionFactory());
         mappedCreator.addMapping(new WebSocketPathSpec(metadata.getPath()),creator);
     }
 

@@ -19,10 +19,12 @@
 package org.eclipse.jetty.websocket.servlet;
 
 import java.io.IOException;
+import java.util.List;
 
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
+import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 
 /**
  * Servlet Specific UpgradeResponse implementation.
@@ -30,6 +32,8 @@ import org.eclipse.jetty.websocket.api.UpgradeResponse;
 public class ServletUpgradeResponse extends UpgradeResponse
 {
     private HttpServletResponse resp;
+    private boolean extensionsNegotiated = false;
+    private boolean subprotocolNegotiated = false;
 
     public ServletUpgradeResponse(HttpServletResponse resp)
     {
@@ -60,6 +64,16 @@ public class ServletUpgradeResponse extends UpgradeResponse
         return this.resp.isCommitted();
     }
 
+    public boolean isExtensionsNegotiated()
+    {
+        return extensionsNegotiated;
+    }
+
+    public boolean isSubprotocolNegotiated()
+    {
+        return subprotocolNegotiated;
+    }
+
     public void sendError(int statusCode, String message) throws IOException
     {
         setSuccess(false);
@@ -71,6 +85,20 @@ public class ServletUpgradeResponse extends UpgradeResponse
     {
         setSuccess(false);
         resp.sendError(HttpServletResponse.SC_FORBIDDEN,message);
+    }
+
+    @Override
+    public void setAcceptedSubProtocol(String protocol)
+    {
+        super.setAcceptedSubProtocol(protocol);
+        subprotocolNegotiated = true;
+    }
+
+    @Override
+    public void setExtensions(List<ExtensionConfig> extensions)
+    {
+        super.setExtensions(extensions);
+        extensionsNegotiated = true;
     }
 
     @Override

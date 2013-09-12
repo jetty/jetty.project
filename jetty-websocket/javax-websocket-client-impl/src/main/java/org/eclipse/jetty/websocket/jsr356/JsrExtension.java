@@ -25,6 +25,7 @@ import java.util.Map;
 import javax.websocket.Extension;
 
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.api.util.QuoteUtil;
 
 public class JsrExtension implements Extension
 {
@@ -88,5 +89,24 @@ public class JsrExtension implements Extension
     public List<Parameter> getParameters()
     {
         return parameters;
+    }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder str = new StringBuilder();
+        str.append(name);
+        for (Parameter param : parameters)
+        {
+            str.append(';');
+            str.append(param.getName());
+            String value = param.getValue();
+            if (value != null)
+            {
+                str.append('=');
+                QuoteUtil.quoteIfNeeded(str,value,";=");
+            }
+        }
+        return str.toString();
     }
 }

@@ -19,12 +19,18 @@
 package org.eclipse.jetty.websocket.jsr356.server;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
+import javax.websocket.Extension;
+import javax.websocket.Extension.Parameter;
 import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
+import org.eclipse.jetty.websocket.jsr356.JsrExtension;
 import org.eclipse.jetty.websocket.jsr356.endpoints.EndpointInstance;
 import org.eclipse.jetty.websocket.jsr356.server.pathmap.WebSocketPathSpec;
 import org.eclipse.jetty.websocket.server.pathmap.PathSpec;
@@ -36,10 +42,12 @@ public class JsrCreator implements WebSocketCreator
 {
     private static final Logger LOG = Log.getLogger(JsrCreator.class);
     private final ServerEndpointMetadata metadata;
+    private final ExtensionFactory extensionFactory;
 
-    public JsrCreator(ServerEndpointMetadata metadata)
+    public JsrCreator(ServerEndpointMetadata metadata, ExtensionFactory extensionFactory)
     {
         this.metadata = metadata;
+        this.extensionFactory = extensionFactory;
     }
 
     @Override
@@ -77,6 +85,33 @@ public class JsrCreator implements WebSocketCreator
         {
             resp.setAcceptedSubProtocol(subprotocol);
         }
+
+        // deal with extensions
+        List<Extension> installedExts = new ArrayList<>();
+        for (String extName : extensionFactory.getAvailableExtensions().keySet())
+        {
+            installedExts.add(new JsrExtension(extName));
+        }
+        List<Extension> requestedExts = new ArrayList<>();
+        for (ExtensionConfig reqCfg : req.getExtensions())
+        {
+            requestedExts.add(new JsrExtension(reqCfg));
+        }
+        List<Extension> usedExts = configurator.getNegotiatedExtensions(installedExts,requestedExts);
+        List<ExtensionConfig> configs = new ArrayList<>();
+        if (usedExts != null)
+        {
+            for (Extension used : usedExts)
+            {
+                ExtensionConfig ecfg = new ExtensionConfig(used.getName());
+                for (Parameter param : used.getParameters())
+                {
+                    ecfg.setParameter(param.getName(),param.getValue());
+                }
+                configs.add(ecfg);
+            }
+        }
+        resp.setExtensions(configs);
 
         // create endpoint class
         try

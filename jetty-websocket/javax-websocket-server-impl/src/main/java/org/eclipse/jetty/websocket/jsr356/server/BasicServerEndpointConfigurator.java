@@ -57,8 +57,7 @@ public class BasicServerEndpointConfigurator extends Configurator
     @Override
     public List<Extension> getNegotiatedExtensions(List<Extension> installed, List<Extension> requested)
     {
-        /* do nothing */
-        return null;
+        return requested;
     }
 
     @Override

@@ -468,7 +468,18 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
 
         // Initialize / Negotiate Extensions
         ExtensionStack extensionStack = new ExtensionStack(getExtensionFactory());
-        extensionStack.negotiate(request.getExtensions());
+        // The JSR allows for the extensions to be pre-negotiated, filtered, etc...
+        // Usually from a Configurator.
+        if (response.isExtensionsNegotiated())
+        {
+            // Use pre-negotiated extension list from response
+            extensionStack.negotiate(response.getExtensions());
+        }
+        else
+        {
+            // Use raw extension list from request
+            extensionStack.negotiate(request.getExtensions());
+        }
 
         // Create connection
         UpgradeContext context = getActiveUpgradeContext();
@@ -494,6 +505,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         WebSocketSession session = createSession(request.getRequestURI(),driver,connection);
         session.setPolicy(driver.getPolicy());
         session.setUpgradeRequest(request);
+        // set true negotiated extension list back to response 
         response.setExtensions(extensionStack.getNegotiatedExtensions());
         session.setUpgradeResponse(response);
         connection.setSession(session);

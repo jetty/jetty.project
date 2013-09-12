@@ -160,6 +160,7 @@ public class WSServer
     {
         server = new Server();
         ServerConnector connector = new ServerConnector(server);
+        connector.setPort(0);
         server.addConnector(connector);
 
         HandlerCollection handlers = new HandlerCollection();
