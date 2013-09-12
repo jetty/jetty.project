@@ -155,12 +155,14 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     @Override
     public void setAsyncSendTimeout(long ms)
     {
+        super.setAsyncSendTimeout(ms);
         webSocketServerFactory.getPolicy().setAsyncWriteTimeout(ms);
     }
 
     @Override
     public void setDefaultMaxBinaryMessageBufferSize(int max)
     {
+        super.setDefaultMaxBinaryMessageBufferSize(max);
         // overall message limit (used in non-streaming)
         webSocketServerFactory.getPolicy().setMaxBinaryMessageSize(max);
         // incoming streaming buffer size
@@ -170,12 +172,14 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     @Override
     public void setDefaultMaxSessionIdleTimeout(long ms)
     {
+        super.setDefaultMaxSessionIdleTimeout(ms);
         webSocketServerFactory.getPolicy().setIdleTimeout(ms);
     }
 
     @Override
     public void setDefaultMaxTextMessageBufferSize(int max)
     {
+        super.setDefaultMaxTextMessageBufferSize(max);
         // overall message limit (used in non-streaming)
         webSocketServerFactory.getPolicy().setMaxTextMessageSize(max);
         // incoming streaming buffer size
