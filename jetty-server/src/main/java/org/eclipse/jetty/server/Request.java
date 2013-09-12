@@ -409,12 +409,32 @@ public class Request implements HttpServletRequest
     }
 
     /* ------------------------------------------------------------ */
-    /*
+    /**
+     * Get Request Attribute.
+     * <p>Also supports jetty specific attributes to gain access to Jetty APIs:
+     * <dl>
+     * <dt>org.eclipse.jetty.server.Server</dt><dd>The Jetty Server instance</dd>
+     * <dt>org.eclipse.jetty.server.HttpChannel</dt><dd>The HttpChannel for this request</dd>
+     * <dt>org.eclipse.jetty.server.HttpConnection</dt><dd>The HttpConnection or null if another transport is used</dd>
+     * </dl>
+     * While these attributes may look like security problems, they are exposing nothing that is not already
+     * available via reflection from a Request instance.
+     * </p>
      * @see javax.servlet.ServletRequest#getAttribute(java.lang.String)
      */
     @Override
     public Object getAttribute(String name)
     {
+        if (name.startsWith("org.eclipse.jetty"))
+        {
+            if ("org.eclipse.jetty.server.Server".equals(name))
+                return _channel.getServer();
+            if ("org.eclipse.jetty.server.HttpChannel".equals(name))
+                return _channel;
+            if ("org.eclipse.jetty.server.HttpConnection".equals(name) &&
+                _channel.getHttpTransport() instanceof HttpConnection)
+                return _channel.getHttpTransport();
+        }
         return (_attributes == null)?null:_attributes.getAttribute(name);
     }
 
