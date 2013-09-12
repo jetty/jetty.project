@@ -42,10 +42,10 @@ import org.eclipse.jetty.util.log.Logger;
 public class MBeanContainer implements Container.InheritedListener, Dumpable
 {
     private final static Logger LOG = Log.getLogger(MBeanContainer.class.getName());
+    private final static HashMap<String, Integer> _unique = new HashMap<String, Integer>();
 
     private final MBeanServer _mbeanServer;
     private final WeakHashMap<Object, ObjectName> _beans = new WeakHashMap<Object, ObjectName>();
-    private final HashMap<String, Integer> _unique = new HashMap<String, Integer>();
     private String _domain = null;
 
     /**
