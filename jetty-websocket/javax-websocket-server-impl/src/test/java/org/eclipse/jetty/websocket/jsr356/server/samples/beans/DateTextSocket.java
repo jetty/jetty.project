@@ -32,8 +32,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.jsr356.server.StackUtil;
 
-@ServerEndpoint(value = "/echo/beans/date", decoders =
-{ DateDecoder.class })
+@ServerEndpoint(value = "/echo/beans/date", decoders = { DateDecoder.class }, encoders = { DateEncoder.class })
 public class DateTextSocket
 {
     private static final Logger LOG = Log.getLogger(DateTextSocket.class);
@@ -46,6 +45,7 @@ public class DateTextSocket
         this.session = session;
     }
 
+    // The decoder declared in the @ServerEndpoint will be used
     @OnMessage
     public void onMessage(Date d) throws IOException
     {
@@ -56,6 +56,7 @@ public class DateTextSocket
         else
         {
             String msg = SimpleDateFormat.getDateInstance(SimpleDateFormat.SHORT).format(d);
+            // The encoder declared in the @ServerEndpoint will be used
             session.getAsyncRemote().sendText(msg);
         }
     }
