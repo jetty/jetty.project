@@ -23,6 +23,9 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.WeakHashMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.management.InstanceNotFoundException;
 import javax.management.MBeanRegistrationException;
@@ -42,10 +45,15 @@ import org.eclipse.jetty.util.log.Logger;
 public class MBeanContainer implements Container.InheritedListener, Dumpable
 {
     private final static Logger LOG = Log.getLogger(MBeanContainer.class.getName());
+    private final static ConcurrentMap<String, AtomicInteger> __unique = new ConcurrentHashMap<String, AtomicInteger>();
 
+    public static void resetUnique()
+    {
+        __unique.clear();
+    }
+    
     private final MBeanServer _mbeanServer;
     private final WeakHashMap<Object, ObjectName> _beans = new WeakHashMap<Object, ObjectName>();
-    private final HashMap<String, Integer> _unique = new HashMap<String, Integer>();
     private String _domain = null;
 
     /**
@@ -186,11 +194,16 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable
                     buf.append(",").append("name=").append(name);
 
                 String basis = buf.toString();
-                Integer count = _unique.get(basis);
-                count = count == null ? 0 : 1 + count;
-                _unique.put(basis, count);
-
-                oname = ObjectName.getInstance(domain + ":" + basis + ",id=" + count);
+                
+                AtomicInteger count = __unique.get(basis);
+                if (count==null)
+                {
+                    count=__unique.putIfAbsent(basis,new AtomicInteger());
+                    if (count==null)
+                        count=__unique.get(basis);
+                }
+                
+                oname = ObjectName.getInstance(domain + ":" + basis + ",id=" + count.getAndIncrement());
             }
 
             ObjectInstance oinstance = _mbeanServer.registerMBean(mbean, oname);

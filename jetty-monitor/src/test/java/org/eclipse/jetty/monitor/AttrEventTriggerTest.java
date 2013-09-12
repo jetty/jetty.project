@@ -98,6 +98,7 @@ public class AttrEventTriggerTest
         _handler = new TestHandler();
         _server.setHandler(_handler);
 
+        MBeanContainer.resetUnique();
         MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
         _mBeanContainer = new MBeanContainer(mBeanServer);
         _server.addBean(_mBeanContainer,true);
