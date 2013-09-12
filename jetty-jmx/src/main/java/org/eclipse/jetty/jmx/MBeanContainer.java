@@ -49,7 +49,15 @@ import org.eclipse.jetty.util.thread.ShutdownThread;
 public class MBeanContainer extends AbstractLifeCycle implements Container.Listener, Dumpable
 {
     private final static Logger LOG = Log.getLogger(MBeanContainer.class.getName());
-    private final static HashMap<String, Integer> _unique = new HashMap<String, Integer>();
+    private final static HashMap<String, Integer> __unique = new HashMap<String, Integer>();
+    
+    public final static void resetUnique()
+    {
+        synchronized (__unique)
+        {
+            __unique.clear();
+        }
+    }
     
     private final MBeanServer _server;
     private final WeakHashMap<Object, ObjectName> _beans = new WeakHashMap<Object, ObjectName>();
@@ -283,9 +291,13 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
                 }
                     
                 String basis = buf.toString();
-                Integer count = _unique.get(basis);
-                count = count == null ? 0 : 1 + count;
-                _unique.put(basis, count);
+                Integer count;
+                synchronized (__unique)
+                {
+                    count = __unique.get(basis);
+                    count = count == null ? 0 : 1 + count;
+                    __unique.put(basis, count);
+                }
 
                 //if no explicit domain, create one
                 String domain = _domain;
