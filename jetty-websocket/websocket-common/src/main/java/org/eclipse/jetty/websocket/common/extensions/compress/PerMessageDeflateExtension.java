@@ -83,11 +83,16 @@ public class PerMessageDeflateExtension extends AbstractExtension
         System.arraycopy(TAIL,0,compressed,inlen,TAIL.length);
         decompressor.setInput(compressed,0,compressed.length);
 
+        // Since we don't track text vs binary vs continuation state, just grab whatever is the greater value.
+        int maxSize = Math.max(getPolicy().getMaxTextMessageSize(),getPolicy().getMaxBinaryMessageBufferSize());
+        ByteAccumulator accumulator = new ByteAccumulator(maxSize);
+
+        DataFrame out = new DataFrame(frame);
+        out.setRsv1(false); // Unset RSV1
+
         // Perform decompression
         while (decompressor.getRemaining() > 0 && !decompressor.finished())
         {
-            DataFrame out = new DataFrame(frame);
-            out.setRsv1(false); // Unset RSV1
             byte outbuf[] = new byte[Math.min(inlen * 2,bufferSize)];
             try
             {
@@ -105,9 +110,8 @@ public class PerMessageDeflateExtension extends AbstractExtension
                 }
                 if (len > 0)
                 {
-                    out.setPayload(ByteBuffer.wrap(outbuf,0,len));
+                    accumulator.addBuffer(outbuf,0,len);
                 }
-                nextIncomingFrame(out);
             }
             catch (DataFormatException e)
             {
@@ -115,6 +119,10 @@ public class PerMessageDeflateExtension extends AbstractExtension
                 throw new BadPayloadException(e);
             }
         }
+
+        // Forward on the frame
+        out.setPayload(accumulator.getByteBuffer(getBufferPool()));
+        nextIncomingFrame(out);
     }
 
     /**
@@ -222,7 +230,8 @@ public class PerMessageDeflateExtension extends AbstractExtension
         {
             key = key.trim();
             String value = config.getParameter(key,null);
-            switch(key) {
+            switch (key)
+            {
                 case "c2s_max_window_bits":
                     negotiated.setParameter("s2c_max_window_bits",value);
                     break;

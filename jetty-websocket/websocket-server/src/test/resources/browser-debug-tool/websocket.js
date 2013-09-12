@@ -76,6 +76,7 @@ var wstool = {
         $('manythreads').disabled = !enabled;
         $('hello').disabled = !enabled;
         $('there').disabled = !enabled;
+        $('json').disabled = !enabled;
     },
     
     _onopen : function() {
