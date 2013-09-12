@@ -54,12 +54,6 @@ public class WebSocketJsrServer
         context.setContextPath("/");
         server.setHandler(context);
 
-        // Add a servlet to your context.
-        // It is required that you provide at least 1 servlet.
-        // Recommended that this servlet mere provide a
-        // "This is a websocket only server" style response
-        context.addServlet(new ServletHolder(new DumpServlet()),"/*");
-
         // Enable javax.websocket configuration for the context
         ServerContainer wsContainer = WebSocketConfiguration.configureContext(context);
 

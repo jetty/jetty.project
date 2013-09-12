@@ -47,6 +47,7 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.ServletSecurityElement;
 import javax.servlet.UnavailableException;
+import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -147,7 +148,15 @@ public class ServletHandler extends ScopedHandler
         }
 
         updateNameMappings();
-        updateMappings();
+        updateMappings();        
+        
+        if (getServletMapping("/")==null)
+        {
+            LOG.debug("Adding Default404Servlet to {}",this);
+            addServletWithMapping(Default404Servlet.class,"/");
+            updateMappings();  
+            getServletMapping("/").setDefault(true);
+        }
 
         if(_filterChainsCached)
         {
@@ -1694,4 +1703,15 @@ public class ServletHandler extends ScopedHandler
             _contextHandler.destroyFilter(filter);
     }
 
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    public static class Default404Servlet extends HttpServlet
+    {
+        protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+                throws ServletException, IOException
+        {
+            resp.sendError(HttpServletResponse.SC_NOT_FOUND);
+        }
+    }
 }
