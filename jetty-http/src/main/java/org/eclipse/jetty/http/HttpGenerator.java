@@ -1079,11 +1079,14 @@ public class HttpGenerator extends AbstractGenerator
     @Override
     public String toString()
     {
+        Buffer header=_header;
+        Buffer buffer=_buffer;
+        Buffer content=_content;
         return String.format("%s{s=%d,h=%d,b=%d,c=%d}",
                 getClass().getSimpleName(),
                 _state,
-                _header == null ? -1 : _header.length(),
-                _buffer == null ? -1 : _buffer.length(),
-                _content == null ? -1 : _content.length());
+                header == null ? -1 : header.length(),
+                buffer == null ? -1 : buffer.length(),
+                content == null ? -1 : content.length());
     }
 }

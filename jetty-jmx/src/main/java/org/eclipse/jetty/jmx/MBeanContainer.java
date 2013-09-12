@@ -49,10 +49,10 @@ import org.eclipse.jetty.util.thread.ShutdownThread;
 public class MBeanContainer extends AbstractLifeCycle implements Container.Listener, Dumpable
 {
     private final static Logger LOG = Log.getLogger(MBeanContainer.class.getName());
+    private final static HashMap<String, Integer> _unique = new HashMap<String, Integer>();
     
     private final MBeanServer _server;
     private final WeakHashMap<Object, ObjectName> _beans = new WeakHashMap<Object, ObjectName>();
-    private final HashMap<String, Integer> _unique = new HashMap<String, Integer>();
     private final WeakHashMap<ObjectName,List<Container.Relationship>> _relations = new WeakHashMap<ObjectName,List<Container.Relationship>>();
     private String _domain = null;
 
