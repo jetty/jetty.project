@@ -466,22 +466,37 @@
         <artifactId>exec-maven-plugin</artifactId>
         <executions>
           <execution>
+	    <id>setup home</id>
             <phase>process-classes</phase>
+	    <configuration>
+	      <mainClass>org.eclipse.jetty.start.Main</mainClass>
+	      <arguments>
+		<argument>jetty.home=${assembly-directory}</argument>
+		<argument>jetty.base=${assembly-directory}</argument>
+		<argument>--module-start-ini=server,deploy,websocket,jsp,ext,resources</argument>
+		<argument>--module-ini=http</argument>
+	      </arguments>
+	    </configuration>
+            <goals>
+              <goal>java</goal>
+            </goals>
+          </execution>
+          <execution>
+	    <id>setup demo-base</id>
+            <phase>process-classes</phase>
+	    <configuration>
+	      <mainClass>org.eclipse.jetty.start.Main</mainClass>
+	      <arguments>
+		<argument>jetty.home=${assembly-directory}</argument>
+		<argument>jetty.base=${assembly-directory}/demo-base</argument>
+		<argument>--module-ini=http,https</argument>
+	      </arguments>
+	    </configuration>
             <goals>
               <goal>java</goal>
             </goals>
           </execution>
         </executions>
-        <configuration>
-          <mainClass>org.eclipse.jetty.start.Main</mainClass>
-          <arguments>
-            <argument>--debug</argument>
-            <argument>jetty.home=${assembly-directory}</argument>
-            <argument>jetty.base=${assembly-directory}</argument>
-            <argument>--module-start-ini=server,deploy,websocket,jsp,ext,resources</argument>
-            <argument>--module-ini=http</argument>
-          </arguments>
-        </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
