@@ -1,4 +1,25 @@
-jetty-8.1.13-SNAPSHOT
+jetty-8.1.14-SNAPSHOT
+
+jetty-8.1.13.v20130910 - 10 September 2013
+ + 412629 PropertyFileLoginModule doesn't cache user configuration file even
+   for refreshInterval=0
+ + 413484 setAttribute in nosql session management better handles _dirty status
+ + 413684 deprecated unsafe alias checkers
+ + 414235 RequestLogHandler configured on a context fails to handle forwarded
+   requests
+ + 414393 StringIndexOutofBoundsException with > 8k multipart content without
+   CR or LF
+ + 414507 Ensure AnnotationParser ignores parent dir hierarchy when checking
+   for hidden dirnames
+ + 414652 WebSocket's sendMessage() may hang on congested connections.
+ + 415192 <jsp-file> maps to JspPropertyGroupServlet instead of JspServlet
+ + 415401 Add XmlConfiguration.initializeDefaults that allows to set default
+   values for any XmlConfiguration that may be overridden in the config file
+ + 416266 HttpServletResponse.encodeURL() encodes on first request when only
+   SessionTrackingMode.COOKIE is used
+ + 416585 WebInfConfiguration examines webapp classloader first instead of its
+   parent when looking for container jars
+ + 416787 StringIndexOutOfBounds with a pathMap of ""
 
 jetty-8.1.12.v20130726 - 26 July 2013
  + 396706 CGI support parameters
