@@ -76,7 +76,7 @@ public class StartArgs
     private Properties properties = new Properties();
     private Set<String> systemPropertyKeys = new HashSet<>();
     private List<String> jvmArgs = new ArrayList<>();
-    private List<String> moduleIni = new ArrayList<>();
+    private List<String> moduleStartdIni = new ArrayList<>();
     private List<String> moduleStartIni = new ArrayList<>();
     private Map<String,String> propertySource = new HashMap<>();
     private String moduleGraphFilename;
@@ -444,9 +444,9 @@ public class StartArgs
         return moduleGraphFilename;
     }
 
-    public List<String> getModuleIni()
+    public List<String> getModuleStartdIni()
     {
-        return moduleIni;
+        return moduleStartdIni;
     }
 
     public List<String> getModuleStartIni()
@@ -679,7 +679,6 @@ public class StartArgs
         }
 
         // Module Management
-
         if ("--list-modules".equals(arg))
         {
             listModules = true;
@@ -687,13 +686,13 @@ public class StartArgs
             return;
         }
 
-        if (arg.startsWith("--module-ini="))
+        if (arg.startsWith("--module-startd-ini=")||arg.startsWith("--module-ini="))
         {
             if (!CMD_LINE_SOURCE.equals(source))
             {
                 throw new UsageException(ERR_BAD_ARG,"%s not allowed in %s",arg,source);
             }
-            moduleIni.addAll(getValues(arg));
+            moduleStartdIni.addAll(getValues(arg));
             run = false;
             return;
         }

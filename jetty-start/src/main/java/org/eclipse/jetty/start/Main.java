@@ -664,7 +664,7 @@ public class Main
         }
 
         // Initialize
-        for (String module : args.getModuleIni())
+        for (String module : args.getModuleStartdIni())
         {
             moduleIni(args,module,true,false);
         }
