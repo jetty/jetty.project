@@ -7,43 +7,36 @@
   </HEAD>
 <BODY>
   <A HREF="http://www.eclipse.org/jetty"><IMG SRC="images/jetty_banner.gif"></A>
-
-<p>&nbsp;</p>
-  <a  href="http://localhost:8080/">Home</a>
-<center>
+  <br/>
+  <b><a href="http://localhost:8080/">Demo Home</a></b>
   <hr/>
- <span style="color:red; font-variant:small-caps; font-weight:bold">Test Web Application Only - Do NOT Deploy in Production</span>
-</center>
+  <center><span style="color:red; font-variant:small-caps; font-weight:bold">Test Web Application Only - Do NOT Deploy in Production</span> </center>
 
   <H1>JAAS Authentication and Authorization Demo </H1>
   <h2>Preparation</h2>
-  <p>To enable JAAS, edit your start.ini or start.d/*.ini files and add the following lines:
+  <p>To enable JAAS in a base jetty instance do:
     <pre>
-     OPTIONS=jaas
-     jaas.login.conf=etc/login.conf
-     etc/jetty-jaas.xml
+    $ cd $JETTY_BASE
+    $ java -jar $JETTY_HOME/start.jar --module-startd-ini=jaas
     </pre>
   </p>
-  <p>For the jetty distribution demos, jaas is already enabled in the demo-base/start.ini file and sets the jaas.login.conf property to ${jetty.base}/etc/login.conf  for use with the demo-base/webapps/test-jaas.war web application.  </p>
+  <p>This will create a $JETTY_BASE/start.d/jaas.ini file to enable and parameterise JAAS.  If the --module-start-ini option instead, then the same initialisation will be appended to the
+  $JETTY_BASE/start.ini file instead. The jetty demo-base already has JAAS enabled in the start.ini file.  </p>
 
 <p>The full source of this demonstration is available <a
 href="http://git.eclipse.org/c/jetty/org.eclipse.jetty.project.git/tree/tests/test-webapps/test-jaas-webapp">here</a>.</p>
 
   <h2>Using the Demo</h2>
   <P>
-  Click on the following link to test JAAS <i>authentication</i> and role-based web security constraint <i>authorization</i>.
+  Click on the link below to test JAAS <i>authentication</i> and role-based web security constraint <i>authorization</i>.  Use username=&quot;me&quot; with password=&quot;me&quot;.  All other usernames, passwords should result in authentication failure.
   </P>
+  <big><b><A HREF="auth.html">LOGIN</A></b></big>
   <p>
    This demo uses a simple login module that stores its configuration in a properties file. There are other types of login module provided with the jetty distro. For full information, please refer to the <a href="http://www.eclipse.org/jetty/documentation/current/">Jetty 9 documentation</a>.
   </p>
-  <P>
-  To authenticate successfully with this demonstration, you must use username=&quot;me&quot; with password=&quot;me&quot;.  All other usernames, passwords should result in authentication failure.
-  </P>
-  <A HREF="auth.html">Login</A>
 
-  <center>
-   <hr/>
-   <a href="http://www.eclipse.org/jetty"><img style="border:0" src="images/small_powered_by.gif"/></a>
-  </center>
+  <hr/>
+  <center> <a href="http://www.eclipse.org/jetty"><img style="border:0" src="images/small_powered_by.gif"/></a></center>
+
 </BODY>
 </HTML>

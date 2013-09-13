@@ -10,29 +10,53 @@
     </style>
   </HEAD>
 <BODY>
-<A HREF="http://jetty.eclipse.org"><IMG SRC="jetty_banner.gif"></A>
+  <A HREF="http://www.eclipse.org/jetty"><IMG SRC="jetty_banner.gif"></A>
+  <br/>
+  <b><a href="http://localhost:8080/">Demo Home</a></b>
+  <hr/>
+  <center><span style="color:red; font-variant:small-caps; font-weight:bold">Test Web Application Only - Do NOT Deploy in Production</span> </center>
+
 <h1>Welcome to Jetty 9</h1>
 <p>
-This is the Test webapp for the Jetty 9 HTTP Server and Servlet Container. It is 
-deployed in $JETTY_HOME/webapp.demo and configured by $JETTY_HOME/start.d/900-demo.ini
+This is the Test webapp for the Jetty 9 HTTP Server and Servlet Container.  
+It is configured as a jetty base directory in $JETTY_HOME/demo_base.
+</p>
+
+<h2>Jetty Tests:</h2>
+<table border=0>
+<tr valign=top><td>
 <ul>
 <li>Servet: <a href="hello/">Hello World</a></li>
-<li>Dump: <a href="dump/info">Request</a>, <a href="session/">Session</a>, <a href="cookie/">Cookie</a></li>
+<li>Dump Servlets: <ul>
+  <li><a href="dump/info">Request</a></li>
+  <li><a href="session/">Session</a></li>
+  <li><a href="cookie/">Cookie</a></li>
+  </ul></li>
+<li>Comet Chat Examples: 
+  <ul>
+  <li><a href="chat/">Long Polling</a></li>
+  <li><a href="ws">WebSocket (Jetty API)</a></li>
+  <li><a href="javax.websocket">WebSocket (javax.websocket)</a></li>
+  </ul>
+  </li>
 <li>JSP: <a href="jsp/">examples</a></li>
-<li>Comet Chat: <a href="chat/">Long Polling</a>, <a href="ws">WebSocket (Jetty API)</a>, <a href="javax.websocket">WebSocket (javax.websocket)</a></li>
+
+</ul></td><td><ul>
 <li><a href="auth.html">Authentication</a></li>
 <li><a href="dispatch">Dispatcher Servlet</a></li>
 <li><a href="rewrite/">Request Rewrite Servlet</a></li>
-<li>static content:
-<a href="d.txt">tiny</a>,
-<a href="da.txt">small</a>,
-<a href="dat.txt">medium</a>,
-<a href="data.txt">large</a>,
-<a href="data.txt.gz">large gziped</a></li>
+<li>Static content: <ul>
+    <li><a href="d.txt">tiny</a></li>
+    <li><a href="da.txt">small</a></li>
+    <li><a href="dat.txt">medium</a></li>
+    <li><a href="data.txt">large</a></li>
+    <li><a href="data.txt.gz">large gziped</a></li>
+    </ul></li>
 </ul>
+</td></tr></table>
 
-<p>
-Useful links are:<ul>
+<h2>Useful links:</h2>
+<ul>
 <li><a
 href="http://git.eclipse.org/c/jetty/org.eclipse.jetty.project.git/tree/tests/test-webapps/test-jetty-webapp">Source
 tree of this webapp</a></li>
@@ -42,8 +66,7 @@ tree of this webapp</a></li>
 </ul>
 </p>
 
-<p>
-<a href="/">MAIN MENU</a>
-</p>
+<hr/>
+<center> <a href="http://www.eclipse.org/jetty"><img style="border:0" src="small_powered_by.gif"/></a></center>
 </BODY>
 </HTML>
