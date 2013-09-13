@@ -473,8 +473,8 @@
 	      <arguments>
 		<argument>jetty.home=${assembly-directory}</argument>
 		<argument>jetty.base=${assembly-directory}</argument>
-		<argument>--module-start-ini=server,deploy,websocket,jsp,ext,resources</argument>
-		<argument>--module-startd-ini=http</argument>
+		<argument>--add-to-start=server,deploy,websocket,jsp,ext,resources</argument>
+		<argument>--add-to-startd=http</argument>
 	      </arguments>
 	    </configuration>
             <goals>
@@ -489,7 +489,7 @@
 	      <arguments>
 		<argument>jetty.home=${assembly-directory}</argument>
 		<argument>jetty.base=${assembly-directory}/demo-base</argument>
-		<argument>--module-startd-ini=http,https</argument>
+		<argument>--add-to-startd-ini=http,https</argument>
 	      </arguments>
 	    </configuration>
             <goals>

@@ -686,7 +686,7 @@ public class StartArgs
             return;
         }
 
-        if (arg.startsWith("--module-startd-ini=")||arg.startsWith("--module-ini="))
+        if (arg.startsWith("--add-to-startd"))
         {
             if (!CMD_LINE_SOURCE.equals(source))
             {
@@ -697,7 +697,7 @@ public class StartArgs
             return;
         }
 
-        if (arg.startsWith("--module-start-ini="))
+        if (arg.startsWith("--add-to-start"))
         {
             if (!CMD_LINE_SOURCE.equals(source))
             {
