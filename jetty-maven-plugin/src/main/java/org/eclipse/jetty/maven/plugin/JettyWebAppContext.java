@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import org.eclipse.jetty.plus.webapp.EnvConfiguration;
+import org.eclipse.jetty.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -46,6 +47,7 @@ import org.eclipse.jetty.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebInfConfiguration;
 import org.eclipse.jetty.webapp.WebXmlConfiguration;
+import org.eclipse.jetty.websocket.jsr356.server.WebSocketConfiguration;
 
 /**
  * JettyWebAppContext
@@ -109,7 +111,8 @@ public class JettyWebAppContext extends WebAppContext
                 new MetaInfConfiguration(),
                 new FragmentConfiguration(),
                 _envConfig = new EnvConfiguration(),
-                new org.eclipse.jetty.plus.webapp.PlusConfiguration(),
+                new PlusConfiguration(),
+                new WebSocketConfiguration(),
                 new MavenAnnotationConfiguration(),
                 new JettyWebXmlConfiguration()
         });

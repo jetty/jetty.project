@@ -112,6 +112,11 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
+      <artifactId>javax-websocket-server-impl</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>websocket-server</artifactId>
       <version>${project.version}</version>
     </dependency>
