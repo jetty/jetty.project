@@ -19,8 +19,7 @@
 package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.regex.Pattern;
 
 import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.BufferUtil;
@@ -101,6 +100,7 @@ public class HttpField
         CACHE.put(new HttpField(HttpHeader.COOKIE,(String)null));
     }
 
+    private final static Pattern __splitter = Pattern.compile("\\s*,\\s*");
     private final static byte[] __colon_space = new byte[] {':',' '};
     
     private final HttpHeader _header;
@@ -153,10 +153,10 @@ public class HttpField
         if (value.equalsIgnoreCase(_value))
             return true;
 
-        String[] split = _value.split("\\s*,\\s*");
-        for (String s : split)
+        String[] split = __splitter.split(_value);
+        for (int i = 0; i < split.length; i++)
         {
-            if (value.equalsIgnoreCase(s))
+            if (value.equalsIgnoreCase(split[i]))
                 return true;
         }
 
