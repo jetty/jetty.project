@@ -1,3 +1,5 @@
+jetty-9.0.6-SNAPSHOT
+
 jetty-9.0.5.v20130815 - 15 August 2013
  + 414898 Only upgrade v0 to v1 cookies on dquote , ; backslash space and tab
    in the value
