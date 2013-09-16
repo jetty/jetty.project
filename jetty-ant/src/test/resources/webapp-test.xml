@@ -10,7 +10,7 @@
            classpathref="jetty.plugin.classpath" loaderref="jetty.loader" />
 
   <target name="jetty.run">
-    <jetty.run daemon="true" scanIntervalSeconds="10">
+    <jetty.run daemon="true" scanIntervalSeconds="10" jettyPort="0">
        <webapp  war="${basedir}/src/test/resources/foo" contextpath="/" />
     </jetty.run>
   </target>
