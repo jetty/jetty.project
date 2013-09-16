@@ -22,6 +22,12 @@ import java.util.Collection;
 
 public interface Container
 {
+    /* ------------------------------------------------------------ */
+    /**
+     * Add a bean.  If the bean is-a {@link Listener}, then also do an implicit {@link #addEventListener(Listener)}.
+     * @param o the bean object to add
+     * @return true if the bean was added, false if it was already present
+     */
     public boolean addBean(Object o);
 
     /**
@@ -45,11 +51,26 @@ public interface Container
 
     /**
      * Removes the given bean.
+     * If the bean is-a {@link Listener}, then also do an implicit {@link #removeEventListener(Listener)}.
      * @return whether the bean was removed
      * @see #removeBeans()
      */
     public boolean removeBean(Object o);
     
+    /**
+     * Add an event listener. 
+     * @see Container#addBean(Object), which also adds listeners if the bean is-a Listener
+     * @param listener
+     */
+    public void addEventListener(Listener listener);
+    
+    /**
+     * Remove an event listener. 
+     * @see Container#removeBean(Object), which also adds listeners if the bean is-a Listener
+     * @param listener
+     */
+    public void removeEventListener(Listener listener);
+
     /**
      * A listener for Container events.
      * If an added bean implements this interface it will receive the events
