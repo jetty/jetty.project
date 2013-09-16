@@ -437,6 +437,7 @@ public class ContextHandlerTest
         assertTrue(handler.isProtectedTarget("/foo-inf/x/y/z"));
         assertFalse(handler.isProtectedTarget("/foo/x/y/z"));
         assertTrue(handler.isProtectedTarget("/foo-inf?x=y&z=1"));
+        assertFalse(handler.isProtectedTarget("/foo-inf-bar"));
 
         protectedTargets = new String[4];
         System.arraycopy(handler.getProtectedTargets(), 0, protectedTargets, 0, 2);

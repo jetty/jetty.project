@@ -27,6 +27,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
+import org.eclipse.jetty.util.component.Container.Listener;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -239,25 +240,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
 
         // if the bean is a Listener
         if (o instanceof Container.Listener)
-        {
-            Container.Listener listener = (Container.Listener)o;
-            _listeners.add(listener);
-
-            // tell it about existing beans
-            for (Bean b:_beans)
-            {
-                listener.beanAdded(this,b._bean);
-
-                // handle inheritance
-                if (listener instanceof InheritedListener && b.isManaged() && b._bean instanceof Container)
-                {
-                    if (b._bean instanceof ContainerLifeCycle)
-                         ((ContainerLifeCycle)b._bean).addBean(listener, false);
-                     else
-                         ((Container)b._bean).addBean(listener);
-                }
-            }
-        }
+            addEventListener((Container.Listener)o);
 
         // Add the bean
         _beans.add(new_bean);
@@ -324,6 +307,31 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
         return true;
     }
 
+    
+
+    @Override
+    public void addEventListener(Container.Listener listener)
+    {
+        if (_listeners.contains(listener))
+            return;
+        
+        _listeners.add(listener);
+
+        // tell it about existing beans
+        for (Bean b:_beans)
+        {
+            listener.beanAdded(this,b._bean);
+
+            // handle inheritance
+            if (listener instanceof InheritedListener && b.isManaged() && b._bean instanceof Container)
+            {
+                if (b._bean instanceof ContainerLifeCycle)
+                     ((ContainerLifeCycle)b._bean).addBean(listener, false);
+                 else
+                     ((Container)b._bean).addBean(listener);
+            }
+        }
+    }
 
     /**
      * Manages a bean already contained by this aggregate, so that it is started/stopped/destroyed with this
@@ -479,20 +487,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
                 l.beanRemoved(this,bean._bean);
 
             if (bean._bean instanceof Container.Listener)
-            {
-                Container.Listener listener = (Container.Listener)bean._bean;
-                if (_listeners.remove(listener))
-                {
-                    // remove existing beans
-                    for (Bean b:_beans)
-                    {
-                        listener.beanRemoved(this,b._bean);
-
-                        if (listener instanceof InheritedListener && b.isManaged() && b._bean instanceof Container)
-                            ((Container)b._bean).removeBean(listener);
-                    }
-                }
-            }
+                removeEventListener((Container.Listener)bean._bean);
 
             // stop managed beans
             if (bean._managed==Managed.MANAGED && bean._bean instanceof LifeCycle)
@@ -515,7 +510,21 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
         return false;
     }
 
+    @Override
+    public void removeEventListener(Container.Listener listener)
+    {
+        if (_listeners.remove(listener))
+        {
+            // remove existing beans
+            for (Bean b:_beans)
+            {
+                listener.beanRemoved(this,b._bean);
 
+                if (listener instanceof InheritedListener && b.isManaged() && b._bean instanceof Container)
+                    ((Container)b._bean).removeBean(listener);
+            }
+        }
+    }
 
     @Override
     public void setStopTimeout(long stopTimeout)
