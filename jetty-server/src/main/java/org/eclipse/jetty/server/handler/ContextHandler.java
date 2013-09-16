@@ -1169,16 +1169,30 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         while (target.startsWith("//"))
             target=URIUtil.compactPath(target);
 
-        boolean isProtected = false;
-        int i=0;
-        while (!isProtected && i<_protectedTargets.length)
+        for (int i=0; i<_protectedTargets.length; i++)
         {
-            isProtected = StringUtil.startsWithIgnoreCase(target, _protectedTargets[i++]);
+            String t=_protectedTargets[i];
+            if (StringUtil.startsWithIgnoreCase(target,t))
+            {
+                if (target.length()==t.length())
+                    return true;
+                
+                // Check that the target prefix really is a path segment, thus
+                // it can end with /, a query, a target or a parameter
+                char c=target.charAt(t.length());
+                if (c=='/'||c=='?'||c=='#'||c==';')
+                    return true;
+            }
         }
-        return isProtected;
+        return false;
     }
 
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @param targets Array of URL prefix. Each prefix is in the form /path and will match
+     * either /path exactly or /path/anything
+     */
     public void setProtectedTargets (String[] targets)
     {
         if (targets == null)
@@ -1191,6 +1205,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         System.arraycopy(targets, 0, _protectedTargets, 0, targets.length);
     }
 
+    /* ------------------------------------------------------------ */
     public String[] getProtectedTargets ()
     {
         if (_protectedTargets == null)
