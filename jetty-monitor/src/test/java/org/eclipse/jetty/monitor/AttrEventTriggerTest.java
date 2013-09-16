@@ -97,6 +97,7 @@ public class AttrEventTriggerTest
         MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
         MBeanContainer mBeanContainer = new MBeanContainer(mBeanServer);
         mBeanContainer.addBean(Log.getLog());
+        MBeanContainer.resetUnique();
 
         _counter = _handler.getRequestCounter();
         mBeanContainer.addBean(_counter);
