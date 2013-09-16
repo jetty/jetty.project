@@ -21,11 +21,11 @@ package org.eclipse.jetty.ant;
 import java.net.HttpURLConnection;
 import java.net.URI;
 
-import junit.framework.Assert;
-
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.junit.Ignore;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 public class JettyAntTaskTest
 {
@@ -42,9 +42,9 @@ public class JettyAntTaskTest
         HttpURLConnection connection = (HttpURLConnection)uri.toURL().openConnection();
         
         connection.connect();
-        
-        Assert.assertEquals(404,connection.getResponseCode());
-        
+
+        assertThat("response code is 404", connection.getResponseCode(), is(404));
+
         build.stop();
     }
 
@@ -53,17 +53,17 @@ public class JettyAntTaskTest
     public void testWebApp () throws Exception
     {
         AntBuild build = new AntBuild(MavenTestingUtils.getTestResourceFile("webapp-test.xml").getAbsolutePath());
-      
+
         build.start();
-        
+
         URI uri = new URI("http://" + build.getJettyHost() + ":" + build.getJettyPort() + "/");
-        
+
         HttpURLConnection connection = (HttpURLConnection)uri.toURL().openConnection();
-        
+
         connection.connect();
-        
-        Assert.assertEquals(200,connection.getResponseCode());
-        
+
+        assertThat("response code is 200", connection.getResponseCode(), is(200));
+
         System.err.println("Stop build!");
         build.stop();
     }
