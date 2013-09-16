@@ -17,30 +17,30 @@
 //
 
 package org.eclipse.jetty.server.ssl;
-
-import static org.junit.Assert.assertEquals;
-
 import java.io.FileInputStream;
-import java.io.InputStream;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.net.SocketException;
-import java.net.URI;
 import java.security.KeyStore;
 import java.util.Arrays;
-
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
 import javax.net.ssl.TrustManagerFactory;
 
-import org.eclipse.jetty.io.ssl.SslConnection;
+import org.eclipse.jetty.io.AsyncEndPoint;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.nio.SslConnection;
 import org.eclipse.jetty.server.HttpServerTestBase;
-import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.lessThan;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 /**
  * HttpServer Tester.
@@ -51,100 +51,70 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
     {
         _scheme="https";
     }
-
+    
     @Override
     protected Socket newSocket(String host, int port) throws Exception
     {
         return __sslContext.getSocketFactory().createSocket(host,port);
     }
+    
+    private static final AtomicInteger _handlecount = new AtomicInteger();
 
-    @Override
-    public void testFullMethod() throws Exception
-    {
-        try
+    @BeforeClass
+    public static void init() throws Exception
+    {   
+        SslSelectChannelConnector connector = new SslSelectChannelConnector()
         {
-            super.testFullMethod();
-        }
-        catch (SocketException e)
-        {
-            Log.getLogger(SslConnection.class).warn("Close overtook 400 response");
-        }
-    }
-
-    @Override
-    public void testFullURI() throws Exception
-    {
-        try
-        {
-            super.testFullURI();
-        }
-        catch (SocketException e)
-        {
-            Log.getLogger(SslConnection.class).warn("Close overtook 400 response");
-        }
-    }
-
-    @Override
-    public void testFullHeader() throws Exception
-    {
-        try
-        {
-            super.testFullHeader();
-        }
-        catch (SocketException e)
-        {
-            Log.getLogger(SslConnection.class).warn("Close overtook 400 response");
-        }
-    }
-
-    @Before
-    public void init() throws Exception
-    {
+            @Override
+            protected SslConnection newSslConnection(AsyncEndPoint endPoint, SSLEngine engine)
+            {
+                return new SslConnection(engine, endPoint)
+                {
+                    @Override
+                    public Connection handle() throws IOException
+                    {
+                        _handlecount.incrementAndGet();
+                        return super.handle();
+                    }
+                };
+            }
+        };
+        
         String keystorePath = System.getProperty("basedir",".") + "/src/test/resources/keystore";
-        SslContextFactory sslContextFactory = new SslContextFactory();
-        sslContextFactory.setKeyStorePath(keystorePath);
-        sslContextFactory.setKeyStorePassword("storepwd");
-        sslContextFactory.setKeyManagerPassword("keypwd");
-        sslContextFactory.setTrustStorePath(keystorePath);
-        sslContextFactory.setTrustStorePassword("storepwd");
-        ServerConnector connector = new ServerConnector(_server, 1, 1, sslContextFactory);
-
+        SslContextFactory cf = connector.getSslContextFactory();
+        cf.setKeyStorePath(keystorePath);
+        cf.setKeyStorePassword("storepwd");
+        cf.setKeyManagerPassword("keypwd");
+        cf.setTrustStore(keystorePath);
+        cf.setTrustStorePassword("storepwd");
+        connector.setUseDirectBuffers(true);
         startServer(connector);
+        
 
         KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
-        try (InputStream stream = new FileInputStream(sslContextFactory.getKeyStorePath()))
-        {
-            keystore.load(stream, "storepwd".toCharArray());
-        }
+        keystore.load(new FileInputStream(connector.getKeystore()), "storepwd".toCharArray());
         TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         trustManagerFactory.init(keystore);
         __sslContext = SSLContext.getInstance("TLS");
         __sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
-
+        
         try
         {
             HttpsURLConnection.setDefaultHostnameVerifier(__hostnameverifier);
-            SSLContext sc = SSLContext.getInstance("TLS");
-            sc.init(null, SslContextFactory.TRUST_ALL_CERTS, new java.security.SecureRandom());
+            SSLContext sc = SSLContext.getInstance("TLS"); 
+            sc.init(null, SslContextFactory.TRUST_ALL_CERTS, new java.security.SecureRandom()); 
             HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
         }
         catch(Exception e)
         {
             e.printStackTrace();
             throw new RuntimeException(e);
-        }
-    }
+        }   
+    }   
 
-    @Override
-    public void testBlockingWhileReadingRequestContent() throws Exception
+    public void testRequest2Fragments() throws Exception
     {
-        super.testBlockingWhileReadingRequestContent();
-    }
-
-    @Override
-    public void testBlockingWhileWritingResponseContent() throws Exception
-    {
-        super.testBlockingWhileWritingResponseContent();
+        super.testRequest2Fragments();
     }
 
     @Test
@@ -158,8 +128,7 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
         // Sort the list
         Arrays.sort(points);
 
-        URI uri=_server.getURI();
-        Socket client=newSocket(uri.getHost(),uri.getPort());
+        Socket client=newSocket(HOST,_connector.getLocalPort());
         try
         {
             OutputStream os=client.getOutputStream();
@@ -169,7 +138,7 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
             // Write out the fragments
             for (int j=0; j<points.length; ++j)
             {
-                int point=points[j];
+                int point=points[j];                
                 os.write(bytes,last,point-last);
                 last=point;
                 os.flush();
@@ -181,7 +150,7 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
             os.write(bytes,last,bytes.length-last);
             os.flush();
             Thread.sleep(PAUSE);
-
+            
 
             // Read the response
             String response=readResponse(client);
@@ -206,6 +175,12 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
     public void testAvailable() throws Exception
     {
     }
-
-
+    
+    @Override
+    public void testSuspendedPipeline() throws Exception
+    {
+        _handlecount.set(0);
+        super.testSuspendedPipeline();
+        assertThat(_handlecount.get(),lessThan(50));
+    }
 }

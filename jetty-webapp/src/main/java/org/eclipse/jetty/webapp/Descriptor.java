@@ -66,7 +66,7 @@ public abstract class Descriptor
             }
             finally
             {
-                _xml.close();
+                _xml.release();
             }
         }
     }

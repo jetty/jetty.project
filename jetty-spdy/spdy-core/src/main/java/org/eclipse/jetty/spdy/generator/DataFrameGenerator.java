@@ -20,10 +20,9 @@ package org.eclipse.jetty.spdy.generator;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.spdy.ByteBufferPool;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.frames.DataFrame;
-import org.eclipse.jetty.util.BufferUtil;
 
 public class DataFrameGenerator
 {
@@ -37,8 +36,6 @@ public class DataFrameGenerator
     public ByteBuffer generate(int streamId, int length, DataInfo dataInfo)
     {
         ByteBuffer buffer = bufferPool.acquire(DataFrame.HEADER_LENGTH + length, true);
-        BufferUtil.clearToFill(buffer);
-        buffer.limit(length + DataFrame.HEADER_LENGTH);
         buffer.position(DataFrame.HEADER_LENGTH);
         // Guaranteed to always be >= 0
         int read = dataInfo.readInto(buffer);

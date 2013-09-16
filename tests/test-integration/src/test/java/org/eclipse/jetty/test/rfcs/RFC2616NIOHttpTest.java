@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.test.rfcs;
 
-import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http.HttpSchemes;
 import org.eclipse.jetty.test.support.TestableJettyServer;
 import org.eclipse.jetty.test.support.rawhttp.HttpSocket;
 import org.eclipse.jetty.test.support.rawhttp.HttpSocketImpl;
@@ -33,7 +33,7 @@ public class RFC2616NIOHttpTest extends RFC2616BaseTest
     public static void setupServer() throws Exception
     {
         TestableJettyServer server = new TestableJettyServer();
-        server.setScheme(HttpScheme.HTTP.asString());
+        server.setScheme(HttpSchemes.HTTP);
         server.addConfiguration("RFC2616Base.xml");
         server.addConfiguration("RFC2616_Redirects.xml");
         server.addConfiguration("RFC2616_Filters.xml");

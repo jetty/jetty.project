@@ -25,7 +25,7 @@ import java.util.Map;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.ResourceCache;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.ClasspathPattern;
@@ -42,7 +42,7 @@ import org.eclipse.jetty.xml.XmlConfiguration;
  * This class is an AggregateLifeCycle, so dependent beans may be added to the template and will be started, stopped and destroyed with the template.
  * The template is started after the template.xml file have been applied. It is stopped and destroyed after the last instance using the template is undeployed.
  */
-public class TemplateContext extends ContainerLifeCycle implements WebAppClassLoader.Context, Destroyable
+public class TemplateContext extends AggregateLifeCycle implements WebAppClassLoader.Context, Destroyable
 {
     private final ClassLoader _libLoader;
     

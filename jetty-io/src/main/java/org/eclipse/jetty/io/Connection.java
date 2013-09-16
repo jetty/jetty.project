@@ -18,70 +18,60 @@
 
 package org.eclipse.jetty.io;
 
-import org.eclipse.jetty.util.Callback;
+import java.io.IOException;
 
-/**
- * <p>A {@link Connection} is associated to an {@link EndPoint} so that I/O events
- * happening on the {@link EndPoint} can be processed by the {@link Connection}.</p>
- * <p>A typical implementation of {@link Connection} overrides {@link #onOpen()} to
- * {@link EndPoint#fillInterested(Callback) set read interest} on the {@link EndPoint},
- * and when the {@link EndPoint} signals read readyness, this {@link Connection} can
- * read bytes from the network and interpret them.</p>
+/* ------------------------------------------------------------ */
+/** Abstract Connection used by Jetty Connectors.
+ * <p>
+ * Jetty will call the handle method of a connection when there is work
+ * to be done on the connection.  For blocking connections, this is soon
+ * as the connection is open and handle will keep being called until the
+ * connection is closed.   For non-blocking connections, handle will only
+ * be called if there are bytes to be read or the connection becomes writable
+ * after being write blocked.
+ *
+ * @see org.eclipse.jetty.io.nio.SelectorManager
  */
-public interface Connection extends AutoCloseable
+public interface Connection
 {
-    public void addListener(Listener listener);
+    /* ------------------------------------------------------------ */
+    /**
+     * Handle the connection.
+     * @return The Connection to use for the next handling of the connection.
+     * This allows protocol upgrades and support for CONNECT.
+     * @throws IOException if the handling of I/O operations fail
+     */
+    Connection handle() throws IOException;
 
     /**
-     * <p>Callback method invoked when this {@link Connection} is opened.</p>
-     * <p>Creators of the connection implementation are responsible for calling this method.</p>
+     * @return the timestamp at which the connection was created
      */
-    public void onOpen();
+    long getTimeStamp();
 
     /**
-     * <p>Callback method invoked when this {@link Connection} is closed.</p>
-     * <p>Creators of the connection implementation are responsible for calling this method.</p>
+     * @return whether this connection is idle, that is not parsing and not generating
+     * @see #onIdleExpired(long)
      */
-    public void onClose();
+    boolean isIdle();
 
     /**
-     * @return the {@link EndPoint} associated with this {@link Connection}
+     * <p>The semantic of this method is to return true to indicate interest in further reads,
+     * or false otherwise, but it is misnamed and should be really called <code>isReadInterested()</code>.</p>
+     *
+     * @return true to indicate interest in further reads, false otherwise
      */
-    public EndPoint getEndPoint();
+    // TODO: rename to isReadInterested() in the next release
+    boolean isSuspended();
 
     /**
-     * <p>Performs a logical close of this connection.</p>
-     * <p>For simple connections, this may just mean to delegate the close to the associated
-     * {@link EndPoint} but, for example, SSL connections should write the SSL close message
-     * before closing the associated {@link EndPoint}.</p>
+     * Called after the connection is closed
      */
-    @Override
-    public void close();
+    void onClose();
 
-    public int getMessagesIn();
-    public int getMessagesOut();
-    public long getBytesIn();
-    public long getBytesOut();
-    public long getCreatedTimeStamp();
-    
-    
-    public interface Listener
-    {
-        public void onOpened(Connection connection);
-
-        public void onClosed(Connection connection);
-
-        public static class Empty implements Listener
-        {
-            @Override
-            public void onOpened(Connection connection)
-            {
-            }
-
-            @Override
-            public void onClosed(Connection connection)
-            {
-            }
-        }
-    }
+    /**
+     * Called when the connection idle timeout expires
+     * @param idleForMs how long the connection has been idle
+     * @see #isIdle()
+     */
+    void onIdleExpired(long idleForMs);
 }

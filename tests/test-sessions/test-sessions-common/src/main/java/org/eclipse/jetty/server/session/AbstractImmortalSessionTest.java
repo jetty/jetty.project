@@ -18,11 +18,9 @@
 
 package org.eclipse.jetty.server.session;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Random;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -30,10 +28,12 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.http.HttpMethods;
 import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 
 /**
@@ -52,36 +52,44 @@ public abstract class AbstractImmortalSessionTest
         //turn off session expiry by setting maxInactiveInterval to -1
         AbstractTestServer server = createServer(0, -1, scavengePeriod);
         server.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
-
+        server.start();
+        int port=server.getPort();
+        
         try
         {
-            server.start();
-            int port=server.getPort();
             HttpClient client = new HttpClient();
+            client.setConnectorType(HttpClient.CONNECTOR_SOCKET);
             client.start();
             try
             {
                 int value = 42;
-                ContentResponse response = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=set&value=" + value);
-                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
-                String sessionCookie = response.getHeaders().getStringField("Set-Cookie");
+                ContentExchange exchange = new ContentExchange(true);
+                exchange.setMethod(HttpMethods.GET);
+                exchange.setURL("http://localhost:" + port + contextPath + servletMapping + "?action=set&value=" + value);
+                client.send(exchange);
+                exchange.waitForDone();
+                assertEquals(HttpServletResponse.SC_OK,exchange.getResponseStatus());
+                String sessionCookie = exchange.getResponseFields().getStringField("Set-Cookie");
                 assertTrue(sessionCookie != null);
                 // Mangle the cookie, replacing Path with $Path, etc.
                 sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
-                String resp = response.getContentAsString();
-                assertEquals(resp.trim(),String.valueOf(value));
+                String response = exchange.getResponseContent();
+                assertEquals(response.trim(),String.valueOf(value));
 
                 // Let's wait for the scavenger to run, waiting 2.5 times the scavenger period
                 Thread.sleep(scavengePeriod * 2500L);
 
                 // Be sure the session is still there
-                Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=get");
-                request.header("Cookie", sessionCookie);
-                response = request.send();
-                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
-                resp = response.getContentAsString();
-                assertEquals(String.valueOf(value),resp.trim());
+                exchange = new ContentExchange(true);
+                exchange.setMethod(HttpMethods.GET);
+                exchange.setURL("http://localhost:" + port + contextPath + servletMapping + "?action=get");
+                exchange.getRequestFields().add("Cookie", sessionCookie);
+                client.send(exchange);
+                exchange.waitForDone();
+                assertEquals(HttpServletResponse.SC_OK,exchange.getResponseStatus());
+                response = exchange.getResponseContent();
+                assertEquals(String.valueOf(value),response.trim());
             }
             finally
             {

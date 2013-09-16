@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.start;
 
+import static org.hamcrest.Matchers.is;
+
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
 public class CommandLineBuilderTest
 {
@@ -38,7 +38,7 @@ public class CommandLineBuilderTest
     @Test
     public void testSimpleCommandline()
     {
-        assertThat(cmd.toString(), is("java -Djava.io.tmpdir=/home/java/temp\\ dir/ --version"));
+        Assert.assertThat(cmd.toString(),is("java -Djava.io.tmpdir=/home/java/temp\\ dir/ --version"));
     }
 
     @Test
@@ -65,15 +65,9 @@ public class CommandLineBuilderTest
         System.out.println(cmd.toString());
     }
 
-    @Test
-    public void testQuoteQuotationMarks()
-    {
-        assertQuoting("-XX:OnOutOfMemoryError='kill -9 %p'","-XX:OnOutOfMemoryError='kill -9 %p'");
-    }
-
     private void assertQuoting(String raw, String expected)
     {
         String actual = CommandLineBuilder.quote(raw);
-        assertThat("Quoted version of [" + raw + "]", actual, is(expected));
+        Assert.assertThat("Quoted version of [" + raw + "]",actual,is(expected));
     }
 }

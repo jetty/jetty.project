@@ -18,11 +18,7 @@
 
 package org.eclipse.jetty.server.session;
 
-import java.sql.DriverManager;
 import org.eclipse.jetty.util.resource.Resource;
-import java.sql.SQLException;
-
-import org.junit.After;
 import org.junit.Test;
 
 /**
@@ -43,19 +39,5 @@ public class WebAppObjectInSessionTest extends AbstractWebAppObjectInSessionTest
     public void testWebappObjectInSession() throws Exception
     {
         super.testWebappObjectInSession();
-    }
-    
-    
-
-    @After
-    public void tearDown() throws Exception 
-    {
-        try
-        {
-            DriverManager.getConnection( "jdbc:derby:sessions;shutdown=true" );
-        }
-        catch( SQLException expected )
-        {
-        }
     }
 }

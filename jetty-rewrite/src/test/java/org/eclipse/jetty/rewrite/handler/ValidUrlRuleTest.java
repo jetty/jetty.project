@@ -22,7 +22,6 @@ import static org.junit.Assert.assertEquals;
 import junit.framework.Assert;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 @SuppressWarnings("unused")
@@ -43,9 +42,9 @@ public class ValidUrlRuleTest extends AbstractRuleTestCase
         _rule.setCode("404");
         _request.setRequestURI("/valid/uri.html");
         
-        _rule.matchAndApply(_request.getRequestURI(), _request, _response);
+        String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
 
-        assertEquals(0,_response.getStatus());
+        assertEquals(200,_response.getStatus());
     }
     
     @Test
@@ -85,7 +84,6 @@ public class ValidUrlRuleTest extends AbstractRuleTestCase
         assertEquals("foo",_response.getReason());
     }
     
-    @Ignore("Not working in jetty-9")
     @Test
     public void testInvalidShamrock() throws Exception
     {
@@ -99,7 +97,6 @@ public class ValidUrlRuleTest extends AbstractRuleTestCase
         assertEquals("foo",_response.getReason());
     }
 
-    @Ignore("Not working in jetty-9")
     @Test
     public void testValidShamrock() throws Exception
     {
@@ -111,6 +108,7 @@ public class ValidUrlRuleTest extends AbstractRuleTestCase
 
         assertEquals(200,_response.getStatus());
     }
+
     
     @Test
     public void testCharacters() throws Exception

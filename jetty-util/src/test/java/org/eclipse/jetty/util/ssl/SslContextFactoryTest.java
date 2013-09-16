@@ -22,8 +22,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.security.KeyStore;
 
-import javax.net.ssl.SSLEngine;
-
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
@@ -32,11 +30,10 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import static junit.framework.Assert.assertTrue;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 
 public class SslContextFactoryTest
@@ -56,35 +53,49 @@ public class SslContextFactoryTest
         String keystorePath = System.getProperty("basedir",".") + "/src/test/resources/keystore";
         cf.setKeyStorePassword("storepwd");
         cf.setKeyManagerPassword("keypwd");
-
+        
         cf.start();
-
+        
         assertTrue(cf.getSslContext()!=null);
     }
+    
+    @Test
+    public void testNoTsStreamKs() throws Exception
+    {
+        InputStream keystoreInputStream = this.getClass().getResourceAsStream("keystore");
 
+        cf.setKeyStoreInputStream(keystoreInputStream);
+        cf.setKeyStorePassword("storepwd");
+        cf.setKeyManagerPassword("keypwd");
+        
+        cf.start();
+        
+        assertTrue(cf.getSslContext()!=null);
+    }
+    
     @Test
     public void testNoTsSetKs() throws Exception
     {
+        InputStream keystoreInputStream = this.getClass().getResourceAsStream("keystore");
+
         KeyStore ks = KeyStore.getInstance("JKS");
-        try (InputStream keystoreInputStream = this.getClass().getResourceAsStream("keystore"))
-        {
-            ks.load(keystoreInputStream, "storepwd".toCharArray());
-        }
+        ks.load(keystoreInputStream, "storepwd".toCharArray());
+
         cf.setKeyStore(ks);
         cf.setKeyManagerPassword("keypwd");
-
+        
         cf.start();
-
+        
         assertTrue(cf.getSslContext()!=null);
     }
-
+    
     @Test
     public void testNoTsNoKs() throws Exception
     {
         cf.start();
         assertTrue(cf.getSslContext()!=null);
     }
-
+    
     @Test
     public void testTrustAll() throws Exception
     {
@@ -126,7 +137,6 @@ public class SslContextFactoryTest
     @Test
     public void testResourceTsResourceKsWrongPW() throws Exception
     {
-        SslContextFactory.LOG.info("EXPECT SslContextFactory@????????(null,null): java.security.UnrecoverableKeyException: Cannot recover key...");
         Resource keystoreResource = Resource.newSystemResource("keystore");
         Resource truststoreResource = Resource.newSystemResource("keystore");
 
@@ -150,7 +160,6 @@ public class SslContextFactoryTest
     @Test
     public void testResourceTsWrongPWResourceKs() throws Exception
     {
-        SslContextFactory.LOG.info("EXPECT SslContextFactory@????????(null,null): java.io.IOException: Keystore was tampered with ...");
         Resource keystoreResource = Resource.newSystemResource("keystore");
         Resource truststoreResource = Resource.newSystemResource("keystore");
 
@@ -170,50 +179,25 @@ public class SslContextFactoryTest
         {
         }
     }
-
+    
     @Test
     public void testNoKeyConfig() throws Exception
     {
         try
         {
-            SslContextFactory.LOG.info("EXPECT SslContextFactory@????????(null,/foo): java.lang.IllegalStateException: SSL doesn't have a valid keystore...");
             ((StdErrLog)Log.getLogger(AbstractLifeCycle.class)).setHideStacks(true);
-            cf.setTrustStorePath("/foo");
+            cf.setTrustStore("/foo");
             cf.start();
             Assert.fail();
         }
         catch (IllegalStateException e)
         {
-
+            
         }
         catch (Exception e)
         {
             Assert.fail("Unexpected exception");
         }
-    }
-
-    @Test
-    public void testSetExcludeCipherSuitesRegex() throws Exception
-    {
-        cf.setExcludeCipherSuites(".*RC4.*");
-        cf.start();
-        SSLEngine sslEngine = cf.newSSLEngine();
-        String[] enabledCipherSuites = sslEngine.getEnabledCipherSuites();
-        assertThat("At least 1 cipherSuite is enabled", enabledCipherSuites.length, greaterThan(0));
-        for (String enabledCipherSuite : enabledCipherSuites)
-            assertThat("CipherSuite does not contain RC4", enabledCipherSuite.contains("RC4"), is(false));
-    }
-
-    @Test
-    public void testSetIncludeCipherSuitesRegex() throws Exception
-    {
-        cf.setIncludeCipherSuites(".*RC4.*");
-        cf.start();
-        SSLEngine sslEngine = cf.newSSLEngine();
-        String[] enabledCipherSuites = sslEngine.getEnabledCipherSuites();
-        assertThat("At least 1 cipherSuite is enabled", enabledCipherSuites.length, greaterThan(0));
-        for (String enabledCipherSuite : enabledCipherSuites)
-            assertThat("CipherSuite contains RC4", enabledCipherSuite.contains("RC4"), is(true));
     }
 
     @Test

@@ -220,19 +220,5 @@ public class NoSqlSession extends AbstractSession
     {
     	return _version;
     }
-
-    @Override
-    public void setClusterId(String clusterId)
-    {
-        super.setClusterId(clusterId);
-    }
-
-    @Override
-    public void setNodeId(String nodeId)
-    {
-        super.setNodeId(nodeId);
-    }
-    
-    
     
 }

@@ -19,7 +19,6 @@
 package org.eclipse.jetty.security;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -62,19 +61,19 @@ public class JDBCLoginService extends MappedLoginService
 {
     private static final Logger LOG = Log.getLogger(JDBCLoginService.class);
 
-    protected String _config;
-    protected String _jdbcDriver;
-    protected String _url;
-    protected String _userName;
-    protected String _password;
-    protected String _userTableKey;
-    protected String _userTablePasswordField;
-    protected String _roleTableRoleField;
-    protected int _cacheTime;
-    protected long _lastHashPurge;
-    protected Connection _con;
-    protected String _userSql;
-    protected String _roleSql;
+    private String _config;
+    private String _jdbcDriver;
+    private String _url;
+    private String _userName;
+    private String _password;
+    private String _userTableKey;
+    private String _userTablePasswordField;
+    private String _roleTableRoleField;
+    private int _cacheTime;
+    private long _lastHashPurge;
+    private Connection _con;
+    private String _userSql;
+    private String _roleSql;
 
 
     /* ------------------------------------------------------------ */
@@ -117,10 +116,8 @@ public class JDBCLoginService extends MappedLoginService
     {
         Properties properties = new Properties();
         Resource resource = Resource.newResource(_config);
-        try (InputStream in = resource.getInputStream())
-        {
-            properties.load(in);
-        }
+        properties.load(resource.getInputStream());
+
         _jdbcDriver = properties.getProperty("jdbcdriver");
         _url = properties.getProperty("url");
         _userName = properties.getProperty("username");
@@ -241,29 +238,25 @@ public class JDBCLoginService extends MappedLoginService
             if (null == _con) 
                 throw new SQLException("Can't connect to database");
 
-            try (PreparedStatement stat1 = _con.prepareStatement(_userSql))
-            {
-                stat1.setObject(1, username);
-                try (ResultSet rs1 = stat1.executeQuery())
-                {
-                    if (rs1.next())
-                    {
-                        int key = rs1.getInt(_userTableKey);
-                        String credentials = rs1.getString(_userTablePasswordField);
-                        List<String> roles = new ArrayList<String>();
+            PreparedStatement stat = _con.prepareStatement(_userSql);
+            stat.setObject(1, username);
+            ResultSet rs = stat.executeQuery();
 
-                        try (PreparedStatement stat2 = _con.prepareStatement(_roleSql))
-                        {
-                            stat2.setInt(1, key);
-                            try (ResultSet rs2 = stat2.executeQuery())
-                            {
-                                while (rs2.next())
-                                    roles.add(rs2.getString(_roleTableRoleField));
-                            }
-                        }
-                        return putUser(username, Credential.getCredential(credentials),roles.toArray(new String[roles.size()]));
-                    }
-                }
+            if (rs.next())
+            {
+                int key = rs.getInt(_userTableKey);
+                String credentials = rs.getString(_userTablePasswordField);
+                stat.close();
+
+                stat = _con.prepareStatement(_roleSql);
+                stat.setInt(1, key);
+                rs = stat.executeQuery();
+                List<String> roles = new ArrayList<String>();
+                while (rs.next())
+                    roles.add(rs.getString(_roleTableRoleField));
+
+                stat.close();
+                return putUser(username, Credential.getCredential(credentials),roles.toArray(new String[roles.size()]));
             }
         }
         catch (SQLException e)

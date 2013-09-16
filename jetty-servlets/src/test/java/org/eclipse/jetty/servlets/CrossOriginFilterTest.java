@@ -19,19 +19,17 @@
 package org.eclipse.jetty.servlets;
 
 import java.io.IOException;
-import java.util.EnumSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
-import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.servlet.FilterHolder;
+import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.servlet.ServletTester;
+import org.eclipse.jetty.testing.ServletTester;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -58,7 +56,7 @@ public class CrossOriginFilterTest
     @Test
     public void testRequestWithNoOriginArrivesToApplication() throws Exception
     {
-        tester.getContext().addFilter(CrossOriginFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
+        tester.getContext().addFilter(CrossOriginFilter.class, "/*", FilterMapping.DEFAULT);
 
         final CountDownLatch latch = new CountDownLatch(1);
         tester.getContext().addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
@@ -66,7 +64,6 @@ public class CrossOriginFilterTest
         String request = "" +
                 "GET / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
-                "Connection: close\r\n" +
                 "\r\n";
         String response = tester.getResponses(request);
         Assert.assertTrue(response.contains("HTTP/1.1 200"));
@@ -79,7 +76,7 @@ public class CrossOriginFilterTest
         FilterHolder filterHolder = new FilterHolder(new CrossOriginFilter());
         String origin = "http://localhost";
         filterHolder.setInitParameter(CrossOriginFilter.ALLOWED_ORIGINS_PARAM, origin);
-        tester.getContext().addFilter(filterHolder, "/*", EnumSet.of(DispatcherType.REQUEST));
+        tester.getContext().addFilter(filterHolder, "/*", FilterMapping.DEFAULT);
 
         CountDownLatch latch = new CountDownLatch(1);
         tester.getContext().addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
@@ -88,7 +85,6 @@ public class CrossOriginFilterTest
         String request = "" +
                 "GET / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
-                "Connection: close\r\n" +
                 "Origin: " + otherOrigin + "\r\n" +
                 "\r\n";
         String response = tester.getResponses(request);
@@ -104,7 +100,7 @@ public class CrossOriginFilterTest
         FilterHolder filterHolder = new FilterHolder(new CrossOriginFilter());
         String origin = "http://subdomain.example.com";
         filterHolder.setInitParameter(CrossOriginFilter.ALLOWED_ORIGINS_PARAM, "http://*.example.com");
-        tester.getContext().addFilter(filterHolder, "/*", EnumSet.of(DispatcherType.REQUEST));
+        tester.getContext().addFilter(filterHolder, "/*", FilterMapping.DEFAULT);
 
         CountDownLatch latch = new CountDownLatch(1);
         tester.getContext().addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
@@ -112,7 +108,6 @@ public class CrossOriginFilterTest
         String request = "" +
         "GET / HTTP/1.1\r\n" +
         "Host: localhost\r\n" +
-        "Connection: close\r\n" +
         "Origin: " + origin + "\r\n" +
         "\r\n";
         String response = tester.getResponses(request);
@@ -128,7 +123,7 @@ public class CrossOriginFilterTest
         FilterHolder filterHolder = new FilterHolder(new CrossOriginFilter());
         String origin = "http://subdomain.subdomain.example.com";
         filterHolder.setInitParameter(CrossOriginFilter.ALLOWED_ORIGINS_PARAM, "http://*.example.com");
-        tester.getContext().addFilter(filterHolder, "/*", EnumSet.of(DispatcherType.REQUEST));
+        tester.getContext().addFilter(filterHolder, "/*", FilterMapping.DEFAULT);
 
         CountDownLatch latch = new CountDownLatch(1);
         tester.getContext().addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
@@ -136,7 +131,6 @@ public class CrossOriginFilterTest
         String request = "" +
         "GET / HTTP/1.1\r\n" +
         "Host: localhost\r\n" +
-        "Connection: close\r\n" +
         "Origin: " + origin + "\r\n" +
         "\r\n";
         String response = tester.getResponses(request);
@@ -152,7 +146,7 @@ public class CrossOriginFilterTest
         FilterHolder filterHolder = new FilterHolder(new CrossOriginFilter());
         String origin = "http://localhost";
         filterHolder.setInitParameter(CrossOriginFilter.ALLOWED_ORIGINS_PARAM, origin);
-        tester.getContext().addFilter(filterHolder, "/*", EnumSet.of(DispatcherType.REQUEST));
+        tester.getContext().addFilter(filterHolder, "/*", FilterMapping.DEFAULT);
 
         CountDownLatch latch = new CountDownLatch(1);
         tester.getContext().addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
@@ -160,7 +154,6 @@ public class CrossOriginFilterTest
         String request = "" +
                 "GET / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
-                "Connection: close\r\n" +
                 "Origin: " + origin + "\r\n" +
                 "\r\n";
         String response = tester.getResponses(request);
@@ -177,7 +170,7 @@ public class CrossOriginFilterTest
         String origin = "http://localhost";
         String otherOrigin = origin.replace("localhost", "127.0.0.1");
         filterHolder.setInitParameter(CrossOriginFilter.ALLOWED_ORIGINS_PARAM, origin + "," + otherOrigin);
-        tester.getContext().addFilter(filterHolder, "/*", EnumSet.of(DispatcherType.REQUEST));
+        tester.getContext().addFilter(filterHolder, "/*", FilterMapping.DEFAULT);
 
         CountDownLatch latch = new CountDownLatch(1);
         tester.getContext().addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
@@ -185,7 +178,6 @@ public class CrossOriginFilterTest
         String request = "" +
                 "GET / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
-                "Connection: close\r\n" +
                 // Use 2 spaces as separator to test that the implementation does not fail
                 "Origin: " + otherOrigin + " " + " " + origin + "\r\n" +
                 "\r\n";
@@ -201,7 +193,7 @@ public class CrossOriginFilterTest
     {
         FilterHolder filterHolder = new FilterHolder(new CrossOriginFilter());
         filterHolder.setInitParameter(CrossOriginFilter.ALLOW_CREDENTIALS_PARAM, "false");
-        tester.getContext().addFilter(filterHolder, "/*", EnumSet.of(DispatcherType.REQUEST));
+        tester.getContext().addFilter(filterHolder, "/*", FilterMapping.DEFAULT);
 
         CountDownLatch latch = new CountDownLatch(1);
         tester.getContext().addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
@@ -209,7 +201,6 @@ public class CrossOriginFilterTest
         String request = "" +
                 "GET / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
-                "Connection: close\r\n" +
                 "Origin: http://localhost\r\n" +
                 "\r\n";
         String response = tester.getResponses(request);
@@ -227,7 +218,7 @@ public class CrossOriginFilterTest
         // will contain the CORS response headers.
 
         FilterHolder filterHolder = new FilterHolder(new CrossOriginFilter());
-        tester.getContext().addFilter(filterHolder, "/*", EnumSet.of(DispatcherType.REQUEST));
+        tester.getContext().addFilter(filterHolder, "/*", FilterMapping.DEFAULT);
 
         CountDownLatch latch = new CountDownLatch(1);
         tester.getContext().addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
@@ -235,7 +226,6 @@ public class CrossOriginFilterTest
         String request = "" +
                 "PUT / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
-                "Connection: close\r\n" +
                 "Origin: http://localhost\r\n" +
                 "\r\n";
         String response = tester.getResponses(request);
@@ -253,7 +243,7 @@ public class CrossOriginFilterTest
         // will contain the CORS response headers.
 
         FilterHolder filterHolder = new FilterHolder(new CrossOriginFilter());
-        tester.getContext().addFilter(filterHolder, "/*", EnumSet.of(DispatcherType.REQUEST));
+        tester.getContext().addFilter(filterHolder, "/*", FilterMapping.DEFAULT);
 
         CountDownLatch latch = new CountDownLatch(1);
         tester.getContext().addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
@@ -261,7 +251,6 @@ public class CrossOriginFilterTest
         String request = "" +
                 "OPTIONS / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
-                "Connection: close\r\n" +
                 "Origin: http://localhost\r\n" +
                 "\r\n";
         String response = tester.getResponses(request);
@@ -276,7 +265,7 @@ public class CrossOriginFilterTest
     {
         FilterHolder filterHolder = new FilterHolder(new CrossOriginFilter());
         filterHolder.setInitParameter(CrossOriginFilter.ALLOWED_METHODS_PARAM, "PUT");
-        tester.getContext().addFilter(filterHolder, "/*", EnumSet.of(DispatcherType.REQUEST));
+        tester.getContext().addFilter(filterHolder, "/*", FilterMapping.DEFAULT);
 
         CountDownLatch latch = new CountDownLatch(1);
         tester.getContext().addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
@@ -285,7 +274,6 @@ public class CrossOriginFilterTest
         String request = "" +
                 "OPTIONS / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
-                "Connection: close\r\n" +
                 CrossOriginFilter.ACCESS_CONTROL_REQUEST_METHOD_HEADER + ": PUT\r\n" +
                 "Origin: http://localhost\r\n" +
                 "\r\n";
@@ -302,7 +290,6 @@ public class CrossOriginFilterTest
         request = "" +
                 "PUT / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
-                "Connection: close\r\n" +
                 "Origin: http://localhost\r\n" +
                 "\r\n";
         response = tester.getResponses(request);
@@ -317,7 +304,7 @@ public class CrossOriginFilterTest
         FilterHolder filterHolder = new FilterHolder(new CrossOriginFilter());
         filterHolder.setInitParameter(CrossOriginFilter.ALLOWED_METHODS_PARAM, "GET,HEAD,POST,PUT,DELETE");
         filterHolder.setInitParameter(CrossOriginFilter.ALLOWED_HEADERS_PARAM, "X-Requested-With,Content-Type,Accept,Origin,X-Custom");
-        tester.getContext().addFilter(filterHolder, "/*",EnumSet.of(DispatcherType.REQUEST));
+        tester.getContext().addFilter(filterHolder, "/*", FilterMapping.DEFAULT);
 
         CountDownLatch latch = new CountDownLatch(1);
         tester.getContext().addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
@@ -326,7 +313,6 @@ public class CrossOriginFilterTest
         String request = "" +
                 "OPTIONS / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
-                "Connection: close\r\n" +
                 CrossOriginFilter.ACCESS_CONTROL_REQUEST_METHOD_HEADER + ": DELETE\r\n" +
                 CrossOriginFilter.ACCESS_CONTROL_REQUEST_HEADERS_HEADER + ": origin,x-custom,x-requested-with\r\n" +
                 "Origin: http://localhost\r\n" +
@@ -344,7 +330,6 @@ public class CrossOriginFilterTest
         request = "" +
                 "DELETE / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
-                "Connection: close\r\n" +
                 "X-Custom: value\r\n" +
                 "X-Requested-With: local\r\n" +
                 "Origin: http://localhost\r\n" +
@@ -360,7 +345,7 @@ public class CrossOriginFilterTest
     {
         FilterHolder filterHolder = new FilterHolder(new CrossOriginFilter());
         filterHolder.setInitParameter(CrossOriginFilter.ALLOWED_METHODS_PARAM, "GET,HEAD,POST,PUT,DELETE");
-        tester.getContext().addFilter(filterHolder, "/*", EnumSet.of(DispatcherType.REQUEST));
+        tester.getContext().addFilter(filterHolder, "/*", FilterMapping.DEFAULT);
 
         CountDownLatch latch = new CountDownLatch(1);
         tester.getContext().addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
@@ -369,7 +354,6 @@ public class CrossOriginFilterTest
         String request = "" +
                 "OPTIONS / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
-                "Connection: close\r\n" +
                 CrossOriginFilter.ACCESS_CONTROL_REQUEST_METHOD_HEADER + ": DELETE\r\n" +
                 CrossOriginFilter.ACCESS_CONTROL_REQUEST_HEADERS_HEADER + ": origin,x-custom,x-requested-with\r\n" +
                 "Origin: http://localhost\r\n" +
@@ -386,7 +370,7 @@ public class CrossOriginFilterTest
     public void testCrossOriginFilterDisabledForWebSocketUpgrade() throws Exception
     {
         FilterHolder filterHolder = new FilterHolder(new CrossOriginFilter());
-        tester.getContext().addFilter(filterHolder, "/*", EnumSet.of(DispatcherType.REQUEST));
+        tester.getContext().addFilter(filterHolder, "/*", FilterMapping.DEFAULT);
 
         CountDownLatch latch = new CountDownLatch(1);
         tester.getContext().addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
@@ -410,7 +394,7 @@ public class CrossOriginFilterTest
     {
         FilterHolder filterHolder = new FilterHolder(new CrossOriginFilter());
         filterHolder.setInitParameter("exposedHeaders", "Content-Length");
-        tester.getContext().addFilter(filterHolder, "/*", EnumSet.of(DispatcherType.REQUEST));
+        tester.getContext().addFilter(filterHolder, "/*", FilterMapping.DEFAULT);
 
         CountDownLatch latch = new CountDownLatch(1);
         tester.getContext().addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
@@ -418,7 +402,6 @@ public class CrossOriginFilterTest
         String request = "" +
                 "GET / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
-                "Connection: close\r\n" +
                 "Origin: http://localhost\r\n" +
                 "\r\n";
         String response = tester.getResponses(request);
@@ -433,7 +416,7 @@ public class CrossOriginFilterTest
         FilterHolder filterHolder = new FilterHolder(new CrossOriginFilter());
         filterHolder.setInitParameter(CrossOriginFilter.ALLOWED_METHODS_PARAM, "PUT");
         filterHolder.setInitParameter(CrossOriginFilter.CHAIN_PREFLIGHT_PARAM, "false");
-        tester.getContext().addFilter(filterHolder, "/*", EnumSet.of(DispatcherType.REQUEST));
+        tester.getContext().addFilter(filterHolder, "/*", FilterMapping.DEFAULT);
 
         CountDownLatch latch = new CountDownLatch(1);
         tester.getContext().addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
@@ -442,7 +425,6 @@ public class CrossOriginFilterTest
         String request = "" +
                 "OPTIONS / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
-                "Connection: close\r\n" +
                 CrossOriginFilter.ACCESS_CONTROL_REQUEST_METHOD_HEADER + ": PUT\r\n" +
                 "Origin: http://localhost\r\n" +
                 "\r\n";

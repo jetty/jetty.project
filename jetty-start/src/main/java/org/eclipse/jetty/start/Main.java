@@ -39,7 +39,6 @@ import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
-import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -50,8 +49,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Properties;
 import java.util.Set;
-
-import javax.naming.OperationNotSupportedException;
 
 /*-------------------------------------------*/
 /**
@@ -151,7 +148,21 @@ public class Main
         File start_ini = new File(_jettyHome,"start.ini");
         if (start_ini.exists())
             ini_args.addAll(loadStartIni(start_ini));
-           
+
+        File start_d = new File(_jettyHome,"start.d");
+        if (start_d.isDirectory())
+        {
+            File[] inis = start_d.listFiles(new FilenameFilter()
+            {
+                public boolean accept(File dir, String name)
+                {
+                    return name.toLowerCase(Locale.ENGLISH).endsWith(".ini");
+                }
+            });
+            Arrays.sort(inis);
+            for (File i : inis)
+                ini_args.addAll(loadStartIni(i));
+        }
         return ini_args;
     }
 
@@ -177,12 +188,6 @@ public class Main
                 int timeout = Integer.parseInt(Config.getProperty("STOP.WAIT","0"));
                 stop(port,key,timeout);
                 return null;
-            }
-            
-            if (arg.startsWith("--download="))
-            {
-                download(arg);
-                continue;
             }
 
             if ("--version".equals(arg) || "-v".equals(arg) || "--info".equals(arg))
@@ -243,6 +248,12 @@ public class Main
                 System.setOut(logger);
                 System.setErr(logger);
                 System.out.println("Establishing " + START_LOG_FILENAME + " on " + new Date());
+                continue;
+            }
+
+            if (arg.startsWith("--pre="))
+            {
+                xmls.add(startup++,arg.substring(6));
                 continue;
             }
 
@@ -309,53 +320,6 @@ public class Main
         }
 
         return xmls;
-    }
-
-    private void download(String arg)
-    {
-        try
-        {
-            String[] split = arg.split(":",3);
-            if (split.length!=3 || "http".equalsIgnoreCase(split[0]) || !split[1].startsWith("//"))
-                throw new IllegalArgumentException("Not --download=<http uri>:<location>");
-            
-            String location=split[2];
-            if (File.separatorChar!='/')
-                location.replaceAll("/",File.separator);
-            File file = new File(location);
-            
-            if (Config.isDebug())
-                System.err.println("Download to "+file.getAbsolutePath()+(file.exists()?" Exists!":""));
-            if (file.exists())
-                return;
-            
-            URL url = new URL(split[0].substring(11)+":"+split[1]);
-
-            System.err.println("DOWNLOAD: "+url+" to "+location);
-
-            if (!file.getParentFile().exists())
-                file.getParentFile().mkdirs();
-
-            byte[] buf=new byte[8192];
-            try (InputStream in = url.openStream(); OutputStream out = new FileOutputStream(file);)
-            {
-                while(true)
-                {
-                    int len = in.read(buf);
-
-                    if (len>0)
-                        out.write(buf,0,len);
-                    if (len<0)
-                        break;
-                }
-            }
-        }
-        catch(Exception e)
-        {
-            System.err.println("ERROR: processing "+arg+"\n"+e);
-            e.printStackTrace();
-            usageExit(EXIT_USAGE);
-        }
     }
 
     private void usage()
@@ -433,7 +397,7 @@ public class Main
                     }
                     else if (info.equals("@STARTINI"))
                     {
-                        List<String> ini = parseStartIniFiles();
+                        List<String> ini = loadStartIni(new File(_jettyHome,"start.ini"));
                         if (ini != null && ini.size() > 0)
                         {
                             for (String a : ini)
@@ -742,10 +706,7 @@ public class Main
             File prop_file = File.createTempFile("start",".properties");
             if (!_dryRun)
                 prop_file.deleteOnExit();
-            try (OutputStream out = new FileOutputStream(prop_file))
-            {
-                properties.store(out,"start.jar properties");
-            }
+            properties.store(new FileOutputStream(prop_file),"start.jar properties");
             cmd.addArg(prop_file.getAbsolutePath());
         }
 
@@ -940,8 +901,19 @@ public class Main
             {
                 return JarVersion.getVersion(element);
             }
+
+            if (name.endsWith(".zip"))
+            {
+                return getZipVersion(element);
+            }
         }
 
+        return "";
+    }
+
+    private String getZipVersion(File element)
+    {
+        // TODO - find version in zip file. Look for META-INF/MANIFEST.MF ?
         return "";
     }
 
@@ -1148,7 +1120,7 @@ public class Main
     /**
      * Convert a start.ini format file into an argument list.
      */
-    List<String> loadStartIni(File ini)
+    static List<String> loadStartIni(File ini)
     {
         if (!ini.exists())
         {
@@ -1174,39 +1146,6 @@ public class Main
                 {
                     continue;
                 }
-                
-                if (arg.endsWith("/"))
-                {
-                    try
-                    {
-                        File start_d = new File(arg);
-                        if (!start_d.exists() || !start_d.isDirectory())
-                            start_d = new File(_jettyHome,arg);
-                        
-                        if (start_d.isDirectory())
-                        {
-                            File[] inis = start_d.listFiles(new FilenameFilter()
-                            {
-                                @Override
-                                public boolean accept(File dir, String name)
-                                {
-                                    return name.toLowerCase(Locale.ENGLISH).endsWith(".ini");
-                                }
-                            });
-                            Arrays.sort(inis);
-                            
-                            for (File i : inis)
-                                args.addAll(loadStartIni(i));
-     
-                            continue;
-                        }
-                    }
-                    catch(Exception e)
-                    {
-                        e.printStackTrace();
-                    }
-                }
-                
                 args.add(arg);
             }
         }

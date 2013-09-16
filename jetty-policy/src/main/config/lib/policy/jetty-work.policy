@@ -1,0 +1,19 @@
+//
+// This file contains permissions for the work directory of jetty.
+//
+// Typical usage of secured jetty implies usage of a standard work
+// style directory that web applications are unpacked into.  These specific
+// web applications should have their own policy files however this 
+// file exists to provide a codebase that all webapps under a certain code
+// base can be given should there not be a more exclusive policy file
+// provided.
+
+
+grant codeBase "file:${jetty.home${/}work${/}-" {
+   permission java.io.FilePermission "${jetty.home}${/}webapps${/}-", "read"; // Ought to go up a specific codebase
+   permission java.io.FilePermission "${jetty.home}${/}work${/}-", "read";
+   permission java.util.PropertyPermission "org.eclipse.jetty.util.log.class", "read";  
+   permission java.util.PropertyPermission "org.eclipse.jetty.util.log.stderr.DEBUG", "read";  
+   permission java.util.PropertyPermission "org.eclipse.jetty.util.log.IGNORED", "read";
+   
+};

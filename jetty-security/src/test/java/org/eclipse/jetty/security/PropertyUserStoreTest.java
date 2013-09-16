@@ -21,14 +21,14 @@ package org.eclipse.jetty.security;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
-import java.io.Writer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import junit.framework.Assert;
+
 import org.eclipse.jetty.util.security.Credential;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -56,21 +56,19 @@ public class PropertyUserStoreTest
 
     private void writeInitialUsers(String testFile) throws Exception
     {
-        try (Writer writer = new BufferedWriter(new FileWriter(testFile)))
-        {
-            writer.append("tom: tom, roleA\n");
-            writer.append("dick: dick, roleB\n");
-            writer.append("harry: harry, roleA, roleB\n");
-        }
+        BufferedWriter writer = new BufferedWriter(new FileWriter(testFile));
+        writer.append("tom: tom, roleA\n");
+        writer.append("dick: dick, roleB\n");
+        writer.append("harry: harry, roleA, roleB\n");
+        writer.close();
     }
 
     private void writeAdditionalUser(String testFile) throws Exception
     {
         Thread.sleep(1001);
-        try (Writer writer = new BufferedWriter(new FileWriter(testFile,true)))
-        {
-            writer.append("skip: skip, roleA\n");
-        }
+        BufferedWriter writer = new BufferedWriter(new FileWriter(testFile,true));
+        writer.append("skip: skip, roleA\n");
+        writer.close();
     }
 
     @Test
@@ -143,7 +141,7 @@ public class PropertyUserStoreTest
         {
             Thread.sleep(10);
         }
-
+        
         Assert.assertNotNull("Failed to retrieve UserIdentity from PropertyUserStore directly", store.getUserIdentity("skip"));
         Assert.assertEquals(4,userCount.get());
 

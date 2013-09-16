@@ -34,19 +34,19 @@ import javax.servlet.ServletResponseWrapper;
 /* ------------------------------------------------------------ */
 /**
  * This implementation of Continuation is used by {@link ContinuationSupport}
- * when it detects that the application has been deployed in a non-jetty Servlet 3
+ * when it detects that the application has been deployed in a non-jetty Servlet 3 
  * server.
  */
-public class Servlet3Continuation implements Continuation, AsyncListener
+public class Servlet3Continuation implements Continuation
 {
     // Exception reused for all continuations
     // Turn on debug in ContinuationFilter to see real stack trace.
     private final static ContinuationThrowable __exception = new ContinuationThrowable();
-
+    
     private final ServletRequest _request;
     private ServletResponse _response;
     private AsyncContext _context;
-    private final List<ContinuationListener> _listeners=new ArrayList<ContinuationListener>();
+    private List<AsyncListener> _listeners=new ArrayList<AsyncListener>(); 
     private volatile boolean _initial=true;
     private volatile boolean _resumed=false;
     private volatile boolean _expired=false;
@@ -58,17 +58,64 @@ public class Servlet3Continuation implements Continuation, AsyncListener
     public Servlet3Continuation(ServletRequest request)
     {
         _request=request;
+
+        _listeners.add(new AsyncListener()
+        {
+            public void onComplete(AsyncEvent event) throws IOException
+            {
+            }
+
+            public void onError(AsyncEvent event) throws IOException
+            {
+            }
+
+            public void onStartAsync(AsyncEvent event) throws IOException
+            {
+                event.getAsyncContext().addListener(this);
+            }
+
+            public void onTimeout(AsyncEvent event) throws IOException
+            {
+                _initial=false;
+                event.getAsyncContext().dispatch();
+            }
+        });
     }
 
     /* ------------------------------------------------------------ */
-    @Override
     public void addContinuationListener(final ContinuationListener listener)
     {
-        _listeners.add(listener);
+        AsyncListener wrapped = new AsyncListener()
+        {
+            public void onComplete(final AsyncEvent event) throws IOException
+            {
+                listener.onComplete(Servlet3Continuation.this);
+            }
+
+            public void onError(AsyncEvent event) throws IOException
+            {
+                listener.onComplete(Servlet3Continuation.this);
+            }
+
+            public void onStartAsync(AsyncEvent event) throws IOException
+            {
+                event.getAsyncContext().addListener(this);
+            }
+
+            public void onTimeout(AsyncEvent event) throws IOException
+            {
+                _expired=true;
+                listener.onTimeout(Servlet3Continuation.this);
+            }
+        };
+        
+        if (_context!=null)
+            _context.addListener(wrapped);
+        else
+            _listeners.add(wrapped);
     }
 
     /* ------------------------------------------------------------ */
-    @Override
     public void complete()
     {
         AsyncContext context=_context;
@@ -78,48 +125,34 @@ public class Servlet3Continuation implements Continuation, AsyncListener
     }
 
     /* ------------------------------------------------------------ */
-    @Override
     public ServletResponse getServletResponse()
     {
         return _response;
     }
 
     /* ------------------------------------------------------------ */
-    @Override
     public boolean isExpired()
     {
         return _expired;
     }
 
     /* ------------------------------------------------------------ */
-    @Override
     public boolean isInitial()
     {
+        // TODO - this is not perfect if non continuation API is used directly
         return _initial&&_request.getDispatcherType()!=DispatcherType.ASYNC;
     }
 
     /* ------------------------------------------------------------ */
-    @Override
     public boolean isResumed()
     {
         return _resumed;
     }
 
     /* ------------------------------------------------------------ */
-    @Override
     public boolean isSuspended()
     {
-        if (_request.isAsyncStarted())
-            return true;
-        try
-        {
-            return _request.getAsyncContext()!=null;
-        }
-        catch(IllegalStateException e)
-        {
-            // ignored
-        }
-        return false;
+        return _request.isAsyncStarted();
     }
 
     /* ------------------------------------------------------------ */
@@ -129,7 +162,6 @@ public class Servlet3Continuation implements Continuation, AsyncListener
     }
 
     /* ------------------------------------------------------------ */
-    @Override
     public void resume()
     {
         AsyncContext context=_context;
@@ -140,7 +172,6 @@ public class Servlet3Continuation implements Continuation, AsyncListener
     }
 
     /* ------------------------------------------------------------ */
-    @Override
     public void setTimeout(long timeoutMs)
     {
         _timeoutMs=timeoutMs;
@@ -149,7 +180,6 @@ public class Servlet3Continuation implements Continuation, AsyncListener
     }
 
     /* ------------------------------------------------------------ */
-    @Override
     public void suspend(ServletResponse response)
     {
         _response=response;
@@ -158,22 +188,26 @@ public class Servlet3Continuation implements Continuation, AsyncListener
         _expired=false;
         _context=_request.startAsync();
         _context.setTimeout(_timeoutMs);
-        _context.addListener(this);
+        
+        for (AsyncListener listener:_listeners)
+            _context.addListener(listener);
+        _listeners.clear();
     }
 
     /* ------------------------------------------------------------ */
-    @Override
     public void suspend()
     {
         _resumed=false;
         _expired=false;
         _context=_request.startAsync();
         _context.setTimeout(_timeoutMs);
-        _context.addListener(this);
+                
+        for (AsyncListener listener:_listeners)
+            _context.addListener(listener);
+        _listeners.clear();
     }
 
     /* ------------------------------------------------------------ */
-    @Override
     public boolean isResponseWrapped()
     {
         return _responseWrapped;
@@ -183,7 +217,6 @@ public class Servlet3Continuation implements Continuation, AsyncListener
     /**
      * @see org.eclipse.jetty.continuation.Continuation#getAttribute(java.lang.String)
      */
-    @Override
     public Object getAttribute(String name)
     {
         return _request.getAttribute(name);
@@ -193,7 +226,6 @@ public class Servlet3Continuation implements Continuation, AsyncListener
     /**
      * @see org.eclipse.jetty.continuation.Continuation#removeAttribute(java.lang.String)
      */
-    @Override
     public void removeAttribute(String name)
     {
         _request.removeAttribute(name);
@@ -203,7 +235,6 @@ public class Servlet3Continuation implements Continuation, AsyncListener
     /**
      * @see org.eclipse.jetty.continuation.Continuation#setAttribute(java.lang.String, java.lang.Object)
      */
-    @Override
     public void setAttribute(String name, Object attribute)
     {
         _request.setAttribute(name,attribute);
@@ -213,7 +244,6 @@ public class Servlet3Continuation implements Continuation, AsyncListener
     /**
      * @see org.eclipse.jetty.continuation.Continuation#undispatch()
      */
-    @Override
     public void undispatch()
     {
         if (isSuspended())
@@ -223,39 +253,5 @@ public class Servlet3Continuation implements Continuation, AsyncListener
             throw __exception;
         }
         throw new IllegalStateException("!suspended");
-    }
-    
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public void onComplete(AsyncEvent event) throws IOException
-    {
-        for (ContinuationListener listener:_listeners)
-            listener.onComplete(this);
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public void onError(AsyncEvent event) throws IOException
-    {
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public void onStartAsync(AsyncEvent event) throws IOException
-    {
-        _initial=false;
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public void onTimeout(AsyncEvent event) throws IOException
-    {
-        _initial=false;
-        _expired=true;
-        for (ContinuationListener listener:_listeners)
-            listener.onTimeout(this);
-        if (event.getSuppliedRequest().isAsyncStarted())
-            event.getAsyncContext().dispatch();
     }
 }

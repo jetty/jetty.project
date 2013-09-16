@@ -26,30 +26,25 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import javax.servlet.Registration;
 import javax.servlet.ServletContext;
 import javax.servlet.UnavailableException;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.servlet.api.Registration;
 import org.eclipse.jetty.util.Loader;
-import org.eclipse.jetty.util.annotation.ManagedAttribute;
-import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 
 /* --------------------------------------------------------------------- */
-/**
- *
+/** 
+ * 
  */
-@ManagedObject("Holder - a container for servlets and the like")
 public class Holder<T> extends AbstractLifeCycle implements Dumpable
 {
-    public enum Source { EMBEDDED, JAVAX_API, DESCRIPTOR, ANNOTATION };
-    final private Source _source;
     private static final Logger LOG = Log.getLogger(Holder.class);
 
     protected transient Class<? extends T> _class;
@@ -57,32 +52,15 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
     protected String _className;
     protected String _displayName;
     protected boolean _extInstance;
-    protected boolean _asyncSupported;
+    protected boolean _asyncSupported=true;
 
     /* ---------------------------------------------------------------- */
     protected String _name;
     protected ServletHandler _servletHandler;
 
     /* ---------------------------------------------------------------- */
-    protected Holder(Source source)
+    protected Holder()
     {
-        _source=source;
-        switch(_source)
-        {
-            case JAVAX_API:
-            case DESCRIPTOR:
-            case ANNOTATION:
-                _asyncSupported=false;
-                break;
-            default:
-                _asyncSupported=true;
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    public Source getSource()
-    {
-        return _source;
     }
 
     /* ------------------------------------------------------------ */
@@ -94,28 +72,14 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
         return _extInstance;
     }
     
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * Do any setup necessary after starting
-     * @throws Exception
-     */
-    public void initialize()
-    throws Exception
-    {
-        if (!isStarted())
-            throw new IllegalStateException("Not started: "+this);
-    }
-
     /* ------------------------------------------------------------ */
     @SuppressWarnings("unchecked")
-    @Override
     public void doStart()
         throws Exception
     {
         //if no class already loaded and no classname, make servlet permanently unavailable
         if (_class==null && (_className==null || _className.equals("")))
-            throw new UnavailableException("No class for Servlet or Filter for "+_name);
+            throw new UnavailableException("No class for Servlet or Filter", -1);
         
         //try to load class
         if (_class==null)
@@ -129,11 +93,11 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
             catch (Exception e)
             {
                 LOG.warn(e);
-                throw new UnavailableException(e.getMessage());
+                throw new UnavailableException(e.getMessage(), -1);
             }
         }
     }
-
+    
     /* ------------------------------------------------------------ */
     @Override
     public void doStop()
@@ -142,22 +106,20 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
         if (!_extInstance)
             _class=null;
     }
-
+    
     /* ------------------------------------------------------------ */
-    @ManagedAttribute(value="Class Name", readonly=true)
     public String getClassName()
     {
         return _className;
     }
-
+    
     /* ------------------------------------------------------------ */
     public Class<? extends T> getHeldClass()
     {
         return _class;
     }
-
+    
     /* ------------------------------------------------------------ */
-    @ManagedAttribute(value="Display Name", readonly=true)
     public String getDisplayName()
     {
         return _displayName;
@@ -170,7 +132,7 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
             return null;
         return (String)_initParams.get(param);
     }
-
+    
     /* ------------------------------------------------------------ */
     public Enumeration getInitParameterNames()
     {
@@ -180,19 +142,17 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
     }
 
     /* ---------------------------------------------------------------- */
-    @ManagedAttribute(value="Initial Parameters", readonly=true)
     public Map<String,String> getInitParameters()
     {
         return _initParams;
     }
-
+    
     /* ------------------------------------------------------------ */
-    @ManagedAttribute(value="Name", readonly=true)
     public String getName()
     {
         return _name;
     }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * @return Returns the servletHandler.
@@ -201,13 +161,13 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
     {
         return _servletHandler;
     }
-
+    
     /* ------------------------------------------------------------ */
     public void destroyInstance(Object instance)
     throws Exception
     {
     }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * @param className The className to set.
@@ -217,7 +177,7 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
         _className = className;
         _class=null;
     }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * @param held The class to hold
@@ -232,26 +192,26 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
                 _name=held.getName()+"-"+this.hashCode();
         }
     }
-
+    
     /* ------------------------------------------------------------ */
     public void setDisplayName(String name)
     {
         _displayName=name;
     }
-
+    
     /* ------------------------------------------------------------ */
     public void setInitParameter(String param,String value)
     {
         _initParams.put(param,value);
     }
-
+    
     /* ---------------------------------------------------------------- */
     public void setInitParameters(Map<String,String> map)
     {
         _initParams.clear();
         _initParams.putAll(map);
     }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * The name is a primary key for the held object.
@@ -263,7 +223,7 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
     {
         _name = name;
     }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * @param servletHandler The {@link ServletHandler} that will handle requests dispatched to this servlet.
@@ -284,47 +244,44 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
     {
         return _asyncSupported;
     }
+    
+    /* ------------------------------------------------------------ */
+    public String toString()
+    {
+        return _name;
+    }
 
     /* ------------------------------------------------------------ */
     protected void illegalStateIfContextStarted()
     {
         if (_servletHandler!=null)
         {
-            ServletContext context=_servletHandler.getServletContext();
-            if ((context instanceof ContextHandler.Context) && ((ContextHandler.Context)context).getContextHandler().isStarted())
+            ContextHandler.Context context=(ContextHandler.Context)_servletHandler.getServletContext();
+            if (context!=null && context.getContextHandler().isStarted())
                 throw new IllegalStateException("Started");
         }
     }
 
     /* ------------------------------------------------------------ */
-    @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        out.append(toString())
+        out.append(_name).append("==").append(_className)
         .append(" - ").append(AbstractLifeCycle.getState(this)).append("\n");
-        ContainerLifeCycle.dump(out,indent,_initParams.entrySet());
+        AggregateLifeCycle.dump(out,indent,_initParams.entrySet());
     }
 
     /* ------------------------------------------------------------ */
-    @Override
     public String dump()
     {
-        return ContainerLifeCycle.dump(this);
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public String toString()
-    {
-        return String.format("%s@%x==%s",_name,hashCode(),_className);
-    }
+        return AggregateLifeCycle.dump(this);
+    }    
     
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    protected class HolderConfig
-    {
-
+    protected class HolderConfig 
+    {   
+        
         /* -------------------------------------------------------- */
         public ServletContext getServletContext()
         {
@@ -336,7 +293,7 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
         {
             return Holder.this.getInitParameter(param);
         }
-
+    
         /* -------------------------------------------------------- */
         public Enumeration getInitParameterNames()
         {
@@ -384,12 +341,6 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
         public boolean setInitParameter(String name, String value)
         {
             illegalStateIfContextStarted();
-            if (name == null) {
-                throw new IllegalArgumentException("init parameter name required");
-            }
-            if (value == null) {
-                throw new IllegalArgumentException("non-null value required for init parameter " + name);
-            }
             if (Holder.this.getInitParameter(name)!=null)
                 return false;
             Holder.this.setInitParameter(name,value);
@@ -400,28 +351,20 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
         {
             illegalStateIfContextStarted();
             Set<String> clash=null;
-            for (Map.Entry<String, String> entry : initParameters.entrySet())
+            for (String name : initParameters.keySet())
             {
-                if (entry.getKey() == null) {
-                    throw new IllegalArgumentException("init parameter name required");
-                }
-                if (entry.getValue() == null) {
-                    throw new IllegalArgumentException("non-null value required for init parameter " + entry.getKey());
-                }
-                if (Holder.this.getInitParameter(entry.getKey())!=null)
+                if (Holder.this.getInitParameter(name)!=null)
                 {
                     if (clash==null)
                         clash=new HashSet<String>();
-                    clash.add(entry.getKey());
+                    clash.add(name);
                 }
             }
             if (clash!=null)
                 return clash;
-            Holder.this.getInitParameters().putAll(initParameters);
+            Holder.this.setInitParameters(initParameters);
             return Collections.emptySet();
-        }
-
-
+        }; 
     }
 }
 

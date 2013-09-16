@@ -58,6 +58,8 @@ public class MultiPartOutputStream extends FilterOutputStream
         inPart=false;
     }
 
+    
+
     /* ------------------------------------------------------------ */
     /** End the current part.
      * @exception IOException IOException
@@ -124,7 +126,7 @@ public class MultiPartOutputStream extends FilterOutputStream
         }
         out.write(__CRLF);
     }
-
+    
     /* ------------------------------------------------------------ */
     @Override
     public void write(byte[] b, int off, int len) throws IOException

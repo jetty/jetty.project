@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.util;
 import java.io.ByteArrayOutputStream;
-import java.nio.charset.Charset;
 
 /* ------------------------------------------------------------ */
 /** ByteArrayOutputStream with public internals
@@ -47,8 +46,4 @@ public class ByteArrayOutputStream2 extends ByteArrayOutputStream
         buf[count++]=(byte)b;
     }
     
-    public String toString(Charset charset)
-    {
-        return new String(buf, 0, count, charset);
-    }
 }

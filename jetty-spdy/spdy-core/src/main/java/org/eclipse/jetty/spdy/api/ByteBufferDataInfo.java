@@ -19,7 +19,6 @@
 package org.eclipse.jetty.spdy.api;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.TimeUnit;
 
 /**
  * <p>Specialized {@link DataInfo} for {@link ByteBuffer} content.</p>
@@ -31,12 +30,12 @@ public class ByteBufferDataInfo extends DataInfo
 
     public ByteBufferDataInfo(ByteBuffer buffer, boolean close)
     {
-        this(0, TimeUnit.SECONDS, buffer, close);
+        this(buffer, close, false);
     }
 
-    public ByteBufferDataInfo(long timeout, TimeUnit unit, ByteBuffer buffer, boolean close)
+    public ByteBufferDataInfo(ByteBuffer buffer, boolean close, boolean compress)
     {
-        super(timeout, unit, close);
+        super(close, compress);
         this.buffer = buffer;
         this.length = buffer.remaining();
     }
@@ -70,16 +69,6 @@ public class ByteBufferDataInfo extends DataInfo
             output.put(buffer);
         }
         return space;
-    }
-
-    @Override
-    public int readInto(byte[] bytes, int offset, int length)
-    {
-        int available = available();
-        if (available < length)
-            length = available;
-        buffer.get(bytes, offset, length);
-        return length;
     }
 
     @Override

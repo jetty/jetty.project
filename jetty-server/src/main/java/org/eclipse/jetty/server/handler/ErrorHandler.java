@@ -26,44 +26,43 @@ import java.io.Writer;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpHeaders;
+import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.ByteArrayISO8859Writer;
 
 /* ------------------------------------------------------------ */
 /** Handler for Error pages
- * An ErrorHandler is registered with {@link ContextHandler#setErrorHandler(ErrorHandler)} or
- * {@link org.eclipse.jetty.server.Server#addBean(Object)}.
+ * An ErrorHandler is registered with {@link ContextHandler#setErrorHandler(ErrorHandler)} or 
+ * {@link org.eclipse.jetty.server.Server#addBean(Object)}.   
  * It is called by the HttpResponse.sendError method to write a error page.
- *
+ * 
  */
 public class ErrorHandler extends AbstractHandler
 {
     boolean _showStacks=true;
     boolean _showMessageInTitle=true;
     String _cacheControl="must-revalidate,no-cache,no-store";
-
+    
     /* ------------------------------------------------------------ */
-    /*
+    /* 
      * @see org.eclipse.jetty.server.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
-    @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
-        baseRequest.setHandled(true);
+        AbstractHttpConnection connection = AbstractHttpConnection.getCurrentConnection();
+        connection.getRequest().setHandled(true);
         String method = request.getMethod();
-        if(!HttpMethod.GET.is(method) && !HttpMethod.POST.is(method) && !HttpMethod.HEAD.is(method))
+        if(!method.equals(HttpMethods.GET) && !method.equals(HttpMethods.POST) && !method.equals(HttpMethods.HEAD))
             return;
-        response.setContentType(MimeTypes.Type.TEXT_HTML_8859_1.asString());
+        response.setContentType(MimeTypes.TEXT_HTML_8859_1);    
         if (_cacheControl!=null)
-            response.setHeader(HttpHeader.CACHE_CONTROL.asString(), _cacheControl);
+            response.setHeader(HttpHeaders.CACHE_CONTROL, _cacheControl);
         ByteArrayISO8859Writer writer= new ByteArrayISO8859Writer(4096);
-        String reason=(response instanceof Response)?((Response)response).getReason():null;
-        handleErrorPage(request, writer, response.getStatus(), reason);
+        handleErrorPage(request, writer, connection.getResponse().getStatus(), connection.getResponse().getReason());
         writer.flush();
         response.setContentLength(writer.size());
         writer.writeTo(response.getOutputStream());
@@ -76,7 +75,7 @@ public class ErrorHandler extends AbstractHandler
     {
         writeErrorPage(request, writer, code, message, _showStacks);
     }
-
+    
     /* ------------------------------------------------------------ */
     protected void writeErrorPage(HttpServletRequest request, Writer writer, int code, String message, boolean showStacks)
         throws IOException
@@ -104,7 +103,7 @@ public class ErrorHandler extends AbstractHandler
             writer.write(' ');
             write(writer,message);
         }
-        writer.write("</title>\n");
+        writer.write("</title>\n");    
     }
 
     /* ------------------------------------------------------------ */
@@ -112,11 +111,13 @@ public class ErrorHandler extends AbstractHandler
         throws IOException
     {
         String uri= request.getRequestURI();
-
+        
         writeErrorPageMessage(request,writer,code,message,uri);
         if (showStacks)
             writeErrorPageStacks(request,writer);
-        writer.write("<hr><i><small>Powered by Jetty://</small></i><hr/>\n");
+        writer.write("<hr /><i><small>Powered by Jetty://</small></i>");
+        for (int i= 0; i < 20; i++)
+            writer.write("<br/>                                                \n");
     }
 
     /* ------------------------------------------------------------ */
@@ -150,7 +151,7 @@ public class ErrorHandler extends AbstractHandler
             th =th.getCause();
         }
     }
-
+        
 
     /* ------------------------------------------------------------ */
     /** Get the cacheControl.
@@ -187,7 +188,7 @@ public class ErrorHandler extends AbstractHandler
     {
         _showStacks = showStacks;
     }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * @param showMessageInTitle if true, the error message appears in page title
@@ -196,8 +197,8 @@ public class ErrorHandler extends AbstractHandler
     {
         _showMessageInTitle = showMessageInTitle;
     }
-
-
+    
+    
     /* ------------------------------------------------------------ */
     public boolean getShowMessageInTitle()
     {
@@ -210,11 +211,11 @@ public class ErrorHandler extends AbstractHandler
     {
         if (string==null)
             return;
-
+        
         for (int i=0;i<string.length();i++)
         {
             char c=string.charAt(i);
-
+            
             switch(c)
             {
                 case '&' :
@@ -226,13 +227,13 @@ public class ErrorHandler extends AbstractHandler
                 case '>' :
                     writer.write("&gt;");
                     break;
-
+                    
                 default:
                     if (Character.isISOControl(c) && !Character.isWhitespace(c))
                         writer.write('?');
-                    else
+                    else 
                         writer.write(c);
-            }
+            }          
         }
     }
 }

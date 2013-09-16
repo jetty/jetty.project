@@ -16,77 +16,53 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.server.handler;
+package org.eclipse.jetty.server.handler; 
 
 import java.io.IOException;
 
-import javax.servlet.AsyncEvent;
-import javax.servlet.AsyncListener;
-import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.server.AsyncContextState;
+import org.eclipse.jetty.continuation.Continuation;
+import org.eclipse.jetty.continuation.ContinuationListener;
+import org.eclipse.jetty.server.AsyncContinuation;
+import org.eclipse.jetty.server.DispatcherType;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 
-
-/**
+/** 
  * RequestLogHandler.
  * This handler can be used to wrap an individual context for context logging.
- *
- *
+ * 
  * @org.apache.xbean.XBean
  */
 public class RequestLogHandler extends HandlerWrapper
 {
     private static final Logger LOG = Log.getLogger(RequestLogHandler.class);
-    private RequestLog _requestLog;
-    private final AsyncListener _listener = new AsyncListener()
-    {
-        
-        @Override
-        public void onTimeout(AsyncEvent event) throws IOException
-        {
-            
-        }
-        
-        @Override
-        public void onStartAsync(AsyncEvent event) throws IOException
-        {
-            event.getAsyncContext().addListener(this);
-        }
-        
-        @Override
-        public void onError(AsyncEvent event) throws IOException
-        {
-            
-        }
-        
-        @Override
-        public void onComplete(AsyncEvent event) throws IOException
-        {
-            AsyncContextState context = (AsyncContextState)event.getAsyncContext();
-            Request request=context.getHttpChannelState().getBaseRequest();
-            Response response=request.getResponse();
-            _requestLog.log(request,response);
-        }
-    };
 
+    private RequestLog _requestLog;
+    
     /* ------------------------------------------------------------ */
-    /*
+    /* 
      * @see org.eclipse.jetty.server.server.Handler#handle(java.lang.String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+    public void handle(String target, final Request baseRequest, HttpServletRequest request, final HttpServletResponse response)
             throws IOException, ServletException
     {
+        AsyncContinuation continuation = baseRequest.getAsyncContinuation();
+        if (!continuation.isInitial())
+        {
+            baseRequest.setDispatchTime(System.currentTimeMillis());
+        }
+        
         try
         {
             super.handle(target, baseRequest, request, response);
@@ -95,10 +71,22 @@ public class RequestLogHandler extends HandlerWrapper
         {
             if (_requestLog != null && baseRequest.getDispatcherType().equals(DispatcherType.REQUEST))
             {
-                if (baseRequest.getHttpChannelState().isAsync())
+                if (continuation.isAsync())
                 {
-                    if (baseRequest.getHttpChannelState().isInitial())
-                        baseRequest.getAsyncContext().addListener(_listener);
+                    if (continuation.isInitial())
+                        continuation.addContinuationListener(new ContinuationListener()
+                        {
+
+                            public void onTimeout(Continuation continuation)
+                            {
+
+                            }
+
+                            public void onComplete(Continuation continuation)
+                            {
+                                _requestLog.log(baseRequest, (Response)response);
+                            }
+                        });
                 }
                 else
                     _requestLog.log(baseRequest, (Response)response);
@@ -109,17 +97,63 @@ public class RequestLogHandler extends HandlerWrapper
     /* ------------------------------------------------------------ */
     public void setRequestLog(RequestLog requestLog)
     {
-        updateBean(_requestLog,requestLog);
-        _requestLog=requestLog;
+        //are we changing the request log impl?
+        try
+        {
+            if (_requestLog != null)
+                _requestLog.stop();
+        }
+        catch (Exception e)
+        {
+            LOG.warn (e);
+        }
+        
+        if (getServer()!=null)
+            getServer().getContainer().update(this, _requestLog, requestLog, "logimpl",true);
+        
+        _requestLog = requestLog;
+        
+        //if we're already started, then start our request log
+        try
+        {
+            if (isStarted() && (_requestLog != null))
+                _requestLog.start();
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException (e);
+        }
     }
 
     /* ------------------------------------------------------------ */
-    public RequestLog getRequestLog()
+    /* 
+     * @see org.eclipse.jetty.server.server.handler.HandlerWrapper#setServer(org.eclipse.jetty.server.server.Server)
+     */
+    @Override
+    public void setServer(Server server)
+    {
+        if (_requestLog!=null)
+        {
+            if (getServer()!=null && getServer()!=server)
+                getServer().getContainer().update(this, _requestLog, null, "logimpl",true);
+            super.setServer(server);
+            if (server!=null && server!=getServer())
+                server.getContainer().update(this, null,_requestLog, "logimpl",true);
+        }
+        else
+            super.setServer(server);
+    }
+
+    /* ------------------------------------------------------------ */
+    public RequestLog getRequestLog() 
     {
         return _requestLog;
     }
-    
+
     /* ------------------------------------------------------------ */
+    /* 
+     * @see org.eclipse.jetty.server.server.handler.HandlerWrapper#doStart()
+     */
     @Override
     protected void doStart() throws Exception
     {
@@ -129,13 +163,18 @@ public class RequestLogHandler extends HandlerWrapper
             _requestLog=new NullRequestLog();
         }
         super.doStart();
+        _requestLog.start();
     }
-    
+
     /* ------------------------------------------------------------ */
+    /* 
+     * @see org.eclipse.jetty.server.server.handler.HandlerWrapper#doStop()
+     */
     @Override
     protected void doStop() throws Exception
     {
         super.doStop();
+        _requestLog.stop();
         if (_requestLog instanceof NullRequestLog)
             _requestLog=null;
     }
@@ -145,9 +184,9 @@ public class RequestLogHandler extends HandlerWrapper
     /* ------------------------------------------------------------ */
     private static class NullRequestLog extends AbstractLifeCycle implements RequestLog
     {
-        @Override
         public void log(Request request, Response response)
         {            
         }
     }
+    
 }

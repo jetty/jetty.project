@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.monitor;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -27,14 +25,16 @@ import java.lang.management.ManagementFactory;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.TreeSet;
-
 import javax.management.MBeanServer;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.security.Realm;
+import org.eclipse.jetty.client.security.SimpleRealmResolver;
+import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.monitor.jmx.ConsoleNotifier;
@@ -53,16 +53,16 @@ import org.eclipse.jetty.monitor.triggers.LessThanOrEqualToAttrEventTrigger;
 import org.eclipse.jetty.monitor.triggers.OrEventTrigger;
 import org.eclipse.jetty.monitor.triggers.RangeAttrEventTrigger;
 import org.eclipse.jetty.monitor.triggers.RangeInclAttrEventTrigger;
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 
 /* ------------------------------------------------------------ */
@@ -70,15 +70,12 @@ import org.junit.Test;
  */
 public class AttrEventTriggerTest
 {
-    private static final Logger LOG = Log.getLogger(AttrEventTriggerTest.class);
-
     private Server _server;
     private TestHandler _handler;
     private RequestCounter _counter;
     private JMXMonitor _monitor;
     private HttpClient _client;
     private String _requestUrl;
-    private MBeanContainer _mBeanContainer;
 
     @Before
     public void setUp()
@@ -91,25 +88,25 @@ public class AttrEventTriggerTest
         System.setProperty("org.eclipse.jetty.util.log.DEBUG","");
         _server = new Server();
 
-        ServerConnector connector = new ServerConnector(_server);
-        connector.setPort(0);
-        _server.setConnectors(new Connector[] {connector});
-        
+        SelectChannelConnector connector = new SelectChannelConnector();
+        _server.addConnector(connector);
+
         _handler = new TestHandler();
         _server.setHandler(_handler);
 
-        MBeanContainer.resetUnique();
         MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
-        _mBeanContainer = new MBeanContainer(mBeanServer);
-        _server.addBean(_mBeanContainer,true);
-        _server.addBean(Log.getLog());
-        
-        _counter = _handler.getRequestCounter();
-        _server.addBean(_counter);
+        MBeanContainer mBeanContainer = new MBeanContainer(mBeanServer);
+        mBeanContainer.addBean(Log.getLog());
+        MBeanContainer.resetUnique();
 
+        _counter = _handler.getRequestCounter();
+        mBeanContainer.addBean(_counter);
+
+        _server.addBean(mBeanContainer, true);
+        _server.getContainer().addEventListener(mBeanContainer);
         _server.start();
 
-        startClient();
+        startClient(null);
 
         _monitor = new JMXMonitor();
 
@@ -123,8 +120,6 @@ public class AttrEventTriggerTest
     {
         stopClient();
 
-        _mBeanContainer.destroy();
-        
         if (_server != null)
         {
             _server.stop();
@@ -369,28 +364,21 @@ public class AttrEventTriggerTest
         {
             try
             {
-                //LOG.debug("Request: %s", _requestUrl);
-                ContentResponse r3sponse = _client.GET(_requestUrl);           
-                
-                //ContentExchange getExchange = new ContentExchange();
-                //getExchange.setURL(_requestUrl);
-                //getExchange.setMethod(HttpMethods.GET);
+                ContentExchange getExchange = new ContentExchange();
+                getExchange.setURL(_requestUrl);
+                getExchange.setMethod(HttpMethods.GET);
 
-                //_client.send(getExchange);
-                //int state = getExchange.waitForDone();
+                _client.send(getExchange);
+                int state = getExchange.waitForDone();
 
                 String content = "";
-                //int responseStatus = getExchange.getResponseStatus();
-                if (r3sponse.getStatus() == HttpStatus.OK_200)
+                int responseStatus = getExchange.getResponseStatus();
+                if (responseStatus == HttpStatus.OK_200)
                 {
-                    content = r3sponse.getContentAsString();
-                }
-                else 
-                {
-                    LOG.info("response status", r3sponse.getStatus());
+                    content = getExchange.getResponseContent();
                 }
 
-                assertEquals(HttpStatus.OK_200,r3sponse.getStatus());
+                assertEquals(HttpStatus.OK_200,responseStatus);
                 Thread.sleep(interval);
             }
             catch (InterruptedException ex)
@@ -404,14 +392,13 @@ public class AttrEventTriggerTest
         _monitor.removeActions(action);
     }
 
-    protected void startClient()//Realm realm)
+    protected void startClient(Realm realm)
         throws Exception
     {
         _client = new HttpClient();
-        //_client.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
-        //if (realm != null){
-//            _client.setRealmResolver(new SimpleRealmResolver(realm));
-        //}
+        _client.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
+        if (realm != null)
+            _client.setRealmResolver(new SimpleRealmResolver(realm));
         _client.start();
     }
 

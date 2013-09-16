@@ -42,7 +42,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.AfterClass;
@@ -52,33 +51,30 @@ import org.junit.Test;
 public class SSLSelectChannelConnectorLoadTest
 {
     private static Server server;
-    private static ServerConnector connector;
+    private static SslSelectChannelConnector connector;
     private static SSLContext sslContext;
 
     @BeforeClass
     public static void startServer() throws Exception
     {
-        String keystorePath = System.getProperty("basedir", ".") + "/src/test/resources/keystore";
-        SslContextFactory sslContextFactory = new SslContextFactory();
-        sslContextFactory.setKeyStorePath(keystorePath);
-        sslContextFactory.setKeyStorePassword("storepwd");
-        sslContextFactory.setKeyManagerPassword("keypwd");
-        sslContextFactory.setTrustStorePath(keystorePath);
-        sslContextFactory.setTrustStorePassword("storepwd");
-
         server = new Server();
-        connector = new ServerConnector(server, sslContextFactory);
+        connector = new SslSelectChannelConnector();
         server.addConnector(connector);
+
+        String keystorePath = System.getProperty("basedir", ".") + "/src/test/resources/keystore";
+        SslContextFactory cf = connector.getSslContextFactory();
+        cf.setKeyStorePath(keystorePath);
+        cf.setKeyStorePassword("storepwd");
+        cf.setKeyManagerPassword("keypwd");
+        cf.setTrustStore(keystorePath);
+        cf.setTrustStorePassword("storepwd");
 
         server.setHandler(new EmptyHandler());
 
         server.start();
 
         KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
-        try (InputStream stream = new FileInputStream(keystorePath))
-        {
-            keystore.load(stream, "storepwd".toCharArray());
-        }
+        keystore.load(new FileInputStream(connector.getKeystore()), "storepwd".toCharArray());
         TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         trustManagerFactory.init(keystore);
         sslContext = SSLContext.getInstance("SSL");
@@ -118,13 +114,13 @@ public class SSLSelectChannelConnectorLoadTest
             boolean done = true;
             for (Future task : tasks)
                 done &= task.isDone();
-            //System.err.print("\rIterations: " + Worker.totalIterations.get() + "/" + clients * iterations);
+            System.err.print("\rIterations: " + Worker.totalIterations.get() + "/" + clients * iterations);
             if (done)
                 break;
         }
         long end = System.currentTimeMillis();
-        //System.err.println();
-        //System.err.println("Elapsed time: " + TimeUnit.MILLISECONDS.toSeconds(end - start) + "s");
+        System.err.println();
+        System.err.println("Elapsed time: " + TimeUnit.MILLISECONDS.toSeconds(end - start) + "s");
 
         for (Worker worker : workers)
             worker.close();
@@ -164,13 +160,13 @@ public class SSLSelectChannelConnectorLoadTest
             boolean done = true;
             for (Future task : tasks)
                 done &= task.isDone();
-            // System.err.print("\rIterations: " + Worker.totalIterations.get() + "/" + clients * iterations);
+            System.err.print("\rIterations: " + Worker.totalIterations.get() + "/" + clients * iterations);
             if (done)
                 break;
         }
         long end = System.currentTimeMillis();
-        // System.err.println();
-        // System.err.println("Elapsed time: " + TimeUnit.MILLISECONDS.toSeconds(end - start) + "s");
+        System.err.println();
+        System.err.println("Elapsed time: " + TimeUnit.MILLISECONDS.toSeconds(end - start) + "s");
 
         threadPool.shutdown();
 

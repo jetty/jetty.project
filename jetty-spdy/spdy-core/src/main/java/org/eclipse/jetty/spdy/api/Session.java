@@ -18,14 +18,10 @@
 
 package org.eclipse.jetty.spdy.api;
 
-import java.net.InetSocketAddress;
 import java.util.EventListener;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
-
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.Promise;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 /**
  * <p>A {@link Session} represents the client-side endpoint of a SPDY connection to a single origin server.</p>
@@ -33,7 +29,7 @@ import org.eclipse.jetty.util.Promise;
  * <pre>
  * Session session = ...;
  * SynInfo synInfo = new SynInfo(true);
- * session.push(synInfo, new Stream.FrameListener.Adapter()
+ * session.syn(synInfo, new Stream.FrameListener.Adapter()
  * {
  *     public void onReply(Stream stream, ReplyInfo replyInfo)
  *     {
@@ -71,106 +67,119 @@ public interface Session
     public void removeListener(Listener listener);
 
     /**
-     * <p>Sends a SYN_FRAME to create a new {@link Stream SPDY stream}.</p>
-     * <p>Callers may use the returned Stream for example, to send data frames.</p>
+     * <p>Sends asynchronously a SYN_FRAME to create a new {@link Stream SPDY stream}.</p>
+     * <p>Callers may use the returned future to wait for the stream to be created, and
+     * use the stream, for example, to send data frames.</p>
      *
      * @param synInfo  the metadata to send on stream creation
      * @param listener the listener to invoke when events happen on the stream just created
-     * @return the stream that will be created
-     * @see #syn(SynInfo, StreamFrameListener, Promise
+     * @return a future for the stream that will be created
+     * @see #syn(SynInfo, StreamFrameListener, long, TimeUnit, Handler)
      */
-    public Stream syn(SynInfo synInfo, StreamFrameListener listener) throws ExecutionException, InterruptedException, TimeoutException;
+    public Future<Stream> syn(SynInfo synInfo, StreamFrameListener listener);
 
     /**
      * <p>Sends asynchronously a SYN_FRAME to create a new {@link Stream SPDY stream}.</p>
-     * <p>Callers may pass a non-null completion callback to be notified of when the
+     * <p>Callers may pass a non-null completion handler to be notified of when the
      * stream has been created and use the stream, for example, to send data frames.</p>
-     *
      *
      * @param synInfo  the metadata to send on stream creation
      * @param listener the listener to invoke when events happen on the stream just created
-     * @param promise  the completion callback that gets notified of stream creation
+     * @param timeout  the operation's timeout
+     * @param unit     the timeout's unit
+     * @param handler  the completion handler that gets notified of stream creation
      * @see #syn(SynInfo, StreamFrameListener)
      */
-    public void syn(SynInfo synInfo, StreamFrameListener listener, Promise<Stream> promise);
+    public void syn(SynInfo synInfo, StreamFrameListener listener, long timeout, TimeUnit unit, Handler<Stream> handler);
 
-    /**
-     * <p>Sends synchronously a RST_STREAM to abort a stream.</p>
-     *
-     * @param rstInfo the metadata to reset the stream
-     * @return the RstInfo belonging to the reset to be sent
-     * @see #rst(RstInfo, Callback)
-     */
-    public void rst(RstInfo rstInfo) throws InterruptedException, ExecutionException, TimeoutException;
 
     /**
      * <p>Sends asynchronously a RST_STREAM to abort a stream.</p>
-     * <p>Callers may pass a non-null completion callback to be notified of when the
+     * <p>Callers may use the returned future to wait for the reset to be sent.</p>
+     *
+     * @param rstInfo the metadata to reset the stream
+     * @return a future to wait for the reset to be sent
+     * @see #rst(RstInfo, long, TimeUnit, Handler)
+     */
+    public Future<Void> rst(RstInfo rstInfo);
+
+    /**
+     * <p>Sends asynchronously a RST_STREAM to abort a stream.</p>
+     * <p>Callers may pass a non-null completion handler to be notified of when the
      * reset has been actually sent.</p>
      *
      * @param rstInfo the metadata to reset the stream
-     * @param callback the completion callback that gets notified of reset's send
+     * @param timeout  the operation's timeout
+     * @param unit     the timeout's unit
+     * @param handler the completion handler that gets notified of reset's send
      * @see #rst(RstInfo)
      */
-    public void rst(RstInfo rstInfo, Callback callback);
-
-    /**
-     * <p>Sends synchronously a SETTINGS to configure the SPDY connection.</p>
-     *
-     * @param settingsInfo the metadata to send
-     * @see #settings(SettingsInfo, Callback)
-     */
-    public void settings(SettingsInfo settingsInfo) throws ExecutionException, InterruptedException, TimeoutException;
+    public void rst(RstInfo rstInfo, long timeout, TimeUnit unit, Handler<Void> handler);
 
     /**
      * <p>Sends asynchronously a SETTINGS to configure the SPDY connection.</p>
-     * <p>Callers may pass a non-null completion callback to be notified of when the
-     * settings has been actually sent.</p>
-     *
+     * <p>Callers may use the returned future to wait for the settings to be sent.</p>
      *
      * @param settingsInfo the metadata to send
-     * @param callback      the completion callback that gets notified of settings' send
-     * @see #settings(SettingsInfo)
+     * @return a future to wait for the settings to be sent
+     * @see #settings(SettingsInfo, long, TimeUnit, Handler)
      */
-    public void settings(SettingsInfo settingsInfo, Callback callback);
+    public Future<Void> settings(SettingsInfo settingsInfo);
 
     /**
-     * <p>Sends synchronously a PING, normally to measure round-trip time.</p>
+     * <p>Sends asynchronously a SETTINGS to configure the SPDY connection.</p>
+     * <p>Callers may pass a non-null completion handler to be notified of when the
+     * settings has been actually sent.</p>
      *
-     * @see #ping(PingInfo, Promise
-     * @param pingInfo
+     * @param settingsInfo the metadata to send
+     * @param timeout  the operation's timeout
+     * @param unit     the timeout's unit
+     * @param handler      the completion handler that gets notified of settings' send
+     * @see #settings(SettingsInfo)
      */
-    public PingResultInfo ping(PingInfo pingInfo) throws ExecutionException, InterruptedException, TimeoutException;
+    public void settings(SettingsInfo settingsInfo, long timeout, TimeUnit unit, Handler<Void> handler);
 
     /**
      * <p>Sends asynchronously a PING, normally to measure round-trip time.</p>
-     * <p>Callers may pass a non-null completion callback to be notified of when the
+     * <p>Callers may use the returned future to wait for the ping to be sent.</p>
+     *
+     * @return a future for the metadata sent
+     * @see #ping(long, TimeUnit, Handler)
+     */
+    public Future<PingInfo> ping();
+
+    /**
+     * <p>Sends asynchronously a PING, normally to measure round-trip time.</p>
+     * <p>Callers may pass a non-null completion handler to be notified of when the
      * ping has been actually sent.</p>
      *
-     * @param pingInfo
-     * @param promise the completion callback that gets notified of ping's send
-     * @see #ping(PingInfo)
+     * @param timeout  the operation's timeout
+     * @param unit     the timeout's unit
+     * @param handler the completion handler that gets notified of ping's send
+     * @see #ping()
      */
-    public void ping(PingInfo pingInfo, Promise<PingResultInfo> promise);
+    public void ping(long timeout, TimeUnit unit, Handler<PingInfo> handler);
 
     /**
      * <p>Closes gracefully this session, sending a GO_AWAY frame and then closing the TCP connection.</p>
+     * <p>Callers may use the returned future to wait for the go away to be sent.</p>
      *
-     * @see #goAway(GoAwayInfo, Callback)
-     * @param goAwayInfo
+     * @return a future to wait for the go away to be sent
+     * @see #goAway(long, TimeUnit, Handler)
      */
-    public void goAway(GoAwayInfo goAwayInfo) throws ExecutionException, InterruptedException, TimeoutException;
+    public Future<Void> goAway();
 
     /**
      * <p>Closes gracefully this session, sending a GO_AWAY frame and then closing the TCP connection.</p>
-     * <p>Callers may pass a non-null completion callback to be notified of when the
+     * <p>Callers may pass a non-null completion handler to be notified of when the
      * go away has been actually sent.</p>
      *
-     * @param goAwayInfo
-     * @param callback the completion callback that gets notified of go away's send
-     * @see #goAway(GoAwayInfo)
+     * @param timeout  the operation's timeout
+     * @param unit     the timeout's unit
+     * @param handler the completion handler that gets notified of go away's send
+     * @see #goAway()
      */
-    public void goAway(GoAwayInfo goAwayInfo, Callback callback);
+    public void goAway(long timeout, TimeUnit unit, Handler<Void> handler);
 
     /**
      * @return a snapshot of the streams currently active in this session
@@ -206,16 +215,6 @@ public interface Session
      * @see #setAttribute(String, Object)
      */
     public Object removeAttribute(String key);
-
-    /**
-     * @return the local address of the underlying endpoint
-     */
-    public InetSocketAddress getLocalAddress();
-
-    /**
-     * @return the remote address of the underlying endpoint
-     */
-    public InetSocketAddress getRemoteAddress();
 
     /**
      * <p>Super interface for listeners with callbacks that are invoked on specific session events.</p>

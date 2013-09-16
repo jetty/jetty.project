@@ -29,51 +29,39 @@ import org.junit.Test;
 /* ------------------------------------------------------------ */
 public class HttpURITest
 {
-    String[][] tests=
-    {
-        {"/path/to/context",null,null,"-1","/path/to/context",null,null,null},
-        {"http://example.com/path/to/context;param?query=%22value%22#fragment","http","example.com","-1","/path/to/context","param","query=%22value%22","fragment"},
-        {"http://[::1]/path/to/context;param?query=%22value%22#fragment","http","::1","-1","/path/to/context","param","query=%22value%22","fragment"},
-        {"http://example.com:8080/path/to/context;param?query=%22value%22#fragment","http","example.com","8080","/path/to/context","param","query=%22value%22","fragment"},
-        {"http://[::1]:8080/path/to/context;param?query=%22value%22#fragment","http","::1","8080","/path/to/context","param","query=%22value%22","fragment"},
-    };
+    public static final String __input = "http://example.com:8080/path/to/context?parameter=%22value%22#fragment"; 
+    public static final String __scheme = "http";
+    public static final String __host = "example.com";
+    public static final int    __port = 8080;
+    public static final String __path = "/path/to/context";
+    public static final String __query = "parameter=%22value%22";
+    public static final String __fragment = "fragment";
     
-    public static int
-    INPUT=0,SCHEME=1,HOST=2,PORT=3,PATH=4,PARAM=5,QUERY=6,FRAGMENT=7;
-
     /* ------------------------------------------------------------ */
     @Test
     public void testFromString() throws Exception
     {
-        for (String[] test:tests)
-        {
-            HttpURI uri = new HttpURI(test[INPUT]);
-
-            assertEquals(test[SCHEME], uri.getScheme());
-            assertEquals(test[HOST], uri.getHost());
-            assertEquals(Integer.parseInt(test[PORT]), uri.getPort());
-            assertEquals(test[PATH], uri.getPath());
-            assertEquals(test[PARAM], uri.getParam());
-            assertEquals(test[QUERY], uri.getQuery());
-            assertEquals(test[FRAGMENT], uri.getFragment());
-        }
+        HttpURI uri = new HttpURI(__input);
+        
+        assertEquals(__scheme, uri.getScheme());
+        assertEquals(__host,uri.getHost());
+        assertEquals(__port,uri.getPort());
+        assertEquals(__path,uri.getPath());
+        assertEquals(__query,uri.getQuery());
+        assertEquals(__fragment,uri.getFragment());
     }
-
+    
     /* ------------------------------------------------------------ */
     @Test
     public void testFromURI() throws Exception
     {
-        for (String[] test:tests)
-        {
-            HttpURI uri = new HttpURI(new URI(test[INPUT]));
-
-            assertEquals(test[SCHEME], uri.getScheme());
-            assertEquals(test[HOST], uri.getHost());
-            assertEquals(Integer.parseInt(test[PORT]), uri.getPort());
-            assertEquals(test[PATH], uri.getPath());
-            assertEquals(test[PARAM], uri.getParam());
-            assertEquals(test[QUERY], uri.getQuery());
-            assertEquals(test[FRAGMENT], uri.getFragment());
-        }
+        HttpURI uri = new HttpURI(new URI(__input));
+        
+        assertEquals(__scheme, uri.getScheme());
+        assertEquals(__host,uri.getHost());
+        assertEquals(__port,uri.getPort());
+        assertEquals(__path,uri.getPath());
+        assertEquals(__query,uri.getQuery());
+        assertEquals(__fragment,uri.getFragment());
     }
 }

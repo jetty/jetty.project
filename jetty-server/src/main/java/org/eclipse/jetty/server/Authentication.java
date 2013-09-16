@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
@@ -36,15 +35,6 @@ import javax.servlet.http.HttpServletResponse;
  */
 public interface Authentication
 {
-    /* ------------------------------------------------------------ */
-    public static class Failed extends QuietServletException
-    {
-       public Failed(String message)
-       {
-           super(message);
-       }
-    }
-    
     /* ------------------------------------------------------------ */
     /** A successful Authentication with User information.
      */
@@ -95,7 +85,7 @@ public interface Authentication
          * @param password
          * @return The new Authentication state
          */
-        Authentication login(String username,Object password,ServletRequest request);
+        Authentication login(String username,String password);
     }
 
     

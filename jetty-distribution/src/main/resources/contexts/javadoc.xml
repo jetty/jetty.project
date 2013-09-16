@@ -1,0 +1,27 @@
+<?xml version="1.0"  encoding="ISO-8859-1"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+
+<!--
+Configure a custom context for the javadoc.
+
+This context contains only a ServletHandler with a default servlet
+to serve static html files and images.
+-->
+
+<Configure class="org.eclipse.jetty.server.handler.ContextHandler">
+  <Call class="org.eclipse.jetty.util.log.Log" name="debug"><Arg>Configure javadoc.xml</Arg></Call>
+  <Set name="contextPath">/javadoc</Set>
+  <Set name="resourceBase"><SystemProperty name="jetty.home" default="."/>/javadoc/</Set>
+  <Set name="handler">
+    <New class="org.eclipse.jetty.server.handler.ResourceHandler">
+      <Set name="welcomeFiles">
+        <Array type="String">
+          <Item>index.html</Item>
+        </Array>
+      </Set>
+      <Set name="cacheControl">max-age=3600,public</Set>
+    </New>
+  </Set>
+
+</Configure>
+

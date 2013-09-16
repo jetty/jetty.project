@@ -27,6 +27,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.io.Buffer;
 
 /**
  * Test servlet for testing against unusual MimeTypes and Content-Types.
@@ -47,7 +48,7 @@ public class TestStaticMimeTypeServlet extends TestDirContentServlet
         mimeTypes.addMimeMapping("tga","application/tga");
         mimeTypes.addMimeMapping("xcf","image/xcf");
         mimeTypes.addMimeMapping("jp2","image/jpeg2000");
-
+        
         // Some of the other gzip mime-types seen in the wild.
         // NOTE: Using oddball extensions just so that the calling request can specify
         //       which strange mime type to use.
@@ -69,11 +70,15 @@ public class TestStaticMimeTypeServlet extends TestDirContentServlet
         response.setContentLength(dataBytes.length);
         response.setHeader("ETag","W/etag-"+fileName);
 
-        String mime = mimeTypes.getMimeByExtension(fileName);
-        if (mime == null)
+        Buffer buf = mimeTypes.getMimeByExtension(fileName);
+        if (buf == null)
+        {
             response.setContentType("application/octet-stream");
+        }
         else
-            response.setContentType(mime);
+        {
+            response.setContentType(buf.toString());
+        }
 
         ServletOutputStream out = response.getOutputStream();
         out.write(dataBytes);

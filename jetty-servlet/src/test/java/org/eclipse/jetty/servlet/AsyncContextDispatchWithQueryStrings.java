@@ -23,12 +23,14 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 
-import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.continuation.Continuation;
+import org.eclipse.jetty.continuation.ContinuationSupport;
+import org.eclipse.jetty.server.AsyncContinuation;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
@@ -42,19 +44,19 @@ import org.junit.Test;
 /**
  * This tests verifies that merging of queryStrings works when dispatching
  * Requests via {@link Continuation} multiple times.
- *
+ * 
  * @author tbecker
- *
+ * 
  */
 public class AsyncContextDispatchWithQueryStrings {
 
 	private Server _server = new Server();
 	private ServletContextHandler _contextHandler = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
-	private LocalConnector _connector = new LocalConnector(_server);
+	private LocalConnector _connector = new LocalConnector();
 
 	@Before
 	public void setUp() throws Exception {
-		_connector.setIdleTimeout(30000);
+		_connector.setMaxIdleTime(30000);
 		_server.setConnectors(new Connector[] { _connector });
 
 		_contextHandler.setContextPath("/");
@@ -86,28 +88,24 @@ public class AsyncContextDispatchWithQueryStrings {
 	private class TestServlet extends HttpServlet {
 		private static final long serialVersionUID = 1L;
 
-		@Override
 		protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 			String path = request.getRequestURI();
 			String queryString = request.getQueryString();
-			if ("/initialCall".equals(path)) 
-			{
-			    AsyncContext async = request.startAsync();
-		            async.dispatch("/firstDispatchWithNewQueryString?newQueryString=initialValue");
-	                    assertEquals("initialParam=right", queryString);
-			} 
-			else if ("/firstDispatchWithNewQueryString".equals(path)) 
-			{
-                            AsyncContext async = request.startAsync();
-                            async.dispatch("/secondDispatchNewValueForExistingQueryString?newQueryString=newValue");
-                            assertEquals("newQueryString=initialValue&initialParam=right", queryString);
-			} 
-			else 
-			{
-			    response.setContentType("text/html");
-			    response.setStatus(HttpServletResponse.SC_OK);
-			    response.getWriter().println("<h1>woohhooooo</h1>");
-			    assertEquals("newQueryString=newValue&initialParam=right", queryString);
+			if ("/initialCall".equals(path)) {
+				AsyncContinuation continuation = (AsyncContinuation) ContinuationSupport.getContinuation(request);
+				continuation.suspend();
+				continuation.dispatch("/firstDispatchWithNewQueryString?newQueryString=initialValue");
+				assertEquals("initialParam=right", queryString);
+			} else if ("/firstDispatchWithNewQueryString".equals(path)) {
+				AsyncContinuation continuation = (AsyncContinuation) ContinuationSupport.getContinuation(request);
+				continuation.suspend();
+				continuation.dispatch("/secondDispatchNewValueForExistingQueryString?newQueryString=newValue");
+				assertEquals("newQueryString=initialValue&initialParam=right", queryString);
+			} else {
+				response.setContentType("text/html");
+				response.setStatus(HttpServletResponse.SC_OK);
+				response.getWriter().println("<h1>woohhooooo</h1>");
+				assertEquals("newQueryString=newValue&initialParam=right", queryString);
 			}
 		}
 	}

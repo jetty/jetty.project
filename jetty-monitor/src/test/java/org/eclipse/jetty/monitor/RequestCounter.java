@@ -18,29 +18,21 @@
 
 package org.eclipse.jetty.monitor;
 
-import org.eclipse.jetty.util.annotation.ManagedAttribute;
-import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.annotation.ManagedOperation;
 
-
-@ManagedObject("TEST: Request Counter")
 public class RequestCounter
 {  
     public long _counter;
     
-    @ManagedAttribute("Get the value of the counter")
     public synchronized long getCounter()
     {
         return _counter;
     }
     
-    @ManagedOperation("Increment the value of the counter")
     public synchronized void increment()
     {
         _counter++;
     }
 
-    @ManagedOperation("Reset the counter")
     public synchronized void reset()
     {
         _counter = 0;

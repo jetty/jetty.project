@@ -19,8 +19,6 @@
 package org.eclipse.jetty.osgi.boot;
 
 /**
- * OSGiServerConstants
- * 
  * Name of the properties that configure a jetty Server OSGi service.
  */
 public class OSGiServerConstants

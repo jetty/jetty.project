@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -36,16 +35,13 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.NetworkTrafficListener;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.nio.NetworkTrafficSelectChannelConnector;
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.StringUtil;
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore
 public class NetworkTrafficListenerTest
 {
     private static final byte END_OF_CONTENT = '~';
@@ -56,10 +52,10 @@ public class NetworkTrafficListenerTest
     public void initConnector(Handler handler) throws Exception
     {
         server = new Server();
+        server.setSendDateHeader(false);
+        server.setSendServerVersion(false);
 
-        connector = new NetworkTrafficSelectChannelConnector(server);
-        connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendDateHeader(false);
-        connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendServerVersion(false);
+        connector = new NetworkTrafficSelectChannelConnector();
         server.addConnector(connector);
         server.setHandler(handler);
         server.start();
@@ -105,7 +101,7 @@ public class NetworkTrafficListenerTest
         // Connect to the server
         Socket socket = new Socket("localhost", port);
         assertTrue(openedLatch.await(10, TimeUnit.SECONDS));
-
+        
         socket.close();
         assertTrue(closedLatch.await(10, TimeUnit.SECONDS));
     }
@@ -128,16 +124,16 @@ public class NetworkTrafficListenerTest
         connector.addNetworkTrafficListener(new NetworkTrafficListener.Empty()
         {
             @Override
-            public void incoming(Socket socket, ByteBuffer bytes)
+            public void incoming(Socket socket, Buffer bytes)
             {
-                incomingData.set(BufferUtil.toString(bytes,StringUtil.__UTF8_CHARSET));
+                incomingData.set(bytes.toString("UTF-8"));
                 incomingLatch.countDown();
             }
 
             @Override
-            public void outgoing(Socket socket, ByteBuffer bytes)
+            public void outgoing(Socket socket, Buffer bytes)
             {
-                outgoingData.set(outgoingData.get() + BufferUtil.toString(bytes,StringUtil.__UTF8_CHARSET));
+                outgoingData.set(outgoingData.get() + bytes.toString("UTF-8"));
                 outgoingLatch.countDown();
             }
         });
@@ -192,15 +188,15 @@ public class NetworkTrafficListenerTest
         final CountDownLatch outgoingLatch = new CountDownLatch(2);
         connector.addNetworkTrafficListener(new NetworkTrafficListener.Empty()
         {
-            public void incoming(Socket socket, ByteBuffer bytes)
+            public void incoming(Socket socket, Buffer bytes)
             {
-                incomingData.set(BufferUtil.toString(bytes,StringUtil.__UTF8_CHARSET));
+                incomingData.set(bytes.toString("UTF-8"));
                 incomingLatch.countDown();
             }
 
-            public void outgoing(Socket socket, ByteBuffer bytes)
+            public void outgoing(Socket socket, Buffer bytes)
             {
-                outgoingData.set(outgoingData.get() + BufferUtil.toString(bytes,StringUtil.__UTF8_CHARSET));
+                outgoingData.set(outgoingData.get() + bytes.toString("UTF-8"));
                 outgoingLatch.countDown();
             }
         });
@@ -259,15 +255,15 @@ public class NetworkTrafficListenerTest
         final CountDownLatch outgoingLatch = new CountDownLatch(4);
         connector.addNetworkTrafficListener(new NetworkTrafficListener.Empty()
         {
-            public void incoming(Socket socket, ByteBuffer bytes)
+            public void incoming(Socket socket, Buffer bytes)
             {
-                incomingData.set(BufferUtil.toString(bytes,StringUtil.__UTF8_CHARSET));
+                incomingData.set(bytes.toString("UTF-8"));
                 incomingLatch.countDown();
             }
 
-            public void outgoing(Socket socket, ByteBuffer bytes)
+            public void outgoing(Socket socket, Buffer bytes)
             {
-                outgoingData.set(outgoingData.get() + BufferUtil.toString(bytes,StringUtil.__UTF8_CHARSET));
+                outgoingData.set(outgoingData.get() + bytes.toString("UTF-8"));
                 outgoingLatch.countDown();
             }
         });
@@ -325,15 +321,15 @@ public class NetworkTrafficListenerTest
         final CountDownLatch outgoingLatch = new CountDownLatch(1);
         connector.addNetworkTrafficListener(new NetworkTrafficListener.Empty()
         {
-            public void incoming(Socket socket, ByteBuffer bytes)
+            public void incoming(Socket socket, Buffer bytes)
             {
-                incomingData.set(BufferUtil.toString(bytes,StringUtil.__UTF8_CHARSET));
+                incomingData.set(bytes.toString("UTF-8"));
                 incomingLatch.countDown();
             }
 
-            public void outgoing(Socket socket, ByteBuffer bytes)
+            public void outgoing(Socket socket, Buffer bytes)
             {
-                outgoingData.set(outgoingData.get() + BufferUtil.toString(bytes,StringUtil.__UTF8_CHARSET));
+                outgoingData.set(outgoingData.get() + bytes.toString("UTF-8"));
                 outgoingLatch.countDown();
             }
         });
@@ -398,14 +394,14 @@ public class NetworkTrafficListenerTest
         final CountDownLatch outgoingLatch = new CountDownLatch(1);
         connector.addNetworkTrafficListener(new NetworkTrafficListener.Empty()
         {
-            public void incoming(Socket socket, ByteBuffer bytes)
+            public void incoming(Socket socket, Buffer bytes)
             {
-                incomingData.set(incomingData.get() + BufferUtil.toString(bytes,StringUtil.__UTF8_CHARSET));
+                incomingData.set(incomingData.get() + bytes.toString("UTF-8"));
             }
 
-            public void outgoing(Socket socket, ByteBuffer bytes)
+            public void outgoing(Socket socket, Buffer bytes)
             {
-                outgoingData.set(outgoingData.get() + BufferUtil.toString(bytes,StringUtil.__UTF8_CHARSET));
+                outgoingData.set(outgoingData.get() + bytes.toString("UTF-8"));
                 outgoingLatch.countDown();
             }
         });

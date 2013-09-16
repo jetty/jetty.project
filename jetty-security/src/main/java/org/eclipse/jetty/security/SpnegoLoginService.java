@@ -23,11 +23,11 @@ import java.util.Properties;
 import javax.security.auth.Subject;
 
 import org.eclipse.jetty.server.UserIdentity;
-import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.security.B64Code;
 import org.ietf.jgss.GSSContext;
 import org.ietf.jgss.GSSCredential;
 import org.ietf.jgss.GSSException;
@@ -42,26 +42,25 @@ public class SpnegoLoginService extends AbstractLifeCycle implements LoginServic
     protected IdentityService _identityService;// = new LdapIdentityService();
     protected String _name;
     private String _config;
-
+    
     private String _targetName;
 
     public SpnegoLoginService()
     {
-
+        
     }
-
+    
     public SpnegoLoginService( String name )
     {
         setName(name);
     }
-
+    
     public SpnegoLoginService( String name, String config )
     {
         setName(name);
         setConfig(config);
     }
-
-    @Override
+    
     public String getName()
     {
         return _name;
@@ -73,51 +72,50 @@ public class SpnegoLoginService extends AbstractLifeCycle implements LoginServic
         {
             throw new IllegalStateException("Running");
         }
-
+        
         _name = name;
     }
-
+    
     public String getConfig()
     {
         return _config;
     }
-
+    
     public void setConfig( String config )
     {
         if (isRunning())
         {
             throw new IllegalStateException("Running");
         }
-
+        
         _config = config;
     }
-
-
-
+    
+    
+    
     @Override
     protected void doStart() throws Exception
     {
         Properties properties = new Properties();
         Resource resource = Resource.newResource(_config);
         properties.load(resource.getInputStream());
-
+        
         _targetName = properties.getProperty("targetName");
-
+        
         LOG.debug("Target Name {}", _targetName);
-
+        
         super.doStart();
     }
 
     /**
      * username will be null since the credentials will contain all the relevant info
      */
-    @Override
     public UserIdentity login(String username, Object credentials)
     {
         String encodedAuthToken = (String)credentials;
-
+        
         byte[] authToken = B64Code.decode(encodedAuthToken);
-
+        
         GSSManager manager = GSSManager.getInstance();
         try
         {
@@ -140,7 +138,7 @@ public class SpnegoLoginService extends AbstractLifeCycle implements LoginServic
                 {
                     String clientName = gContext.getSrcName().toString();
                     String role = clientName.substring(clientName.indexOf('@') + 1);
-
+                    
                     LOG.debug("SpnegoUserRealm: established a security context");
                     LOG.debug("Client Principal is: " + gContext.getSrcName());
                     LOG.debug("Server Principal is: " + gContext.getTargName());
@@ -150,7 +148,7 @@ public class SpnegoLoginService extends AbstractLifeCycle implements LoginServic
 
                     Subject subject = new Subject();
                     subject.getPrincipals().add(user);
-
+                    
                     return _identityService.newUserIdentity(subject,user, new String[]{role});
                 }
             }
@@ -164,28 +162,24 @@ public class SpnegoLoginService extends AbstractLifeCycle implements LoginServic
         return null;
     }
 
-    @Override
     public boolean validate(UserIdentity user)
     {
         return false;
     }
 
-    @Override
     public IdentityService getIdentityService()
     {
         return _identityService;
     }
 
-    @Override
     public void setIdentityService(IdentityService service)
     {
         _identityService = service;
     }
 
-    @Override
-    public void logout(UserIdentity user) 
-    {
-        // TODO Auto-generated method stub
-    }
+	public void logout(UserIdentity user) {
+		// TODO Auto-generated method stub
+		
+	}
 
 }

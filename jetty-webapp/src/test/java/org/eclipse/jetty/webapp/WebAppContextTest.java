@@ -39,7 +39,6 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerList;
-import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.junit.Test;
@@ -52,7 +51,7 @@ public class WebAppContextTest
         Server server = new Server();
         //test if no classnames set, its the defaults
         WebAppContext wac = new WebAppContext();
-        Assert.assertEquals(0,wac.getConfigurations().length);
+        assertNull(wac.getConfigurations());
         String[] classNames = wac.getConfigurationClasses();
         assertNotNull(classNames);
 
@@ -67,7 +66,7 @@ public class WebAppContextTest
         String[] classNames = {"x.y.z"};
 
         Server server = new Server();
-        server.setAttribute(Configuration.ATTR, classNames);
+        server.setAttribute(WebAppContext.SERVER_CONFIG, classNames);
 
         //test an explicitly set classnames list overrides that from the server
         WebAppContext wac = new WebAppContext();
@@ -81,14 +80,6 @@ public class WebAppContextTest
         //test if no explicit classnames, they come from the server
         WebAppContext wac2 = new WebAppContext();
         wac2.setServer(server);
-        try
-        {
-            wac2.loadConfigurations();
-        }
-        catch(Exception e)
-        {
-            Log.getRootLogger().ignore(e);
-        }
         assertTrue(Arrays.equals(classNames, wac2.getConfigurationClasses()));
     }
 
@@ -103,11 +94,11 @@ public class WebAppContextTest
         //test that explicit config instances override any from server
         String[] classNames = {"x.y.z"};
         Server server = new Server();
-        server.setAttribute(Configuration.ATTR, classNames);
+        server.setAttribute(WebAppContext.SERVER_CONFIG, classNames);
         wac.setServer(server);
         assertTrue(Arrays.equals(configs,wac.getConfigurations()));
     }
-
+    
     @Test
     public void testRealPathDoesNotExist() throws Exception
     {
@@ -120,30 +111,30 @@ public class WebAppContextTest
         assertNotNull(ctx.getRealPath("/doesnotexist"));
         assertNotNull(ctx.getRealPath("/doesnotexist/"));
     }
-
+    
     /**
      * tests that the servlet context white list works
-     *
+     * 
      * @throws Exception
      */
-    @Test
+    @Test 
     public void testContextWhiteList() throws Exception
     {
         Server server = new Server(0);
         HandlerList handlers = new HandlerList();
-        WebAppContext contextA = new WebAppContext(".", "/A");
-
+        WebAppContext contextA = new WebAppContext(".", "/A"); 
+        
         contextA.addServlet( ServletA.class, "/s");
         handlers.addHandler(contextA);
         WebAppContext contextB = new WebAppContext(".", "/B");
-
+        
         contextB.addServlet(ServletB.class, "/s");
         contextB.setContextWhiteList(new String [] { "/doesnotexist", "/B/s" } );
         handlers.addHandler(contextB);
-
+        
         server.setHandler(handlers);
         server.start();
-
+        
         // context A should be able to get both A and B servlet contexts
         Assert.assertNotNull(contextA.getServletHandler().getServletContext().getContext("/A/s"));
         Assert.assertNotNull(contextA.getServletHandler().getServletContext().getContext("/B/s"));
@@ -152,36 +143,36 @@ public class WebAppContextTest
         Assert.assertNull(contextB.getServletHandler().getServletContext().getContext("/A/s"));
         Assert.assertNotNull(contextB.getServletHandler().getServletContext().getContext("/B/s"));
     }
+    
 
-
-    @Test
+    @Test 
     public void testAlias() throws Exception
     {
         File dir = File.createTempFile("dir",null);
         dir.delete();
         dir.mkdir();
         dir.deleteOnExit();
-
+        
         File webinf = new File(dir,"WEB-INF");
         webinf.mkdir();
-
+        
         File classes = new File(dir,"classes");
         classes.mkdir();
-
+        
         File someclass = new File(classes,"SomeClass.class");
         someclass.createNewFile();
-
+        
         WebAppContext context = new WebAppContext();
         context.setBaseResource(new ResourceCollection(dir.getAbsolutePath()));
-
+        
         context.setResourceAlias("/WEB-INF/classes/", "/classes/");
 
         assertTrue(Resource.newResource(context.getServletContext().getResource("/WEB-INF/classes/SomeClass.class")).exists());
         assertTrue(Resource.newResource(context.getServletContext().getResource("/classes/SomeClass.class")).exists());
 
     }
-
-
+    
+    
     @Test
     public void testIsProtected() throws Exception
     {
@@ -205,7 +196,7 @@ public class WebAppContextTest
         handlers.addHandler(contexts);
         contexts.addHandler(context);
         
-        LocalConnector connector = new LocalConnector(server);
+        LocalConnector connector = new LocalConnector();
         server.addConnector(connector);
         
         server.start();
@@ -227,15 +218,15 @@ public class WebAppContextTest
         public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
         {
             this.getServletContext().getContext("/A/s");
-        }
+        }      
     }
-
+    
     class ServletB extends GenericServlet
     {
         @Override
         public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
         {
             this.getServletContext().getContext("/B/s");
-        }
+        }      
     }
 }

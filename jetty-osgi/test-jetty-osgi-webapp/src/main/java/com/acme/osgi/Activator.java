@@ -46,30 +46,11 @@ public class Activator implements BundleActivator
      */
     public void start(BundleContext context) throws Exception
     {
-        String serverName = "defaultJettyServer";
-        
-        /* Uncomment to create a different server instance to deploy to. Also change
-         * TestJettyOSGiBootWebAppAsService to use the port 9999
-         
-        Server server = new Server();
-        //do any setup on Server in here
-        serverName = "fooServer";
-        Dictionary serverProps = new Hashtable();
-        //define the unique name of the server instance
-        serverProps.put("managedServerName", serverName);
-        serverProps.put("jetty.port", "9999");
-        //let Jetty apply some configuration files to the Server instance
-        serverProps.put("jetty.etc.config.urls", "file:/opt/jetty/etc/jetty.xml,file:/opt/jetty/etc/jetty-selector.xml,file:/opt/jetty/etc/jetty-deployer.xml");
-        //register as an OSGi Service for Jetty to find 
-        context.registerService(Server.class.getName(), server, serverProps);
-        */
-        
-        //Create a webapp context as a Service and target it at the Server created above
         WebAppContext webapp = new WebAppContext();
         Dictionary props = new Hashtable();
         props.put("war",".");
         props.put("contextPath","/acme");
-        props.put("managedServerName", serverName);
+        //uiProps.put(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME, serverName);
         context.registerService(ContextHandler.class.getName(),webapp,props);
     }
 

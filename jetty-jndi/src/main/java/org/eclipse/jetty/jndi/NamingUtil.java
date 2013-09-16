@@ -38,16 +38,16 @@ import org.eclipse.jetty.util.log.Logger;
  *
  * Created: Tue Jul  1 18:26:17 2003
  *
- *
+ * 
  * @version 1.0
  */
-public class NamingUtil
+public class NamingUtil 
 {
     public final static Logger __log=org.eclipse.jetty.util.log.Log.getLogger("jndi");
-
+    
     /* ------------------------------------------------------------ */
     /**
-     * Bind an object to a context ensuring all sub-contexts
+     * Bind an object to a context ensuring all sub-contexts 
      * are created if necessary
      *
      * @param ctx the context into which to bind
@@ -60,12 +60,12 @@ public class NamingUtil
     {
         Name name = ctx.getNameParser("").parse(nameStr);
 
-        //no name, nothing to do
+        //no name, nothing to do 
         if (name.size() == 0)
             return null;
 
         Context subCtx = ctx;
-
+        
         //last component of the name will be the name to bind
         for (int i=0; i < name.size() - 1; i++)
         {
@@ -87,14 +87,14 @@ public class NamingUtil
         if(__log.isDebugEnabled())
             __log.debug("Bound object to "+name.get(name.size() - 1));
         return subCtx;
-    }
-
+    } 
+    
     public static void unbind (Context ctx)
     throws NamingException
     {
         //unbind everything in the context and all of its subdirectories
         NamingEnumeration ne = ctx.listBindings(ctx.getNameInNamespace());
-
+        
         while (ne.hasMoreElements())
         {
             Binding b = (Binding)ne.nextElement();
@@ -106,12 +106,12 @@ public class NamingUtil
                 ctx.unbind(b.getName());
         }
     }
-
+    
     /**
      * Do a deep listing of the bindings for a context.
      * @param ctx the context containing the name for which to list the bindings
      * @param name the name in the context to list
-     * @return map: key is fully qualified name, value is the bound object
+     * @return map: key is fully qualified name, value is the bound object 
      * @throws NamingException
      */
     public static Map flattenBindings (Context ctx, String name)
@@ -137,10 +137,10 @@ public class NamingUtil
                 compoundName.add(b.getName());
                 map.put (compoundName.toString(), b.getObject());
             }
-
+            
         }
-
+        
         return map;
     }
-
+    
 }

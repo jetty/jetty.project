@@ -18,10 +18,8 @@
 
 package org.eclipse.jetty.server.session;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
+import java.util.Random;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -29,11 +27,12 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.http.HttpMethods;
 import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * AbstractInvalidationSessionTest
@@ -52,22 +51,18 @@ public abstract class AbstractInvalidationSessionTest
         String servletMapping = "/server";
         AbstractTestServer server1 = createServer(0);
         server1.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
-
-
+        server1.start();
+        int port1 = server1.getPort();
         try
         {
-            server1.start();
-            int port1 = server1.getPort();
             AbstractTestServer server2 = createServer(0);
             server2.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
-
+            server2.start();
+            int port2=server2.getPort();
             try
             {
-                server2.start();
-                int port2=server2.getPort();
                 HttpClient client = new HttpClient();
-                QueuedThreadPool executor = new QueuedThreadPool();
-                client.setExecutor(executor);
+                client.setConnectorType(HttpClient.CONNECTOR_SOCKET);
                 client.start();
                 try
                 {
@@ -76,34 +71,45 @@ public abstract class AbstractInvalidationSessionTest
                     urls[1] = "http://localhost:" + port2 + contextPath + servletMapping;
 
                     // Create the session on node1
-                    ContentResponse response1 = client.GET(urls[0] + "?action=init");
-
-                    assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
-                    String sessionCookie = response1.getHeaders().getStringField("Set-Cookie");
+                    ContentExchange exchange1 = new ContentExchange(true);
+                    exchange1.setMethod(HttpMethods.GET);
+                    exchange1.setURL(urls[0] + "?action=init");
+                    client.send(exchange1);
+                    exchange1.waitForDone();
+                    assertEquals(HttpServletResponse.SC_OK,exchange1.getResponseStatus());
+                    String sessionCookie = exchange1.getResponseFields().getStringField("Set-Cookie");
                     assertTrue(sessionCookie != null);
                     // Mangle the cookie, replacing Path with $Path, etc.
                     sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
                     // Be sure the session is also present in node2
-
-                    Request request2 = client.newRequest(urls[1] + "?action=increment");
-                    request2.header("Cookie", sessionCookie);
-                    ContentResponse response2 = request2.send();
-                    assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
+                    ContentExchange exchange2 = new ContentExchange(true);
+                    exchange2.setMethod(HttpMethods.GET);
+                    exchange2.setURL(urls[1] + "?action=increment");
+                    exchange2.getRequestFields().add("Cookie", sessionCookie);
+                    client.send(exchange2);
+                    exchange2.waitForDone();
+                    assertEquals(HttpServletResponse.SC_OK,exchange2.getResponseStatus());
 
                     // Invalidate on node1
-                    Request request1 = client.newRequest(urls[0] + "?action=invalidate");
-                    request1.header("Cookie", sessionCookie);
-                    response1 = request1.send();
-                    assertEquals(HttpServletResponse.SC_OK, response1.getStatus());
+                    exchange1 = new ContentExchange(true);
+                    exchange1.setMethod(HttpMethods.GET);
+                    exchange1.setURL(urls[0] + "?action=invalidate");
+                    exchange1.getRequestFields().add("Cookie", sessionCookie);
+                    client.send(exchange1);
+                    exchange1.waitForDone();
+                    assertEquals(HttpServletResponse.SC_OK, exchange1.getResponseStatus());
 
                     pause();
-
+                    
                     // Be sure on node2 we don't see the session anymore
-                    request2 = client.newRequest(urls[1] + "?action=test");
-                    request2.header("Cookie", sessionCookie);
-                    response2 = request2.send();
-                    assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
+                    exchange2 = new ContentExchange(true);
+                    exchange2.setMethod(HttpMethods.GET);
+                    exchange2.setURL(urls[1] + "?action=test");
+                    exchange2.getRequestFields().add("Cookie", sessionCookie);
+                    client.send(exchange2);
+                    exchange2.waitForDone();
+                    assertEquals(HttpServletResponse.SC_OK,exchange2.getResponseStatus());
                 }
                 finally
                 {

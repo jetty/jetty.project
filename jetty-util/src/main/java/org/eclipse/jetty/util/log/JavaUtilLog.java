@@ -57,8 +57,7 @@ public class JavaUtilLog extends AbstractLogger
 
     public void warn(String msg, Object... args)
     {
-        if (_logger.isLoggable(Level.WARNING))
-            _logger.log(Level.WARNING,format(msg,args));
+        _logger.log(Level.WARNING, format(msg, args));
     }
 
     public void warn(Throwable thrown)
@@ -73,8 +72,7 @@ public class JavaUtilLog extends AbstractLogger
 
     public void info(String msg, Object... args)
     {
-        if (_logger.isLoggable(Level.INFO))
-            _logger.log(Level.INFO, format(msg, args));
+        _logger.log(Level.INFO, format(msg, args));
     }
 
     public void info(Throwable thrown)
@@ -107,8 +105,7 @@ public class JavaUtilLog extends AbstractLogger
 
     public void debug(String msg, Object... args)
     {
-        if (_logger.isLoggable(Level.FINE))
-            _logger.log(Level.FINE,format(msg, args));
+        _logger.log(Level.FINE, format(msg, args));
     }
 
     public void debug(Throwable thrown)

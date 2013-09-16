@@ -22,7 +22,7 @@ import java.io.File;
 
 import junit.framework.Assert;
 
-import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
@@ -71,7 +71,7 @@ public class HashSessionManagerTest
 
     }
     
-   @Test
+    @Test
     public void testValidSessionIdRemoval() throws Exception
     {
         final HashSessionManager manager = new HashSessionManager();
@@ -89,50 +89,5 @@ public class HashSessionManagerTest
 
         Assert.assertTrue("File shouldn't exist!", !new File(testDir,"validFile.session").exists());
 
-    }
-    
-    @Test
-    public void testHashSession() throws Exception
-    {
-        File testDir = MavenTestingUtils.getTargetTestingDir("saved");
-        testDir.mkdirs();
-        HashSessionManager manager = new HashSessionManager();
-        manager.setStoreDirectory(testDir);
-        manager.setMaxInactiveInterval(5);
-        Assert.assertTrue(testDir.exists());
-        Assert.assertTrue(testDir.canWrite());
-        
-        AbstractSessionIdManager idManager = new HashSessionIdManager();
-        idManager.setWorkerName("foo");
-        manager.setSessionIdManager(idManager);
-        
-        idManager.start();
-        manager.start();
-        
-        HashedSession session = (HashedSession)manager.newHttpSession(new Request(null, null));
-        String sessionId = session.getId();
-        
-        session.setAttribute("one", new Integer(1));
-        session.setAttribute("two", new Integer(2));    
-        
-        //stop will persist sessions
-        idManager.stop();
-        manager.setMaxInactiveInterval(30); //change max inactive interval for *new* sessions
-        manager.stop();
-        
-        Assert.assertTrue("File should exist!", new File(testDir, session.getId()).exists());
-        
-        //start will restore sessions
-        idManager.start();
-        manager.start();
-        
-        HashedSession restoredSession = (HashedSession)manager.getSession(sessionId);
-        Assert.assertNotNull(restoredSession);
-        
-        Object o = restoredSession.getAttribute("one");
-        Assert.assertNotNull(o);
-        
-        Assert.assertEquals(1, ((Integer)o).intValue());
-        Assert.assertEquals(5, restoredSession.getMaxInactiveInterval());     
     }
 }

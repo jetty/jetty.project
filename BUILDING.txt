@@ -1,0 +1,9 @@
+BUILDING JETTY
+--------------
+
+Jetty is built with maven 3.x+
+
+  $ cd /my/work/directory/jetty-7
+  $ mvn clean install
+
+

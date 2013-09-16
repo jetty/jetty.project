@@ -18,11 +18,7 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -31,6 +27,9 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class RewriteHandlerTest extends AbstractRuleTestCase
 {
@@ -44,10 +43,9 @@ public class RewriteHandlerTest extends AbstractRuleTestCase
     public void init() throws Exception
     {
         _handler=new RewriteHandler();
-        _handler.setServer(_server);
-        _handler.setHandler(new AbstractHandler()
-        {
-            @Override
+        _server.setHandler(_handler);
+        _handler.setHandler(new AbstractHandler(){
+
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 response.setStatus(201);
@@ -57,7 +55,6 @@ public class RewriteHandlerTest extends AbstractRuleTestCase
             }
 
         });
-        _handler.start();
 
         _rule1 = new RewritePatternRule();
         _rule1.setPattern("/aaa/*");
@@ -101,7 +98,6 @@ public class RewriteHandlerTest extends AbstractRuleTestCase
         _handler.setRewritePathInfo(false);
         _request.setRequestURI("/foo/bar");
         _request.setPathInfo("/foo/bar");
-        
         _handler.handle("/foo/bar",_request,_request, _response);
         assertEquals(201,_response.getStatus());
         assertEquals("/foo/bar",_request.getAttribute("target"));

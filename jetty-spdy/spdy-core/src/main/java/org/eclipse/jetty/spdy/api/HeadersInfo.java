@@ -18,14 +18,10 @@
 
 package org.eclipse.jetty.spdy.api;
 
-import java.util.concurrent.TimeUnit;
-
-import org.eclipse.jetty.util.Fields;
-
 /**
  * <p>A container for HEADERS frame metadata and headers.</p>
  */
-public class HeadersInfo extends Info
+public class HeadersInfo
 {
     /**
      * <p>Flag that indicates that this {@link HeadersInfo} is the last frame in the stream.</p>
@@ -44,51 +40,33 @@ public class HeadersInfo extends Info
 
     private final boolean close;
     private final boolean resetCompression;
-    private final Fields headers;
+    private final Headers headers;
 
     /**
-     * <p>Creates a new {@link HeadersInfo} instance with the given headers, the given close flag and no reset
-     * compression flag</p>
+     * <p>Creates a new {@link HeadersInfo} instance with the given headers,
+     * the given close flag and no reset compression flag</p>
      *
-     * @param headers the {@link Fields}
-     * @param close   the value of the close flag
+     * @param headers the {@link Headers}
+     * @param close the value of the close flag
      */
-    public HeadersInfo(Fields headers, boolean close)
+    public HeadersInfo(Headers headers, boolean close)
     {
         this(headers, close, false);
     }
 
     /**
-     * <p>Creates a new {@link HeadersInfo} instance with the given headers, the given close flag and the given reset
-     * compression flag</p>
+     * <p>Creates a new {@link HeadersInfo} instance with the given headers,
+     * the given close flag and the given reset compression flag</p>
      *
-     * @param headers          the {@link Fields}
-     * @param close            the value of the close flag
+     * @param headers the {@link Headers}
+     * @param close the value of the close flag
      * @param resetCompression the value of the reset compression flag
      */
-    public HeadersInfo(Fields headers, boolean close, boolean resetCompression)
+    public HeadersInfo(Headers headers, boolean close, boolean resetCompression)
     {
         this.headers = headers;
         this.close = close;
         this.resetCompression = resetCompression;
-    }
-
-    /**
-     * <p>Creates a new {@link HeadersInfo} instance with the given headers, the given close flag and the given reset
-     * compression flag</p>
-     *
-     * @param timeout          the operation's timeout
-     * @param unit             the timeout's unit
-     * @param headers          the {@link Fields}
-     * @param close            the value of the close flag
-     * @param resetCompression the value of the reset compression flag
-     */
-    public HeadersInfo(long timeout, TimeUnit unit, boolean close, boolean resetCompression, Fields headers)
-    {
-        super(timeout, unit);
-        this.close = close;
-        this.resetCompression = resetCompression;
-        this.headers = headers;
     }
 
     /**
@@ -108,9 +86,9 @@ public class HeadersInfo extends Info
     }
 
     /**
-     * @return the {@link Fields}
+     * @return the {@link Headers}
      */
-    public Fields getHeaders()
+    public Headers getHeaders()
     {
         return headers;
     }

@@ -19,12 +19,12 @@
 package org.eclipse.jetty.server.handler;
 
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.io.IOException;
 
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HandlerContainer;
+import org.eclipse.jetty.util.LazyList;
+import org.eclipse.jetty.util.TypeUtil;
 
 
 /* ------------------------------------------------------------ */
@@ -38,66 +38,64 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
     public AbstractHandlerContainer()
     {
     }
-
+    
     /* ------------------------------------------------------------ */
-    @Override
     public Handler[] getChildHandlers()
     {
-        List<Handler> list=new ArrayList<>();
-        expandChildren(list,null);
-        return list.toArray(new Handler[list.size()]);
+        Object list = expandChildren(null,null);
+        return (Handler[])LazyList.toArray(list, Handler.class);
     }
-
+        
     /* ------------------------------------------------------------ */
-    @Override
     public Handler[] getChildHandlersByClass(Class<?> byclass)
     {
-        List<Handler> list=new ArrayList<>();
-        expandChildren(list,byclass);
-        return list.toArray(new Handler[list.size()]);
+        Object list = expandChildren(null,byclass);
+        return (Handler[])LazyList.toArray(list, byclass);
     }
-
+    
     /* ------------------------------------------------------------ */
-    @Override
     public <T extends Handler> T getChildHandlerByClass(Class<T> byclass)
     {
-        List<Handler> list=new ArrayList<>();
-        expandChildren(list,byclass);
-        if (list.isEmpty())
+        // TODO this can be more efficient?
+        Object list = expandChildren(null,byclass);
+        if (list==null)
             return null;
-        return (T)list.get(0);
+        return (T)LazyList.get(list, 0);
     }
-
+    
     /* ------------------------------------------------------------ */
-    protected void expandChildren(List<Handler> list, Class<?> byClass)
+    protected Object expandChildren(Object list, Class<?> byClass)
     {
+        return list;
     }
 
     /* ------------------------------------------------------------ */
-    protected void expandHandler(Handler handler, List<Handler> list, Class<?> byClass)
+    protected Object expandHandler(Handler handler, Object list, Class<Handler> byClass)
     {
         if (handler==null)
-            return;
-
+            return list;
+        
         if (byClass==null || byClass.isAssignableFrom(handler.getClass()))
-            list.add(handler);
+            list=LazyList.add(list, handler);
 
         if (handler instanceof AbstractHandlerContainer)
-            ((AbstractHandlerContainer)handler).expandChildren(list, byClass);
+            list=((AbstractHandlerContainer)handler).expandChildren(list, byClass);
         else if (handler instanceof HandlerContainer)
         {
             HandlerContainer container = (HandlerContainer)handler;
             Handler[] handlers=byClass==null?container.getChildHandlers():container.getChildHandlersByClass(byClass);
-            list.addAll(Arrays.asList(handlers));
+            list=LazyList.addArray(list, handlers);
         }
+        
+        return list;
     }
-
+    
     /* ------------------------------------------------------------ */
     public static <T extends HandlerContainer> T findContainerOf(HandlerContainer root,Class<T>type, Handler handler)
     {
         if (root==null || handler==null)
             return null;
-
+        
         Handler[] branches=root.getChildHandlersByClass(type);
         if (branches!=null)
         {
@@ -114,5 +112,12 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
             }
         }
         return null;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void dump(Appendable out,String indent) throws IOException
+    {
+        dumpThis(out);
+        dump(out,indent,getBeans(),TypeUtil.asList(getHandlers()));
     }
 }

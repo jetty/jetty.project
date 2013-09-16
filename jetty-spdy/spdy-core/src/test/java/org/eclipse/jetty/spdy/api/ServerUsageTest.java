@@ -18,12 +18,9 @@
 
 package org.eclipse.jetty.spdy.api;
 
-import junit.framework.Assert;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.Fields;
-import org.eclipse.jetty.util.Promise;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -33,35 +30,34 @@ public class ServerUsageTest
     @Test
     public void testServerSynAndReplyWithData() throws Exception
     {
-        ServerSessionFrameListener ssfl = new ServerSessionFrameListener.Adapter()
+        new ServerSessionFrameListener.Adapter()
         {
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo streamInfo)
             {
-                Fields synHeaders = streamInfo.getHeaders();
+                Headers synHeaders = streamInfo.getHeaders();
                 // Do something with headers, for example extract them and
                 // perform an http request via Jetty's LocalConnector
 
                 // Get the http response, fill headers and data
-                Fields replyHeaders = new Fields();
+                Headers replyHeaders = new Headers();
                 replyHeaders.put(synHeaders.get("host"));
                 // Sends a reply
-                stream.reply(new ReplyInfo(replyHeaders, false), new Callback.Adapter());
+                stream.reply(new ReplyInfo(replyHeaders, false));
 
                 // Sends data
                 StringDataInfo dataInfo = new StringDataInfo("foo", false);
-                stream.data(dataInfo, new Callback.Adapter());
+                stream.data(dataInfo);
                 // Stream is now closed
                 return null;
             }
         };
-        Assert.assertTrue(ssfl!=null);
     }
 
     @Test
     public void testServerInitiatesStreamAndPushesData() throws Exception
     {
-        ServerSessionFrameListener ssfl = new ServerSessionFrameListener.Adapter()
+        new ServerSessionFrameListener.Adapter()
         {
             @Override
             public void onConnect(Session session)
@@ -75,48 +71,46 @@ public class ServerUsageTest
                 //
                 // However, the API may allow to initiate the stream
 
-                session.syn(new SynInfo(new Fields(), false), null, new Promise.Adapter<Stream>()
+                session.syn(new SynInfo(false), null, 0, TimeUnit.MILLISECONDS, new Handler.Adapter<Stream>()
                 {
                     @Override
-                    public void succeeded(Stream stream)
+                    public void completed(Stream stream)
                     {
                         // The point here is that we have no idea if the client accepted our stream
                         // So we return a stream, we may be able to send the headers frame, but later
                         // the client sends a rst frame.
                         // We have to atomically set some flag on the stream to signal it's closed
                         // and any operation on it will throw
-                        stream.headers(new HeadersInfo(new Fields(), true), new Callback.Adapter());
+                        stream.headers(new HeadersInfo(new Headers(), true));
                     }
                 });
             }
         };
-        Assert.assertTrue(ssfl!=null);
     }
 
     @Test
     public void testServerPush() throws Exception
     {
-        ServerSessionFrameListener ssfl = new ServerSessionFrameListener.Adapter()
+        new ServerSessionFrameListener.Adapter()
         {
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo streamInfo)
             {
                 // Need to send the reply first
-                stream.reply(new ReplyInfo(false), new Callback.Adapter());
+                stream.reply(new ReplyInfo(false));
 
                 Session session = stream.getSession();
                 // Since it's unidirectional, no need to pass the listener
-                session.syn(new SynInfo(new Fields(), false, (byte)0), null, new Promise.Adapter<Stream>()
+                session.syn(new SynInfo(new Headers(), false, (byte)0), null, 0, TimeUnit.MILLISECONDS, new Handler.Adapter<Stream>()
                 {
                     @Override
-                    public void succeeded(Stream pushStream)
+                    public void completed(Stream pushStream)
                     {
-                        pushStream.data(new StringDataInfo("foo", false), new Callback.Adapter());
+                        pushStream.data(new StringDataInfo("foo", false));
                     }
                 });
                 return null;
             }
         };
-        Assert.assertTrue(ssfl!=null);
     }
 }

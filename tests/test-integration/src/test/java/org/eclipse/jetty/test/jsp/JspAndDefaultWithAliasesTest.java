@@ -30,8 +30,8 @@ import java.util.Collection;
 import java.util.List;
 
 import org.eclipse.jetty.security.HashLoginService;
-import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -87,7 +87,10 @@ public class JspAndDefaultWithAliasesTest
     @BeforeClass
     public static void startServer() throws Exception
     {
-        server = new Server(0);  
+        server = new Server();
+        SelectChannelConnector connector = new SelectChannelConnector();
+        connector.setPort(0);
+        server.addConnector(connector);
 
         // Configure LoginService
         HashLoginService login = new HashLoginService();
@@ -116,10 +119,8 @@ public class JspAndDefaultWithAliasesTest
         server.setHandler(context);
 
         server.start();
-        
-        int port = ((NetworkConnector)server.getConnectors()[0]).getLocalPort();
 
-        serverURI = new URI("http://localhost:" + port + "/");
+        serverURI = new URI("http://localhost:" + connector.getLocalPort() + "/");
     }
 
     @AfterClass

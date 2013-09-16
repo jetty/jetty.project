@@ -46,7 +46,7 @@ import org.eclipse.jetty.util.log.Logger;
     server.setHandler(handlers);
     server.start();
    </pre>
- *
+ * 
    <pre>
    public static void attemptShutdown(int port, String shutdownCookie) {
         try {
@@ -73,8 +73,8 @@ public class ShutdownHandler extends AbstractHandler
     private final Server _server;
 
     private boolean _exitJvm = false;
-
-
+  
+    
 
     /**
      * Creates a listener that lets the server be shut down remotely (but only from localhost).
@@ -116,7 +116,7 @@ public class ShutdownHandler extends AbstractHandler
         }
 
         LOG.info("Shutting down by request from " + getRemoteAddr(request));
-
+        
         new Thread()
         {
             public void run ()
@@ -149,15 +149,13 @@ public class ShutdownHandler extends AbstractHandler
 
     private boolean hasCorrectSecurityToken(HttpServletRequest request)
     {
-        String tok = request.getParameter("token");
-        LOG.debug("Token: {}", tok);
-        return _shutdownToken.equals(tok);
+        return _shutdownToken.equals(request.getParameter("token"));
     }
 
     private void shutdownServer() throws Exception
     {
         _server.stop();
-
+        
         if (_exitJvm)
         {
             System.exit(0);

@@ -41,7 +41,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
     private static final Logger LOG = Log.getLogger(ResourceAnnotationHandler.class);
 
     protected WebAppContext _context;
-
+   
 
     public ResourceAnnotationHandler (WebAppContext wac)
     {
@@ -60,7 +60,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
         if (Util.isServletType(clazz))
         {
             handleClass(clazz);
-
+            
             Method[] methods = clazz.getDeclaredMethods();
             for (int i=0; i<methods.length; i++)
                 handleMethod(clazz, methods[i]);
@@ -70,7 +70,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
                 handleField(clazz, fields[i]);
         }
     }
-
+        
      public void handleClass (Class<?> clazz)
      {
          Resource resource = (Resource)clazz.getAnnotation(Resource.class);
@@ -78,10 +78,10 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
          {
              String name = resource.name();
              String mappedName = resource.mappedName();
-
+             
              if (name==null || name.trim().equals(""))
                  throw new IllegalStateException ("Class level Resource annotations must contain a name (Common Annotations Spec Section 2.3)");
-
+             
              try
              {
                  if (!org.eclipse.jetty.plus.jndi.NamingEntryUtil.bindToENC(_context, name,mappedName))
@@ -115,14 +115,14 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
             }
 
             //work out default name
-            String name = clazz.getCanonicalName()+"/"+field.getName();
-
+            String name = clazz.getCanonicalName()+"/"+field.getName();     
+           
             //allow @Resource name= to override the field name
             name = (resource.name()!=null && !resource.name().trim().equals("")? resource.name(): name);
             String mappedName = (resource.mappedName()!=null && !resource.mappedName().trim().equals("")?resource.mappedName():null);
             //get the type of the Field
             Class<?> type = field.getType();
-
+            
             //Servlet Spec 3.0 p. 76
             //If a descriptor has specified at least 1 injection target for this
             //resource, then it overrides this annotation
@@ -152,7 +152,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
                     if (!bound)
                         bound = org.eclipse.jetty.plus.jndi.NamingEntryUtil.bindToENC(_context.getServer(), name, mappedName);
                     if (!bound)
-                        bound =  org.eclipse.jetty.plus.jndi.NamingEntryUtil.bindToENC(null, name, mappedName);
+                        bound =  org.eclipse.jetty.plus.jndi.NamingEntryUtil.bindToENC(null, name, mappedName); 
                     if (!bound)
                     {
                         //see if there is an env-entry value been bound
@@ -160,7 +160,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
                         {
                             InitialContext ic = new InitialContext();
                             String nameInEnvironment = (mappedName!=null?mappedName:name);
-                            ic.lookup("java:comp/env/"+nameInEnvironment);
+                            ic.lookup("java:comp/env/"+nameInEnvironment);                               
                             bound = true;
                         }
                         catch (NameNotFoundException e)
@@ -168,22 +168,22 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
                             bound = false;
                         }
                     }
-                    //Check there is a JNDI entry for this annotation
+                    //Check there is a JNDI entry for this annotation 
                     if (bound)
-                    {
+                    { 
                         LOG.debug("Bound "+(mappedName==null?name:mappedName) + " as "+ name);
                         //   Make the Injection for it if the binding succeeded
                         injection = new Injection();
                         injection.setTarget(clazz, field, type);
                         injection.setJndiName(name);
                         injection.setMappingName(mappedName);
-                        injections.add(injection);
-
-                        //TODO - an @Resource is equivalent to a resource-ref, resource-env-ref, message-destination
+                        injections.add(injection); 
+                        
+                        //TODO - an @Resource is equivalent to a resource-ref, resource-env-ref, message-destination 
                         metaData.setOrigin("resource-ref."+name+".injection");
-                    }
+                    }  
                     else if (!Util.isEnvEntryType(type))
-                    {
+                    {   
                         //if this is an env-entry type resource and there is no value bound for it, it isn't
                         //an error, it just means that perhaps the code will use a default value instead
                         // JavaEE Spec. sec 5.4.1.3
@@ -203,10 +203,10 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
         }
     }
 
-
+    
     /**
      * Process a Resource annotation on a Method.
-     *
+     * 
      * This will generate a JNDI entry, and an Injection to be
      * processed when an instance of the class is created.
      */
@@ -219,17 +219,17 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
             /*
              * Commons Annotations Spec 2.3
              * " The Resource annotation is used to declare a reference to a resource.
-             *   It can be specified on a class, methods or on fields. When the
-             *   annotation is applied on a field or method, the container will
-             *   inject an instance of the requested resource into the application
-             *   when the application is initialized... Even though this annotation
-             *   is not marked Inherited, if used all superclasses MUST be examined
-             *   to discover all uses of this annotation. All such annotation instances
-             *   specify resources that are needed by the application. Note that this
-             *   annotation may appear on private fields and methods of the superclasses.
-             *   Injection of the declared resources needs to happen in these cases as
+             *   It can be specified on a class, methods or on fields. When the 
+             *   annotation is applied on a field or method, the container will 
+             *   inject an instance of the requested resource into the application 
+             *   when the application is initialized... Even though this annotation 
+             *   is not marked Inherited, if used all superclasses MUST be examined 
+             *   to discover all uses of this annotation. All such annotation instances 
+             *   specify resources that are needed by the application. Note that this 
+             *   annotation may appear on private fields and methods of the superclasses. 
+             *   Injection of the declared resources needs to happen in these cases as 
              *   well, even if a method with such an annotation is overridden by a subclass."
-             *
+             *  
              *  Which IMHO, put more succinctly means "If you find a @Resource on any method
              *  or field, inject it!".
              */
@@ -251,13 +251,13 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
             if (method.getParameterTypes().length != 1)
             {
                 LOG.warn("Skipping Resource annotation on "+clazz.getName()+"."+method.getName()+": invalid java bean, not single argument to method");
-                return;
+                return; 
             }
 
             if (Void.TYPE != method.getReturnType())
             {
                 LOG.warn("Skipping Resource annotation on "+clazz.getName()+"."+method.getName()+": invalid java bean, not void");
-                return;
+                return; 
             }
 
 
@@ -271,7 +271,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
             Class<?> paramType = method.getParameterTypes()[0];
 
             Class<?> resourceType = resource.type();
-
+            
             //Servlet Spec 3.0 p. 76
             //If a descriptor has specified at least 1 injection target for this
             //resource, then it overrides this annotation
@@ -282,7 +282,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
                 //it overrides this annotation
                 return;
             }
-
+            
             //check if an injection has already been setup for this target by web.xml
             InjectionCollection injections = (InjectionCollection)_context.getAttribute(InjectionCollection.INJECTION_COLLECTION);
             if (injections == null)
@@ -315,7 +315,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
                         {
                             InitialContext ic = new InitialContext();
                             String nameInEnvironment = (mappedName!=null?mappedName:name);
-                            ic.lookup("java:comp/env/"+nameInEnvironment);
+                            ic.lookup("java:comp/env/"+nameInEnvironment);                               
                             bound = true;
                         }
                         catch (NameNotFoundException e)
@@ -333,20 +333,20 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
                         injection.setJndiName(name);
                         injection.setMappingName(mappedName);
                         injections.add(injection);
-                        //TODO - an @Resource is equivalent to a resource-ref, resource-env-ref, message-destination
+                        //TODO - an @Resource is equivalent to a resource-ref, resource-env-ref, message-destination 
                         metaData.setOrigin("resource-ref."+name+".injection");
-                    }
+                    } 
                     else if (!Util.isEnvEntryType(paramType))
                     {
 
                         //if this is an env-entry type resource and there is no value bound for it, it isn't
                         //an error, it just means that perhaps the code will use a default value instead
-                        // JavaEE Spec. sec 5.4.1.3
+                        // JavaEE Spec. sec 5.4.1.3   
                         throw new IllegalStateException("No resource at "+(mappedName==null?name:mappedName));
                     }
                 }
                 catch (NamingException e)
-                {
+                {  
                     //if this is an env-entry type resource and there is no value bound for it, it isn't
                     //an error, it just means that perhaps the code will use a default value instead
                     // JavaEE Spec. sec 5.4.1.3

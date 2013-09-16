@@ -136,7 +136,7 @@ public class FragmentDescriptor extends WebDescriptor
             node = (XmlParser.Node) o;
             if (node.getTag().equalsIgnoreCase("others"))
             {
-                if (_otherType != OtherType.None)
+                if (_otherType != OtherType.After)
                     throw new IllegalStateException("Duplicate <other> clause detected in "+_xml.getURI());
 
                 _otherType = OtherType.After;

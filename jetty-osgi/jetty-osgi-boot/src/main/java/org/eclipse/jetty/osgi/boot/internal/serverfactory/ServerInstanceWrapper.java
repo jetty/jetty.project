@@ -19,17 +19,15 @@
 package org.eclipse.jetty.osgi.boot.internal.serverfactory;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.StringTokenizer;
 
 import org.eclipse.jetty.deploy.AppLifeCycle;
@@ -45,11 +43,11 @@ import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
 import org.eclipse.jetty.osgi.boot.OSGiUndeployer;
 import org.eclipse.jetty.osgi.boot.ServiceContextProvider;
 import org.eclipse.jetty.osgi.boot.ServiceWebAppProvider;
+import org.eclipse.jetty.osgi.boot.internal.jsp.TldLocatableURLClassloader;
+import org.eclipse.jetty.osgi.boot.internal.webapp.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.osgi.boot.internal.webapp.LibExtClassLoaderHelper;
-import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelperFactory;
-import org.eclipse.jetty.osgi.boot.utils.FakeURLClassLoader;
-import org.eclipse.jetty.osgi.boot.utils.TldBundleDiscoverer;
-import org.eclipse.jetty.osgi.boot.utils.Util;
+import org.eclipse.jetty.osgi.boot.internal.webapp.WebBundleTrackerCustomizer;
+import org.eclipse.jetty.osgi.boot.utils.WebappRegistrationCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.IO;
@@ -73,9 +71,6 @@ public class ServerInstanceWrapper
      * support the case where the bundle is zipped.
      */
     public static final String PROPERTY_THIS_JETTY_XML_FOLDER_URL = "this.jetty.xml.parent.folder.url";
-    
-    
-    private static Collection<TldBundleDiscoverer> __containerTldBundleDiscoverers = new ArrayList<TldBundleDiscoverer>();
 
     private static Logger LOG = Log.getLogger(ServerInstanceWrapper.class.getName());
     
@@ -98,102 +93,6 @@ public class ServerInstanceWrapper
     private ClassLoader _commonParentClassLoaderForWebapps;
 
     private DeploymentManager _deploymentManager;
-    
-    
-    
-    /* ------------------------------------------------------------ */
-    public static void addContainerTldBundleDiscoverer (TldBundleDiscoverer tldBundleDiscoverer)
-    {
-        __containerTldBundleDiscoverers.add(tldBundleDiscoverer);
-    }
-    
-    /* ------------------------------------------------------------ */
-    public static Collection<TldBundleDiscoverer> getContainerTldBundleDiscoverers()
-    {
-        return __containerTldBundleDiscoverers;
-    }
-    
- 
-
-    
-    /* ------------------------------------------------------------ */
-    public static Server configure(Server server, List<URL> jettyConfigurations, Dictionary props) throws Exception
-    {
-       
-        if (jettyConfigurations == null || jettyConfigurations.isEmpty()) { return server; }
-        
-        Map<String, Object> id_map = new HashMap<String, Object>();
-        if (server != null)
-        {
-            //Put in a mapping for the id "Server" and the name of the server as the instance being configured
-            id_map.put("Server", server);
-            id_map.put((String)props.get(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME), server);
-        }
-
-        Map<String, String> properties = new HashMap<String, String>();
-        if (props != null)
-        {
-            Enumeration<Object> en = props.keys();
-            while (en.hasMoreElements())
-            {
-                Object key = en.nextElement();
-                Object value = props.get(key);
-                String keyStr = String.valueOf(key);
-                String valStr = String.valueOf(value);
-                properties.put(keyStr, valStr);
-                if (server != null) server.setAttribute(keyStr, valStr);
-            }
-        }
-
-        for (URL jettyConfiguration : jettyConfigurations)
-        {
-            InputStream is = null;
-            try
-            {
-                // Execute a Jetty configuration file
-                Resource r = Resource.newResource(jettyConfiguration);
-                if (!r.exists())
-                {
-                    LOG.warn("File does not exist "+r);
-                    throw new IllegalStateException("No such jetty server config file: "+r);
-                }
-                is = r.getInputStream();
-                XmlConfiguration config = new XmlConfiguration(is);
-                config.getIdMap().putAll(id_map);
-                config.getProperties().putAll(properties);
-                
-                // #334062 compute the URL of the folder that contains the
-                // conf file and set it as a property so we can compute relative paths
-                // from it.
-                String urlPath = jettyConfiguration.toString();
-                int lastSlash = urlPath.lastIndexOf('/');
-                if (lastSlash > 4)
-                {
-                    urlPath = urlPath.substring(0, lastSlash);
-                    config.getProperties().put(PROPERTY_THIS_JETTY_XML_FOLDER_URL, urlPath);
-                }
-     
-                Object o = config.configure();
-                if (server == null)
-                    server = (Server)o;
-                
-                id_map = config.getIdMap();
-            }
-            catch (SAXParseException saxparse)
-            {
-                LOG.warn("Unable to configure the jetty/etc file " + jettyConfiguration, saxparse);
-                throw saxparse;
-            }
-            finally
-            {
-                IO.close(is);
-            }
-        }
-
-        return server;
-    }
-    
-    
     
     
     /* ------------------------------------------------------------ */
@@ -264,41 +163,18 @@ public class ServerInstanceWrapper
             String sharedURLs = (String) props.get(OSGiServerConstants.MANAGED_JETTY_SHARED_LIB_FOLDER_URLS);
 
             List<File> shared = sharedURLs != null ? extractFiles(sharedURLs) : null;
-            libExtClassLoader = LibExtClassLoaderHelper.createLibExtClassLoader(shared, null,JettyBootstrapActivator.class.getClassLoader());
+            libExtClassLoader = LibExtClassLoaderHelper.createLibExtClassLoader(shared, null, server, JettyBootstrapActivator.class.getClassLoader());
 
             if (LOG.isDebugEnabled()) LOG.debug("LibExtClassLoader = "+libExtClassLoader);
             
             Thread.currentThread().setContextClassLoader(libExtClassLoader);
 
-            String jettyConfigurationUrls = (String) props.get(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS);
-            List<URL> jettyConfigurations = jettyConfigurationUrls != null ? Util.fileNamesAsURLs(jettyConfigurationUrls, Util.DEFAULT_DELIMS) : null;
-            
-            _server = configure(server, jettyConfigurations, props);
+            configure(server, props);
 
             init();
-            
-            //if support for jsp is enabled, we need to convert locations of bundles that contain tlds into urls.
-            //these are tlds that we want jasper to treat as if they are on the container's classpath. Web bundles
-            //can use the Require-TldBundle MANIFEST header to name other tld-containing bundles that should be regarded
-            //as on the webapp classpath.
-            if (!__containerTldBundleDiscoverers.isEmpty())
-            {
-                Set<URL> urls = new HashSet<URL>();
-                //discover bundles with tlds that need to be on the container's classpath as URLs
-                for (TldBundleDiscoverer d:__containerTldBundleDiscoverers)
-                {
-                    URL[] list = d.getUrlsForBundlesWithTlds(_deploymentManager, BundleFileLocatorHelperFactory.getFactory().getHelper());
-                    if (list != null)
-                    {
-                        for (URL u:list)
-                            urls.add(u);
-                    }
-                }
-                _commonParentClassLoaderForWebapps =  new FakeURLClassLoader(libExtClassLoader, urls.toArray(new URL[urls.size()]));
-            }
-            else
-                _commonParentClassLoaderForWebapps = libExtClassLoader;
 
+            URL[] jarsWithTlds = getJarsWithTlds();
+            _commonParentClassLoaderForWebapps = jarsWithTlds == null ? libExtClassLoader : new TldLocatableURLClassloader(libExtClassLoader, jarsWithTlds);
             
             if (LOG.isDebugEnabled()) LOG.debug("common classloader = "+_commonParentClassLoaderForWebapps);
 
@@ -342,9 +218,128 @@ public class ServerInstanceWrapper
     }
     
     
-   
+    /* ------------------------------------------------------------ */
+    /**
+     * TODO: right now only the jetty-jsp bundle is scanned for common taglibs.
+     * Should support a way to plug more bundles that contain taglibs.
+     * 
+     * The jasper TldScanner expects a URLClassloader to parse a jar for the
+     * /META-INF/*.tld it may contain. We place the bundles that we know contain
+     * such tag-libraries. Please note that it will work if and only if the
+     * bundle is a jar (!) Currently we just hardcode the bundle that contains
+     * the jstl implementation.
+     * 
+     * A workaround when the tld cannot be parsed with this method is to copy
+     * and paste it inside the WEB-INF of the webapplication where it is used.
+     * 
+     * Support only 2 types of packaging for the bundle: - the bundle is a jar
+     * (recommended for runtime.) - the bundle is a folder and contain jars in
+     * the root and/or in the lib folder (nice for PDE development situations)
+     * Unsupported: the bundle is a jar that embeds more jars.
+     * 
+     * @return
+     * @throws Exception
+     */
+    private URL[] getJarsWithTlds() throws Exception
+    {
+        
+        //Jars that are added onto the equivalent of the container classpath are:
+        // jstl jars: identified by the class WhenTag (and the boot-bundle manifest imports the jstl packages
+        // bundles identified by System property org.eclipse.jetty.osgi.tldbundles
+        // bundle symbolic name patterns defined in the DeploymentManager
+        //
+        // Any bundles mentioned in the Require-TldBundle manifest header of the webapp bundle MUST ALSO HAVE Import-Bundle
+        // in order to get them onto the classpath of the webapp.
+        
+        ArrayList<URL> res = new ArrayList<URL>();
+        for (WebappRegistrationCustomizer regCustomizer : WebBundleTrackerCustomizer.JSP_REGISTRATION_HELPERS)
+        {
+            URL[] urls = regCustomizer.getJarsWithTlds(_deploymentManager, BundleFileLocatorHelperFactory.getFactory().getHelper());
+            for (URL url : urls)
+            {
+                if (!res.contains(url)) res.add(url);
+            }
+        }
+        if (!res.isEmpty())
+            return res.toArray(new URL[res.size()]);
+        else
+            return null;
+    }
+    
     
     /* ------------------------------------------------------------ */
+    private void configure(Server server, Dictionary props) throws Exception
+    {
+        String jettyConfigurationUrls = (String) props.get(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS);
+        List<URL> jettyConfigurations = jettyConfigurationUrls != null ? extractResources(jettyConfigurationUrls) : null;
+        if (jettyConfigurations == null || jettyConfigurations.isEmpty()) { return; }
+        Map<String, Object> id_map = new HashMap<String, Object>();
+        
+        //Put in a mapping for the id "Server" and the name of the server as the instance being configured
+        id_map.put("Server", server);
+        id_map.put((String)props.get(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME), server);
+        
+        Map<String, String> properties = new HashMap<String, String>();
+        Enumeration<Object> en = props.keys();
+        while (en.hasMoreElements())
+        {
+            Object key = en.nextElement();
+            Object value = props.get(key);
+            String keyStr = String.valueOf(key);
+            String valStr = String.valueOf(value);
+            properties.put(keyStr, valStr);
+            server.setAttribute(keyStr, valStr);
+        }
+
+        for (URL jettyConfiguration : jettyConfigurations)
+        {
+            InputStream is = null;
+            try
+            {
+                // Execute a Jetty configuration file
+                Resource r = Resource.newResource(jettyConfiguration);
+                if (!r.exists())
+                {
+                    LOG.warn("File does not exist "+r);
+                    continue;
+                }
+                is = r.getInputStream();
+                XmlConfiguration config = new XmlConfiguration(is);
+                config.getIdMap().putAll(id_map);
+
+                // #334062 compute the URL of the folder that contains the
+                // jetty.xml conf file
+                // and set it as a property so we can compute relative paths
+                // from it.
+                String urlPath = jettyConfiguration.toString();
+                int lastSlash = urlPath.lastIndexOf('/');
+                if (lastSlash > 4)
+                {
+                    urlPath = urlPath.substring(0, lastSlash);
+                    Map<String, String> properties2 = new HashMap<String, String>(properties);
+                    properties2.put(PROPERTY_THIS_JETTY_XML_FOLDER_URL, urlPath);
+                    config.getProperties().putAll(properties2);
+                }
+                else
+                {
+                    config.getProperties().putAll(properties);
+                }
+                config.configure();
+                id_map = config.getIdMap();
+            }
+            catch (SAXParseException saxparse)
+            {
+                LOG.warn("Unable to configure the jetty/etc file " + jettyConfiguration, saxparse);
+                throw saxparse;
+            }
+            finally
+            {
+                IO.close(is);
+            }
+        }
+
+    }
+
     /**
      * Must be called after the server is configured. 
      * 
@@ -362,10 +357,10 @@ public class ServerInstanceWrapper
         List<String> providerClassNames = new ArrayList<String>();
         
         // get a deployerManager and some providers
-        Collection<DeploymentManager> deployers = _server.getBeans(DeploymentManager.class);
+        List<DeploymentManager> deployers = _server.getBeans(DeploymentManager.class);
         if (deployers != null && !deployers.isEmpty())
         {
-            _deploymentManager = deployers.iterator().next();
+            _deploymentManager = deployers.get(0);
             
             for (AppProvider provider : _deploymentManager.getAppProviders())
             {
@@ -442,12 +437,54 @@ public class ServerInstanceWrapper
             }
         }
     }
-    
 
-  
-    
-    
-    /* ------------------------------------------------------------ */
+    /**
+     * @return The default folder in which the context files of the osgi bundles
+     *         are located and watched. Or null when the system property
+     *         "jetty.osgi.contexts.home" is not defined. If the configuration
+     *         file defines the OSGiAppProvider's context. This will not be
+     *         taken into account.
+     */
+    File getDefaultOSGiContextsHome(File jettyHome)
+    {
+        String jettyContextsHome = System.getProperty("jetty.osgi.contexts.home");
+        if (jettyContextsHome != null)
+        {
+            File contextsHome = new File(jettyContextsHome);
+            if (!contextsHome.exists() || !contextsHome.isDirectory())
+            { 
+                throw new IllegalArgumentException("the ${jetty.osgi.contexts.home} '" 
+                                                   + jettyContextsHome
+                                                   + " must exist and be a folder"); 
+            }
+            return contextsHome;
+        }
+        return new File(jettyHome, "/contexts");
+    }
+
+
+    /**
+     * @return the urls in this string.
+     */
+    private List<URL> extractResources(String propertyValue)
+    {
+        StringTokenizer tokenizer = new StringTokenizer(propertyValue, ",;", false);
+        List<URL> urls = new ArrayList<URL>();
+        while (tokenizer.hasMoreTokens())
+        {
+            String tok = tokenizer.nextToken();
+            try
+            {
+                urls.add(BundleFileLocatorHelperFactory.getFactory().getHelper().getLocalURL(new URL(tok)));
+            }
+            catch (Throwable mfe)
+            {
+                LOG.warn(mfe);
+            }
+        }
+        return urls;
+    }
+
     /**
      * Get the folders that might contain jars for the legacy J2EE shared
      * libraries

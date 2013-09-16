@@ -21,9 +21,9 @@ package org.eclipse.jetty.util.resource;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -31,8 +31,6 @@ import java.util.List;
 import java.util.StringTokenizer;
 
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 /**
  * A collection of resources (dirs).
@@ -46,7 +44,6 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class ResourceCollection extends Resource
 {
-    private static final Logger LOG = Log.getLogger(ResourceCollection.class);
     private Resource[] _resources;
 
     /* ------------------------------------------------------------ */
@@ -169,25 +166,20 @@ public class ResourceCollection extends Resource
                     " argument must be a string containing one or more comma-separated resource strings.");
         }
         
-        List<Resource> resources = new ArrayList<>();
-        
+        _resources = new Resource[len];
         try
         {            
-            while(tokenizer.hasMoreTokens())
+            for(int i=0; tokenizer.hasMoreTokens(); i++)
             {
-                Resource resource = Resource.newResource(tokenizer.nextToken().trim());
-                if(!resource.exists() || !resource.isDirectory())
-                    LOG.warn(" !exist "+resource);
-                else
-                    resources.add(resource);
+                _resources[i] = Resource.newResource(tokenizer.nextToken().trim());
+                if(!_resources[i].exists() || !_resources[i].isDirectory())
+                    throw new IllegalArgumentException(_resources[i] + " is not an existing directory.");
             }
         }
         catch(Exception e)
         {
             throw new RuntimeException(e);
         }
-
-        _resources = resources.toArray(new Resource[resources.size()]);
     }
     
     /* ------------------------------------------------------------ */
@@ -226,15 +218,12 @@ public class ResourceCollection extends Resource
             Resource r = _resources[i].addPath(path); 
             if (r.exists() && r.isDirectory())
             {
-                if (resources==null)
-                    resources = new ArrayList<Resource>();
-                    
                 if (resource!=null)
                 {
+                    resources = new ArrayList<Resource>();
                     resources.add(resource);
                     resource=null;
                 }
-                
                 resources.add(r);
             }
         }
@@ -339,22 +328,6 @@ public class ResourceCollection extends Resource
         }
         return null;
     }
-
-    /* ------------------------------------------------------------ */
-    @Override 
-    public ReadableByteChannel getReadableByteChannel() throws IOException
-    {
-        if(_resources==null)
-            throw new IllegalStateException("*resources* not set.");
-        
-        for(Resource r : _resources)
-        {
-            ReadableByteChannel channel = r.getReadableByteChannel();
-            if(channel!=null)
-                return channel;
-        }
-        return null;
-    }
     
     /* ------------------------------------------------------------ */
     @Override
@@ -368,6 +341,22 @@ public class ResourceCollection extends Resource
             String name = r.getName();
             if(name!=null)
                 return name;
+        }
+        return null;
+    }
+    
+    /* ------------------------------------------------------------ */
+    @Override
+    public OutputStream getOutputStream() throws IOException, SecurityException
+    {
+        if(_resources==null)
+            throw new IllegalStateException("*resources* not set.");
+        
+        for(Resource r : _resources)
+        {
+            OutputStream os = r.getOutputStream();
+            if(os!=null)
+                return os;
         }
         return null;
     }
@@ -444,13 +433,13 @@ public class ResourceCollection extends Resource
     
     /* ------------------------------------------------------------ */
     @Override
-    public void close()
+    public void release()
     {
         if(_resources==null)
             throw new IllegalStateException("*resources* not set.");
         
         for(Resource r : _resources)
-            r.close();
+            r.release();
     }
     
     /* ------------------------------------------------------------ */

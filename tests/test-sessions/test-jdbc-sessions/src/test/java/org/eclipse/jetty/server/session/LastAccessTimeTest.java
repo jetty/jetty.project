@@ -18,10 +18,7 @@
 
 package org.eclipse.jetty.server.session;
 
-import java.sql.DriverManager;
-import java.sql.SQLException;
-
-import org.junit.After;
+import org.eclipse.jetty.util.log.Log;
 import org.junit.Test;
 
 /**
@@ -40,17 +37,4 @@ public class LastAccessTimeTest extends AbstractLastAccessTimeTest
         // Log.getLog().setDebugEnabled(true);
         super.testLastAccessTime();
     }
-    
-    @After
-    public void tearDown() throws Exception 
-    {
-        try
-        {
-            DriverManager.getConnection( "jdbc:derby:sessions;shutdown=true" );
-        }
-        catch( SQLException expected )
-        {
-        }
-    }
-    
 }

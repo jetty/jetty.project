@@ -18,12 +18,7 @@
 
 package org.eclipse.jetty.jndi.factories;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
 import java.util.Properties;
-
 import javax.mail.Session;
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -33,6 +28,10 @@ import javax.naming.NameParser;
 
 import org.eclipse.jetty.jndi.NamingUtil;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  *

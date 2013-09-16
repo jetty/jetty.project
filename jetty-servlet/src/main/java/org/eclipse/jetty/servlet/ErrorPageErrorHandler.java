@@ -29,7 +29,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -67,9 +68,9 @@ public class ErrorPageErrorHandler extends ErrorHandler
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
         String method = request.getMethod();
-        if (!HttpMethod.GET.is(method) && !HttpMethod.POST.is(method) && !HttpMethod.HEAD.is(method))
+        if(!method.equals(HttpMethods.GET) && !method.equals(HttpMethods.POST) && !method.equals(HttpMethods.HEAD))
         {
-            baseRequest.setHandled(true);
+            AbstractHttpConnection.getCurrentConnection().getRequest().setHandled(true);
             return;
         }
         if (_errorPages!=null)
@@ -190,7 +191,7 @@ public class ErrorPageErrorHandler extends ErrorHandler
     {
         _errorPages.put(exception.getName(),uri);
     }
-
+    
     /* ------------------------------------------------------------ */
     /** Add Error Page mapping for an exception class
      * This method is called as a result of an exception-type element in a web.xml file
@@ -234,6 +235,14 @@ public class ErrorPageErrorHandler extends ErrorHandler
     {
         super.doStart();
         _servletContext=ContextHandler.getCurrentContext();
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    protected void doStop() throws Exception
+    {
+        // TODO Auto-generated method stub
+        super.doStop();
     }
 
     /* ------------------------------------------------------------ */

@@ -2,7 +2,8 @@
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
-    <version>9.0.6-SNAPSHOT</version>
+    <version>7.6.13-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-httpservice</artifactId>
@@ -87,7 +88,7 @@
                   <id>bundle-manifest</id>
                   <phase>process-classes</phase>
                   <goals>
-                      <goal>manifest</goal>
+                      <goal>manifest</goal> 
                   </goals>
               </execution>
           </executions>
@@ -96,10 +97,8 @@
                 <Bundle-SymbolicName>org.eclipse.jetty.osgi.httpservice</Bundle-SymbolicName>
                 <Bundle-Name>OSGi HttpService</Bundle-Name>
                 <Jetty-ContextFilePath>contexts/httpservice.xml</Jetty-ContextFilePath>
-                <Import-Package>org.eclipse.jetty.server.handler;version="[9.0,10.0)",
-org.eclipse.jetty.util.component;version="[9.0,10.0)",
-org.eclipse.jetty.server.session;version="[9.0,10.0)",
-org.eclipse.jetty.servlet;version="[9.0,10.0)",
+                <Import-Package>org.eclipse.jetty.server.handler;version="[7.6,8)",
+org.eclipse.jetty.util.component;version="[7.6,8)",
 org.eclipse.equinox.http.servlet,
 *
                  </Import-Package>
@@ -116,4 +115,6 @@ org.eclipse.equinox.http.servlet,
       </plugin>
     </plugins>
   </build>
+
+
 </project>

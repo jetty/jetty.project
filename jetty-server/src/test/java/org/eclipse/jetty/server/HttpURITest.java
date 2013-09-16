@@ -27,14 +27,16 @@ import static org.junit.Assert.fail;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
-import java.nio.charset.Charset;
+import java.util.Iterator;
+import java.util.Set;
 
+import junit.framework.Assert;
+
+import org.eclipse.jetty.http.EncodedHttpURI;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.util.MultiMap;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.Utf8Appendable;
-import org.junit.Assert;
 import org.junit.Test;
 
 public class HttpURITest
@@ -136,11 +138,11 @@ public class HttpURITest
        /*33*/ {"/?abc=test",null, null, null,null,"/", null,"abc=test",null},
        /*34*/ {"/#fragment",null, null, null,null,"/", null,null,"fragment"},
        /*35*/ {"http://192.0.0.1:8080/","http","//192.0.0.1:8080","192.0.0.1","8080","/",null,null,null},
-       /*36*/ {"http://[2001:db8::1]:8080/","http","//[2001:db8::1]:8080","2001:db8::1","8080","/",null,null,null},
-       /*37*/ {"http://user@[2001:db8::1]:8080/","http","//user@[2001:db8::1]:8080","2001:db8::1","8080","/",null,null,null},
-       /*38*/ {"http://[2001:db8::1]/","http","//[2001:db8::1]","2001:db8::1",null,"/",null,null,null},
+       /*36*/ {"http://[2001:db8::1]:8080/","http","//[2001:db8::1]:8080","[2001:db8::1]","8080","/",null,null,null},
+       /*37*/ {"http://user@[2001:db8::1]:8080/","http","//user@[2001:db8::1]:8080","[2001:db8::1]","8080","/",null,null,null},
+       /*38*/ {"http://[2001:db8::1]/","http","//[2001:db8::1]","[2001:db8::1]",null,"/",null,null,null},
        /*39*/ {"//[2001:db8::1]:8080/",null,null,null,null,"//[2001:db8::1]:8080/",null,null,null},
-       /*40*/ {"http://user@[2001:db8::1]:8080/","http","//user@[2001:db8::1]:8080","2001:db8::1","8080","/",null,null,null},
+       /*40*/ {"http://user@[2001:db8::1]:8080/","http","//user@[2001:db8::1]:8080","[2001:db8::1]","8080","/",null,null,null},
        /*41*/ {"*",null,null,null,null,"*",null, null,null}
     };
 
@@ -215,6 +217,7 @@ public class HttpURITest
     @Test
     public void testNoPercentEncodingOfQueryUsingNonUTF8() throws Exception
     {
+        
         byte[] utf8_bytes = "/%D0%A1%D1%82%D1%80%D0%BE%D0%BD%D0%B3-%D1%84%D0%B8%D0%BB%D1%8C%D1%82%D1%80/%D0%BA%D0%B0%D1%82%D0%B0%D0%BB%D0%BE%D0%B3?".getBytes("UTF-8");
         byte[] cp1251_bytes = TypeUtil.fromHexString("e2fbe1f0e0edee3dd2e5ecefe5f0e0f2f3f0e0");
         String expectedCP1251String = new String(cp1251_bytes, "cp1251");
@@ -231,7 +234,7 @@ public class HttpURITest
             allbytes[i+j] = cp1251_bytes[j];
         
         //Test using a HttpUri that expects a particular charset encoding. See URIUtil.__CHARSET
-        HttpURI uri = new HttpURI(Charset.forName("cp1251"));
+        EncodedHttpURI uri = new EncodedHttpURI("cp1251");
         uri.parse(allbytes, 0, allbytes.length);
         assertEquals(expectedCP1251String, uri.getQuery("cp1251"));
         
@@ -256,7 +259,7 @@ public class HttpURITest
         assertEquals(expectedCP1251Value, val);
         
         //test able to set the query encoding and call getQueryString multiple times
-        Request request = new Request(null,null);
+        Request request = new Request();
         request.setUri(httpuri);    
         request.setAttribute("org.eclipse.jetty.server.Request.queryEncoding", "ISO-8859-1");
         assertNotNull (request.getQueryString()); //will be incorrect encoding but not null
@@ -301,7 +304,7 @@ public class HttpURITest
       assertEquals(expectedCP1251Value, val);
       
       //test able to set the query encoding and call getQueryString multiple times
-      Request request = new Request(null,null);
+      Request request = new Request();
       request.setUri(httpuri);    
       request.setAttribute("org.eclipse.jetty.server.Request.queryEncoding", "ISO-8859-1");
       assertNotNull (request.getQueryString()); //will be incorrect encoding but not null
@@ -323,16 +326,30 @@ public class HttpURITest
         {
         }
 
-        HttpURI huri=new HttpURI(uri);
-        MultiMap<String> params = new MultiMap<>();
-        huri.decodeQueryTo(params);
-        assertEquals("data"+Utf8Appendable.REPLACEMENT+"here"+Utf8Appendable.REPLACEMENT,params.getValue("invalid",0));
-
-        huri=new HttpURI(uri);
-        params = new MultiMap<>();
-        huri.decodeQueryTo(params,"UTF-8");
-        assertEquals("data"+Utf8Appendable.REPLACEMENT+"here"+Utf8Appendable.REPLACEMENT,params.getValue("invalid",0));
-
+        try
+        {
+            HttpURI huri=new HttpURI(uri);
+            MultiMap<String> params = new MultiMap<String>();
+            huri.decodeQueryTo(params);
+            System.err.println(params);
+            Assert.assertTrue(false);
+        }
+        catch (IllegalArgumentException e)
+        {
+        }
+        
+        try
+        {
+            HttpURI huri=new HttpURI(uri);
+            MultiMap<String> params = new MultiMap<String>();
+            huri.decodeQueryTo(params,"UTF-8");
+            System.err.println(params);
+            Assert.assertTrue(false);
+        }
+        catch (IllegalArgumentException e)
+        {
+        }        
+        
     }
 
     @Test
@@ -341,19 +358,19 @@ public class HttpURITest
         for (String value: new String[]{"a","abcdABCD","\u00C0","\u697C","\uD869\uDED5","\uD840\uDC08"} )
         {
             HttpURI uri = new HttpURI("/path?value="+URLEncoder.encode(value,"UTF-8"));
-
-            MultiMap<String> parameters = new MultiMap<>();
+            
+            MultiMap<String> parameters = new MultiMap<String>();
             uri.decodeQueryTo(parameters,"UTF-8");
-            assertEquals(value,parameters.getString("value"));
+            assertEquals(value,parameters.get("value"));
         }
     }
-
-
+    
+    
     private final String[][] connect_tests=
     {
        /* 0*/ {"  localhost:8080  ","localhost","8080"},
        /* 1*/ {"  127.0.0.1:8080  ","127.0.0.1","8080"},
-       /* 2*/ {"  [127::0::0::1]:8080  ","127::0::0::1","8080"},
+       /* 2*/ {"  [127::0::0::1]:8080  ","[127::0::0::1]","8080"},
        /* 3*/ {"  error  ",null,null},
        /* 4*/ {"  http://localhost:8080/  ",null,null},
     };
@@ -366,10 +383,9 @@ public class HttpURITest
         {
             try
             {
-                byte[] buf = connect_tests[i][0].getBytes(StringUtil.__UTF8);
-
-                uri.parseConnect(buf,2,buf.length-4);
-                assertEquals("path"+i,connect_tests[i][0].trim(),uri.getPath());
+                ByteArrayBuffer buf = new ByteArrayBuffer(connect_tests[i][0]);
+                uri.parseConnect(buf.array(),2,buf.length()-4);
+                assertEquals("path"+i,connect_tests[i][1]+":"+connect_tests[i][2],uri.getPath());
                 assertEquals("host"+i,connect_tests[i][1],uri.getHost());
                 assertEquals("port"+i,Integer.parseInt(connect_tests[i][2]),uri.getPort());
             }
@@ -378,25 +394,5 @@ public class HttpURITest
                 assertNull("error"+i,connect_tests[i][1]);
             }
         }
-    }
-
-    @Test
-    public void testNonURIAscii() throws Exception
-    {
-        String url = "http://www.foo.com/ma\u00F1ana";
-        byte[] asISO = url.getBytes("ISO-8859-1");
-        new String(asISO, "ISO-8859-1");
-
-        //use a non UTF-8 charset as the encoding and url-escape as per
-        //http://www.w3.org/TR/html40/appendix/notes.html#non-ascii-chars
-        String s = URLEncoder.encode(url, "ISO-8859-1");
-        HttpURI uri = new HttpURI(Charset.forName("ISO-8859-1"));
-
-        //parse it, using the same encoding
-        uri.parse(s);
-
-        //decode the url encoding
-        String d = URLDecoder.decode(uri.getCompletePath(), "ISO-8859-1");
-        assertEquals(url, d);
     }
 }

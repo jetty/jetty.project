@@ -19,7 +19,6 @@
 package org.eclipse.jetty.io;
 
 import java.net.Socket;
-import java.nio.ByteBuffer;
 
 /**
  * <p>A listener for raw network traffic within Jetty.</p>
@@ -53,7 +52,7 @@ public interface NetworkTrafficListener
      * @param socket the socket associated with the remote client
      * @param bytes  the read-only buffer containing the incoming bytes
      */
-    public void incoming(Socket socket, ByteBuffer bytes);
+    public void incoming(Socket socket, Buffer bytes);
 
     /**
      * <p>Callback method invoked when bytes are sent to a remote client from the server.</p>
@@ -62,7 +61,7 @@ public interface NetworkTrafficListener
      * @param socket the socket associated with the remote client
      * @param bytes  the read-only buffer containing the outgoing bytes
      */
-    public void outgoing(Socket socket, ByteBuffer bytes);
+    public void outgoing(Socket socket, Buffer bytes);
 
     /**
      * <p>Callback method invoked when a connection to a remote client has been closed.</p>
@@ -85,11 +84,11 @@ public interface NetworkTrafficListener
         {
         }
 
-        public void incoming(Socket socket, ByteBuffer bytes)
+        public void incoming(Socket socket, Buffer bytes)
         {
         }
 
-        public void outgoing(Socket socket, ByteBuffer bytes)
+        public void outgoing(Socket socket, Buffer bytes)
         {
         }
 

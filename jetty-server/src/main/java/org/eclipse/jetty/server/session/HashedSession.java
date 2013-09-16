@@ -40,7 +40,7 @@ public class HashedSession extends AbstractSession
 
     private final HashSessionManager _hashSessionManager;
 
-    /** Whether the session has been saved because it has been deemed idle;
+    /** Whether the session has been saved because it has been deemed idle; 
      * in which case its attribute map will have been saved and cleared. */
     private transient boolean _idled = false;
 
@@ -72,7 +72,7 @@ public class HashedSession extends AbstractSession
             deIdle();
         super.checkValid();
     }
-
+    
     /* ------------------------------------------------------------- */
     @Override
     public void setMaxInactiveInterval(int secs)
@@ -88,16 +88,8 @@ public class HashedSession extends AbstractSession
     throws IllegalStateException
     {
         super.doInvalidate();
-        remove();
-    }
-    
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * Remove from the disk
-     */
-    synchronized void remove ()
-    {
+        
+        // Remove from the disk
         if (_hashSessionManager._storeDir!=null && getId()!=null)
         {
             String id=getId();
@@ -116,41 +108,24 @@ public class HashedSession extends AbstractSession
             if (LOG.isDebugEnabled())
                 LOG.debug("Saving {} {}",super.getId(),reactivate);
 
-            try
-            {
-                willPassivate();
-                save();
-                if (reactivate)
-                    didActivate();
-                else
-                    clearAttributes();
-            }
-            catch (Exception e)
-            {       
-                LOG.warn("Problem saving session " + super.getId(), e);
-                _idled=false; // assume problem was before _values.clear();
-            }
-        }
-    }
-    
-    
-    
-    synchronized void save ()
-    throws Exception
-    {   
-        File file = null;
-        FileOutputStream fos = null;
-        if (!_saveFailed && _hashSessionManager._storeDir != null)
-        {
+            File file = null;
+            FileOutputStream fos = null;
+            
             try
             {
                 file = new File(_hashSessionManager._storeDir, super.getId());
+
                 if (file.exists())
                     file.delete();
                 file.createNewFile();
                 fos = new FileOutputStream(file);
+                willPassivate();
                 save(fos);
                 IO.close(fos);
+                if (reactivate)
+                    didActivate();
+                else
+                    clearAttributes();
             }
             catch (Exception e)
             {
@@ -161,23 +136,22 @@ public class HashedSession extends AbstractSession
             }
         }
     }
-    
-    
     /* ------------------------------------------------------------ */
-    public synchronized void save(OutputStream os)  throws IOException
+    public synchronized void save(OutputStream os)  throws IOException 
     {
         DataOutputStream out = new DataOutputStream(os);
         out.writeUTF(getClusterId());
         out.writeUTF(getNodeId());
         out.writeLong(getCreationTime());
         out.writeLong(getAccessed());
-
+        
         /* Don't write these out, as they don't make sense to store because they
-         * either they cannot be true or their value will be restored in the
+         * either they cannot be true or their value will be restored in the 
          * Session constructor.
          */
         //out.writeBoolean(_invalid);
         //out.writeBoolean(_doInvalidate);
+        //out.writeLong(_maxIdleMs);
         //out.writeBoolean( _newSession);
         out.writeInt(getRequests());
         out.writeInt(getAttributes());
@@ -189,8 +163,7 @@ public class HashedSession extends AbstractSession
             oos.writeUTF(key);
             oos.writeObject(doGet(key));
         }
-        
-        out.writeInt(getMaxInactiveInterval());
+        oos.close();
     }
 
     /* ------------------------------------------------------------ */
@@ -232,13 +205,13 @@ public class HashedSession extends AbstractSession
         }
     }
 
-
+    
     /* ------------------------------------------------------------ */
     /**
      * Idle the session to reduce session memory footprint.
-     *
-     * The session is idled by persisting it, then clearing the session values attribute map and finally setting
-     * it to an idled state.
+     * 
+     * The session is idled by persisting it, then clearing the session values attribute map and finally setting 
+     * it to an idled state.  
      */
     public synchronized void idle()
     throws Exception
@@ -246,7 +219,7 @@ public class HashedSession extends AbstractSession
         save(false);
         _idled = true;
     }
-
+    
     /* ------------------------------------------------------------ */
     public synchronized boolean isIdled()
     {

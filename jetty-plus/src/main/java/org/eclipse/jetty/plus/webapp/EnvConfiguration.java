@@ -31,7 +31,6 @@ import javax.naming.Name;
 import javax.naming.NameNotFoundException;
 import javax.naming.NamingException;
 
-import org.eclipse.jetty.jndi.ContextFactory;
 import org.eclipse.jetty.jndi.NamingContext;
 import org.eclipse.jetty.jndi.NamingUtil;
 import org.eclipse.jetty.jndi.local.localContextRoot;
@@ -62,26 +61,26 @@ public class EnvConfiguration extends AbstractConfiguration
         this.jettyEnvXmlUrl = url;
     }
 
-    /**
+    /** 
      * @see Configuration#configure(WebAppContext)
      * @throws Exception
      */
     @Override
     public void preConfigure (WebAppContext context) throws Exception
-    {
+    {        
         //create a java:comp/env
         createEnvContext(context);
     }
 
-    /**
+    /** 
      * @throws Exception
      */
     @Override
     public void configure (WebAppContext context) throws Exception
-    {
+    {  
         if (LOG.isDebugEnabled())
             LOG.debug("Created java:comp/env for webapp "+context.getContextPath());
-
+        
         //check to see if an explicit file has been set, if not,
         //look in WEB-INF/jetty-env.xml
         if (jettyEnvXmlUrl == null)
@@ -98,7 +97,7 @@ public class EnvConfiguration extends AbstractConfiguration
                 }
             }
         }
-
+        
         if (jettyEnvXmlUrl != null)
         {
             synchronized (localContextRoot.getRoot())
@@ -136,8 +135,8 @@ public class EnvConfiguration extends AbstractConfiguration
         bindEnvEntries(context);
     }
 
-
-    /**
+    
+    /** 
      * Remove jndi setup from start
      * @see Configuration#deconfigure(WebAppContext)
      * @throws Exception
@@ -148,7 +147,6 @@ public class EnvConfiguration extends AbstractConfiguration
         //get rid of any bindings for comp/env for webapp
         ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(context.getClassLoader());
-        ContextFactory.associateClassLoader(context.getClassLoader());
         try
         {
             Context ic = new InitialContext();
@@ -172,13 +170,12 @@ public class EnvConfiguration extends AbstractConfiguration
         }
         finally
         {
-            ContextFactory.disassociateClassLoader();
             Thread.currentThread().setContextClassLoader(oldLoader);
         }
     }
 
-
-    /**
+    
+    /** 
      * Remove all jndi setup
      * @see Configuration#deconfigure(WebAppContext)
      * @throws Exception
@@ -187,7 +184,7 @@ public class EnvConfiguration extends AbstractConfiguration
     public void destroy (WebAppContext context) throws Exception
     {
         try
-        {
+        {            
             //unbind any NamingEntries that were configured in this webapp's name space
             NamingContext scopeContext = (NamingContext)NamingEntryUtil.getContextForScope(context);
             scopeContext.getParent().destroySubcontext(scopeContext.getName());
@@ -198,11 +195,11 @@ public class EnvConfiguration extends AbstractConfiguration
             LOG.debug("No naming entries configured in environment for webapp "+context);
         }
     }
-
+    
     /**
      * Bind all EnvEntries that have been declared, so that the processing of the
      * web.xml file can potentially override them.
-     *
+     * 
      * We first bind EnvEntries declared in Server scope, then WebAppContext scope.
      * @throws NamingException
      */
@@ -220,11 +217,11 @@ public class EnvConfiguration extends AbstractConfiguration
             EnvEntry ee = (EnvEntry)itor.next();
             ee.bindToENC(ee.getJndiName());
             Name namingEntryName = NamingEntryUtil.makeNamingEntryName(null, ee);
-            NamingUtil.bind(envCtx, namingEntryName.toString(), ee);//also save the EnvEntry in the context so we can check it later
+            NamingUtil.bind(envCtx, namingEntryName.toString(), ee);//also save the EnvEntry in the context so we can check it later          
         }
-
+        
         LOG.debug("Binding env entries from the server scope");
-
+        
         scope = context.getServer();
         list = NamingEntryUtil.lookupNamingEntries(scope, EnvEntry.class);
         itor = list.iterator();
@@ -233,9 +230,9 @@ public class EnvConfiguration extends AbstractConfiguration
             EnvEntry ee = (EnvEntry)itor.next();
             ee.bindToENC(ee.getJndiName());
             Name namingEntryName = NamingEntryUtil.makeNamingEntryName(null, ee);
-            NamingUtil.bind(envCtx, namingEntryName.toString(), ee);//also save the EnvEntry in the context so we can check it later
+            NamingUtil.bind(envCtx, namingEntryName.toString(), ee);//also save the EnvEntry in the context so we can check it later          
         }
-
+        
         LOG.debug("Binding env entries from the context scope");
         scope = context;
         list = NamingEntryUtil.lookupNamingEntries(scope, EnvEntry.class);
@@ -247,27 +244,25 @@ public class EnvConfiguration extends AbstractConfiguration
             Name namingEntryName = NamingEntryUtil.makeNamingEntryName(null, ee);
             NamingUtil.bind(envCtx, namingEntryName.toString(), ee);//also save the EnvEntry in the context so we can check it later
         }
-    }
-
+    }  
+    
     protected void createEnvContext (WebAppContext wac)
     throws NamingException
     {
         ClassLoader old_loader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(wac.getClassLoader());
-        ContextFactory.associateClassLoader(wac.getClassLoader());
         try
         {
             Context context = new InitialContext();
             Context compCtx =  (Context)context.lookup ("java:comp");
             compCtx.createSubcontext("env");
         }
-        finally
+        finally 
         {
-            ContextFactory.disassociateClassLoader();
-            Thread.currentThread().setContextClassLoader(old_loader);
-        }
+           Thread.currentThread().setContextClassLoader(old_loader);
+       }
     }
-
+    
     private static class Bound
     {
         final NamingContext _context;

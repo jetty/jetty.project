@@ -19,7 +19,6 @@
 package org.eclipse.jetty.util;
 
 import java.io.UnsupportedEncodingException;
-import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 
 import org.eclipse.jetty.util.log.Log;
@@ -38,9 +37,6 @@ public class StringUtil
 {
     private static final Logger LOG = Log.getLogger(StringUtil.class);
     
-    
-    private final static Trie<String> CHARSETS= new ArrayTrie<>(256);
-    
     public static final String ALL_INTERFACES="0.0.0.0";
     public static final String CRLF="\015\012";
     public static final String __LINE_SEPARATOR=
@@ -48,51 +44,19 @@ public class StringUtil
        
     public static final String __ISO_8859_1="ISO-8859-1";
     public final static String __UTF8="UTF-8";
+    public final static String __UTF8Alt="UTF8";
     public final static String __UTF16="UTF-16";
     
     public final static Charset __UTF8_CHARSET;
     public final static Charset __ISO_8859_1_CHARSET;
-    public final static Charset __UTF16_CHARSET;
-    public final static Charset __US_ASCII_CHARSET;
     
     static
     {
         __UTF8_CHARSET=Charset.forName(__UTF8);
         __ISO_8859_1_CHARSET=Charset.forName(__ISO_8859_1);
-        __UTF16_CHARSET=Charset.forName(__UTF16);
-        __US_ASCII_CHARSET=Charset.forName("US-ASCII");
-        
-        CHARSETS.put("UTF-8",__UTF8);
-        CHARSETS.put("UTF8",__UTF8);
-        CHARSETS.put("UTF-16",__UTF16);
-        CHARSETS.put("UTF16",__UTF16);
-        CHARSETS.put("ISO-8859-1",__ISO_8859_1);
-        CHARSETS.put("ISO_8859_1",__ISO_8859_1);
     }
     
-    /* ------------------------------------------------------------ */
-    /** Convert alternate charset names (eg utf8) to normalized
-     * name (eg UTF-8).
-     */
-    public static String normalizeCharset(String s)
-    {
-        String n=CHARSETS.get(s);
-        return (n==null)?s:n;
-    }
-    
-    /* ------------------------------------------------------------ */
-    /** Convert alternate charset names (eg utf8) to normalized
-     * name (eg UTF-8).
-     */
-    public static String normalizeCharset(String s,int offset,int length)
-    {
-        String n=CHARSETS.get(s,offset,length);       
-        return (n==null)?s.substring(offset,offset+length):n;
-    }
-    
-
-    /* ------------------------------------------------------------ */
-    public static final char[] lowercases = {
+    private static char[] lowercases = {
           '\000','\001','\002','\003','\004','\005','\006','\007',
           '\010','\011','\012','\013','\014','\015','\016','\017',
           '\020','\021','\022','\023','\024','\025','\026','\027',
@@ -343,7 +307,14 @@ public class StringUtil
     /* ------------------------------------------------------------ */
     public static String toUTF8String(byte[] b,int offset,int length)
     {
-        return new String(b,offset,length,__UTF8_CHARSET);
+        try
+        {
+            return new String(b,offset,length,__UTF8);
+        }
+        catch (UnsupportedEncodingException e)
+        {
+            throw new IllegalArgumentException(e);
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -359,90 +330,11 @@ public class StringUtil
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * Test if a string is null or only has whitespace characters in it.
-     * <p>
-     * Note: uses codepoint version of {@link Character#isWhitespace(int)} to support Unicode better.
-     * 
-     * <pre>
-     *   isBlank(null)   == true
-     *   isBlank("")     == true
-     *   isBlank("\r\n") == true
-     *   isBlank("\t")   == true
-     *   isBlank("   ")  == true
-     *   isBlank("a")    == false
-     *   isBlank(".")    == false
-     *   isBlank(";\n")  == false
-     * </pre>
-     * 
-     * @param str
-     *            the string to test.
-     * @return true if string is null or only whitespace characters, false if non-whitespace characters encountered.
-     */
-    public static boolean isBlank(String str)
-    {
-        if (str == null)
-        {
-            return true;
-        }
-        int len = str.length();
-        for (int i = 0; i < len; i++)
-        {
-            if (!Character.isWhitespace(str.codePointAt(i)))
-            {
-                // found a non-whitespace, we can stop searching  now
-                return false;
-            }
-        }
-        // only whitespace
-        return true;
-    }
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * Test if a string is not null and contains at least 1 non-whitespace characters in it.
-     * <p>
-     * Note: uses codepoint version of {@link Character#isWhitespace(int)} to support Unicode better.
-     * 
-     * <pre>
-     *   isNotBlank(null)   == false
-     *   isNotBlank("")     == false
-     *   isNotBlank("\r\n") == false
-     *   isNotBlank("\t")   == false
-     *   isNotBlank("   ")  == false
-     *   isNotBlank("a")    == true
-     *   isNotBlank(".")    == true
-     *   isNotBlank(";\n")  == true
-     * </pre>
-     * 
-     * @param str
-     *            the string to test.
-     * @return true if string is not null and has at least 1 non-whitespace character, false if null or all-whitespace characters.
-     */
-    public static boolean isNotBlank(String str)
-    {
-        if (str == null)
-        {
-            return false;
-        }
-        int len = str.length();
-        for (int i = 0; i < len; i++)
-        {
-            if (!Character.isWhitespace(str.codePointAt(i)))
-            {
-                // found a non-whitespace, we can stop searching  now
-                return true;
-            }
-        }
-        // only whitespace
-        return false;
-    }
 
     /* ------------------------------------------------------------ */
     public static boolean isUTF8(String charset)
     {
-        return __UTF8.equalsIgnoreCase(charset)||__UTF8.equalsIgnoreCase(normalizeCharset(charset));
+        return __UTF8.equalsIgnoreCase(charset)||__UTF8Alt.equalsIgnoreCase(charset);
     }
 
 
@@ -481,12 +373,15 @@ public class StringUtil
     
     public static byte[] getBytes(String s)
     {
-        return s.getBytes(__ISO_8859_1_CHARSET);
-    }
-    
-    public static byte[] getUtf8Bytes(String s)
-    {
-        return s.getBytes(__UTF8_CHARSET);
+        try
+        {
+            return s.getBytes(__ISO_8859_1);
+        }
+        catch(Exception e)
+        {
+            LOG.warn(e);
+            return s.getBytes();
+        }
     }
     
     public static byte[] getBytes(String s,String charset)
@@ -606,106 +501,4 @@ public class StringUtil
       
         return sidBytes;
     }
-    
-
-    /**
-     * Convert String to an integer. Parses up to the first non-numeric character. If no number is found an IllegalArgumentException is thrown
-     * 
-     * @param string
-     *            A String containing an integer.
-     * @return an int
-     */
-    public static int toInt(String string)
-    {
-        int val = 0;
-        boolean started = false;
-        boolean minus = false;
-
-        for (int i = 0; i < string.length(); i++)
-        {
-            char b = string.charAt(i);
-            if (b <= ' ')
-            {
-                if (started)
-                    break;
-            }
-            else if (b >= '0' && b <= '9')
-            {
-                val = val * 10 + (b - '0');
-                started = true;
-            }
-            else if (b == '-' && !started)
-            {
-                minus = true;
-            }
-            else
-                break;
-        }
-
-        if (started)
-            return minus?(-val):val;
-        throw new NumberFormatException(string);
-    }
-
-    /**
-     * Convert String to an long. Parses up to the first non-numeric character. If no number is found an IllegalArgumentException is thrown
-     * 
-     * @param string
-     *            A String containing an integer.
-     * @return an int
-     */
-    public static long toLong(String string)
-    {
-        long val = 0;
-        boolean started = false;
-        boolean minus = false;
-
-        for (int i = 0; i < string.length(); i++)
-        {
-            char b = string.charAt(i);
-            if (b <= ' ')
-            {
-                if (started)
-                    break;
-            }
-            else if (b >= '0' && b <= '9')
-            {
-                val = val * 10L + (b - '0');
-                started = true;
-            }
-            else if (b == '-' && !started)
-            {
-                minus = true;
-            }
-            else
-                break;
-        }
-
-        if (started)
-            return minus?(-val):val;
-        throw new NumberFormatException(string);
-    }
-    
-    /**
-     * Truncate a string to a max size.
-     * 
-     * @param str the string to possibly truncate
-     * @param maxSize the maximum size of the string
-     * @return the truncated string.  if <code>str</code> param is null, then the returned string will also be null.
-     */
-    public static String truncate(String str, int maxSize)
-    {
-        if (str == null)
-        {
-            return null;
-        }
-
-        if (str.length() <= maxSize)
-        {
-            return str;
-        }
-
-        return str.substring(0,maxSize);
-    }
-
 }

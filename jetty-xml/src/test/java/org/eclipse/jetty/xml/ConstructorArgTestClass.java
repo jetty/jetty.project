@@ -49,7 +49,7 @@ public class ConstructorArgTestClass
         this.arrayList = arrayList;
         this.list = list;
     }
-    
+
     @SuppressWarnings("rawtypes")
     public ConstructorArgTestClass(ArrayList list)
     {

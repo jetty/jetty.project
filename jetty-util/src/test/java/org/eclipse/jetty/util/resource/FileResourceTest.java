@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.util.resource;
 
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -50,7 +50,7 @@ public class FileResourceTest
     private URL decode(URL url) throws MalformedURLException
     {
         String raw = url.toExternalForm();
-        String decoded = UrlEncoded.decodeString(raw,0,raw.length(),StringUtil.__UTF8_CHARSET);
+        String decoded = UrlEncoded.decodeString(raw,0,raw.length(),StringUtil.__UTF8);
         return new URL(decoded);
     }
 

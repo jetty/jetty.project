@@ -22,37 +22,33 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.spdy.api.DataInfo;
+import org.eclipse.jetty.spdy.api.Handler;
 import org.eclipse.jetty.spdy.api.HeadersInfo;
-import org.eclipse.jetty.spdy.api.PushInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.StreamStatus;
+import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.frames.ControlFrame;
 import org.eclipse.jetty.spdy.frames.HeadersFrame;
 import org.eclipse.jetty.spdy.frames.SynReplyFrame;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.FutureCallback;
-import org.eclipse.jetty.util.FuturePromise;
-import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 public class StandardStream implements IStream
 {
-    private static final Logger LOG = Log.getLogger(Stream.class);
+    private static final Logger logger = Log.getLogger(Stream.class);
     private final Map<String, Object> attributes = new ConcurrentHashMap<>();
     private final int id;
     private final byte priority;
     private final ISession session;
     private final IStream associatedStream;
-    private final Promise<Stream> promise;
     private final AtomicInteger windowSize = new AtomicInteger();
     private final Set<Stream> pushedStreams = Collections.newSetFromMap(new ConcurrentHashMap<Stream, Boolean>());
     private volatile StreamFrameListener listener;
@@ -60,13 +56,12 @@ public class StandardStream implements IStream
     private volatile CloseState closeState = CloseState.OPENED;
     private volatile boolean reset = false;
 
-    public StandardStream(int id, byte priority, ISession session, IStream associatedStream, Promise<Stream> promise)
+    public StandardStream(int id, byte priority, ISession session, IStream associatedStream)
     {
         this.id = id;
         this.priority = priority;
         this.session = session;
         this.associatedStream = associatedStream;
-        this.promise = promise;
     }
 
     @Override
@@ -115,7 +110,7 @@ public class StandardStream implements IStream
     public void updateWindowSize(int delta)
     {
         int size = windowSize.addAndGet(delta);
-        LOG.debug("Updated window size {} -> {} for {}", size - delta, size, this);
+        logger.debug("Updated window size {} -> {} for {}", size - delta, size, this);
     }
 
     @Override
@@ -133,7 +128,7 @@ public class StandardStream implements IStream
     @Override
     public void setAttribute(String key, Object value)
     {
-        attributes.put(key, value);
+        attributes.put(key,value);
     }
 
     @Override
@@ -148,7 +143,6 @@ public class StandardStream implements IStream
         this.listener = listener;
     }
 
-    @Override
     public StreamFrameListener getStreamFrameListener()
     {
         return listener;
@@ -157,7 +151,6 @@ public class StandardStream implements IStream
     @Override
     public void updateCloseState(boolean close, boolean local)
     {
-        LOG.debug("{} close={} local={}", this, close, local);
         if (close)
         {
             switch (closeState)
@@ -185,7 +178,7 @@ public class StandardStream implements IStream
                 }
                 default:
                 {
-                    LOG.warn("Already CLOSED! {} local={}", this, local);
+                    throw new IllegalStateException();
                 }
             }
         }
@@ -238,34 +231,20 @@ public class StandardStream implements IStream
         // ignore data frame if this stream is remotelyClosed already
         if (isRemotelyClosed())
         {
-            LOG.debug("Stream is remotely closed, ignoring {}", dataInfo);
+            logger.debug("Stream is remotely closed, ignoring {}", dataInfo);
             return;
         }
 
         if (!canReceive())
         {
-            LOG.debug("Protocol error receiving {}, resetting", dataInfo);
-            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR), new Adapter());
+            logger.debug("Protocol error receiving {}, resetting" + dataInfo);
+            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR));
             return;
         }
 
         updateCloseState(dataInfo.isClose(), false);
         notifyOnData(dataInfo);
         session.flush();
-    }
-
-    @Override
-    public void succeeded()
-    {
-        if (promise != null)
-            promise.succeeded(this);
-    }
-
-    @Override
-    public void failed(Throwable x)
-    {
-        if (promise != null)
-            promise.failed(x);
     }
 
     private void notifyOnReply(ReplyInfo replyInfo)
@@ -275,17 +254,17 @@ public class StandardStream implements IStream
         {
             if (listener != null)
             {
-                LOG.debug("Invoking reply callback with {} on listener {}", replyInfo, listener);
+                logger.debug("Invoking reply callback with {} on listener {}", replyInfo, listener);
                 listener.onReply(this, replyInfo);
             }
         }
         catch (Exception x)
         {
-            LOG.info("Exception while notifying listener " + listener, x);
+            logger.info("Exception while notifying listener " + listener, x);
         }
         catch (Error x)
         {
-            LOG.info("Exception while notifying listener " + listener, x);
+            logger.info("Exception while notifying listener " + listener, x);
             throw x;
         }
     }
@@ -297,17 +276,17 @@ public class StandardStream implements IStream
         {
             if (listener != null)
             {
-                LOG.debug("Invoking headers callback with {} on listener {}", headersInfo, listener);
+                logger.debug("Invoking headers callback with {} on listener {}", headersInfo, listener);
                 listener.onHeaders(this, headersInfo);
             }
         }
         catch (Exception x)
         {
-            LOG.info("Exception while notifying listener " + listener, x);
+            logger.info("Exception while notifying listener " + listener, x);
         }
         catch (Error x)
         {
-            LOG.info("Exception while notifying listener " + listener, x);
+            logger.info("Exception while notifying listener " + listener, x);
             throw x;
         }
     }
@@ -319,126 +298,113 @@ public class StandardStream implements IStream
         {
             if (listener != null)
             {
-                LOG.debug("Invoking data callback with {} on listener {}", dataInfo, listener);
+                logger.debug("Invoking data callback with {} on listener {}", dataInfo, listener);
                 listener.onData(this, dataInfo);
-                LOG.debug("Invoked data callback with {} on listener {}", dataInfo, listener);
+                logger.debug("Invoked data callback with {} on listener {}", dataInfo, listener);
             }
         }
         catch (Exception x)
         {
-            LOG.info("Exception while notifying listener " + listener, x);
+            logger.info("Exception while notifying listener " + listener, x);
         }
         catch (Error x)
         {
-            LOG.info("Exception while notifying listener " + listener, x);
+            logger.info("Exception while notifying listener " + listener, x);
             throw x;
         }
     }
 
     @Override
-    public Stream push(PushInfo pushInfo) throws InterruptedException, ExecutionException, TimeoutException
+    public Future<Stream> syn(SynInfo synInfo)
     {
-        FuturePromise<Stream> result = new FuturePromise<>();
-        push(pushInfo, result);
-        if (pushInfo.getTimeout() > 0)
-            return result.get(pushInfo.getTimeout(), pushInfo.getUnit());
-        else
-            return result.get();
+        Promise<Stream> result = new Promise<>();
+        syn(synInfo,0,TimeUnit.MILLISECONDS,result);
+        return result;
     }
 
     @Override
-    public void push(PushInfo pushInfo, Promise<Stream> promise)
+    public void syn(SynInfo synInfo, long timeout, TimeUnit unit, Handler<Stream> handler)
     {
         if (isClosed() || isReset())
         {
-            promise.failed(new StreamException(getId(), StreamStatus.STREAM_ALREADY_CLOSED,
-                    "Stream: " + this + " already closed or reset!"));
+            handler.failed(this, new StreamException(getId(), StreamStatus.STREAM_ALREADY_CLOSED));
             return;
         }
-        PushSynInfo pushSynInfo = new PushSynInfo(getId(), pushInfo);
-        session.syn(pushSynInfo, null, promise);
+        PushSynInfo pushSynInfo = new PushSynInfo(getId(), synInfo);
+        session.syn(pushSynInfo, null, timeout, unit, handler);
     }
 
     @Override
-    public void reply(ReplyInfo replyInfo) throws InterruptedException, ExecutionException, TimeoutException
+    public Future<Void> reply(ReplyInfo replyInfo)
     {
-        FutureCallback result = new FutureCallback();
-        reply(replyInfo, result);
-        if (replyInfo.getTimeout() > 0)
-            result.get(replyInfo.getTimeout(), replyInfo.getUnit());
-        else
-            result.get();
+        Promise<Void> result = new Promise<>();
+        reply(replyInfo,0,TimeUnit.MILLISECONDS,result);
+        return result;
     }
 
     @Override
-    public void reply(ReplyInfo replyInfo, Callback callback)
+    public void reply(ReplyInfo replyInfo, long timeout, TimeUnit unit, Handler<Void> handler)
     {
         if (isUnidirectional())
             throw new IllegalStateException("Protocol violation: cannot send SYN_REPLY frames in unidirectional streams");
         openState = OpenState.REPLY_SENT;
         updateCloseState(replyInfo.isClose(), true);
         SynReplyFrame frame = new SynReplyFrame(session.getVersion(), replyInfo.getFlags(), getId(), replyInfo.getHeaders());
-        session.control(this, frame, replyInfo.getTimeout(), replyInfo.getUnit(), callback);
+        session.control(this, frame, timeout, unit, handler, null);
     }
 
     @Override
-    public void data(DataInfo dataInfo) throws InterruptedException, ExecutionException, TimeoutException
+    public Future<Void> data(DataInfo dataInfo)
     {
-        FutureCallback result = new FutureCallback();
-        data(dataInfo, result);
-        if (dataInfo.getTimeout() > 0)
-            result.get(dataInfo.getTimeout(), dataInfo.getUnit());
-        else
-            result.get();
+        Promise<Void> result = new Promise<>();
+        data(dataInfo,0,TimeUnit.MILLISECONDS,result);
+        return result;
     }
 
     @Override
-    public void data(DataInfo dataInfo, Callback callback)
+    public void data(DataInfo dataInfo, long timeout, TimeUnit unit, Handler<Void> handler)
     {
         if (!canSend())
         {
-            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR), new Adapter());
+            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR));
             throw new IllegalStateException("Protocol violation: cannot send a DATA frame before a SYN_REPLY frame");
         }
         if (isLocallyClosed())
         {
-            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR), new Adapter());
-            throw new IllegalStateException("Protocol violation: cannot send a DATA frame on a locally closed stream");
+            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR));
+            throw new IllegalStateException("Protocol violation: cannot send a DATA frame on a closed stream");
         }
 
         // Cannot update the close state here, because the data that we send may
         // be flow controlled, so we need the stream to update the window size.
-        session.data(this, dataInfo, dataInfo.getTimeout(), dataInfo.getUnit(), callback);
+        session.data(this, dataInfo, timeout, unit, handler, null);
     }
 
     @Override
-    public void headers(HeadersInfo headersInfo) throws InterruptedException, ExecutionException, TimeoutException
+    public Future<Void> headers(HeadersInfo headersInfo)
     {
-        FutureCallback result = new FutureCallback();
-        headers(headersInfo, result);
-        if (headersInfo.getTimeout() > 0)
-            result.get(headersInfo.getTimeout(), headersInfo.getUnit());
-        else
-            result.get();
+        Promise<Void> result = new Promise<>();
+        headers(headersInfo,0,TimeUnit.MILLISECONDS,result);
+        return result;
     }
 
     @Override
-    public void headers(HeadersInfo headersInfo, Callback callback)
+    public void headers(HeadersInfo headersInfo, long timeout, TimeUnit unit, Handler<Void> handler)
     {
         if (!canSend())
         {
-            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR), new Adapter());
+            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR));
             throw new IllegalStateException("Protocol violation: cannot send a HEADERS frame before a SYN_REPLY frame");
         }
         if (isLocallyClosed())
         {
-            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR), new Adapter());
+            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR));
             throw new IllegalStateException("Protocol violation: cannot send a HEADERS frame on a closed stream");
         }
 
         updateCloseState(headersInfo.isClose(), true);
         HeadersFrame frame = new HeadersFrame(session.getVersion(), headersInfo.getFlags(), getId(), headersInfo.getHeaders());
-        session.control(this, frame, headersInfo.getTimeout(), headersInfo.getUnit(), callback);
+        session.control(this, frame, timeout, unit, handler, null);
     }
 
     @Override
@@ -481,8 +447,7 @@ public class StandardStream implements IStream
     @Override
     public String toString()
     {
-        return String.format("stream=%d v%d windowSize=%d reset=%s prio=%d %s %s", getId(), session.getVersion(),
-                getWindowSize(), isReset(), priority, openState, closeState);
+        return String.format("stream=%d v%d windowSize=%db reset=%s %s %s", getId(), session.getVersion(), getWindowSize(), isReset(), openState, closeState);
     }
 
     private boolean canSend()

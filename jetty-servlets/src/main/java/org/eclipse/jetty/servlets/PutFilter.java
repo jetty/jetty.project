@@ -48,10 +48,10 @@ import org.eclipse.jetty.util.URIUtil;
 
 /**
  * PutFilter
- *
+ * 
  * A Filter that handles PUT, DELETE and MOVE methods.
  * Files are hidden during PUT operations, so that 404's result.
- *
+ * 
  * The following init parameters pay be used:<ul>
  * <li><b>baseURI</b> - The file URI of the document root for put content.
  * <li><b>delAllowed</b> - boolean, if true DELETE and MOVE methods are supported.
@@ -59,7 +59,7 @@ import org.eclipse.jetty.util.URIUtil;
  * </ul>
  *
  */
-public class PutFilter implements Filter
+public class PutFilter implements Filter 
 {
     public final static String __PUT="PUT";
     public final static String __DELETE="DELETE";
@@ -74,18 +74,18 @@ public class PutFilter implements Filter
     private boolean _delAllowed;
     private boolean _putAtomic;
     private File _tmpdir;
-
-
+    
+    
     /* ------------------------------------------------------------ */
     public void init(FilterConfig config) throws ServletException
     {
         _context=config.getServletContext();
-
+        
         _tmpdir=(File)_context.getAttribute("javax.servlet.context.tempdir");
-
+            
         if (_context.getRealPath("/")==null)
            throw new UnavailableException("Packed war");
-
+        
         String b = config.getInitParameter("baseURI");
         if (b != null)
         {
@@ -96,7 +96,7 @@ public class PutFilter implements Filter
             File base=new File(_context.getRealPath("/"));
             _baseURI=base.toURI().toString();
         }
-
+        
         _delAllowed = getInitBoolean(config,"delAllowed");
         _putAtomic = getInitBoolean(config,"putAtomic");
 
@@ -124,13 +124,13 @@ public class PutFilter implements Filter
 
         String servletPath =request.getServletPath();
         String pathInfo = request.getPathInfo();
-        String pathInContext = URIUtil.addPaths(servletPath, pathInfo);
+        String pathInContext = URIUtil.addPaths(servletPath, pathInfo);    
 
-        String resource = URIUtil.addPaths(_baseURI,pathInContext);
-
+        String resource = URIUtil.addPaths(_baseURI,pathInContext); 
+       
         String method = request.getMethod();
         boolean op = _operations.contains(method);
-
+        
         if (op)
         {
             File file = null;
@@ -144,7 +144,7 @@ public class PutFilter implements Filter
                     boolean exists = file.exists();
                     if (exists && !passConditionalHeaders(request, response, file))
                         return;
-
+                    
                     if (method.equals(__PUT))
                         handlePut(request, response,pathInContext, file);
                     else if (method.equals(__DELETE))
@@ -214,31 +214,29 @@ public class PutFilter implements Filter
                 parent.mkdirs();
                 int toRead = request.getContentLength();
                 InputStream in = request.getInputStream();
-
-
+                
+                    
                 if (_putAtomic)
                 {
                     File tmp=File.createTempFile(file.getName(),null,_tmpdir);
-                    try (OutputStream out = new FileOutputStream(tmp,false))
-                    {
-                        if (toRead >= 0)
-                            IO.copy(in, out, toRead);
-                        else
-                            IO.copy(in, out);
-                    }
-
+                    OutputStream out = new FileOutputStream(tmp,false);
+                    if (toRead >= 0)
+                        IO.copy(in, out, toRead);
+                    else
+                        IO.copy(in, out);
+                    out.close();
+                    
                     if (!tmp.renameTo(file))
                         throw new IOException("rename from "+tmp+" to "+file+" failed");
                 }
                 else
                 {
-                    try (OutputStream out = new FileOutputStream(file,false))
-                    {
-                        if (toRead >= 0)
-                            IO.copy(in, out, toRead);
-                        else
-                            IO.copy(in, out);
-                    }
+                    OutputStream out = new FileOutputStream(file,false);
+                    if (toRead >= 0)
+                        IO.copy(in, out, toRead);
+                    else
+                        IO.copy(in, out);
+                    out.close();
                 }
 
                 response.setStatus(exists ? HttpServletResponse.SC_OK : HttpServletResponse.SC_CREATED);
@@ -291,7 +289,7 @@ public class PutFilter implements Filter
     }
 
     /* ------------------------------------------------------------------- */
-    public void handleMove(HttpServletRequest request, HttpServletResponse response, String pathInContext, File file)
+    public void handleMove(HttpServletRequest request, HttpServletResponse response, String pathInContext, File file) 
         throws ServletException, IOException, URISyntaxException
     {
         String newPath = URIUtil.canonicalPath(request.getHeader("new-uri"));
@@ -300,7 +298,7 @@ public class PutFilter implements Filter
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
             return;
         }
-
+        
         String contextPath = request.getContextPath();
         if (contextPath != null && !newPath.startsWith(contextPath))
         {
@@ -337,11 +335,11 @@ public class PutFilter implements Filter
                     for (String o : options)
                         value=value==null?o:(value+", "+o);
                 }
-
+                    
                 super.setHeader(name,value);
             }
         });
-
+        
     }
 
     /* ------------------------------------------------------------ */
@@ -351,7 +349,7 @@ public class PutFilter implements Filter
     protected boolean passConditionalHeaders(HttpServletRequest request, HttpServletResponse response, File file) throws IOException
     {
         long date = 0;
-
+        
         if ((date = request.getDateHeader("if-unmodified-since")) > 0)
         {
             if (file.lastModified() / 1000 > date / 1000)

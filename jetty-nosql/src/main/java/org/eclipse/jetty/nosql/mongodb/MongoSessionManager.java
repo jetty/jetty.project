@@ -32,9 +32,6 @@ import java.util.Set;
 import org.eclipse.jetty.nosql.NoSqlSession;
 import org.eclipse.jetty.nosql.NoSqlSessionManager;
 import org.eclipse.jetty.server.SessionIdManager;
-import org.eclipse.jetty.util.annotation.ManagedAttribute;
-import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -43,8 +40,6 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.MongoException;
 
-
-@ManagedObject("Mongo Session Manager")
 public class MongoSessionManager extends NoSqlSessionManager
 {
     private static final Logger LOG = Log.getLogger(MongoSessionManager.class);
@@ -88,9 +83,8 @@ public class MongoSessionManager extends NoSqlSessionManager
     {
         super.doStart();
         String[] hosts = getContextHandler().getVirtualHosts();
-        //TODO: can this be replaced?
-        /*if (hosts == null || hosts.length == 0)
-            hosts = getContextHandler().getConnectorNames();*/
+        if (hosts == null || hosts.length == 0)
+            hosts = getContextHandler().getConnectorNames();
         if (hosts == null || hosts.length == 0)
             hosts = new String[]
             { "::" }; // IPv6 equiv of 0.0.0.0
@@ -434,18 +428,6 @@ public class MongoSessionManager extends NoSqlSessionManager
     }
     
     /*------------------------------------------------------------ */
-    @Override
-    protected void update(NoSqlSession session, String newClusterId, String newNodeId) throws Exception
-    {
-        // Form query for update - use object's existing session id
-        BasicDBObject key = new BasicDBObject(__ID, session.getClusterId());
-        BasicDBObject sets = new BasicDBObject();
-        BasicDBObject update = new BasicDBObject(__ID, newClusterId);
-        sets.put("$set", update);
-        _sessions.update(key, sets, false, false);
-    }
-
-    /*------------------------------------------------------------ */
     protected String encodeName(String name)
     {
         return name.replace("%","%25").replace(".","%2E");
@@ -532,26 +514,21 @@ public class MongoSessionManager extends NoSqlSessionManager
     	return __CONTEXT + "." + _contextId + "." + keybit;
     }
     
-    @ManagedOperation(value="purge invalid sessions in the session store based on normal criteria", impact="ACTION")
     public void purge()
     {   
         ((MongoSessionIdManager)_sessionIdManager).purge();
     }
     
-    
-    @ManagedOperation(value="full purge of invalid sessions in the session store", impact="ACTION")
     public void purgeFully()
     {   
         ((MongoSessionIdManager)_sessionIdManager).purgeFully();
     }
     
-    @ManagedOperation(value="scavenge sessions known to this manager", impact="ACTION")
     public void scavenge()
     {
         ((MongoSessionIdManager)_sessionIdManager).scavenge();
     }
     
-    @ManagedOperation(value="scanvenge all sessions", impact="ACTION")
     public void scavengeFully()
     {
         ((MongoSessionIdManager)_sessionIdManager).scavengeFully();
@@ -564,7 +541,6 @@ public class MongoSessionManager extends NoSqlSessionManager
      * the count() operation itself is optimized to perform on the server side
      * and avoid loading to client side.
      */
-    @ManagedAttribute("total number of known sessions in the store")
     public long getSessionStoreCount()
     {
         return _sessions.find().count();      
@@ -642,6 +618,5 @@ public class MongoSessionManager extends NoSqlSessionManager
             }
         }
     }
-
 
 }

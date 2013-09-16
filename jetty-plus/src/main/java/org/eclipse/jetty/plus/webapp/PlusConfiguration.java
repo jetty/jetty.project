@@ -43,18 +43,18 @@ public class PlusConfiguration extends AbstractConfiguration
     private static final Logger LOG = Log.getLogger(PlusConfiguration.class);
 
     private Integer _key;
-
+    
     @Override
     public void preConfigure (WebAppContext context)
     throws Exception
-    {
-        context.addDecorator(new PlusDecorator(context));
+    {      
+        context.addDecorator(new PlusDecorator(context));  
     }
-
+ 
     @Override
     public void cloneConfigure(WebAppContext template, WebAppContext context) throws Exception
     {
-        context.addDecorator(new PlusDecorator(context));
+        context.addDecorator(new PlusDecorator(context));  
     }
 
     @Override
@@ -62,7 +62,7 @@ public class PlusConfiguration extends AbstractConfiguration
     throws Exception
     {
         bindUserTransaction(context);
-
+        
         context.getMetaData().addDescriptorProcessor(new PlusDescriptorProcessor());
     }
 
@@ -82,7 +82,7 @@ public class PlusConfiguration extends AbstractConfiguration
         context.setAttribute(InjectionCollection.INJECTION_COLLECTION,null);
         context.setAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION,null);
     }
-
+    
     public void bindUserTransaction (WebAppContext context)
     throws Exception
     {
@@ -92,12 +92,12 @@ public class PlusConfiguration extends AbstractConfiguration
         }
         catch (NameNotFoundException e)
         {
-            LOG.debug("No Transaction manager found - if your webapp requires one, please configure one.");
+            LOG.info("No Transaction manager found - if your webapp requires one, please configure one.");
         }
     }
-
-
-
+    
+ 
+  
     protected void lockCompEnv (WebAppContext wac)
     throws Exception
     {
@@ -116,7 +116,7 @@ public class PlusConfiguration extends AbstractConfiguration
             Thread.currentThread().setContextClassLoader(old_loader);
         }
     }
-
+    
     protected void unlockCompEnv (WebAppContext wac)
     throws Exception
     {
@@ -129,7 +129,7 @@ public class PlusConfiguration extends AbstractConfiguration
             {
                 Context context = new InitialContext();
                 Context compCtx = (Context)context.lookup("java:comp");
-                compCtx.addToEnvironment("org.eclipse.jndi.unlock", _key);
+                compCtx.addToEnvironment("org.eclipse.jndi.unlock", _key); 
             }
             finally
             {

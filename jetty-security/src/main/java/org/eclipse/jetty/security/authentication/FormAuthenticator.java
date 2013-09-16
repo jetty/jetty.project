@@ -33,15 +33,14 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 import javax.servlet.http.HttpSession;
 
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpHeaderValue;
-import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpHeaders;
+import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.security.UserAuthentication;
+import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.Authentication.User;
-import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.MultiMap;
@@ -53,18 +52,18 @@ import org.eclipse.jetty.util.security.Constraint;
 
 /**
  * FORM Authenticator.
- *
+ * 
  * <p>This authenticator implements form authentication will use dispatchers to
  * the login page if the {@link #__FORM_DISPATCH} init parameter is set to true.
  * Otherwise it will redirect.</p>
- *
+ * 
  * <p>The form authenticator redirects unauthenticated requests to a log page
  * which should use a form to gather username/password from the user and send them
- * to the /j_security_check URI within the context.  FormAuthentication uses
+ * to the /j_security_check URI within the context.  FormAuthentication uses 
  * {@link SessionAuthentication} to wrap Authentication results so that they
  * are  associated with the session.</p>
- *
- *
+ *  
+ * 
  */
 public class FormAuthenticator extends LoginAuthenticator
 {
@@ -100,7 +99,7 @@ public class FormAuthenticator extends LoginAuthenticator
             setErrorPage(error);
         _dispatch=dispatch;
     }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * If true, uris that cause a redirect to a login page will always
@@ -113,14 +112,14 @@ public class FormAuthenticator extends LoginAuthenticator
     {
         _alwaysSaveUri = alwaysSave;
     }
-
-
+    
+    
     /* ------------------------------------------------------------ */
     public boolean getAlwaysSaveUri ()
     {
         return _alwaysSaveUri;
     }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.security.authentication.LoginAuthenticator#setConfiguration(org.eclipse.jetty.security.Authenticator.AuthConfiguration)
@@ -140,7 +139,6 @@ public class FormAuthenticator extends LoginAuthenticator
     }
 
     /* ------------------------------------------------------------ */
-    @Override
     public String getAuthMethod()
     {
         return Constraint.__FORM_AUTH;
@@ -156,7 +154,7 @@ public class FormAuthenticator extends LoginAuthenticator
         }
         _formLoginPage = path;
         _formLoginPath = path;
-        if (_formLoginPath.indexOf('?') > 0)
+        if (_formLoginPath.indexOf('?') > 0) 
             _formLoginPath = _formLoginPath.substring(0, _formLoginPath.indexOf('?'));
     }
 
@@ -178,31 +176,14 @@ public class FormAuthenticator extends LoginAuthenticator
             _formErrorPage = path;
             _formErrorPath = path;
 
-            if (_formErrorPath.indexOf('?') > 0)
+            if (_formErrorPath.indexOf('?') > 0) 
                 _formErrorPath = _formErrorPath.substring(0, _formErrorPath.indexOf('?'));
         }
     }
-    
-    
-    /* ------------------------------------------------------------ */
-    @Override
-    public UserIdentity login(String username, Object password, ServletRequest request)
-    {
-        
-        UserIdentity user = super.login(username,password,request);
-        if (user!=null)
-        {
-            HttpSession session = ((HttpServletRequest)request).getSession(true);
-            Authentication cached=new SessionAuthentication(getAuthMethod(),user,password);
-            session.setAttribute(SessionAuthentication.__J_AUTHENTICATED, cached);
-        }
-        return user;
-    }
 
     /* ------------------------------------------------------------ */
-    @Override
     public Authentication validateRequest(ServletRequest req, ServletResponse res, boolean mandatory) throws ServerAuthException
-    {
+    {   
         HttpServletRequest request = (HttpServletRequest)req;
         HttpServletResponse response = (HttpServletResponse)res;
         String uri = request.getRequestURI();
@@ -217,7 +198,7 @@ public class FormAuthenticator extends LoginAuthenticator
             return new DeferredAuthentication(this);
 
         HttpSession session = request.getSession(true);
-
+            
         try
         {
             // Handle a request for authentication.
@@ -225,15 +206,14 @@ public class FormAuthenticator extends LoginAuthenticator
             {
                 final String username = request.getParameter(__J_USERNAME);
                 final String password = request.getParameter(__J_PASSWORD);
-
-                UserIdentity user = login(username, password, request);
-                LOG.debug("jsecuritycheck {} {}",username,user);
-                session = request.getSession(true);
+                
+                UserIdentity user = _loginService.login(username,password);
                 if (user!=null)
-                {                    
+                {
+                    session=renewSession(request,response);
+                    
                     // Redirect to original request
                     String nuri;
-                    FormAuthentication form_auth;
                     synchronized(session)
                     {
                         nuri = (String) session.getAttribute(__J_URI);
@@ -241,88 +221,81 @@ public class FormAuthenticator extends LoginAuthenticator
                         if (nuri == null || nuri.length() == 0)
                         {
                             nuri = request.getContextPath();
-                            if (nuri.length() == 0)
+                            if (nuri.length() == 0) 
                                 nuri = URIUtil.SLASH;
                         }
-                        form_auth = new FormAuthentication(getAuthMethod(),user);
+
+                        Authentication cached=new SessionAuthentication(getAuthMethod(),user,password);
+                        session.setAttribute(SessionAuthentication.__J_AUTHENTICATED, cached);
                     }
-                    LOG.debug("authenticated {}->{}",form_auth,nuri);
-
-                    response.setContentLength(0);
+                    response.setContentLength(0);   
                     response.sendRedirect(response.encodeRedirectURL(nuri));
-                    return form_auth;
+                    
+                    return new FormAuthentication(getAuthMethod(),user);
                 }
-
+                
                 // not authenticated
-                if (LOG.isDebugEnabled())
+                if (LOG.isDebugEnabled()) 
                     LOG.debug("Form authentication FAILED for " + StringUtil.printable(username));
                 if (_formErrorPage == null)
                 {
-                    LOG.debug("auth failed {}->403",username);
-                    if (response != null)
+                    if (response != null) 
                         response.sendError(HttpServletResponse.SC_FORBIDDEN);
                 }
                 else if (_dispatch)
                 {
-                    LOG.debug("auth failed {}=={}",username,_formErrorPage);
                     RequestDispatcher dispatcher = request.getRequestDispatcher(_formErrorPage);
-                    response.setHeader(HttpHeader.CACHE_CONTROL.asString(),HttpHeaderValue.NO_CACHE.asString());
-                    response.setDateHeader(HttpHeader.EXPIRES.asString(),1);
+                    response.setHeader(HttpHeaders.CACHE_CONTROL,"No-cache");
+                    response.setDateHeader(HttpHeaders.EXPIRES,1);
                     dispatcher.forward(new FormRequest(request), new FormResponse(response));
                 }
                 else
                 {
-                    LOG.debug("auth failed {}->{}",username,_formErrorPage);
                     response.sendRedirect(response.encodeRedirectURL(URIUtil.addPaths(request.getContextPath(),_formErrorPage)));
                 }
-
+                
                 return Authentication.SEND_FAILURE;
             }
-
+            
             // Look for cached authentication
             Authentication authentication = (Authentication) session.getAttribute(SessionAuthentication.__J_AUTHENTICATED);
-            if (authentication != null)
+            if (authentication != null) 
             {
                 // Has authentication been revoked?
-                if (authentication instanceof Authentication.User &&
+                if (authentication instanceof Authentication.User && 
                     _loginService!=null &&
                     !_loginService.validate(((Authentication.User)authentication).getUserIdentity()))
                 {
-                    LOG.debug("auth revoked {}",authentication);
+                
                     session.removeAttribute(SessionAuthentication.__J_AUTHENTICATED);
                 }
                 else
                 {
-                    synchronized (session)
+                    String j_uri=(String)session.getAttribute(__J_URI);
+                    if (j_uri!=null)
                     {
-                        String j_uri=(String)session.getAttribute(__J_URI);
-                        if (j_uri!=null)
+                        MultiMap<String> j_post = (MultiMap<String>)session.getAttribute(__J_POST);
+                        if (j_post!=null)
                         {
-                            LOG.debug("auth retry {}->{}",authentication,j_uri);
-                            MultiMap<String> j_post = (MultiMap<String>)session.getAttribute(__J_POST);
-                            if (j_post!=null)
+                            StringBuffer buf = request.getRequestURL();
+                            if (request.getQueryString() != null)
+                                buf.append("?").append(request.getQueryString());
+
+                            if (j_uri.equals(buf.toString()))
                             {
-                                LOG.debug("auth rePOST {}->{}",authentication,j_uri);
-                                StringBuffer buf = request.getRequestURL();
-                                if (request.getQueryString() != null)
-                                    buf.append("?").append(request.getQueryString());
+                                // This is a retry of an original POST request
+                                // so restore method and parameters
 
-                                if (j_uri.equals(buf.toString()))
-                                {
-                                    // This is a retry of an original POST request
-                                    // so restore method and parameters
-
-                                    session.removeAttribute(__J_POST);
-                                    Request base_request = HttpChannel.getCurrentHttpChannel().getRequest();
-                                    base_request.setMethod(HttpMethod.POST,HttpMethod.POST.asString());
-                                    base_request.setParameters(j_post);
-                                }
+                                session.removeAttribute(__J_POST);                        
+                                Request base_request = (req instanceof Request)?(Request)req:AbstractHttpConnection.getCurrentConnection().getRequest();
+                                base_request.setMethod(HttpMethods.POST);
+                                base_request.setParameters(j_post);
                             }
-                            else
-                                session.removeAttribute(__J_URI);
                         }
+                        else
+                            session.removeAttribute(__J_URI);
+                            
                     }
-                    LOG.debug("auth {}",authentication);
                     return authentication;
                 }
             }
@@ -339,48 +312,52 @@ public class FormAuthenticator extends LoginAuthenticator
             {
                 // But only if it is not set already, or we save every uri that leads to a login form redirect
                 if (session.getAttribute(__J_URI)==null || _alwaysSaveUri)
-                {
+                {  
                     StringBuffer buf = request.getRequestURL();
                     if (request.getQueryString() != null)
                         buf.append("?").append(request.getQueryString());
                     session.setAttribute(__J_URI, buf.toString());
-
-                    if (MimeTypes.Type.FORM_ENCODED.is(req.getContentType()) && HttpMethod.POST.is(request.getMethod()))
+                    
+                    if (MimeTypes.FORM_ENCODED.equalsIgnoreCase(req.getContentType()) && HttpMethods.POST.equals(request.getMethod()))
                     {
-                        Request base_request = (req instanceof Request)?(Request)req:HttpChannel.getCurrentHttpChannel().getRequest();
-                        base_request.extractParameters();
+                        Request base_request = (req instanceof Request)?(Request)req:AbstractHttpConnection.getCurrentConnection().getRequest();
+                        base_request.extractParameters();                        
                         session.setAttribute(__J_POST, new MultiMap<String>(base_request.getParameters()));
                     }
                 }
             }
-
+            
             // send the the challenge
             if (_dispatch)
             {
-                LOG.debug("challenge {}=={}",session.getId(),_formLoginPage);
                 RequestDispatcher dispatcher = request.getRequestDispatcher(_formLoginPage);
-                response.setHeader(HttpHeader.CACHE_CONTROL.asString(),HttpHeaderValue.NO_CACHE.asString());
-                response.setDateHeader(HttpHeader.EXPIRES.asString(),1);
+                response.setHeader(HttpHeaders.CACHE_CONTROL,"No-cache");
+                response.setDateHeader(HttpHeaders.EXPIRES,1);
                 dispatcher.forward(new FormRequest(request), new FormResponse(response));
             }
             else
             {
-                LOG.debug("challenge {}->{}",session.getId(),_formLoginPage);
                 response.sendRedirect(response.encodeRedirectURL(URIUtil.addPaths(request.getContextPath(),_formLoginPage)));
             }
             return Authentication.SEND_CONTINUE;
+            
+         
         }
-        catch (IOException | ServletException e)
+        catch (IOException e)
+        {
+            throw new ServerAuthException(e);
+        }
+        catch (ServletException e)
         {
             throw new ServerAuthException(e);
         }
     }
-
+    
     /* ------------------------------------------------------------ */
     public boolean isJSecurityCheck(String uri)
     {
         int jsc = uri.indexOf(__J_SECURITY_CHECK);
-
+        
         if (jsc<0)
             return false;
         int e=jsc+__J_SECURITY_CHECK.length();
@@ -389,15 +366,14 @@ public class FormAuthenticator extends LoginAuthenticator
         char c = uri.charAt(e);
         return c==';'||c=='#'||c=='/'||c=='?';
     }
-
+    
     /* ------------------------------------------------------------ */
     public boolean isLoginOrErrorPage(String pathInContext)
     {
         return pathInContext != null && (pathInContext.equals(_formErrorPath) || pathInContext.equals(_formLoginPath));
     }
-
+    
     /* ------------------------------------------------------------ */
-    @Override
     public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, User validatedUser) throws ServerAuthException
     {
         return true;
@@ -419,7 +395,7 @@ public class FormAuthenticator extends LoginAuthenticator
                 return -1;
             return super.getDateHeader(name);
         }
-
+        
         @Override
         public String getHeader(String name)
         {
@@ -429,16 +405,16 @@ public class FormAuthenticator extends LoginAuthenticator
         }
 
         @Override
-        public Enumeration<String> getHeaderNames()
+        public Enumeration getHeaderNames()
         {
             return Collections.enumeration(Collections.list(super.getHeaderNames()));
         }
 
         @Override
-        public Enumeration<String> getHeaders(String name)
+        public Enumeration getHeaders(String name)
         {
             if (name.toLowerCase(Locale.ENGLISH).startsWith("if-"))
-                return Collections.<String>enumeration(Collections.<String>emptyList());
+                return Collections.enumeration(Collections.EMPTY_LIST);
             return super.getHeaders(name);
         }
     }
@@ -472,30 +448,30 @@ public class FormAuthenticator extends LoginAuthenticator
             if (notIgnored(name))
                 super.setDateHeader(name,date);
         }
-
+        
         @Override
         public void setHeader(String name, String value)
         {
             if (notIgnored(name))
                 super.setHeader(name,value);
         }
-
+        
         private boolean notIgnored(String name)
         {
-            if (HttpHeader.CACHE_CONTROL.is(name) ||
-                HttpHeader.PRAGMA.is(name) ||
-                HttpHeader.ETAG.is(name) ||
-                HttpHeader.EXPIRES.is(name) ||
-                HttpHeader.LAST_MODIFIED.is(name) ||
-                HttpHeader.AGE.is(name))
+            if (HttpHeaders.CACHE_CONTROL.equalsIgnoreCase(name) ||
+                HttpHeaders.PRAGMA.equalsIgnoreCase(name) ||
+                HttpHeaders.ETAG.equalsIgnoreCase(name) ||
+                HttpHeaders.EXPIRES.equalsIgnoreCase(name) ||
+                HttpHeaders.LAST_MODIFIED.equalsIgnoreCase(name) ||
+                HttpHeaders.AGE.equalsIgnoreCase(name))
                 return false;
             return true;
         }
     }
-
+    
     /* ------------------------------------------------------------ */
     /** This Authentication represents a just completed Form authentication.
-     * Subsequent requests from the same user are authenticated by the presents
+     * Subsequent requests from the same user are authenticated by the presents 
      * of a {@link SessionAuthentication} instance in their session.
      */
     public static class FormAuthentication extends UserAuthentication implements Authentication.ResponseSent
@@ -504,7 +480,7 @@ public class FormAuthenticator extends LoginAuthenticator
         {
             super(method,userIdentity);
         }
-
+        
         @Override
         public String toString()
         {

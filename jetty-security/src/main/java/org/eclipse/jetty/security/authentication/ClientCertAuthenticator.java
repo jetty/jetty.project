@@ -70,25 +70,21 @@ public class ClientCertAuthenticator extends LoginAuthenticator
     private boolean _enableOCSP = false;
     /** Location of OCSP Responder */
     private String _ocspResponderURL;
-
+    
     public ClientCertAuthenticator()
     {
         super();
     }
 
-    @Override
     public String getAuthMethod()
     {
         return Constraint.__CERT_AUTH;
     }
-
     
-
     /**
      * @return Authentication for request
      * @throws ServerAuthException
      */
-    @Override
     public Authentication validateRequest(ServletRequest req, ServletResponse res, boolean mandatory) throws ServerAuthException
     {
         if (!mandatory)
@@ -103,7 +99,7 @@ public class ClientCertAuthenticator extends LoginAuthenticator
             // Need certificates.
             if (certs != null && certs.length > 0)
             {
-
+                
                 if (_validateCerts)
                 {
                     KeyStore trustStore = getKeyStore(null,
@@ -113,7 +109,7 @@ public class ClientCertAuthenticator extends LoginAuthenticator
                     CertificateValidator validator = new CertificateValidator(trustStore, crls);
                     validator.validate(certs);
                 }
-
+                
                 for (X509Certificate cert: certs)
                 {
                     if (cert==null)
@@ -125,9 +121,10 @@ public class ClientCertAuthenticator extends LoginAuthenticator
 
                     final char[] credential = B64Code.encode(cert.getSignature());
 
-                    UserIdentity user = login(username, credential, req);
+                    UserIdentity user = _loginService.login(username,credential);
                     if (user!=null)
                     {
+                        renewSession(request,response);
                         return new UserAuthentication(getAuthMethod(),user);
                     }
                 }
@@ -138,7 +135,7 @@ public class ClientCertAuthenticator extends LoginAuthenticator
                 response.sendError(HttpServletResponse.SC_FORBIDDEN);
                 return Authentication.SEND_FAILURE;
             }
-
+            
             return Authentication.UNAUTHENTICATED;
         }
         catch (Exception e)
@@ -185,7 +182,6 @@ public class ClientCertAuthenticator extends LoginAuthenticator
         return CertificateUtils.loadCRL(crlPath);
     }
 
-    @Override
     public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, User validatedUser) throws ServerAuthException
     {
         return true;
@@ -314,9 +310,9 @@ public class ClientCertAuthenticator extends LoginAuthenticator
     {
         _maxCertPathLength = maxCertPathLength;
     }
-
+    
     /* ------------------------------------------------------------ */
-    /**
+    /** 
      * @return true if CRL Distribution Points support is enabled
      */
     public boolean isEnableCRLDP()
@@ -334,7 +330,7 @@ public class ClientCertAuthenticator extends LoginAuthenticator
     }
 
     /* ------------------------------------------------------------ */
-    /**
+    /** 
      * @return true if On-Line Certificate Status Protocol support is enabled
      */
     public boolean isEnableOCSP()
@@ -352,7 +348,7 @@ public class ClientCertAuthenticator extends LoginAuthenticator
     }
 
     /* ------------------------------------------------------------ */
-    /**
+    /** 
      * @return Location of the OCSP Responder
      */
     public String getOcspResponderURL()

@@ -67,7 +67,6 @@ public class RewriteRegexRule extends RegexRule  implements Rule.ApplyURI
     /* (non-Javadoc)
      * @see org.eclipse.jetty.server.handler.rules.RegexRule#apply(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, java.util.regex.Matcher)
      */
-    @Override
     public String apply(String target, HttpServletRequest request, HttpServletResponse response, Matcher matcher) throws IOException
     {
         target=_replacement;
@@ -95,7 +94,6 @@ public class RewriteRegexRule extends RegexRule  implements Rule.ApplyURI
     }
 
     /* ------------------------------------------------------------ */
-    @Override
     public void applyURI(Request request, String oldTarget, String newTarget) throws IOException
     {
         if (_query==null)
@@ -119,7 +117,6 @@ public class RewriteRegexRule extends RegexRule  implements Rule.ApplyURI
     /**
      * Returns the replacement string.
      */
-    @Override
     public String toString()
     {
         return super.toString()+"["+_replacement+"]";

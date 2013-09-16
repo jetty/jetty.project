@@ -27,6 +27,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.KeyStore;
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
@@ -37,14 +38,11 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -52,23 +50,23 @@ import org.junit.Test;
 public class SslUploadTest
 {
     private static Server server;
-    private static ServerConnector connector;
+    private static SslSelectChannelConnector connector;
     private static int total;
 
     @BeforeClass
     public static void startServer() throws Exception
     {
-        String keystorePath = System.getProperty("basedir",".") + "/src/test/resources/keystore";
-        SslContextFactory sslContextFactory = new SslContextFactory();
-        sslContextFactory.setKeyStorePath(keystorePath);
-        sslContextFactory.setKeyStorePassword("storepwd");
-        sslContextFactory.setKeyManagerPassword("keypwd");
-        sslContextFactory.setTrustStorePath(keystorePath);
-        sslContextFactory.setTrustStorePassword("storepwd");
-
         server = new Server();
-        connector = new ServerConnector(server, sslContextFactory);
+        connector = new SslSelectChannelConnector();
         server.addConnector(connector);
+
+        String keystorePath = System.getProperty("basedir",".") + "/src/test/resources/keystore";
+        SslContextFactory cf = connector.getSslContextFactory();
+        cf.setKeyStorePath(keystorePath);
+        cf.setKeyStorePassword("storepwd");
+        cf.setKeyManagerPassword("keypwd");
+        cf.setTrustStore(keystorePath);
+        cf.setTrustStorePassword("storepwd");
 
         server.setHandler(new EmptyHandler());
 
@@ -83,15 +81,10 @@ public class SslUploadTest
     }
 
     @Test
-    @Ignore
     public void test() throws Exception
     {
         KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
-        SslContextFactory ctx=connector.getConnectionFactory(SslConnectionFactory.class).getSslContextFactory();
-        try (InputStream stream = new FileInputStream(ctx.getKeyStorePath()))
-        {
-            keystore.load(stream, "storepwd".toCharArray());
-        }
+        keystore.load(new FileInputStream(connector.getKeystore()), "storepwd".toCharArray());
         TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         trustManagerFactory.init(keystore);
         SSLContext sslContext = SSLContext.getInstance("SSL");
@@ -143,14 +136,13 @@ public class SslUploadTest
         assertTrue (response.indexOf("200")>0);
         // System.err.println(response);
 
-        // long end = System.nanoTime();
-        // System.out.println("upload time: " + TimeUnit.NANOSECONDS.toMillis(end - start));
+        long end = System.nanoTime();
+        System.out.println("upload time: " + TimeUnit.NANOSECONDS.toMillis(end - start));
         assertEquals(requestContent.length, total);
     }
 
     private static class EmptyHandler extends AbstractHandler
     {
-        @Override
         public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
         {
             request.setHandled(true);

@@ -34,10 +34,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.HandlerWrapper;
-import org.eclipse.jetty.toolchain.test.AdvancedRunner;
+import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.toolchain.test.OS;
-import org.eclipse.jetty.toolchain.test.annotation.Stress;
 import org.eclipse.jetty.toolchain.test.PropertyFlag;
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -46,16 +46,14 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
-@RunWith(AdvancedRunner.class)
 public class StressTest
 {
     private static final Logger LOG = Log.getLogger(StressTest.class);
 
     private static QueuedThreadPool _threads;
     private static Server _server;
-    private static ServerConnector _connector;
+    private static SelectChannelConnector _connector;
     private static final AtomicInteger _handled=new AtomicInteger(0);
     private static final ConcurrentLinkedQueue[] _latencies= {
             new ConcurrentLinkedQueue<Long>(),
@@ -91,14 +89,16 @@ public class StressTest
     @BeforeClass
     public static void init() throws Exception
     {
-        _threads = new QueuedThreadPool();
+        _threads = new QueuedThreadPool(new BlockingArrayQueue<Runnable>(4,4));
         _threads.setMaxThreads(200);
 
-        _server = new Server(_threads);
-        _server.manage(_threads);
-        _connector = new ServerConnector(_server,null,null,null,1, 1,new HttpConnectionFactory());
+        _server = new Server();
+        _server.setThreadPool(_threads);
+
+        _connector = new SelectChannelConnector();
+        _connector.setAcceptors(1);
         _connector.setAcceptQueueSize(5000);
-        _connector.setIdleTimeout(30000);
+        _connector.setMaxIdleTime(30000);
         _server.addConnector(_connector);
 
         TestHandler _handler = new TestHandler();
@@ -123,45 +123,35 @@ public class StressTest
     }
 
     @Test
-    public void testMinNonPersistent() throws Throwable
-    {
-        assumeTrue(!OS.IS_OSX);
-        doThreads(10,10,false);
-    }
-
-    @Test
-    @Stress("Hey, its called StressTest for a reason")
     public void testNonPersistent() throws Throwable
     {
         // TODO needs to be further investigated
-        assumeTrue(!OS.IS_OSX);
-
-        doThreads(20,20,false);
-        Thread.sleep(1000);
-        doThreads(200,10,false);
-        Thread.sleep(1000);
-        doThreads(200,200,false);
+        assumeTrue(!OS.IS_OSX || PropertyFlag.isEnabled("test.stress"));
+    	
+        doThreads(10,10,false);
+        if (PropertyFlag.isEnabled("test.stress"))
+        {
+            Thread.sleep(1000);
+            doThreads(200,10,false);
+            Thread.sleep(1000);
+            doThreads(200,200,false);
+        }
     }
 
     @Test
-    public void testMinPersistent() throws Throwable
-    {
-        // TODO needs to be further investigated
-        assumeTrue(!OS.IS_OSX);
-        doThreads(10,10,true);
-    }
-    
-    @Test
-    @Stress("Hey, its called StressTest for a reason")
     public void testPersistent() throws Throwable
     {
         // TODO needs to be further investigated
-        assumeTrue(!OS.IS_OSX);
-        doThreads(40,40,true);
-        Thread.sleep(1000);
-        doThreads(200,10,true);
-        Thread.sleep(1000);
-        doThreads(200,200,true);
+        assumeTrue(!OS.IS_OSX || PropertyFlag.isEnabled("test.stress"));
+    	
+        doThreads(20,10,true);
+        if (PropertyFlag.isEnabled("test.stress"))
+        {
+            Thread.sleep(1000);
+            doThreads(200,10,true);
+            Thread.sleep(1000);
+            doThreads(200,200,true);
+        }
     }
 
     private void doThreads(int threadCount, final int loops, final boolean persistent) throws Throwable
@@ -238,6 +228,7 @@ public class StressTest
                     {
                         System.err.println("STALLED!!!");
                         System.err.println(_server.getThreadPool().toString());
+                        ((SelectChannelConnector)(_server.getConnectors()[0])).dump();
                         Thread.sleep(5000);
                         System.exit(1);
                     }
@@ -262,7 +253,7 @@ public class StressTest
         }
         finally
         {
-            // System.err.println();
+            System.err.println();
             final int quantums=48;
             final int[][] count = new int[_latencies.length][quantums];
             final int length[] = new int[_latencies.length];
@@ -296,22 +287,22 @@ public class StressTest
             System.out.println("           stage:\tbind\twrite\trecv\tdispatch\twrote\ttotal");
             for (int q=0;q<quantums;q++)
             {
-                System.out.printf("%02d00<=l<%02d00",q,(q+1));
+                System.out.print(q+"00<=latency<"+(q+1)+"00");
                 for (int i=0;i<_latencies.length;i++)
                     System.out.print("\t"+count[i][q]);
                 System.out.println();
             }
 
-            System.out.print("other       ");
+            System.out.print("other            ");
             for (int i=0;i<_latencies.length;i++)
                 System.out.print("\t"+other[i]);
             System.out.println();
 
-            System.out.print("HANDLED     ");
+            System.out.print("HANDLED          ");
             for (int i=0;i<_latencies.length;i++)
                 System.out.print("\t"+_handled.get());
             System.out.println();
-            System.out.print("TOTAL       ");
+            System.out.print("TOTAL             ");
             for (int i=0;i<_latencies.length;i++)
                 System.out.print("\t"+length[i]);
             System.out.println();

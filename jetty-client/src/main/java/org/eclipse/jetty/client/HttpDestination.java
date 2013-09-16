@@ -18,533 +18,725 @@
 
 package org.eclipse.jetty.client;
 
-import java.io.Closeable;
 import java.io.IOException;
-import java.net.URI;
-import java.nio.channels.AsynchronousCloseException;
+import java.lang.reflect.Constructor;
+import java.net.ProtocolException;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.Queue;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import org.eclipse.jetty.client.api.Connection;
-import org.eclipse.jetty.client.api.Destination;
-import org.eclipse.jetty.client.api.ProxyConfiguration;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.http.HttpScheme;
-import org.eclipse.jetty.util.BlockingArrayQueue;
-import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.client.HttpClient.Connector;
+import org.eclipse.jetty.client.security.Authentication;
+import org.eclipse.jetty.client.security.SecurityListener;
+import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpHeaders;
+import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.PathMap;
+import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteArrayBuffer;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
 
-public class HttpDestination implements Destination, Closeable, Dumpable
+/**
+ * @version $Revision: 879 $ $Date: 2009-09-11 16:13:28 +0200 (Fri, 11 Sep 2009) $
+ */
+public class HttpDestination implements Dumpable
 {
     private static final Logger LOG = Log.getLogger(HttpDestination.class);
 
-    private final AtomicInteger connectionCount = new AtomicInteger();
-    private final HttpClient client;
-    private final String scheme;
-    private final String host;
-    private final Address address;
-    private final Queue<HttpExchange> exchanges;
-    private final BlockingQueue<Connection> idleConnections;
-    private final BlockingQueue<Connection> activeConnections;
-    private final RequestNotifier requestNotifier;
-    private final ResponseNotifier responseNotifier;
-    private final Address proxyAddress;
-    private final HttpField hostField;
+    private final List<HttpExchange> _exchanges = new LinkedList<HttpExchange>();
+    private final List<AbstractHttpConnection> _connections = new LinkedList<AbstractHttpConnection>();
+    private final BlockingQueue<Object> _reservedConnections = new ArrayBlockingQueue<Object>(10, true);
+    private final List<AbstractHttpConnection> _idleConnections = new ArrayList<AbstractHttpConnection>();
+    private final HttpClient _client;
+    private final Address _address;
+    private final boolean _ssl;
+    private final ByteArrayBuffer _hostHeader;
+    private volatile int _maxConnections;
+    private volatile int _maxQueueSize;
+    private int _pendingConnections = 0;
+    private int _pendingReservedConnections = 0;
+    private volatile Address _proxy;
+    private Authentication _proxyAuthentication;
+    private PathMap _authorizations;
+    private List<HttpCookie> _cookies;
 
-    public HttpDestination(HttpClient client, String scheme, String host, int port)
+    HttpDestination(HttpClient client, Address address, boolean ssl)
     {
-        this.client = client;
-        this.scheme = scheme;
-        this.host = host;
-        this.address = new Address(host, port);
-
-        int maxRequestsQueued = client.getMaxRequestsQueuedPerDestination();
-        int capacity = Math.min(32, maxRequestsQueued);
-        this.exchanges = new BlockingArrayQueue<>(capacity, capacity, maxRequestsQueued);
-
-        int maxConnections = client.getMaxConnectionsPerDestination();
-        capacity = Math.min(8, maxConnections);
-        this.idleConnections = new BlockingArrayQueue<>(capacity, capacity, maxConnections);
-        this.activeConnections = new BlockingArrayQueue<>(capacity, capacity, maxConnections);
-
-        this.requestNotifier = new RequestNotifier(client);
-        this.responseNotifier = new ResponseNotifier(client);
-
-        ProxyConfiguration proxyConfig = client.getProxyConfiguration();
-        proxyAddress = proxyConfig != null && proxyConfig.matches(host, port) ?
-                new Address(proxyConfig.getHost(), proxyConfig.getPort()) : null;
-
-        if (!client.isDefaultPort(scheme, port))
-            host += ":" + port;
-        hostField = new HttpField(HttpHeader.HOST, host);
+        _client = client;
+        _address = address;
+        _ssl = ssl;
+        _maxConnections = _client.getMaxConnectionsPerAddress();
+        _maxQueueSize = _client.getMaxQueueSizePerAddress();
+        String addressString = address.getHost();
+        if (address.getPort() != (_ssl ? 443 : 80))
+            addressString += ":" + address.getPort();
+        _hostHeader = new ByteArrayBuffer(addressString);
     }
 
-    protected BlockingQueue<Connection> getIdleConnections()
+    public HttpClient getHttpClient()
     {
-        return idleConnections;
+        return _client;
     }
 
-    protected BlockingQueue<Connection> getActiveConnections()
+    public Address getAddress()
     {
-        return activeConnections;
+        return _address;
     }
 
-    public RequestNotifier getRequestNotifier()
+    public boolean isSecure()
     {
-        return requestNotifier;
+        return _ssl;
     }
 
-    public ResponseNotifier getResponseNotifier()
+    public Buffer getHostHeader()
     {
-        return responseNotifier;
+        return _hostHeader;
+    }
+
+    public int getMaxConnections()
+    {
+        return _maxConnections;
+    }
+
+    public void setMaxConnections(int maxConnections)
+    {
+        this._maxConnections = maxConnections;
+    }
+
+    public int getMaxQueueSize()
+    {
+        return _maxQueueSize;
+    }
+
+    public void setMaxQueueSize(int maxQueueSize)
+    {
+        this._maxQueueSize = maxQueueSize;
+    }
+
+    public int getConnections()
+    {
+        synchronized (this)
+        {
+            return _connections.size();
+        }
+    }
+
+    public int getIdleConnections()
+    {
+        synchronized (this)
+        {
+            return _idleConnections.size();
+        }
+    }
+
+    public void addAuthorization(String pathSpec, Authentication authorization)
+    {
+        synchronized (this)
+        {
+            if (_authorizations == null)
+                _authorizations = new PathMap();
+            _authorizations.put(pathSpec, authorization);
+        }
+
+        // TODO query and remove methods
+    }
+
+    public void addCookie(HttpCookie cookie)
+    {
+        synchronized (this)
+        {
+            if (_cookies == null)
+                _cookies = new ArrayList<HttpCookie>();
+            _cookies.add(cookie);
+        }
+
+        // TODO query, remove and age methods
+    }
+
+    /**
+     * Get a connection. We either get an idle connection if one is available, or
+     * we make a new connection, if we have not yet reached maxConnections. If we
+     * have reached maxConnections, we wait until the number reduces.
+     *
+     * @param timeout max time prepared to block waiting to be able to get a connection
+     * @return a HttpConnection for this destination
+     * @throws IOException if an I/O error occurs
+     */
+    private AbstractHttpConnection getConnection(long timeout) throws IOException
+    {
+        AbstractHttpConnection connection = null;
+
+        while ((connection == null) && (connection = getIdleConnection()) == null && timeout > 0)
+        {
+            boolean startConnection = false;
+            synchronized (this)
+            {
+                int totalConnections = _connections.size() + _pendingConnections;
+                if (totalConnections < _maxConnections)
+                {
+                    _pendingReservedConnections++;
+                    startConnection = true;
+                }
+            }
+
+            if (startConnection)
+            {
+                startNewConnection();
+                try
+                {
+                    Object o = _reservedConnections.take();
+                    if (o instanceof AbstractHttpConnection)
+                    {
+                        connection = (AbstractHttpConnection)o;
+                    }
+                    else
+                        throw (IOException)o;
+                }
+                catch (InterruptedException e)
+                {
+                    LOG.ignore(e);
+                }
+            }
+            else
+            {
+                try
+                {
+                    Thread.currentThread();
+                    Thread.sleep(200);
+                    timeout -= 200;
+                }
+                catch (InterruptedException e)
+                {
+                    LOG.ignore(e);
+                }
+            }
+        }
+        return connection;
+    }
+
+    public AbstractHttpConnection reserveConnection(long timeout) throws IOException
+    {
+        AbstractHttpConnection connection = getConnection(timeout);
+        if (connection != null)
+            connection.setReserved(true);
+        return connection;
+    }
+
+    public AbstractHttpConnection getIdleConnection() throws IOException
+    {
+        AbstractHttpConnection connection = null;
+        while (true)
+        {
+            synchronized (this)
+            {
+                if (connection != null)
+                {
+                    _connections.remove(connection);
+                    connection.close();
+                    connection = null;
+                }
+                if (_idleConnections.size() > 0)
+                    connection = _idleConnections.remove(_idleConnections.size() - 1);
+            }
+
+            if (connection == null)
+            {
+                return null;
+            }
+
+            // Check if the connection was idle,
+            // but it expired just a moment ago
+            if (connection.cancelIdleTimeout())
+            {
+                return connection;
+            }
+        }
+    }
+
+    protected void startNewConnection()
+    {
+        try
+        {
+            synchronized (this)
+            {
+                _pendingConnections++;
+            }
+            final Connector connector = _client._connector;
+            if (connector != null)
+                connector.startConnection(this);
+        }
+        catch (Exception e)
+        {
+            LOG.debug(e);
+            onConnectionFailed(e);
+        }
+    }
+
+    public void onConnectionFailed(Throwable throwable)
+    {
+        Throwable connect_failure = null;
+
+        boolean startConnection = false;
+        synchronized (this)
+        {
+            _pendingConnections--;
+            if (_pendingReservedConnections > 0)
+            {
+                connect_failure = throwable;
+                _pendingReservedConnections--;
+            }
+            else if (_exchanges.size() > 0)
+            {
+                HttpExchange ex = _exchanges.remove(0);
+                if (ex.setStatus(HttpExchange.STATUS_EXCEPTED))
+                    ex.getEventListener().onConnectionFailed(throwable);
+
+                // Since an existing connection had failed, we need to create a
+                // connection if the  queue is not empty and client is running.
+                if (!_exchanges.isEmpty() && _client.isStarted())
+                    startConnection = true;
+            }
+        }
+
+        if (startConnection)
+            startNewConnection();
+
+        if (connect_failure != null)
+        {
+            try
+            {
+                _reservedConnections.put(connect_failure);
+            }
+            catch (InterruptedException e)
+            {
+                LOG.ignore(e);
+            }
+        }
+    }
+
+    public void onException(Throwable throwable)
+    {
+        synchronized (this)
+        {
+            _pendingConnections--;
+            if (_exchanges.size() > 0)
+            {
+                HttpExchange ex = _exchanges.remove(0);
+                if (ex.setStatus(HttpExchange.STATUS_EXCEPTED))
+                    ex.getEventListener().onException(throwable);
+            }
+        }
+    }
+
+    public void onNewConnection(final AbstractHttpConnection connection) throws IOException
+    {
+        Connection reservedConnection = null;
+
+        synchronized (this)
+        {
+            _pendingConnections--;
+            _connections.add(connection);
+
+            if (_pendingReservedConnections > 0)
+            {
+                reservedConnection = connection;
+                _pendingReservedConnections--;
+            }
+            else
+            {
+                // Establish the tunnel if needed
+                EndPoint endPoint = connection.getEndPoint();
+                if (isProxied() && endPoint instanceof SelectConnector.UpgradableEndPoint)
+                {
+                    SelectConnector.UpgradableEndPoint proxyEndPoint = (SelectConnector.UpgradableEndPoint)endPoint;
+                    ConnectExchange connect = new ConnectExchange(getAddress(), proxyEndPoint);
+                    connect.setAddress(getProxy());
+                    LOG.debug("Establishing tunnel to {} via {}", getAddress(), getProxy());
+                    send(connection, connect);
+                }
+                else
+                {
+                    // Another connection stole the exchange that caused the creation of this connection ?
+                    if (_exchanges.size() == 0)
+                    {
+                        LOG.debug("No exchanges for new connection {}", connection);
+                        connection.setIdleTimeout();
+                        _idleConnections.add(connection);
+                    }
+                    else
+                    {
+                        HttpExchange exchange = _exchanges.remove(0);
+                        send(connection, exchange);
+                    }
+                }
+            }
+        }
+
+        if (reservedConnection != null)
+        {
+            try
+            {
+                _reservedConnections.put(reservedConnection);
+            }
+            catch (InterruptedException e)
+            {
+                LOG.ignore(e);
+            }
+        }
+    }
+
+    public void returnConnection(AbstractHttpConnection connection, boolean close) throws IOException
+    {
+        if (connection.isReserved())
+            connection.setReserved(false);
+
+        if (close)
+        {
+            try
+            {
+                connection.close();
+            }
+            catch (IOException e)
+            {
+                LOG.ignore(e);
+            }
+        }
+
+        if (!_client.isStarted())
+            return;
+
+        if (!close && connection.getEndPoint().isOpen())
+        {
+            synchronized (this)
+            {
+                if (_exchanges.size() == 0)
+                {
+                    connection.setIdleTimeout();
+                    _idleConnections.add(connection);
+                }
+                else
+                {
+                    HttpExchange ex = _exchanges.remove(0);
+                    send(connection, ex);
+                }
+                this.notifyAll();
+            }
+        }
+        else
+        {
+            boolean startConnection = false;
+            synchronized (this)
+            {
+                _connections.remove(connection);
+                if (!_exchanges.isEmpty())
+                    startConnection = true;
+            }
+
+            if (startConnection)
+                startNewConnection();
+        }
+    }
+
+    public void returnIdleConnection(AbstractHttpConnection connection)
+    {
+        // TODO work out the real idle time;
+        long idleForMs = connection.getEndPoint() != null ? connection.getEndPoint().getMaxIdleTime() : -1;
+        connection.onIdleExpired(idleForMs);
+
+        boolean startConnection = false;
+        synchronized (this)
+        {
+            _idleConnections.remove(connection);
+            _connections.remove(connection);
+
+            if (!_exchanges.isEmpty() && _client.isStarted())
+                startConnection = true;
+        }
+
+        if (startConnection)
+            startNewConnection();
+    }
+
+    public void send(HttpExchange ex) throws IOException
+    {
+        LinkedList<String> listeners = _client.getRegisteredListeners();
+
+        if (listeners != null)
+        {
+            // Add registered listeners, fail if we can't load them
+            for (int i = listeners.size(); i > 0; --i)
+            {
+                String listenerClass = listeners.get(i - 1);
+                try
+                {
+                    Class<?> listener = Class.forName(listenerClass);
+                    Constructor constructor = listener.getDeclaredConstructor(HttpDestination.class, HttpExchange.class);
+                    HttpEventListener elistener = (HttpEventListener)constructor.newInstance(this, ex);
+                    ex.setEventListener(elistener);
+                }
+                catch (final Exception e)
+                {
+                    throw new IOException("Unable to instantiate registered listener for destination: " + listenerClass)
+                    {
+                        {
+                            initCause(e);
+                        }
+                    };
+                }
+            }
+        }
+
+        // Security is supported by default and should be the first consulted
+        if (_client.hasRealms())
+        {
+            ex.setEventListener(new SecurityListener(this, ex));
+        }
+
+        doSend(ex);
+    }
+
+    public void resend(HttpExchange ex) throws IOException
+    {
+        ex.getEventListener().onRetry();
+        ex.reset();
+        doSend(ex);
+    }
+
+    protected void doSend(HttpExchange ex) throws IOException
+    {
+        // add cookies
+        // TODO handle max-age etc.
+        if (_cookies != null)
+        {
+            StringBuilder buf = null;
+            for (HttpCookie cookie : _cookies)
+            {
+                if (buf == null)
+                    buf = new StringBuilder();
+                else
+                    buf.append("; ");
+                buf.append(cookie.getName()); // TODO quotes
+                buf.append("=");
+                buf.append(cookie.getValue()); // TODO quotes
+            }
+            if (buf != null)
+                ex.addRequestHeader(HttpHeaders.COOKIE, buf.toString());
+        }
+
+        // Add any known authorizations
+        if (_authorizations != null)
+        {
+            Authentication auth = (Authentication)_authorizations.match(ex.getRequestURI());
+            if (auth != null)
+                (auth).setCredentials(ex);
+        }
+
+        // Schedule the timeout here, before we queue the exchange
+        // so that we count also the queue time in the timeout
+        ex.scheduleTimeout(this);
+
+        AbstractHttpConnection connection = getIdleConnection();
+        if (connection != null)
+        {
+            send(connection, ex);
+        }
+        else
+        {
+            boolean startConnection = false;
+            synchronized (this)
+            {
+                if (_exchanges.size() == _maxQueueSize)
+                    throw new RejectedExecutionException("Queue full for address " + _address);
+
+                _exchanges.add(ex);
+                if (_connections.size() + _pendingConnections < _maxConnections)
+                    startConnection = true;
+            }
+
+            if (startConnection)
+                startNewConnection();
+        }
+    }
+
+    protected void exchangeExpired(HttpExchange exchange)
+    {
+        // The exchange may expire while waiting in the
+        // destination queue, make sure it is removed
+        synchronized (this)
+        {
+            _exchanges.remove(exchange);
+        }
+    }
+
+    protected void send(AbstractHttpConnection connection, HttpExchange exchange) throws IOException
+    {
+        synchronized (this)
+        {
+            // If server closes the connection, put the exchange back
+            // to the exchange queue and recycle the connection
+            if (!connection.send(exchange))
+            {
+                if (exchange.getStatus() <= HttpExchange.STATUS_WAITING_FOR_CONNECTION)
+                    _exchanges.add(0, exchange);
+                returnIdleConnection(connection);
+            }
+        }
     }
 
     @Override
-    public String getScheme()
+    public synchronized String toString()
     {
-        return scheme;
+        return String.format("HttpDestination@%x//%s:%d(%d/%d,%d,%d/%d)%n", hashCode(), _address.getHost(), _address.getPort(), _connections.size(), _maxConnections, _idleConnections.size(), _exchanges.size(), _maxQueueSize);
     }
 
-    @Override
-    public String getHost()
+    public synchronized String toDetailString()
     {
-        // InetSocketAddress.getHostString() transforms the host string
-        // in case of IPv6 addresses, so we return the original host string
-        return host;
+        StringBuilder b = new StringBuilder();
+        b.append(toString());
+        b.append('\n');
+        synchronized (this)
+        {
+            for (AbstractHttpConnection connection : _connections)
+            {
+                b.append(connection.toDetailString());
+                if (_idleConnections.contains(connection))
+                    b.append(" IDLE");
+                b.append('\n');
+            }
+        }
+        b.append("--");
+        b.append('\n');
+
+        return b.toString();
     }
 
-    @Override
-    public int getPort()
+    public void setProxy(Address proxy)
     {
-        return address.getPort();
+        _proxy = proxy;
     }
 
-    public Address getConnectAddress()
+    public Address getProxy()
     {
-        return isProxied() ? proxyAddress : address;
+        return _proxy;
+    }
+
+    public Authentication getProxyAuthentication()
+    {
+        return _proxyAuthentication;
+    }
+
+    public void setProxyAuthentication(Authentication authentication)
+    {
+        _proxyAuthentication = authentication;
     }
 
     public boolean isProxied()
     {
-        return proxyAddress != null;
+        return _proxy != null;
     }
 
-    public URI getProxyURI()
+    public void close() throws IOException
     {
-        ProxyConfiguration proxyConfiguration = client.getProxyConfiguration();
-        String uri = getScheme() + "://" + proxyConfiguration.getHost();
-        if (!client.isDefaultPort(getScheme(), proxyConfiguration.getPort()))
-            uri += ":" + proxyConfiguration.getPort();
-        return URI.create(uri);
-    }
-
-    public HttpField getHostField()
-    {
-        return hostField;
-    }
-
-    public void send(Request request, List<Response.ResponseListener> listeners)
-    {
-        if (!scheme.equals(request.getScheme()))
-            throw new IllegalArgumentException("Invalid request scheme " + request.getScheme() + " for destination " + this);
-        if (!getHost().equals(request.getHost()))
-            throw new IllegalArgumentException("Invalid request host " + request.getHost() + " for destination " + this);
-        int port = request.getPort();
-        if (port >= 0 && getPort() != port)
-            throw new IllegalArgumentException("Invalid request port " + port + " for destination " + this);
-
-        HttpConversation conversation = client.getConversation(request.getConversationID(), true);
-        HttpExchange exchange = new HttpExchange(conversation, this, request, listeners);
-
-        if (client.isRunning())
+        synchronized (this)
         {
-            if (exchanges.offer(exchange))
+            for (AbstractHttpConnection connection : _connections)
             {
-                if (!client.isRunning() && exchanges.remove(exchange))
-                {
-                    throw new RejectedExecutionException(client + " is stopping");
-                }
-                else
-                {
-                    LOG.debug("Queued {}", request);
-                    requestNotifier.notifyQueued(request);
-                    Connection connection = acquire();
-                    if (connection != null)
-                        process(connection, false);
-                }
-            }
-            else
-            {
-                LOG.debug("Max queued exceeded {}", request);
-                abort(exchange, new RejectedExecutionException("Max requests per destination " + client.getMaxRequestsQueuedPerDestination() + " exceeded for " + this));
-            }
-        }
-        else
-        {
-            throw new RejectedExecutionException(client + " is stopped");
-        }
-    }
-
-    public void newConnection(Promise<Connection> promise)
-    {
-        createConnection(new ProxyPromise(promise));
-    }
-
-    protected void createConnection(Promise<Connection> promise)
-    {
-        client.newConnection(this, promise);
-    }
-
-    protected Connection acquire()
-    {
-        Connection result = idleConnections.poll();
-        if (result != null)
-            return result;
-
-        final int maxConnections = client.getMaxConnectionsPerDestination();
-        while (true)
-        {
-            int current = connectionCount.get();
-            final int next = current + 1;
-
-            if (next > maxConnections)
-            {
-                LOG.debug("Max connections per destination {} exceeded for {}", current, this);
-                // Try again the idle connections
-                return idleConnections.poll();
-            }
-
-            if (connectionCount.compareAndSet(current, next))
-            {
-                LOG.debug("Creating connection {}/{} for {}", next, maxConnections, this);
-
-                // This is the promise that is being called when a connection (eventually proxied) succeeds or fails.
-                Promise<Connection> promise = new Promise<Connection>()
-                {
-                    @Override
-                    public void succeeded(Connection connection)
-                    {
-                        process(connection, true);
-                    }
-
-                    @Override
-                    public void failed(final Throwable x)
-                    {
-                        client.getExecutor().execute(new Runnable()
-                        {
-                            @Override
-                            public void run()
-                            {
-                                abort(x);
-                            }
-                        });
-                    }
-                };
-
-                // Create a new connection, and pass a ProxyPromise to establish a proxy tunnel, if needed.
-                // Differently from the case where the connection is created explicitly by applications, here
-                // we need to do a bit more logging and keep track of the connection count in case of failures.
-                createConnection(new ProxyPromise(promise)
-                {
-                    @Override
-                    public void succeeded(Connection connection)
-                    {
-                        LOG.debug("Created connection {}/{} {} for {}", next, maxConnections, connection, HttpDestination.this);
-                        super.succeeded(connection);
-                    }
-
-                    @Override
-                    public void failed(Throwable x)
-                    {
-                        LOG.debug("Connection failed {} for {}", x, HttpDestination.this);
-                        connectionCount.decrementAndGet();
-                        super.failed(x);
-                    }
-                });
-
-                // Try again the idle connections
-                return idleConnections.poll();
+                connection.close();
             }
         }
     }
 
-    private void abort(Throwable cause)
-    {
-        HttpExchange exchange;
-        while ((exchange = exchanges.poll()) != null)
-            abort(exchange, cause);
-    }
-
-    /**
-     * <p>Processes a new connection making it idle or active depending on whether requests are waiting to be sent.</p>
-     * <p>A new connection is created when a request needs to be executed; it is possible that the request that
-     * triggered the request creation is executed by another connection that was just released, so the new connection
-     * may become idle.</p>
-     * <p>If a request is waiting to be executed, it will be dequeued and executed by the new connection.</p>
-     *
-     * @param connection the new connection
-     * @param dispatch whether to dispatch the processing to another thread
-     */
-    protected void process(Connection connection, boolean dispatch)
-    {
-        // Ugly cast, but lack of generic reification forces it
-        final HttpConnection httpConnection = (HttpConnection)connection;
-
-        final HttpExchange exchange = exchanges.poll();
-        if (exchange == null)
-        {
-            LOG.debug("{} idle", httpConnection);
-            if (!idleConnections.offer(httpConnection))
-            {
-                LOG.debug("{} idle overflow");
-                httpConnection.close();
-            }
-            if (!client.isRunning())
-            {
-                LOG.debug("{} is stopping", client);
-                remove(httpConnection);
-                httpConnection.close();
-            }
-        }
-        else
-        {
-            final Request request = exchange.getRequest();
-            Throwable cause = request.getAbortCause();
-            if (cause != null)
-            {
-                abort(exchange, cause);
-                LOG.debug("Aborted before processing {}: {}", exchange, cause);
-            }
-            else
-            {
-                LOG.debug("{} active", httpConnection);
-                if (!activeConnections.offer(httpConnection))
-                {
-                    LOG.warn("{} active overflow");
-                }
-                if (dispatch)
-                {
-                    client.getExecutor().execute(new Runnable()
-                    {
-                        @Override
-                        public void run()
-                        {
-                            httpConnection.send(exchange);
-                        }
-                    });
-                }
-                else
-                {
-                    httpConnection.send(exchange);
-                }
-            }
-        }
-    }
-
-    public void release(Connection connection)
-    {
-        LOG.debug("{} released", connection);
-        if (client.isRunning())
-        {
-            boolean removed = activeConnections.remove(connection);
-            if (removed)
-                process(connection, false);
-            else
-                LOG.debug("{} explicit", connection);
-        }
-        else
-        {
-            LOG.debug("{} is stopped", client);
-            remove(connection);
-            connection.close();
-        }
-    }
-
-    public void remove(Connection connection)
-    {
-        boolean removed = activeConnections.remove(connection);
-        removed |= idleConnections.remove(connection);
-        if (removed)
-        {
-            int open = connectionCount.decrementAndGet();
-            LOG.debug("Removed connection {} for {} - open: {}", connection, this, open);
-        }
-
-        // We need to execute queued requests even if this connection failed.
-        // We may create a connection that is not needed, but it will eventually
-        // idle timeout, so no worries
-        if (!exchanges.isEmpty())
-        {
-            connection = acquire();
-            if (connection != null)
-                process(connection, false);
-        }
-    }
-
-    public void close()
-    {
-        for (Connection connection : idleConnections)
-            connection.close();
-        idleConnections.clear();
-
-        // A bit drastic, but we cannot wait for all requests to complete
-        for (Connection connection : activeConnections)
-            connection.close();
-        activeConnections.clear();
-
-        abort(new AsynchronousCloseException());
-
-        connectionCount.set(0);
-
-        LOG.debug("Closed {}", this);
-    }
-
-    public boolean remove(HttpExchange exchange)
-    {
-        return exchanges.remove(exchange);
-    }
-
-    protected void abort(HttpExchange exchange, Throwable cause)
-    {
-        Request request = exchange.getRequest();
-        HttpResponse response = exchange.getResponse();
-        getRequestNotifier().notifyFailure(request, cause);
-        List<Response.ResponseListener> listeners = exchange.getConversation().getResponseListeners();
-        getResponseNotifier().notifyFailure(listeners, response, cause);
-        getResponseNotifier().notifyComplete(listeners, new Result(request, cause, response, cause));
-    }
-
-    protected void tunnelSucceeded(Connection connection, Promise<Connection> promise)
-    {
-        // Wrap the connection with TLS
-        Connection tunnel = client.tunnel(connection);
-        promise.succeeded(tunnel);
-    }
-
-    protected void tunnelFailed(Connection connection, Promise<Connection> promise, Throwable failure)
-    {
-        promise.failed(failure);
-        connection.close();
-    }
-
-    @Override
     public String dump()
     {
-        return ContainerLifeCycle.dump(this);
+        return AggregateLifeCycle.dump(this);
     }
 
-    @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        ContainerLifeCycle.dumpObject(out, this + " - requests queued: " + exchanges.size());
-        List<String> connections = new ArrayList<>();
-        for (Connection connection : idleConnections)
-            connections.add(connection + " - IDLE");
-        for (Connection connection : activeConnections)
-            connections.add(connection + " - ACTIVE");
-        ContainerLifeCycle.dump(out, indent, connections);
-    }
-
-    @Override
-    public String toString()
-    {
-        return String.format("%s(%s://%s:%d)%s",
-                HttpDestination.class.getSimpleName(),
-                getScheme(),
-                getHost(),
-                getPort(),
-                proxyAddress == null ? "" : " via " + proxyAddress.getHost() + ":" + proxyAddress.getPort());
-    }
-
-    /**
-     * Decides whether to establish a proxy tunnel using HTTP CONNECT.
-     * It is implemented as a promise because it needs to establish the tunnel
-     * when the TCP connection is succeeded, and needs to notify another
-     * promise when the tunnel is established (or failed).
-     */
-    private class ProxyPromise implements Promise<Connection>
-    {
-        private final Promise<Connection> delegate;
-
-        private ProxyPromise(Promise<Connection> delegate)
+        synchronized (this)
         {
-            this.delegate = delegate;
+            out.append(String.valueOf(this));
+            out.append("idle=");
+            out.append(String.valueOf(_idleConnections.size()));
+            out.append(" pending=");
+            out.append(String.valueOf(_pendingConnections));
+            out.append("\n");
+            AggregateLifeCycle.dump(out, indent, _connections);
+        }
+    }
+
+    private class ConnectExchange extends ContentExchange
+    {
+        private final SelectConnector.UpgradableEndPoint proxyEndPoint;
+
+        public ConnectExchange(Address serverAddress, SelectConnector.UpgradableEndPoint proxyEndPoint)
+        {
+            this.proxyEndPoint = proxyEndPoint;
+            setMethod(HttpMethods.CONNECT);
+            String serverHostAndPort = serverAddress.toString();
+            setRequestURI(serverHostAndPort);
+            addRequestHeader(HttpHeaders.HOST, serverHostAndPort);
+            addRequestHeader(HttpHeaders.PROXY_CONNECTION, "keep-alive");
+            addRequestHeader(HttpHeaders.USER_AGENT, "Jetty-Client");
         }
 
         @Override
-        public void succeeded(Connection connection)
+        protected void onResponseComplete() throws IOException
         {
-            if (isProxied() && HttpScheme.HTTPS.is(getScheme()))
+            int responseStatus = getResponseStatus();
+            if (responseStatus == HttpStatus.OK_200)
             {
-                if (client.getSslContextFactory() != null)
-                {
-                    tunnel(connection);
-                }
-                else
-                {
-                    String message = String.format("Cannot perform requests over SSL, no %s in %s",
-                            SslContextFactory.class.getSimpleName(), HttpClient.class.getSimpleName());
-                    delegate.failed(new IllegalStateException(message));
-                }
+                proxyEndPoint.upgrade();
+            }
+            else if (responseStatus == HttpStatus.GATEWAY_TIMEOUT_504)
+            {
+                onExpire();
             }
             else
             {
-                delegate.succeeded(connection);
+                onException(new ProtocolException("Proxy: " + proxyEndPoint.getRemoteAddr() + ":" + proxyEndPoint.getRemotePort() + " didn't return http return code 200, but " + responseStatus));
             }
         }
 
         @Override
-        public void failed(Throwable x)
+        protected void onConnectionFailed(Throwable x)
         {
-            delegate.failed(x);
+            HttpDestination.this.onConnectionFailed(x);
         }
 
-        private void tunnel(final Connection connection)
+        @Override
+        protected void onException(Throwable x)
         {
-            String target = address.getHost() + ":" + address.getPort();
-            Request connect = client.newRequest(proxyAddress.getHost(), proxyAddress.getPort())
-                    .scheme(HttpScheme.HTTP.asString())
-                    .method(HttpMethod.CONNECT)
-                    .path(target)
-                    .header(HttpHeader.HOST, target)
-                    .timeout(client.getConnectTimeout(), TimeUnit.MILLISECONDS);
-            connection.send(connect, new Response.CompleteListener()
+            HttpExchange exchange = null;
+            synchronized (HttpDestination.this)
             {
-                @Override
-                public void onComplete(Result result)
-                {
-                    if (result.isFailed())
-                    {
-                        tunnelFailed(connection, delegate, result.getFailure());
-                    }
-                    else
-                    {
-                        Response response = result.getResponse();
-                        if (response.getStatus() == 200)
-                        {
-                            tunnelSucceeded(connection, delegate);
-                        }
-                        else
-                        {
-                            tunnelFailed(connection, delegate, new HttpResponseException("Received " + response + " for " + result.getRequest(), response));
-                        }
-                    }
-                }
-            });
+                if (!_exchanges.isEmpty())
+                    exchange = _exchanges.remove(0);
+            }
+            if (exchange != null && exchange.setStatus(STATUS_EXCEPTED))
+                exchange.getEventListener().onException(x);
+        }
+
+        @Override
+        protected void onExpire()
+        {
+            HttpExchange exchange = null;
+            synchronized (HttpDestination.this)
+            {
+                if (!_exchanges.isEmpty())
+                    exchange = _exchanges.remove(0);
+            }
+            if (exchange != null && exchange.setStatus(STATUS_EXPIRED))
+                exchange.getEventListener().onExpire();
         }
     }
 }

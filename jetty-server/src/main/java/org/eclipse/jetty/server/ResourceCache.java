@@ -21,8 +21,6 @@ package org.eclipse.jetty.server;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
 import java.util.Comparator;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -35,7 +33,11 @@ import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpContent.ResourceAsHttpContent;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteArrayBuffer;
+import org.eclipse.jetty.io.View;
+import org.eclipse.jetty.io.nio.DirectNIOBuffer;
+import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -56,9 +58,9 @@ public class ResourceCache
     private final ResourceFactory _factory;
     private final ResourceCache _parent;
     private final MimeTypes _mimeTypes;
-    private final boolean _etagSupported;
-    private final boolean  _useFileMappedBuffer;
-    
+    private final boolean _etags;
+
+    private boolean  _useFileMappedBuffer=true;
     private int _maxCachedFileSize =4*1024*1024;
     private int _maxCachedFiles=2048;
     private int _maxCacheSize =32*1024*1024;
@@ -75,8 +77,8 @@ public class ResourceCache
         _cachedFiles=new AtomicInteger();
         _mimeTypes=mimeTypes;
         _parent=parent;
+        _etags=etags;
         _useFileMappedBuffer=useFileMappedBuffer;
-        _etagSupported=etags;
     }
 
     /* ------------------------------------------------------------ */
@@ -140,6 +142,12 @@ public class ResourceCache
     public boolean isUseFileMappedBuffer()
     {
         return _useFileMappedBuffer;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setUseFileMappedBuffer(boolean useFileMappedBuffer)
+    {
+        _useFileMappedBuffer = useFileMappedBuffer;
     }
 
     /* ------------------------------------------------------------ */
@@ -237,7 +245,7 @@ public class ResourceCache
             return content;
         }
         
-        return new HttpContent.ResourceAsHttpContent(resource,_mimeTypes.getMimeByExtension(resource.toString()),getMaxCachedFileSize(),_etagSupported);
+        return new HttpContent.ResourceAsHttpContent(resource,_mimeTypes.getMimeByExtension(resource.toString()),getMaxCachedFileSize(),_etags);
         
     }
     
@@ -280,7 +288,7 @@ public class ResourceCache
     }
     
     /* ------------------------------------------------------------ */
-    protected ByteBuffer getIndirectBuffer(Resource resource)
+    protected Buffer getIndirectBuffer(Resource resource)
     {
         try
         {
@@ -290,17 +298,10 @@ public class ResourceCache
                 LOG.warn("invalid resource: "+String.valueOf(resource)+" "+len);
                 return null;
             }
-            ByteBuffer buffer = BufferUtil.allocate(len);
-            int pos=BufferUtil.flipToFill(buffer);
-            if (resource.getFile()!=null)
-                BufferUtil.readFrom(resource.getFile(),buffer);
-            else
-            {
-                InputStream is = resource.getInputStream();
-                BufferUtil.readFrom(is,len,buffer);
-                is.close();
-            }
-            BufferUtil.flipToFlush(buffer,pos);
+            Buffer buffer = new IndirectNIOBuffer(len);
+            InputStream is = resource.getInputStream();
+            buffer.readFrom(is,len);
+            is.close();
             return buffer;
         }
         catch(IOException e)
@@ -311,32 +312,23 @@ public class ResourceCache
     }
 
     /* ------------------------------------------------------------ */
-    protected ByteBuffer getDirectBuffer(Resource resource)
+    protected Buffer getDirectBuffer(Resource resource)
     {
         try
         {
             if (_useFileMappedBuffer && resource.getFile()!=null) 
-                return BufferUtil.toBuffer(resource.getFile());
-            
+                return new DirectNIOBuffer(resource.getFile());
+
             int len=(int)resource.length();
             if (len<0)
             {
                 LOG.warn("invalid resource: "+String.valueOf(resource)+" "+len);
                 return null;
             }
-            ByteBuffer buffer = BufferUtil.allocateDirect(len);
-
-            int pos=BufferUtil.flipToFill(buffer);
-            if (resource.getFile()!=null)
-                BufferUtil.readFrom(resource.getFile(),buffer);
-            else
-            {
-                InputStream is = resource.getInputStream();
-                BufferUtil.readFrom(is,len,buffer);
-                is.close();
-            }
-            BufferUtil.flipToFlush(buffer,pos);
-            
+            Buffer buffer = new DirectNIOBuffer(len);
+            InputStream is = resource.getInputStream();
+            buffer.readFrom(is,len);
+            is.close();
             return buffer;
         }
         catch(IOException e)
@@ -363,13 +355,13 @@ public class ResourceCache
         final int _length;
         final String _key;
         final long _lastModified;
-        final ByteBuffer _lastModifiedBytes;
-        final ByteBuffer _contentType;
-        final String _etag;
+        final Buffer _lastModifiedBytes;
+        final Buffer _contentType;
+        final Buffer _etagBuffer;
         
         volatile long _lastAccessed;
-        AtomicReference<ByteBuffer> _indirectBuffer=new AtomicReference<ByteBuffer>();
-        AtomicReference<ByteBuffer> _directBuffer=new AtomicReference<ByteBuffer>();
+        AtomicReference<Buffer> _indirectBuffer=new AtomicReference<Buffer>();
+        AtomicReference<Buffer> _directBuffer=new AtomicReference<Buffer>();
 
         /* ------------------------------------------------------------ */
         Content(String pathInContext,Resource resource)
@@ -377,18 +369,17 @@ public class ResourceCache
             _key=pathInContext;
             _resource=resource;
 
-            String mimeType = _mimeTypes.getMimeByExtension(_resource.toString());
-            _contentType=(mimeType==null?null:BufferUtil.toBuffer(mimeType));
+            _contentType=_mimeTypes.getMimeByExtension(_resource.toString());
             boolean exists=resource.exists();
             _lastModified=exists?resource.lastModified():-1;
-            _lastModifiedBytes=_lastModified<0?null:BufferUtil.toBuffer(HttpFields.formatDate(_lastModified));
+            _lastModifiedBytes=_lastModified<0?null:new ByteArrayBuffer(HttpFields.formatDate(_lastModified));
             
             _length=exists?(int)resource.length():0;
             _cachedSize.addAndGet(_length);
             _cachedFiles.incrementAndGet();
             _lastAccessed=System.currentTimeMillis();
             
-            _etag=ResourceCache.this._etagSupported?resource.getWeakETag():null;
+            _etagBuffer=_etags?new ByteArrayBuffer(resource.getWeakETag()):null;
         }
 
 
@@ -411,17 +402,15 @@ public class ResourceCache
         }
 
         /* ------------------------------------------------------------ */
-        @Override
         public Resource getResource()
         {
             return _resource;
         }
 
         /* ------------------------------------------------------------ */
-        @Override
-        public String getETag()
+        public Buffer getETag()
         {
-            return _etag;
+            return _etagBuffer;
         }
         
         /* ------------------------------------------------------------ */
@@ -444,38 +433,34 @@ public class ResourceCache
             // Invalidate it
             _cachedSize.addAndGet(-_length);
             _cachedFiles.decrementAndGet();
-            _resource.close(); 
+            _resource.release(); 
         }
 
         /* ------------------------------------------------------------ */
-        @Override
-        public String getLastModified()
+        public Buffer getLastModified()
         {
-            return BufferUtil.toString(_lastModifiedBytes);
+            return _lastModifiedBytes;
         }
 
         /* ------------------------------------------------------------ */
-        @Override
-        public String getContentType()
+        public Buffer getContentType()
         {
-            return BufferUtil.toString(_contentType);
+            return _contentType;
         }
 
         /* ------------------------------------------------------------ */
-        @Override
         public void release()
         {
             // don't release while cached. Release when invalidated.
         }
 
         /* ------------------------------------------------------------ */
-        @Override
-        public ByteBuffer getIndirectBuffer()
+        public Buffer getIndirectBuffer()
         {
-            ByteBuffer buffer = _indirectBuffer.get();
+            Buffer buffer = _indirectBuffer.get();
             if (buffer==null)
             {
-                ByteBuffer buffer2=ResourceCache.this.getIndirectBuffer(_resource);
+                Buffer buffer2=ResourceCache.this.getIndirectBuffer(_resource);
                 
                 if (buffer2==null)
                     LOG.warn("Could not load "+this);
@@ -486,18 +471,17 @@ public class ResourceCache
             }
             if (buffer==null)
                 return null;
-            return buffer.slice();
+            return new View(buffer);
         }
         
 
         /* ------------------------------------------------------------ */
-        @Override
-        public ByteBuffer getDirectBuffer()
+        public Buffer getDirectBuffer()
         {
-            ByteBuffer buffer = _directBuffer.get();
+            Buffer buffer = _directBuffer.get();
             if (buffer==null)
             {
-                ByteBuffer buffer2=ResourceCache.this.getDirectBuffer(_resource);
+                Buffer buffer2=ResourceCache.this.getDirectBuffer(_resource);
 
                 if (buffer2==null)
                     LOG.warn("Could not load "+this);
@@ -508,34 +492,25 @@ public class ResourceCache
             }
             if (buffer==null)
                 return null;
-            return buffer.asReadOnlyBuffer();
+                        
+            return new View(buffer);
         }
         
         /* ------------------------------------------------------------ */
-        @Override
         public long getContentLength()
         {
             return _length;
         }
 
         /* ------------------------------------------------------------ */
-        @Override
         public InputStream getInputStream() throws IOException
         {
-            ByteBuffer indirect = getIndirectBuffer();
-            if (indirect!=null && indirect.hasArray())
-                return new ByteArrayInputStream(indirect.array(),indirect.arrayOffset()+indirect.position(),indirect.remaining());
+            Buffer indirect = getIndirectBuffer();
+            if (indirect!=null && indirect.array()!=null)
+                return new ByteArrayInputStream(indirect.array(),indirect.getIndex(),indirect.length());
            
             return _resource.getInputStream();
         }   
-        
-        /* ------------------------------------------------------------ */
-        @Override
-        public ReadableByteChannel getReadableByteChannel() throws IOException
-        {
-            return _resource.getReadableByteChannel();
-        }
-
 
         /* ------------------------------------------------------------ */
         @Override

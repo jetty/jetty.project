@@ -25,12 +25,12 @@ import org.eclipse.jetty.jndi.NamingUtil;
 import org.eclipse.jetty.overlays.OverlayedAppProvider;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
+import org.eclipse.jetty.server.nio.SelectChannelConnector;
 
 public class OverlayServer
 {
@@ -56,7 +56,7 @@ public class OverlayServer
         );
         
         // Setup Connectors
-        ServerConnector connector = new ServerConnector(server);
+        SelectChannelConnector connector = new SelectChannelConnector();
         connector.setPort(8080);
         server.addConnector(connector);
         
@@ -85,7 +85,7 @@ public class OverlayServer
         deployer.addAppProvider(provider);
 
         server.setStopAtShutdown(true);
-        //server.setSendServerVersion(true);
+        server.setSendServerVersion(true);
         
 	// Uncomment to work with JNDI examples
         // new org.eclipse.jetty.plus.jndi.Transaction(new com.atomikos.icatch.jta.UserTransactionImp());

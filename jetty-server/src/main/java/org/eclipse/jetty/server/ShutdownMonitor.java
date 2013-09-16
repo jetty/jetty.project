@@ -102,13 +102,6 @@ public class ShutdownMonitor
                         // Graceful Shutdown
                         debug("Issuing graceful shutdown..");
                         ShutdownThread.getInstance().run();
-                        
-                        //Stop accepting any more
-                        close(serverSocket);
-                        serverSocket = null;
-                        
-                        //Shutdown input from client
-                        shutdownInput(socket);
 
                         // Reply to client
                         debug("Informing client that we are stopped.");
@@ -116,10 +109,11 @@ public class ShutdownMonitor
                         out.flush();
 
                         // Shutdown Monitor
-                        socket.shutdownOutput();
-                        close(socket);
-                        socket = null;                        
                         debug("Shutting down monitor");
+                        close(socket);
+                        socket = null;
+                        close(serverSocket);
+                        serverSocket = null;
 
                         if (exitVm)
                         {
@@ -152,9 +146,7 @@ public class ShutdownMonitor
         {
             if (isAlive())
             {
-                // TODO why are we reentrant here?
-                if (DEBUG)
-                    System.err.printf("ShutdownMonitorThread already started");
+                System.err.printf("ShutdownMonitorThread already started");
                 return; // cannot start it again
             }
 
@@ -254,7 +246,7 @@ public class ShutdownMonitor
         }
         catch (IOException ignore)
         {
-            debug(ignore);
+            /* ignore */
         }
     }
 
@@ -271,27 +263,10 @@ public class ShutdownMonitor
         }
         catch (IOException ignore)
         {
-            debug(ignore);
+            /* ignore */
         }
     }
 
-    
-    private void shutdownInput(Socket socket)
-    {
-        if (socket == null)
-            return;
-        
-        try
-        {
-            socket.shutdownInput();
-        }   
-        catch (IOException ignore)
-        {
-            debug(ignore);
-        }
-    }
-    
-    
     private void debug(String format, Object... args)
     {
         if (DEBUG)
@@ -377,9 +352,7 @@ public class ShutdownMonitor
         {
             if (thread != null && thread.isAlive())
             {
-                // TODO why are we reentrant here?
-                if (DEBUG)
-                    System.err.printf("ShutdownMonitorThread already started");
+                System.err.printf("ShutdownMonitorThread already started");
                 return; // cannot start it again
             }
          

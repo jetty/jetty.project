@@ -39,11 +39,10 @@ public class ScanningAppProviderStartupTest
     {
         jetty = new XmlConfiguredJetty(testdir);
         jetty.addConfiguration("jetty.xml");
-        jetty.addConfiguration("jetty-http.xml");
         jetty.addConfiguration("jetty-deploymgr-contexts.xml");
 
         // Setup initial context
-        jetty.copyWebapp("foo.xml","foo.xml");
+        jetty.copyContext("foo.xml","foo.xml");
         jetty.copyWebapp("foo-webapp-1.war","foo.war");
 
         // Should not throw an Exception

@@ -46,13 +46,13 @@ class JarFileResource extends JarResource
     private boolean _exists;
     
     /* -------------------------------------------------------- */
-    protected JarFileResource(URL url)
+    JarFileResource(URL url)
     {
         super(url);
     }
     
     /* ------------------------------------------------------------ */
-    protected JarFileResource(URL url, boolean useCaches)
+    JarFileResource(URL url, boolean useCaches)
     {
         super(url, useCaches);
     }
@@ -60,35 +60,31 @@ class JarFileResource extends JarResource
 
     /* ------------------------------------------------------------ */
     @Override
-    public synchronized void close()
+    public synchronized void release()
     {
         _list=null;
         _entry=null;
         _file=null;
-        //if the jvm is not doing url caching, then the JarFiles will not be cached either,
-        //and so they are safe to close
-        if (!getUseCaches())
+        
+        if ( _jarFile != null )
         {
-            if ( _jarFile != null )
+            try
             {
-                try
-                {
-                    LOG.debug("Closing JarFile "+_jarFile.getName());
-                    _jarFile.close();
-                }
-                catch ( IOException ioe )
-                {
-                    LOG.ignore(ioe);
-                }
+                _jarFile.close();
+            }
+            catch ( IOException ioe )
+            {
+                LOG.ignore(ioe);
             }
         }
+        
         _jarFile=null;
-        super.close();
+        super.release();
     }
     
     /* ------------------------------------------------------------ */
     @Override
-    protected synchronized boolean checkConnection()
+    protected boolean checkConnection()
     {
         try
         {
@@ -186,7 +182,7 @@ class JarFileResource extends JarResource
                 Enumeration<JarEntry> e=jarFile.entries();
                 while(e.hasMoreElements())
                 {
-                    JarEntry entry = e.nextElement();
+                    JarEntry entry = (JarEntry) e.nextElement();
                     String name=entry.getName().replace('\\','/');
                     
                     // Do we have a match
@@ -316,8 +312,6 @@ class JarFileResource extends JarResource
                 e.printStackTrace();
                  LOG.ignore(e);
             }
-                if(jarFile==null)
-                    throw new IllegalStateException();
         }
         
         Enumeration<JarEntry> e=jarFile.entries();
@@ -373,6 +367,18 @@ class JarFileResource extends JarResource
             return _entry.getSize();
         
         return -1;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /** Encode according to this resource type.
+     * File URIs are not encoded.
+     * @param uri URI to encode.
+     * @return The uri unchanged.
+     */
+    @Override
+    public String encode(String uri)
+    {
+        return uri;
     }
 
     

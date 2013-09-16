@@ -22,12 +22,14 @@ import java.io.File;
 import java.net.URL;
 import java.util.Dictionary;
 import java.util.HashMap;
+import java.util.Hashtable;
 
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
-import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelperFactory;
+import org.eclipse.jetty.osgi.boot.internal.webapp.BundleFileLocatorHelperFactory;
+import org.eclipse.jetty.osgi.boot.utils.EventSender;
 import org.eclipse.jetty.osgi.boot.utils.OSGiClassLoader;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -35,8 +37,11 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.JarResource;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.ServiceRegistration;
 
 
 
@@ -44,15 +49,14 @@ import org.osgi.framework.Bundle;
 /**
  * AbstractContextProvider
  *
- * Base class for DeploymentManager Providers that can deploy ContextHandlers into 
- * Jetty that have been discovered via OSGI either as bundles or services.
- * 
+ *
  */
 public abstract class AbstractContextProvider extends AbstractLifeCycle implements AppProvider
 {
     private static final Logger LOG = Log.getLogger(AbstractContextProvider.class);
     
-    private DeploymentManager _deploymentManager;    
+    private DeploymentManager _deploymentManager;
+    
     
     private ServerInstanceWrapper _serverWrapper;
     
@@ -61,7 +65,7 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
     
     /* ------------------------------------------------------------ */
     /**
-     * OSGiApp
+     * BundleApp
      *
      *
      */
@@ -169,7 +173,7 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
                                 jettyHome = jettyHome.substring(0,jettyHome.length()-1);
 
                             res = getFileAsResource(jettyHome, _contextFile); 
-                            LOG.debug("jetty home context file: {}",res);
+                            if (LOG.isDebugEnabled()) LOG.debug("jetty home context file:"+res);
                         }
                     }
                 }
@@ -179,11 +183,8 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
                 {                 
                     if (bundleOverrideLocation != null)
                     { 
-                        try(Resource location=Resource.newResource(bundleOverrideLocation))
-                        {
-                            res=location.addPath(_contextFile);
-                        }
-                        LOG.debug("Bundle override location context file: {}",res);
+                        res = getFileAsResource(Resource.newResource(bundleOverrideLocation).getFile(), _contextFile);
+                        if (LOG.isDebugEnabled()) LOG.debug("Bundle override location context file:"+res);
                     }
                 }         
 
@@ -217,7 +218,7 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
                         //put the server instance in
                         properties.put("Server", getServerInstanceWrapper().getServer());
                         //put in the location of the bundle root
-                        properties.put(OSGiWebappConstants.JETTY_BUNDLE_ROOT, rootResource.toString());
+                        properties.put("bundle.root", rootResource.toString());
                         
                         // insert the bundle's location as a property.
                         xmlConfiguration.getProperties().putAll(properties);
@@ -292,6 +293,22 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
                 if (asFile.exists())
                     r = Resource.newResource(asFile);
             }
+            catch (Exception e)
+            {
+                r = null;
+            } 
+            return r;
+        }
+        
+        private Resource getFileAsResource (File dir, String file)
+        {
+            Resource r = null;
+            try
+            {
+                File asFile = new File (dir, file);
+                if (asFile.exists())
+                    r = Resource.newResource(asFile);
+            } 
             catch (Exception e)
             {
                 r = null;

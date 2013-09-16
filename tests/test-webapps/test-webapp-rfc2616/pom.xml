@@ -21,7 +21,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-webapps-parent</artifactId>
-    <version>9.0.6-SNAPSHOT</version>
+    <version>7.6.13-SNAPSHOT</version>
   </parent>
   <artifactId>test-webapp-rfc2616</artifactId>
   <name>Jetty Tests :: WebApp :: RFC2616</name>
@@ -35,22 +35,6 @@
         <configuration>
           <!-- DO NOT DEPLOY (or Release) -->
           <skip>true</skip>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-maven-plugin</artifactId>
-        <version>${project.version}</version>
-        <configuration>
-          <stopPort>8087</stopPort>
-          <stopKey>foo</stopKey>
-          <scanIntervalSeconds>1</scanIntervalSeconds>
-          <systemProperties>
-            <systemProperty>
-              <name>fooprop</name>
-              <value>222</value>
-            </systemProperty>
-          </systemProperties>
         </configuration>
       </plugin>
     </plugins>

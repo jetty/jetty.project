@@ -35,7 +35,7 @@ public class javaNameParser implements NameParser
 
     static Properties syntax = new Properties();
 
-    static
+    static 
     {
       syntax.put("jndi.syntax.direction", "left_to_right");
       syntax.put("jndi.syntax.separator", "/");

@@ -1,26 +1,110 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
 
 <!-- =============================================================== -->
-<!-- Configure extended support for webapps                          -->
+<!-- Configure Jetty Plus features                                   -->
+<!--                                                                 -->
+<!-- This file sets up a WebAppDeployer to automatically deploy all  -->
+<!-- webapps in $jetty.home/webapps-plus at startup time, and to     -->
+<!-- enable all of them with Plus features (jndi etc).               -->
+<!--                                                                 -->
+<!-- You can instead configure individual webapps with Jetty Plus    -->
+<!-- features by using the ContextDeployer (configured in            -->
+<!-- $jetty.home/etc/jetty.xml), and ensuring that you set the       -->
+<!-- same set of classes listed below in the "plusConfig" as the     -->
+<!-- webapp's configurationClasses.                                  -->
+<!--                                                                 -->
+<!-- For more information about Jetty Plus, see the Jetty wiki at    -->
+<!-- http://docs.codehaus.org/display/JETTY/Jetty+Wiki               -->
 <!-- =============================================================== -->
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
   <!-- =========================================================== -->
-  <!-- Add plus Configuring classes to all webapps for this Server -->
+  <!-- Example JAAS realm setup.                                   -->
+  <!-- The LoginModuleName must be exactly the same as in the      -->
+  <!-- login.conf file, and the realm Name must be the same as in  -->
+  <!-- the web.xml file.                                           -->
   <!-- =========================================================== -->
-  <Call class="org.eclipse.jetty.webapp.Configuration$ClassList" name="setServerDefault">
-    <Arg><Ref refid="Server" /></Arg>
-    <Call name="addAfter">
-      <Arg name="afterClass">org.eclipse.jetty.webapp.FragmentConfiguration</Arg>
+  <!-- 
+  <Call name="addBean">
+    <Arg>
+      <New class="org.eclipse.jetty.plus.jaas.JAASLoginService">
+	      <Set name="name">xyzrealm</Set>
+	      <Set name="LoginModuleName">xyz</Set>
+	    </New>
+    </Arg>
+  </Call>
+  -->
+
+
+  <!-- =========================================================== -->
+  <!-- Enabling plus feature.                                      -->
+  <!-- Choose one of the following methods. NOTE that by default   -->
+  <!-- the last method (enabled for all webapps on this Server) is -->
+  <!-- enabled.                                                    -->
+  <!--                                                             -->
+  <!-- For a single webapp:                                        -->
+  <!-- Use a context xml file to call                              -->
+  <!--  setConfigurationClasses(plusConfig).                       -->
+  <!--                                                             -->
+  <!-- For all webapps in a directory:                             -->
+  <!-- Uncomment the section entitled  "Apply plusConfig to all    -->
+  <!-- webapps in webapps-plus".                                   -->
+  <!--                                                             -->
+  <!-- For all webapps deployed via this Server instance:          -->
+  <!-- Uncomment the section entitled "Apply plusConfig to all     -->
+  <!-- webapps for this Server". NOTE: this is the default.        -->
+  <!-- =========================================================== -->
+  
+
+  <!-- =========================================================== -->
+  <!-- Sequence of configurations to defining Plus features.       -->
+  <!-- =========================================================== -->
+  <Array id="plusConfig" type="java.lang.String">
+    <Item>org.eclipse.jetty.webapp.WebInfConfiguration</Item>
+    <Item>org.eclipse.jetty.webapp.WebXmlConfiguration</Item>
+    <Item>org.eclipse.jetty.webapp.MetaInfConfiguration</Item>
+    <Item>org.eclipse.jetty.webapp.FragmentConfiguration</Item>
+    <Item>org.eclipse.jetty.plus.webapp.EnvConfiguration</Item>
+    <Item>org.eclipse.jetty.plus.webapp.PlusConfiguration</Item>
+    <Item>org.eclipse.jetty.annotations.AnnotationConfiguration</Item>
+    <Item>org.eclipse.jetty.webapp.JettyWebXmlConfiguration</Item>
+    <Item>org.eclipse.jetty.webapp.TagLibConfiguration</Item>
+  </Array>
+
+  <!-- =========================================================== -->
+  <!-- Apply plusConfig to all webapps in webapps-plus             -->
+  <!-- =========================================================== -->
+  <!-- Uncomment the following to set up a deployer that will      -->
+  <!-- deploy webapps from a directory called webapps-plus. Note   -->
+  <!-- that you will need to create this directory first!          -->
+  <!--
+  <Ref id="DeploymentManager">
+      <Call name="addAppProvider">
+        <Arg>
+          <New class="org.eclipse.jetty.deploy.providers.WebAppProvider">
+            <Set name="monitoredDirName"><Property name="jetty.home" default="." />/webapps-plus</Set>
+            <Set name="defaultsDescriptor"><Property name="jetty.home" default="."/>/etc/webdefault.xml</Set>
+            <Set name="scanInterval">5</Set>
+            <Set name="contextXmlDir"><Property name="jetty.home" default="." />/contexts</Set>
+            <Set name="parentLoaderPriority">false</Set>
+            <Set name="extractWars">true</Set>
+            <Set name="configurationClasses"><Ref id="plusConfig"/></Set>
+          </New>
+        </Arg>
+      </Call>
+  </Ref>
+  -->
+
+  <!-- =========================================================== -->
+  <!-- Apply plusConfig to all webapps for this Server             -->
+  <!-- =========================================================== -->
+    <Call name="setAttribute">
+      <Arg>org.eclipse.jetty.webapp.configuration</Arg>
       <Arg>
-        <Array type="String">
-          <Item>org.eclipse.jetty.plus.webapp.EnvConfiguration</Item>
-          <Item>org.eclipse.jetty.plus.webapp.PlusConfiguration</Item>
-        </Array>
+          <Ref id="plusConfig"/>
       </Arg>
     </Call>
-  </Call>
 
 </Configure>
 

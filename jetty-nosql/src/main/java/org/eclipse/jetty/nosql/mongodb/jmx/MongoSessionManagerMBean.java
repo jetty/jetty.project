@@ -21,11 +21,10 @@ package org.eclipse.jetty.nosql.mongodb.jmx;
 import org.eclipse.jetty.nosql.mongodb.MongoSessionManager;
 import org.eclipse.jetty.server.handler.AbstractHandlerContainer;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.session.AbstractSessionManager;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.server.session.jmx.AbstractSessionManagerMBean;
-import org.eclipse.jetty.util.annotation.ManagedObject;
 
-@ManagedObject("Mongo Session Manager MBean")
 public class MongoSessionManagerMBean extends AbstractSessionManagerMBean
 {
 

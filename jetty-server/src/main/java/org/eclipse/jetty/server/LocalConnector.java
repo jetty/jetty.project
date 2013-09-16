@@ -19,248 +19,158 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class LocalConnector extends AbstractConnector
 {
-    private final BlockingQueue<LocalEndPoint> _connects = new LinkedBlockingQueue<>();
-
-
-    public LocalConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool pool, int acceptors, ConnectionFactory... factories)
+    private static final Logger LOG = Log.getLogger(LocalConnector.class);
+    private final BlockingQueue<Request> _requests = new LinkedBlockingQueue<Request>();
+    
+    public LocalConnector()
     {
-        super(server,executor,scheduler,pool,acceptors,factories);
-        setIdleTimeout(30000);
+        setMaxIdleTime(30000);
     }
 
-    public LocalConnector(Server server)
-    {
-        this(server, null, null, null, 0, new HttpConnectionFactory());
-    }
-
-    public LocalConnector(Server server, SslContextFactory sslContextFactory)
-    {
-        this(server, null, null, null, 0,AbstractConnectionFactory.getFactories(sslContextFactory,new HttpConnectionFactory()));
-    }
-
-    public LocalConnector(Server server, ConnectionFactory connectionFactory)
-    {
-        this(server, null, null, null, 0, connectionFactory);
-    }
-
-    public LocalConnector(Server server, ConnectionFactory connectionFactory, SslContextFactory sslContextFactory)
-    {
-        this(server, null, null, null, 0, AbstractConnectionFactory.getFactories(sslContextFactory,connectionFactory));
-    }
-
-    @Override
-    public Object getTransport()
+    public Object getConnection()
     {
         return this;
     }
 
-    /** Sends requests and get responses based on thread activity.
-     * Returns all the responses received once the thread activity has
-     * returned to the level it was before the requests.
-     * <p>
-     * This methods waits until the connection is closed or
-     * is idle for 1s before returning the responses.
-     * @param requests the requests
-     * @return the responses
-     * @throws Exception if the requests fail
-     */
     public String getResponses(String requests) throws Exception
     {
-        return getResponses(requests, 5, TimeUnit.SECONDS);
+        return getResponses(requests, false);
     }
 
-    /** Sends requests and get responses based on thread activity.
-     * Returns all the responses received once the thread activity has
-     * returned to the level it was before the requests.
-     * <p>
-     * This methods waits until the connection is closed or
-     * an idle period before returning the responses.
-     * @param requests the requests
-     * @param idleFor The time the response stream must be idle for before returning
-     * @param units The units of idleFor
-     * @return the responses
-     * @throws Exception if the requests fail
-     */
-    public String getResponses(String requests,long idleFor,TimeUnit units) throws Exception
+    public String getResponses(String requests, boolean keepOpen) throws Exception
     {
-        ByteBuffer result = getResponses(BufferUtil.toBuffer(requests,StringUtil.__UTF8_CHARSET),idleFor,units);
-        return result==null?null:BufferUtil.toString(result,StringUtil.__UTF8_CHARSET);
+        ByteArrayBuffer result = getResponses(new ByteArrayBuffer(requests, StringUtil.__ISO_8859_1), keepOpen);
+        return result==null?null:result.toString(StringUtil.__ISO_8859_1);
     }
 
-    /** Sends requests and get's responses based on thread activity.
-     * Returns all the responses received once the thread activity has
-     * returned to the level it was before the requests.
-     * <p>
-     * This methods waits until the connection is closed or
-     * is idle for 1s before returning the responses.
-     * @param requestsBuffer the requests
-     * @return the responses
-     * @throws Exception if the requests fail
-     */
-    public ByteBuffer getResponses(ByteBuffer requestsBuffer) throws Exception
+    public ByteArrayBuffer getResponses(ByteArrayBuffer requestsBuffer, boolean keepOpen) throws Exception
     {
-        return getResponses(requestsBuffer, 5, TimeUnit.SECONDS);
-    }
-
-    /** Sends requests and get's responses based on thread activity.
-     * Returns all the responses received once the thread activity has
-     * returned to the level it was before the requests.
-     * <p>
-     * This methods waits until the connection is closed or
-     * an idle period before returning the responses.
-     * @param requestsBuffer the requests
-     * @param idleFor The time the response stream must be idle for before returning
-     * @param units The units of idleFor
-     * @return the responses
-     * @throws Exception if the requests fail
-     */
-    public ByteBuffer getResponses(ByteBuffer requestsBuffer,long idleFor,TimeUnit units) throws Exception
-    {
-        LOG.debug("requests {}", BufferUtil.toUTF8String(requestsBuffer));
-        LocalEndPoint endp = executeRequest(requestsBuffer);
-        endp.waitUntilClosedOrIdleFor(idleFor,units);
-        ByteBuffer responses = endp.takeOutput();
-        endp.getConnection().close();
-        LOG.debug("responses {}", BufferUtil.toUTF8String(responses));
-        return responses;
-    }
-
-    /**
-     * Execute a request and return the EndPoint through which
-     * responses can be received.
-     * @param rawRequest the request
-     * @return the local endpoint
-     */
-    public LocalEndPoint executeRequest(String rawRequest)
-    {
-        return executeRequest(BufferUtil.toBuffer(rawRequest,StringUtil.__UTF8_CHARSET));
-    }
-
-    private LocalEndPoint executeRequest(ByteBuffer rawRequest)
-    {
-        LocalEndPoint endp = new LocalEndPoint();
-        endp.setInput(rawRequest);
-        _connects.add(endp);
-        return endp;
+        CountDownLatch latch = new CountDownLatch(1);
+        Request request = new Request(requestsBuffer, keepOpen, latch);
+        _requests.add(request);
+        latch.await(getMaxIdleTime(),TimeUnit.MILLISECONDS);
+        return request.getResponsesBuffer();
     }
 
     @Override
     protected void accept(int acceptorID) throws IOException, InterruptedException
     {
-        LOG.debug("accepting {}", acceptorID);
-        LocalEndPoint endPoint = _connects.take();
-        endPoint.onOpen();
-        onEndPointOpened(endPoint);
-
-        Connection connection = getDefaultConnectionFactory().newConnection(this, endPoint);
-        endPoint.setConnection(connection);
-
-//        connectionOpened(connection);
-        connection.onOpen();
+        Request request = _requests.take();
+        getThreadPool().dispatch(request);
     }
 
-    public class LocalEndPoint extends ByteArrayEndPoint
+    public void open() throws IOException
     {
-        private final CountDownLatch _closed = new CountDownLatch(1);
+    }
 
-        public LocalEndPoint()
+    public void close() throws IOException
+    {
+    }
+
+    public int getLocalPort()
+    {
+        return -1;
+    }
+
+    public void executeRequest(String rawRequest) throws IOException
+    {
+        Request request = new Request(new ByteArrayBuffer(rawRequest, "UTF-8"), true, null);
+        _requests.add(request);
+    }
+
+    private class Request implements Runnable
+    {
+        private final ByteArrayBuffer _requestsBuffer;
+        private final boolean _keepOpen;
+        private final CountDownLatch _latch;
+        private volatile ByteArrayBuffer _responsesBuffer;
+
+        private Request(ByteArrayBuffer requestsBuffer, boolean keepOpen, CountDownLatch latch)
         {
-            super(getScheduler(), LocalConnector.this.getIdleTimeout());
-            setGrowOutput(true);
+            _requestsBuffer = requestsBuffer;
+            _keepOpen = keepOpen;
+            _latch = latch;
         }
 
-        public void addInput(String s)
+        public void run()
         {
-            // TODO this is a busy wait
-            while(getIn()==null || BufferUtil.hasContent(getIn()))
-                Thread.yield();
-            setInput(BufferUtil.toBuffer(s, StringUtil.__UTF8_CHARSET));
-        }
-
-        @Override
-        public void close()
-        {
-            boolean wasOpen=isOpen();
-            super.close();
-            if (wasOpen)
+            try
             {
-//                connectionClosed(getConnection());
-                getConnection().onClose();
-                onClose();
-            }
-        }
-
-        @Override
-        public void onClose()
-        {
-            LocalConnector.this.onEndPointClosed(this);
-            super.onClose();
-            _closed.countDown();
-        }
-
-        @Override
-        public void shutdownOutput()
-        {
-            super.shutdownOutput();
-            close();
-        }
-
-        public void waitUntilClosed()
-        {
-            while (isOpen())
-            {
-                try
+                ByteArrayEndPoint endPoint = new ByteArrayEndPoint(_requestsBuffer.asArray(), 1024)
                 {
-                    if (!_closed.await(10,TimeUnit.SECONDS))
-                        break;
-                }
-                catch(Exception e)
-                {
-                    LOG.warn(e);
-                }
-            }
-        }
-
-        public void waitUntilClosedOrIdleFor(long idleFor,TimeUnit units)
-        {
-            Thread.yield();
-            int size=getOutput().remaining();
-            while (isOpen())
-            {
-                try
-                {
-                    if (!_closed.await(idleFor,units))
+                    @Override
+                    public void setConnection(Connection connection)
                     {
-                        if (size==getOutput().remaining())
+                        if (getConnection()!=null && connection!=getConnection())
+                            connectionUpgraded(getConnection(),connection);
+                        super.setConnection(connection);
+                    }
+                };
+
+                endPoint.setGrowOutput(true);
+                AbstractHttpConnection connection = new BlockingHttpConnection(LocalConnector.this, endPoint, getServer());
+                endPoint.setConnection(connection);
+                connectionOpened(connection);
+
+                boolean leaveOpen = _keepOpen;
+                try
+                {
+                    while (endPoint.getIn().length() > 0 && endPoint.isOpen())
+                    {
+                        while (true)
                         {
-                            LOG.debug("idle for {} {}",idleFor,units);
-                            return;
+                            final Connection con = endPoint.getConnection();
+                            final Connection next = con.handle();
+                            if (next!=con)
+                            {  
+                                endPoint.setConnection(next);
+                                continue;
+                            }
+                            break;
                         }
-                        size=getOutput().remaining();
                     }
                 }
-                catch(Exception e)
+                catch (IOException x)
                 {
-                    LOG.warn(e);
+                    LOG.debug(x);
+                    leaveOpen = false;
+                }
+                catch (Exception x)
+                {
+                    LOG.warn(x);
+                    leaveOpen = false;
+                }
+                finally
+                {
+                    if (!leaveOpen)
+                        connectionClosed(connection);
+                    _responsesBuffer = endPoint.getOut();
                 }
             }
+            finally
+            {
+                if (_latch != null)
+                    _latch.countDown();
+            }
+        }
+
+        public ByteArrayBuffer getResponsesBuffer()
+        {
+            return _responsesBuffer;
         }
     }
 }

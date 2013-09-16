@@ -118,14 +118,6 @@ public class ExecutorThreadPool extends AbstractLifeCycle implements ThreadPool,
         this(new ThreadPoolExecutor(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue));
     }
 
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public void execute(Runnable job)
-    {
-        _executor.execute(job);
-    }
-
     /* ------------------------------------------------------------ */
     public boolean dispatch(Runnable job)
     {

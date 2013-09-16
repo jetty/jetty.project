@@ -20,25 +20,19 @@ package org.eclipse.jetty.osgi.boot.internal.serverfactory;
 
 import java.io.File;
 import java.net.MalformedURLException;
-import java.net.URI;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.Hashtable;
-import java.util.List;
 import java.util.StringTokenizer;
 
 import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
 import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
-import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelperFactory;
-import org.eclipse.jetty.osgi.boot.utils.OSGiClassLoader;
-import org.eclipse.jetty.osgi.boot.utils.Util;
+import org.eclipse.jetty.osgi.boot.internal.webapp.BundleFileLocatorHelperFactory;
+import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelper;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.resource.JarResource;
-import org.eclipse.jetty.util.resource.Resource;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 
@@ -46,19 +40,18 @@ import org.osgi.framework.BundleContext;
  * DefaultJettyAtJettyHomeHelper
  * 
  * 
- * Creates a default instance of Jetty, based on the values of the
- * System properties "jetty.home" or "jetty.home.bundle", one of which
- * must be specified in order to create the default instance.
- * 
  * Called by the {@link JettyBootstrapActivator} during the starting of the
- * bundle. 
+ * bundle. If the system property 'jetty.home' is defined and points to a
+ * folder, then setup the corresponding jetty server.
  */
 public class DefaultJettyAtJettyHomeHelper
 {
     private static final Logger LOG = Log.getLogger(DefaultJettyAtJettyHomeHelper.class);
 
     /**
-     * contains a comma separated list of paths to the etc/jetty-*.xml files
+     * contains a comma separated list of pathes to the etc/jetty-*.xml files
+     * used to configure jetty. By default the value is 'etc/jetty.xml' when the
+     * path is relative the file is resolved relatively to jettyhome.
      */
     public static final String JETTY_ETC_FILES = OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS;
 
@@ -71,7 +64,6 @@ public class DefaultJettyAtJettyHomeHelper
      * Default location within bundle of a jetty home dir.
      */
     public static final String DEFAULT_JETTYHOME = "/jettyhome";
-    
     
     
     /* ------------------------------------------------------------ */
@@ -87,7 +79,9 @@ public class DefaultJettyAtJettyHomeHelper
      * In both cases reads the system property 'jetty.etc.config.urls' to locate
      * the configuration files for the deployed jetty. It is a comma separated
      * list of URLs or relative paths inside the bundle or folder to the config
-     * files.
+     * files. If undefined it defaults to 'etc/jetty.xml'. In the case of the jetty.home.bundle,
+     * if no etc/jetty.xml file is found in the bundle, it will look for 
+     * /jettyhome/etc/jetty-osgi-default.xml
      * </p>
      * <p>
      * In both cases the system properties jetty.host, jetty.port and
@@ -95,37 +89,34 @@ public class DefaultJettyAtJettyHomeHelper
      * as part of their properties.
      * </p>
      */
-    public static Server startJettyAtJettyHome(BundleContext bundleContext) throws Exception
+    public static void startJettyAtJettyHome(BundleContext bundleContext) throws Exception
     {
         String jettyHomeSysProp = System.getProperty(OSGiServerConstants.JETTY_HOME);
         String jettyHomeBundleSysProp = System.getProperty(OSGiServerConstants.JETTY_HOME_BUNDLE);
-        File jettyHomeDir = null;
+        File jettyHome = null;
         Bundle jettyHomeBundle = null;
-     
-        Dictionary<String,String> properties = new Hashtable<String,String>();
         if (jettyHomeSysProp != null)
         {
-            jettyHomeSysProp = Util.resolvePropertyValue(jettyHomeSysProp);
+            jettyHomeSysProp = resolvePropertyValue(jettyHomeSysProp);
             // bug 329621
             if (jettyHomeSysProp.startsWith("\"") && jettyHomeSysProp.endsWith("\"") || (jettyHomeSysProp.startsWith("'") && jettyHomeSysProp.endsWith("'")))
+            {
                 jettyHomeSysProp = jettyHomeSysProp.substring(1, jettyHomeSysProp.length() - 1);
-         
+            }
             if (jettyHomeBundleSysProp != null)
+            {
                 LOG.warn("Both jetty.home and jetty.home.bundle property defined: jetty.home.bundle ignored.");
-           
-            jettyHomeDir = new File(jettyHomeSysProp);
-            if (!jettyHomeDir.exists() || !jettyHomeDir.isDirectory())
+            }
+            jettyHome = new File(jettyHomeSysProp);
+            if (!jettyHome.exists() || !jettyHome.isDirectory())
             {
                 LOG.warn("Unable to locate the jetty.home folder " + jettyHomeSysProp);
-                return null;
+                return;
             }
-            
-            //set jetty.home
-            Util.setProperty(properties, OSGiServerConstants.JETTY_HOME, jettyHomeDir.getAbsolutePath());
         }
         else if (jettyHomeBundleSysProp != null)
         {
-            jettyHomeBundleSysProp = Util.resolvePropertyValue(jettyHomeBundleSysProp);
+            jettyHomeBundleSysProp = resolvePropertyValue(jettyHomeBundleSysProp);
             for (Bundle b : bundleContext.getBundles())
             {
                 if (b.getSymbolicName().equals(jettyHomeBundleSysProp))
@@ -137,54 +128,37 @@ public class DefaultJettyAtJettyHomeHelper
             if (jettyHomeBundle == null)
             {
                 LOG.warn("Unable to find the jetty.home.bundle named " + jettyHomeSysProp);
-                return null;
+                return;
             }
+
         }
-        
-        if (jettyHomeDir == null && jettyHomeBundle == null)
+        if (jettyHome == null && jettyHomeBundle == null)
         {
             LOG.warn("No default jetty created.");
-            return null;
+            return;
         }
-        
-        
-        
-        //configure the server here rather than letting the JettyServerServiceTracker do it, because we want to be able to
-        //configure the ThreadPool, which can only be done via the constructor, ie from within the xml configuration processing
-        List<URL> configURLs = jettyHomeDir != null ? getJettyConfigurationURLs(jettyHomeDir) : getJettyConfigurationURLs(jettyHomeBundle, properties);
 
-        LOG.info("Configuring the default jetty server with {}",configURLs);
-        LOG.info("JETTY.HOME="+properties.get(OSGiServerConstants.JETTY_HOME));
-        ClassLoader contextCl = Thread.currentThread().getContextClassLoader();
-        try
-        {
-            Thread.currentThread().setContextClassLoader(JettyBootstrapActivator.class.getClassLoader());
-            
-            // these properties usually are the ones passed to this type of
-            // configuration.
-            properties.put(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME, OSGiServerConstants.MANAGED_JETTY_SERVER_DEFAULT_NAME);
-            Util.setProperty(properties, OSGiServerConstants.JETTY_HOST, System.getProperty(OSGiServerConstants.JETTY_HOST));
-            Util.setProperty(properties, OSGiServerConstants.JETTY_PORT, System.getProperty(OSGiServerConstants.JETTY_PORT));
-            Util.setProperty(properties, OSGiServerConstants.JETTY_PORT_SSL, System.getProperty(OSGiServerConstants.JETTY_PORT_SSL));
+        Server server = new Server();
+        Dictionary<String,String> properties = new Hashtable<String,String>();
+        properties.put(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME, OSGiServerConstants.MANAGED_JETTY_SERVER_DEFAULT_NAME);
 
-            Server server = ServerInstanceWrapper.configure(null, configURLs, properties);
-            //ensure jetty.home is set
-            server.setAttribute(OSGiServerConstants.JETTY_HOME, properties.get(OSGiServerConstants.JETTY_HOME));
-            
-            //Register the default Server instance as an OSGi service.
-            //The JettyServerServiceTracker will notice it and set it up to deploy bundles as wars etc
-            bundleContext.registerService(Server.class.getName(), server, properties);
-            LOG.info("Default jetty server configured");
-            return server;
-        }
-        finally
-        {
-            Thread.currentThread().setContextClassLoader(contextCl);
-        }
+        String configURLs = jettyHome != null ? getJettyConfigurationURLs(jettyHome) : getJettyConfigurationURLs(jettyHomeBundle);
+        properties.put(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS, configURLs);
+
+        LOG.info("Configuring the default jetty server with " + configURLs);
+
+        // these properties usually are the ones passed to this type of
+        // configuration.
+        setProperty(properties, OSGiServerConstants.JETTY_HOME, System.getProperty(OSGiServerConstants.JETTY_HOME));
+        setProperty(properties, OSGiServerConstants.JETTY_HOST, System.getProperty(OSGiServerConstants.JETTY_HOST));
+        setProperty(properties, OSGiServerConstants.JETTY_PORT, System.getProperty(OSGiServerConstants.JETTY_PORT));
+        setProperty(properties, OSGiServerConstants.JETTY_PORT_SSL, System.getProperty(OSGiServerConstants.JETTY_PORT_SSL));
+
+        //register the Server instance as an OSGi service.
+        bundleContext.registerService(Server.class.getName(), server, properties);
     }
-
     
-   
+    
     
     /* ------------------------------------------------------------ */
     /**
@@ -195,26 +169,33 @@ public class DefaultJettyAtJettyHomeHelper
      * 
      * @param jettyhome
      * @return
-     * @throws MalformedURLException 
      */
-    private static List<URL> getJettyConfigurationURLs(File jettyhome) 
-    throws MalformedURLException
+    private static String getJettyConfigurationURLs(File jettyhome)
     {
-        List<URL> configURLs = new ArrayList<URL>();
         String jettyetc = System.getProperty(JETTY_ETC_FILES, DEFAULT_JETTY_ETC_FILES);
         StringTokenizer tokenizer = new StringTokenizer(jettyetc, ";,", false);
+        StringBuilder res = new StringBuilder();
         while (tokenizer.hasMoreTokens())
         {
             String next = tokenizer.nextToken().trim();
-            //etc files can either be relative to jetty.home or absolute disk locations
-            if (!next.startsWith("/") && (next.indexOf(':') == -1))    
-                configURLs.add(new File(jettyhome, next).toURI().toURL());
-            else 
-                configURLs.add(new URL(next));
+            if (!next.startsWith("/") && next.indexOf(':') == -1)
+            {
+                try
+                {
+                    next = new File(jettyhome, next).toURI().toURL().toString();
+                }
+                catch (MalformedURLException e)
+                {
+                    LOG.warn(e);
+                    continue;
+                }
+            }
+            appendToCommaSeparatedList(res, next);
         }
-        return configURLs;
+        return res.toString();
     }
-
+    
+    
     /* ------------------------------------------------------------ */
     /**
      * Minimum setup for the location of the configuration files given a
@@ -225,90 +206,118 @@ public class DefaultJettyAtJettyHomeHelper
      * @param jettyhome
      * @return
      */
-    private static List<URL> getJettyConfigurationURLs(Bundle configurationBundle, Dictionary properties)
-    throws Exception
+    private static String getJettyConfigurationURLs(Bundle configurationBundle)
     {
-        List<URL> configURLs = new ArrayList<URL>();
-        String files = System.getProperty(JETTY_ETC_FILES, DEFAULT_JETTY_ETC_FILES);       
+        String files = System.getProperty(JETTY_ETC_FILES, DEFAULT_JETTY_ETC_FILES);
+       
         StringTokenizer tokenizer = new StringTokenizer(files, ";,", false);
+        StringBuilder res = new StringBuilder();
 
         while (tokenizer.hasMoreTokens())
         {
             String etcFile = tokenizer.nextToken().trim();
-
-            //file path is absolute
             if (etcFile.startsWith("/") || etcFile.indexOf(":") != -1)
-                configURLs.add(new URL(etcFile));
-            else //relative file path
             {
+                //file path is absolute
+                appendToCommaSeparatedList(res, etcFile);
+            }
+            else
+            {
+                //relative file path
                 Enumeration<URL> enUrls = BundleFileLocatorHelperFactory.getFactory().getHelper().findEntries(configurationBundle, etcFile);
-
-                String home = null;
+                      
                 // default for org.eclipse.osgi.boot where we look inside
-                // jettyhome/ for the default embedded configuration.
+                // jettyhome for the default embedded configuration.
+                // default inside jettyhome. this way fragments to the bundle
+                // can define their own configuration.
                 if ((enUrls == null || !enUrls.hasMoreElements()))
                 {
-                    home = DEFAULT_JETTYHOME;
-                    String tmp = DEFAULT_JETTYHOME+(DEFAULT_JETTYHOME.endsWith("/")?"":"/")+etcFile;
+                    String tmp = DEFAULT_JETTYHOME+etcFile;
                     enUrls = BundleFileLocatorHelperFactory.getFactory().getHelper().findEntries(configurationBundle, tmp);                    
-                    LOG.info("Configuring jetty from bundle: {} with {}", configurationBundle.getSymbolicName(),tmp);
-                }          
-
-                //lazily ensure jetty.home value is set based on location of etc files
-                if (properties.get(OSGiServerConstants.JETTY_HOME) == null)
-                {
-                    Resource res = findDir(configurationBundle, home);
-                    if (res != null)
-                        properties.put(OSGiServerConstants.JETTY_HOME, res.toString());
+                    LOG.info("Configuring jetty from bundle: "
+                                       + configurationBundle.getSymbolicName()
+                                       + " with "+tmp);
                 }
-         
                 if (enUrls == null || !enUrls.hasMoreElements())
+                {
                     throw new IllegalStateException ("Unable to locate a jetty configuration file for " + etcFile);
-
-                URL url = BundleFileLocatorHelperFactory.getFactory().getHelper().getFileURL(enUrls.nextElement());
-                configURLs.add(url);
-           
+                }
+                if (enUrls != null)
+                {
+                    while (enUrls.hasMoreElements())
+                    {
+                        URL url = BundleFileLocatorHelperFactory.getFactory().getHelper().getFileURL(enUrls.nextElement());
+                        appendToCommaSeparatedList(res, url.toString());
+                    }
+                }
             }
         }
-        return configURLs;
+        return res.toString();
     }
+    
+    
+    /* ------------------------------------------------------------ */
+    private static void appendToCommaSeparatedList(StringBuilder buffer, String value)
+    {
+        if (buffer.length() != 0)
+        {
+            buffer.append(",");
+        }
+        buffer.append(value);
+    }
+    
+    
+    /* ------------------------------------------------------------ */
+    private static void setProperty(Dictionary<String,String> properties, String key, String value)
+    {
+        if (value != null)
+        {
+            properties.put(key, value);
+        }
+    }
+    
     
     /* ------------------------------------------------------------ */
     /**
-     * Get a resource representing a directory inside a bundle. If the dir is null,
-     * return a resource representing the installation location of the bundle.
-     * @param bundle
-     * @param dir
+     * recursively substitute the ${sysprop} by their actual system property.
+     * ${sysprop,defaultvalue} will use 'defaultvalue' as the value if no
+     * sysprop is defined. Not the most efficient code but we are shooting for
+     * simplicity and speed of development here.
+     * 
+     * @param value
      * @return
      */
-    public static Resource findDir (Bundle bundle, String dir)
+    public static String resolvePropertyValue(String value)
     {
-        if (bundle == null)
-            return null;
-
-        try
+        int ind = value.indexOf("${");
+        if (ind == -1) { return value; }
+        int ind2 = value.indexOf('}', ind);
+        if (ind2 == -1) { return value; }
+        String sysprop = value.substring(ind + 2, ind2);
+        String defaultValue = null;
+        int comma = sysprop.indexOf(',');
+        if (comma != -1 && comma + 1 != sysprop.length())
         {
-            File f = BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(bundle);
-            URL u = f.toURI().toURL();
-            u = BundleFileLocatorHelperFactory.getFactory().getHelper().getLocalURL(u);
-            Resource res = Resource.newResource(u);
-            String s = res.toString();
-   
-            //check if it is an unarchived bundle
-            if (s.endsWith(".jar") && s.startsWith("file:"))
-                res = JarResource.newJarResource(res);
-            
-            //if looking for a directory 
-            if (dir != null)
-                res = res.addPath(dir);
-            
-            return res;
-          
+            defaultValue = sysprop.substring(comma + 1);
+            defaultValue = resolvePropertyValue(defaultValue);
+            sysprop = sysprop.substring(0, comma);
         }
-        catch (Exception e)
+        else
         {
-            LOG.warn("Bad bundle location" , e);
-            return null;
+            defaultValue = "${" + sysprop + "}";
+        }
+
+        String v = System.getProperty(sysprop);
+
+        String reminder = value.length() > ind2 + 1 ? value.substring(ind2 + 1) : "";
+        reminder = resolvePropertyValue(reminder);
+        if (v != null)
+        {
+            return value.substring(0, ind) + v + reminder;
+        }
+        else
+        {
+            return value.substring(0, ind) + defaultValue + reminder;
         }
     }
 }

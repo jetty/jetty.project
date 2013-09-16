@@ -21,10 +21,15 @@ package org.eclipse.jetty.util;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import junit.framework.Assert;
 
-import org.junit.Assert;
 import org.junit.Test;
 
+
+/**
+ * 
+ *
+ */
 public class StringUtilTest
 {
     @Test
@@ -38,7 +43,7 @@ public class StringUtilTest
     @Test
     public void testStartsWithIgnoreCase()
     {
-
+        
         assertTrue(StringUtil.startsWithIgnoreCase("\u0690b\u0690defg", "\u0690b\u0690"));
         assertTrue(StringUtil.startsWithIgnoreCase("\u0690bcdefg", "\u0690bc"));
         assertTrue(StringUtil.startsWithIgnoreCase("\u0690bcdefg", "\u0690Bc"));
@@ -48,9 +53,9 @@ public class StringUtilTest
         assertTrue(StringUtil.startsWithIgnoreCase("\u0690bcdefg", null));
         assertTrue(StringUtil.startsWithIgnoreCase("\u0690bcdefg", "\u0690bcdefg"));
 
-        assertFalse(StringUtil.startsWithIgnoreCase(null, "xyz"));
+        assertFalse(StringUtil.startsWithIgnoreCase(null, "xyz")); 
         assertFalse(StringUtil.startsWithIgnoreCase("\u0690bcdefg", "xyz"));
-        assertFalse(StringUtil.startsWithIgnoreCase("\u0690", "xyz"));
+        assertFalse(StringUtil.startsWithIgnoreCase("\u0690", "xyz")); 
     }
 
     @Test
@@ -65,9 +70,9 @@ public class StringUtilTest
         assertTrue(StringUtil.endsWithIgnoreCase("\u0690bcdefg", null));
         assertTrue(StringUtil.endsWithIgnoreCase("\u0690bcdefg", "\u0690bcdefg"));
 
-        assertFalse(StringUtil.endsWithIgnoreCase(null, "xyz"));
+        assertFalse(StringUtil.endsWithIgnoreCase(null, "xyz")); 
         assertFalse(StringUtil.endsWithIgnoreCase("\u0690bcdefg", "xyz"));
-        assertFalse(StringUtil.endsWithIgnoreCase("\u0690", "xyz"));
+        assertFalse(StringUtil.endsWithIgnoreCase("\u0690", "xyz"));  
     }
 
     @Test
@@ -85,10 +90,10 @@ public class StringUtilTest
         String s="\u0690bc \u0690bc \u0690bc";
         assertEquals(StringUtil.replace(s, "\u0690bc", "xyz"),"xyz xyz xyz");
         assertTrue(StringUtil.replace(s,"xyz","pqy")==s);
-
+        
         s=" \u0690bc ";
         assertEquals(StringUtil.replace(s, "\u0690bc", "xyz")," xyz ");
-
+        
     }
 
     @Test
@@ -132,9 +137,9 @@ public class StringUtilTest
         StringUtil.append(buf, (byte)-1, 16);
         StringUtil.append(buf, (byte)-16, 16);
         assertEquals("ab0c10fff0",buf.toString());
-
+        
     }
-
+    
     @Test
     public void testSidConversion() throws Exception
     {
@@ -154,8 +159,8 @@ public class StringUtilTest
         Assert.assertEquals(sid12, StringUtil.sidBytesToString(sid12Bytes));
 
     }
-
-
+    
+    
     public static void main(String[] arg) throws Exception
     {
         String string = "Now \u0690xxxxxxxx";
@@ -192,39 +197,9 @@ public class StringUtilTest
                 calc+=strbuf.toString().hashCode();
             }
             long s5=System.currentTimeMillis();
-
+            
             System.err.println((s2-s1)+", "+(s3-s2)+", "+(s4-s3)+", "+(s5-s4));
         }
         System.err.println(calc);
-    }
-
-    @Test
-    public void testIsBlank() {
-        Assert.assertTrue(StringUtil.isBlank(null));
-        Assert.assertTrue(StringUtil.isBlank(""));
-        Assert.assertTrue(StringUtil.isBlank("\r\n"));
-        Assert.assertTrue(StringUtil.isBlank("\t"));
-        Assert.assertTrue(StringUtil.isBlank("   "));
-
-        Assert.assertFalse(StringUtil.isBlank("a"));
-        Assert.assertFalse(StringUtil.isBlank("  a"));
-        Assert.assertFalse(StringUtil.isBlank("a  "));
-        Assert.assertFalse(StringUtil.isBlank("."));
-        Assert.assertFalse(StringUtil.isBlank(";\n"));
-    }
-
-    @Test
-    public void testIsNotBlank() {
-        Assert.assertFalse(StringUtil.isNotBlank(null));
-        Assert.assertFalse(StringUtil.isNotBlank(""));
-        Assert.assertFalse(StringUtil.isNotBlank("\r\n"));
-        Assert.assertFalse(StringUtil.isNotBlank("\t"));
-        Assert.assertFalse(StringUtil.isNotBlank("   "));
-
-        Assert.assertTrue(StringUtil.isNotBlank("a"));
-        Assert.assertTrue(StringUtil.isNotBlank("  a"));
-        Assert.assertTrue(StringUtil.isNotBlank("a  "));
-        Assert.assertTrue(StringUtil.isNotBlank("."));
-        Assert.assertTrue(StringUtil.isNotBlank(";\n"));
     }
 }

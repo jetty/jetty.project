@@ -18,15 +18,15 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.IOException;
 import java.util.Enumeration;
 
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaders;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 public class CookiePatternRuleTest extends AbstractRuleTestCase
 {
@@ -73,7 +73,7 @@ public class CookiePatternRuleTest extends AbstractRuleTestCase
 
             // verify
             HttpFields httpFields = _response.getHttpFields();
-            Enumeration e = httpFields.getValues(HttpHeader.SET_COOKIE.asString());
+            Enumeration e = httpFields.getValues(HttpHeaders.SET_COOKIE_BUFFER);
             int index = 0;
             while (e.hasMoreElements())
             {

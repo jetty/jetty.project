@@ -27,9 +27,9 @@ import java.net.URLClassLoader;
 
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.util.log.Log;
@@ -95,14 +95,18 @@ public class ReloadedSessionMissingClassTest
         try
         {
             HttpClient client = new HttpClient();
+            client.setConnectorType(HttpClient.CONNECTOR_SOCKET);
             client.start();
             try
             {
                 // Perform one request to server1 to create a session
-                ContentResponse response = client.GET("http://localhost:" + port1 + contextPath +"/bar?action=set");
-                
-                assertEquals( HttpServletResponse.SC_OK, response.getStatus());
-                String sessionCookie = response.getHeaders().getStringField("Set-Cookie");
+                ContentExchange exchange1 = new ContentExchange(true);
+                exchange1.setMethod(HttpMethods.GET);
+                exchange1.setURL("http://localhost:" + port1 + contextPath +"/bar?action=set");
+                client.send(exchange1);
+                exchange1.waitForDone();
+                assertEquals( HttpServletResponse.SC_OK, exchange1.getResponseStatus());
+                String sessionCookie = exchange1.getResponseFields().getStringField("Set-Cookie");
                 assertTrue(sessionCookie != null);
                 String sessionId = (String)webApp.getServletContext().getAttribute("foo");
                 assertNotNull(sessionId);
@@ -113,14 +117,18 @@ public class ReloadedSessionMissingClassTest
                 webApp.stop();
                 
                 webApp.setClassLoader(loaderWithoutFoo);
+                webApp.addServlet("Bar", "/bar");
                 
                 //restart webapp
                 webApp.start();
                 
-                Request request = client.newRequest("http://localhost:" + port1 + contextPath + "/bar?action=get");
-                request.header("Cookie", sessionCookie);
-                response = request.send();
-                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+                ContentExchange exchange2 = new ContentExchange(true);
+                exchange2.setMethod(HttpMethods.GET);
+                exchange2.setURL("http://localhost:" + port1 + contextPath + "/bar?action=get");
+                exchange2.getRequestFields().add("Cookie", sessionCookie);
+                client.send(exchange2);
+                exchange2.waitForDone();
+                assertEquals(HttpServletResponse.SC_OK,exchange2.getResponseStatus());
                 String afterStopSessionId = (String)webApp.getServletContext().getAttribute("foo.session");
                 
                 assertNotNull(afterStopSessionId);

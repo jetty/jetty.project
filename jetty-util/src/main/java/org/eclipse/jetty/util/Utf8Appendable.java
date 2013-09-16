@@ -19,7 +19,6 @@
 package org.eclipse.jetty.util;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -52,7 +51,6 @@ public abstract class Utf8Appendable
 {
     protected static final Logger LOG = Log.getLogger(Utf8Appendable.class);
     public static final char REPLACEMENT = '\ufffd';
-    public static final byte[] REPLACEMENT_UTF8 = new byte[] {(byte)0xEF,(byte)0xBF,(byte)0xBD };
     private static final int UTF8_ACCEPT = 0;
     private static final int UTF8_REJECT = 12;
 
@@ -103,21 +101,6 @@ public abstract class Utf8Appendable
         try
         {
             appendByte(b);
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeException(e);
-        }
-    }
-    
-    public void append(ByteBuffer buf)
-    {
-        try
-        {
-            while (buf.remaining() > 0)
-            {
-                appendByte(buf.get());
-            }
         }
         catch (IOException e)
         {
@@ -206,7 +189,6 @@ public abstract class Utf8Appendable
         return _state == UTF8_ACCEPT;
     }
 
-    @SuppressWarnings("serial")
     public static class NotUtf8Exception extends IllegalArgumentException
     {
         public NotUtf8Exception(String reason)

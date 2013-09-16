@@ -28,9 +28,9 @@ import javax.servlet.http.HttpServletResponse;
 public class NoJspServlet extends HttpServlet
 {
     private boolean _warned;
-
+    
     /* ------------------------------------------------------------ */
-    /*
+    /* 
      * @see javax.servlet.http.HttpServlet#doGet(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
      */
     protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException

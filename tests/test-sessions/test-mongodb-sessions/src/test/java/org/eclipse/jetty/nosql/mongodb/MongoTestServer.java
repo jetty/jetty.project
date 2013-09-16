@@ -58,10 +58,10 @@ public class MongoTestServer extends AbstractTestServer
     {
         try
         {
-            System.err.println("MongoTestServer:SessionIdManager scavenge: delay:"+ _scavengePeriod + " period:"+_maxInactivePeriod);
+            System.err.println("MongoTestServer:SessionIdManager:" + _maxInactivePeriod + "/" + _scavengePeriod);
             MongoSessionIdManager idManager = new MongoSessionIdManager(_server);
             idManager.setWorkerName("w"+(__workers++));
-            idManager.setScavengeDelay((_scavengePeriod));
+            idManager.setScavengeDelay((int)TimeUnit.SECONDS.toMillis(_scavengePeriod));
             idManager.setScavengePeriod(_maxInactivePeriod);                  
 
             return idManager;

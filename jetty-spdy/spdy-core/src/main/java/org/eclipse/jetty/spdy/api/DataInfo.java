@@ -20,7 +20,6 @@ package org.eclipse.jetty.spdy.api;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -42,7 +41,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * <p>Consuming the data bytes can be done only via {@link #consumeInto(ByteBuffer)} or by a combination
  * of {@link #readInto(ByteBuffer)} and {@link #consume(int)} (possibly at different times).</p>
  */
-public abstract class DataInfo extends Info
+public abstract class DataInfo
 {
     /**
      * <p>Flag that indicates that this {@link DataInfo} is the last frame in the stream.</p>
@@ -51,9 +50,17 @@ public abstract class DataInfo extends Info
      * @see #getFlags()
      */
     public final static byte FLAG_CLOSE = 1;
+    /**
+     * <p>Flag that indicates that this {@link DataInfo}'s data is compressed.</p>
+     *
+     * @see #isCompress()
+     * @see #getFlags()
+     */
+    public final static byte FLAG_COMPRESS = 2;
 
     private final AtomicInteger consumed = new AtomicInteger();
     private boolean close;
+    private boolean compress;
 
     /**
      * <p>Creates a new {@link DataInfo} with the given close flag and no compression flag.</p>
@@ -66,16 +73,33 @@ public abstract class DataInfo extends Info
     }
 
     /**
-     * <p>Creates a new {@link DataInfo} with the given close flag and no compression flag.</p>
+     * <p>Creates a new {@link DataInfo} with the given close flag and given compression flag.</p>
      *
-     * @param timeout
-     * @param unit
-     * @param close the value of the close flag
+     * @param close    the close flag
+     * @param compress the compress flag
      */
-    protected DataInfo(long timeout, TimeUnit unit, boolean close)
+    public DataInfo(boolean close, boolean compress)
     {
-        super(timeout, unit);
-        this.close = close;
+        setClose(close);
+        setCompress(compress);
+    }
+
+    /**
+     * @return the value of the compress flag
+     * @see #setCompress(boolean)
+     */
+    public boolean isCompress()
+    {
+        return compress;
+    }
+
+    /**
+     * @param compress the value of the compress flag
+     * @see #isCompress()
+     */
+    public void setCompress(boolean compress)
+    {
+        this.compress = compress;
     }
 
     /**
@@ -99,10 +123,13 @@ public abstract class DataInfo extends Info
     /**
      * @return the close and compress flags as integer
      * @see #FLAG_CLOSE
+     * @see #FLAG_COMPRESS
      */
     public byte getFlags()
     {
-        return isClose() ? FLAG_CLOSE : 0;
+        byte flags = isClose() ? FLAG_CLOSE : 0;
+        flags |= isCompress() ? FLAG_COMPRESS : 0;
+        return flags;
     }
 
     /**
@@ -127,25 +154,12 @@ public abstract class DataInfo extends Info
      * then after the read {@link #available()} will return a positive value, and further content
      * may be retrieved by invoking again this method with a new output buffer.</p>
      *
-     * @param output the {@link ByteBuffer} to copy the bytes into
+     * @param output the {@link ByteBuffer} to copy to bytes into
      * @return the number of bytes copied
      * @see #available()
      * @see #consumeInto(ByteBuffer)
      */
     public abstract int readInto(ByteBuffer output);
-
-    /**
-     * <p>Copies the content bytes of this {@link DataInfo} into the given byte array.</p>
-     * <p>If the given byte array cannot contain the whole content of this {@link DataInfo}
-     * then after the read {@link #available()} will return a positive value, and further content
-     * may be retrieved by invoking again this method with a new byte array.</p>
-     *
-     * @param bytes the byte array to copy the bytes into
-     * @param offset the index of the byte array to start copying
-     * @param length the number of bytes to copy
-     * @return the number of bytes copied
-     */
-    public abstract int readInto(byte[] bytes, int offset, int length);
 
     /**
      * <p>Reads and consumes the content bytes of this {@link DataInfo} into the given {@link ByteBuffer}.</p>
@@ -157,22 +171,6 @@ public abstract class DataInfo extends Info
     public int consumeInto(ByteBuffer output)
     {
         int read = readInto(output);
-        consume(read);
-        return read;
-    }
-
-    /**
-     * <p>Reads and consumes the content bytes of this {@link DataInfo} into the given byte array,
-     * starting from index {@code offset} for {@code length} bytes.</p>
-     *
-     * @param bytes the byte array to copy the bytes into
-     * @param offset the offset of the byte array to start copying
-     * @param length the number of bytes to copy
-     * @return the number of bytes copied
-     */
-    public int consumeInto(byte[] bytes, int offset, int length)
-    {
-        int read = readInto(bytes, offset, length);
         consume(read);
         return read;
     }
@@ -248,6 +246,6 @@ public abstract class DataInfo extends Info
     @Override
     public String toString()
     {
-        return String.format("DATA @%x available=%d consumed=%d close=%b", hashCode(), available(), consumed(), isClose());
+        return String.format("DATA @%x available=%d consumed=%d close=%b compress=%b", hashCode(), available(), consumed(), isClose(), isCompress());
     }
 }

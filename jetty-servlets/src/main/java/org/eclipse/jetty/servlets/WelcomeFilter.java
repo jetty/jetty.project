@@ -17,7 +17,6 @@
 //
 
 package org.eclipse.jetty.servlets;
-
 import java.io.IOException;
 
 import javax.servlet.Filter;
@@ -30,10 +29,10 @@ import javax.servlet.http.HttpServletRequest;
 
 /* ------------------------------------------------------------ */
 /** Welcome Filter
- * This filter can be used to server an index file for a directory
+ * This filter can be used to server an index file for a directory 
  * when no index file actually exists (thus the web.xml mechanism does
  * not work).
- *
+ * 
  * This filter will dispatch requests to a directory (URLs ending with /)
  * to the welcome URL determined by the "welcome" init parameter.  So if
  * the filter "welcome" init parameter is set to "index.do" then a request
@@ -45,7 +44,7 @@ import javax.servlet.http.HttpServletRequest;
 public  class WelcomeFilter implements Filter
 {
     private String welcome;
-
+    
     public void init(FilterConfig filterConfig)
     {
         welcome=filterConfig.getInitParameter("welcome");

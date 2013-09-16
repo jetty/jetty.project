@@ -39,9 +39,9 @@ import org.eclipse.jetty.util.security.Password;
 
 /**
  * MailSessionReference
- *
+ * 
  * This is a subclass of javax.mail.Reference and an ObjectFactory for javax.mail.Session objects.
- *
+ * 
  * The subclassing of Reference allows all of the setup for a javax.mail.Session
  * to be captured without necessitating first instantiating a Session object. The
  * reference is bound into JNDI and it is only when the reference is looked up that
@@ -51,7 +51,7 @@ import org.eclipse.jetty.util.security.Password;
  */
 public class MailSessionReference extends Reference implements ObjectFactory
 {
-
+ 
 
     public static class PasswordAuthenticator extends Authenticator
     {
@@ -61,9 +61,9 @@ public class MailSessionReference extends Reference implements ObjectFactory
 
         public PasswordAuthenticator()
         {
-
+            
         }
-
+        
         public PasswordAuthenticator(String user, String password)
         {
             passwordAuthentication = new PasswordAuthentication (user, (password.startsWith(Password.__OBFUSCATE)?Password.deobfuscate(password):password));
@@ -73,7 +73,7 @@ public class MailSessionReference extends Reference implements ObjectFactory
         {
             return passwordAuthentication;
         }
-
+        
         public void setUser (String user)
         {
             this.user = user;
@@ -82,7 +82,7 @@ public class MailSessionReference extends Reference implements ObjectFactory
         {
             return this.user;
         }
-
+        
         public String getPassword ()
         {
             return this.password;
@@ -93,23 +93,23 @@ public class MailSessionReference extends Reference implements ObjectFactory
             this.password = password;
         }
 
-
+       
     };
+    
+    
+  
 
-
-
-
-
+    
     /**
-     *
+     * 
      */
     public MailSessionReference()
     {
-       super ("javax.mail.Session", MailSessionReference.class.getName(), null);
+       super ("javax.mail.Session", MailSessionReference.class.getName(), null); 
     }
 
 
-    /**
+    /** 
      * Create a javax.mail.Session instance based on the information passed in the Reference
      * @see javax.naming.spi.ObjectFactory#getObjectInstance(java.lang.Object, javax.naming.Name, javax.naming.Context, java.util.Hashtable)
      * @param ref the Reference
@@ -123,19 +123,19 @@ public class MailSessionReference extends Reference implements ObjectFactory
     {
         if (ref == null)
         return null;
-
+        
         Reference reference = (Reference)ref;
-
+        
 
         Properties props = new Properties();
         String user = null;
         String password = null;
-
+        
         Enumeration refs = reference.getAll();
         while (refs.hasMoreElements())
         {
             RefAddr refAddr = (RefAddr)refs.nextElement();
-            String name = refAddr.getType();
+            String name = refAddr.getType();           
             String value =  (String)refAddr.getContent();
             if (name.equalsIgnoreCase("user"))
                 user = value;
@@ -150,8 +150,8 @@ public class MailSessionReference extends Reference implements ObjectFactory
         else
             return Session.getInstance(props, new PasswordAuthenticator(user, password));
     }
-
-
+    
+    
     public void setUser (String user)
     {
        StringRefAddr addr =  (StringRefAddr)get("user");
@@ -161,7 +161,7 @@ public class MailSessionReference extends Reference implements ObjectFactory
        }
        add(new StringRefAddr("user", user));
     }
-
+    
     public void setPassword (String password)
     {
         StringRefAddr addr = (StringRefAddr)get("pwd");
@@ -169,7 +169,7 @@ public class MailSessionReference extends Reference implements ObjectFactory
             throw new RuntimeException ("password already set on SessionReference, can't be changed");
         add(new StringRefAddr ("pwd", password));
     }
-
+    
     public void setProperties (Properties properties)
     {
         Iterator entries = properties.entrySet().iterator();
@@ -182,7 +182,7 @@ public class MailSessionReference extends Reference implements ObjectFactory
             add(new StringRefAddr((String)e.getKey(), (String)e.getValue()));
         }
     }
-
-
-
+    
+  
+    
 }

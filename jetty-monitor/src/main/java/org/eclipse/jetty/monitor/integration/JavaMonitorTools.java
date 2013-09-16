@@ -27,9 +27,6 @@ import java.security.Security;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.annotation.ManagedOperation;
-
 /* ------------------------------------------------------------ */
 /**
  * Derived from the JMX bean classes created by Kees Jan Koster for the java-monitor
@@ -37,7 +34,6 @@ import org.eclipse.jetty.util.annotation.ManagedOperation;
  * 
  * @author kjkoster <kjkoster@gmail.com>
  */
-@ManagedObject("Java Monitoring Tools")
 public class JavaMonitorTools
 {
     private static final ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
@@ -82,7 +78,7 @@ public class JavaMonitorTools
         final ThreadInfo[] threads = threadMXBean.getThreadInfo(threadIds,Integer.MAX_VALUE);
         return threads;
     }
-    @ManagedOperation(value="Detailed report on the deadlocked threads.", impact="ACTION_INFO")
+
     public String getDeadlockStacktraces()
     {
         try
@@ -138,7 +134,6 @@ public class JavaMonitorTools
 
     private final Map<Thread.State, Integer> states = new HashMap<Thread.State, Integer>();
 
-    @ManagedOperation(value="Number of Blocked Threads")
     public int getThreadsBlocked()
     {
         sampleThreads();
@@ -146,15 +141,13 @@ public class JavaMonitorTools
         return states.get(Thread.State.BLOCKED);
     }
 
-    @ManagedOperation(value="Number of New Threads", impact="ACTION_INFO")
     public int getThreadsNew()
     {
         sampleThreads();
 
         return states.get(Thread.State.NEW);
     }
-    
-    @ManagedOperation(value="Number of Terminated Threads", impact="ACTION_INFO")
+
     public int getThreadsTerminated()
     {
         sampleThreads();
@@ -162,7 +155,6 @@ public class JavaMonitorTools
         return states.get(Thread.State.TERMINATED);
     }
 
-    @ManagedOperation(value="Number of Sleeping and Waiting threads")
     public int getThreadsTimedWaiting()
     {
         sampleThreads();
@@ -170,7 +162,6 @@ public class JavaMonitorTools
         return states.get(Thread.State.TIMED_WAITING);
     }
 
-    @ManagedOperation(value="Number of Waiting Threads", impact="ACTION_INFO")
     public int getThreadsWaiting()
     {
         sampleThreads();
@@ -178,7 +169,6 @@ public class JavaMonitorTools
         return states.get(Thread.State.WAITING);
     }
 
-    @ManagedOperation(value="Number of Runnable Threads", impact="ACTION_INFO")
     public int getThreadsRunnable()
     {
         sampleThreads();
@@ -213,7 +203,6 @@ public class JavaMonitorTools
 
     private static final String POLICY = "sun.net.InetAddressCachePolicy";
 
-    @ManagedOperation(value="Amount of time successful DNS queries are cached for.")
     public int getCacheSeconds() throws ClassNotFoundException,
             IllegalAccessException, InvocationTargetException,
             NoSuchMethodException {
@@ -225,7 +214,6 @@ public class JavaMonitorTools
         return seconds.intValue();
     }
 
-    @ManagedOperation(value="Amount of time failed DNS queries are cached for")
     public int getCacheNegativeSeconds() throws ClassNotFoundException,
             IllegalAccessException, InvocationTargetException,
             NoSuchMethodException {
@@ -253,7 +241,6 @@ public class JavaMonitorTools
 
     private static final String SYSTEM_NEGATIVE_TTL = "sun.net.inetaddr.negative.ttl";
 
-    @ManagedOperation(value="Cache policy for successful DNS lookups was changed from the hard-coded default")
     public String getCacheTweakedFrom() {
         if (Security.getProperty(SECURITY_TTL) != null) {
             if (System.getProperty(SYSTEM_TTL) != null) {
@@ -270,7 +257,6 @@ public class JavaMonitorTools
         return DEFAULT;
     }
 
-    @ManagedOperation(value="Cache policy for failed DNS lookups was changed from the hard-coded default")
     public String getCacheNegativeTweakedFrom() {
         if (Security.getProperty(SECURITY_NEGATIVE_TTL) != null) {
             if (System.getProperty(SYSTEM_NEGATIVE_TTL) != null) {

@@ -19,7 +19,6 @@
 package org.eclipse.jetty.osgi.boot.utils;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.URL;
 import java.util.Enumeration;
 
@@ -27,9 +26,6 @@ import org.eclipse.jetty.osgi.boot.utils.internal.DefaultFileLocatorHelper;
 import org.osgi.framework.Bundle;
 
 /**
- * BundleFileLocatorHelper
- * 
- * 
  * From a bundle to its location on the filesystem. Assumes the bundle is not a
  * jar.
  * 
@@ -104,7 +100,7 @@ public interface BundleFileLocatorHelper
      * 
      * @return a URL to the bundle entry that uses a common protocol
      */
-    public URL getLocalURL(URL url) throws Exception;
+    public URL getLocalURL(URL url);
     
     /**
      * Only useful for equinox: on felix we get the file:// url already. Other
@@ -117,9 +113,7 @@ public interface BundleFileLocatorHelper
      * @return a URL to the content of the bundle entry that uses the file:
      *         protocol
      *         </p>
-     * @throws IOException 
-     * @throws Exception 
      */
-    public URL getFileURL(URL url) throws Exception;
+    public URL getFileURL(URL url);
 
 }

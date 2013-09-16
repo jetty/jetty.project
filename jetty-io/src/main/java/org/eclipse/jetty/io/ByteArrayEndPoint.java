@@ -19,33 +19,24 @@
 package org.eclipse.jetty.io;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
-import java.nio.charset.Charset;
 
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.Scheduler;
 
 
 /* ------------------------------------------------------------ */
 /** ByteArrayEndPoint.
  *
+ *
  */
-public class ByteArrayEndPoint extends AbstractEndPoint
+public class ByteArrayEndPoint implements ConnectedEndPoint
 {
-    static final Logger LOG = Log.getLogger(ByteArrayEndPoint.class);
-    public final static InetSocketAddress NOIP=new InetSocketAddress(0);
-
-    protected ByteBuffer _in;
-    protected ByteBuffer _out;
-    protected boolean _ishut;
-    protected boolean _oshut;
+    protected byte[] _inBytes;
+    protected ByteArrayBuffer _in;
+    protected ByteArrayBuffer _out;
     protected boolean _closed;
+    protected boolean _nonBlocking;
     protected boolean _growOutput;
+    protected Connection _connection;
+    protected int _maxIdleTime;
 
 
     /* ------------------------------------------------------------ */
@@ -54,7 +45,42 @@ public class ByteArrayEndPoint extends AbstractEndPoint
      */
     public ByteArrayEndPoint()
     {
-        this(null,0,null,null);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.io.ConnectedEndPoint#getConnection()
+     */
+    public Connection getConnection()
+    {
+        return _connection;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.io.ConnectedEndPoint#setConnection(org.eclipse.jetty.io.Connection)
+     */
+    public void setConnection(Connection connection)
+    {
+        _connection=connection;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return the nonBlocking
+     */
+    public boolean isNonBlocking()
+    {
+        return _nonBlocking;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param nonBlocking the nonBlocking to set
+     */
+    public void setNonBlocking(boolean nonBlocking)
+    {
+        _nonBlocking=nonBlocking;
     }
 
     /* ------------------------------------------------------------ */
@@ -63,178 +89,48 @@ public class ByteArrayEndPoint extends AbstractEndPoint
      */
     public ByteArrayEndPoint(byte[] input, int outputSize)
     {
-        this(null,0,input!=null?BufferUtil.toBuffer(input):null,BufferUtil.allocate(outputSize));
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     *
-     */
-    public ByteArrayEndPoint(String input, int outputSize)
-    {
-        this(null,0,input!=null?BufferUtil.toBuffer(input):null,BufferUtil.allocate(outputSize));
-    }
-
-    /* ------------------------------------------------------------ */
-    public ByteArrayEndPoint(Scheduler scheduler, long idleTimeoutMs)
-    {
-        this(scheduler,idleTimeoutMs,null,null);
-    }
-
-    /* ------------------------------------------------------------ */
-    public ByteArrayEndPoint(Scheduler timer, long idleTimeoutMs, byte[] input, int outputSize)
-    {
-        this(timer,idleTimeoutMs,input!=null?BufferUtil.toBuffer(input):null,BufferUtil.allocate(outputSize));
-    }
-
-    /* ------------------------------------------------------------ */
-    public ByteArrayEndPoint(Scheduler timer, long idleTimeoutMs, String input, int outputSize)
-    {
-        this(timer,idleTimeoutMs,input!=null?BufferUtil.toBuffer(input):null,BufferUtil.allocate(outputSize));
-    }
-
-    /* ------------------------------------------------------------ */
-    public ByteArrayEndPoint(Scheduler timer, long idleTimeoutMs, ByteBuffer input, ByteBuffer output)
-    {
-        super(timer,NOIP,NOIP);
-        _in=input==null?BufferUtil.EMPTY_BUFFER:input;
-        _out=output==null?BufferUtil.allocate(1024):output;
-        setIdleTimeout(idleTimeoutMs);
-    }
-
-
-
-
-
-    /* ------------------------------------------------------------ */
-    @Override
-    protected void onIncompleteFlush()
-    {
-        // Don't need to do anything here as takeOutput does the signalling.
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    protected boolean needsFill() throws IOException
-    {
-        if (_closed)
-            throw new ClosedChannelException();
-        return _in == null || BufferUtil.hasContent(_in);
+        _inBytes=input;
+        _in=new ByteArrayBuffer(input);
+        _out=new ByteArrayBuffer(outputSize);
     }
 
     /* ------------------------------------------------------------ */
     /**
      * @return Returns the in.
      */
-    public ByteBuffer getIn()
+    public ByteArrayBuffer getIn()
     {
         return _in;
     }
-
-    /* ------------------------------------------------------------ */
-    /**
-     */
-    public void setInputEOF()
-    {
-        _in = null;
-    }
-
     /* ------------------------------------------------------------ */
     /**
      * @param in The in to set.
      */
-    public void setInput(ByteBuffer in)
+    public void setIn(ByteArrayBuffer in)
     {
         _in = in;
-        if (in == null || BufferUtil.hasContent(in))
-            getFillInterest().fillable();
     }
-
-    /* ------------------------------------------------------------ */
-    public void setInput(String s)
-    {
-        setInput(BufferUtil.toBuffer(s,StringUtil.__UTF8_CHARSET));
-    }
-
-    /* ------------------------------------------------------------ */
-    public void setInput(String s,Charset charset)
-    {
-        setInput(BufferUtil.toBuffer(s,charset));
-    }
-
     /* ------------------------------------------------------------ */
     /**
      * @return Returns the out.
      */
-    public ByteBuffer getOutput()
+    public ByteArrayBuffer getOut()
     {
         return _out;
     }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @return Returns the out.
-     */
-    public String getOutputString()
-    {
-        return getOutputString(StringUtil.__UTF8_CHARSET);
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @return Returns the out.
-     */
-    public String getOutputString(Charset charset)
-    {
-        return BufferUtil.toString(_out,charset);
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @return Returns the out.
-     */
-    public ByteBuffer takeOutput()
-    {
-        ByteBuffer b=_out;
-        _out=BufferUtil.allocate(b.capacity());
-        getWriteFlusher().completeWrite();
-        return b;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @return Returns the out.
-     */
-    public String takeOutputString()
-    {
-        return takeOutputString(StringUtil.__UTF8_CHARSET);
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @return Returns the out.
-     */
-    public String takeOutputString(Charset charset)
-    {
-        ByteBuffer buffer=takeOutput();
-        return BufferUtil.toString(buffer,charset);
-    }
-
     /* ------------------------------------------------------------ */
     /**
      * @param out The out to set.
      */
-    public void setOutput(ByteBuffer out)
+    public void setOut(ByteArrayBuffer out)
     {
         _out = out;
-        getWriteFlusher().completeWrite();
     }
 
     /* ------------------------------------------------------------ */
     /*
      * @see org.eclipse.io.EndPoint#isOpen()
      */
-    @Override
     public boolean isOpen()
     {
         return !_closed;
@@ -242,122 +138,152 @@ public class ByteArrayEndPoint extends AbstractEndPoint
 
     /* ------------------------------------------------------------ */
     /*
+     *  @see org.eclipse.jetty.io.EndPoint#isInputShutdown()
      */
-    @Override
     public boolean isInputShutdown()
     {
-        return _ishut||_closed;
+        return _closed;
     }
 
     /* ------------------------------------------------------------ */
     /*
+     *  @see org.eclipse.jetty.io.EndPoint#isOutputShutdown()
      */
-    @Override
     public boolean isOutputShutdown()
     {
-        return _oshut||_closed;
+        return _closed;
     }
 
     /* ------------------------------------------------------------ */
-    private void shutdownInput()
+    /*
+     * @see org.eclipse.io.EndPoint#isBlocking()
+     */
+    public boolean isBlocking()
     {
-        _ishut=true;
-        if (_oshut)
-            close();
+        return !_nonBlocking;
+    }
+
+    /* ------------------------------------------------------------ */
+    public boolean blockReadable(long millisecs)
+    {
+        return true;
+    }
+
+    /* ------------------------------------------------------------ */
+    public boolean blockWritable(long millisecs)
+    {
+        return true;
     }
 
     /* ------------------------------------------------------------ */
     /*
      * @see org.eclipse.io.EndPoint#shutdownOutput()
      */
-    @Override
-    public void shutdownOutput()
+    public void shutdownOutput() throws IOException
     {
-        _oshut=true;
-        if (_ishut)
-            close();
+        close();
+    }
+
+    /* ------------------------------------------------------------ */
+    /*
+     * @see org.eclipse.io.EndPoint#shutdownInput()
+     */
+    public void shutdownInput() throws IOException
+    {
+        close();
     }
 
     /* ------------------------------------------------------------ */
     /*
      * @see org.eclipse.io.EndPoint#close()
      */
-    @Override
-    public void close()
+    public void close() throws IOException
     {
         _closed=true;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @return <code>true</code> if there are bytes remaining to be read from the encoded input
-     */
-    public boolean hasMore()
-    {
-        return getOutput().position()>0;
     }
 
     /* ------------------------------------------------------------ */
     /*
      * @see org.eclipse.io.EndPoint#fill(org.eclipse.io.Buffer)
      */
-    @Override
-    public int fill(ByteBuffer buffer) throws IOException
+    public int fill(Buffer buffer) throws IOException
     {
         if (_closed)
-            throw new EofException("CLOSED");
-        if (_in==null)
-            shutdownInput();
-        if (_ishut)
-            return -1;
-        int filled=BufferUtil.flipPutFlip(_in,buffer);
-        if (filled>0)
-            notIdle();
-        return filled;
+            throw new IOException("CLOSED");
+
+        if (_in!=null && _in.length()>0)
+        {
+            int len = buffer.put(_in);
+            _in.skip(len);
+            return len;
+        }
+
+        if (_in!=null && _in.length()==0 && _nonBlocking)
+            return 0;
+
+        close();
+        return -1;
+    }
+
+    /* ------------------------------------------------------------ */
+    /*
+     * @see org.eclipse.io.EndPoint#flush(org.eclipse.io.Buffer)
+     */
+    public int flush(Buffer buffer) throws IOException
+    {
+        if (_closed)
+            throw new IOException("CLOSED");
+        if (_growOutput && buffer.length()>_out.space())
+        {
+            _out.compact();
+
+            if (buffer.length()>_out.space())
+            {
+                ByteArrayBuffer n = new ByteArrayBuffer(_out.putIndex()+buffer.length());
+
+                n.put(_out.peek(0,_out.putIndex()));
+                if (_out.getIndex()>0)
+                {
+                    n.mark();
+                    n.setGetIndex(_out.getIndex());
+                }
+                _out=n;
+            }
+        }
+        int len = _out.put(buffer);
+        if (!buffer.isImmutable())
+            buffer.skip(len);
+        return len;
     }
 
     /* ------------------------------------------------------------ */
     /*
      * @see org.eclipse.io.EndPoint#flush(org.eclipse.io.Buffer, org.eclipse.io.Buffer, org.eclipse.io.Buffer)
      */
-    @Override
-    public boolean flush(ByteBuffer... buffers) throws IOException
+    public int flush(Buffer header, Buffer buffer, Buffer trailer) throws IOException
     {
         if (_closed)
             throw new IOException("CLOSED");
-        if (_oshut)
-            throw new IOException("OSHUT");
 
-        boolean flushed=true;
-        boolean idle=true;
+        int flushed=0;
 
-        for (ByteBuffer b : buffers)
+        if (header!=null && header.length()>0)
+            flushed=flush(header);
+
+        if (header==null || header.length()==0)
         {
-            if (BufferUtil.hasContent(b))
+            if (buffer!=null && buffer.length()>0)
+                flushed+=flush(buffer);
+
+            if (buffer==null || buffer.length()==0)
             {
-                if (_growOutput && b.remaining()>BufferUtil.space(_out))
+                if (trailer!=null && trailer.length()>0)
                 {
-                    BufferUtil.compact(_out);
-                    if (b.remaining()>BufferUtil.space(_out))
-                    {
-                        ByteBuffer n = BufferUtil.allocate(_out.capacity()+b.remaining()*2);
-                        BufferUtil.flipPutFlip(_out,n);
-                        _out=n;
-                    }
-                }
-
-                if (BufferUtil.flipPutFlip(b,_out)>0)
-                    idle=false;
-
-                if (BufferUtil.hasContent(b))
-                {
-                    flushed=false;
-                    break;
+                    flushed+=flush(trailer);
                 }
             }
         }
-        if (!idle)
-            notIdle();
+
         return flushed;
     }
 
@@ -367,25 +293,81 @@ public class ByteArrayEndPoint extends AbstractEndPoint
      */
     public void reset()
     {
-        getFillInterest().onClose();
-        getWriteFlusher().onClose();
-        _ishut=false;
-        _oshut=false;
         _closed=false;
-        _in=null;
-        BufferUtil.clear(_out);
+        _in.clear();
+        _out.clear();
+        if (_inBytes!=null)
+            _in.setPutIndex(_inBytes.length);
+    }
+
+    /* ------------------------------------------------------------ */
+    /*
+     * @see org.eclipse.io.EndPoint#getLocalAddr()
+     */
+    public String getLocalAddr()
+    {
+        return null;
+    }
+
+    /* ------------------------------------------------------------ */
+    /*
+     * @see org.eclipse.io.EndPoint#getLocalHost()
+     */
+    public String getLocalHost()
+    {
+        return null;
+    }
+
+    /* ------------------------------------------------------------ */
+    /*
+     * @see org.eclipse.io.EndPoint#getLocalPort()
+     */
+    public int getLocalPort()
+    {
+        return 0;
+    }
+
+    /* ------------------------------------------------------------ */
+    /*
+     * @see org.eclipse.io.EndPoint#getRemoteAddr()
+     */
+    public String getRemoteAddr()
+    {
+        return null;
+    }
+
+    /* ------------------------------------------------------------ */
+    /*
+     * @see org.eclipse.io.EndPoint#getRemoteHost()
+     */
+    public String getRemoteHost()
+    {
+        return null;
+    }
+
+    /* ------------------------------------------------------------ */
+    /*
+     * @see org.eclipse.io.EndPoint#getRemotePort()
+     */
+    public int getRemotePort()
+    {
+        return 0;
     }
 
     /* ------------------------------------------------------------ */
     /*
      * @see org.eclipse.io.EndPoint#getConnection()
      */
-    @Override
     public Object getTransport()
     {
-        return null;
+        return _inBytes;
     }
 
+    /* ------------------------------------------------------------ */
+    public void flush() throws IOException
+    {
+    }
+    
     /* ------------------------------------------------------------ */
     /**
      * @return the growOutput
@@ -402,6 +384,24 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     public void setGrowOutput(boolean growOutput)
     {
         _growOutput=growOutput;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.io.EndPoint#getMaxIdleTime()
+     */
+    public int getMaxIdleTime()
+    {
+        return _maxIdleTime;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.io.EndPoint#setMaxIdleTime(int)
+     */
+    public void setMaxIdleTime(int timeMs) throws IOException
+    {
+        _maxIdleTime=timeMs;
     }
 
 

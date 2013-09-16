@@ -20,9 +20,11 @@ package org.eclipse.jetty.http;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
 
+import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteArrayBuffer;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 
 /* ------------------------------------------------------------ */
@@ -32,146 +34,134 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public interface HttpContent
 {
-    String getContentType();
-    String getLastModified();
-    ByteBuffer getIndirectBuffer();
-    ByteBuffer getDirectBuffer();
-    String getETag();
+    Buffer getContentType();
+    Buffer getLastModified();
+    Buffer getIndirectBuffer();
+    Buffer getDirectBuffer();
+    Buffer getETag();
     Resource getResource();
     long getContentLength();
     InputStream getInputStream() throws IOException;
-    ReadableByteChannel getReadableByteChannel() throws IOException;
     void release();
-
+    
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     public class ResourceAsHttpContent implements HttpContent
     {
+        private static final Logger LOG = Log.getLogger(ResourceAsHttpContent.class);
+        
         final Resource _resource;
-        final String _mimeType;
+        final Buffer _mimeType;
         final int _maxBuffer;
-        final String _etag;
+        final Buffer _etag;
 
         /* ------------------------------------------------------------ */
-        public ResourceAsHttpContent(final Resource resource, final String mimeType)
+        public ResourceAsHttpContent(final Resource resource, final Buffer mimeType)
         {
             this(resource,mimeType,-1,false);
         }
 
         /* ------------------------------------------------------------ */
-        public ResourceAsHttpContent(final Resource resource, final String mimeType, int maxBuffer)
+        public ResourceAsHttpContent(final Resource resource, final Buffer mimeType, int maxBuffer)
         {
             this(resource,mimeType,maxBuffer,false);
         }
 
         /* ------------------------------------------------------------ */
-        public ResourceAsHttpContent(final Resource resource, final String mimeType, boolean etag)
+        public ResourceAsHttpContent(final Resource resource, final Buffer mimeType, boolean etag)
         {
             this(resource,mimeType,-1,etag);
         }
 
         /* ------------------------------------------------------------ */
-        public ResourceAsHttpContent(final Resource resource, final String mimeType, int maxBuffer, boolean etag)
+        public ResourceAsHttpContent(final Resource resource, final Buffer mimeType, int maxBuffer, boolean etag)
         {
             _resource=resource;
             _mimeType=mimeType;
             _maxBuffer=maxBuffer;
-            _etag=etag?resource.getWeakETag():null;
+            _etag=etag?new ByteArrayBuffer(resource.getWeakETag()):null;
         }
 
         /* ------------------------------------------------------------ */
-        @Override
-        public String getContentType()
+        public Buffer getContentType()
         {
             return _mimeType;
         }
 
         /* ------------------------------------------------------------ */
-        @Override
-        public String getLastModified()
+        public Buffer getLastModified()
         {
             return null;
         }
 
         /* ------------------------------------------------------------ */
-        @Override
-        public ByteBuffer getDirectBuffer()
+        public Buffer getDirectBuffer()
         {
             return null;
         }
         
         /* ------------------------------------------------------------ */
-        @Override
-        public String getETag()
+        public Buffer getETag()
         {
             return _etag;
         }
 
         /* ------------------------------------------------------------ */
-        @Override
-        public ByteBuffer getIndirectBuffer()
+        public Buffer getIndirectBuffer()
         {
-            if (_resource.length()<=0 || _maxBuffer<_resource.length())
-                return null;
-            int length=(int)_resource.length();
-            byte[] array = new byte[length];
-
-            int offset=0;
-            try (InputStream in=_resource.getInputStream())
+            InputStream inputStream = null;
+            try
             {
-                do
-                {
-                    int filled=in.read(array,offset,length);
-                    if (filled<0)
-                        break;
-                    length-=filled;
-                    offset+=filled;
-                }
-                while(length>0);
-
-                ByteBuffer buffer = ByteBuffer.wrap(array);
+                if (_resource.length() <= 0 || _maxBuffer < _resource.length())
+                    return null;
+                ByteArrayBuffer buffer = new ByteArrayBuffer((int)_resource.length());
+                inputStream = _resource.getInputStream();
+                buffer.readFrom(inputStream,(int)_resource.length());
                 return buffer;
             }
-            catch(IOException e)
+            catch (IOException e)
             {
                 throw new RuntimeException(e);
+            }
+            finally
+            {
+                if (inputStream != null)
+                {
+                    try
+                    {
+                        inputStream.close();
+                    }
+                    catch (IOException e)
+                    {
+                        LOG.warn("Couldn't close inputStream. Possible file handle leak",e);
+                    }
+                }
             }
         }
 
         /* ------------------------------------------------------------ */
-        @Override
         public long getContentLength()
         {
             return _resource.length();
         }
 
         /* ------------------------------------------------------------ */
-        @Override
         public InputStream getInputStream() throws IOException
         {
             return _resource.getInputStream();
         }
-        
-        /* ------------------------------------------------------------ */
-        @Override
-        public ReadableByteChannel getReadableByteChannel() throws IOException
-        {
-            return _resource.getReadableByteChannel();
-        }
 
         /* ------------------------------------------------------------ */
-        @Override
         public Resource getResource()
         {
             return _resource;
         }
 
         /* ------------------------------------------------------------ */
-        @Override
         public void release()
         {
-            _resource.close();
+            _resource.release();
         }
     }
 }

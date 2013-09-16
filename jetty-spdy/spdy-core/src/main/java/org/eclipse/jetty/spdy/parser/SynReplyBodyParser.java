@@ -21,15 +21,15 @@ package org.eclipse.jetty.spdy.parser;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.spdy.CompressionFactory;
+import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.frames.ControlFrameType;
 import org.eclipse.jetty.spdy.frames.SynReplyFrame;
-import org.eclipse.jetty.util.Fields;
 
 public class SynReplyBodyParser extends ControlFrameBodyParser
 {
-    private final Fields headers = new Fields();
+    private final Headers headers = new Headers();
     private final ControlFrameParser controlFrameParser;
     private final HeadersBlockParser headersBlockParser;
     private State state = State.STREAM_ID;
@@ -124,7 +124,7 @@ public class SynReplyBodyParser extends ControlFrameBodyParser
                         if (flags != 0 && flags != ReplyInfo.FLAG_CLOSE)
                             throw new IllegalArgumentException("Invalid flag " + flags + " for frame " + ControlFrameType.SYN_REPLY);
 
-                        SynReplyFrame frame = new SynReplyFrame(version, flags, streamId, new Fields(headers, true));
+                        SynReplyFrame frame = new SynReplyFrame(version, flags, streamId, new Headers(headers, true));
                         controlFrameParser.onControlFrame(frame);
 
                         reset();

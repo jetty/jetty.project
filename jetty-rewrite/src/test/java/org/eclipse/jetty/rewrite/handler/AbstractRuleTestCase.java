@@ -18,30 +18,24 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
-import java.io.IOException;
-import java.util.concurrent.CountDownLatch;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
+import org.eclipse.jetty.io.bio.StringEndPoint;
+import org.eclipse.jetty.server.BlockingHttpConnection;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.After;
 
 public abstract class AbstractRuleTestCase
 {
     protected Server _server = new Server();
     protected LocalConnector _connector;
-    protected volatile Request _request;
-    protected volatile Response _response;
-    protected volatile CountDownLatch _latch;
+    protected StringEndPoint _endpoint = new StringEndPoint();
+    protected AbstractHttpConnection _connection;
+    protected Request _request;
+    protected Response _response;
     protected boolean _isSecure = false;
 
     @After
@@ -52,65 +46,31 @@ public abstract class AbstractRuleTestCase
 
     protected void start(final boolean isSecure) throws Exception
     {
-        _connector = new LocalConnector(_server);
-        _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().addCustomizer(new HttpConfiguration.Customizer()
+        _connector = new LocalConnector()
         {
-            @Override
-            public void customize(Connector connector, HttpConfiguration channelConfig, Request request)
+            public boolean isConfidential(Request request)
             {
-                request.setSecure(isSecure);
+                return isSecure;
             }
-        });
+        };
         _server.setConnectors(new Connector[]{_connector});
-        
-
-        _server.setHandler(new AbstractHandler()
-        {
-            @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-            {
-                _request=baseRequest;
-                _response=_request.getResponse();
-                try
-                {
-                    _latch.await();
-                }
-                catch (InterruptedException e)
-                {
-                    throw new ServletException(e);
-                }
-            }
-        });
-
         _server.start();
-
-        _latch=new CountDownLatch(1);
-        _connector.executeRequest("GET / HTTP/1.0\n\n");
-        
-        while (_response==null)
-            Thread.sleep(1);
+        reset();
     }
 
-    protected void reset()
-    {
-        if (_latch!=null)
-            _latch.countDown();
-        _request = null;
-        _response = null;
-        _latch=new CountDownLatch(1);
-        _connector.executeRequest("GET / HTTP/1.0\n\n");
-        
-        while (_response==null)
-            Thread.yield();
-    }
-    
     protected void stop() throws Exception
     {
-        _latch.countDown();
         _server.stop();
         _server.join();
         _request = null;
         _response = null;
     }
 
+    protected void reset()
+    {
+        _connection = new BlockingHttpConnection(_connector, _endpoint, _server);
+        _request = new Request(_connection);
+        _response = new Response(_connection);
+        _request.setRequestURI("/test/");
+    }
 }

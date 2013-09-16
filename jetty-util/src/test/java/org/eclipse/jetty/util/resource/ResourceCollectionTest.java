@@ -30,7 +30,7 @@ import org.junit.Test;
 
 public class ResourceCollectionTest
 {
-
+    
     @Test
     public void testMutlipleSources1() throws Exception
     {
@@ -41,9 +41,9 @@ public class ResourceCollectionTest
         });
         assertEquals("1 - one", getContent(rc1, "1.txt"));
         assertEquals("2 - two", getContent(rc1, "2.txt"));
-        assertEquals("3 - three", getContent(rc1, "3.txt"));
-
-
+        assertEquals("3 - three", getContent(rc1, "3.txt"));        
+        
+        
         ResourceCollection rc2 = new ResourceCollection(
                 "src/test/resources/org/eclipse/jetty/util/resource/one/," +
                 "src/test/resources/org/eclipse/jetty/util/resource/two/," +
@@ -52,9 +52,9 @@ public class ResourceCollectionTest
         assertEquals("1 - one", getContent(rc2, "1.txt"));
         assertEquals("2 - two", getContent(rc2, "2.txt"));
         assertEquals("3 - three", getContent(rc2, "3.txt"));
-
+             
     }
-
+    
     @Test
     public void testMergedDir() throws Exception
     {
@@ -63,15 +63,15 @@ public class ResourceCollectionTest
                 "src/test/resources/org/eclipse/jetty/util/resource/two/",
                 "src/test/resources/org/eclipse/jetty/util/resource/three/"
         });
-
+        
         Resource r = rc.addPath("dir");
         assertTrue(r instanceof ResourceCollection);
         rc=(ResourceCollection)r;
         assertEquals("1 - one", getContent(rc, "1.txt"));
         assertEquals("2 - two", getContent(rc, "2.txt"));
-        assertEquals("3 - three", getContent(rc, "3.txt"));
+        assertEquals("3 - three", getContent(rc, "3.txt"));  
     }
-
+    
     @Test
     public void testCopyTo() throws Exception
     {
@@ -80,36 +80,35 @@ public class ResourceCollectionTest
                 "src/test/resources/org/eclipse/jetty/util/resource/two/",
                 "src/test/resources/org/eclipse/jetty/util/resource/three/"
         });
-
+        
         File dest = File.createTempFile("copyto",null);
         if (dest.exists())
             dest.delete();
         dest.mkdir();
         dest.deleteOnExit();
         rc.copyTo(dest);
-
+        
         Resource r = Resource.newResource(dest.toURI());
         assertEquals("1 - one", getContent(r, "1.txt"));
         assertEquals("2 - two", getContent(r, "2.txt"));
-        assertEquals("3 - three", getContent(r, "3.txt"));
+        assertEquals("3 - three", getContent(r, "3.txt"));  
         r = r.addPath("dir");
         assertEquals("1 - one", getContent(r, "1.txt"));
         assertEquals("2 - two", getContent(r, "2.txt"));
-        assertEquals("3 - three", getContent(r, "3.txt"));
-
+        assertEquals("3 - three", getContent(r, "3.txt")); 
+        
         IO.delete(dest);
     }
-
+    
     static String getContent(Resource r, String path) throws Exception
     {
         StringBuilder buffer = new StringBuilder();
         String line = null;
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(r.addPath(path).getURL().openStream())))
-        {
-            while((line=br.readLine())!=null)
-                buffer.append(line);
-        }
+        BufferedReader br = new BufferedReader(new InputStreamReader(r.addPath(path).getURL().openStream()));
+        while((line=br.readLine())!=null)
+            buffer.append(line);
+        br.close();        
         return buffer.toString();
     }
-
+    
 }

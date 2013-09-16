@@ -68,13 +68,7 @@ public class ArrayQueue<E> extends AbstractList<E> implements Queue<E>
         _growCapacity = growBy;
         _elements = new Object[initCapacity];
     }
-    
-    /* ------------------------------------------------------------ */
-    public Object lock()
-    {
-        return _lock;
-    }
-    
+
     /* ------------------------------------------------------------ */
     public int getCapacity()
     {
@@ -140,7 +134,6 @@ public class ArrayQueue<E> extends AbstractList<E> implements Queue<E>
         }
     }
 
-    /* ------------------------------------------------------------ */
     @SuppressWarnings("unchecked")
     private E at(int index)
     {
@@ -152,18 +145,10 @@ public class ArrayQueue<E> extends AbstractList<E> implements Queue<E>
     {
         synchronized (_lock)
         {
-            if (_size == 0)
+            if (isEmpty())
                 return null;
             return at(_nextE);
         }
-    }
-
-    /* ------------------------------------------------------------ */
-    public E peekUnsafe()
-    {
-        if (_size == 0)
-            return null;
-        return at(_nextE);
     }
 
     /* ------------------------------------------------------------ */
@@ -175,14 +160,6 @@ public class ArrayQueue<E> extends AbstractList<E> implements Queue<E>
                 return null;
             return dequeue();
         }
-    }
-    
-    /* ------------------------------------------------------------ */
-    public E pollUnsafe()
-    {
-        if (_size == 0)
-            return null;
-        return dequeue();
     }
 
     /* ------------------------------------------------------------ */

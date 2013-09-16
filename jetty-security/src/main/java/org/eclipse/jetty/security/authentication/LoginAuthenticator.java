@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.security.authentication;
 
-import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
@@ -26,17 +25,10 @@ import javax.servlet.http.HttpSession;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.LoginService;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.server.UserIdentity;
-import org.eclipse.jetty.server.session.AbstractSession;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.server.session.AbstractSessionManager;
 
 public abstract class LoginAuthenticator implements Authenticator
 {
-    private static final Logger LOG = Log.getLogger(LoginAuthenticator.class);
-
     protected LoginService _loginService;
     protected IdentityService _identityService;
     private boolean _renewSession;
@@ -45,21 +37,6 @@ public abstract class LoginAuthenticator implements Authenticator
     {
     }
 
-
-    /* ------------------------------------------------------------ */
-    public UserIdentity login(String username, Object password, ServletRequest request)
-    {
-        UserIdentity user = _loginService.login(username,password);
-        if (user!=null)
-        {
-            renewSession((HttpServletRequest)request, (request instanceof Request? ((Request)request).getResponse() : null));
-            return user;
-        }
-        return null;
-    }
-
-
-    @Override
     public void setConfiguration(AuthConfiguration configuration)
     {
         _loginService=configuration.getLoginService();
@@ -70,12 +47,12 @@ public abstract class LoginAuthenticator implements Authenticator
             throw new IllegalStateException("No IdentityService for "+this+" in "+configuration);
         _renewSession=configuration.isSessionRenewedOnAuthentication();
     }
-
+    
     public LoginService getLoginService()
     {
         return _loginService;
     }
-
+    
     /** Change the session id.
      * The session is changed to a new instance with a new ID if and only if:<ul>
      * <li>A session exists.
@@ -89,30 +66,14 @@ public abstract class LoginAuthenticator implements Authenticator
     protected HttpSession renewSession(HttpServletRequest request, HttpServletResponse response)
     {
         HttpSession httpSession = request.getSession(false);
-
-        if (_renewSession && httpSession!=null)
+       
+        //if we should renew sessions, and there is an existing session that may have been seen by non-authenticated users
+        //(indicated by SESSION_SECURED not being set on the session) then we should change id
+        if (_renewSession && httpSession!=null && httpSession.getAttribute(AbstractSessionManager.SESSION_KNOWN_ONLY_TO_AUTHENTICATED)!=Boolean.TRUE)
         {
-            synchronized (httpSession)
+            synchronized (this)
             {
-                //if we should renew sessions, and there is an existing session that may have been seen by non-authenticated users
-                //(indicated by SESSION_SECURED not being set on the session) then we should change id
-                if (httpSession.getAttribute(AbstractSession.SESSION_KNOWN_ONLY_TO_AUTHENTICATED)!=Boolean.TRUE)
-                {
-                    if (httpSession instanceof AbstractSession)
-                    {
-                        AbstractSession abstractSession = (AbstractSession)httpSession;
-                        String oldId = abstractSession.getId();
-                        abstractSession.renewId(request);
-                        abstractSession.setAttribute(AbstractSession.SESSION_KNOWN_ONLY_TO_AUTHENTICATED, Boolean.TRUE);
-                        if (abstractSession.isIdChanged() && response != null && (response instanceof Response))
-                            ((Response)response).addCookie(abstractSession.getSessionManager().getSessionCookie(abstractSession, request.getContextPath(), request.isSecure()));
-                        LOG.debug("renew {}->{}",oldId,abstractSession.getId());
-                    }
-                    else
-                        LOG.warn("Unable to renew session "+httpSession);
-                    
-                    return httpSession;
-                }
+                httpSession = AbstractSessionManager.renewSession(request, httpSession,true);
             }
         }
         return httpSession;

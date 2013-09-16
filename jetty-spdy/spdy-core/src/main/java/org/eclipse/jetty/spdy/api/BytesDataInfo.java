@@ -19,7 +19,6 @@
 package org.eclipse.jetty.spdy.api;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.TimeUnit;
 
 /**
  * <p>Specialized {@link DataInfo} for byte array content.</p>
@@ -33,17 +32,12 @@ public class BytesDataInfo extends DataInfo
 
     public BytesDataInfo(byte[] bytes, boolean close)
     {
-        this(0, TimeUnit.SECONDS, bytes, close);
+        this(bytes, 0, bytes.length, close);
     }
 
-    public BytesDataInfo(long timeout, TimeUnit unit, byte[] bytes, boolean close)
+    public BytesDataInfo(byte[] bytes, int offset, int length, boolean close)
     {
-        this(timeout, unit, bytes, 0, bytes.length, close);
-    }
-
-    public BytesDataInfo(long timeout, TimeUnit unit, byte[] bytes, int offset, int length, boolean close)
-    {
-        super(timeout, unit, close);
+        super(close, false);
         this.bytes = bytes;
         this.offset = offset;
         this.length = length;
@@ -68,15 +62,6 @@ public class BytesDataInfo extends DataInfo
         int space = output.remaining();
         int chunk = Math.min(available(), space);
         output.put(bytes, index, chunk);
-        index += chunk;
-        return chunk;
-    }
-
-    @Override
-    public int readInto(byte[] bytes, int offset, int length)
-    {
-        int chunk = Math.min(available(), length);
-        System.arraycopy(this.bytes, index, bytes, offset, chunk);
         index += chunk;
         return chunk;
     }

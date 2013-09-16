@@ -101,7 +101,7 @@ public class MonitorTask extends TimerTask
         final long timestamp = System.currentTimeMillis();
         final EventTrigger trigger = _action.getTrigger();
 
-        _callback.execute(new Runnable() {
+        _callback.dispatch(new Runnable() {
             public void run()
             {
                 try

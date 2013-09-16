@@ -18,17 +18,12 @@
 
 package org.eclipse.jetty.jndi.java;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.HashMap;
 import java.util.Hashtable;
 
+import javax.naming.Binding;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.LinkRef;
@@ -44,12 +39,21 @@ import javax.naming.spi.ObjectFactory;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 
+import org.eclipse.jetty.jndi.ContextFactory;
 import org.eclipse.jetty.jndi.NamingContext;
+import org.eclipse.jetty.jndi.NamingUtil;
+import org.eclipse.jetty.jndi.local.localContextRoot;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
 /**
  *
  */
@@ -59,9 +63,9 @@ public class TestJNDI
 
     static
     {
-        // NamingUtil.__log.setDebugEnabled(true);
+        // NamingUtil.__log.setDebugEnabled(true);    
     }
-
+    
     public static class MyObjectFactory implements ObjectFactory
     {
         public static String myString = "xxx";
@@ -70,7 +74,7 @@ public class TestJNDI
         {
             return myString;
         }
-
+        
     }
     
     
@@ -133,7 +137,6 @@ public class TestJNDI
             });
             //Starting the context makes it current and creates a classloader for it
             ch.start();
-
             
             ch2.setContextPath("/ch2");
             ch2.addEventListener(new ServletContextListener()
@@ -439,7 +442,6 @@ public class TestJNDI
                 //expected failure to modify immutable context
             }
             
-
             initCtx.close();
         }
         finally

@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.servlets;
 
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -38,7 +37,6 @@ public class CloseableDoSFilterTest extends AbstractDoSFilterTest
 
     public static class CloseableDoSFilter2 extends CloseableDoSFilter
     {
-        @Override
         public void closeConnection(HttpServletRequest request, HttpServletResponse response, Thread thread)
         {
             try
@@ -52,11 +50,5 @@ public class CloseableDoSFilterTest extends AbstractDoSFilterTest
                 LOG.warn(e);
             }
         }
-    }
-
-    public void testUnresponsiveClient() throws Exception
-    {
-        // TODO work out why this intermittently fails
-    	LOG.warn("Ignored Closeable testUnresponsiveClient");
     }
 }

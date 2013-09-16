@@ -20,33 +20,29 @@ package org.eclipse.jetty.util.component;
 
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.eclipse.jetty.util.annotation.ManagedAttribute;
-import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
  * Basic implementation of the life cycle interface for components.
- *
- *
+ * 
+ * 
  */
-@ManagedObject("Abstract Implementation of LifeCycle")
 public abstract class AbstractLifeCycle implements LifeCycle
 {
     private static final Logger LOG = Log.getLogger(AbstractLifeCycle.class);
-
     public static final String STOPPED="STOPPED";
     public static final String FAILED="FAILED";
     public static final String STARTING="STARTING";
     public static final String STARTED="STARTED";
     public static final String STOPPING="STOPPING";
     public static final String RUNNING="RUNNING";
-
-    private final CopyOnWriteArrayList<LifeCycle.Listener> _listeners=new CopyOnWriteArrayList<LifeCycle.Listener>();
+    
     private final Object _lock = new Object();
     private final int __FAILED = -1, __STOPPED = 0, __STARTING = 1, __STARTED = 2, __STOPPING = 3;
     private volatile int _state = __STOPPED;
-    private long _stopTimeout = 30000;
+    
+    protected final CopyOnWriteArrayList<LifeCycle.Listener> _listeners=new CopyOnWriteArrayList<LifeCycle.Listener>();
 
     protected void doStart() throws Exception
     {
@@ -55,8 +51,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
     protected void doStop() throws Exception
     {
     }
-    
-    @Override
+
     public final void start() throws Exception
     {
         synchronized (_lock)
@@ -69,7 +64,12 @@ public abstract class AbstractLifeCycle implements LifeCycle
                 doStart();
                 setStarted();
             }
-            catch (Throwable e)
+            catch (Exception e)
+            {
+                setFailed(e);
+                throw e;
+            }
+            catch (Error e)
             {
                 setFailed(e);
                 throw e;
@@ -77,7 +77,6 @@ public abstract class AbstractLifeCycle implements LifeCycle
         }
     }
 
-    @Override
     public final void stop() throws Exception
     {
         synchronized (_lock)
@@ -90,7 +89,12 @@ public abstract class AbstractLifeCycle implements LifeCycle
                 doStop();
                 setStopped();
             }
-            catch (Throwable e)
+            catch (Exception e)
+            {
+                setFailed(e);
+                throw e;
+            }
+            catch (Error e)
             {
                 setFailed(e);
                 throw e;
@@ -98,57 +102,48 @@ public abstract class AbstractLifeCycle implements LifeCycle
         }
     }
 
-    @Override
     public boolean isRunning()
     {
         final int state = _state;
-
+        
         return state == __STARTED || state == __STARTING;
     }
 
-    @Override
     public boolean isStarted()
     {
         return _state == __STARTED;
     }
 
-    @Override
     public boolean isStarting()
     {
         return _state == __STARTING;
     }
 
-    @Override
     public boolean isStopping()
     {
         return _state == __STOPPING;
     }
 
-    @Override
     public boolean isStopped()
     {
         return _state == __STOPPED;
     }
 
-    @Override
     public boolean isFailed()
     {
         return _state == __FAILED;
     }
 
-    @Override
     public void addLifeCycleListener(LifeCycle.Listener listener)
     {
         _listeners.add(listener);
     }
 
-    @Override
     public void removeLifeCycleListener(LifeCycle.Listener listener)
     {
         _listeners.remove(listener);
     }
-
-    @ManagedAttribute(value="Lifecycle State for this instance", readonly=true)
+    
     public String getState()
     {
         switch(_state)
@@ -161,7 +156,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
         }
         return null;
     }
-
+    
     public static String getState(LifeCycle lc)
     {
         if (lc.isStarting()) return STARTING;
@@ -211,23 +206,12 @@ public abstract class AbstractLifeCycle implements LifeCycle
             listener.lifeCycleFailure(this,th);
     }
 
-    @ManagedAttribute(value="The stop timeout in milliseconds")
-    public long getStopTimeout()
-    {
-        return _stopTimeout;
-    }
-
-    public void setStopTimeout(long stopTimeout)
-    {
-        this._stopTimeout = stopTimeout;
-    }
-
     public static abstract class AbstractLifeCycleListener implements LifeCycle.Listener
     {
-        @Override public void lifeCycleFailure(LifeCycle event, Throwable cause) {}
-        @Override public void lifeCycleStarted(LifeCycle event) {}
-        @Override public void lifeCycleStarting(LifeCycle event) {}
-        @Override public void lifeCycleStopped(LifeCycle event) {}
-        @Override public void lifeCycleStopping(LifeCycle event) {}
+        public void lifeCycleFailure(LifeCycle event, Throwable cause) {}
+        public void lifeCycleStarted(LifeCycle event) {}
+        public void lifeCycleStarting(LifeCycle event) {}
+        public void lifeCycleStopped(LifeCycle event) {}
+        public void lifeCycleStopping(LifeCycle event) {}
     }
 }

@@ -20,11 +20,11 @@ package org.eclipse.jetty.spdy;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.spdy.api.Handler;
 
-public interface Controller
+public interface Controller<T>
 {
-    public void write(ByteBuffer buffer, Callback callback);
+    public int write(ByteBuffer buffer, Handler<T> handler, T context);
 
     public void close(boolean onlyOutput);
 }

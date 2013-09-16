@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 
-import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelperFactory;
+import org.eclipse.jetty.osgi.boot.internal.webapp.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.osgi.boot.utils.internal.PackageAdminServiceTracker;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -32,14 +32,6 @@ import org.eclipse.jetty.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.osgi.framework.Bundle;
 
-/**
- * OSGiMetaInfConfiguration
- *
- * Extension of standard Jetty MetaInfConfiguration class to handle OSGi bundle
- * fragments that may also need to be scanned for META-INF info.
- * 
- * @deprecated
- */
 public class OSGiMetaInfConfiguration extends MetaInfConfiguration
 {
     private static final Logger LOG = Log.getLogger(OSGiMetaInfConfiguration.class);

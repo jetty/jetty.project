@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.monitor.integration;
 
+import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 
 import org.eclipse.jetty.monitor.triggers.AttrEventTrigger;

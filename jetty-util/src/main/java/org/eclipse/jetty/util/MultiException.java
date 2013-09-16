@@ -17,22 +17,22 @@
 //
 
 package org.eclipse.jetty.util;
-
 import java.io.PrintStream;
 import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
-/** 
- * Wraps multiple exceptions.
+
+/* ------------------------------------------------------------ */
+/** Wraps multiple exceptions.
  *
  * Allows multiple exceptions to be thrown as a single exception.
+ *
+ * 
  */
 @SuppressWarnings("serial")
 public class MultiException extends Exception
 {
-    private List<Throwable> nested;
+    private Object nested;
 
     /* ------------------------------------------------------------ */
     public MultiException()
@@ -43,39 +43,32 @@ public class MultiException extends Exception
     /* ------------------------------------------------------------ */
     public void add(Throwable e)
     {
-        if(nested == null)
-        {
-            nested = new ArrayList<>();
-        }
-        
         if (e instanceof MultiException)
         {
             MultiException me = (MultiException)e;
-            nested.addAll(me.nested);
+            for (int i=0;i<LazyList.size(me.nested);i++)
+                nested=LazyList.add(nested,LazyList.get(me.nested,i));
         }
         else
-            nested.add(e);
+            nested=LazyList.add(nested,e);
     }
 
     /* ------------------------------------------------------------ */
     public int size()
     {
-        return (nested ==null)?0:nested.size();
+        return LazyList.size(nested);
     }
     
     /* ------------------------------------------------------------ */
     public List<Throwable> getThrowables()
     {
-        if(nested == null) {
-            return Collections.emptyList();
-        }
-        return nested;
+        return LazyList.getList(nested);
     }
     
     /* ------------------------------------------------------------ */
     public Throwable getThrowable(int i)
     {
-        return nested.get(i);
+        return (Throwable) LazyList.get(nested,i);
     }
 
     /* ------------------------------------------------------------ */
@@ -88,15 +81,12 @@ public class MultiException extends Exception
     public void ifExceptionThrow()
         throws Exception
     {
-        if(nested == null)
-            return;
-        
-        switch (nested.size())
+        switch (LazyList.size(nested))
         {
           case 0:
               break;
           case 1:
-              Throwable th=nested.get(0);
+              Throwable th=(Throwable)LazyList.get(nested,0);
               if (th instanceof Error)
                   throw (Error)th;
               if (th instanceof Exception)
@@ -118,15 +108,12 @@ public class MultiException extends Exception
     public void ifExceptionThrowRuntime()
         throws Error
     {
-        if(nested == null)
-            return;
-        
-        switch (nested.size())
+        switch (LazyList.size(nested))
         {
           case 0:
               break;
           case 1:
-              Throwable th=nested.get(0);
+              Throwable th=(Throwable)LazyList.get(nested,0);
               if (th instanceof Error)
                   throw (Error)th;
               else if (th instanceof RuntimeException)
@@ -147,10 +134,7 @@ public class MultiException extends Exception
     public void ifExceptionThrowMulti()
         throws MultiException
     {
-        if(nested == null)
-            return;
-        
-        if (nested.size()>0)
+        if (LazyList.size(nested)>0)
             throw this;
     }
 
@@ -158,14 +142,10 @@ public class MultiException extends Exception
     @Override
     public String toString()
     {
-        StringBuilder str = new StringBuilder();
-        str.append(MultiException.class.getSimpleName());
-        if((nested == null) || (nested.size()<=0)) {
-            str.append("[]");
-        } else {
-            str.append(nested);
-        }
-        return str.toString();
+        if (LazyList.size(nested)>0)
+            return MultiException.class.getSimpleName()+
+                LazyList.getList(nested);
+        return MultiException.class.getSimpleName()+"[]";
     }
 
     /* ------------------------------------------------------------ */
@@ -173,11 +153,8 @@ public class MultiException extends Exception
     public void printStackTrace()
     {
         super.printStackTrace();
-        if(nested != null) {
-            for(Throwable t: nested) {
-                t.printStackTrace();
-            }
-        }
+        for (int i=0;i<LazyList.size(nested);i++)
+            ((Throwable)LazyList.get(nested,i)).printStackTrace();
     }
    
 
@@ -189,11 +166,8 @@ public class MultiException extends Exception
     public void printStackTrace(PrintStream out)
     {
         super.printStackTrace(out);
-        if(nested != null) {
-            for(Throwable t: nested) {
-                t.printStackTrace(out);
-            }
-        }
+        for (int i=0;i<LazyList.size(nested);i++)
+            ((Throwable)LazyList.get(nested,i)).printStackTrace(out);
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -204,11 +178,8 @@ public class MultiException extends Exception
     public void printStackTrace(PrintWriter out)
     {
         super.printStackTrace(out);
-        if(nested != null) {
-            for(Throwable t: nested) {
-                t.printStackTrace(out);
-            }
-        }
+        for (int i=0;i<LazyList.size(nested);i++)
+            ((Throwable)LazyList.get(nested,i)).printStackTrace(out);
     }
 
 }

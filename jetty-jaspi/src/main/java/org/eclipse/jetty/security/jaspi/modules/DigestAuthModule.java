@@ -32,15 +32,15 @@ import javax.security.auth.message.MessagePolicy;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaders;
+import org.eclipse.jetty.util.security.Constraint;
+import org.eclipse.jetty.util.security.Credential;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.security.Constraint;
-import org.eclipse.jetty.util.security.Credential;
 
 /**
  * @deprecated use *ServerAuthentication
@@ -87,7 +87,7 @@ public class DigestAuthModule extends BaseAuthModule
     {
         HttpServletRequest request = (HttpServletRequest) messageInfo.getRequestMessage();
         HttpServletResponse response = (HttpServletResponse) messageInfo.getResponseMessage();
-        String credentials = request.getHeader(HttpHeader.AUTHORIZATION.asString());
+        String credentials = request.getHeader(HttpHeaders.AUTHORIZATION);
 
         try
         {
@@ -155,7 +155,7 @@ public class DigestAuthModule extends BaseAuthModule
             if (!isMandatory(messageInfo)) { return AuthStatus.SUCCESS; }
             String domain = request.getContextPath();
             if (domain == null) domain = "/";
-            response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), "Digest realm=\"" + realmName
+            response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "Digest realm=\"" + realmName
                                                              + "\", domain=\""
                                                              + domain
                                                              + "\", nonce=\""

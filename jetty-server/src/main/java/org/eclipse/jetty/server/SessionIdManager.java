@@ -59,8 +59,6 @@ public interface SessionIdManager extends LifeCycle
      */
     public String newSessionId(HttpServletRequest request,long created);
     
-    
-    
     public String getWorkerName();
     
     
@@ -79,16 +77,5 @@ public interface SessionIdManager extends LifeCycle
      * @return The session ID qualified with the node ID.
      */
     public String getNodeId(String clusterId,HttpServletRequest request);
-    
-    
-    /* ------------------------------------------------------------ */
-    /** Change the existing session id.
-    * 
-    * @param oldClusterId
-    * @param oldNodeId
-    * @param request
-    */
-    public void renewSessionId(String oldClusterId, String oldNodeId, HttpServletRequest request);    
-
     
 }

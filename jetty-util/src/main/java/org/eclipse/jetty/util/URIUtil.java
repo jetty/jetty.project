@@ -18,7 +18,11 @@
 
 package org.eclipse.jetty.util;
 
-import java.nio.charset.Charset;
+import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URLEncoder;
+
+import org.eclipse.jetty.util.log.Log;
 
 
 
@@ -43,7 +47,7 @@ public class URIUtil
     public static final String HTTPS_COLON="https:";
 
     // Use UTF-8 as per http://www.w3.org/TR/html40/appendix/notes.html#non-ascii-chars
-    public static final Charset __CHARSET=Charset.forName(System.getProperty("org.eclipse.jetty.util.URI.charset",StringUtil.__UTF8));
+    public static final String __CHARSET=System.getProperty("org.eclipse.jetty.util.URI.charset",StringUtil.__UTF8);
     
     private URIUtil()
     {}
@@ -95,7 +99,14 @@ public class URIUtil
                     default:
                         if (c>127)
                         {
-                            bytes=path.getBytes(URIUtil.__CHARSET);
+                            try
+                            {
+                                bytes=path.getBytes(URIUtil.__CHARSET);
+                            }
+                            catch (UnsupportedEncodingException e)
+                            {
+                                throw new IllegalStateException(e);
+                            }
                             buf=new StringBuilder(path.length()*2);
                             break loop;
                         }
@@ -298,7 +309,16 @@ public class URIUtil
             // Do we have some bytes to convert?
             if (b>0)
             {
-                String s=new String(bytes,0,b,__CHARSET);
+                // convert series of bytes and add to chars
+                String s;
+                try
+                {
+                    s=new String(bytes,0,b,__CHARSET);
+                }
+                catch (UnsupportedEncodingException e)
+                {       
+                    s=new String(bytes,0,b);
+                }
                 s.getChars(0,s.length(),chars,n);
                 n+=s.length();
                 b=0;
@@ -313,7 +333,16 @@ public class URIUtil
         // if we have a remaining sequence of bytes
         if (b>0)
         {
-            String s=new String(bytes,0,b,__CHARSET);
+            // convert series of bytes and add to chars
+            String s;
+            try
+            {
+                s=new String(bytes,0,b,__CHARSET);
+            }
+            catch (UnsupportedEncodingException e)
+            {       
+                s=new String(bytes,0,b);
+            }
             s.getChars(0,s.length(),chars,n);
             n+=s.length();
         }
@@ -362,8 +391,8 @@ public class URIUtil
         }
 
         if (bytes==null)
-            return new String(buf,offset,length,__CHARSET);
-        return new String(bytes,0,n,__CHARSET);
+            return StringUtil.toString(buf,offset,length,__CHARSET);
+        return StringUtil.toString(bytes,0,n,__CHARSET);
     }
 
     
@@ -657,30 +686,6 @@ public class URIUtil
         return false;
     }
     
-    public static void appendSchemeHostPort(StringBuilder url,String scheme,String server, int port)
-    {
-        if (server.indexOf(':')>=0&&server.charAt(0)!='[')
-            url.append(scheme).append("://").append('[').append(server).append(']');
-        else
-            url.append(scheme).append("://").append(server);
-
-        if (port > 0 && (("http".equalsIgnoreCase(scheme) && port != 80) || ("https".equalsIgnoreCase(scheme) && port != 443)))
-            url.append(':').append(port);
-    }
-    
-    public static void appendSchemeHostPort(StringBuffer url,String scheme,String server, int port)
-    {
-        synchronized (url)
-        {
-            if (server.indexOf(':')>=0&&server.charAt(0)!='[')
-                url.append(scheme).append("://").append('[').append(server).append(']');
-            else
-                url.append(scheme).append("://").append(server);
-
-            if (port > 0 && (("http".equalsIgnoreCase(scheme) && port != 80) || ("https".equalsIgnoreCase(scheme) && port != 443)))
-                url.append(':').append(port);
-        }
-    }
 }
 
 

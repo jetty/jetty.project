@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.server.session;
 
-import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.SessionManager;
@@ -78,7 +77,7 @@ public abstract class AbstractTestServer
     
     public int getPort()
     {
-        return ((NetworkConnector)getServer().getConnectors()[0]).getLocalPort();
+        return _server.getConnectors()[0].getLocalPort();
     }
 
     public ServletContextHandler addContext(String contextPath)

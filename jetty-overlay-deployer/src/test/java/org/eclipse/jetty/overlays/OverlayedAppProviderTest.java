@@ -20,7 +20,6 @@ package org.eclipse.jetty.overlays;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Set;
@@ -578,10 +577,9 @@ public class OverlayedAppProviderTest
         try
         {
             IO.delete(file);
-            try (OutputStream out = new FileOutputStream(file,false))
-            {
-                out.write("<h1>Hello</h1>".getBytes());
-            }
+            FileOutputStream out = new FileOutputStream(file,false);
+            out.write("<h1>Hello</h1>".getBytes());
+            out.close();
         }
         catch(Exception e)
         {

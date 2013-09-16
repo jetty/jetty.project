@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.server.session;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
 
 import javax.servlet.ServletException;
@@ -29,12 +26,25 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.SessionManager;
+import org.eclipse.jetty.server.session.AbstractTestServer;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
+
+
+/**
+ * AbstractSessionExpiryTest
+ *
+ *
+ *
+ */
 public abstract class AbstractSessionExpiryTest
 {
     public abstract AbstractTestServer createServer(int port, int max, int scavenge);
@@ -50,7 +60,7 @@ public abstract class AbstractSessionExpiryTest
             e.printStackTrace();
         }
     }
-
+    
     @Test
     public void testSessionNotExpired() throws Exception
     {
@@ -62,42 +72,48 @@ public abstract class AbstractSessionExpiryTest
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         server1.addContext(contextPath).addServlet(holder, servletMapping);
+        server1.start();
+        int port1 = server1.getPort();
 
-        HttpClient client = new HttpClient();
         try
         {
-            server1.start();
-            int port1 = server1.getPort();
-
+            HttpClient client = new HttpClient();
+            client.setConnectorType(HttpClient.CONNECTOR_SOCKET);
             client.start();
             String url = "http://localhost:" + port1 + contextPath + servletMapping;
 
             //make a request to set up a session on the server
-            ContentResponse response = client.GET(url + "?action=init");
-            assertEquals(HttpServletResponse.SC_OK,response.getStatus());
-            String sessionCookie = response.getHeaders().getStringField("Set-Cookie");
+            ContentExchange exchange1 = new ContentExchange(true);
+            exchange1.setMethod(HttpMethods.GET);
+            exchange1.setURL(url + "?action=init");
+            client.send(exchange1);
+            exchange1.waitForDone();
+            assertEquals(HttpServletResponse.SC_OK,exchange1.getResponseStatus());
+            String sessionCookie = exchange1.getResponseFields().getStringField("Set-Cookie");
             assertTrue(sessionCookie != null);
             // Mangle the cookie, replacing Path with $Path, etc.
             sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
-
+            
             //now stop the server
             server1.stop();
-
+            
             //start the server again, before the session times out
-            server1.start();
+            server1.start();            
             port1 = server1.getPort();
             url = "http://localhost:" + port1 + contextPath + servletMapping;
-
+            
             //make another request, the session should not have expired
-            Request request = client.newRequest(url + "?action=notexpired");
-            request.getHeaders().add("Cookie", sessionCookie);
-            ContentResponse response2 = request.send();
-            assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
+            ContentExchange exchange2 = new ContentExchange(true);
+            exchange2.setMethod(HttpMethods.GET);
+            exchange2.setURL(url + "?action=notexpired");
+            exchange2.getRequestFields().add("Cookie", sessionCookie);
+            client.send(exchange2);
+            exchange2.waitForDone();
+            assertEquals(HttpServletResponse.SC_OK,exchange2.getResponseStatus());
 
         }
         finally
         {
-            client.stop();
             server1.stop();
         }
     }
@@ -119,33 +135,41 @@ public abstract class AbstractSessionExpiryTest
         try
         {
             HttpClient client = new HttpClient();
+            client.setConnectorType(HttpClient.CONNECTOR_SOCKET);
             client.start();
             String url = "http://localhost:" + port1 + contextPath + servletMapping;
 
             //make a request to set up a session on the server
-            ContentResponse response1 = client.GET(url + "?action=init");
-            assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
-            String sessionCookie = response1.getHeaders().getStringField("Set-Cookie");
+            ContentExchange exchange1 = new ContentExchange(true);
+            exchange1.setMethod(HttpMethods.GET);
+            exchange1.setURL(url + "?action=init");
+            client.send(exchange1);
+            exchange1.waitForDone();
+            assertEquals(HttpServletResponse.SC_OK,exchange1.getResponseStatus());
+            String sessionCookie = exchange1.getResponseFields().getStringField("Set-Cookie");
             assertTrue(sessionCookie != null);
             // Mangle the cookie, replacing Path with $Path, etc.
             sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
-
+            
             //now stop the server
             server1.stop();
-
+            
             //and wait until the expiry time has passed
             pause(inactivePeriod);
-
+            
             //restart the server
-            server1.start();
+            server1.start();            
             port1 = server1.getPort();
             url = "http://localhost:" + port1 + contextPath + servletMapping;
-
+            
             //make another request, the session should have expired
-            Request request = client.newRequest(url + "?action=test");
-            request.getHeaders().add("Cookie", sessionCookie);
-            ContentResponse response2 = request.send();
-            assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
+            ContentExchange exchange2 = new ContentExchange(true);
+            exchange2.setMethod(HttpMethods.GET);
+            exchange2.setURL(url + "?action=test");
+            exchange2.getRequestFields().add("Cookie", sessionCookie);
+            client.send(exchange2);
+            exchange2.waitForDone();
+            assertEquals(HttpServletResponse.SC_OK,exchange2.getResponseStatus());
         }
         finally
         {
@@ -156,6 +180,8 @@ public abstract class AbstractSessionExpiryTest
     public static class TestServlet extends HttpServlet
     {
         public String originalId = null;
+        public String testId = null;
+        public String checkId = null;
 
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse) throws ServletException, IOException
@@ -179,7 +205,7 @@ public abstract class AbstractSessionExpiryTest
                 assertTrue(session != null);
                 assertTrue(originalId.equals(session.getId()));
             }
-
+           
         }
     }
 }

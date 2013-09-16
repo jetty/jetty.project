@@ -32,10 +32,10 @@ import javax.naming.NamingException;
  * <p>Used to return results of Context.listBindings();
  *
  * <p><h4>Usage</h4>
- *
+ * 
  */
 public class BindingEnumeration implements NamingEnumeration<Binding>
-{
+{       
     Iterator<Binding> _delegate;
 
     public BindingEnumeration (Iterator<Binding> e)

@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
 
 <!-- =============================================================== -->
 <!-- Configuration for starting up Jetty using inetd/xinetd          -->
@@ -16,8 +16,8 @@ service jetty
     disable     = no
 
     id          = jetty
-    type        = UNLISTED
-    wait        = yes
+    type        = UNLISTED     
+    wait        = yes          
     socket_type = stream
 
     # change this
@@ -39,14 +39,16 @@ service jetty
           <New class="org.eclipse.jetty.server.nio.InheritedChannelConnector">
 
 
-            <!-- Optional. Fallback in case System.inheritedChannel() does not give a ServerSocketChannel
+            <!-- Optional. Fallback in case System.inheritedChannel() does not give a ServerSocketChannel 
             <Set name="port"><Property name="jetty.service.port" default="8082"/></Set>
             -->
 
             <!-- sane defaults -->
-            <Set name="idleTimeout">300000</Set>
+            <Set name="maxIdleTime">300000</Set>
             <Set name="Acceptors">2</Set>
             <Set name="statsOn">false</Set>
+      	    <Set name="lowResourcesConnections">20000</Set>
+	        <Set name="lowResourcesMaxIdleTime">5000</Set>
           </New>
       </Arg>
     </Call>

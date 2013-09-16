@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.plus.webapp;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-
 import javax.naming.Context;
 import javax.naming.InitialContext;
 
@@ -28,10 +25,13 @@ import org.eclipse.jetty.plus.jndi.EnvEntry;
 import org.eclipse.jetty.plus.jndi.NamingEntry;
 import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.webapp.MetaData;
 import org.eclipse.jetty.webapp.WebAppClassLoader;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.webapp.MetaData;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class TestConfiguration
 {
@@ -49,9 +49,9 @@ public class TestConfiguration
             WebAppContext wac = new WebAppContext();
             wac.setServer(server);
             wac.setClassLoader(new WebAppClassLoader(Thread.currentThread().getContextClassLoader(), wac));
-
+            
             MetaData metaData = new MetaData();
-
+            
             PlusDescriptorProcessor plusProcessor = new PlusDescriptorProcessor();
 
             //bind some EnvEntrys at the server level

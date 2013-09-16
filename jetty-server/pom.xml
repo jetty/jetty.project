@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.0.6-SNAPSHOT</version>
+    <version>7.6.13-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-server</artifactId>
@@ -26,8 +26,7 @@
             </goals>
             <configuration>
               <instructions>
-                <Import-Package>javax.servlet.*;version="2.6.0",org.eclipse.jetty.jmx.*;version="9.0";resolution:=optional,*</Import-Package>
-                <_nouses>true</_nouses>
+                <Import-Package>javax.servlet.*;version="[2.5,3.0)",org.eclipse.jetty.jmx.*;version="[7.3,8)";resolution:=optional,*</Import-Package>
               </instructions>
             </configuration>
           </execution>
@@ -94,19 +93,13 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-continuation</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-http</artifactId>
       <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-io</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-xml</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

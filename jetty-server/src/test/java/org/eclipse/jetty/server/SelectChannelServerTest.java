@@ -17,17 +17,31 @@
 //
 
 package org.eclipse.jetty.server;
-
-import org.junit.Before;
+import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.junit.BeforeClass;
 
 /**
  * HttpServer Tester.
  */
 public class SelectChannelServerTest extends HttpServerTestBase
 {
-    @Before
-    public void init() throws Exception
+    @BeforeClass
+    public static void init() throws Exception
     {
-        startServer(new ServerConnector(_server,1,1));
+        startServer(new SelectChannelConnector());
     }
+
+    @Override
+    public void testCommittedError() throws Exception
+    {
+        super.testCommittedError();
+    }
+
+    @Override
+    public void testSuspendedPipeline() throws Exception
+    {
+        super.testSuspendedPipeline();
+    }
+    
+    
 }

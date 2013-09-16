@@ -60,7 +60,7 @@ public class ShutdownHandlerTest
     {
         setDefaultExpectations();
         final CountDownLatch countDown = new CountDownLatch(1);
-        server.addLifeCycleListener(new AbstractLifeCycle.Listener ()
+        server.addLifeCycleListener(new AbstractLifeCycle.Listener () 
         {
 
             public void lifeCycleStarting(LifeCycle event)
@@ -72,23 +72,23 @@ public class ShutdownHandlerTest
             }
 
             public void lifeCycleFailure(LifeCycle event, Throwable cause)
-            {
+            {  
             }
 
             public void lifeCycleStopping(LifeCycle event)
-            {
+            {  
             }
 
             public void lifeCycleStopped(LifeCycle event)
             {
                 countDown.countDown();
             }
-
+            
         });
         shutdownHandler.handle("/shutdown",null,request,response);
         boolean stopped = countDown.await(1000, TimeUnit.MILLISECONDS); //wait up to 1 sec to stop
         assertTrue("Server lifecycle stop listener called", stopped);
-        assertEquals("Server should be stopped","STOPPED",server.getState());
+        assertEquals("Server should be stopped","STOPPED",server.getState());  
     }
 
     @Test

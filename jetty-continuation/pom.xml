@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.0.6-SNAPSHOT</version>
+    <version>7.6.13-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-continuation</artifactId>
@@ -23,6 +23,11 @@
             <goals>
               <goal>manifest</goal>
             </goals>
+            <configuration>
+              <instructions>
+                <Import-Package>javax.servlet.*;version="[2.5,3.1)",org.mortbay.log.*;version="[6.1,7)";resolution:=optional,org.mortbay.util.ajax.*;version="[6.1,7)";resolution:=optional,*</Import-Package>
+              </instructions>
+            </configuration>
            </execution>
         </executions>
       </plugin>
@@ -36,9 +41,15 @@
               <goal>jar</goal>
             </goals>
           </execution>
+          <execution>
+            <id>test-jar</id>
+            <goals>
+              <goal>test-jar</goal>
+            </goals>
+          </execution>
         </executions>
         <configuration>
-          <archive>
+          <archive>               
             <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
           </archive>
         </configuration>
@@ -54,9 +65,16 @@
   </build>
   <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
+      <groupId>org.eclipse.jetty.orbit</groupId> 
       <artifactId>javax.servlet</artifactId>
+      <version>3.0.0.v201112011016</version>
       <scope>provided</scope>
-    </dependency>
+    </dependency> 
+    <dependency>
+      <groupId>org.mortbay.jetty</groupId> 
+      <artifactId>jetty-util</artifactId>
+      <version>6.1.26</version>
+      <scope>provided</scope>
+    </dependency> 
   </dependencies>
 </project>

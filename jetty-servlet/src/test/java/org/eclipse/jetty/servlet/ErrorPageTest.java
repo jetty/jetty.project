@@ -52,9 +52,10 @@ public class ErrorPageTest
     public void init() throws Exception
     {
         _server = new Server();
-        _connector = new LocalConnector(_server);
+        _connector = new LocalConnector();
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SECURITY|ServletContextHandler.NO_SESSIONS);
 
+        _server.setSendServerVersion(false);
         _server.addConnector(_connector);
         _server.setHandler(context);
 

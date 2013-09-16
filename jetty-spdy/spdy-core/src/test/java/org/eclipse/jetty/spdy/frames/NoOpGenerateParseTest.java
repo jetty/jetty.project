@@ -20,7 +20,7 @@ package org.eclipse.jetty.spdy.frames;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.spdy.StandardByteBufferPool;
 import org.eclipse.jetty.spdy.StandardCompressionFactory;
 import org.eclipse.jetty.spdy.generator.Generator;
 import org.eclipse.jetty.spdy.parser.Parser;
@@ -33,7 +33,7 @@ public class NoOpGenerateParseTest
     public void testGenerateParse() throws Exception
     {
         NoOpFrame frame1 = new NoOpFrame();
-        Generator generator = new Generator(new MappedByteBufferPool(), new StandardCompressionFactory().newCompressor());
+        Generator generator = new Generator(new StandardByteBufferPool(), new StandardCompressionFactory().newCompressor());
         ByteBuffer buffer = generator.control(frame1);
 
         Assert.assertNotNull(buffer);
@@ -54,7 +54,7 @@ public class NoOpGenerateParseTest
     public void testGenerateParseOneByteAtATime() throws Exception
     {
         NoOpFrame frame1 = new NoOpFrame();
-        Generator generator = new Generator(new MappedByteBufferPool(), new StandardCompressionFactory().newCompressor());
+        Generator generator = new Generator(new StandardByteBufferPool(), new StandardCompressionFactory().newCompressor());
         ByteBuffer buffer = generator.control(frame1);
 
         Assert.assertNotNull(buffer);

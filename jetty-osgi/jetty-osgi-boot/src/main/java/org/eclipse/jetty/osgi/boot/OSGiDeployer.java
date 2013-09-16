@@ -27,9 +27,7 @@ import org.eclipse.jetty.osgi.boot.utils.EventSender;
 /**
  * OSGiDeployer
  *
- * Extension of standard Jetty deployer that emits OSGi EventAdmin 
- * events whenever a webapp is deployed into OSGi via Jetty.
- * 
+ *
  */
 public class OSGiDeployer extends StandardDeployer
 {

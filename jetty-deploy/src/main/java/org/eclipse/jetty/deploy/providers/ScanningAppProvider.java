@@ -20,20 +20,14 @@ package org.eclipse.jetty.deploy.providers;
 
 import java.io.File;
 import java.io.FilenameFilter;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.util.Scanner;
-import org.eclipse.jetty.util.annotation.ManagedAttribute;
-import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -41,7 +35,6 @@ import org.eclipse.jetty.util.resource.Resource;
 
 /**
  */
-@ManagedObject("Abstract Provider for loading webapps")
 public abstract class ScanningAppProvider extends AbstractLifeCycle implements AppProvider
 {
     private static final Logger LOG = Log.getLogger(ScanningAppProvider.class);
@@ -49,8 +42,8 @@ public abstract class ScanningAppProvider extends AbstractLifeCycle implements A
     private Map<String, App> _appMap = new HashMap<String, App>();
 
     private DeploymentManager _deploymentManager;
-    protected FilenameFilter _filenameFilter;
-    private final List<Resource> _monitored= new CopyOnWriteArrayList<>();
+    protected final FilenameFilter _filenameFilter;
+    private Resource _monitoredDir;
     private boolean _recursive = false;
     private int _scanInterval = 10;
     private Scanner _scanner;
@@ -58,19 +51,16 @@ public abstract class ScanningAppProvider extends AbstractLifeCycle implements A
     /* ------------------------------------------------------------ */
     private final Scanner.DiscreteListener _scannerListener = new Scanner.DiscreteListener()
     {
-        @Override
         public void fileAdded(String filename) throws Exception
         {
             ScanningAppProvider.this.fileAdded(filename);
         }
 
-        @Override
         public void fileChanged(String filename) throws Exception
         {
             ScanningAppProvider.this.fileChanged(filename);
         }
 
-        @Override
         public void fileRemoved(String filename) throws Exception
         {
             ScanningAppProvider.this.fileRemoved(filename);
@@ -78,24 +68,11 @@ public abstract class ScanningAppProvider extends AbstractLifeCycle implements A
     };
 
     /* ------------------------------------------------------------ */
-    protected ScanningAppProvider()
-    {
-    }
-    
-    /* ------------------------------------------------------------ */
     protected ScanningAppProvider(FilenameFilter filter)
     {
         _filenameFilter = filter;
     }
 
-    /* ------------------------------------------------------------ */
-    protected void setFilenameFilter(FilenameFilter filter)
-    {
-        if (isRunning())
-            throw new IllegalStateException();
-        _filenameFilter = filter;
-    }
-    
     /* ------------------------------------------------------------ */
     /**
      * @return The index of currently deployed applications.
@@ -127,16 +104,15 @@ public abstract class ScanningAppProvider extends AbstractLifeCycle implements A
     {
         if (LOG.isDebugEnabled()) 
             LOG.debug(this.getClass().getSimpleName() + ".doStart()");
-        if (_monitored.size()==0)
+        if (_monitoredDir == null)
+        {
             throw new IllegalStateException("No configuration dir specified");
+        }
 
-        LOG.info("Deployment monitor " + _monitored + " at interval " + _scanInterval);
-        List<File> files = new ArrayList<>();
-        for (Resource resource:_monitored)
-            files.add(resource.getFile());
-        
+        File scandir = _monitoredDir.getFile();
+        LOG.info("Deployment monitor " + scandir + " at interval " + _scanInterval);
         _scanner = new Scanner();
-        _scanner.setScanDirs(files);
+        _scanner.setScanDirs(Collections.singletonList(scandir));
         _scanner.setScanInterval(_scanInterval);
         _scanner.setRecursive(_recursive);
         _scanner.setFilenameFilter(_filenameFilter);
@@ -155,12 +131,6 @@ public abstract class ScanningAppProvider extends AbstractLifeCycle implements A
             _scanner.removeListener(_scannerListener);
             _scanner = null;
         }
-    }
-    
-    /* ------------------------------------------------------------ */
-    protected boolean exists(String path)
-    {
-        return _scanner.exists(path);
     }
 
     /* ------------------------------------------------------------ */
@@ -219,64 +189,52 @@ public abstract class ScanningAppProvider extends AbstractLifeCycle implements A
     /* ------------------------------------------------------------ */
     public Resource getMonitoredDirResource()
     {
-        if (_monitored.size()==0)
-            return null;
-        if (_monitored.size()>1)
-            throw new IllegalStateException();
-        return _monitored.get(0);
+        return _monitoredDir;
     }
 
     /* ------------------------------------------------------------ */
     public String getMonitoredDirName()
     {
-        Resource resource=getMonitoredDirResource();
-        return resource==null?null:resource.toString();
+        return _monitoredDir.toString();
     }
 
     /* ------------------------------------------------------------ */
-    @ManagedAttribute("scanning interval to detect changes which need reloaded")
     public int getScanInterval()
     {
         return _scanInterval;
     }
 
     /* ------------------------------------------------------------ */
-    @ManagedAttribute("recursive scanning supported")
     public boolean isRecursive()
     {
         return _recursive;
     }
 
     /* ------------------------------------------------------------ */
-    @Override
     public void setDeploymentManager(DeploymentManager deploymentManager)
     {
         _deploymentManager = deploymentManager;
     }
     
     /* ------------------------------------------------------------ */
-    public void setMonitoredResources(List<Resource> resources)
+    public void setMonitoredDirResource(Resource contextsDir)
     {
-        _monitored.clear();
-        _monitored.addAll(resources);
-    }
-    
-    /* ------------------------------------------------------------ */
-    public List<Resource> getMonitoredResources()
-    {
-        return Collections.unmodifiableList(_monitored);
-    }
-    
-    /* ------------------------------------------------------------ */
-    public void setMonitoredDirResource(Resource resource)
-    {
-        setMonitoredResources(Collections.singletonList(resource));
+        _monitoredDir = contextsDir;
     }
 
     /* ------------------------------------------------------------ */
     public void addScannerListener(Scanner.Listener listener)
     {
         _scanner.addListener(listener);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @deprecated Use {@link #setMonitoredDirName(String)}
+     */
+    public void setMonitoredDir(String dir)
+    {
+        setMonitoredDirName(dir);
     }
     
     /* ------------------------------------------------------------ */
@@ -286,25 +244,16 @@ public abstract class ScanningAppProvider extends AbstractLifeCycle implements A
      */
     public void setMonitoredDirName(String dir)
     {
-        setMonitoredDirectories(Collections.singletonList(dir));
-    }
-
-    /* ------------------------------------------------------------ */
-    public void setMonitoredDirectories(Collection<String> directories)
-    {
         try
         {
-            List<Resource> resources = new ArrayList<>();
-            for (String dir:directories)
-                resources.add(Resource.newResource(dir));
-            setMonitoredResources(resources);
+            setMonitoredDirResource(Resource.newResource(dir));
         }
         catch (Exception e)
         {
             throw new IllegalArgumentException(e);
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     protected void setRecursive(boolean recursive)
     {

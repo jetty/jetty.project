@@ -293,6 +293,7 @@ public class WebAppClassLoader extends URLClassLoader
     /* ------------------------------------------------------------ */
     public PermissionCollection getPermissions(CodeSource cs)
     {
+        // TODO check CodeSource
         PermissionCollection permissions=_context.getPermissions();
         PermissionCollection pc= (permissions == null) ? super.getPermissions(cs) : permissions;
         return pc;
@@ -445,4 +446,5 @@ public class WebAppClassLoader extends URLClassLoader
     {
         return "WebAppClassLoader=" + _name+"@"+Long.toHexString(hashCode());
     }
+
 }

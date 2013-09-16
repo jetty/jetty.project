@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.server.session;
 
+import java.util.concurrent.TimeUnit;
+
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.SessionManager;
 

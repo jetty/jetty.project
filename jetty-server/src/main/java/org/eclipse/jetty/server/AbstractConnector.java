@@ -19,539 +19,1204 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.Socket;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import java.net.UnknownHostException;
+import java.util.concurrent.atomic.AtomicLong;
 
-import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ByteBufferPool;
+import javax.servlet.ServletRequest;
+
+import org.eclipse.jetty.http.HttpBuffers;
+import org.eclipse.jetty.http.HttpBuffersImpl;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeaders;
+import org.eclipse.jetty.http.HttpSchemes;
+import org.eclipse.jetty.io.Buffers;
+import org.eclipse.jetty.io.Buffers.Type;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.ssl.SslConnection;
-import org.eclipse.jetty.util.FutureCallback;
-import org.eclipse.jetty.util.annotation.ManagedAttribute;
-import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
-import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.statistic.CounterStatistic;
+import org.eclipse.jetty.util.statistic.SampleStatistic;
+import org.eclipse.jetty.util.thread.ThreadPool;
 
 /**
- * <p>An abstract implementation of {@link Connector} that provides a {@link ConnectionFactory} mechanism
- * for creating {@link Connection} instances for various protocols (HTTP, SSL, SPDY, etc).</p>
- *
- * <h2>Connector Services</h2>
- * The abstract connector manages the dependent services needed by all specific connector instances:
+ * Abstract Connector implementation. This abstract implementation of the Connector interface provides:
  * <ul>
- * <li>The {@link Executor} service is used to run all active tasks needed by this connector such as accepting connections
- * or handle HTTP requests. The default is to use the {@link Server#getThreadPool()} as an executor.
- * </li>
- * <li>The {@link Scheduler} service is used to monitor the idle timeouts of all connections and is also made available
- * to the connections to time such things as asynchronous request timeouts.  The default is to use a new
- * {@link ScheduledExecutorScheduler} instance.
- * </li>
- * <li>The {@link ByteBufferPool} service is made available to all connections to be used to acquire and release
- * {@link ByteBuffer} instances from a pool.  The default is to use a new {@link ArrayByteBufferPool} instance.
- * </li>
+ * <li>AbstractLifeCycle implementation</li>
+ * <li>Implementations for connector getters and setters</li>
+ * <li>Buffer management</li>
+ * <li>Socket configuration</li>
+ * <li>Base acceptor thread</li>
+ * <li>Optional reverse proxy headers checking</li>
  * </ul>
- * These services are managed as aggregate beans by the {@link ContainerLifeCycle} super class and
- * may either be managed or unmanaged beans.
- *
- * <h2>Connection Factories</h2>
- * The connector keeps a collection of {@link ConnectionFactory} instances, each of which are known by their
- * protocol name.  The protocol name may be a real protocol (eg http/1.1 or spdy/3) or it may be a private name
- * that represents a special connection factory. For example, the name "SSL-http/1.1" is used for
- * an {@link SslConnectionFactory} that has been instantiated with the {@link HttpConnectionFactory} as it's
- * next protocol.
- *
- * <h4>Configuring Connection Factories</h4>
- * The collection of available {@link ConnectionFactory} may be constructor injected or modified with the
- * methods {@link #addConnectionFactory(ConnectionFactory)}, {@link #removeConnectionFactory(String)} and
- * {@link #setConnectionFactories(Collection)}.  Only a single {@link ConnectionFactory} instance may be configured
- * per protocol name, so if two factories with the same {@link ConnectionFactory#getProtocol()} are set, then
- * the second will replace the first.
- * <p>
- * The protocol factory used for newly accepted connections is specified by
- * the method {@link #setDefaultProtocol(String)} or defaults to the protocol of the first configured factory.
- * <p>
- * Each Connection factory type is responsible for the configuration of the protocols that it accepts. Thus to
- * configure the HTTP protocol, you pass a {@link HttpConfiguration} instance to the {@link HttpConnectionFactory}
- * (or the SPDY factories that can also provide HTTP Semantics).  Similarly the {@link SslConnectionFactory} is
- * configured by passing it a {@link SslContextFactory} and a next protocol name.
- *
- * <h4>Connection Factory Operation</h4>
- * {@link ConnectionFactory}s may simply create a {@link Connection} instance to support a specific
- * protocol.  For example, the {@link HttpConnectionFactory} will create a {@link HttpConnection} instance
- * that can handle http/1.1, http/1.0 and http/0.9.
- * <p>
- * {@link ConnectionFactory}s may also create a chain of {@link Connection} instances, using other {@link ConnectionFactory} instances.
- * For example, the {@link SslConnectionFactory} is configured with a next protocol name, so that once it has accepted
- * a connection and created an {@link SslConnection}, it then used the next {@link ConnectionFactory} from the
- * connector using the {@link #getConnectionFactory(String)} method, to create a {@link Connection} instance that
- * will handle the unecrypted bytes from the {@link SslConnection}.   If the next protocol is "http/1.1", then the
- * {@link SslConnectionFactory} will have a protocol name of "SSL-http/1.1" and lookup "http/1.1" for the protocol
- * to run over the SSL connection.
- * <p>
- * {@link ConnectionFactory}s may also create temporary {@link Connection} instances that will exchange bytes
- * over the connection to determine what is the next protocol to use.  For example the NPN protocol is an extension
- * of SSL to allow a protocol to be specified during the SSL handshake. NPN is used by the SPDY protocol to
- * negotiate the version of SPDY or HTTP that the client and server will speak.  Thus to accept a SPDY connection, the
- * connector will be configured with {@link ConnectionFactory}s for "SSL-NPN", "NPN", "spdy/3", "spdy/2", "http/1.1"
- * with the default protocol being "SSL-NPN".  Thus a newly accepted connection uses "SSL-NPN", which specifies a
- * SSLConnectionFactory with "NPN" as the next protocol.  Thus an SslConnection instance is created chained to an NPNConnection
- * instance.  The NPN connection then negotiates with the client to determined the next protocol, which could be
- * "spdy/3", "spdy/2" or the default of "http/1.1".  Once the next protocol is determined, the NPN connection
- * calls {@link #getConnectionFactory(String)} to create a connection instance that will replace the NPN connection as
- * the connection chained to the SSLConnection.
- * <p>
- * <h2>Acceptors</h2>
- * The connector will execute a number of acceptor tasks to the {@link Exception} service passed to the constructor.
- * The acceptor tasks run in a loop while the connector is running and repeatedly call the abstract {@link #accept(int)} method.
- * The implementation of the accept method must:
- * <nl>
- * <li>block waiting for new connections
- * <li>accept the connection (eg socket accept)
- * <li>perform any configuration of the connection (eg. socket linger times)
- * <li>call the {@link #getDefaultConnectionFactory()} {@link ConnectionFactory#newConnection(Connector, org.eclipse.jetty.io.EndPoint)}
- * method to create a new Connection instance.
- * </nl>
- * The default number of acceptor tasks is the minimum of 1 and half the number of available CPUs. Having more acceptors may reduce
- * the latency for servers that see a high rate of new connections (eg HTTP/1.0 without keep-alive).  Typically the default is
- * sufficient for modern persistent protocols (HTTP/1.1, SPDY etc.)
  */
-@ManagedObject("Abstract implementation of the Connector Interface")
-public abstract class AbstractConnector extends ContainerLifeCycle implements Connector, Dumpable
+public abstract class AbstractConnector extends AggregateLifeCycle implements HttpBuffers, Connector, Dumpable
 {
-    protected final Logger LOG = Log.getLogger(getClass());
-    // Order is important on server side, so we use a LinkedHashMap
-    private final Map<String, ConnectionFactory> _factories = new LinkedHashMap<>();
-    private final Server _server;
-    private final Executor _executor;
-    private final Scheduler _scheduler;
-    private final ByteBufferPool _byteBufferPool;
-    private final Thread[] _acceptors;
-    private final Set<EndPoint> _endpoints = Collections.newSetFromMap(new ConcurrentHashMap());
-    private final Set<EndPoint> _immutableEndPoints = Collections.unmodifiableSet(_endpoints);
-    private volatile CountDownLatch _stopping;
-    private long _idleTimeout = 30000;
-    private String _defaultProtocol;
-    private ConnectionFactory _defaultConnectionFactory;
+    private static final Logger LOG = Log.getLogger(AbstractConnector.class);
+
     private String _name;
 
+    private Server _server;
+    private ThreadPool _threadPool;
+    private String _host;
+    private int _port = 0;
+    private String _integralScheme = HttpSchemes.HTTPS;
+    private int _integralPort = 0;
+    private String _confidentialScheme = HttpSchemes.HTTPS;
+    private int _confidentialPort = 0;
+    private int _acceptQueueSize = 0;
+    private int _acceptors = 1;
+    private int _acceptorPriorityOffset = 0;
+    private boolean _useDNS;
+    private boolean _forwarded;
+    private String _hostHeader;
 
+    private String _forwardedHostHeader = HttpHeaders.X_FORWARDED_HOST;
+    private String _forwardedServerHeader = HttpHeaders.X_FORWARDED_SERVER;
+    private String _forwardedForHeader = HttpHeaders.X_FORWARDED_FOR;
+    private String _forwardedProtoHeader = HttpHeaders.X_FORWARDED_PROTO;
+    private String _forwardedCipherSuiteHeader;
+    private String _forwardedSslSessionIdHeader;
+    private boolean _reuseAddress = true;
+
+    protected int _maxIdleTime = 200000;
+    protected int _lowResourceMaxIdleTime = -1;
+    protected int _soLingerTime = -1;
+
+    private transient Thread[] _acceptorThreads;
+
+    private final AtomicLong _statsStartedAt = new AtomicLong(-1L);
+
+    /** connections to server */
+    private final CounterStatistic _connectionStats = new CounterStatistic();
+    /** requests per connection */
+    private final SampleStatistic _requestStats = new SampleStatistic();
+    /** duration of a connection */
+    private final SampleStatistic _connectionDurationStats = new SampleStatistic();
+
+    protected final HttpBuffersImpl _buffers = new HttpBuffersImpl();
+
+    /* ------------------------------------------------------------ */
     /**
-     * @param server The server this connector will be added to. Must not be null.
-     * @param executor An executor for this connector or null to use the servers executor
-     * @param scheduler A scheduler for this connector or null to either a {@link Scheduler} set as a server bean or if none set, then a new {@link ScheduledExecutorScheduler} instance.
-     * @param pool A buffer pool for this connector or null to either a {@link ByteBufferPool} set as a server bean or none set, the new  {@link ArrayByteBufferPool} instance.
-     * @param acceptors the number of acceptor threads to use, or 0 for a default value.
-     * @param factories The Connection Factories to use.
      */
-    public AbstractConnector(
-            Server server,
-            Executor executor,
-            Scheduler scheduler,
-            ByteBufferPool pool,
-            int acceptors,
-            ConnectionFactory... factories)
+    public AbstractConnector()
     {
-        _server=server;
-        _executor=executor!=null?executor:_server.getThreadPool();
-        if (scheduler==null)
-            scheduler=_server.getBean(Scheduler.class);
-        _scheduler=scheduler!=null?scheduler:new ScheduledExecutorScheduler();
-        if (pool==null)
-            pool=_server.getBean(ByteBufferPool.class);
-        _byteBufferPool = pool!=null?pool:new ArrayByteBufferPool();
-
-        addBean(_server,false);
-        addBean(_executor);
-        if (executor==null)
-            unmanage(_executor); // inherited from server
-        addBean(_scheduler);
-        addBean(_byteBufferPool);
-
-        for (ConnectionFactory factory:factories)
-            addConnectionFactory(factory);
-
-        if (acceptors<=0)
-            acceptors=Math.max(1,(Runtime.getRuntime().availableProcessors()) / 2);
-        if (acceptors > 2 * Runtime.getRuntime().availableProcessors())
-            LOG.warn("Acceptors should be <= 2*availableProcessors: " + this);
-        _acceptors = new Thread[acceptors];
+        addBean(_buffers);
     }
 
-
-    @Override
+    /* ------------------------------------------------------------ */
+    /*
+     */
     public Server getServer()
     {
         return _server;
     }
 
-    @Override
-    public Executor getExecutor()
+    /* ------------------------------------------------------------ */
+    public void setServer(Server server)
     {
-        return _executor;
+        _server = server;
     }
 
-    @Override
-    public ByteBufferPool getByteBufferPool()
+    /* ------------------------------------------------------------ */
+    public ThreadPool getThreadPool()
     {
-        return _byteBufferPool;
+        return _threadPool;
     }
 
-    @Override
-    @ManagedAttribute("Idle timeout")
-    public long getIdleTimeout()
-    {
-        return _idleTimeout;
-    }
-
-    /**
-     * <p>Sets the maximum Idle time for a connection, which roughly translates to the {@link Socket#setSoTimeout(int)}
-     * call, although with NIO implementations other mechanisms may be used to implement the timeout.</p>
-     * <p>The max idle time is applied:</p>
-     * <ul>
-     * <li>When waiting for a new message to be received on a connection</li>
-     * <li>When waiting for a new message to be sent on a connection</li>
-     * </ul>
-     * <p>This value is interpreted as the maximum time between some progress being made on the connection.
-     * So if a single byte is read or written, then the timeout is reset.</p>
-     *
-     * @param idleTimeout the idle timeout
+    /* ------------------------------------------------------------ */
+    /** Set the ThreadPool.
+     * The threadpool passed is added via {@link #addBean(Object)} so that 
+     * it's lifecycle may be managed as a {@link AggregateLifeCycle}.
+     * @param pool the threadPool to set
      */
-    public void setIdleTimeout(long idleTimeout)
+    public void setThreadPool(ThreadPool pool)
     {
-        _idleTimeout = idleTimeout;
+        removeBean(_threadPool);
+        _threadPool = pool;
+        addBean(_threadPool);
     }
-
-    /**
-     * @return Returns the number of acceptor threads.
-     */
-    @ManagedAttribute("number of acceptor threads")
-    public int getAcceptors()
-    {
-        return _acceptors.length;
-    }
-
-    @Override
-    protected void doStart() throws Exception
-    {
-        _defaultConnectionFactory = getConnectionFactory(_defaultProtocol);
-        if(_defaultConnectionFactory==null)
-            throw new IllegalStateException("No protocol factory for default protocol: "+_defaultProtocol);
-
-        super.doStart();
-
-        _stopping=new CountDownLatch(_acceptors.length);
-        for (int i = 0; i < _acceptors.length; i++)
-            getExecutor().execute(new Acceptor(i));
-
-        LOG.info("Started {}", this);
-    }
-
-
-    protected void interruptAcceptors()
-    {
-        for (Thread thread : _acceptors)
-        {
-            if (thread != null)
-                thread.interrupt();
-        }
-    }
-
-    @Override
-    public Future<Void> shutdown()
-    {
-        return new FutureCallback(true);
-    }
-
-    @Override
-    protected void doStop() throws Exception
-    {
-        // Tell the acceptors we are stopping
-        interruptAcceptors();
-
-        // If we have a stop timeout
-        long stopTimeout = getStopTimeout();
-        CountDownLatch stopping=_stopping;
-        if (stopTimeout > 0 && stopping!=null)
-            stopping.await(stopTimeout,TimeUnit.MILLISECONDS);
-        _stopping=null;
-
-        super.doStop();
-
-        LOG.info("Stopped {}", this);
-    }
-
-    public void join() throws InterruptedException
-    {
-        join(0);
-    }
-
-    public void join(long timeout) throws InterruptedException
-    {
-        for (Thread thread : _acceptors)
-            if (thread != null)
-                thread.join(timeout);
-    }
-
-    protected abstract void accept(int acceptorID) throws IOException, InterruptedException;
-
 
     /* ------------------------------------------------------------ */
     /**
-     * @return Is the connector accepting new connections
      */
-    protected boolean isAccepting()
+    public void setHost(String host)
     {
-        return isRunning();
+        _host = host;
     }
 
-    @Override
-    public ConnectionFactory getConnectionFactory(String protocol)
+    /* ------------------------------------------------------------ */
+    /*
+     */
+    public String getHost()
     {
-        synchronized (_factories)
+        return _host;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setPort(int port)
+    {
+        _port = port;
+    }
+
+    /* ------------------------------------------------------------ */
+    public int getPort()
+    {
+        return _port;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return Returns the maxIdleTime.
+     */
+    public int getMaxIdleTime()
+    {
+        return _maxIdleTime;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Set the maximum Idle time for a connection, which roughly translates to the {@link Socket#setSoTimeout(int)} call, although with NIO implementations
+     * other mechanisms may be used to implement the timeout. The max idle time is applied:
+     * <ul>
+     * <li>When waiting for a new request to be received on a connection</li>
+     * <li>When reading the headers and content of a request</li>
+     * <li>When writing the headers and content of a response</li>
+     * </ul>
+     * Jetty interprets this value as the maximum time between some progress being made on the connection. So if a single byte is read or written, then the
+     * timeout (if implemented by jetty) is reset. However, in many instances, the reading/writing is delegated to the JVM, and the semantic is more strictly
+     * enforced as the maximum time a single read/write operation can take. Note, that as Jetty supports writes of memory mapped file buffers, then a write may
+     * take many 10s of seconds for large content written to a slow device.
+     * <p>
+     * Previously, Jetty supported separate idle timeouts and IO operation timeouts, however the expense of changing the value of soTimeout was significant, so
+     * these timeouts were merged. With the advent of NIO, it may be possible to again differentiate these values (if there is demand).
+     *
+     * @param maxIdleTime
+     *            The maxIdleTime to set.
+     */
+    public void setMaxIdleTime(int maxIdleTime)
+    {
+        _maxIdleTime = maxIdleTime;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return Returns the maxIdleTime when resources are low.
+     */
+    public int getLowResourcesMaxIdleTime()
+    {
+        return _lowResourceMaxIdleTime;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param maxIdleTime
+     *            The maxIdleTime to set when resources are low.
+     */
+    public void setLowResourcesMaxIdleTime(int maxIdleTime)
+    {
+        _lowResourceMaxIdleTime = maxIdleTime;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return Returns the maxIdleTime when resources are low.
+     * @deprecated
+     */
+    @Deprecated
+    public final int getLowResourceMaxIdleTime()
+    {
+        return getLowResourcesMaxIdleTime();
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param maxIdleTime
+     *            The maxIdleTime to set when resources are low.
+     * @deprecated
+     */
+    @Deprecated
+    public final void setLowResourceMaxIdleTime(int maxIdleTime)
+    {
+        setLowResourcesMaxIdleTime(maxIdleTime);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return Returns the soLingerTime.
+     */
+    public int getSoLingerTime()
+    {
+        return _soLingerTime;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return Returns the acceptQueueSize.
+     */
+    public int getAcceptQueueSize()
+    {
+        return _acceptQueueSize;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param acceptQueueSize
+     *            The acceptQueueSize to set.
+     */
+    public void setAcceptQueueSize(int acceptQueueSize)
+    {
+        _acceptQueueSize = acceptQueueSize;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return Returns the number of acceptor threads.
+     */
+    public int getAcceptors()
+    {
+        return _acceptors;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param acceptors
+     *            The number of acceptor threads to set.
+     */
+    public void setAcceptors(int acceptors)
+    {
+        if (acceptors > 2 * Runtime.getRuntime().availableProcessors())
+            LOG.warn("Acceptors should be <=2*availableProcessors: " + this);
+        _acceptors = acceptors;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param soLingerTime
+     *            The soLingerTime to set or -1 to disable.
+     */
+    public void setSoLingerTime(int soLingerTime)
+    {
+        _soLingerTime = soLingerTime;
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    protected void doStart() throws Exception
+    {
+        if (_server == null)
+            throw new IllegalStateException("No server");
+
+        // open listener port
+        open();
+
+        if (_threadPool == null)
         {
-            return _factories.get(protocol.toLowerCase(Locale.ENGLISH));
+            _threadPool = _server.getThreadPool();
+            addBean(_threadPool,false);
+        }
+
+        super.doStart();
+
+        // Start selector thread
+        synchronized (this)
+        {
+            _acceptorThreads = new Thread[getAcceptors()];
+
+            for (int i = 0; i < _acceptorThreads.length; i++)
+                if (!_threadPool.dispatch(new Acceptor(i)))
+                    throw new IllegalStateException("!accepting");
+            if (_threadPool.isLowOnThreads())
+                LOG.warn("insufficient threads configured for {}",this);
+        }
+
+        LOG.info("Started {}",this);
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    protected void doStop() throws Exception
+    {
+        try
+        {
+            close();
+        }
+        catch (IOException e)
+        {
+            LOG.warn(e);
+        }
+
+        super.doStop();
+
+        Thread[] acceptors;
+        synchronized (this)
+        {
+            acceptors = _acceptorThreads;
+            _acceptorThreads = null;
+        }
+        if (acceptors != null)
+        {
+            for (Thread thread : acceptors)
+            {
+                if (thread != null)
+                    thread.interrupt();
+            }
         }
     }
 
-    @Override
-    public <T> T getConnectionFactory(Class<T> factoryType)
+    /* ------------------------------------------------------------ */
+    public void join() throws InterruptedException
     {
-        synchronized (_factories)
+        Thread[] threads;
+        synchronized(this)
         {
-            for (ConnectionFactory f : _factories.values())
-                if (factoryType.isAssignableFrom(f.getClass()))
-                    return (T)f;
+            threads=_acceptorThreads;
+        }
+        if (threads != null)
+            for (Thread thread : threads)
+                if (thread != null)
+                    thread.join();
+    }
+
+    /* ------------------------------------------------------------ */
+    protected void configure(Socket socket) throws IOException
+    {
+        try
+        {
+            socket.setTcpNoDelay(true);
+            if (_soLingerTime >= 0)
+                socket.setSoLinger(true,_soLingerTime / 1000);
+            else
+                socket.setSoLinger(false,0);
+        }
+        catch (Exception e)
+        {
+            LOG.ignore(e);
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    public void customize(EndPoint endpoint, Request request) throws IOException
+    {
+        if (isForwarded())
+            checkForwardedHeaders(endpoint,request);
+    }
+
+    /* ------------------------------------------------------------ */
+    protected void checkForwardedHeaders(EndPoint endpoint, Request request) throws IOException
+    {
+        HttpFields httpFields = request.getConnection().getRequestFields();
+
+        // Do SSL first
+        if (getForwardedCipherSuiteHeader()!=null)
+        {
+            String cipher_suite=httpFields.getStringField(getForwardedCipherSuiteHeader());
+            if (cipher_suite!=null)
+                request.setAttribute("javax.servlet.request.cipher_suite",cipher_suite);
+        }
+        if (getForwardedSslSessionIdHeader()!=null)
+        {
+            String ssl_session_id=httpFields.getStringField(getForwardedSslSessionIdHeader());
+            if(ssl_session_id!=null)
+            {
+                request.setAttribute("javax.servlet.request.ssl_session_id", ssl_session_id);
+                request.setScheme(HttpSchemes.HTTPS);
+            }
+        }
+
+        // Retrieving headers from the request
+        String forwardedHost = getLeftMostFieldValue(httpFields,getForwardedHostHeader());
+        String forwardedServer = getLeftMostFieldValue(httpFields,getForwardedServerHeader());
+        String forwardedFor = getLeftMostFieldValue(httpFields,getForwardedForHeader());
+        String forwardedProto = getLeftMostFieldValue(httpFields,getForwardedProtoHeader());
+
+        if (_hostHeader != null)
+        {
+            // Update host header
+            httpFields.put(HttpHeaders.HOST_BUFFER,_hostHeader);
+            request.setServerName(null);
+            request.setServerPort(-1);
+            request.getServerName();
+        }
+        else if (forwardedHost != null)
+        {
+            // Update host header
+            httpFields.put(HttpHeaders.HOST_BUFFER,forwardedHost);
+            request.setServerName(null);
+            request.setServerPort(-1);
+            request.getServerName();
+        }
+        else if (forwardedServer != null)
+        {
+            // Use provided server name
+            request.setServerName(forwardedServer);
+        }
+
+        if (forwardedFor != null)
+        {
+            request.setRemoteAddr(forwardedFor);
+            InetAddress inetAddress = null;
+
+            if (_useDNS)
+            {
+                try
+                {
+                    inetAddress = InetAddress.getByName(forwardedFor);
+                }
+                catch (UnknownHostException e)
+                {
+                    LOG.ignore(e);
+                }
+            }
+
+            request.setRemoteHost(inetAddress == null?forwardedFor:inetAddress.getHostName());
+        }
+
+        if (forwardedProto != null)
+        {
+            request.setScheme(forwardedProto);
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    protected String getLeftMostFieldValue(HttpFields fields, String header)
+    {
+        if (header == null)
             return null;
-        }
-    }
 
-    public void addConnectionFactory(ConnectionFactory factory)
-    {
-        synchronized (_factories)
+        String headerValue = fields.getStringField(header);
+
+        if (headerValue == null)
+            return null;
+
+        int commaIndex = headerValue.indexOf(',');
+
+        if (commaIndex == -1)
         {
-            ConnectionFactory old=_factories.remove(factory.getProtocol());
-            if (old!=null)
-                removeBean(old);
-            _factories.put(factory.getProtocol().toLowerCase(Locale.ENGLISH), factory);
-            addBean(factory);
-            if (_defaultProtocol==null)
-                _defaultProtocol=factory.getProtocol();
+            // Single value
+            return headerValue;
         }
+
+        // The left-most value is the farthest downstream client
+        return headerValue.substring(0,commaIndex);
     }
 
-    public ConnectionFactory removeConnectionFactory(String protocol)
+    /* ------------------------------------------------------------ */
+    public void persist(EndPoint endpoint) throws IOException
     {
-        synchronized (_factories)
-        {
-            ConnectionFactory factory= _factories.remove(protocol.toLowerCase(Locale.ENGLISH));
-            removeBean(factory);
-            return factory;
-        }
     }
 
+    /* ------------------------------------------------------------ */
+    /*
+     * @see org.eclipse.jetty.server.Connector#getConfidentialPort()
+     */
+    public int getConfidentialPort()
+    {
+        return _confidentialPort;
+    }
+
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /*
+     * @see org.eclipse.jetty.server.Connector#getConfidentialScheme()
+     */
+    public String getConfidentialScheme()
+    {
+        return _confidentialScheme;
+    }
+
+    /* ------------------------------------------------------------ */
+    /*
+     * @see org.eclipse.jetty.server.Connector#isConfidential(org.eclipse.jetty.server .Request)
+     */
+    public boolean isIntegral(Request request)
+    {
+        return false;
+    }
+
+    /* ------------------------------------------------------------ */
+    /*
+     * @see org.eclipse.jetty.server.Connector#getConfidentialPort()
+     */
+    public int getIntegralPort()
+    {
+        return _integralPort;
+    }
+
+    /* ------------------------------------------------------------ */
+    /*
+     * @see org.eclipse.jetty.server.Connector#getIntegralScheme()
+     */
+    public String getIntegralScheme()
+    {
+        return _integralScheme;
+    }
+
+    /* ------------------------------------------------------------ */
+    /*
+     * @see org.eclipse.jetty.server.Connector#isConfidential(org.eclipse.jetty.server.Request)
+     */
+    public boolean isConfidential(Request request)
+    {
+        return _forwarded && request.getScheme().equalsIgnoreCase(HttpSchemes.HTTPS);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param confidentialPort
+     *            The confidentialPort to set.
+     */
+    public void setConfidentialPort(int confidentialPort)
+    {
+        _confidentialPort = confidentialPort;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param confidentialScheme
+     *            The confidentialScheme to set.
+     */
+    public void setConfidentialScheme(String confidentialScheme)
+    {
+        _confidentialScheme = confidentialScheme;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param integralPort
+     *            The integralPort to set.
+     */
+    public void setIntegralPort(int integralPort)
+    {
+        _integralPort = integralPort;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param integralScheme
+     *            The integralScheme to set.
+     */
+    public void setIntegralScheme(String integralScheme)
+    {
+        _integralScheme = integralScheme;
+    }
+
+    /* ------------------------------------------------------------ */
+    protected abstract void accept(int acceptorID) throws IOException, InterruptedException;
+
+    /* ------------------------------------------------------------ */
+    public void stopAccept(int acceptorID) throws Exception
+    {
+    }
+
+    /* ------------------------------------------------------------ */
+    public boolean getResolveNames()
+    {
+        return _useDNS;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setResolveNames(boolean resolve)
+    {
+        _useDNS = resolve;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Is reverse proxy handling on?
+     *
+     * @return true if this connector is checking the x-forwarded-for/host/server headers
+     */
+    public boolean isForwarded()
+    {
+        return _forwarded;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Set reverse proxy handling. If set to true, then the X-Forwarded headers (or the headers set in their place) are looked for to set the request protocol,
+     * host, server and client ip.
+     *
+     * @param check
+     *            true if this connector is checking the x-forwarded-for/host/server headers
+     * @see #setForwardedForHeader(String)
+     * @see #setForwardedHostHeader(String)
+     * @see #setForwardedProtoHeader(String)
+     * @see #setForwardedServerHeader(String)
+     */
+    public void setForwarded(boolean check)
+    {
+        if (check)
+            LOG.debug("{} is forwarded",this);
+        _forwarded = check;
+    }
+
+    /* ------------------------------------------------------------ */
+    public String getHostHeader()
+    {
+        return _hostHeader;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Set a forced valued for the host header to control what is returned by {@link ServletRequest#getServerName()} and {@link ServletRequest#getServerPort()}.
+     * This value is only used if {@link #isForwarded()} is true.
+     *
+     * @param hostHeader
+     *            The value of the host header to force.
+     */
+    public void setHostHeader(String hostHeader)
+    {
+        _hostHeader = hostHeader;
+    }
+
+    /* ------------------------------------------------------------ */
+    /*
+     *
+     * @see #setForwarded(boolean)
+     */
+    public String getForwardedHostHeader()
+    {
+        return _forwardedHostHeader;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param forwardedHostHeader
+     *            The header name for forwarded hosts (default x-forwarded-host)
+     * @see #setForwarded(boolean)
+     */
+    public void setForwardedHostHeader(String forwardedHostHeader)
+    {
+        _forwardedHostHeader = forwardedHostHeader;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return the header name for forwarded server.
+     * @see #setForwarded(boolean)
+     */
+    public String getForwardedServerHeader()
+    {
+        return _forwardedServerHeader;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param forwardedServerHeader
+     *            The header name for forwarded server (default x-forwarded-server)
+     * @see #setForwarded(boolean)
+     */
+    public void setForwardedServerHeader(String forwardedServerHeader)
+    {
+        _forwardedServerHeader = forwardedServerHeader;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see #setForwarded(boolean)
+     */
+    public String getForwardedForHeader()
+    {
+        return _forwardedForHeader;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param forwardedRemoteAddressHeader
+     *            The header name for forwarded for (default x-forwarded-for)
+     * @see #setForwarded(boolean)
+     */
+    public void setForwardedForHeader(String forwardedRemoteAddressHeader)
+    {
+        _forwardedForHeader = forwardedRemoteAddressHeader;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Get the forwardedProtoHeader.
+     *
+     * @return the forwardedProtoHeader (default X-Forwarded-For)
+     * @see #setForwarded(boolean)
+     */
+    public String getForwardedProtoHeader()
+    {
+        return _forwardedProtoHeader;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Set the forwardedProtoHeader.
+     *
+     * @param forwardedProtoHeader
+     *            the forwardedProtoHeader to set (default X-Forwarded-For)
+     * @see #setForwarded(boolean)
+     */
+    public void setForwardedProtoHeader(String forwardedProtoHeader)
+    {
+        _forwardedProtoHeader = forwardedProtoHeader;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return The header name holding a forwarded cipher suite (default null)
+     */
+    public String getForwardedCipherSuiteHeader()
+    {
+        return _forwardedCipherSuiteHeader;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param forwardedCipherSuite
+     *            The header name holding a forwarded cipher suite (default null)
+     */
+    public void setForwardedCipherSuiteHeader(String forwardedCipherSuite)
+    {
+        _forwardedCipherSuiteHeader = forwardedCipherSuite;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return The header name holding a forwarded SSL Session ID (default null)
+     */
+    public String getForwardedSslSessionIdHeader()
+    {
+        return _forwardedSslSessionIdHeader;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param forwardedSslSessionId
+     *            The header name holding a forwarded SSL Session ID (default null)
+     */
+    public void setForwardedSslSessionIdHeader(String forwardedSslSessionId)
+    {
+        _forwardedSslSessionIdHeader = forwardedSslSessionId;
+    }
+
+    public int getRequestBufferSize()
+    {
+        return _buffers.getRequestBufferSize();
+    }
+
+    public void setRequestBufferSize(int requestBufferSize)
+    {
+        _buffers.setRequestBufferSize(requestBufferSize);
+    }
+
+    public int getRequestHeaderSize()
+    {
+        return _buffers.getRequestHeaderSize();
+    }
+
+    public void setRequestHeaderSize(int requestHeaderSize)
+    {
+        _buffers.setRequestHeaderSize(requestHeaderSize);
+    }
+
+    public int getResponseBufferSize()
+    {
+        return _buffers.getResponseBufferSize();
+    }
+
+    public void setResponseBufferSize(int responseBufferSize)
+    {
+        _buffers.setResponseBufferSize(responseBufferSize);
+    }
+
+    public int getResponseHeaderSize()
+    {
+        return _buffers.getResponseHeaderSize();
+    }
+
+    public void setResponseHeaderSize(int responseHeaderSize)
+    {
+        _buffers.setResponseHeaderSize(responseHeaderSize);
+    }
+
+    public Type getRequestBufferType()
+    {
+        return _buffers.getRequestBufferType();
+    }
+
+    public Type getRequestHeaderType()
+    {
+        return _buffers.getRequestHeaderType();
+    }
+
+    public Type getResponseBufferType()
+    {
+        return _buffers.getResponseBufferType();
+    }
+
+    public Type getResponseHeaderType()
+    {
+        return _buffers.getResponseHeaderType();
+    }
+
+    public void setRequestBuffers(Buffers requestBuffers)
+    {
+        _buffers.setRequestBuffers(requestBuffers);
+    }
+
+    public void setResponseBuffers(Buffers responseBuffers)
+    {
+        _buffers.setResponseBuffers(responseBuffers);
+    }
+
+    public Buffers getRequestBuffers()
+    {
+        return _buffers.getRequestBuffers();
+    }
+
+    public Buffers getResponseBuffers()
+    {
+        return _buffers.getResponseBuffers();
+    }
+
+    public void setMaxBuffers(int maxBuffers)
+    {
+        _buffers.setMaxBuffers(maxBuffers);
+    }
+
+    public int getMaxBuffers()
+    {
+        return _buffers.getMaxBuffers();
+    }
+
+    /* ------------------------------------------------------------ */
     @Override
-    public Collection<ConnectionFactory> getConnectionFactories()
+    public String toString()
     {
-        synchronized (_factories)
-        {
-            return _factories.values();
-        }
+        return String.format("%s@%s:%d",
+                getClass().getSimpleName(),
+                getHost()==null?"0.0.0.0":getHost(),
+                getLocalPort()<=0?getPort():getLocalPort());
     }
 
-    public void setConnectionFactories(Collection<ConnectionFactory> factories)
-    {
-        synchronized (_factories)
-        {
-            List<ConnectionFactory> existing = new ArrayList<>(_factories.values());
-            for (ConnectionFactory factory: existing)
-                removeConnectionFactory(factory.getProtocol());
-            for (ConnectionFactory factory: factories)
-                if (factory!=null)
-                    addConnectionFactory(factory);
-        }
-    }
-
-
-    @Override
-    @ManagedAttribute("Protocols supported by this connector")
-    public List<String> getProtocols()
-    {
-        synchronized (_factories)
-        {
-            return new ArrayList<>(_factories.keySet());
-        }
-    }
-
-    public void clearConnectionFactories()
-    {
-        synchronized (_factories)
-        {
-            _factories.clear();
-        }
-    }
-
-    @ManagedAttribute("This connector's default protocol")
-    public String getDefaultProtocol()
-    {
-        return _defaultProtocol;
-    }
-
-    public void setDefaultProtocol(String defaultProtocol)
-    {
-        _defaultProtocol = defaultProtocol.toLowerCase(Locale.ENGLISH);
-        if (isRunning())
-            _defaultConnectionFactory=getConnectionFactory(_defaultProtocol);
-    }
-
-    @Override
-    public ConnectionFactory getDefaultConnectionFactory()
-    {
-        if (isStarted())
-            return _defaultConnectionFactory;
-        return getConnectionFactory(_defaultProtocol);
-    }
-
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
     private class Acceptor implements Runnable
     {
-        private final int _acceptor;
+        int _acceptor = 0;
 
-        private Acceptor(int id)
+        Acceptor(int id)
         {
             _acceptor = id;
         }
 
-        @Override
+        /* ------------------------------------------------------------ */
         public void run()
         {
             Thread current = Thread.currentThread();
-            String name = current.getName();
-            current.setName(name + "-acceptor-" + _acceptor + "-" + AbstractConnector.this);
-
+            String name;
             synchronized (AbstractConnector.this)
             {
-                _acceptors[_acceptor] = current;
+                if (_acceptorThreads == null)
+                    return;
+
+                _acceptorThreads[_acceptor] = current;
+                name = _acceptorThreads[_acceptor].getName();
+                current.setName(name + " Acceptor" + _acceptor + " " + AbstractConnector.this);
             }
+            int old_priority = current.getPriority();
 
             try
             {
-                while (isAccepting())
+                current.setPriority(old_priority - _acceptorPriorityOffset);
+                while (isRunning() && getConnection() != null)
                 {
                     try
                     {
                         accept(_acceptor);
                     }
+                    catch (EofException e)
+                    {
+                        LOG.ignore(e);
+                    }
+                    catch (IOException e)
+                    {
+                        LOG.ignore(e);
+                    }
+                    catch (InterruptedException x)
+                    {
+                        // Connector has been stopped
+                        LOG.ignore(x);
+                    }
                     catch (Throwable e)
                     {
-                        if (isAccepting())
-                            LOG.warn(e);
-                        else
-                            LOG.debug(e);
+                        LOG.warn(e);
                     }
                 }
             }
             finally
             {
+                current.setPriority(old_priority);
                 current.setName(name);
 
                 synchronized (AbstractConnector.this)
                 {
-                    _acceptors[_acceptor] = null;
+                    if (_acceptorThreads != null)
+                        _acceptorThreads[_acceptor] = null;
                 }
-                CountDownLatch stopping=_stopping;
-                if (stopping!=null)
-                    stopping.countDown();
             }
         }
     }
 
-
-
-
-//    protected void connectionOpened(Connection connection)
-//    {
-//        _stats.connectionOpened();
-//        connection.onOpen();
-//    }
-//
-//    protected void connectionClosed(Connection connection)
-//    {
-//        connection.onClose();
-//        long duration = System.currentTimeMillis() - connection.getEndPoint().getCreatedTimeStamp();
-//        _stats.connectionClosed(duration, connection.getMessagesIn(), connection.getMessagesOut());
-//    }
-//
-//    public void connectionUpgraded(Connection oldConnection, Connection newConnection)
-//    {
-//        oldConnection.onClose();
-//        _stats.connectionUpgraded(oldConnection.getMessagesIn(), oldConnection.getMessagesOut());
-//        newConnection.onOpen();
-//    }
-
-    @Override
-    public Collection<EndPoint> getConnectedEndPoints()
-    {
-        return _immutableEndPoints;
-    }
-
-    protected void onEndPointOpened(EndPoint endp)
-    {
-        _endpoints.add(endp);
-    }
-
-    protected void onEndPointClosed(EndPoint endp)
-    {
-        _endpoints.remove(endp);
-    }
-
-    @Override
-    public Scheduler getScheduler()
-    {
-        return _scheduler;
-    }
-
-    @Override
+    /* ------------------------------------------------------------ */
     public String getName()
     {
+        if (_name == null)
+            _name = (getHost() == null?"0.0.0.0":getHost()) + ":" + (getLocalPort() <= 0?getPort():getLocalPort());
         return _name;
     }
-    
+
     /* ------------------------------------------------------------ */
-    /**
-     * Set a connector name.   A context may be configured with
-     * virtual hosts in the form "@contextname" and will only serve
-     * requests from the named connector,
-     * @param name A connector name.
-     */
     public void setName(String name)
     {
-        _name=name;
+        _name = name;
     }
-    
-    @Override
-    public String toString()
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return Get the number of requests handled by this connector since last call of statsReset(). If setStatsOn(false) then this is undefined.
+     */
+    public int getRequests()
     {
-        return String.format("%s@%x{%s}",
-                _name==null?getClass().getSimpleName():_name,
-                hashCode(),
-                getDefaultProtocol());
+        return (int)_requestStats.getTotal();
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return Returns the connectionsDurationTotal.
+     */
+    public long getConnectionsDurationTotal()
+    {
+        return _connectionDurationStats.getTotal();
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return Number of connections accepted by the server since statsReset() called. Undefined if setStatsOn(false).
+     */
+    public int getConnections()
+    {
+        return (int)_connectionStats.getTotal();
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return Number of connections currently open that were opened since statsReset() called. Undefined if setStatsOn(false).
+     */
+    public int getConnectionsOpen()
+    {
+        return (int)_connectionStats.getCurrent();
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return Maximum number of connections opened simultaneously since statsReset() called. Undefined if setStatsOn(false).
+     */
+    public int getConnectionsOpenMax()
+    {
+        return (int)_connectionStats.getMax();
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return Mean duration in milliseconds of open connections since statsReset() called. Undefined if setStatsOn(false).
+     */
+    public double getConnectionsDurationMean()
+    {
+        return _connectionDurationStats.getMean();
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return Maximum duration in milliseconds of an open connection since statsReset() called. Undefined if setStatsOn(false).
+     */
+    public long getConnectionsDurationMax()
+    {
+        return _connectionDurationStats.getMax();
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return Standard deviation of duration in milliseconds of open connections since statsReset() called. Undefined if setStatsOn(false).
+     */
+    public double getConnectionsDurationStdDev()
+    {
+        return _connectionDurationStats.getStdDev();
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return Mean number of requests per connection since statsReset() called. Undefined if setStatsOn(false).
+     */
+    public double getConnectionsRequestsMean()
+    {
+        return _requestStats.getMean();
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return Maximum number of requests per connection since statsReset() called. Undefined if setStatsOn(false).
+     */
+    public int getConnectionsRequestsMax()
+    {
+        return (int)_requestStats.getMax();
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return Standard deviation of number of requests per connection since statsReset() called. Undefined if setStatsOn(false).
+     */
+    public double getConnectionsRequestsStdDev()
+    {
+        return _requestStats.getStdDev();
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Reset statistics.
+     */
+    public void statsReset()
+    {
+        updateNotEqual(_statsStartedAt,-1,System.currentTimeMillis());
+
+        _requestStats.reset();
+        _connectionStats.reset();
+        _connectionDurationStats.reset();
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setStatsOn(boolean on)
+    {
+        if (on && _statsStartedAt.get() != -1)
+            return;
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Statistics on = " + on + " for " + this);
+
+        statsReset();
+        _statsStartedAt.set(on?System.currentTimeMillis():-1);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return True if statistics collection is turned on.
+     */
+    public boolean getStatsOn()
+    {
+        return _statsStartedAt.get() != -1;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return Timestamp stats were started at.
+     */
+    public long getStatsOnMs()
+    {
+        long start = _statsStartedAt.get();
+
+        return (start != -1)?(System.currentTimeMillis() - start):0;
+    }
+
+    /* ------------------------------------------------------------ */
+    protected void connectionOpened(Connection connection)
+    {
+        if (_statsStartedAt.get() == -1)
+            return;
+
+        _connectionStats.increment();
+    }
+
+    /* ------------------------------------------------------------ */
+    protected void connectionUpgraded(Connection oldConnection, Connection newConnection)
+    {
+        _requestStats.set((oldConnection instanceof AbstractHttpConnection)?((AbstractHttpConnection)oldConnection).getRequests():0);
+    }
+
+    /* ------------------------------------------------------------ */
+    protected void connectionClosed(Connection connection)
+    {
+        connection.onClose();
+
+        if (_statsStartedAt.get() == -1)
+            return;
+
+        long duration = System.currentTimeMillis() - connection.getTimeStamp();
+        int requests = (connection instanceof AbstractHttpConnection)?((AbstractHttpConnection)connection).getRequests():0;
+        _requestStats.set(requests);
+        _connectionStats.decrement();
+        _connectionDurationStats.set(duration);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return the acceptorPriority
+     */
+    public int getAcceptorPriorityOffset()
+    {
+        return _acceptorPriorityOffset;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Set the priority offset of the acceptor threads. The priority is adjusted by this amount (default 0) to either favour the acceptance of new threads and
+     * newly active connections or to favour the handling of already dispatched connections.
+     *
+     * @param offset
+     *            the amount to alter the priority of the acceptor threads.
+     */
+    public void setAcceptorPriorityOffset(int offset)
+    {
+        _acceptorPriorityOffset = offset;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return True if the the server socket will be opened in SO_REUSEADDR mode.
+     */
+    public boolean getReuseAddress()
+    {
+        return _reuseAddress;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param reuseAddress
+     *            True if the the server socket will be opened in SO_REUSEADDR mode.
+     */
+    public void setReuseAddress(boolean reuseAddress)
+    {
+        _reuseAddress = reuseAddress;
+    }
+
+    /* ------------------------------------------------------------ */
+    public boolean isLowResources()
+    {
+        if (_threadPool != null)
+            return _threadPool.isLowOnThreads();
+        return _server.getThreadPool().isLowOnThreads();
+    }
+
+    /* ------------------------------------------------------------ */
+    private void updateNotEqual(AtomicLong valueHolder, long compare, long value)
+    {
+        long oldValue = valueHolder.get();
+        while (compare != oldValue)
+        {
+            if (valueHolder.compareAndSet(oldValue,value))
+                break;
+            oldValue = valueHolder.get();
+        }
     }
 }

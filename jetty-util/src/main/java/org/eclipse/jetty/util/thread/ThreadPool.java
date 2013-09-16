@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.util.thread;
 
-import java.util.concurrent.Executor;
-
-import org.eclipse.jetty.util.annotation.ManagedAttribute;
-import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.LifeCycle;
 
 /* ------------------------------------------------------------ */
@@ -29,14 +25,9 @@ import org.eclipse.jetty.util.component.LifeCycle;
  * 
  *
  */
-@ManagedObject("Pool of Threads")
-public interface ThreadPool extends Executor
+public interface ThreadPool
 {
     /* ------------------------------------------------------------ */
-    /** 
-     * @deprecated use {@link Executor#execute(Runnable)}
-     */
-    @Deprecated
     public abstract boolean dispatch(Runnable job);
 
     /* ------------------------------------------------------------ */
@@ -49,21 +40,18 @@ public interface ThreadPool extends Executor
     /**
      * @return The total number of threads currently in the pool
      */
-    @ManagedAttribute("number of threads in pool")
     public int getThreads();
 
     /* ------------------------------------------------------------ */
     /**
      * @return The number of idle threads in the pool
      */
-    @ManagedAttribute("number of idle threads in pool")
     public int getIdleThreads();
     
     /* ------------------------------------------------------------ */
     /**
      * @return True if the pool is low on threads
      */
-    @ManagedAttribute("indicates the pool is low on available threads")
     public boolean isLowOnThreads();
     
 

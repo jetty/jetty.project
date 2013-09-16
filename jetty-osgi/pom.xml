@@ -3,7 +3,8 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.0.6-SNAPSHOT</version>
+    <version>7.6.13-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
   </parent>
   <groupId>org.eclipse.jetty.osgi</groupId>
   <artifactId>jetty-osgi-project</artifactId>
@@ -15,15 +16,16 @@
     <osgi-services-version>3.2.100.v20100503</osgi-services-version>
     <equinox-http-servlet-version>1.0.0-v20070606</equinox-http-servlet-version>
     <!--equinox-servletbridge-version>1.0.0-v20070523</equinox-servletbridge-version-->
-    <logback-version>0.9.29</logback-version>
-    <slf4j-version>1.6.1</slf4j-version>
+    <logback-version>0.9.18</logback-version>
+    <slf4j-version>1.5.11</slf4j-version>
   </properties>
   <modules>
     <module>jetty-osgi-boot</module>
     <module>jetty-osgi-boot-jsp</module>
+    <module>jetty-osgi-boot-logback</module>
     <module>jetty-osgi-boot-warurl</module>
-    <module>jetty-osgi-npn</module>
     <module>jetty-osgi-httpservice</module>
+    <module>jetty-osgi-equinoxtools</module>
     <module>test-jetty-osgi-webapp</module>
     <module>test-jetty-osgi-context</module>
     <module>test-jetty-osgi</module>
@@ -75,7 +77,7 @@
     <dependencies>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-annotations</artifactId>
+        <artifactId>jetty-server</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -127,13 +129,6 @@
         <groupId>org.eclipse.osgi</groupId>
         <artifactId>org.eclipse.osgi.services</artifactId>
         <version>${osgi-services-version}</version>
-        <exclusions>
-          <exclusion>
-            <!-- we use the servlet jar from orbit -->
-            <groupId>javax.servlet</groupId>
-            <artifactId>servlet-api</artifactId>
-          </exclusion>
-        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.eclipse.osgi</groupId>
@@ -145,6 +140,11 @@
         <artifactId>servlet</artifactId>
         <version>${equinox-http-servlet-version}</version>
       </dependency>
+      <!--dependency>
+        <groupId>org.eclipse.equinox</groupId>
+        <artifactId>servletbridge</artifactId>
+        <version>${equinox-servletbridge-version}</version>
+      </dependency-->
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>

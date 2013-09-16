@@ -50,10 +50,7 @@ public class FileDestroyable implements Destroyable
     
     public void addFile(String file) throws IOException
     {
-        try(Resource r = Resource.newResource(file);)
-        {
-            _files.add(r.getFile());
-        }
+        _files.add(Resource.newResource(file).getFile());
     }
     
     public void addFile(File file)
@@ -68,10 +65,7 @@ public class FileDestroyable implements Destroyable
     
     public void removeFile(String file) throws IOException
     {
-        try(Resource r = Resource.newResource(file);)
-        {
-            _files.remove(r.getFile());
-        }
+        _files.remove(Resource.newResource(file).getFile());
     }
     
     public void removeFile(File file)
@@ -79,7 +73,6 @@ public class FileDestroyable implements Destroyable
         _files.remove(file);
     }
     
-    @Override
     public void destroy()
     {
         for (File file : _files)

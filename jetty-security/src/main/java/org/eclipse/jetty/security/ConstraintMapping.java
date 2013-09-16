@@ -23,7 +23,6 @@ import org.eclipse.jetty.util.security.Constraint;
 public class ConstraintMapping
 {
     String _method;
-    String[] _methodOmissions;
 
     String _pathSpec;
 
@@ -81,20 +80,5 @@ public class ConstraintMapping
     public void setPathSpec(String pathSpec)
     {
         this._pathSpec = pathSpec;
-    }
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * @param omissions The http-method-omission
-     */
-    public void setMethodOmissions(String[] omissions)
-    {
-        _methodOmissions = omissions;
-    }
-    
-    /* ------------------------------------------------------------ */
-    public String[] getMethodOmissions()
-    {
-        return _methodOmissions;
     }
 }

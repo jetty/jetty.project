@@ -19,1138 +19,888 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
-import java.net.ConnectException;
-import java.net.CookieManager;
-import java.net.CookiePolicy;
-import java.net.CookieStore;
-import java.net.SocketAddress;
-import java.net.SocketException;
-import java.net.URI;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.SocketChannel;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
+import java.io.InputStream;
+import java.net.UnknownHostException;
+import java.util.Enumeration;
+import java.util.LinkedList;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
-import java.util.concurrent.TimeoutException;
-import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLContext;
 
-import org.eclipse.jetty.client.api.AuthenticationStore;
-import org.eclipse.jetty.client.api.Connection;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Destination;
-import org.eclipse.jetty.client.api.ProxyConfiguration;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.http.HttpScheme;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.io.SelectChannelEndPoint;
-import org.eclipse.jetty.io.SelectorManager;
-import org.eclipse.jetty.io.ssl.SslConnection;
-import org.eclipse.jetty.util.Jetty;
-import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.SocketAddressResolver;
-import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.client.security.Authentication;
+import org.eclipse.jetty.client.security.RealmResolver;
+import org.eclipse.jetty.client.security.SecurityListener;
+import org.eclipse.jetty.http.HttpBuffers;
+import org.eclipse.jetty.http.HttpBuffersImpl;
+import org.eclipse.jetty.http.HttpSchemes;
+import org.eclipse.jetty.io.Buffers;
+import org.eclipse.jetty.io.Buffers.Type;
+import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.AttributesMap;
+import org.eclipse.jetty.util.component.AggregateLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
-import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.thread.ThreadPool;
+import org.eclipse.jetty.util.thread.Timeout;
 
 /**
- * <p>{@link HttpClient} provides an efficient, asynchronous, non-blocking implementation
- * to perform HTTP requests to a server through a simple API that offers also blocking semantic.</p>
- * <p>{@link HttpClient} provides easy-to-use methods such as {@link #GET(String)} that allow to perform HTTP
- * requests in a one-liner, but also gives the ability to fine tune the configuration of requests via
- * {@link HttpClient#newRequest(URI)}.</p>
- * <p>{@link HttpClient} acts as a central configuration point for network parameters (such as idle timeouts)
- * and HTTP parameters (such as whether to follow redirects).</p>
- * <p>{@link HttpClient} transparently pools connections to servers, but allows direct control of connections
- * for cases where this is needed.</p>
- * <p>{@link HttpClient} also acts as a central configuration point for cookies, via {@link #getCookieStore()}.</p>
- * <p>Typical usage:</p>
- * <pre>
- * HttpClient httpClient = new HttpClient();
- * httpClient.start();
+ * Http Client.
+ * <p/>
+ * HttpClient is the main active component of the client API implementation.
+ * It is the opposite of the Connectors in standard Jetty, in that it listens
+ * for responses rather than requests.   Just like the connectors, there is a
+ * blocking socket version and a non-blocking NIO version (implemented as nested classes
+ * selected by {@link #setConnectorType(int)}).
+ * <p/>
+ * The an instance of {@link HttpExchange} is passed to the {@link #send(HttpExchange)} method
+ * to send a request.  The exchange contains both the headers and content (source) of the request
+ * plus the callbacks to handle responses.   A HttpClient can have many exchanges outstanding
+ * and they may be queued on the {@link HttpDestination} waiting for a {@link AbstractHttpConnection},
+ * queued in the {@link AbstractHttpConnection} waiting to be transmitted or pipelined on the actual
+ * TCP/IP connection waiting for a response.
+ * <p/>
+ * The {@link HttpDestination} class is an aggregation of {@link AbstractHttpConnection}s for the
+ * same host, port and protocol.   A destination may limit the number of connections
+ * open and they provide a pool of open connections that may be reused.   Connections may also
+ * be allocated from a destination, so that multiple request sources are not multiplexed
+ * over the same connection.
  *
- * // One liner:
- * httpClient.GET("http://localhost:8080/").get().status();
- *
- * // Building a request with a timeout
- * Response response = httpClient.newRequest("http://localhost:8080").send().get(5, TimeUnit.SECONDS);
- * int status = response.status();
- *
- * // Asynchronously
- * httpClient.newRequest("http://localhost:8080").send(new Response.CompleteListener()
- * {
- *     &#64;Override
- *     public void onComplete(Result result)
- *     {
- *         ...
- *     }
- * });
- * </pre>
+ * @see HttpExchange
+ * @see HttpDestination
  */
-public class HttpClient extends ContainerLifeCycle
+public class HttpClient extends AggregateLifeCycle implements HttpBuffers, Attributes, Dumpable
 {
-    private static final Logger LOG = Log.getLogger(HttpClient.class);
+    public static final int CONNECTOR_SOCKET = 0;
+    public static final int CONNECTOR_SELECT_CHANNEL = 2;
 
-    private final ConcurrentMap<String, HttpDestination> destinations = new ConcurrentHashMap<>();
-    private final ConcurrentMap<Long, HttpConversation> conversations = new ConcurrentHashMap<>();
-    private final List<ProtocolHandler> handlers = new ArrayList<>();
-    private final List<Request.Listener> requestListeners = new ArrayList<>();
-    private final AuthenticationStore authenticationStore = new HttpAuthenticationStore();
-    private final Set<ContentDecoder.Factory> decoderFactories = new ContentDecoderFactorySet();
-    private final SslContextFactory sslContextFactory;
-    private volatile CookieManager cookieManager;
-    private volatile CookieStore cookieStore;
-    private volatile Executor executor;
-    private volatile ByteBufferPool byteBufferPool;
-    private volatile Scheduler scheduler;
-    private volatile SocketAddressResolver resolver;
-    private volatile SelectorManager selectorManager;
-    private volatile HttpField agentField = new HttpField(HttpHeader.USER_AGENT, "Jetty/" + Jetty.VERSION);
-    private volatile boolean followRedirects = true;
-    private volatile int maxConnectionsPerDestination = 64;
-    private volatile int maxRequestsQueuedPerDestination = 1024;
-    private volatile int requestBufferSize = 4096;
-    private volatile int responseBufferSize = 4096;
-    private volatile int maxRedirects = 8;
-    private volatile SocketAddress bindAddress;
-    private volatile long connectTimeout = 15000;
-    private volatile long addressResolutionTimeout = 15000;
-    private volatile long idleTimeout;
-    private volatile boolean tcpNoDelay = true;
-    private volatile boolean dispatchIO = true;
-    private volatile ProxyConfiguration proxyConfig;
-    private volatile HttpField encodingField;
+    private int _connectorType = CONNECTOR_SELECT_CHANNEL;
+    private boolean _useDirectBuffers = true;
+    private boolean _connectBlocking = true;
+    private int _maxConnectionsPerAddress = Integer.MAX_VALUE;
+    private int _maxQueueSizePerAddress = Integer.MAX_VALUE;
+    private ConcurrentMap<Address, HttpDestination> _destinations = new ConcurrentHashMap<Address, HttpDestination>();
+    ThreadPool _threadPool;
+    Connector _connector;
+    private long _idleTimeout = 20000;
+    private long _timeout = 320000;
+    private int _connectTimeout = 75000;
+    private Timeout _timeoutQ = new Timeout();
+    private Timeout _idleTimeoutQ = new Timeout();
+    private Address _proxy;
+    private Authentication _proxyAuthentication;
+    private Set<String> _noProxy;
+    private int _maxRetries = 3;
+    private int _maxRedirects = 20;
+    private LinkedList<String> _registeredListeners;
 
-    /**
-     * Creates a {@link HttpClient} instance that can perform requests to non-TLS destinations only
-     * (that is, requests with the "http" scheme only, and not "https").
-     *
-     * @see #HttpClient(SslContextFactory) to perform requests to TLS destinations.
-     */
+    private final SslContextFactory _sslContextFactory;
+
+    private RealmResolver _realmResolver;
+
+    private AttributesMap _attributes=new AttributesMap();
+
+    private final HttpBuffersImpl _buffers= new HttpBuffersImpl();
+
+    /* ------------------------------------------------------------------------------- */
+    private void setBufferTypes()
+    {
+        if (_connectorType==CONNECTOR_SOCKET)
+        {
+            _buffers.setRequestBufferType(Type.BYTE_ARRAY);
+            _buffers.setRequestHeaderType(Type.BYTE_ARRAY);
+            _buffers.setResponseBufferType(Type.BYTE_ARRAY);
+            _buffers.setResponseHeaderType(Type.BYTE_ARRAY);
+        }
+        else
+        {
+            _buffers.setRequestBufferType(Type.DIRECT);
+            _buffers.setRequestHeaderType(_useDirectBuffers?Type.DIRECT:Type.INDIRECT);
+            _buffers.setResponseBufferType(Type.DIRECT);
+            _buffers.setResponseHeaderType(_useDirectBuffers?Type.DIRECT:Type.INDIRECT);
+        }
+
+    }
+
+    /* ------------------------------------------------------------------------------- */
     public HttpClient()
     {
-        this(null);
+        this(new SslContextFactory());
     }
 
-    /**
-     * Creates a {@link HttpClient} instance that can perform requests to non-TLS and TLS destinations
-     * (that is, both requests with the "http" scheme and with the "https" scheme).
-     *
-     * @param sslContextFactory the {@link SslContextFactory} that manages TLS encryption
-     * @see #getSslContextFactory()
-     */
+    /* ------------------------------------------------------------------------------- */
     public HttpClient(SslContextFactory sslContextFactory)
     {
-        this.sslContextFactory = sslContextFactory;
+        _sslContextFactory = sslContextFactory;
+        addBean(_sslContextFactory);
+        addBean(_buffers);
     }
 
+    /* ------------------------------------------------------------------------------- */
     /**
-     * @return the {@link SslContextFactory} that manages TLS encryption
-     * @see #HttpClient(SslContextFactory)
+     * @return True if connects will be in blocking mode.
      */
-    public SslContextFactory getSslContextFactory()
+    public boolean isConnectBlocking()
     {
-        return sslContextFactory;
+        return _connectBlocking;
     }
 
-    @Override
-    protected void doStart() throws Exception
-    {
-        if (sslContextFactory != null)
-            addBean(sslContextFactory);
-
-        String name = HttpClient.class.getSimpleName() + "@" + hashCode();
-
-        if (executor == null)
-        {
-            QueuedThreadPool threadPool = new QueuedThreadPool();
-            threadPool.setName(name);
-            executor = threadPool;
-        }
-        addBean(executor);
-
-        if (byteBufferPool == null)
-            byteBufferPool = new MappedByteBufferPool();
-        addBean(byteBufferPool);
-
-        if (scheduler == null)
-            scheduler = new ScheduledExecutorScheduler(name + "-scheduler", false);
-        addBean(scheduler);
-
-        resolver = new SocketAddressResolver(executor, scheduler, getAddressResolutionTimeout());
-
-        selectorManager = newSelectorManager();
-        selectorManager.setConnectTimeout(getConnectTimeout());
-        addBean(selectorManager);
-
-        handlers.add(new ContinueProtocolHandler(this));
-        handlers.add(new RedirectProtocolHandler(this));
-        handlers.add(new WWWAuthenticationProtocolHandler(this));
-        handlers.add(new ProxyAuthenticationProtocolHandler(this));
-
-        decoderFactories.add(new GZIPContentDecoder.Factory());
-
-        cookieManager = newCookieManager();
-        cookieStore = cookieManager.getCookieStore();
-
-        super.doStart();
-    }
-
-    protected SelectorManager newSelectorManager()
-    {
-        return new ClientSelectorManager(getExecutor(), getScheduler());
-    }
-
-    private CookieManager newCookieManager()
-    {
-        return new CookieManager(getCookieStore(), CookiePolicy.ACCEPT_ALL);
-    }
-
-    @Override
-    protected void doStop() throws Exception
-    {
-        cookieStore.removeAll();
-        cookieStore = null;
-        decoderFactories.clear();
-        handlers.clear();
-
-        for (HttpDestination destination : destinations.values())
-            destination.close();
-        destinations.clear();
-
-        conversations.clear();
-        requestListeners.clear();
-        authenticationStore.clearAuthentications();
-        authenticationStore.clearAuthenticationResults();
-
-        super.doStop();
-    }
-
+    /* ------------------------------------------------------------------------------- */
     /**
-     * Returns a <em>non</em> thread-safe list of {@link Request.Listener}s that can be modified before
-     * performing requests.
-     *
-     * @return a list of {@link Request.Listener} that can be used to add and remove listeners
+     * @param connectBlocking True if connects will be in blocking mode.
      */
-    public List<Request.Listener> getRequestListeners()
+    public void setConnectBlocking(boolean connectBlocking)
     {
-        return requestListeners;
+        _connectBlocking = connectBlocking;
     }
 
+    /* ------------------------------------------------------------------------------- */
+    public void send(HttpExchange exchange) throws IOException
+    {
+        boolean ssl = HttpSchemes.HTTPS_BUFFER.equalsIgnoreCase(exchange.getScheme());
+        exchange.setStatus(HttpExchange.STATUS_WAITING_FOR_CONNECTION);
+        HttpDestination destination = getDestination(exchange.getAddress(), ssl);
+        destination.send(exchange);
+    }
+
+    /* ------------------------------------------------------------ */
     /**
-     * @return the cookie store associated with this instance
+     * @return the threadpool
      */
-    public CookieStore getCookieStore()
+    public ThreadPool getThreadPool()
     {
-        return cookieStore;
+        return _threadPool;
     }
 
+    /* ------------------------------------------------------------ */
+    /** Set the ThreadPool.
+     * The threadpool passed is added via {@link #addBean(Object)} so that
+     * it's lifecycle may be managed as a {@link AggregateLifeCycle}.
+     * @param threadPool the threadPool to set
+     */
+    public void setThreadPool(ThreadPool threadPool)
+    {
+        removeBean(_threadPool);
+        _threadPool = threadPool;
+        addBean(_threadPool);
+    }
+
+
+    /* ------------------------------------------------------------ */
     /**
-     * @param cookieStore the cookie store associated with this instance
+     * @param name
+     * @return Attribute associated with client
      */
-    public void setCookieStore(CookieStore cookieStore)
+    public Object getAttribute(String name)
     {
-        this.cookieStore = Objects.requireNonNull(cookieStore);
-        this.cookieManager = newCookieManager();
+        return _attributes.getAttribute(name);
     }
 
+    /* ------------------------------------------------------------ */
     /**
-     * Keep this method package-private because its interface is so ugly
-     * that we really don't want to expose it more than strictly needed.
-     *
-     * @return the cookie manager
+     * @return names of attributes associated with client
      */
-    CookieManager getCookieManager()
+    public Enumeration getAttributeNames()
     {
-        return cookieManager;
+        return _attributes.getAttributeNames();
     }
 
+    /* ------------------------------------------------------------ */
     /**
-     * @return the authentication store associated with this instance
+     * @param name
      */
-    public AuthenticationStore getAuthenticationStore()
+    public void removeAttribute(String name)
     {
-        return authenticationStore;
+        _attributes.removeAttribute(name);
     }
 
+    /* ------------------------------------------------------------ */
     /**
-     * Returns a <em>non</em> thread-safe set of {@link ContentDecoder.Factory}s that can be modified before
-     * performing requests.
-     *
-     * @return a set of {@link ContentDecoder.Factory} that can be used to add and remove content decoder factories
+     * Set an attribute on the HttpClient.
+     * Attributes are not used by the client, but are provided for
+     * so that users of a shared HttpClient may share other structures.
+     * @param name
+     * @param attribute
      */
-    public Set<ContentDecoder.Factory> getContentDecoderFactories()
+    public void setAttribute(String name, Object attribute)
     {
-        return decoderFactories;
+        _attributes.setAttribute(name,attribute);
     }
 
-    /**
-     * Performs a GET request to the specified URI.
-     *
-     * @param uri the URI to GET
-     * @return the {@link ContentResponse} for the request
-     * @see #GET(URI)
-     */
-    public ContentResponse GET(String uri) throws InterruptedException, ExecutionException, TimeoutException
+    /* ------------------------------------------------------------ */
+    public void clearAttributes()
     {
-        return GET(URI.create(uri));
+        _attributes.clearAttributes();
     }
 
-    /**
-     * Performs a GET request to the specified URI.
-     *
-     * @param uri the URI to GET
-     * @return the {@link ContentResponse} for the request
-     * @see #newRequest(URI)
-     */
-    public ContentResponse GET(URI uri) throws InterruptedException, ExecutionException, TimeoutException
+    /* ------------------------------------------------------------------------------- */
+    public HttpDestination getDestination(Address remote, boolean ssl) throws IOException
     {
-        return newRequest(uri).send();
-    }
+        if (remote == null)
+            throw new UnknownHostException("Remote socket address cannot be null.");
 
-    /**
-     * Creates a POST request to the specified URI.
-     *
-     * @param uri the URI to POST to
-     * @return the POST request
-     * @see #POST(URI)
-     */
-    public Request POST(String uri)
-    {
-        return POST(URI.create(uri));
-    }
-
-    /**
-     * Creates a POST request to the specified URI.
-     *
-     * @param uri the URI to POST to
-     * @return the POST request
-     */
-    public Request POST(URI uri)
-    {
-        return newRequest(uri).method(HttpMethod.POST);
-    }
-
-    /**
-     * Creates a new request with the "http" scheme and the specified host and port
-     *
-     * @param host the request host
-     * @param port the request port
-     * @return the request just created
-     */
-    public Request newRequest(String host, int port)
-    {
-        return newRequest(address("http", host, port));
-    }
-
-    /**
-     * Creates a new request with the specified URI.
-     *
-     * @param uri the URI to request
-     * @return the request just created
-     */
-    public Request newRequest(String uri)
-    {
-        return newRequest(URI.create(uri));
-    }
-
-    /**
-     * Creates a new request with the specified URI.
-     *
-     * @param uri the URI to request
-     * @return the request just created
-     */
-    public Request newRequest(URI uri)
-    {
-        return new HttpRequest(this, uri);
-    }
-
-    protected Request copyRequest(Request oldRequest, URI newURI)
-    {
-        Request newRequest = new HttpRequest(this, oldRequest.getConversationID(), newURI);
-        newRequest.method(oldRequest.method())
-                .version(oldRequest.getVersion())
-                .content(oldRequest.getContent());
-        for (HttpField header : oldRequest.getHeaders())
-        {
-            // We have a new URI, so skip the host header if present
-            if (HttpHeader.HOST == header.getHeader())
-                continue;
-
-            // Remove expectation headers
-            if (HttpHeader.EXPECT == header.getHeader())
-                continue;
-
-            // Remove cookies
-            if (HttpHeader.COOKIE == header.getHeader())
-                continue;
-
-            // Remove authorization headers
-            if (HttpHeader.AUTHORIZATION == header.getHeader() ||
-                    HttpHeader.PROXY_AUTHORIZATION == header.getHeader())
-                continue;
-
-            newRequest.header(header.getName(), header.getValue());
-        }
-        return newRequest;
-    }
-
-    protected String address(String scheme, String host, int port)
-    {
-        StringBuilder result = new StringBuilder();
-        URIUtil.appendSchemeHostPort(result, scheme, host, port);
-        return result.toString();
-    }
-
-    /**
-     * Returns a {@link Destination} for the given scheme, host and port.
-     * Applications may use {@link Destination}s to create {@link Connection}s
-     * that will be outside {@link HttpClient}'s pooling mechanism, to explicitly
-     * control the connection lifecycle (in particular their termination with
-     * {@link Connection#close()}).
-     *
-     * @param scheme the destination scheme
-     * @param host the destination host
-     * @param port the destination port
-     * @return the destination
-     * @see #getDestinations()
-     */
-    public Destination getDestination(String scheme, String host, int port)
-    {
-        return destinationFor(scheme, host, port);
-    }
-
-    protected HttpDestination destinationFor(String scheme, String host, int port)
-    {
-        port = normalizePort(scheme, port);
-
-        String address = address(scheme, host, port);
-        HttpDestination destination = destinations.get(address);
+        HttpDestination destination = _destinations.get(remote);
         if (destination == null)
         {
-            destination = new HttpDestination(this, scheme, host, port);
-            if (isRunning())
+            destination = new HttpDestination(this, remote, ssl);
+            if (_proxy != null && (_noProxy == null || !_noProxy.contains(remote.getHost())))
             {
-                HttpDestination existing = destinations.putIfAbsent(address, destination);
-                if (existing != null)
-                    destination = existing;
-                else
-                    LOG.debug("Created {}", destination);
-                if (!isRunning())
-                    destinations.remove(address);
+                destination.setProxy(_proxy);
+                if (_proxyAuthentication != null)
+                    destination.setProxyAuthentication(_proxyAuthentication);
             }
-
+            HttpDestination other =_destinations.putIfAbsent(remote, destination);
+            if (other!=null)
+                destination=other;
         }
         return destination;
     }
 
+    /* ------------------------------------------------------------ */
+    public void schedule(Timeout.Task task)
+    {
+        _timeoutQ.schedule(task);
+    }
+
+    /* ------------------------------------------------------------ */
+    public void schedule(Timeout.Task task, long timeout)
+    {
+        _timeoutQ.schedule(task, timeout - _timeoutQ.getDuration());
+    }
+
+    /* ------------------------------------------------------------ */
+    public void scheduleIdle(Timeout.Task task)
+    {
+        _idleTimeoutQ.schedule(task);
+    }
+
+    /* ------------------------------------------------------------ */
+    public void cancel(Timeout.Task task)
+    {
+        task.cancel();
+    }
+
+    /* ------------------------------------------------------------ */
     /**
-     * @return the list of destinations known to this {@link HttpClient}.
+     * Get whether the connector can use direct NIO buffers.
      */
-    public List<Destination> getDestinations()
+    public boolean getUseDirectBuffers()
     {
-        return new ArrayList<Destination>(destinations.values());
+        return _useDirectBuffers;
     }
 
-    protected void send(final Request request, List<Response.ResponseListener> listeners)
+    /* ------------------------------------------------------------ */
+    /** Set a RealmResolver for client Authentication.
+     * If a realmResolver is set, then the HttpDestinations created by
+     * this client will instantiate a {@link SecurityListener} so that
+     * BASIC and DIGEST authentication can be performed.
+     * @param resolver
+     */
+    public void setRealmResolver(RealmResolver resolver)
     {
-        String scheme = request.getScheme().toLowerCase(Locale.ENGLISH);
-        if (!HttpScheme.HTTP.is(scheme) && !HttpScheme.HTTPS.is(scheme))
-            throw new IllegalArgumentException("Invalid protocol " + scheme);
-
-        HttpDestination destination = destinationFor(scheme, request.getHost(), request.getPort());
-        destination.send(request, listeners);
+        _realmResolver = resolver;
     }
 
-    protected void newConnection(final HttpDestination destination, final Promise<Connection> promise)
+    /* ------------------------------------------------------------ */
+    /**
+     * returns the SecurityRealmResolver reg_realmResolveristered with the HttpClient or null
+     *
+     * @return the SecurityRealmResolver reg_realmResolveristered with the HttpClient or null
+     */
+    public RealmResolver getRealmResolver()
     {
-        Destination.Address address = destination.getConnectAddress();
-        resolver.resolve(address.getHost(), address.getPort(), new Promise<SocketAddress>()
+        return _realmResolver;
+    }
+
+    /* ------------------------------------------------------------ */
+    public boolean hasRealms()
+    {
+        return _realmResolver == null ? false : true;
+    }
+
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Registers a listener that can listen to the stream of execution between the client and the
+     * server and influence events.  Sequential calls to the method wrapper sequentially wrap the preceding
+     * listener in a delegation model.
+     * <p/>
+     * NOTE: the SecurityListener is a special listener which doesn't need to be added via this
+     * mechanic, if you register security realms then it will automatically be added as the top listener of the
+     * delegation stack.
+     *
+     * @param listenerClass
+     */
+    public void registerListener(String listenerClass)
+    {
+        if (_registeredListeners == null)
         {
-            @Override
-            public void succeeded(SocketAddress socketAddress)
-            {
-                SocketChannel channel = null;
-                try
-                {
-                    channel = SocketChannel.open();
-                    SocketAddress bindAddress = getBindAddress();
-                    if (bindAddress != null)
-                        channel.bind(bindAddress);
-                    configure(channel);
-                    channel.configureBlocking(false);
-                    channel.connect(socketAddress);
+            _registeredListeners = new LinkedList<String>();
+        }
+        _registeredListeners.add(listenerClass);
+    }
 
-                    ConnectionCallback callback = new ConnectionCallback(destination, promise);
-                    selectorManager.connect(channel, callback);
-                }
-                // Must catch all exceptions, since some like
-                // UnresolvedAddressException are not IOExceptions.
-                catch (Throwable x)
-                {
-                    if (channel != null)
-                        close(channel);
-                    promise.failed(x);
-                }
-            }
+    /* ------------------------------------------------------------ */
+    public LinkedList<String> getRegisteredListeners()
+    {
+        return _registeredListeners;
+    }
 
-            @Override
-            public void failed(Throwable x)
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Set to use NIO direct buffers.
+     *
+     * @param direct If True (the default), the connector can use NIO direct
+     *               buffers. Some JVMs have memory management issues (bugs) with
+     *               direct buffers.
+     */
+    public void setUseDirectBuffers(boolean direct)
+    {
+        _useDirectBuffers = direct;
+        setBufferTypes();
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Get the type of connector (socket, blocking or select) in use.
+     */
+    public int getConnectorType()
+    {
+        return _connectorType;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setConnectorType(int connectorType)
+    {
+        this._connectorType = connectorType;
+        setBufferTypes();
+    }
+
+    /* ------------------------------------------------------------ */
+    public int getMaxConnectionsPerAddress()
+    {
+        return _maxConnectionsPerAddress;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setMaxConnectionsPerAddress(int maxConnectionsPerAddress)
+    {
+        _maxConnectionsPerAddress = maxConnectionsPerAddress;
+    }
+
+    public int getMaxQueueSizePerAddress()
+    {
+        return _maxQueueSizePerAddress;
+    }
+
+    public void setMaxQueueSizePerAddress(int maxQueueSizePerAddress)
+    {
+        this._maxQueueSizePerAddress = maxQueueSizePerAddress;
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    protected void doStart() throws Exception
+    {
+        setBufferTypes();
+
+        _timeoutQ.setDuration(_timeout);
+        _timeoutQ.setNow();
+        _idleTimeoutQ.setDuration(_idleTimeout);
+        _idleTimeoutQ.setNow();
+
+        if (_threadPool==null)
+        {
+            QueuedThreadPool pool = new LocalQueuedThreadPool();
+            pool.setMaxThreads(16);
+            pool.setDaemon(true);
+            pool.setName("HttpClient");
+            _threadPool = pool;
+            addBean(_threadPool,true);
+        }
+
+        _connector=(_connectorType == CONNECTOR_SELECT_CHANNEL)?new SelectConnector(this):new SocketConnector(this);
+        addBean(_connector,true);
+
+        super.doStart();
+
+        _threadPool.dispatch(new Runnable()
+        {
+            public void run()
             {
-                promise.failed(x);
+                while (isRunning())
+                {
+                    _timeoutQ.tick(System.currentTimeMillis());
+                    _idleTimeoutQ.tick(_timeoutQ.getNow());
+                    try
+                    {
+                        Thread.sleep(200);
+                    }
+                    catch (InterruptedException ignored)
+                    {
+                    }
+                }
             }
         });
     }
 
-    protected void configure(SocketChannel channel) throws SocketException
+    /* ------------------------------------------------------------ */
+    @Override
+    protected void doStop() throws Exception
     {
-        channel.socket().setTcpNoDelay(isTCPNoDelay());
-    }
+        for (HttpDestination destination : _destinations.values())
+            destination.close();
 
-    private void close(SocketChannel channel)
-    {
-        try
+        _timeoutQ.cancelAll();
+        _idleTimeoutQ.cancelAll();
+
+        super.doStop();
+
+        if (_threadPool instanceof LocalQueuedThreadPool)
         {
-            channel.close();
+            removeBean(_threadPool);
+            _threadPool = null;
         }
-        catch (IOException x)
-        {
-            LOG.ignore(x);
-        }
+
+        removeBean(_connector);
     }
 
-    protected HttpConversation getConversation(long id, boolean create)
+    /* ------------------------------------------------------------ */
+    interface Connector extends LifeCycle
     {
-        HttpConversation conversation = conversations.get(id);
-        if (conversation == null && create)
-        {
-            conversation = new HttpConversation(this, id);
-            HttpConversation existing = conversations.putIfAbsent(id, conversation);
-            if (existing != null)
-                conversation = existing;
-            else
-                LOG.debug("{} created", conversation);
-        }
-        return conversation;
+        public void startConnection(HttpDestination destination) throws IOException;
     }
 
-    protected void removeConversation(HttpConversation conversation)
-    {
-        conversations.remove(conversation.getID());
-        LOG.debug("{} removed", conversation);
-    }
-
-    protected List<ProtocolHandler> getProtocolHandlers()
-    {
-        return handlers;
-    }
-
-    protected ProtocolHandler findProtocolHandler(Request request, Response response)
-    {
-        // Optimized to avoid allocations of iterator instances
-        List<ProtocolHandler> protocolHandlers = getProtocolHandlers();
-        for (int i = 0; i < protocolHandlers.size(); ++i)
-        {
-            ProtocolHandler handler = protocolHandlers.get(i);
-            if (handler.accept(request, response))
-                return handler;
-        }
-        return null;
-    }
-
+    /* ------------------------------------------------------------ */
     /**
-     * @return the {@link ByteBufferPool} of this {@link HttpClient}
+     * if a keystore location has been provided then client will attempt to use it as the keystore,
+     * otherwise we simply ignore certificates and run with a loose ssl context.
+     *
+     * @return the SSL context
      */
-    public ByteBufferPool getByteBufferPool()
+    protected SSLContext getSSLContext()
     {
-        return byteBufferPool;
+        return _sslContextFactory.getSslContext();
     }
 
+    /* ------------------------------------------------------------ */
     /**
-     * @param byteBufferPool the {@link ByteBufferPool} of this {@link HttpClient}
+     * @return the instance of SslContextFactory associated with the client
      */
-    public void setByteBufferPool(ByteBufferPool byteBufferPool)
+    public SslContextFactory getSslContextFactory()
     {
-        this.byteBufferPool = byteBufferPool;
+        return _sslContextFactory;
     }
 
+    /* ------------------------------------------------------------ */
     /**
-     * @return the max time a connection can take to connect to destinations
-     */
-    public long getConnectTimeout()
-    {
-        return connectTimeout;
-    }
-
-    /**
-     * @param connectTimeout the max time a connection can take to connect to destinations
-     * @see java.net.Socket#connect(SocketAddress, int)
-     */
-    public void setConnectTimeout(long connectTimeout)
-    {
-        this.connectTimeout = connectTimeout;
-    }
-
-    /**
-     * @return the timeout, in milliseconds, for the DNS resolution of host addresses
-     */
-    public long getAddressResolutionTimeout()
-    {
-        return addressResolutionTimeout;
-    }
-
-    /**
-     * @param addressResolutionTimeout the timeout, in milliseconds, for the DNS resolution of host addresses
-     */
-    public void setAddressResolutionTimeout(long addressResolutionTimeout)
-    {
-        this.addressResolutionTimeout = addressResolutionTimeout;
-    }
-
-    /**
-     * @return the max time a connection can be idle (that is, without traffic of bytes in either direction)
+     * @return the period in milliseconds a {@link AbstractHttpConnection} can be idle for before it is closed.
      */
     public long getIdleTimeout()
     {
-        return idleTimeout;
+        return _idleTimeout;
     }
 
+    /* ------------------------------------------------------------ */
     /**
-     * @param idleTimeout the max time a connection can be idle (that is, without traffic of bytes in either direction)
+     * @param ms the period in milliseconds a {@link AbstractHttpConnection} can be idle for before it is closed.
      */
-    public void setIdleTimeout(long idleTimeout)
+    public void setIdleTimeout(long ms)
     {
-        this.idleTimeout = idleTimeout;
+        _idleTimeout = ms;
     }
 
+    /* ------------------------------------------------------------ */
     /**
-     * @return the address to bind socket channels to
-     * @see #setBindAddress(SocketAddress)
+     * @return the period in ms that an exchange will wait for a response from the server.
+     * @deprecated use {@link #getTimeout()} instead.
      */
-    public SocketAddress getBindAddress()
+    @Deprecated
+    public int getSoTimeout()
     {
-        return bindAddress;
+        return Long.valueOf(getTimeout()).intValue();
     }
 
+    /* ------------------------------------------------------------ */
     /**
-     * @param bindAddress the address to bind socket channels to
-     * @see #getBindAddress()
-     * @see SocketChannel#bind(SocketAddress)
+     * @deprecated use {@link #setTimeout(long)} instead.
+     * @param timeout the period in ms that an exchange will wait for a response from the server.
      */
-    public void setBindAddress(SocketAddress bindAddress)
+    @Deprecated
+    public void setSoTimeout(int timeout)
     {
-        this.bindAddress = bindAddress;
+        setTimeout(timeout);
     }
 
+    /* ------------------------------------------------------------ */
     /**
-     * @return the "User-Agent" HTTP field of this {@link HttpClient}
+     * @return the period in ms that an exchange will wait for a response from the server.
      */
-    public HttpField getUserAgentField()
+    public long getTimeout()
     {
-        return agentField;
+        return _timeout;
     }
 
+    /* ------------------------------------------------------------ */
     /**
-     * @param agent the "User-Agent" HTTP header string of this {@link HttpClient}
+     * @param timeout the period in ms that an exchange will wait for a response from the server.
      */
-    public void setUserAgentField(HttpField agent)
+    public void setTimeout(long timeout)
     {
-        if (agent.getHeader() != HttpHeader.USER_AGENT)
-            throw new IllegalArgumentException();
-        this.agentField = agent;
+        _timeout = timeout;
     }
 
+    /* ------------------------------------------------------------ */
     /**
-     * @return whether this {@link HttpClient} follows HTTP redirects
-     * @see Request#isFollowRedirects()
+     * @return the period in ms before timing out an attempt to connect
      */
-    public boolean isFollowRedirects()
+    public int getConnectTimeout()
     {
-        return followRedirects;
+        return _connectTimeout;
     }
 
+    /* ------------------------------------------------------------ */
     /**
-     * @param follow whether this {@link HttpClient} follows HTTP redirects
-     * @see #setMaxRedirects(int)
+     * @param connectTimeout the period in ms before timing out an attempt to connect
      */
-    public void setFollowRedirects(boolean follow)
+    public void setConnectTimeout(int connectTimeout)
     {
-        this.followRedirects = follow;
+        this._connectTimeout = connectTimeout;
     }
 
-    /**
-     * @return the {@link Executor} of this {@link HttpClient}
-     */
-    public Executor getExecutor()
+    /* ------------------------------------------------------------ */
+    public Address getProxy()
     {
-        return executor;
+        return _proxy;
     }
 
-    /**
-     * @param executor the {@link Executor} of this {@link HttpClient}
-     */
-    public void setExecutor(Executor executor)
+    /* ------------------------------------------------------------ */
+    public void setProxy(Address proxy)
     {
-        this.executor = executor;
+        this._proxy = proxy;
     }
 
-    /**
-     * @return the {@link Scheduler} of this {@link HttpClient}
-     */
-    public Scheduler getScheduler()
+    /* ------------------------------------------------------------ */
+    public Authentication getProxyAuthentication()
     {
-        return scheduler;
+        return _proxyAuthentication;
     }
 
-    /**
-     * @param scheduler the {@link Scheduler} of this {@link HttpClient}
-     */
-    public void setScheduler(Scheduler scheduler)
+    /* ------------------------------------------------------------ */
+    public void setProxyAuthentication(Authentication authentication)
     {
-        this.scheduler = scheduler;
+        _proxyAuthentication = authentication;
     }
 
-    protected SelectorManager getSelectorManager()
+    /* ------------------------------------------------------------ */
+    public boolean isProxied()
     {
-        return selectorManager;
+        return this._proxy != null;
     }
 
-    /**
-     * @return the max number of connections that this {@link HttpClient} opens to {@link Destination}s
-     */
-    public int getMaxConnectionsPerDestination()
+    /* ------------------------------------------------------------ */
+    public Set<String> getNoProxy()
     {
-        return maxConnectionsPerDestination;
+        return _noProxy;
     }
 
-    /**
-     * Sets the max number of connections to open to each destinations.
-     * <p />
-     * RFC 2616 suggests that 2 connections should be opened per each destination,
-     * but browsers commonly open 6.
-     * If this {@link HttpClient} is used for load testing, it is common to have only one destination
-     * (the server to load test), and it is recommended to set this value to a high value (at least as
-     * much as the threads present in the {@link #getExecutor() executor}).
-     *
-     * @param maxConnectionsPerDestination the max number of connections that this {@link HttpClient} opens to {@link Destination}s
-     */
-    public void setMaxConnectionsPerDestination(int maxConnectionsPerDestination)
+    /* ------------------------------------------------------------ */
+    public void setNoProxy(Set<String> noProxyAddresses)
     {
-        this.maxConnectionsPerDestination = maxConnectionsPerDestination;
+        _noProxy = noProxyAddresses;
     }
 
-    /**
-     * @return the max number of requests that may be queued to a {@link Destination}.
-     */
-    public int getMaxRequestsQueuedPerDestination()
+    /* ------------------------------------------------------------ */
+    public int maxRetries()
     {
-        return maxRequestsQueuedPerDestination;
+        return _maxRetries;
     }
 
-    /**
-     * Sets the max number of requests that may be queued to a destination.
-     * <p />
-     * If this {@link HttpClient} performs a high rate of requests to a destination,
-     * and all the connections managed by that destination are busy with other requests,
-     * then new requests will be queued up in the destination.
-     * This parameter controls how many requests can be queued before starting to reject them.
-     * If this {@link HttpClient} is used for load testing, it is common to have this parameter
-     * set to a high value, although this may impact latency (requests sit in the queue for a long
-     * time before being sent).
-     *
-     * @param maxRequestsQueuedPerDestination the max number of requests that may be queued to a {@link Destination}.
-     */
-    public void setMaxRequestsQueuedPerDestination(int maxRequestsQueuedPerDestination)
+    /* ------------------------------------------------------------ */
+    public void setMaxRetries(int retries)
     {
-        this.maxRequestsQueuedPerDestination = maxRequestsQueuedPerDestination;
+        _maxRetries = retries;
     }
 
-    /**
-     * @return the size of the buffer used to write requests
-     */
+    /* ------------------------------------------------------------ */
+    public int maxRedirects()
+    {
+        return _maxRedirects;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setMaxRedirects(int redirects)
+    {
+        _maxRedirects = redirects;
+    }
+
     public int getRequestBufferSize()
     {
-        return requestBufferSize;
+        return _buffers.getRequestBufferSize();
     }
 
-    /**
-     * @param requestBufferSize the size of the buffer used to write requests
-     */
     public void setRequestBufferSize(int requestBufferSize)
     {
-        this.requestBufferSize = requestBufferSize;
+        _buffers.setRequestBufferSize(requestBufferSize);
     }
 
-    /**
-     * @return the size of the buffer used to read responses
-     */
+    public int getRequestHeaderSize()
+    {
+        return _buffers.getRequestHeaderSize();
+    }
+
+    public void setRequestHeaderSize(int requestHeaderSize)
+    {
+        _buffers.setRequestHeaderSize(requestHeaderSize);
+    }
+
     public int getResponseBufferSize()
     {
-        return responseBufferSize;
+        return _buffers.getResponseBufferSize();
     }
 
-    /**
-     * @param responseBufferSize the size of the buffer used to read responses
-     */
     public void setResponseBufferSize(int responseBufferSize)
     {
-        this.responseBufferSize = responseBufferSize;
+        _buffers.setResponseBufferSize(responseBufferSize);
     }
 
-    /**
-     * @return the max number of HTTP redirects that are followed
-     * @see #setMaxRedirects(int)
-     */
-    public int getMaxRedirects()
+    public int getResponseHeaderSize()
     {
-        return maxRedirects;
+        return _buffers.getResponseHeaderSize();
     }
 
-    /**
-     * @param maxRedirects the max number of HTTP redirects that are followed
-     * @see #setFollowRedirects(boolean)
-     */
-    public void setMaxRedirects(int maxRedirects)
+    public void setResponseHeaderSize(int responseHeaderSize)
     {
-        this.maxRedirects = maxRedirects;
+        _buffers.setResponseHeaderSize(responseHeaderSize);
     }
 
-    /**
-     * @return whether TCP_NODELAY is enabled
-     */
-    public boolean isTCPNoDelay()
+    public Type getRequestBufferType()
     {
-        return tcpNoDelay;
+        return _buffers.getRequestBufferType();
     }
 
-    /**
-     * @param tcpNoDelay whether TCP_NODELAY is enabled
-     * @see java.net.Socket#setTcpNoDelay(boolean)
-     */
-    public void setTCPNoDelay(boolean tcpNoDelay)
+    public Type getRequestHeaderType()
     {
-        this.tcpNoDelay = tcpNoDelay;
+        return _buffers.getRequestHeaderType();
     }
 
-    /**
-     * @return true to dispatch I/O operations in a different thread, false to execute them in the selector thread
-     * @see #setDispatchIO(boolean)
-     */
-    public boolean isDispatchIO()
+    public Type getResponseBufferType()
     {
-        return dispatchIO;
+        return _buffers.getResponseBufferType();
     }
 
-    /**
-     * Whether to dispatch I/O operations from the selector thread to a different thread.
-     * <p />
-     * This implementation never blocks on I/O operation, but invokes application callbacks that may
-     * take time to execute or block on other I/O.
-     * If application callbacks are known to take time or block on I/O, then parameter {@code dispatchIO}
-     * should be set to true.
-     * If application callbacks are known to be quick and never block on I/O, then parameter {@code dispatchIO}
-     * may be set to false.
-     *
-     * @param dispatchIO true to dispatch I/O operations in a different thread,
-     *                   false to execute them in the selector thread
-     */
-    public void setDispatchIO(boolean dispatchIO)
+    public Type getResponseHeaderType()
     {
-        this.dispatchIO = dispatchIO;
+        return _buffers.getResponseHeaderType();
     }
 
-    /**
-     * @return the forward proxy configuration
-     */
-    public ProxyConfiguration getProxyConfiguration()
+    public void setRequestBuffers(Buffers requestBuffers)
     {
-        return proxyConfig;
+        _buffers.setRequestBuffers(requestBuffers);
     }
 
-    /**
-     * @param proxyConfig the forward proxy configuration
-     */
-    public void setProxyConfiguration(ProxyConfiguration proxyConfig)
+    public void setResponseBuffers(Buffers responseBuffers)
     {
-        this.proxyConfig = proxyConfig;
+        _buffers.setResponseBuffers(responseBuffers);
     }
 
-    protected HttpField getAcceptEncodingField()
+    public Buffers getRequestBuffers()
     {
-        return encodingField;
+        return _buffers.getRequestBuffers();
     }
 
-    protected String normalizeHost(String host)
+    public Buffers getResponseBuffers()
     {
-        if (host != null && host.matches("\\[.*\\]"))
-            return host.substring(1, host.length() - 1);
-        return host;
+        return _buffers.getResponseBuffers();
     }
 
-    protected int normalizePort(String scheme, int port)
+    public void setMaxBuffers(int maxBuffers)
     {
-        return port > 0 ? port : HttpScheme.HTTPS.is(scheme) ? 443 : 80;
+        _buffers.setMaxBuffers(maxBuffers);
     }
 
-    protected boolean isDefaultPort(String scheme, int port)
+    public int getMaxBuffers()
     {
-        return HttpScheme.HTTPS.is(scheme) ? port == 443 : port == 80;
+        return _buffers.getMaxBuffers();
     }
 
-    protected HttpConnection newHttpConnection(HttpClient httpClient, EndPoint endPoint, HttpDestination destination)
+    /* ------------------------------------------------------------ */
+    @Deprecated
+    public String getTrustStoreLocation()
     {
-        return new HttpConnection(httpClient, endPoint, destination);
+        return _sslContextFactory.getTrustStore();
     }
 
-    protected SslConnection newSslConnection(HttpClient httpClient, EndPoint endPoint, SSLEngine engine)
+    /* ------------------------------------------------------------ */
+    @Deprecated
+    public void setTrustStoreLocation(String trustStoreLocation)
     {
-        return new SslConnection(httpClient.getByteBufferPool(), httpClient.getExecutor(), endPoint, engine);
+        _sslContextFactory.setTrustStore(trustStoreLocation);
     }
 
-    @Override
-    public void dump(Appendable out, String indent) throws IOException
+    /* ------------------------------------------------------------ */
+    @Deprecated
+    public InputStream getTrustStoreInputStream()
     {
-        dumpThis(out);
-        dump(out, indent, getBeans(), destinations.values());
+        return _sslContextFactory.getTrustStoreInputStream();
     }
 
-    protected Connection tunnel(Connection connection)
+    /* ------------------------------------------------------------ */
+    @Deprecated
+    public void setTrustStoreInputStream(InputStream trustStoreInputStream)
     {
-        HttpConnection httpConnection = (HttpConnection)connection;
-        HttpDestination destination = httpConnection.getDestination();
-        SslConnection sslConnection = createSslConnection(destination, httpConnection.getEndPoint());
-        Connection result = (Connection)sslConnection.getDecryptedEndPoint().getConnection();
-        selectorManager.connectionClosed(httpConnection);
-        selectorManager.connectionOpened(sslConnection);
-        LOG.debug("Tunnelled {} over {}", connection, result);
-        return result;
+        _sslContextFactory.setTrustStoreInputStream(trustStoreInputStream);
     }
 
-    private SslConnection createSslConnection(HttpDestination destination, EndPoint endPoint)
+    /* ------------------------------------------------------------ */
+    @Deprecated
+    public String getKeyStoreLocation()
     {
-        SSLEngine engine = sslContextFactory.newSSLEngine(destination.getHost(), destination.getPort());
-        engine.setUseClientMode(true);
-
-        SslConnection sslConnection = newSslConnection(HttpClient.this, endPoint, engine);
-        sslConnection.setRenegotiationAllowed(sslContextFactory.isRenegotiationAllowed());
-        endPoint.setConnection(sslConnection);
-        EndPoint appEndPoint = sslConnection.getDecryptedEndPoint();
-        HttpConnection connection = newHttpConnection(this, appEndPoint, destination);
-        appEndPoint.setConnection(connection);
-
-        return sslConnection;
+        return _sslContextFactory.getKeyStorePath();
     }
 
-    protected class ClientSelectorManager extends SelectorManager
+    /* ------------------------------------------------------------ */
+    @Deprecated
+    public void setKeyStoreLocation(String keyStoreLocation)
     {
-        public ClientSelectorManager(Executor executor, Scheduler scheduler)
-        {
-            this(executor, scheduler, 1);
-        }
-
-        public ClientSelectorManager(Executor executor, Scheduler scheduler, int selectors)
-        {
-            super(executor, scheduler, selectors);
-        }
-
-        @Override
-        protected EndPoint newEndPoint(SocketChannel channel, ManagedSelector selector, SelectionKey key)
-        {
-            return new SelectChannelEndPoint(channel, selector, key, getScheduler(), getIdleTimeout());
-        }
-
-        @Override
-        public org.eclipse.jetty.io.Connection newConnection(SocketChannel channel, EndPoint endPoint, Object attachment) throws IOException
-        {
-            ConnectionCallback callback = (ConnectionCallback)attachment;
-            HttpDestination destination = callback.destination;
-
-            SslContextFactory sslContextFactory = getSslContextFactory();
-            if (!destination.isProxied() && HttpScheme.HTTPS.is(destination.getScheme()))
-            {
-                if (sslContextFactory == null)
-                {
-                    IOException failure = new ConnectException("Missing " + SslContextFactory.class.getSimpleName() + " for " + destination.getScheme() + " requests");
-                    callback.failed(failure);
-                    throw failure;
-                }
-                else
-                {
-                    SslConnection sslConnection = createSslConnection(destination, endPoint);
-                    callback.succeeded((Connection)sslConnection.getDecryptedEndPoint().getConnection());
-                    return sslConnection;
-                }
-            }
-            else
-            {
-                HttpConnection connection = newHttpConnection(HttpClient.this, endPoint, destination);
-                callback.succeeded(connection);
-                return connection;
-            }
-        }
-
-        @Override
-        protected void connectionFailed(SocketChannel channel, Throwable ex, Object attachment)
-        {
-            ConnectionCallback callback = (ConnectionCallback)attachment;
-            callback.failed(ex);
-        }
+        _sslContextFactory.setKeyStorePath(keyStoreLocation);
     }
 
-    private class ConnectionCallback implements Promise<Connection>
+    @Deprecated
+    public InputStream getKeyStoreInputStream()
     {
-        private final HttpDestination destination;
-        private final Promise<Connection> promise;
-
-        private ConnectionCallback(HttpDestination destination, Promise<Connection> promise)
-        {
-            this.destination = destination;
-            this.promise = promise;
-        }
-
-        @Override
-        public void succeeded(Connection result)
-        {
-            promise.succeeded(result);
-        }
-
-        @Override
-        public void failed(Throwable x)
-        {
-            promise.failed(x);
-        }
+        return _sslContextFactory.getKeyStoreInputStream();
     }
 
-    private class ContentDecoderFactorySet implements Set<ContentDecoder.Factory>
+    @Deprecated
+    public void setKeyStoreInputStream(InputStream keyStoreInputStream)
     {
-        private final Set<ContentDecoder.Factory> set = new HashSet<>();
+        _sslContextFactory.setKeyStoreInputStream(keyStoreInputStream);
+    }
 
-        @Override
-        public boolean add(ContentDecoder.Factory e)
-        {
-            boolean result = set.add(e);
-            invalidate();
-            return result;
-        }
+    /* ------------------------------------------------------------ */
+    @Deprecated
+    public void setKeyStorePassword(String keyStorePassword)
+    {
+        _sslContextFactory.setKeyStorePassword(keyStorePassword);
+    }
 
-        @Override
-        public boolean addAll(Collection<? extends ContentDecoder.Factory> c)
-        {
-            boolean result = set.addAll(c);
-            invalidate();
-            return result;
-        }
+    /* ------------------------------------------------------------ */
+    @Deprecated
+    public void setKeyManagerPassword(String keyManagerPassword)
+    {
+        _sslContextFactory.setKeyManagerPassword(keyManagerPassword);
+    }
 
-        @Override
-        public boolean remove(Object o)
-        {
-            boolean result = set.remove(o);
-            invalidate();
-            return result;
-        }
+    /* ------------------------------------------------------------ */
+    @Deprecated
+    public void setTrustStorePassword(String trustStorePassword)
+    {
+        _sslContextFactory.setTrustStorePassword(trustStorePassword);
+    }
 
-        @Override
-        public boolean removeAll(Collection<?> c)
-        {
-            boolean result = set.removeAll(c);
-            invalidate();
-            return result;
-        }
+    /* ------------------------------------------------------------ */
+    @Deprecated
+    public String getKeyStoreType()
+    {
+        return _sslContextFactory.getKeyStoreType();
+    }
 
-        @Override
-        public boolean retainAll(Collection<?> c)
-        {
-            boolean result = set.retainAll(c);
-            invalidate();
-            return result;
-        }
+    /* ------------------------------------------------------------ */
+    @Deprecated
+    public void setKeyStoreType(String keyStoreType)
+    {
+        _sslContextFactory.setKeyStoreType(keyStoreType);
+    }
 
-        @Override
-        public void clear()
-        {
-            set.clear();
-            invalidate();
-        }
+    /* ------------------------------------------------------------ */
+    @Deprecated
+    public String getTrustStoreType()
+    {
+        return _sslContextFactory.getTrustStoreType();
+    }
 
-        @Override
-        public int size()
-        {
-            return set.size();
-        }
+    /* ------------------------------------------------------------ */
+    @Deprecated
+    public void setTrustStoreType(String trustStoreType)
+    {
+        _sslContextFactory.setTrustStoreType(trustStoreType);
+    }
 
-        @Override
-        public boolean isEmpty()
-        {
-            return set.isEmpty();
-        }
+    /* ------------------------------------------------------------ */
+    @Deprecated
+    public String getKeyManagerAlgorithm()
+    {
+        return _sslContextFactory.getSslKeyManagerFactoryAlgorithm();
+    }
 
-        @Override
-        public boolean contains(Object o)
-        {
-            return set.contains(o);
-        }
+    /* ------------------------------------------------------------ */
+    @Deprecated
+    public void setKeyManagerAlgorithm(String keyManagerAlgorithm)
+    {
+        _sslContextFactory.setSslKeyManagerFactoryAlgorithm(keyManagerAlgorithm);
+    }
 
-        @Override
-        public boolean containsAll(Collection<?> c)
-        {
-            return set.containsAll(c);
-        }
+    /* ------------------------------------------------------------ */
+    @Deprecated
+    public String getTrustManagerAlgorithm()
+    {
+        return _sslContextFactory.getTrustManagerFactoryAlgorithm();
+    }
 
-        @Override
-        public Iterator<ContentDecoder.Factory> iterator()
-        {
-            return set.iterator();
-        }
+    /* ------------------------------------------------------------ */
+    @Deprecated
+    public void setTrustManagerAlgorithm(String trustManagerAlgorithm)
+    {
+        _sslContextFactory.setTrustManagerFactoryAlgorithm(trustManagerAlgorithm);
+    }
 
-        @Override
-        public Object[] toArray()
-        {
-            return set.toArray();
-        }
+    /* ------------------------------------------------------------ */
+    @Deprecated
+    public String getProtocol()
+    {
+        return _sslContextFactory.getProtocol();
+    }
 
-        @Override
-        public <T> T[] toArray(T[] a)
-        {
-            return set.toArray(a);
-        }
+    /* ------------------------------------------------------------ */
+    @Deprecated
+    public void setProtocol(String protocol)
+    {
+        _sslContextFactory.setProtocol(protocol);
+    }
 
-        protected void invalidate()
-        {
-            if (set.isEmpty())
-            {
-                encodingField = null;
-            }
-            else
-            {
-                StringBuilder value = new StringBuilder();
-                for (Iterator<ContentDecoder.Factory> iterator = set.iterator(); iterator.hasNext();)
-                {
-                    ContentDecoder.Factory decoderFactory = iterator.next();
-                    value.append(decoderFactory.getEncoding());
-                    if (iterator.hasNext())
-                        value.append(",");
-                }
-                encodingField = new HttpField(HttpHeader.ACCEPT_ENCODING, value.toString());
-            }
-        }
+    /* ------------------------------------------------------------ */
+    @Deprecated
+    public String getProvider()
+    {
+        return _sslContextFactory.getProvider();
+    }
+
+    /* ------------------------------------------------------------ */
+    @Deprecated
+    public void setProvider(String provider)
+    {
+        _sslContextFactory.setProvider(provider);
+    }
+
+    /* ------------------------------------------------------------ */
+    @Deprecated
+    public String getSecureRandomAlgorithm()
+    {
+        return _sslContextFactory.getSecureRandomAlgorithm();
+    }
+
+    /* ------------------------------------------------------------ */
+    @Deprecated
+    public void setSecureRandomAlgorithm(String secureRandomAlgorithm)
+    {
+        _sslContextFactory.setSecureRandomAlgorithm(secureRandomAlgorithm);
+    }
+
+    private static class LocalQueuedThreadPool extends QueuedThreadPool
+    {
     }
 }

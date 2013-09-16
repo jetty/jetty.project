@@ -25,7 +25,7 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.server.Authentication;
@@ -38,35 +38,31 @@ import org.eclipse.jetty.util.security.Constraint;
 /**
  * @version $Rev: 4793 $ $Date: 2009-03-19 00:00:01 +0100 (Thu, 19 Mar 2009) $
  */
-public class BasicAuthenticator extends LoginAuthenticator
-{
+public class BasicAuthenticator extends LoginAuthenticator 
+{   
     /* ------------------------------------------------------------ */
     public BasicAuthenticator()
     {
     }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.security.Authenticator#getAuthMethod()
      */
-    @Override
     public String getAuthMethod()
     {
         return Constraint.__BASIC_AUTH;
     }
 
- 
-
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.security.Authenticator#validateRequest(javax.servlet.ServletRequest, javax.servlet.ServletResponse, boolean)
      */
-    @Override
     public Authentication validateRequest(ServletRequest req, ServletResponse res, boolean mandatory) throws ServerAuthException
     {
         HttpServletRequest request = (HttpServletRequest)req;
         HttpServletResponse response = (HttpServletResponse)res;
-        String credentials = request.getHeader(HttpHeader.AUTHORIZATION.asString());
+        String credentials = request.getHeader(HttpHeaders.AUTHORIZATION);
 
         try
         {
@@ -74,7 +70,7 @@ public class BasicAuthenticator extends LoginAuthenticator
                 return new DeferredAuthentication(this);
 
             if (credentials != null)
-            {
+            {                 
                 int space=credentials.indexOf(' ');
                 if (space>0)
                 {
@@ -89,9 +85,10 @@ public class BasicAuthenticator extends LoginAuthenticator
                             String username = credentials.substring(0,i);
                             String password = credentials.substring(i+1);
 
-                            UserIdentity user = login (username, password, request);
+                            UserIdentity user = _loginService.login(username,password);
                             if (user!=null)
                             {
+                                renewSession(request,response);
                                 return new UserAuthentication(getAuthMethod(),user);
                             }
                         }
@@ -101,8 +98,8 @@ public class BasicAuthenticator extends LoginAuthenticator
 
             if (DeferredAuthentication.isDeferred(response))
                 return Authentication.UNAUTHENTICATED;
-
-            response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), "basic realm=\"" + _loginService.getName() + '"');
+            
+            response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "basic realm=\"" + _loginService.getName() + '"');
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
             return Authentication.SEND_CONTINUE;
         }
@@ -112,7 +109,6 @@ public class BasicAuthenticator extends LoginAuthenticator
         }
     }
 
-    @Override
     public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, User validatedUser) throws ServerAuthException
     {
         return true;

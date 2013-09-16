@@ -1,12 +1,21 @@
 
 JETTY
 =====
+
 The Jetty project is a 100% Java HTTP Server, HTTP Client
-and Servlet Container from the eclipse foundation
+and Servlet Container.
+
+
+The Jetty @ eclipse project is based on the Jetty project at codehaus
+
+  http://jetty.codehaus.org
+
+Ongoing development is now at the eclipse foundation
 
   http://www.eclipse.org/jetty/
 
-Jetty is open source and is dual licensed using the apache 2.0 and
+
+Jetty @ eclipse is open source and is dual licensed using the apache 2.0 and
 eclipse public license 1.0.   You may choose either license when distributing
 jetty.
 
@@ -14,6 +23,7 @@ jetty.
 
 BUILDING JETTY
 ==============
+
 Jetty uses maven 2 as its build system.  Maven will fetch
 the dependancies, build the server and assemble a runnable
 version:
@@ -24,6 +34,7 @@ version:
 
 RUNNING JETTY
 =============
+
 The run directory is either the top-level of a binary release
 or jetty-distribution/target/assembly-prep directory when built from
 source.
@@ -37,12 +48,9 @@ provided by the start.ini file:
 
   java -jar start.jar --help
 
-
-Most start options can be configured in the start.ini file or they can be appended to the start line.
-
 To run with extra configuration file(s) appended, eg SSL
 
-  java -jar start.jar etc/jetty-https.xml
+  java -jar start.jar etc/jetty-ssl.xml
 
 To run with properties 
 

@@ -88,7 +88,7 @@ public class DeploymentManagerLifeCyclePathTest
 
         pathtracker.assertExpected("Test StateTransition / New only",expected);
     }
-
+    
     @Test
     public void testStateTransition_DeployedToUndeployed() throws Exception
     {
@@ -99,7 +99,8 @@ public class DeploymentManagerLifeCyclePathTest
 
         // Setup JMX
         MBeanContainer mbContainer=new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
-        depman.addBean(mbContainer);
+        mbContainer.start();
+        mbContainer.addBean(depman);
 
         depman.addLifeCycleBinding(pathtracker);
         depman.addAppProvider(mockProvider);
@@ -115,10 +116,10 @@ public class DeploymentManagerLifeCyclePathTest
 
         // Request Deploy of App
         depman.requestAppGoal(app,"deployed");
-
+        
         JmxServiceConnection jmxConnection = new JmxServiceConnection();
         jmxConnection.connect();
-
+        
         MBeanServerConnection mbsConnection = jmxConnection.getConnection();
         ObjectName dmObjName = new ObjectName("org.eclipse.jetty.deploy:type=deploymentmanager,id=0");
         String[] params = new String[] {"mock-foo-webapp-1.war", "undeployed"};
@@ -134,5 +135,5 @@ public class DeploymentManagerLifeCyclePathTest
         expected.add("undeployed");
 
         pathtracker.assertExpected("Test JMX StateTransition / Deployed -> Undeployed",expected);
-    }
+    }    
 }

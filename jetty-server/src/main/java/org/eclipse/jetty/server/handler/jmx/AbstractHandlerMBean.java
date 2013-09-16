@@ -47,12 +47,7 @@ public class AbstractHandlerMBean extends ObjectMBean
             String basis = null;
             if (_managed instanceof ContextHandler)
             {
-                ContextHandler handler = (ContextHandler)_managed;
-                String context = getContextName(handler);
-                if (context==null)
-                    context=handler.getDisplayName();
-                if (context!=null)
-                    return context;
+                return null;
             }
             else if (_managed instanceof AbstractHandler)
             {
@@ -72,6 +67,26 @@ public class AbstractHandlerMBean extends ObjectMBean
                 return basis;
         }
         return super.getObjectContextBasis();
+    }
+    
+    /* ------------------------------------------------------------ */
+    @Override
+    public String getObjectNameBasis()
+    {
+        if (_managed != null )
+        {
+            String name = null;
+            if (_managed instanceof ContextHandler)
+            {
+                ContextHandler context = (ContextHandler)_managed;
+                name = getContextName(context);
+            }
+            
+            if (name != null)
+                return name;
+        }
+        
+        return super.getObjectNameBasis();
     }
 
     /* ------------------------------------------------------------ */
@@ -100,9 +115,6 @@ public class AbstractHandlerMBean extends ObjectMBean
                 name=context.getBaseResource().getName();
             }
         }
-        
-        if (context.getVirtualHosts()!=null && context.getVirtualHosts().length>0)
-            name='"'+name+"@"+context.getVirtualHosts()[0]+'"';
         
         return name;
     }

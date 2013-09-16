@@ -27,7 +27,7 @@ import java.util.StringTokenizer;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
 
-import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelperFactory;
+import org.eclipse.jetty.osgi.boot.internal.webapp.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.osgi.boot.utils.internal.PackageAdminServiceTracker;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -52,7 +52,7 @@ public class OSGiWebInfConfiguration extends WebInfConfiguration
     
     public static final String CONTAINER_BUNDLE_PATTERN = "org.eclipse.jetty.server.webapp.containerIncludeBundlePattern";
     
-    /* ------------------------------------------------------------ */
+    
     /** 
      * Check to see if there have been any bundle symbolic names added of bundles that should be
      * regarded as being on the container classpath, and scanned for fragments, tlds etc etc.
@@ -115,12 +115,12 @@ public class OSGiWebInfConfiguration extends WebInfConfiguration
         
         for (Resource r:matchingResources)
         {
-            context.getMetaData().addContainerResource(r);
+            context.getMetaData().addContainerJar(r);
         }
     }
     
     
-    /* ------------------------------------------------------------ */
+    
     /** 
      * Consider the fragment bundles associated with the bundle of the webapp being deployed.
      * 
@@ -148,7 +148,7 @@ public class OSGiWebInfConfiguration extends WebInfConfiguration
         return mergedResources;
     }
     
-    /* ------------------------------------------------------------ */
+    
     /** 
      * Allow fragments to supply some resources that are added to the baseResource of the webapp.
      * 
@@ -227,10 +227,11 @@ public class OSGiWebInfConfiguration extends WebInfConfiguration
             resources[resources.length-1] = context.getBaseResource();
             context.setBaseResource(new ResourceCollection(resources));
         }
+        
     }
 
     
-    /* ------------------------------------------------------------ */
+    
     /**
     * Resolves the bundle. Usually that would be a single URL per bundle. But we do some more work if there are jars
     * embedded in the bundle.

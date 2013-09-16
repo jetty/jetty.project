@@ -27,25 +27,23 @@ import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.GZIPOutputStream;
 
-import javax.servlet.DispatcherType;
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.gzip.CompressedResponseWrapper;
+import org.eclipse.jetty.http.gzip.AbstractCompressedStream;
 import org.eclipse.jetty.io.UncheckedPrintWriter;
-import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.servlets.gzip.AbstractCompressedStream;
-import org.eclipse.jetty.servlets.gzip.CompressedResponseWrapper;
 
 /* ------------------------------------------------------------ */
 /** Includable GZip Filter.
  * This extension to the {@link GzipFilter} that uses Jetty features to allow
- * headers to be set during calls to
+ * headers to be set during calls to 
  * {@link javax.servlet.RequestDispatcher#include(javax.servlet.ServletRequest, javax.servlet.ServletResponse)}.
  * This allows the gzip filter to function correct during includes and to make a decision to gzip or not
  * at the time the buffer fills and on the basis of all response headers.
- *
+ * 
  * If the init parameter "uncheckedPrintWriter" is set to "true", then the PrintWriter used by
  * the wrapped getWriter will be {@link UncheckedPrintWriter}.
  *
@@ -58,7 +56,7 @@ public class IncludableGzipFilter extends GzipFilter
     public void init(FilterConfig filterConfig) throws ServletException
     {
         super.init(filterConfig);
-
+        
         String tmp=filterConfig.getInitParameter("uncheckedPrintWriter");
         if (tmp!=null)
             _uncheckedPrintWriter=Boolean.valueOf(tmp).booleanValue();
@@ -146,16 +144,10 @@ public class IncludableGzipFilter extends GzipFilter
         @Override
         public void setHeader(String name,String value)
         {
-            if (getRequest().getDispatcherType()==DispatcherType.INCLUDE)
-            {
-                if (!"etag".equalsIgnoreCase(name) && !name.startsWith("content-"))
-                {
-                    HttpServletResponse response = (HttpServletResponse)getResponse();
-                    response.setHeader("org.eclipse.jetty.server.include."+name,value);
-                }
-            }
-            else
-                super.setHeader(name,value);
+            super.setHeader(name,value);
+            HttpServletResponse response = (HttpServletResponse)getResponse();
+            if (!response.containsHeader(name))
+                response.setHeader("org.eclipse.jetty.server.include."+name,value);
         }
 
         @Override

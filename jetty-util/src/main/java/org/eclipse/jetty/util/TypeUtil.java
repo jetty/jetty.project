@@ -19,18 +19,17 @@
 package org.eclipse.jetty.util;
 
 import java.io.IOException;
-import java.lang.annotation.Annotation;
+import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -46,12 +45,11 @@ import org.eclipse.jetty.util.log.Logger;
 public class TypeUtil
 {
     private static final Logger LOG = Log.getLogger(TypeUtil.class);
-    public static final Class<?>[] NO_ARGS = new Class[]{};
-    public static final int CR = '\015';
-    public static final int LF = '\012';
+    public static int CR = '\015';
+    public static int LF = '\012';
 
     /* ------------------------------------------------------------ */
-    private static final HashMap<String, Class<?>> name2Class=new HashMap<>();
+    private static final HashMap<String, Class<?>> name2Class=new HashMap<String, Class<?>>();
     static
     {
         name2Class.put("boolean",java.lang.Boolean.TYPE);
@@ -99,7 +97,7 @@ public class TypeUtil
     }
 
     /* ------------------------------------------------------------ */
-    private static final HashMap<Class<?>, String> class2Name=new HashMap<>();
+    private static final HashMap<Class<?>, String> class2Name=new HashMap<Class<?>, String>();
     static
     {
         class2Name.put(java.lang.Boolean.TYPE,"boolean");
@@ -126,7 +124,7 @@ public class TypeUtil
     }
 
     /* ------------------------------------------------------------ */
-    private static final HashMap<Class<?>, Method> class2Value=new HashMap<>();
+    private static final HashMap<Class<?>, Method> class2Value=new HashMap<Class<?>, Method>();
     static
     {
         try
@@ -175,13 +173,13 @@ public class TypeUtil
      * Works like {@link Arrays#asList(Object...)}, but handles null arrays.
      * @return a list backed by the array.
      */
-    public static <T> List<T> asList(T[] a)
+    public static <T> List<T> asList(T[] a) 
     {
         if (a==null)
             return Collections.emptyList();
         return Arrays.asList(a);
     }
-
+    
     /* ------------------------------------------------------------ */
     /** Class from a canonical name for a type.
      * @param name A class or type name.
@@ -221,20 +219,28 @@ public class TypeUtil
 
             if (type.equals(java.lang.Character.TYPE) ||
                 type.equals(java.lang.Character.class))
-                return value.charAt(0);
+                return new Character(value.charAt(0));
 
             Constructor<?> c = type.getConstructor(java.lang.String.class);
             return c.newInstance(value);
         }
-        catch (NoSuchMethodException | IllegalAccessException | InstantiationException x)
+        catch(NoSuchMethodException e)
         {
-            LOG.ignore(x);
+            // LogSupport.ignore(log,e);
         }
-        catch (InvocationTargetException x)
+        catch(IllegalAccessException e)
         {
-            if (x.getTargetException() instanceof Error)
-                throw (Error)x.getTargetException();
-            LOG.ignore(x);
+            // LogSupport.ignore(log,e);
+        }
+        catch(InstantiationException e)
+        {
+            // LogSupport.ignore(log,e);
+        }
+        catch(InvocationTargetException e)
+        {
+            if (e.getTargetException() instanceof Error)
+                throw (Error)(e.getTargetException());
+            // LogSupport.ignore(log,e);
         }
         return null;
     }
@@ -353,7 +359,7 @@ public class TypeUtil
     {
         byte b = (byte)((c & 0x1f) + ((c >> 6) * 0x19) - 0x10);
         if (b<0 || b>15)
-            throw new NumberFormatException("!hex "+c);
+            throw new IllegalArgumentException("!hex "+c);
         return b;
     }
     
@@ -422,7 +428,7 @@ public class TypeUtil
     {
         return toHexString(new byte[]{b}, 0, 1);
     }
-
+    
     /* ------------------------------------------------------------ */
     public static String toHexString(byte[] b)
     {
@@ -480,140 +486,105 @@ public class TypeUtil
     }
 
 
-    public static Object call(Class<?> oClass, String methodName, Object obj, Object[] arg)
+    /* ------------------------------------------------------------ */
+    public static byte[] readLine(InputStream in) throws IOException
+    {
+        byte[] buf = new byte[256];
+
+        int i=0;
+        int loops=0;
+        int ch=0;
+
+        while (true)
+        {
+            ch=in.read();
+            if (ch<0)
+                break;
+            loops++;
+
+            // skip a leading LF's
+            if (loops==1 && ch==LF)
+                continue;
+
+            if (ch==CR || ch==LF)
+                break;
+
+            if (i>=buf.length)
+            {
+                byte[] old_buf=buf;
+                buf=new byte[old_buf.length+256];
+                System.arraycopy(old_buf, 0, buf, 0, old_buf.length);
+            }
+            buf[i++]=(byte)ch;
+        }
+
+        if (ch==-1 && i==0)
+            return null;
+
+        // skip a trailing LF if it exists
+        if (ch==CR && in.available()>=1 && in.markSupported())
+        {
+            in.mark(1);
+            ch=in.read();
+            if (ch!=LF)
+                in.reset();
+        }
+
+        byte[] old_buf=buf;
+        buf=new byte[i];
+        System.arraycopy(old_buf, 0, buf, 0, i);
+
+        return buf;
+    }
+
+    public static URL jarFor(String className)
+    {
+        try
+        {
+            className=className.replace('.','/')+".class";
+            // hack to discover jstl libraries
+            URL url = Loader.getResource(null,className,false);
+            String s=url.toString();
+            if (s.startsWith("jar:file:"))
+                return new URL(s.substring(4,s.indexOf("!/")));
+        }
+        catch(Exception e)
+        {
+            LOG.ignore(e);
+        }
+        return null;
+    }
+    
+    public static Object call(Class<?> oClass, String method, Object obj, Object[] arg) 
        throws InvocationTargetException, NoSuchMethodException
     {
         // Lets just try all methods for now
-        for (Method method : oClass.getMethods())
+        Method[] methods = oClass.getMethods();
+        for (int c = 0; methods != null && c < methods.length; c++)
         {
-            if (!method.getName().equals(methodName))
-                continue;            
-            if (method.getParameterTypes().length != arg.length)
+            if (!methods[c].getName().equals(method))
                 continue;
-            if (Modifier.isStatic(method.getModifiers()) != (obj == null))
+            if (methods[c].getParameterTypes().length != arg.length)
                 continue;
-            if ((obj == null) && method.getDeclaringClass() != oClass)
+            if (Modifier.isStatic(methods[c].getModifiers()) != (obj == null))
+                continue;
+            if ((obj == null) && methods[c].getDeclaringClass() != oClass)
                 continue;
 
             try
             {
-                return method.invoke(obj, arg);
+                return methods[c].invoke(obj,arg);
             }
-            catch (IllegalAccessException | IllegalArgumentException e)
+            catch (IllegalAccessException e)
+            {
+                LOG.ignore(e);
+            }
+            catch (IllegalArgumentException e)
             {
                 LOG.ignore(e);
             }
         }
-        
-        // Lets look for a method with optional arguments
-        Object[] args_with_opts=null;
-        
-        for (Method method : oClass.getMethods())
-        {
-            if (!method.getName().equals(methodName))
-                continue;            
-            if (method.getParameterTypes().length != arg.length+1)
-                continue;
-            if (!method.getParameterTypes()[arg.length].isArray())
-                continue;
-            if (Modifier.isStatic(method.getModifiers()) != (obj == null))
-                continue;
-            if ((obj == null) && method.getDeclaringClass() != oClass)
-                continue;
 
-            if (args_with_opts==null)
-                args_with_opts=ArrayUtil.addToArray(arg,new Object[]{},Object.class);
-            try
-            {
-                return method.invoke(obj, args_with_opts);
-            }
-            catch (IllegalAccessException | IllegalArgumentException e)
-            {
-                LOG.ignore(e);
-            }
-        }
-        
-        
-        throw new NoSuchMethodException(methodName);
-    }
-
-    public static Object construct(Class<?> klass, Object[] arguments) throws InvocationTargetException, NoSuchMethodException
-    {
-        for (Constructor<?> constructor : klass.getConstructors())
-        {
-            if (constructor.getParameterTypes().length != arguments.length)
-                continue;
-
-            try
-            {
-                return constructor.newInstance(arguments);
-            }
-            catch (InstantiationException | IllegalAccessException | IllegalArgumentException e)
-            {
-                LOG.ignore(e);
-            }
-        }
-        throw new NoSuchMethodException("<init>");
-    }
-    
-    public static Object construct(Class<?> klass, Object[] arguments, Map<String, Object> namedArgMap) throws InvocationTargetException, NoSuchMethodException
-    {
-        for (Constructor<?> constructor : klass.getConstructors())
-        {
-            if (constructor.getParameterTypes().length != arguments.length)
-                continue;
-
-            try
-            {
-                Annotation[][] parameterAnnotations = constructor.getParameterAnnotations();
-                
-                // target has no annotations
-                if ( parameterAnnotations == null || parameterAnnotations.length == 0 )
-                {                
-                    LOG.debug("Target has no parameter annotations");                   
-                    return constructor.newInstance(arguments);
-                }
-                else
-                {
-                   Object[] swizzled = new Object[arguments.length];
-                   
-                   int count = 0;
-                   for ( Annotation[] annotations : parameterAnnotations )
-                   {
-                       for ( Annotation annotation : annotations)
-                       {
-                           if ( annotation instanceof Name )
-                           {
-                               Name param = (Name)annotation;
-                               
-                               if (namedArgMap.containsKey(param.value()))
-                               {
-                                   LOG.debug("placing named {} in position {}", param.value(), count);
-                                   swizzled[count] = namedArgMap.get(param.value());
-                               }
-                               else
-                               {
-                                   LOG.debug("placing {} in position {}", arguments[count], count);
-                                   swizzled[count] = arguments[count];
-                               }
-                               ++count;
-                           }
-                           else
-                           {
-                               LOG.debug("passing on annotation {}", annotation);
-                           }
-                       }
-                   }
-                   
-                   return constructor.newInstance(swizzled);
-                }
-                
-            }
-            catch (InstantiationException | IllegalAccessException | IllegalArgumentException e)
-            {
-                LOG.ignore(e);
-            }
-        }
-        throw new NoSuchMethodException("<init>");
+        throw new NoSuchMethodException(method);
     }
 }

@@ -24,7 +24,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
-import java.nio.charset.Charset;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Locale;
@@ -35,7 +34,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
@@ -229,7 +228,7 @@ public class CGI extends HttpServlet
             pathTranslated = path;
 
         String bodyFormEncoded = null;
-        if ((HttpMethod.POST.equals(req.getMethod()) || HttpMethod.PUT.equals(req.getMethod())) && "application/x-www-form-urlencoded".equals(req.getContentType()))
+        if ((HttpMethods.POST.equals(req.getMethod()) || HttpMethods.PUT.equals(req.getMethod())) && "application/x-www-form-urlencoded".equals(req.getContentType()))
         {
             MultiMap<String> parameterMap = new MultiMap<String>();
             Enumeration names = req.getParameterNames();
@@ -238,7 +237,7 @@ public class CGI extends HttpServlet
                 String parameterName = (String)names.nextElement();
                 parameterMap.addValues(parameterName, req.getParameterValues(parameterName));
             }
-            bodyFormEncoded = UrlEncoded.encode(parameterMap, Charset.forName(req.getCharacterEncoding()), true);
+            bodyFormEncoded = UrlEncoded.encode(parameterMap, req.getCharacterEncoding(), true);
         }
 
         EnvList env = new EnvList(_env);
@@ -409,10 +408,9 @@ public class CGI extends HttpServlet
             {
                 try
                 {
-                    try (Writer outToCgi = new OutputStreamWriter(p.getOutputStream()))
-                    {
-                        outToCgi.write(input);
-                    }
+                    Writer outToCgi = new OutputStreamWriter(p.getOutputStream());
+                    outToCgi.write(input);
+                    outToCgi.close();
                 }
                 catch (IOException e)
                 {

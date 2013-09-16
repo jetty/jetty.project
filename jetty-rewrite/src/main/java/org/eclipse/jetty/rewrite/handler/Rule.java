@@ -49,7 +49,7 @@ public abstract class Rule
      * @param response
      * 
      * @return The new target if the rule has matched, else null
-     * @throws IOException
+     * @throws IOException TODO
      */
     public abstract String matchAndApply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException;   
     
@@ -97,7 +97,6 @@ public abstract class Rule
     /**
      * Returns the handling and terminating flag values.
      */
-    @Override
     public String toString()
     {
         return this.getClass().getName()+(_handling?"[H":"[h")+(_terminating?"T]":"t]");

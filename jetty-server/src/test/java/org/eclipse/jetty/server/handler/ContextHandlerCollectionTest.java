@@ -23,8 +23,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -34,121 +32,60 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.ArrayUtil;
-import org.hamcrest.Matchers;
-import org.junit.Assert;
 import org.junit.Test;
 
 public class ContextHandlerCollectionTest
 {
     @Test
-    public void testVirtualHosts() throws Exception
+    public void testVirtualHostNormalization() throws Exception
     {
         Server server = new Server();
-        LocalConnector connector0 = new LocalConnector(server);
-        LocalConnector connector1 = new LocalConnector(server);
-        connector1.setName("connector1");
-        
+        LocalConnector connector = new LocalConnector();
         server.setConnectors(new Connector[]
-        { connector0,connector1});
+        { connector });
 
-        ContextHandler contextA = new ContextHandler("/ctx");
+        ContextHandler contextA = new ContextHandler("/");
         contextA.setVirtualHosts(new String[]
-        { "www.example.com", "alias.example.com" });
-        IsHandledHandler handlerA = new IsHandledHandler("A");
+        { "www.example.com" });
+        IsHandledHandler handlerA = new IsHandledHandler();
         contextA.setHandler(handlerA);
-        contextA.setAllowNullPathInfo(true);
 
-        ContextHandler contextB = new ContextHandler("/ctx");
-        IsHandledHandler handlerB = new IsHandledHandler("B");
+        ContextHandler contextB = new ContextHandler("/");
+        IsHandledHandler handlerB = new IsHandledHandler();
         contextB.setHandler(handlerB);
         contextB.setVirtualHosts(new String[]
-        { "*.other.com" , "@connector1"});
+        { "www.example2.com." });
 
-        ContextHandler contextC = new ContextHandler("/ctx");
-        IsHandledHandler handlerC = new IsHandledHandler("C");
+        ContextHandler contextC = new ContextHandler("/");
+        IsHandledHandler handlerC = new IsHandledHandler();
         contextC.setHandler(handlerC);
 
-        ContextHandler contextD = new ContextHandler("/");
-        IsHandledHandler handlerD = new IsHandledHandler("D");
-        contextD.setHandler(handlerD);
-        
-        ContextHandler contextE = new ContextHandler("/ctx/foo");
-        IsHandledHandler handlerE = new IsHandledHandler("E");
-        contextE.setHandler(handlerE);
-        
-        ContextHandler contextF = new ContextHandler("/ctxlong");
-        IsHandledHandler handlerF = new IsHandledHandler("F");
-        contextF.setHandler(handlerF);
-
         ContextHandlerCollection c = new ContextHandlerCollection();
+
         c.addHandler(contextA);
         c.addHandler(contextB);
         c.addHandler(contextC);
-        
-        HandlerList list = new HandlerList();
-        list.addHandler(contextD);
-        list.addHandler(contextE);
-        list.addHandler(contextF);
-        c.addHandler(list);
-        
+
         server.setHandler(c);
 
         try
         {
             server.start();
-            
-            Object[][] tests = new Object[][] {
-                {connector0,"www.example.com.", "/ctx",    handlerA},
-                {connector0,"www.example.com.", "/ctx/",    handlerA},
-                {connector0,"www.example.com.", "/ctx/info",    handlerA},
-                {connector0,"www.example.com",  "/ctx/info",    handlerA},
-                {connector0,"alias.example.com",  "/ctx/info",    handlerA},
-                {connector1,"www.example.com.", "/ctx/info",    handlerA},
-                {connector1,"www.example.com",  "/ctx/info",    handlerA},
-                {connector1,"alias.example.com",  "/ctx/info",    handlerA},
+            connector.getResponses("GET / HTTP/1.1\n" + "Host: www.example.com.\n\n");
 
-                {connector1,"www.other.com",  "/ctx",    null},
-                {connector1,"www.other.com",  "/ctx/",    handlerB},
-                {connector1,"www.other.com",  "/ctx/info",    handlerB},
-                {connector0,"www.other.com",  "/ctx/info",    handlerC},
-                
-                {connector0,"www.example.com",  "/ctxinfo",    handlerD},
-                {connector1,"unknown.com",  "/unknown",    handlerD},
-                
-                {connector0,"alias.example.com",  "/ctx/foo/info",    handlerE},
-                {connector0,"alias.example.com",  "/ctxlong/info",    handlerF},
-            };
-            
-            for (int i=0;i<tests.length;i++)
-            {
-                Object[] test=tests[i];
-                LocalConnector connector = (LocalConnector)test[0];
-                String host=(String)test[1];
-                String uri=(String)test[2];
-                IsHandledHandler handler = (IsHandledHandler)test[3];
+            assertTrue(handlerA.isHandled());
+            assertFalse(handlerB.isHandled());
+            assertFalse(handlerC.isHandled());
 
-                handlerA.reset();
-                handlerB.reset();
-                handlerC.reset();
-                handlerD.reset();
-                handlerE.reset();
-                handlerF.reset();
+            handlerA.reset();
+            handlerB.reset();
+            handlerC.reset();
 
-                // System.err.printf("test   %d %s@%s --> %s | %s%n",i,uri,host,connector.getName(),handler);
-                String response = connector.getResponses("GET "+uri+" HTTP/1.0\nHost: "+host+"\n\n");
-                
-                if (handler==null)
-                {
-                    Assert.assertThat(response,Matchers.containsString(" 302 "));
-                }
-                else if (!handler.isHandled())
-                {
-                    System.err.printf("FAILED %d %s@%s --> %s | %s%n",i,uri,host,connector.getName(),handler);
-                    System.err.println(response);
-                    Assert.fail();
-                }
-            }
+            connector.getResponses("GET / HTTP/1.1\n" + "Host: www.example2.com\n\n");
+
+            assertFalse(handlerA.isHandled());
+            assertTrue(handlerB.isHandled());
+            assertFalse(handlerC.isHandled());
 
         }
         finally
@@ -161,12 +98,12 @@ public class ContextHandlerCollectionTest
     public void testVirtualHostWildcard() throws Exception
     {
         Server server = new Server();
-        LocalConnector connector = new LocalConnector(server);
+        LocalConnector connector = new LocalConnector();
         server.setConnectors(new Connector[] { connector });
 
         ContextHandler context = new ContextHandler("/");
 
-        IsHandledHandler handler = new IsHandledHandler("H");
+        IsHandledHandler handler = new IsHandledHandler();
         context.setHandler(handler);
 
         ContextHandlerCollection c = new ContextHandlerCollection();
@@ -212,10 +149,7 @@ public class ContextHandlerCollectionTest
 
         for(String host : requestHosts)
         {
-            // System.err.printf("host=%s in %s%n",host,contextHosts==null?Collections.emptyList():Arrays.asList(contextHosts));
-            
-            String response=connector.getResponses("GET / HTTP/1.0\n" + "Host: "+host+"\nConnection:close\n\n");
-            // System.err.println(response);
+            connector.getResponses("GET / HTTP/1.1\n" + "Host: "+host+"\n\n");
             if(succeed)
                 assertTrue("'"+host+"' should have been handled.",handler.isHandled());
             else
@@ -232,17 +166,17 @@ public class ContextHandlerCollectionTest
         Server server = new Server();
 
         ContextHandler contextA = new ContextHandler("/a");
-        IsHandledHandler handlerA = new IsHandledHandler("A");
+        IsHandledHandler handlerA = new IsHandledHandler();
         contextA.setHandler(handlerA);
 
         ContextHandler contextB = new ContextHandler("/b");
-        IsHandledHandler handlerB = new IsHandledHandler("B");
+        IsHandledHandler handlerB = new IsHandledHandler();
         HandlerWrapper wrapperB = new HandlerWrapper();
         wrapperB.setHandler(handlerB);
         contextB.setHandler(wrapperB);
 
         ContextHandler contextC = new ContextHandler("/c");
-        IsHandledHandler handlerC = new IsHandledHandler("C");
+        IsHandledHandler handlerC = new IsHandledHandler();
         contextC.setHandler(handlerC);
 
         ContextHandlerCollection collection = new ContextHandlerCollection();
@@ -254,49 +188,35 @@ public class ContextHandlerCollectionTest
         HandlerWrapper wrapper = new HandlerWrapper();
         wrapper.setHandler(collection);
         server.setHandler(wrapper);
-
+        
         assertEquals(wrapper,AbstractHandlerContainer.findContainerOf(server,HandlerWrapper.class,handlerA));
         assertEquals(contextA,AbstractHandlerContainer.findContainerOf(server,ContextHandler.class,handlerA));
         assertEquals(contextB,AbstractHandlerContainer.findContainerOf(server,ContextHandler.class,handlerB));
         assertEquals(wrapper,AbstractHandlerContainer.findContainerOf(server,HandlerWrapper.class,handlerB));
         assertEquals(contextB,AbstractHandlerContainer.findContainerOf(collection,HandlerWrapper.class,handlerB));
         assertEquals(wrapperB,AbstractHandlerContainer.findContainerOf(contextB,HandlerWrapper.class,handlerB));
-
+        
     }
 
-
+    
     private static final class IsHandledHandler extends AbstractHandler
     {
         private boolean handled;
-        private final String name;
-
-        public IsHandledHandler(String string)
-        {
-            name=string;
-        }
 
         public boolean isHandled()
         {
             return handled;
         }
 
-        @Override
         public void handle(String s, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
             this.handled = true;
-            response.getWriter().print(name);
         }
 
         public void reset()
         {
             handled = false;
-        }
-        
-        @Override
-        public String toString()
-        {
-            return name;
         }
     }
 

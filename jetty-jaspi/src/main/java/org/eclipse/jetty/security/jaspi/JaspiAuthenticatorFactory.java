@@ -33,10 +33,10 @@ import javax.security.auth.message.config.ServerAuthConfig;
 import javax.servlet.ServletContext;
 
 import org.eclipse.jetty.security.Authenticator;
-import org.eclipse.jetty.security.Authenticator.AuthConfiguration;
 import org.eclipse.jetty.security.DefaultAuthenticatorFactory;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.LoginService;
+import org.eclipse.jetty.security.Authenticator.AuthConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -137,7 +137,7 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
     {
         if (_serviceSubject!=null)
             return _serviceSubject;
-        List<Subject> subjects = (List<Subject>)server.getBeans(Subject.class);
+        List subjects = server.getBeans(Subject.class);
         if (subjects.size()>0)
             return (Subject)subjects.get(0);
         return null;

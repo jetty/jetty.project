@@ -18,15 +18,16 @@
 
 package org.eclipse.jetty.http;
 
+import java.io.Externalizable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.StringTokenizer;
 
-import org.eclipse.jetty.util.ArrayTernaryTrie;
 import org.eclipse.jetty.util.LazyList;
-import org.eclipse.jetty.util.Trie;
+import org.eclipse.jetty.util.StringMap;
 import org.eclipse.jetty.util.URIUtil;
 
 /* ------------------------------------------------------------ */
@@ -60,7 +61,7 @@ import org.eclipse.jetty.util.URIUtil;
  *
  *
  */
-public class PathMap<O> extends HashMap<String,O>
+public class PathMap extends HashMap implements Externalizable
 {
     /* ------------------------------------------------------------ */
     private static String __pathSpecSeparators = ":,";
@@ -78,46 +79,67 @@ public class PathMap<O> extends HashMap<String,O>
     }
 
     /* --------------------------------------------------------------- */
-    Trie<MappedEntry<O>> _prefixMap=new ArrayTernaryTrie<>(false);
-    Trie<MappedEntry<O>> _suffixMap=new ArrayTernaryTrie<>(false);
-    final Map<String,MappedEntry<O>> _exactMap=new HashMap<>();
+    final StringMap _prefixMap=new StringMap();
+    final StringMap _suffixMap=new StringMap();
+    final StringMap _exactMap=new StringMap();
 
-    List<MappedEntry<O>> _defaultSingletonList=null;
-    MappedEntry<O> _prefixDefault=null;
-    MappedEntry<O> _default=null;
+    List _defaultSingletonList=null;
+    Entry _prefixDefault=null;
+    Entry _default=null;
+    final Set _entrySet;
     boolean _nodefault=false;
 
     /* --------------------------------------------------------------- */
+    /** Construct empty PathMap.
+     */
     public PathMap()
     {
-        this(11);
+        super(11);
+        _entrySet=entrySet();
     }
 
     /* --------------------------------------------------------------- */
-    public PathMap(boolean noDefault)
+    /** Construct empty PathMap.
+     */
+    public PathMap(boolean nodefault)
     {
-        this(11, noDefault);
+        super(11);
+        _entrySet=entrySet();
+        _nodefault=nodefault;
     }
 
     /* --------------------------------------------------------------- */
+    /** Construct empty PathMap.
+     */
     public PathMap(int capacity)
     {
-        this(capacity, false);
-    }
-
-    /* --------------------------------------------------------------- */
-    private PathMap(int capacity, boolean noDefault)
-    {
-        super(capacity);
-        _nodefault=noDefault;
+        super (capacity);
+        _entrySet=entrySet();
     }
 
     /* --------------------------------------------------------------- */
     /** Construct from dictionary PathMap.
      */
-    public PathMap(Map<String, ? extends O> m)
+    public PathMap(Map m)
     {
         putAll(m);
+        _entrySet=entrySet();
+    }
+
+    /* ------------------------------------------------------------ */
+    public void writeExternal(java.io.ObjectOutput out)
+        throws java.io.IOException
+    {
+        HashMap map = new HashMap(this);
+        out.writeObject(map);
+    }
+
+    /* ------------------------------------------------------------ */
+    public void readExternal(java.io.ObjectInput in)
+        throws java.io.IOException, ClassNotFoundException
+    {
+        HashMap map = (HashMap)in.readObject();
+        this.putAll(map);
     }
 
     /* --------------------------------------------------------------- */
@@ -127,18 +149,10 @@ public class PathMap<O> extends HashMap<String,O>
      * @param object The object the path maps to
      */
     @Override
-    public O put(String pathSpec, O object)
+    public Object put(Object pathSpec, Object object)
     {
-        if ("".equals(pathSpec.trim()))
-        {
-            MappedEntry<O> entry = new MappedEntry<>("",object);
-            entry.setMapped("");
-            _exactMap.put("", entry);
-            return super.put("", object);
-        }
-
-        StringTokenizer tok = new StringTokenizer(pathSpec,__pathSpecSeparators);
-        O old =null;
+        StringTokenizer tok = new StringTokenizer(pathSpec.toString(),__pathSpecSeparators);
+        Object old =null;
 
         while (tok.hasMoreTokens())
         {
@@ -150,7 +164,7 @@ public class PathMap<O> extends HashMap<String,O>
             old = super.put(spec,object);
 
             // Make entry that was just created.
-            MappedEntry<O> entry = new MappedEntry<>(spec,object);
+            Entry entry = new Entry(spec,object);
 
             if (entry.getKey().equals(spec))
             {
@@ -160,15 +174,12 @@ public class PathMap<O> extends HashMap<String,O>
                 {
                     String mapped=spec.substring(0,spec.length()-2);
                     entry.setMapped(mapped);
-                    while (!_prefixMap.put(mapped,entry))
-                        _prefixMap=new ArrayTernaryTrie<>((ArrayTernaryTrie<MappedEntry<O>>)_prefixMap,1.5);
+                    _prefixMap.put(mapped,entry);
+                    _exactMap.put(mapped,entry);
+                    _exactMap.put(spec.substring(0,spec.length()-1),entry);
                 }
                 else if (spec.startsWith("*."))
-                {
-                    String suffix=spec.substring(2);
-                    while(!_suffixMap.put(suffix,entry))
-                        _suffixMap=new ArrayTernaryTrie<>((ArrayTernaryTrie<MappedEntry<O>>)_suffixMap,1.5);
-                }
+                    _suffixMap.put(spec.substring(2),entry);
                 else if (spec.equals(URIUtil.SLASH))
                 {
                     if (_nodefault)
@@ -176,7 +187,8 @@ public class PathMap<O> extends HashMap<String,O>
                     else
                     {
                         _default=entry;
-                        _defaultSingletonList=Collections.singletonList(_default);
+                        _defaultSingletonList=
+                            Collections.singletonList(_default);
                     }
                 }
                 else
@@ -195,9 +207,9 @@ public class PathMap<O> extends HashMap<String,O>
      * @param path the path.
      * @return Best matched object or null.
      */
-    public O match(String path)
+    public Object match(String path)
     {
-        MappedEntry<O> entry = getMatch(path);
+        Map.Entry entry = getMatch(path);
         if (entry!=null)
             return entry.getValue();
         return null;
@@ -209,40 +221,27 @@ public class PathMap<O> extends HashMap<String,O>
      * @param path the path.
      * @return Map.Entry of the best matched  or null.
      */
-    public MappedEntry<O> getMatch(String path)
+    public Entry getMatch(String path)
     {
+        Map.Entry entry;
+
         if (path==null)
             return null;
 
         int l=path.length();
 
-        MappedEntry<O> entry=null;
-
-        //special case
-        if (l == 1 && path.charAt(0)=='/')
-        {
-            entry = _exactMap.get("");
-            if (entry != null)
-                return entry;
-        }
-
         // try exact match
-        entry=_exactMap.get(path);
+        entry=_exactMap.getEntry(path,0,l);
         if (entry!=null)
-            return entry;
+            return (Entry) entry.getValue();
 
         // prefix search
         int i=l;
-        final Trie<PathMap.MappedEntry<O>> prefix_map=_prefixMap;
-        while(i>=0)
+        while((i=path.lastIndexOf('/',i-1))>=0)
         {
-            entry=prefix_map.getBest(path,0,i);
-            if (entry==null)
-                break;
-            String key = entry.getKey();
-            if (key.length()-2>=path.length() || path.charAt(key.length()-2)=='/')
-                return entry;
-            i=key.length()-3;
+            entry=_prefixMap.getEntry(path,0,i);
+            if (entry!=null)
+                return (Entry) entry.getValue();
         }
 
         // Prefix Default
@@ -251,12 +250,11 @@ public class PathMap<O> extends HashMap<String,O>
 
         // Extension search
         i=0;
-        final Trie<PathMap.MappedEntry<O>> suffix_map=_suffixMap;
         while ((i=path.indexOf('.',i+1))>0)
         {
-            entry=suffix_map.get(path,i+1,l-i-1);
+            entry=_suffixMap.getEntry(path,i+1,l-i-1);
             if (entry!=null)
-                return entry;
+                return (Entry) entry.getValue();
         }
 
         // Default
@@ -271,31 +269,26 @@ public class PathMap<O> extends HashMap<String,O>
      */
     public Object getLazyMatches(String path)
     {
-        MappedEntry<O> entry;
+        Map.Entry entry;
         Object entries=null;
 
         if (path==null)
             return LazyList.getList(entries);
 
+        int l=path.length();
+
         // try exact match
-        entry=_exactMap.get(path);
+        entry=_exactMap.getEntry(path,0,l);
         if (entry!=null)
-            entries=LazyList.add(entries,entry);
+            entries=LazyList.add(entries,entry.getValue());
 
         // prefix search
-        int l=path.length();
-        int i=l;
-        final Trie<PathMap.MappedEntry<O>> prefix_map=_prefixMap;
-        while(i>=0)
+        int i=l-1;
+        while((i=path.lastIndexOf('/',i-1))>=0)
         {
-            entry=prefix_map.getBest(path,0,i);
-            if (entry==null)
-                break;
-            String key = entry.getKey();
-            if (key.length()-2>=path.length() || path.charAt(key.length()-2)=='/')
-                entries=LazyList.add(entries,entry);
-
-            i=key.length()-3;
+            entry=_prefixMap.getEntry(path,0,i);
+            if (entry!=null)
+                entries=LazyList.add(entries,entry.getValue());
         }
 
         // Prefix Default
@@ -304,12 +297,11 @@ public class PathMap<O> extends HashMap<String,O>
 
         // Extension search
         i=0;
-        final Trie<PathMap.MappedEntry<O>> suffix_map=_suffixMap;
         while ((i=path.indexOf('.',i+1))>0)
         {
-            entry=suffix_map.get(path,i+1,l-i-1);
+            entry=_suffixMap.getEntry(path,i+1,l-i-1);
             if (entry!=null)
-                entries=LazyList.add(entries,entry);
+                entries=LazyList.add(entries,entry.getValue());
         }
 
         // Default
@@ -331,7 +323,7 @@ public class PathMap<O> extends HashMap<String,O>
      * @param path Path to match
      * @return List of Map.Entry instances key=pathSpec
      */
-    public List<Map.Entry<String,O>> getMatches(String path)
+    public List getMatches(String path)
     {
         return LazyList.getList(getLazyMatches(path));
     }
@@ -344,13 +336,13 @@ public class PathMap<O> extends HashMap<String,O>
      */
     public boolean containsMatch(String path)
     {
-        MappedEntry<?> match = getMatch(path);
-        return match!=null && !match.equals(_default);
+    	Entry match = getMatch(path);
+    	return match!=null && !match.equals(_default);
     }
 
     /* --------------------------------------------------------------- */
     @Override
-    public O remove(Object pathSpec)
+    public Object remove(Object pathSpec)
     {
         if (pathSpec!=null)
         {
@@ -358,7 +350,11 @@ public class PathMap<O> extends HashMap<String,O>
             if (spec.equals("/*"))
                 _prefixDefault=null;
             else if (spec.endsWith("/*"))
+            {
                 _prefixMap.remove(spec.substring(0,spec.length()-2));
+                _exactMap.remove(spec.substring(0,spec.length()-1));
+                _exactMap.remove(spec.substring(0,spec.length()-2));
+            }
             else if (spec.startsWith("*."))
                 _suffixMap.remove(spec.substring(2));
             else if (spec.equals(URIUtil.SLASH))
@@ -377,8 +373,8 @@ public class PathMap<O> extends HashMap<String,O>
     public void clear()
     {
         _exactMap.clear();
-        _prefixMap=new ArrayTernaryTrie<>(false);
-        _suffixMap=new ArrayTernaryTrie<>(false);
+        _prefixMap.clear();
+        _suffixMap.clear();
         _default=null;
         _defaultSingletonList=null;
         super.clear();
@@ -399,11 +395,8 @@ public class PathMap<O> extends HashMap<String,O>
      * @return true if match.
      */
     public static boolean match(String pathSpec, String path, boolean noDefault)
-        throws IllegalArgumentException
+    throws IllegalArgumentException
     {
-        if (pathSpec.length()==0)
-            return "/".equals(path);
-            
         char c = pathSpec.charAt(0);
         if (c=='/')
         {
@@ -415,7 +408,7 @@ public class PathMap<O> extends HashMap<String,O>
         }
         else if (c=='*')
             return path.regionMatches(path.length()-pathSpec.length()+1,
-                    pathSpec,1,pathSpec.length()-1);
+                                      pathSpec,1,pathSpec.length()-1);
         return false;
     }
 
@@ -455,7 +448,7 @@ public class PathMap<O> extends HashMap<String,O>
         else if (c=='*')
         {
             if (path.regionMatches(path.length()-(pathSpec.length()-1),
-                    pathSpec,1,pathSpec.length()-1))
+                                   pathSpec,1,pathSpec.length()-1))
                 return path;
         }
         return null;
@@ -467,9 +460,6 @@ public class PathMap<O> extends HashMap<String,O>
      */
     public static String pathInfo(String pathSpec, String path)
     {
-        if ("".equals(pathSpec))
-            return path; //servlet 3 spec sec 12.2 will be '/'
-
         char c = pathSpec.charAt(0);
 
         if (c=='/')
@@ -502,8 +492,8 @@ public class PathMap<O> extends HashMap<String,O>
      * @return base plus path with pathspec removed
      */
     public static String relativePath(String base,
-            String pathSpec,
-            String path )
+                                      String pathSpec,
+                                      String path )
     {
         String info=pathInfo(pathSpec,path);
         if (info==null)
@@ -527,32 +517,30 @@ public class PathMap<O> extends HashMap<String,O>
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    public static class MappedEntry<O> implements Map.Entry<String,O>
+    public static class Entry implements Map.Entry
     {
-        private final String key;
-        private final O value;
+        private final Object key;
+        private final Object value;
         private String mapped;
+        private transient String string;
 
-        MappedEntry(String key, O value)
+        Entry(Object key, Object value)
         {
             this.key=key;
             this.value=value;
         }
 
-        @Override
-        public String getKey()
+        public Object getKey()
         {
             return key;
         }
 
-        @Override
-        public O getValue()
+        public Object getValue()
         {
             return value;
         }
 
-        @Override
-        public O setValue(O o)
+        public Object setValue(Object o)
         {
             throw new UnsupportedOperationException();
         }
@@ -560,7 +548,9 @@ public class PathMap<O> extends HashMap<String,O>
         @Override
         public String toString()
         {
-            return key+"="+value;
+            if (string==null)
+                string=key+"="+value;
+            return string;
         }
 
         public String getMapped()

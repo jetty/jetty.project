@@ -24,15 +24,17 @@ import java.lang.reflect.Method;
 import java.net.URL;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Loader;
-import org.eclipse.jetty.util.annotation.ManagedAttribute;
 
 /**
  * Logging.
@@ -58,20 +60,20 @@ public class Log
     /**
      * Logging Configuration Properties
      */
-    protected static final Properties __props;
+    protected static Properties __props;
     /**
      * The {@link Logger} implementation class name
      */
     public static String __logClass;
     /**
-     * Legacy flag indicating if {@link Logger#ignore(Throwable)} methods produce any output in the {@link Logger}s
+     * Legacy flag indicating if {@link Log#ignore(Throwable)} methods produce any output in the {@link Logger}s
      */
     public static boolean __ignored;
 
     /**
      * Hold loggers only.
      */
-    private final static ConcurrentMap<String, Logger> __loggers = new ConcurrentHashMap<>();
+    private final static ConcurrentMap<String, Logger> __loggers = new ConcurrentHashMap<String, Logger>();
 
 
     static
@@ -105,7 +107,7 @@ public class Log
                     }
                     finally
                     {
-                        safeCloseInputStream(in);
+                        IO.close(in);
                     }
                 }
 
@@ -130,19 +132,6 @@ public class Log
                 return null;
             }
         });
-    }
-
-    private static void safeCloseInputStream(InputStream in)
-    {
-        try
-        {
-            if (in != null)
-                in.close();
-        }
-        catch (IOException e)
-        {
-            LOG.ignore(e);
-        }
     }
 
     private static Logger LOG;
@@ -197,16 +186,20 @@ public class Log
             LOG.debug("Logging to {} via {}", LOG, log_class.getName());
         }
     }
-    
-    public static Logger getLog()
-    {
-        initialized();
-        return LOG;
-    }
 
     public static void setLog(Logger log)
     {
         Log.LOG = log;
+    }
+
+    /**
+     * @deprecated anonymous logging is deprecated, use a named {@link Logger} obtained from {@link #getLogger(String)}
+     */
+    @Deprecated
+    public static Logger getLog()
+    {
+        initialized();
+        return LOG;
     }
 
     /**
@@ -262,6 +255,165 @@ public class Log
     }
 
     /**
+     * @deprecated anonymous logging is deprecated, use a named {@link Logger} obtained from {@link #getLogger(String)}
+     */
+    @Deprecated
+    public static void debug(Throwable th)
+    {
+        if (!isDebugEnabled())
+            return;
+        LOG.debug(EXCEPTION, th);
+    }
+
+    /**
+     * @deprecated anonymous logging is deprecated, use a named {@link Logger} obtained from {@link #getLogger(String)}
+     */
+    @Deprecated
+    public static void debug(String msg)
+    {
+        if (!initialized())
+            return;
+        LOG.debug(msg);
+    }
+
+    /**
+     * @deprecated anonymous logging is deprecated, use a named {@link Logger} obtained from {@link #getLogger(String)}
+     */
+    @Deprecated
+    public static void debug(String msg, Object arg)
+    {
+        if (!initialized())
+            return;
+        LOG.debug(msg, arg);
+    }
+
+    /**
+     * @deprecated anonymous logging is deprecated, use a named {@link Logger} obtained from {@link #getLogger(String)}
+     */
+    @Deprecated
+    public static void debug(String msg, Object arg0, Object arg1)
+    {
+        if (!initialized())
+            return;
+        LOG.debug(msg, arg0, arg1);
+    }
+
+    /**
+     * Ignore an exception unless trace is enabled.
+     * This works around the problem that log4j does not support the trace level.
+     * @param thrown the Throwable to ignore
+     */
+    /**
+     * @deprecated anonymous logging is deprecated, use a named {@link Logger} obtained from {@link #getLogger(String)}
+     */
+    @Deprecated
+    public static void ignore(Throwable thrown)
+    {
+        if (!initialized())
+            return;
+        LOG.ignore(thrown);
+    }
+
+    /**
+     * @deprecated anonymous logging is deprecated, use a named {@link Logger} obtained from {@link #getLogger(String)}
+     */
+    @Deprecated
+    public static void info(String msg)
+    {
+        if (!initialized())
+            return;
+        LOG.info(msg);
+    }
+
+    /**
+     * @deprecated anonymous logging is deprecated, use a named {@link Logger} obtained from {@link #getLogger(String)}
+     */
+    @Deprecated
+    public static void info(String msg, Object arg)
+    {
+        if (!initialized())
+            return;
+        LOG.info(msg, arg);
+    }
+
+    /**
+     * @deprecated anonymous logging is deprecated, use a named {@link Logger} obtained from {@link #getLogger(String)}
+     */
+    @Deprecated
+    public static void info(String msg, Object arg0, Object arg1)
+    {
+        if (!initialized())
+            return;
+        LOG.info(msg, arg0, arg1);
+    }
+
+    /**
+     * @deprecated anonymous logging is deprecated, use a named {@link Logger} obtained from {@link #getLogger(String)}
+     */
+    @Deprecated
+    public static boolean isDebugEnabled()
+    {
+        if (!initialized())
+            return false;
+        return LOG.isDebugEnabled();
+    }
+
+    /**
+     * @deprecated anonymous logging is deprecated, use a named {@link Logger} obtained from {@link #getLogger(String)}
+     */
+    @Deprecated
+    public static void warn(String msg)
+    {
+        if (!initialized())
+            return;
+        LOG.warn(msg);
+    }
+
+    /**
+     * @deprecated anonymous logging is deprecated, use a named {@link Logger} obtained from {@link #getLogger(String)}
+     */
+    @Deprecated
+    public static void warn(String msg, Object arg)
+    {
+        if (!initialized())
+            return;
+        LOG.warn(msg, arg);
+    }
+
+    /**
+     * @deprecated anonymous logging is deprecated, use a named {@link Logger} obtained from {@link #getLogger(String)}
+     */
+    @Deprecated
+    public static void warn(String msg, Object arg0, Object arg1)
+    {
+        if (!initialized())
+            return;
+        LOG.warn(msg, arg0, arg1);
+    }
+
+    /**
+     * @deprecated anonymous logging is deprecated, use a named {@link Logger} obtained from {@link #getLogger(String)}
+     */
+    @Deprecated
+    public static void warn(String msg, Throwable th)
+    {
+        if (!initialized())
+            return;
+        LOG.warn(msg, th);
+    }
+
+    /**
+     * @deprecated anonymous logging is deprecated, use a named {@link Logger} obtained from {@link #getLogger(String)}
+     */
+    @Deprecated
+    public static void warn(Throwable th)
+    {
+        if (!initialized())
+            return;
+        LOG.warn(EXCEPTION, th);
+    }
+
+    /**
      * Obtain a named Logger based on the fully qualified class name.
      *
      * @param clazz
@@ -281,11 +433,7 @@ public class Log
     public static Logger getLogger(String name)
     {
         if (!initialized())
-        {
-            IllegalStateException e = new IllegalStateException();
-            e.printStackTrace();
-            throw e;
-        }
+            return null;
 
         if(name==null)
             return LOG;
@@ -307,7 +455,6 @@ public class Log
      *
      * @return a map of all configured {@link Logger} instances
      */
-    @ManagedAttribute("list of all instantiated loggers")
     public static Map<String, Logger> getLoggers()
     {
         return Collections.unmodifiableMap(__loggers);

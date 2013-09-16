@@ -7,7 +7,6 @@
 target/
 */src/main/java/META-INF/
 *.versionsBackup
-bin/
 
 # common junk
 *.log
@@ -39,4 +38,3 @@ bin/
 
 #maven
 *.versionsBackup
-*.releaseBackup

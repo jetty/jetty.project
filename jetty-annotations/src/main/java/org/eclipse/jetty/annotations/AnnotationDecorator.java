@@ -24,9 +24,10 @@ import javax.servlet.Filter;
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
 
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.ServletContextHandler.Decorator;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.servlet.ServletContextHandler.Decorator;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
@@ -37,7 +38,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
 public class AnnotationDecorator implements Decorator
 {
     AnnotationIntrospector _introspector = new AnnotationIntrospector();
-
+    
     /**
      * @param context
      */
@@ -49,8 +50,6 @@ public class AnnotationDecorator implements Decorator
         _introspector.registerHandler(new PostConstructAnnotationHandler(context));
         _introspector.registerHandler(new PreDestroyAnnotationHandler(context));
         _introspector.registerHandler(new DeclareRolesAnnotationHandler(context));
-        _introspector.registerHandler(new MultiPartConfigAnnotationHandler(context));
-        _introspector.registerHandler(new ServletSecurityAnnotationHandler(context));
     }
 
     /* ------------------------------------------------------------ */
@@ -62,7 +61,7 @@ public class AnnotationDecorator implements Decorator
     public void decorateFilterHolder(FilterHolder filter) throws ServletException
     {
     }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * @param <T>
@@ -76,7 +75,7 @@ public class AnnotationDecorator implements Decorator
         introspect(filter);
         return filter;
     }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * @param <T>
@@ -133,10 +132,10 @@ public class AnnotationDecorator implements Decorator
     {
     }
 
+    
+    
 
-
-
-
+  
     /* ------------------------------------------------------------ */
     /**
      * @param f

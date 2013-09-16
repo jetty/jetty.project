@@ -19,26 +19,21 @@
 package org.eclipse.jetty.osgi.boot.jsp;
 
 import org.eclipse.jetty.osgi.boot.BundleWebAppProvider;
-import org.eclipse.jetty.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
-import org.eclipse.jetty.osgi.boot.jasper.ContainerTldBundleDiscoverer;
-import org.eclipse.jetty.osgi.boot.jasper.JSTLBundleDiscoverer;
+import org.eclipse.jetty.osgi.boot.internal.webapp.WebBundleTrackerCustomizer;
+import org.eclipse.jetty.osgi.boot.jasper.PluggableWebAppRegistrationCustomizerImpl;
+import org.eclipse.jetty.osgi.boot.jasper.WebappRegistrationCustomizerImpl;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 
 /**
- * FragmentActivator
- * 
- * Sets up support for jsp. All relevant jsp jars must also be installed
- * into the osgi environment.
- *  <p>
- * Note that as this is part of a bundle fragment, this activator is NOT
- * called by the OSGi environment. Instead, the org.eclipse.jetty.osgi.boot.utils.internal.PackageAdminTracker
- * simulates fragment activation and causes this class's start() method to
- * be called.
- * </p>
- *  <p>
- * The package of this class MUST match the Bundle-SymbolicName of this fragment
- * in order for the PackageAdminTracker to find it.
+ * Pseudo fragment activator. Called by the main org.eclipse.jetty.osgi.boot
+ * bundle. Please note: this is not a real BundleActivator. Simply something
+ * called back by the host bundle.
+ * <p>
+ * It must be placed in the org.eclipse.jetty.osgi.boot.jsp package: this is
+ * because org.eclipse.jetty.osgi.boot.jsp is the symbolic-name of this
+ * fragment. From that name, the PackageadminTracker will call this class. IN a
+ * different package it won't be called.
  * </p>
  */
 public class FragmentActivator implements BundleActivator
@@ -48,14 +43,12 @@ public class FragmentActivator implements BundleActivator
      */
     public void start(BundleContext context) throws Exception
     {
-        //jsr199 compilation does not work in osgi
         System.setProperty("org.apache.jasper.compiler.disablejsr199", Boolean.TRUE.toString());
-        
-        //set up some classes that will look for bundles with tlds that must be converted
-        //to urls and treated as if they are on the Jetty container's classpath so that 
-        //jasper can deal with them
-        ServerInstanceWrapper.addContainerTldBundleDiscoverer(new JSTLBundleDiscoverer());
-        ServerInstanceWrapper.addContainerTldBundleDiscoverer(new ContainerTldBundleDiscoverer());      
+        WebBundleTrackerCustomizer.JSP_REGISTRATION_HELPERS.add(new WebappRegistrationCustomizerImpl());
+        WebBundleTrackerCustomizer.JSP_REGISTRATION_HELPERS.add(new PluggableWebAppRegistrationCustomizerImpl());
+        //Put in the support for the tag libs
+        addTagLibSupport();
+      
     }
 
     /**
@@ -64,5 +57,13 @@ public class FragmentActivator implements BundleActivator
     public void stop(BundleContext context) throws Exception
     {
 
+    }
+    
+    public void addTagLibSupport ()
+    {
+        String[] defaultConfigurations = new String[BundleWebAppProvider.getDefaultConfigurations().length+1];
+        System.arraycopy(BundleWebAppProvider.getDefaultConfigurations(), 0, defaultConfigurations, 0, BundleWebAppProvider.getDefaultConfigurations().length);
+        defaultConfigurations[defaultConfigurations.length-1] = "org.eclipse.jetty.osgi.boot.jsp.TagLibOSGiConfiguration";
+        BundleWebAppProvider.setDefaultConfigurations(defaultConfigurations);
     }
 }

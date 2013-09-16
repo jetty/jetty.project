@@ -1,15 +1,15 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
-  <Call name="addBean">
+  <Call name="addLifeCycle">
     <Arg>
       <New id="DeploymentManager" class="org.eclipse.jetty.deploy.DeploymentManager">
         <Set name="contexts">
-          <Ref refid="Contexts" />
+          <Ref id="Contexts" />
         </Set>
-
+        
         <!-- Providers of Apps -->
         <Set name="appProviders">
           <Array type="org.eclipse.jetty.deploy.AppProvider">

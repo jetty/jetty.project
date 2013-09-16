@@ -21,15 +21,15 @@ package org.eclipse.jetty.spdy.parser;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.spdy.CompressionFactory;
+import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.HeadersInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.frames.ControlFrameType;
 import org.eclipse.jetty.spdy.frames.HeadersFrame;
-import org.eclipse.jetty.util.Fields;
 
 public class HeadersBodyParser extends ControlFrameBodyParser
 {
-    private final Fields headers = new Fields();
+    private final Headers headers = new Headers();
     private final ControlFrameParser controlFrameParser;
     private final HeadersBlockParser headersBlockParser;
     private State state = State.STREAM_ID;
@@ -126,7 +126,7 @@ public class HeadersBodyParser extends ControlFrameBodyParser
                         if (flags != 0 && flags != HeadersInfo.FLAG_CLOSE && flags != HeadersInfo.FLAG_RESET_COMPRESSION)
                             throw new IllegalArgumentException("Invalid flag " + flags + " for frame " + ControlFrameType.HEADERS);
 
-                        HeadersFrame frame = new HeadersFrame(version, flags, streamId, new Fields(headers, true));
+                        HeadersFrame frame = new HeadersFrame(version, flags, streamId, new Headers(headers, true));
                         controlFrameParser.onControlFrame(frame);
 
                         reset();

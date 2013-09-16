@@ -35,10 +35,11 @@ import javax.management.MBeanServerConnection;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 
+import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.util.BytesContentProvider;
+import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.monitor.JMXMonitor;
 import org.eclipse.jetty.monitor.jmx.EventNotifier;
 import org.eclipse.jetty.monitor.jmx.EventState;
@@ -48,7 +49,6 @@ import org.eclipse.jetty.monitor.jmx.MonitorAction;
 import org.eclipse.jetty.monitor.triggers.AggregateEventTrigger;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 
 /* ------------------------------------------------------------ */
@@ -83,10 +83,9 @@ public class JavaMonitorAction extends MonitorAction
         _uuid = uuid;
         _appid = appid;
         
-        QueuedThreadPool executor = new QueuedThreadPool();
-        executor.setName(executor.getName() + "-monitor");
         _client = new HttpClient();
-        _client.setExecutor(executor);
+        _client.setTimeout(60000);
+        _client.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
         
         try
         {
@@ -183,19 +182,24 @@ public class JavaMonitorAction extends MonitorAction
         Properties response = null;
     
         try {
+            ContentExchange reqEx = new ContentExchange();
+            reqEx.setURL(_url);
+            reqEx.setMethod(HttpMethods.POST);
+            reqEx.addRequestHeader("Connection","close");
+            
             reqStream = new ByteArrayOutputStream();
             request.storeToXML(reqStream,null);
+            ByteArrayBuffer reqBuff = new ByteArrayBuffer(reqStream.toByteArray());
+
+            reqEx.setRequestContent(reqBuff);
+            _client.send(reqEx);
+        
+            reqEx.waitForDone();
             
-            ContentResponse r3sponse = _client.POST(_url)
-                .header("Connection","close")
-                .content(new BytesContentProvider(reqStream.toByteArray()))
-                .send();
-            
-                        
-            if (r3sponse.getStatus() == HttpStatus.OK_200)
+            if (reqEx.getResponseStatus() == HttpStatus.OK_200)
             {
                 response = new Properties();
-                resStream = new ByteArrayInputStream(r3sponse.getContent());
+                resStream = new ByteArrayInputStream(reqEx.getResponseContentBytes());
                 response.loadFromXML(resStream);               
             }
         }

@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+  <!-- Add a AJP listener on port 8009                           -->
+  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+  <Call name="addConnector">
+    <Arg>
+       <New class="org.eclipse.jetty.ajp.Ajp13SocketConnector">
+         <Set name="port">8009</Set>
+       </New>
+    </Arg>
+  </Call>
+
+</Configure>
+

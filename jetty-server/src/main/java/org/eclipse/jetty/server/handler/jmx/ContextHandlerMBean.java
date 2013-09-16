@@ -24,12 +24,7 @@ import java.util.Map;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
-import org.eclipse.jetty.util.annotation.ManagedAttribute;
-import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.annotation.ManagedOperation;
-import org.eclipse.jetty.util.annotation.Name;
 
-@ManagedObject("ContextHandler mbean wrapper")
 public class ContextHandlerMBean extends AbstractHandlerMBean
 {
     public ContextHandlerMBean(Object managedObject)
@@ -37,12 +32,11 @@ public class ContextHandlerMBean extends AbstractHandlerMBean
         super(managedObject);
     }
 
-    @ManagedAttribute("Map of context attributes")
-    public Map<String,Object> getContextAttributes()
+    public Map getContextAttributes()
     {
-        Map<String,Object> map = new HashMap<String,Object>();
+        Map map = new HashMap();
         Attributes attrs = ((ContextHandler)_managed).getAttributes();
-        Enumeration<String> en = attrs.getAttributeNames();
+        Enumeration en = attrs.getAttributeNames();
         while (en.hasMoreElements())
         {
             String name = (String)en.nextElement();
@@ -52,22 +46,19 @@ public class ContextHandlerMBean extends AbstractHandlerMBean
         return map;
     }
     
-    @ManagedOperation(value="Set context attribute", impact="ACTION")
-    public void setContextAttribute(@Name(value = "name", description="attribute name") String name, @Name(value = "value", description="attribute value") Object value)
+    public void setContextAttribute(String name, Object value)
     {
         Attributes attrs = ((ContextHandler)_managed).getAttributes();
         attrs.setAttribute(name,value);
     }
     
-    @ManagedOperation(value="Set context attribute", impact="ACTION")
-    public void setContextAttribute(@Name(value = "name", description="attribute name") String name, @Name(value = "value", description="attribute value") String value)
+    public void setContextAttribute(String name, String value)
     {
         Attributes attrs = ((ContextHandler)_managed).getAttributes();
         attrs.setAttribute(name,value);
     }
     
-    @ManagedOperation(value="Remove context attribute", impact="ACTION")
-    public void removeContextAttribute(@Name(value = "name", description="attribute name") String name)
+    public void removeContextAttribute(String name)
     {
         Attributes attrs = ((ContextHandler)_managed).getAttributes();
         attrs.removeAttribute(name);

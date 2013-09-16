@@ -23,7 +23,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -45,7 +44,6 @@ public class CheckReverseProxyHeadersTest
                     "X-Forwarded-For: 10.20.30.40\n" +
                     "X-Forwarded-Host: example.com", new RequestValidator()
         {
-            @Override
             public void validate(HttpServletRequest request)
             {
                 assertEquals("example.com", request.getServerName());
@@ -53,42 +51,6 @@ public class CheckReverseProxyHeadersTest
                 assertEquals("10.20.30.40", request.getRemoteAddr());
                 assertEquals("10.20.30.40", request.getRemoteHost());
                 assertEquals("example.com", request.getHeader("Host"));
-                assertEquals("http",request.getScheme());
-                assertFalse(request.isSecure());
-            }
-        });
-        
-        // IPv6 ProxyPass from example.com:80 to localhost:8080
-        testRequest("Host: localhost:8080\n" +
-                    "X-Forwarded-For: 10.20.30.40\n" +
-                    "X-Forwarded-Host: [::1]", new RequestValidator()
-        {
-            @Override
-            public void validate(HttpServletRequest request)
-            {
-                assertEquals("::1", request.getServerName());
-                assertEquals(80, request.getServerPort());
-                assertEquals("10.20.30.40", request.getRemoteAddr());
-                assertEquals("10.20.30.40", request.getRemoteHost());
-                assertEquals("[::1]", request.getHeader("Host"));
-                assertEquals("http",request.getScheme());
-                assertFalse(request.isSecure());
-            }
-        });
-        
-        // IPv6 ProxyPass from example.com:80 to localhost:8080
-        testRequest("Host: localhost:8080\n" +
-                    "X-Forwarded-For: 10.20.30.40\n" +
-                    "X-Forwarded-Host: [::1]:8888", new RequestValidator()
-        {
-            @Override
-            public void validate(HttpServletRequest request)
-            {
-                assertEquals("::1", request.getServerName());
-                assertEquals(8888, request.getServerPort());
-                assertEquals("10.20.30.40", request.getRemoteAddr());
-                assertEquals("10.20.30.40", request.getRemoteHost());
-                assertEquals("[::1]:8888", request.getHeader("Host"));
                 assertEquals("http",request.getScheme());
                 assertFalse(request.isSecure());
             }
@@ -101,7 +63,6 @@ public class CheckReverseProxyHeadersTest
                     "X-Forwarded-Server: example.com\n"+
                     "X-Forwarded-Proto: https", new RequestValidator()
         {
-            @Override
             public void validate(HttpServletRequest request)
             {
                 assertEquals("example.com", request.getServerName());
@@ -121,7 +82,6 @@ public class CheckReverseProxyHeadersTest
                     "X-Forwarded-Server: example.com, rp.example.com\n"+
                     "X-Forwarded-Proto: https, http", new RequestValidator()
         {
-            @Override
             public void validate(HttpServletRequest request)
             {
                 assertEquals("example.com", request.getServerName());
@@ -138,11 +98,10 @@ public class CheckReverseProxyHeadersTest
     private void testRequest(String headers, RequestValidator requestValidator) throws Exception
     {
         Server server = new Server();
-        // Activate reverse proxy headers checking
-        HttpConnectionFactory http = new HttpConnectionFactory();
-        http.getHttpConfiguration().addCustomizer(new ForwardedRequestCustomizer());
+        LocalConnector connector = new LocalConnector();
 
-        LocalConnector connector = new LocalConnector(server,http);
+        // Activate reverse proxy headers checking
+        connector.setForwarded(true);
 
         server.setConnectors(new Connector[] {connector});
         ValidationHandler validationHandler = new ValidationHandler(requestValidator);
@@ -151,8 +110,7 @@ public class CheckReverseProxyHeadersTest
         try
         {
             server.start();
-            connector.getResponses("GET / HTTP/1.1\r\n" +"Connection: close\r\n" + headers + "\r\n\r\n",
-                1000,TimeUnit.SECONDS);
+            connector.getResponses("GET / HTTP/1.1\n" + headers + "\n\n");
 
             Error error = validationHandler.getError();
 
@@ -201,7 +159,6 @@ public class CheckReverseProxyHeadersTest
             return _error;
         }
 
-        @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             try

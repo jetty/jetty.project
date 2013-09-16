@@ -30,16 +30,16 @@ import org.eclipse.jetty.servlets.GzipFilter;
 /**
  * A sample servlet to serve static content, using a order of construction that has caused problems for
  * {@link GzipFilter} in the past.
- *
+ * 
  * Using a real-world pattern of:
- *
+ * 
  * <pre>
  *  1) get stream
  *  2) set content length
  *  3) set content type
  *  4) write
  * </pre>
- *
+ * 
  * @see <a href="Eclipse Bug 354014">http://bugs.eclipse.org/354014</a>
  */
 @SuppressWarnings("serial")

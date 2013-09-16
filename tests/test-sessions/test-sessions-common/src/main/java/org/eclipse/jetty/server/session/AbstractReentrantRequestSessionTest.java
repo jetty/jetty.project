@@ -18,10 +18,8 @@
 
 package org.eclipse.jetty.server.session;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
+import java.util.Random;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -29,9 +27,12 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.http.HttpMethods;
 import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 
 /**
@@ -48,17 +49,21 @@ public abstract class AbstractReentrantRequestSessionTest
         String servletMapping = "/server";
         AbstractTestServer server = createServer(0);
         server.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
+        server.start();
+        int port = server.getPort();
         try
         {
-            server.start();
-            int port = server.getPort();
-
             HttpClient client = new HttpClient();
+            client.setConnectorType(HttpClient.CONNECTOR_SOCKET);
             client.start();
             try
             {
-                ContentResponse response = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=reenter&port=" + port + "&path=" + contextPath + servletMapping);
-                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+                ContentExchange exchange = new ContentExchange(true);
+                exchange.setMethod(HttpMethods.GET);
+                exchange.setURL("http://localhost:" + port + contextPath + servletMapping + "?action=reenter&port=" + port + "&path=" + contextPath + servletMapping);
+                client.send(exchange);
+                exchange.waitForDone();
+                assertEquals(HttpServletResponse.SC_OK,exchange.getResponseStatus());
             }
             finally
             {
@@ -87,22 +92,27 @@ public abstract class AbstractReentrantRequestSessionTest
             String action = request.getParameter("action");
             if ("reenter".equals(action))
             {
-                if (session == null)
+                if (session == null) 
                     session = request.getSession(true);
                 int port = Integer.parseInt(request.getParameter("port"));
                 String path = request.getParameter("path");
 
-                // We want to make another request
+                // We want to make another request 
                 // while this request is still pending, to see if the locking is
                 // fine grained (per session at least).
                 try
                 {
                     HttpClient client = new HttpClient();
+                    client.setConnectorType(HttpClient.CONNECTOR_SOCKET);
                     client.start();
                     try
                     {
-                        ContentResponse resp = client.GET("http://localhost:" + port + path + ";jsessionid="+session.getId()+"?action=none");
-                        assertEquals(HttpServletResponse.SC_OK,resp.getStatus());
+                        ContentExchange exchange = new ContentExchange(true);
+                        exchange.setMethod(HttpMethods.GET);
+                        exchange.setURL("http://localhost:" + port + path + ";jsessionid="+session.getId()+"?action=none");
+                        client.send(exchange);
+                        exchange.waitForDone();
+                        assertEquals(HttpServletResponse.SC_OK,exchange.getResponseStatus());
                         assertEquals("true",session.getAttribute("reentrant"));
                     }
                     finally

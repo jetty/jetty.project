@@ -26,13 +26,14 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.security.UserAuthentication;
@@ -51,10 +52,9 @@ import org.eclipse.jetty.util.security.Credential;
 
 /**
  * @version $Rev: 4793 $ $Date: 2009-03-19 00:00:01 +0100 (Thu, 19 Mar 2009) $
- *
- * The nonce max age in ms can be set with the {@link SecurityHandler#setInitParameter(String, String)}
- * using the name "maxNonceAge".  The nonce max count can be set with {@link SecurityHandler#setInitParameter(String, String)}
- * using the name "maxNonceCount".  When the age or count is exceeded, the nonce is considered stale.
+ * 
+ * The nonce max age in ms can be set with the {@link SecurityHandler#setInitParameter(String, String)} 
+ * using the name "maxNonceAge"
  */
 public class DigestAuthenticator extends LoginAuthenticator
 {
@@ -104,19 +104,15 @@ public class DigestAuthenticator extends LoginAuthenticator
     public void setConfiguration(AuthConfiguration configuration)
     {
         super.setConfiguration(configuration);
-
+        
         String mna=configuration.getInitParameter("maxNonceAge");
         if (mna!=null)
         {
             _maxNonceAgeMs=Long.valueOf(mna);
         }
-        String mnc=configuration.getInitParameter("maxNonceCount");
-        if (mnc!=null)
-        {
-            _maxNC=Integer.valueOf(mnc);
-        }
     }
 
+   
     /* ------------------------------------------------------------ */
     public int getMaxNonceCount()
     {
@@ -128,6 +124,12 @@ public class DigestAuthenticator extends LoginAuthenticator
     {
         _maxNC = maxNC;
     }
+    
+    /* ------------------------------------------------------------ */
+    public void setMaxNonceAge(long maxNonceAgeInMillis)
+    {
+        _maxNonceAgeMs = maxNonceAgeInMillis;
+    }
 
     /* ------------------------------------------------------------ */
     public long getMaxNonceAge()
@@ -136,29 +138,18 @@ public class DigestAuthenticator extends LoginAuthenticator
     }
 
     /* ------------------------------------------------------------ */
-    public synchronized void setMaxNonceAge(long maxNonceAgeInMillis)
-    {
-        _maxNonceAgeMs = maxNonceAgeInMillis;
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
     public String getAuthMethod()
     {
         return Constraint.__DIGEST_AUTH;
     }
 
     /* ------------------------------------------------------------ */
-    @Override
     public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, User validatedUser) throws ServerAuthException
     {
         return true;
     }
-    
-
 
     /* ------------------------------------------------------------ */
-    @Override
     public Authentication validateRequest(ServletRequest req, ServletResponse res, boolean mandatory) throws ServerAuthException
     {
         if (!mandatory)
@@ -166,14 +157,14 @@ public class DigestAuthenticator extends LoginAuthenticator
 
         HttpServletRequest request = (HttpServletRequest)req;
         HttpServletResponse response = (HttpServletResponse)res;
-        String credentials = request.getHeader(HttpHeader.AUTHORIZATION.asString());
+        String credentials = request.getHeader(HttpHeaders.AUTHORIZATION);
 
         try
         {
             boolean stale = false;
             if (credentials != null)
             {
-                if (LOG.isDebugEnabled())
+                if (LOG.isDebugEnabled()) 
                     LOG.debug("Credentials: " + credentials);
                 QuotedStringTokenizer tokenizer = new QuotedStringTokenizer(credentials, "=, ", true, false);
                 final Digest digest = new Digest(request.getMethod());
@@ -215,7 +206,7 @@ public class DigestAuthenticator extends LoginAuthenticator
                                     digest.qop = tok;
                                 else if ("uri".equalsIgnoreCase(name))
                                     digest.uri = tok;
-                                else if ("response".equalsIgnoreCase(name))
+                                else if ("response".equalsIgnoreCase(name)) 
                                     digest.response = tok;
                                 name=null;
                             }
@@ -226,14 +217,14 @@ public class DigestAuthenticator extends LoginAuthenticator
 
                 if (n > 0)
                 {
-                    //UserIdentity user = _loginService.login(digest.username,digest);
-                    UserIdentity user = login(digest.username, digest, req);
+                    UserIdentity user = _loginService.login(digest.username,digest);
                     if (user!=null)
                     {
+                        renewSession(request,response);
                         return new UserAuthentication(getAuthMethod(),user);
                     }
                 }
-                else if (n == 0)
+                else if (n == 0) 
                     stale = true;
 
             }
@@ -241,9 +232,9 @@ public class DigestAuthenticator extends LoginAuthenticator
             if (!DeferredAuthentication.isDeferred(response))
             {
                 String domain = request.getContextPath();
-                if (domain == null)
+                if (domain == null) 
                     domain = "/";
-                response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), "Digest realm=\"" + _loginService.getName()
+                response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "Digest realm=\"" + _loginService.getName()
                         + "\", domain=\""
                         + domain
                         + "\", nonce=\""
@@ -268,7 +259,7 @@ public class DigestAuthenticator extends LoginAuthenticator
     public String newNonce(Request request)
     {
         Nonce nonce;
-
+        
         do
         {
             byte[] nounce = new byte[24];
@@ -278,7 +269,7 @@ public class DigestAuthenticator extends LoginAuthenticator
         }
         while (_nonceMap.putIfAbsent(nonce._nonce,nonce)!=null);
         _nonceQueue.add(nonce);
-
+               
         return nonce._nonce;
     }
 
@@ -299,21 +290,19 @@ public class DigestAuthenticator extends LoginAuthenticator
             _nonceMap.remove(nonce._nonce);
             nonce=_nonceQueue.peek();
         }
-
+        
         // Now check the requested nonce
         try
         {
             nonce = _nonceMap.get(digest.nonce);
             if (nonce==null)
                 return 0;
-
+         
             long count = Long.parseLong(digest.nc,16);
             if (count>=_maxNC)
                 return 0;
-            
             if (nonce.seen((int)count))
                 return -1;
-
             return 1;
         }
         catch (Exception e)

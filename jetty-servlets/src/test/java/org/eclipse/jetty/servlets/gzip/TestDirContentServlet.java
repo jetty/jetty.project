@@ -53,7 +53,7 @@ public class TestDirContentServlet extends HttpServlet
         String relPath = fileName;
         relPath = relPath.replaceFirst("^/context/","");
         relPath = relPath.replaceFirst("^/","");
-
+        
         File contentFile =  getTestFile(relPath);
 
         FileInputStream in = null;

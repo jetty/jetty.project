@@ -20,13 +20,13 @@ package org.eclipse.jetty.spdy.frames;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.spdy.StandardByteBufferPool;
 import org.eclipse.jetty.spdy.StandardCompressionFactory;
+import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.generator.Generator;
 import org.eclipse.jetty.spdy.parser.Parser;
-import org.eclipse.jetty.util.Fields;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -40,11 +40,11 @@ public class SynStreamGenerateParseTest
         int associatedStreamId = 11;
         byte priority = 3;
         short slot = 5;
-        Fields headers = new Fields();
+        Headers headers = new Headers();
         headers.put("a", "b");
         headers.put("c", "d");
         SynStreamFrame frame1 = new SynStreamFrame(SPDY.V2, flags, streamId, associatedStreamId, priority, slot, headers);
-        Generator generator = new Generator(new MappedByteBufferPool(), new StandardCompressionFactory().newCompressor());
+        Generator generator = new Generator(new StandardByteBufferPool(), new StandardCompressionFactory().newCompressor());
         ByteBuffer buffer = generator.control(frame1);
 
         Assert.assertNotNull(buffer);
@@ -75,11 +75,11 @@ public class SynStreamGenerateParseTest
         int associatedStreamId = 11;
         byte priority = 3;
         short slot = 5;
-        Fields headers = new Fields();
+        Headers headers = new Headers();
         headers.put("a", "b");
         headers.put("c", "d");
         SynStreamFrame frame1 = new SynStreamFrame(SPDY.V2, flags, streamId, associatedStreamId, priority, slot, headers);
-        Generator generator = new Generator(new MappedByteBufferPool(), new StandardCompressionFactory().newCompressor());
+        Generator generator = new Generator(new StandardByteBufferPool(), new StandardCompressionFactory().newCompressor());
         ByteBuffer buffer = generator.control(frame1);
 
         Assert.assertNotNull(buffer);

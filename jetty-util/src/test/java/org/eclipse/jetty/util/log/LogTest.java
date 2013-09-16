@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.util.log;
 
+import static org.hamcrest.Matchers.is;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -32,6 +33,7 @@ public class LogTest
     private static Logger originalLogger;
     private static Map<String,Logger> originalLoggers;
 
+    @SuppressWarnings("deprecation")
     @BeforeClass
     public static void rememberOriginalLogger()
     {
@@ -85,9 +87,10 @@ public class LogTest
         assertNamedLogging(Green.class);
     }
 
+    @SuppressWarnings("deprecation")
     private void assertNamedLogging(Class<?> clazz)
     {
         Logger lc = Log.getLogger(clazz);
-        Assert.assertEquals("Named logging (impl=" + Log.getLog().getClass().getName() + ")",lc.getName(),clazz.getName());
+        Assert.assertThat("Named logging (impl=" + Log.getLog().getClass().getName() + ")",lc.getName(),is(clazz.getName()));
     }
 }

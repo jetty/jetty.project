@@ -21,8 +21,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>tests-parent</artifactId>
-    <version>9.0.6-SNAPSHOT</version>
-    <relativePath>../pom.xml</relativePath>
+    <version>7.6.13-SNAPSHOT</version>
   </parent>
   <artifactId>test-webapps-parent</artifactId>
   <name>Jetty Tests :: WebApps :: Parent</name>
@@ -41,12 +40,6 @@
     </plugins>
   </build>
   <modules>
-    <module>test-jetty-webapp</module>
-    <module>test-proxy-webapp</module>
     <module>test-webapp-rfc2616</module>
-    <module>test-mock-resources</module>
-    <module>test-servlet-spec</module>
-    <module>test-jaas-webapp</module>
-    <module>test-jndi-webapp</module>
   </modules>
 </project>

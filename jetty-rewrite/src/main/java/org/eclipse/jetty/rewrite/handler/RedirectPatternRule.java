@@ -53,7 +53,6 @@ public class RedirectPatternRule extends PatternRule
      * (non-Javadoc)
      * @see org.eclipse.jetty.server.server.handler.rules.RuleBase#apply(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
      */
-    @Override
     public String apply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
         response.sendRedirect(response.encodeRedirectURL(_location));
@@ -64,7 +63,6 @@ public class RedirectPatternRule extends PatternRule
     /**
      * Returns the redirect location.
      */
-    @Override
     public String toString()
     {
         return super.toString()+"["+_location+"]";

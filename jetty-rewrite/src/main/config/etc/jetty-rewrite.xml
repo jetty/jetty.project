@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
 
 <!-- =============================================================== -->
 <!-- Mixin the RewriteHandler                                        -->
@@ -9,33 +9,109 @@
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
     <!-- =========================================================== -->
-    <!-- configure rewrite handler                                   -->
+    <!-- configure rewrite handler                                   --> 
     <!-- =========================================================== -->
     <Get id="oldhandler" name="handler"/>
 
     <Set name="handler">
      <New id="Rewrite" class="org.eclipse.jetty.rewrite.handler.RewriteHandler">
-      <Set name="handler"><Ref refid="oldhandler"/></Set>
-      <Set name="rewriteRequestURI"><Property name="rewrite.rewriteRequestURI" default="true"/></Set>
-      <Set name="rewritePathInfo"><Property name="rewrite.rewritePathInfo" default="false"/></Set>
-      <Set name="originalPathAttribute"><Property name="rewrite.originalPathAttribute" default="requestedPath"/></Set>
+      <Set name="handler"><Ref id="oldhandler"/></Set>
+      <Set name="rewriteRequestURI">true</Set>
+      <Set name="rewritePathInfo">false</Set>
+      <Set name="originalPathAttribute">requestedPath</Set>
+
+      <!-- Add rule to protect against IE ssl bug -->
+      <Call name="addRule">
+        <Arg>
+          <New class="org.eclipse.jetty.rewrite.handler.MsieSslRule"/>
+        </Arg>
+      </Call>
+
+      <!-- protect favicon handling -->
+      <Call name="addRule">
+        <Arg>
+          <New class="org.eclipse.jetty.rewrite.handler.HeaderPatternRule">
+            <Set name="pattern">/favicon.ico</Set>
+            <Set name="name">Cache-Control</Set>
+            <Set name="value">Max-Age=3600,public</Set>
+            <Set name="terminating">true</Set>
+          </New>
+        </Arg>
+      </Call>
+
+      <!-- redirect from the welcome page to a specific page -->
+      <Call name="addRule">
+        <Arg>
+          <New class="org.eclipse.jetty.rewrite.handler.RewritePatternRule">
+            <Set name="pattern">/rewrite/</Set>
+            <Set name="replacement">/rewrite/info.html</Set>
+          </New>
+        </Arg>
+      </Call>
+
+      <!-- replace the entire request URI -->
+      <Call name="addRule">
+        <Arg>
+          <New class="org.eclipse.jetty.rewrite.handler.RewritePatternRule">
+            <Set name="pattern">/some/old/context</Set>
+            <Set name="replacement">/rewritten/newcontext</Set>
+          </New>
+        </Arg>
+      </Call>
+
+      <!-- replace the beginning of the request URI -->
+      <Call name="addRule">
+        <Arg>
+          <New class="org.eclipse.jetty.rewrite.handler.RewritePatternRule">
+            <Set name="pattern">/rewrite/for/*</Set>
+            <Set name="replacement">/rewritten/</Set>
+          </New>
+        </Arg>
+      </Call>
+      
+      <!-- reverse the order of the path sections -->
+      <Call name="addRule">
+        <Arg>
+          <New class="org.eclipse.jetty.rewrite.handler.RewriteRegexRule">
+            <Set name="regex">(.*?)/reverse/([^/]*)/(.*)</Set>
+            <Set name="replacement">$1/reverse/$3/$2</Set>
+          </New>
+        </Arg>
+      </Call>
+
+      <!-- add a cookie to each path visited -->
+      <Call name="addRule">
+        <Arg>
+          <New class="org.eclipse.jetty.rewrite.handler.CookiePatternRule">
+            <Set name="pattern">/*</Set>
+            <Set name="name">visited</Set>
+            <Set name="value">yes</Set>
+          </New>
+        </Arg>
+      </Call>
+      
+      <!--  actual redirect, instead of internal rewrite -->
+      <Call name="addRule">
+        <Arg>
+          <New class="org.eclipse.jetty.rewrite.handler.RedirectPatternRule">
+            <Set name="pattern">/redirect/*</Set>
+            <Set name="location">/redirected</Set>
+          </New>
+        </Arg>
+      </Call>
+
+      <!-- add a response rule -->
+      <Call name="addRule">
+        <Arg>
+           <New class="org.eclipse.jetty.rewrite.handler.ResponsePatternRule">
+             <Set name="pattern">/400Error</Set>
+             <Set name="code">400</Set>
+             <Set name="reason">ResponsePatternRule Demo</Set>
+          </New>
+        </Arg>
+      </Call>
+
      </New>
     </Set>
-
-    <!-- example rule -->
-    <!--
-    <Call name="addRule">
-      <Arg>
-	<New class="org.eclipse.jetty.rewrite.handler.HeaderPatternRule">
-	  <Set name="pattern">/favicon.ico</Set>
-	  <Set name="name">Cache-Control</Set>
-	  <Set name="value">Max-Age=3600,public</Set>
-	  <Set name="terminating">true</Set>
-	</New>
-      </Arg>
-    </Call>
-    -->
-
-    <!-- for example rules see jetty-demo.xml -->
-
+    
 </Configure>

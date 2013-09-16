@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+    <New id="sslContextFactory" class="org.eclipse.jetty.util.ssl.SslContextFactory">
+        <Set name="keyStorePath">src/main/resources/keystore.jks</Set>
+        <Set name="keyStorePassword">storepwd</Set>
+        <Set name="trustStore">src/main/resources/truststore.jks</Set>
+        <Set name="trustStorePassword">storepwd</Set>
+        <Set name="protocol">TLSv1</Set>
+    </New>
+
+    <!-- Uncomment to create a ReferrerPushStrategy that can be added to the Connectors -->
+
+    <!--
+    <New id="pushStrategy" class="org.eclipse.jetty.spdy.http.ReferrerPushStrategy">
+        <Arg type="List">
+            <Array type="String">
+                <Item>.*\.css</Item>
+                <Item>.*\.js</Item>
+                <Item>.*\.png</Item>
+                <Item>.*\.jpg</Item>
+                <Item>.*\.gif</Item>
+            </Array>
+        </Arg>
+    </New>
+    -->
+
+    <!--<Set class="org.eclipse.jetty.npn.NextProtoNego" name="debug" type="boolean">true</Set>-->
+
+    <Call name="addConnector">
+        <Arg>
+            <New class="org.eclipse.jetty.spdy.http.HTTPSPDYServerConnector">
+                <!-- uncomment to enable to apply ReferrerPushStrategy for spdy/3
+                     if you want to support it in both spdy/2 and spdy/3, just replace the
+                     value in the first map entry.
+                -->
+                <!--
+                <Arg name="pushStrategies">
+                    <Map>
+                        <Entry>
+                            <Item type="short">2</Item>
+                            <Item><New class="org.eclipse.jetty.spdy.http.PushStrategy$None" /></Item>
+                        </Entry>
+                        <Entry>
+                            <Item type="short">3</Item>
+                            <Item><Ref id="pushStrategy" /></Item>
+                        </Entry>
+                    </Map>
+                </Arg>
+                -->
+                <Set name="Port">8080</Set>
+            </New>
+        </Arg>
+    </Call>
+    <Call name="addConnector">
+        <Arg>
+            <New class="org.eclipse.jetty.spdy.http.HTTPSPDYServerConnector">
+                <Arg>
+                    <Ref id="sslContextFactory" />
+                </Arg>
+                <!-- uncomment to enable to apply ReferrerPushStrategy for spdy/3
+                     if you want to support it in both spdy/2 and spdy/3, just replace the
+                     value in the first map entry.
+                -->
+                <!--
+                <Arg name="pushStrategies">
+                    <Map>
+                        <Entry>
+                            <Item type="short">2</Item>
+                            <Item><New class="org.eclipse.jetty.spdy.http.PushStrategy$None" /></Item>
+                        </Entry>
+                        <Entry>
+                            <Item type="short">3</Item>
+                            <Item><Ref id="pushStrategy" /></Item>
+                        </Entry>
+                    </Map>
+                </Arg>
+                -->
+                <Set name="Port">8443</Set>
+            </New>
+        </Arg>
+    </Call>
+
+</Configure>

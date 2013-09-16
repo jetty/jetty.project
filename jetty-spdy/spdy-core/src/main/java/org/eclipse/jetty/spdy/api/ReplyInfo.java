@@ -18,14 +18,10 @@
 
 package org.eclipse.jetty.spdy.api;
 
-import java.util.concurrent.TimeUnit;
-
-import org.eclipse.jetty.util.Fields;
-
 /**
  * <p>A container for SYN_REPLY frames metadata and headers.</p>
  */
-public class ReplyInfo extends Info
+public class ReplyInfo
 {
     /**
      * <p>Flag that indicates that this {@link ReplyInfo} is the last frame in the stream.</p>
@@ -35,7 +31,7 @@ public class ReplyInfo extends Info
      */
     public static final byte FLAG_CLOSE = 1;
 
-    private final Fields headers;
+    private final Headers headers;
     private final boolean close;
 
     /**
@@ -45,39 +41,25 @@ public class ReplyInfo extends Info
      */
     public ReplyInfo(boolean close)
     {
-        this(new Fields(), close);
+        this(new Headers(), close);
     }
 
     /**
      * <p>Creates a {@link ReplyInfo} instance with the given headers and the given close flag.</p>
      *
-     * @param headers the {@link Fields}
-     * @param close   the value of the close flag
+     * @param headers the {@link Headers}
+     * @param close the value of the close flag
      */
-    public ReplyInfo(Fields headers, boolean close)
+    public ReplyInfo(Headers headers, boolean close)
     {
-        this(0, TimeUnit.SECONDS, headers, close);
-    }
-
-    /**
-     * <p>Creates a {@link ReplyInfo} instance with the given headers and the given close flag.</p>
-     *
-     * @param timeout the timeout
-     * @param unit    the time unit for the timeout
-     * @param headers the {@link Fields}
-     * @param close   the value of the close flag
-     */
-    public ReplyInfo(long timeout, TimeUnit unit, Fields headers, boolean close)
-    {
-        super(timeout, unit);
         this.headers = headers;
         this.close = close;
     }
 
     /**
-     * @return the {@link Fields}
+     * @return the {@link Headers}
      */
-    public Fields getHeaders()
+    public Headers getHeaders()
     {
         return headers;
     }

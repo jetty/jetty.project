@@ -21,16 +21,11 @@ package org.eclipse.jetty.servlet;
 import java.io.IOException;
 import java.util.Arrays;
 
-import org.eclipse.jetty.util.annotation.ManagedAttribute;
-import org.eclipse.jetty.util.annotation.ManagedObject;
 
-@ManagedObject("Servlet Mapping")
 public class ServletMapping
 {
     private String[] _pathSpecs;
     private String _servletName;
-    private boolean _default;
-    
 
     /* ------------------------------------------------------------ */
     public ServletMapping()
@@ -41,7 +36,6 @@ public class ServletMapping
     /**
      * @return Returns the pathSpecs.
      */
-    @ManagedAttribute(value="url patterns", readonly=true)
     public String[] getPathSpecs()
     {
         return _pathSpecs;
@@ -51,7 +45,6 @@ public class ServletMapping
     /**
      * @return Returns the servletName.
      */
-    @ManagedAttribute(value="servlet name", readonly=true)
     public String getServletName()
     {
         return _servletName;
@@ -84,26 +77,6 @@ public class ServletMapping
         _servletName = servletName;
     }
     
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * @return
-     */
-    @ManagedAttribute(value="default", readonly=true)
-    public boolean isDefault()
-    {
-        return _default;
-    }
-    
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * @param default1
-     */
-    public void setDefault(boolean fromDefault)
-    {
-        _default = fromDefault;
-    }
 
     /* ------------------------------------------------------------ */
     public String toString()

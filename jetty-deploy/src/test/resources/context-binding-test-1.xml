@@ -26,6 +26,6 @@
     <Item>org.eclipse.jetty.servlet.DefaultServlet</Item>
   </Array>
 
-  <Set name="serverClasses"><Ref refid="serverClasses"/></Set>
-  <Set name="systemClasses"><Ref refid="systemClasses"/></Set-->
+  <Set name="serverClasses"><Ref id="serverClasses"/></Set>
+  <Set name="systemClasses"><Ref id="systemClasses"/></Set-->
 </Configure>

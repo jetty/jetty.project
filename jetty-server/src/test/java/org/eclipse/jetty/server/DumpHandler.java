@@ -31,7 +31,9 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.continuation.Continuation;
+import org.eclipse.jetty.continuation.ContinuationSupport;
+import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.StringUtil;
@@ -42,59 +44,62 @@ import org.eclipse.jetty.util.log.Logger;
 /** Dump request handler.
  * Dumps GET and POST requests.
  * Useful for testing and debugging.
- *
+ * 
  * @version $Id: DumpHandler.java,v 1.14 2005/08/13 00:01:26 gregwilkins Exp $
- *
+ * 
  */
 public class DumpHandler extends AbstractHandler
 {
     private static final Logger LOG = Log.getLogger(DumpHandler.class);
 
     String label="Dump HttpHandler";
-
+    
     public DumpHandler()
     {
     }
-
+    
     public DumpHandler(String label)
     {
         this.label=label;
     }
-
+    
     /* ------------------------------------------------------------ */
-    /*
+    /* 
      * @see org.eclipse.jetty.server.server.Handler#handle(java.lang.String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
-    @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-    {
+    {        
         if (!isStarted())
             return;
 
-        StringBuilder read = null;
         if (request.getParameter("read")!=null)
         {
-            read=new StringBuilder();
-            int len=Integer.parseInt(request.getParameter("read"));
             Reader in = request.getReader();
-            for (int i=len;i-->0;)
-                read.append((char)in.read());
+            for (int i=Integer.parseInt(request.getParameter("read"));i-->0;)
+                in.read();
         }
-
+        
         if (request.getParameter("ISE")!=null)
         {
-            throw new IllegalStateException("Testing ISE");
+            throw new IllegalStateException();
         }
-
+        
         if (request.getParameter("error")!=null)
         {
             response.sendError(Integer.parseInt(request.getParameter("error")));
             return;
         }
-
+        
+        if (request.getParameter("continue")!=null)
+        {
+            Continuation continuation = ContinuationSupport.getContinuation(request,response);
+            continuation.setTimeout(Long.parseLong(request.getParameter("continue")));
+            continuation.suspend();
+        }
+        
         baseRequest.setHandled(true);
-        response.setHeader(HttpHeader.CONTENT_TYPE.asString(),MimeTypes.Type.TEXT_HTML.asString());
-
+        response.setHeader(HttpHeaders.CONTENT_TYPE,MimeTypes.TEXT_HTML);
+        
         OutputStream out = response.getOutputStream();
         ByteArrayOutputStream buf = new ByteArrayOutputStream(2048);
         Writer writer = new OutputStreamWriter(buf,StringUtil.__ISO_8859_1);
@@ -104,20 +109,20 @@ public class DumpHandler extends AbstractHandler
         writer.write("<pre>\nencoding="+request.getCharacterEncoding()+"\n</pre>\n");
         writer.write("<h3>Header:</h3><pre>");
         writer.write(request.getMethod()+" "+request.getRequestURI()+" "+request.getProtocol()+"\n");
-        Enumeration<String> headers = request.getHeaderNames();
+        Enumeration headers = request.getHeaderNames();
         while(headers.hasMoreElements())
         {
-            String name=headers.nextElement();
+            String name=(String)headers.nextElement();
             writer.write(name);
             writer.write(": ");
             writer.write(request.getHeader(name));
             writer.write("\n");
         }
         writer.write("</pre>\n<h3>Parameters:</h3>\n<pre>");
-        Enumeration<String> names=request.getParameterNames();
+        Enumeration names=request.getParameterNames();
         while(names.hasMoreElements())
         {
-            String name=names.nextElement();
+            String name=names.nextElement().toString();
             String[] values=request.getParameterValues(name);
             if (values==null || values.length==0)
             {
@@ -142,7 +147,7 @@ public class DumpHandler extends AbstractHandler
                 }
             }
         }
-
+        
         String cookie_name=request.getParameter("CookieName");
         if (cookie_name!=null && cookie_name.trim().length()>0)
         {
@@ -162,7 +167,7 @@ public class DumpHandler extends AbstractHandler
                 writer.write(e.toString());
             }
         }
-
+        
         writer.write("</pre>\n<h3>Cookies:</h3>\n<pre>");
         Cookie[] cookies=request.getCookies();
         if (cookies!=null && cookies.length>0)
@@ -176,7 +181,7 @@ public class DumpHandler extends AbstractHandler
                 writer.write("\n");
             }
         }
-
+        
         writer.write("</pre>\n<h3>Attributes:</h3>\n<pre>");
         Enumeration attributes=request.getAttributeNames();
         if (attributes!=null && attributes.hasMoreElements())
@@ -190,50 +195,42 @@ public class DumpHandler extends AbstractHandler
                 writer.write("\n");
             }
         }
-
+        
         writer.write("</pre>\n<h3>Content:</h3>\n<pre>");
 
-        if (read!=null)
-        {
-            writer.write(read.toString());
+        char[] content= new char[4096];
+        int len;
+        try{
+            Reader in=request.getReader();
+            while((len=in.read(content))>=0)
+                writer.write(new String(content,0,len));
         }
-        else
+        catch(IOException e)
         {
-            char[] content= new char[4096];
-            int len;
-            try{
-                Reader in=request.getReader();
-                while((len=in.read(content))>=0)
-                    writer.write(new String(content,0,len));
-            }
-            catch(IOException e)
-            {
-                writer.write(e.toString());
-            }
+            writer.write(e.toString());
         }
-
-        writer.write("</pre>\n");
-        writer.write("</html>\n");
-        writer.flush();
-
+        
+        
+        writer.write("</pre>");
+        writer.write("</html>");
+        
         // commit now
+        writer.flush();
         response.setContentLength(buf.size()+1000);
-        response.addHeader("Before-Flush",response.isCommitted()?"Committed???":"Not Committed");
-        buf.writeTo(out);
-        out.flush();
-        response.addHeader("After-Flush","These headers should not be seen in the response!!!");
-        response.addHeader("After-Flush",response.isCommitted()?"Committed":"Not Committed?");
 
-        // write remaining content after commit
         try
         {
+            buf.writeTo(out);
+
             buf.reset();
             writer.flush();
-            for (int pad=998;pad-->0;)
+            for (int pad=998-buf.size();pad-->0;)
                 writer.write(" ");
-            writer.write("\r\n");
+            writer.write("\015\012");
             writer.flush();
             buf.writeTo(out);
+
+            response.setHeader("IgnoreMe","ignored");
         }
         catch(Exception e)
         {

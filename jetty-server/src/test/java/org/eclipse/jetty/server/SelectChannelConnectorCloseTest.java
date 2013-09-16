@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.server;
 
-import org.junit.After;
+import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.junit.Before;
 
 
@@ -30,12 +30,7 @@ public class SelectChannelConnectorCloseTest extends ConnectorCloseTestBase
     @Before
     public void init() throws Exception
     {
-        startServer(new ServerConnector(_server));
-    }
-    
-    @After
-    public void after() throws Exception
-    {
-        _server.stop();
+        System.setProperty("org.eclipse.jetty.util.log.DEBUG","true");        
+        startServer(new SelectChannelConnector());
     }
 }

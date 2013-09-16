@@ -99,7 +99,6 @@ public abstract class HeaderRule extends Rule
     protected abstract String apply(String target, String value, HttpServletRequest request, HttpServletResponse response) throws IOException;
 
     /* ------------------------------------------------------------ */
-    @Override
     public String toString()
     {
         return super.toString() + "[" + _header + ":" + _headerValue + "]";

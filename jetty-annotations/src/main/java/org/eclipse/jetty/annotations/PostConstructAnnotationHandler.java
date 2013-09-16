@@ -42,7 +42,7 @@ public class PostConstructAnnotationHandler extends AbstractIntrospectableAnnota
 
 
     public void doHandle(Class clazz)
-    {
+    {  
         //Check that the PostConstruct is on a class that we're interested in
         if (Util.isServletType(clazz))
         {
@@ -60,17 +60,17 @@ public class PostConstructAnnotationHandler extends AbstractIntrospectableAnnota
                         throw new IllegalStateException(m+" throws checked exceptions");
                     if (Modifier.isStatic(m.getModifiers()))
                         throw new IllegalStateException(m+" is static");
-
+                   
                     //ServletSpec 3.0 p80 If web.xml declares even one post-construct then all post-constructs
                     //in fragments must be ignored. Otherwise, they are additive.
                     MetaData metaData = _context.getMetaData();
                     Origin origin = metaData.getOrigin("post-construct");
-                    if (origin != null &&
+                    if (origin != null && 
                         (origin == Origin.WebXml ||
-                         origin == Origin.WebDefaults ||
+                         origin == Origin.WebDefaults || 
                          origin == Origin.WebOverride))
                         return;
-
+                                        
                     PostConstructCallback callback = new PostConstructCallback();
                     callback.setTarget(clazz.getName(), m.getName());
                     LifeCycleCallbackCollection lifecycles = (LifeCycleCallbackCollection)_context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION);

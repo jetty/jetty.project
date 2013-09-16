@@ -19,7 +19,6 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
-import java.util.List;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -28,8 +27,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.annotation.ManagedAttribute;
-import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.LifeCycle;
 
 /* ------------------------------------------------------------ */
@@ -37,7 +34,6 @@ import org.eclipse.jetty.util.component.LifeCycle;
  * {@link LifeCycle life cycle} events to a delegate. This is primarily used to implement the <i>Decorator</i> pattern.
  *
  */
-@ManagedObject("Handler wrapping another Handler")
 public class HandlerWrapper extends AbstractHandlerContainer
 {
     protected Handler _handler;
@@ -54,7 +50,6 @@ public class HandlerWrapper extends AbstractHandlerContainer
     /**
      * @return Returns the handlers.
      */
-    @ManagedAttribute(value="Wrapped Handler", readonly=true)
     public Handler getHandler()
     {
         return _handler;
@@ -64,7 +59,6 @@ public class HandlerWrapper extends AbstractHandlerContainer
     /**
      * @return Returns the handlers.
      */
-    @Override
     public Handler[] getHandlers()
     {
         if (_handler==null)
@@ -81,15 +75,40 @@ public class HandlerWrapper extends AbstractHandlerContainer
         if (isStarted())
             throw new IllegalStateException(STARTED);
 
+        Handler old_handler = _handler;
+        _handler = handler;
         if (handler!=null)
             handler.setServer(getServer());
         
-        updateBean(_handler,handler);
-        _handler=handler;
+        if (getServer()!=null)
+            getServer().getContainer().update(this, old_handler, handler, "handler");
     }
 
     /* ------------------------------------------------------------ */
+    /*
+     * @see org.eclipse.thread.AbstractLifeCycle#doStart()
+     */
     @Override
+    protected void doStart() throws Exception
+    {
+        if (_handler!=null)
+            _handler.start();
+        super.doStart();
+    }
+
+    /* ------------------------------------------------------------ */
+    /*
+     * @see org.eclipse.thread.AbstractLifeCycle#doStop()
+     */
+    @Override
+    protected void doStop() throws Exception
+    {
+        if (_handler!=null)
+            _handler.stop();
+        super.doStop();
+    }
+
+    /* ------------------------------------------------------------ */
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         if (_handler!=null && isStarted())
@@ -103,24 +122,46 @@ public class HandlerWrapper extends AbstractHandlerContainer
     @Override
     public void setServer(Server server)
     {
-        if (server==getServer())
+        Server old_server=getServer();
+        if (server==old_server)
             return;
-        
+
         if (isStarted())
             throw new IllegalStateException(STARTED);
 
         super.setServer(server);
+
         Handler h=getHandler();
         if (h!=null)
             h.setServer(server);
+
+        if (server!=null && server!=old_server)
+            server.getContainer().update(this, null,_handler, "handler");
     }
 
 
     /* ------------------------------------------------------------ */
     @Override
-    protected void expandChildren(List<Handler> list, Class<?> byClass)
+    protected Object expandChildren(Object list, Class byClass)
     {
-        expandHandler(_handler,list,byClass);
+        return expandHandler(_handler,list,byClass);
+    }
+
+    /* ------------------------------------------------------------ */
+    public <H extends Handler> H getNestedHandlerByClass(Class<H> byclass)
+    {
+        HandlerWrapper h=this;
+        while (h!=null)
+        {
+            if (byclass.isInstance(h))
+                return (H)h;
+            Handler w = h.getHandler();
+            if (w instanceof HandlerWrapper)
+                h=(HandlerWrapper)w;
+            else break;
+        }
+        return null;
+
     }
 
     /* ------------------------------------------------------------ */

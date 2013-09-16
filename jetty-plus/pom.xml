@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.0.6-SNAPSHOT</version>
+    <version>7.6.13-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-plus</artifactId>
@@ -29,9 +29,7 @@
             <configuration>
               <instructions>
                <_versionpolicy> </_versionpolicy>
-               <Import-Package>javax.sql.*,javax.security.*,javax.naming.*,
-               javax.servlet.*;version="2.6.0",javax.transaction.*;version="[1.1,1.2)",
-               *</Import-Package>
+               <Import-Package>javax.sql.*,javax.security.*,javax.naming.*,javax.servlet.*;version="[2.5,3.0)",javax.transaction.*;version="[1.1,1.2)",*</Import-Package>
               </instructions>
             </configuration>
           </execution>
@@ -86,8 +84,8 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-test-helper</artifactId>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

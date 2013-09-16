@@ -38,11 +38,11 @@ import org.eclipse.jetty.util.log.Logger;
 public class NamingEntryUtil
 {
     private static Logger __log = NamingUtil.__log;
-
+    
     /**
      * Link a name in a webapp's java:/comp/evn namespace to a pre-existing
      * resource. The pre-existing resource can be either in the webapp's
-     * naming environment, or in the container's naming environment. Webapp's
+     * naming environment, or in the container's naming environment. Webapp's 
      * environment takes precedence over the server's namespace.
      *
      * @param scope the scope of the lookup
@@ -52,28 +52,28 @@ public class NamingEntryUtil
      */
     public static boolean bindToENC (Object scope, String asName, String mappedName)
     throws NamingException
-    {
+    {  
         if (asName==null||asName.trim().equals(""))
             throw new NamingException ("No name for NamingEntry");
 
         if (mappedName==null || "".equals(mappedName))
             mappedName=asName;
-
+        
         NamingEntry entry = lookupNamingEntry (scope, mappedName);
         if (entry == null)
             return false;
-
+        
         entry.bindToENC(asName);
         return true;
      }
 
-
-
-
+    
+    
+ 
 
     /**
      * Find a NamingEntry in the given scope.
-     *
+     * 
      * @param scope
      * @param jndiName
      * @return the naming entry for the given scope
@@ -84,12 +84,12 @@ public class NamingEntryUtil
     {
         NamingEntry entry = null;
         try
-        {
+        {         
             Name scopeName = getNameForScope(scope);
-            InitialContext ic = new InitialContext();
+            InitialContext ic = new InitialContext();   
             NameParser parser = ic.getNameParser("");
-            Name namingEntryName = makeNamingEntryName(parser, jndiName);
-            scopeName.addAll(namingEntryName);
+            Name namingEntryName = makeNamingEntryName(parser, jndiName);  
+            scopeName.addAll(namingEntryName);           
             entry =  (NamingEntry)ic.lookup(scopeName);
         }
         catch (NameNotFoundException ee)
@@ -98,7 +98,7 @@ public class NamingEntryUtil
 
         return entry;
     }
-
+    
     public static Object lookup(Object scope, String jndiName) throws NamingException
     {
         Name scopeName = getNameForScope(scope);
@@ -108,18 +108,18 @@ public class NamingEntryUtil
         return ic.lookup(scopeName);
     }
 
-    /**
+    /** 
      * Get all NameEntries of a certain type in the given naming
      * environment scope (server-wide names or context-specific names)
-     *
-     * @param scope
+     * 
+     * @param scope 
      * @param clazz the type of the entry
      * @return all NameEntries of a certain type in the given naming environment scope (server-wide names or context-specific names)
      * @throws NamingException
      */
     public static List<Object> lookupNamingEntries (Object scope, Class<?> clazz)
     throws NamingException
-    {
+    { 
         try
         {
             Context scopeContext = getContextForScope(scope);
@@ -130,35 +130,35 @@ public class NamingEntryUtil
         }
         catch (NameNotFoundException e)
         {
-            return Collections.emptyList();
+            return Collections.emptyList(); 
         }
     }
-
-
+    
+    
     public static Name makeNamingEntryName (NameParser parser, NamingEntry namingEntry)
     throws NamingException
     {
         return makeNamingEntryName(parser, (namingEntry==null?null:namingEntry.getJndiName()));
     }
-
+    
     public static Name makeNamingEntryName (NameParser parser, String jndiName)
     throws NamingException
     {
         if (jndiName==null)
             return null;
-
+        
         if (parser==null)
         {
             InitialContext ic = new InitialContext();
             parser = ic.getNameParser("");
         }
-
+        
         Name name = parser.parse("");
         name.add(NamingEntry.__contextName);
         name.addAll(parser.parse(jndiName));
         return name;
     }
-
+    
 
     public static Name getNameForScope (Object scope)
     {
@@ -170,7 +170,7 @@ public class NamingEntryUtil
             if (scope != null)
             {
                 name.add(canonicalizeScope(scope));
-            }
+            }  
             return name;
         }
         catch (NamingException e)
@@ -189,10 +189,10 @@ public class NamingEntryUtil
         if (scope != null)
         {
             name.add(canonicalizeScope(scope));
-        }
+        }  
         return (Context)ic.lookup(name);
     }
-
+    
     public static Context getContextForNamingEntries (Object scope)
     throws NamingException
     {
@@ -202,7 +202,7 @@ public class NamingEntryUtil
 
     /**
      * Build up a list of NamingEntry objects that are of a specific type.
-     *
+     * 
      * @param list
      * @param context
      * @param clazz

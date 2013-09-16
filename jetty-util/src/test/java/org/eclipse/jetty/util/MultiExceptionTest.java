@@ -38,16 +38,16 @@ public class MultiExceptionTest
         me.ifExceptionThrowMulti();
         me.ifExceptionThrowRuntime();
     }
-
+    
     @Test
     public void testOne() throws Exception
     {
         MultiException me = new MultiException();
         IOException io = new IOException("one");
         me.add(io);
-
+        
         assertEquals(1,me.size());
-
+        
         try
         {
             me.ifExceptionThrow();
@@ -57,7 +57,7 @@ public class MultiExceptionTest
         {
             assertTrue(e==io);
         }
-
+        
         try
         {
             me.ifExceptionThrowMulti();
@@ -67,7 +67,7 @@ public class MultiExceptionTest
         {
             assertTrue(e==me);
         }
-
+        
         try
         {
             me.ifExceptionThrowRuntime();
@@ -77,7 +77,7 @@ public class MultiExceptionTest
         {
             assertTrue(e.getCause()==io);
         }
-
+        
         me = new MultiException();
         RuntimeException run = new RuntimeException("one");
         me.add(run);
@@ -92,7 +92,7 @@ public class MultiExceptionTest
             assertTrue(run==e);
         }
     }
-
+    
     @Test
     public void testTwo() throws Exception
     {
@@ -101,9 +101,9 @@ public class MultiExceptionTest
         RuntimeException run = new RuntimeException("one");
         me.add(io);
         me.add(run);
-
+        
         assertEquals(2,me.size());
-
+        
         try
         {
             me.ifExceptionThrow();
@@ -113,7 +113,7 @@ public class MultiExceptionTest
         {
             assertTrue(e==me);
         }
-
+        
         try
         {
             me.ifExceptionThrowMulti();
@@ -123,7 +123,7 @@ public class MultiExceptionTest
         {
             assertTrue(e==me);
         }
-
+        
         try
         {
             me.ifExceptionThrowRuntime();
@@ -133,7 +133,7 @@ public class MultiExceptionTest
         {
             assertTrue(e.getCause()==me);
         }
-
+        
         me = new MultiException();
         me.add(run);
         me.add(run);

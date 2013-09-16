@@ -19,21 +19,20 @@
 package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.URIUtil;
 
 /**
- * Rewrite the URI by replacing the matched {@link PathMap} path with a fixed string.
+ * Rewrite the URI by replacing the matched {@link PathMap} path with a fixed string. 
  */
 public class RewritePatternRule extends PatternRule implements Rule.ApplyURI
 {
     private String _replacement;
-    private String _query;
 
     /* ------------------------------------------------------------ */
     public RewritePatternRule()
@@ -45,70 +44,36 @@ public class RewritePatternRule extends PatternRule implements Rule.ApplyURI
     /* ------------------------------------------------------------ */
     /**
      * Whenever a match is found, it replaces with this value.
-     *
-     * @param replacement the replacement string.
+     * 
+     * @param value the replacement string.
      */
-    public void setReplacement(String replacement)
+    public void setReplacement(String value)
     {
-        String[] split = replacement.split("\\?", 2);
-        _replacement = split[0];
-        _query = split.length == 2 ? split[1] : null;
+        _replacement = value;
     }
 
     /* ------------------------------------------------------------ */
     /*
      * (non-Javadoc)
-     *
-     * @see org.eclipse.jetty.server.handler.rules.RuleBase#apply(javax.servlet.http.HttpServletRequest,
-     * javax.servlet.http.HttpServletResponse)
+     * @see org.eclipse.jetty.server.handler.rules.RuleBase#apply(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
      */
-    @Override
     public String apply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
-        target = URIUtil.addPaths(_replacement, PathMap.pathInfo(_pattern, target));
+        target = URIUtil.addPaths(_replacement, PathMap.pathInfo(_pattern,target));   
         return target;
     }
 
     /* ------------------------------------------------------------ */
-
-    /**
-     * This method will add _query to the requests's queryString and also combine it with existing queryStrings in
-     * the request. However it won't take care for duplicate. E.g. if request.getQueryString contains a parameter
-     * "param1 = true" and _query will contain "param1=false" the result will be param1=true&param1=false.
-     * To cover this use case some more complex pattern matching is necessary. We can implement this if there's use
-     * cases.
-     *
-     * @param request
-     * @param oldTarget
-     * @param newTarget
-     * @throws IOException
-     */
-    @Override
-    public void applyURI(Request request, String oldTarget, String newTarget) throws IOException
+    public void applyURI(Request request, String oldTarget, String newTarget) throws IOException 
     {
-        if (_query == null)
-        {
-            request.setRequestURI(newTarget);
-        }
-        else
-        {
-            String queryString = request.getQueryString();
-            if (queryString != null)
-                queryString = queryString + "&" + _query;
-            else
-                queryString = _query;
-            HttpURI uri = new HttpURI(newTarget + "?" + queryString);
-            request.setUri(uri);
-            request.setRequestURI(newTarget);
-            request.setQueryString(queryString);
-        }
+        String uri = URIUtil.addPaths(_replacement, PathMap.pathInfo(_pattern,request.getRequestURI()));
+        request.setRequestURI(uri);
     }
 
     /* ------------------------------------------------------------ */
     /**
      * Returns the replacement string.
      */
-    @Override
     public String toString()
     {
         return super.toString()+"["+_replacement+"]";

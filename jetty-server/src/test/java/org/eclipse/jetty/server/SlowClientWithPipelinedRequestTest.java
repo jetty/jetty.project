@@ -18,54 +18,55 @@
 
 package org.eclipse.jetty.server;
 
-import static org.hamcrest.Matchers.lessThan;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.io.AsyncEndPoint;
+import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.nio.AsyncConnection;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.junit.After;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.lessThan;
 
 public class SlowClientWithPipelinedRequestTest
 {
     private final AtomicInteger handles = new AtomicInteger();
     private Server server;
-    private ServerConnector connector;
+    private SelectChannelConnector connector;
 
     public void startServer(Handler handler) throws Exception
     {
         server = new Server();
-        connector = new ServerConnector(server,new HttpConnectionFactory()
+        connector = new SelectChannelConnector()
         {
             @Override
-            public Connection newConnection(Connector connector, EndPoint endPoint)
+            protected AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint)
             {
-                return configure(new HttpConnection(new HttpConfiguration(),connector,endPoint)
+                return new AsyncHttpConnection(this, endpoint, getServer())
                 {
                     @Override
-                    public void onFillable()
+                    public Connection handle() throws IOException
                     {
                         handles.incrementAndGet();
-                        super.onFillable();
+                        return super.handle();
                     }
-                },connector,endPoint);
+                };
             }
-        });
-
+        };
         server.addConnector(connector);
         connector.setPort(0);
         server.setHandler(handler);
@@ -82,15 +83,12 @@ public class SlowClientWithPipelinedRequestTest
         }
     }
 
-    // TODO merged from jetty-8 - not working???
     @Test
-    @Ignore
     public void testSlowClientWithPipelinedRequest() throws Exception
     {
         final int contentLength = 512 * 1024;
         startServer(new AbstractHandler()
         {
-            @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
                     throws IOException, ServletException
             {
@@ -100,12 +98,13 @@ public class SlowClientWithPipelinedRequestTest
                 {
                     // We simulate what the DefaultServlet does, bypassing the blocking
                     // write mechanism otherwise the test does not reproduce the bug
+
                     OutputStream outputStream = response.getOutputStream();
-                    HttpOutput output = (HttpOutput)outputStream;
+                    AbstractHttpConnection.Output output = (AbstractHttpConnection.Output)outputStream;
                     // Since the test is via localhost, we need a really big buffer to stall the write
                     byte[] bytes = new byte[contentLength];
                     Arrays.fill(bytes, (byte)'9');
-                    ByteBuffer buffer = ByteBuffer.wrap(bytes);
+                    Buffer buffer = new ByteArrayBuffer(bytes);
                     // Do a non blocking write
                     output.sendContent(buffer);
                 }

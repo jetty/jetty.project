@@ -20,11 +20,10 @@ package org.eclipse.jetty.spdy.generator;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.spdy.ByteBufferPool;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.frames.ControlFrame;
 import org.eclipse.jetty.spdy.frames.GoAwayFrame;
-import org.eclipse.jetty.util.BufferUtil;
 
 public class GoAwayGenerator extends ControlFrameGenerator
 {
@@ -41,7 +40,6 @@ public class GoAwayGenerator extends ControlFrameGenerator
         int frameBodyLength = 8;
         int totalLength = ControlFrame.HEADER_LENGTH + frameBodyLength;
         ByteBuffer buffer = getByteBufferPool().acquire(totalLength, true);
-        BufferUtil.clearToFill(buffer);
         generateControlFrameHeader(goAway, frameBodyLength, buffer);
 
         buffer.putInt(goAway.getLastStreamId() & 0x7F_FF_FF_FF);

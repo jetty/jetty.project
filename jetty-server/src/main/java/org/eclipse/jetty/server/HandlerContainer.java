@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import org.eclipse.jetty.util.annotation.ManagedAttribute;
-import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.LifeCycle;
 
 /**
@@ -29,21 +27,18 @@ import org.eclipse.jetty.util.component.LifeCycle;
  * or many (see {@link org.eclipse.jetty.server.handler.HandlerList} or {@link org.eclipse.jetty.server.handler.HandlerCollection}. 
  *
  */
-@ManagedObject("Handler of Multiple Handlers")
 public interface HandlerContainer extends LifeCycle
 {
     /* ------------------------------------------------------------ */
     /**
      * @return array of handlers directly contained by this handler.
      */
-    @ManagedAttribute("handlers in this container")
     public Handler[] getHandlers();
     
     /* ------------------------------------------------------------ */
     /**
      * @return array of all handlers contained by this handler and it's children
      */
-    @ManagedAttribute("all contained handlers")
     public Handler[] getChildHandlers();
     
     /* ------------------------------------------------------------ */

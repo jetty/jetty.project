@@ -16,6 +16,11 @@
 //  ========================================================================
 //
 
+// JettyTest.java --
+//
+// Junit test that shows the Jetty SSL bug.
+//
+
 package org.eclipse.jetty.server.ssl;
 
 import java.io.BufferedReader;
@@ -24,52 +29,83 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
-
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import junit.framework.TestCase;
+import org.eclipse.jetty.io.AsyncEndPoint;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.junit.Test;
 
-public class SSLCloseTest
+/**
+ * HttpServer Tester.
+ */
+public class SSLCloseTest extends TestCase
 {
-    @Test
+    private static AsyncEndPoint __endp;
+    private static class CredulousTM implements TrustManager, X509TrustManager
+    {
+        public X509Certificate[] getAcceptedIssuers()
+        {
+            return new X509Certificate[]{};
+        }
+
+        public void checkClientTrusted(X509Certificate[] arg0, String arg1) throws CertificateException
+        {
+        }
+
+        public void checkServerTrusted(X509Certificate[] arg0, String arg1) throws CertificateException
+        {
+        }
+    }
+
+    private static final TrustManager[] s_dummyTrustManagers=new TrustManager[]  { new CredulousTM() };
+
+    // ~ Methods
+    // ----------------------------------------------------------------
+
+    /**
+     * Feed the server the entire request at once.
+     *
+     * @throws Exception
+     */
     public void testClose() throws Exception
     {
-        File keystore = MavenTestingUtils.getTestResourceFile("keystore");
-        SslContextFactory sslContextFactory = new SslContextFactory();
-        sslContextFactory.setKeyStoreResource(Resource.newResource(keystore));
-        sslContextFactory.setKeyStorePassword("storepwd");
-        sslContextFactory.setKeyManagerPassword("keypwd");
-
         Server server=new Server();
-        ServerConnector connector=new ServerConnector(server, sslContextFactory);
-        connector.setPort(0);
+        SslSelectChannelConnector connector=new SslSelectChannelConnector();
 
-        server.addConnector(connector);
+        String keystore = System.getProperty("user.dir")+File.separator+"src"+File.separator+"test"+File.separator+"resources"+File.separator+"keystore";
+
+        connector.setPort(0);
+        connector.getSslContextFactory().setKeyStorePath(keystore);
+        connector.getSslContextFactory().setKeyStorePassword("storepwd");
+        connector.getSslContextFactory().setKeyManagerPassword("keypwd");
+
+        server.setConnectors(new Connector[]
+        { connector });
         server.setHandler(new WriteHandler());
+
         server.start();
 
+
         SSLContext ctx=SSLContext.getInstance("SSLv3");
-        ctx.init(null,SslContextFactory.TRUST_ALL_CERTS,new java.security.SecureRandom());
+        ctx.init(null,s_dummyTrustManagers,new java.security.SecureRandom());
 
         int port=connector.getLocalPort();
 
+        // System.err.println("write:"+i);
         Socket socket=ctx.getSocketFactory().createSocket("localhost",port);
         OutputStream os=socket.getOutputStream();
 
-        os.write((
-            "GET /test HTTP/1.1\r\n"+
-            "Host:test\r\n"+
-            "Connection:close\r\n\r\n").getBytes());
+        os.write("GET /test HTTP/1.1\r\nHost:test\r\nConnection:close\r\n\r\n".getBytes());
         os.flush();
 
         BufferedReader in =new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -77,15 +113,19 @@ public class SSLCloseTest
         String line;
         while ((line=in.readLine())!=null)
         {
+            System.err.println(line);
             if (line.trim().length()==0)
                 break;
         }
 
         Thread.sleep(2000);
+        System.err.println(__endp);
 
-        while (in.readLine()!=null)
-            Thread.yield();
+        while ((line=in.readLine())!=null)
+            System.err.println(line);
+
     }
+
 
     private static class WriteHandler extends AbstractHandler
     {
@@ -96,6 +136,7 @@ public class SSLCloseTest
                 baseRequest.setHandled(true);
                 response.setStatus(200);
                 response.setHeader("test","value");
+                __endp=(AsyncEndPoint)baseRequest.getConnection().getEndPoint();
 
                 OutputStream out=response.getOutputStream();
 
@@ -109,9 +150,24 @@ public class SSLCloseTest
 
                 for (int i=0;i<2;i++)
                 {
-                    // System.err.println("Write "+i+" "+bytes.length);
+                    System.err.println("Write "+i+" "+bytes.length);
                     out.write(bytes);
                 }
+            }
+            catch(RuntimeException e)
+            {
+                e.printStackTrace();
+                throw e;
+            }
+            catch(IOException e)
+            {
+                e.printStackTrace();
+                throw e;
+            }
+            catch(Error e)
+            {
+                e.printStackTrace();
+                throw e;
             }
             catch(Throwable e)
             {
@@ -119,5 +175,7 @@ public class SSLCloseTest
                 throw new ServletException(e);
             }
         }
+
     }
+
 }

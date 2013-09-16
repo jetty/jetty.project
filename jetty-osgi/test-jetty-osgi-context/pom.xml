@@ -2,7 +2,8 @@
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
-    <version>9.0.6-SNAPSHOT</version>
+    <version>7.6.13-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>test-jetty-osgi-context</artifactId>
@@ -16,7 +17,6 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-server</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
     	<groupId>org.eclipse.osgi</groupId>
@@ -39,6 +39,28 @@
         </resources>
 
         <plugins> 
+<!--
+            <plugin> 
+                <artifactId>maven-antrun-plugin</artifactId> 
+                <executions> 
+                    <execution> 
+                        <phase>process-resources</phase> 
+                        <configuration> 
+                            <tasks>
+                                <copy todir="target/classes/jettyhome"> 
+                                    <fileset dir="jettyhome"> 
+                                        <exclude name="**/*.log" /> 
+                                    </fileset> 
+                                </copy> 
+                            </tasks> 
+                        </configuration> 
+                        <goals> 
+                            <goal>run</goal> 
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+-->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId> 
                 <artifactId>maven-jar-plugin</artifactId> 
@@ -86,8 +108,8 @@
                         compilation time. --> 
                         <_nouses>true</_nouses>
                         <Import-Package>
- javax.servlet;version="2.6.0",
- javax.servlet.resources;version="2.6.0",
+ javax.servlet;version="2.5.0",
+ javax.servlet.resources;version="2.5.0",
  org.osgi.framework,
  org.osgi.service.cm;version="1.2.0",
  org.osgi.service.packageadmin,
@@ -101,7 +123,9 @@
  org.xml.sax.helpers,
  *
                         </Import-Package>
-                        <DynamicImport-Package>org.eclipse.jetty.*;version="[9.0,10.0)"</DynamicImport-Package>
+                        <DynamicImport-Package>org.eclipse.jetty.*;version="[7.6,8)"</DynamicImport-Package>
+                        <!--Require-Bundle/-->
+                        <!-- Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment --> 
                     </instructions>
                 </configuration>
             </plugin>

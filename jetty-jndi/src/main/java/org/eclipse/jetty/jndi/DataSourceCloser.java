@@ -19,20 +19,19 @@
 package org.eclipse.jetty.jndi;
 
 import java.lang.reflect.Method;
-import java.sql.Connection;
 import java.sql.Statement;
 
 import javax.sql.DataSource;
 
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
  * Close a DataSource.
- * Some {@link DataSource}'s need to be close (eg. Atomikos).  This bean is a {@link Destroyable} and
- * may be added to any {@link ContainerLifeCycle} so that {@link #destroy()}
+ * Some {@link DataSource}'s need to be close (eg. Atomikos).  This bean is a {@link Destroyable} and 
+ * may be added to any {@link AggregateLifeCycle} so that {@link #destroy()}
  * will be called.   The {@link #destroy()} method calls any no-arg method called "close" on the passed DataSource.
  *
  */
@@ -42,7 +41,7 @@ public class DataSourceCloser implements Destroyable
 
     final DataSource _datasource;
     final String _shutdown;
-
+    
     public DataSourceCloser(DataSource datasource)
     {
         if (datasource==null)
@@ -50,7 +49,7 @@ public class DataSourceCloser implements Destroyable
         _datasource=datasource;
         _shutdown=null;
     }
-
+    
     public DataSourceCloser(DataSource datasource,String shutdownSQL)
     {
         if (datasource==null)
@@ -58,8 +57,7 @@ public class DataSourceCloser implements Destroyable
         _datasource=datasource;
         _shutdown=shutdownSQL;
     }
-
-    @Override
+    
     public void destroy()
     {
         try
@@ -67,18 +65,16 @@ public class DataSourceCloser implements Destroyable
             if (_shutdown!=null)
             {
                 LOG.info("Shutdown datasource {}",_datasource);
-                try (Connection connection = _datasource.getConnection();
-                        Statement stmt = connection.createStatement())
-                {
-                    stmt.executeUpdate(_shutdown);
-                }
+                Statement stmt = _datasource.getConnection().createStatement();
+                stmt.executeUpdate(_shutdown);
+                stmt.close();
             }
         }
         catch (Exception e)
         {
             LOG.warn(e);
         }
-
+        
         try
         {
             Method close = _datasource.getClass().getMethod("close", new Class[]{});

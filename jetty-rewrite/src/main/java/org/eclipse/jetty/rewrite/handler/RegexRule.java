@@ -55,7 +55,6 @@ public abstract class RegexRule extends Rule
     
 
     /* ------------------------------------------------------------ */
-    @Override
     public String matchAndApply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
         Matcher matcher=_regex.matcher(target);
@@ -83,7 +82,6 @@ public abstract class RegexRule extends Rule
     /**
      * Returns the regular expression string.
      */
-    @Override
     public String toString()
     {
         return super.toString()+"["+_regex+"]";

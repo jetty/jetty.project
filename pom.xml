@@ -6,18 +6,17 @@
     <version>20</version>
   </parent>
   <artifactId>jetty-project</artifactId>
-  <version>9.0.6-SNAPSHOT</version>
+  <version>7.6.13-SNAPSHOT</version>
   <name>Jetty :: Project</name>
   <url>http://www.eclipse.org/jetty</url>
   <packaging>pom</packaging>
   <properties>
     <jetty.url>http://www.eclipse.org/jetty</jetty.url>
-    <orbit-servlet-api-version>3.0.0.v201112011016</orbit-servlet-api-version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <orbit-servlet-api-version>2.5.0.v201103041518</orbit-servlet-api-version>
     <build-support-version>1.1</build-support-version>
     <slf4j-version>1.6.1</slf4j-version>
     <jetty-test-policy-version>1.2</jetty-test-policy-version>
-    <npn.api.version>1.1.0.v20120525</npn.api.version>
   </properties>
   <scm>
     <connection>scm:git:http://git.eclipse.org/gitroot/jetty/org.eclipse.jetty.project.git</connection>
@@ -30,8 +29,8 @@
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
-          <source>1.7</source>
-          <target>1.7</target>
+          <source>1.5</source>
+          <target>1.5</target>
           <verbose>false</verbose>
         </configuration>
       </plugin>
@@ -125,11 +124,10 @@
             <configuration>
               <rules>
                 <requireMavenVersion>
-                  <version>[3.0.0,)</version>
+                  <version>[2.0.6,)</version>
                 </requireMavenVersion>
                 <requireJavaVersion>
-                  <version>[1.7,)</version>
-                  <message>[ERROR] OLD JDK [${java.version}] in use. Jetty ${project.version} requires JDK 1.7 or newer</message>
+                  <version>[1.5,)</version>
                 </requireJavaVersion>
                 <versionTxtRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.VersionTxtRule" />
                 <versionOsgiRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireOsgiCompatibleVersionRule" />
@@ -147,43 +145,17 @@
               <rules>
                 <!-- Banned Dependencies (should use Orbit based versions now) -->
                 <bannedDependencies>
-                  <excludes>
-                    <exclude>javax.servlet</exclude>
-                    <exclude>javax.servlet.jsp</exclude>
-                    <exclude>org.apache.geronimo.specs</exclude>
-                    <exclude>javax.mail</exclude>
-                    <exclude>javax.activation</exclude>
-                  </excludes>
-                  <!-- allowed combinations -->
                   <includes>
-                    <include>org.apache.geronimo.specs:geronimo-atinject_1.0_spec:jar:*</include>
-                    <include>javax.net.websocket:*:*:*</include>
-                    <include>javax.websocket:*:*:*</include>
-                    <include>javax.servlet:*:*:*:provided</include>
-                    <include>javax.servlet.jsp:*:*:*:provided</include>
+                    <include>javax.servlet</include>
+                    <include>org.apache.geronimo.specs</include>
+                    <include>javax.mail</include>
+                    <include>javax.activation</include>
                   </includes>
                   <searchTransitive>true</searchTransitive>
                   <message>This dependency is banned, use the ORBIT provided dependency instead.</message>
                 </bannedDependencies>
               </rules>
               <fail>true</fail>
-            </configuration>
-          </execution>
-          <execution>
-            <id>ban-junit-dep.jar</id>
-            <goals>
-              <goal>enforce</goal>
-            </goals>
-            <configuration>
-              <rules>
-                <bannedDependencies>
-                  <excludes>
-                    <exclude>junit:junit-dep:*:jar</exclude>
-                  </excludes>
-                  <searchTransitive>true</searchTransitive>
-                  <message>We use junit.jar, not junit-dep.jar (as of junit 4.11, hamcrest is no longer embedded)</message>
-                </bannedDependencies>
-              </rules>
             </configuration>
           </execution>
         </executions>
@@ -211,7 +183,7 @@
           </execution>
         </executions>
         <configuration>
-          <targetJdk>1.7</targetJdk>
+          <targetJdk>1.5</targetJdk>
           <rulesets>
             <ruleset>jetty/pmd_logging_ruleset.xml</ruleset>
           </rulesets>
@@ -247,7 +219,6 @@
             <exclude>jetty-util/src/main/java/org/eclipse/jetty/util/security/UnixCrypt.java</exclude>
             <exclude>jetty-policy/src/main/java/org/eclipse/jetty/policy/loader/DefaultPolicyLoader.java</exclude>
             <exclude>jetty-policy/src/main/java/org/eclipse/jetty/policy/loader/PolicyFileScanner.java</exclude>
-            <exclude>jetty-ant/**</exclude>
           </excludes>
         </configuration>
         <executions>
@@ -285,7 +256,6 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
           <configuration>
-            <argLine>-showversion -Xmx1g -Xms1g -XX:+PrintGCDetails</argLine>
             <failIfNoTests>false</failIfNoTests>
             <!--systemProperties>
               <property>
@@ -301,13 +271,12 @@
           <extensions>true</extensions>
           <configuration>
             <instructions>
-              <Bundle-SymbolicName>${bundle-symbolic-name}</Bundle-SymbolicName>
-              <Bundle-RequiredExecutionEnvironment>JavaSE-1.7</Bundle-RequiredExecutionEnvironment>
+              <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment>
               <Bundle-DocURL>${jetty.url}</Bundle-DocURL>
               <Bundle-Vendor>Eclipse Jetty Project</Bundle-Vendor>
               <Bundle-Classpath>.</Bundle-Classpath>
               <Export-Package>${bundle-symbolic-name}.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"</Export-Package>
-              <Bundle-Copyright>Copyright (c) 2008-2013 Mort Bay Consulting Pty. Ltd.</Bundle-Copyright>
+              <Bundle-Copyright>Copyright (c) 2008-2012 Mort Bay Consulting Pty. Ltd.</Bundle-Copyright>
               <_versionpolicy>[$(version;==;$(@)),$(version;+;$(@)))</_versionpolicy>
             </instructions>
           </configuration>
@@ -359,12 +328,11 @@
                 <head>Apache XBean:</head>
               </tag>
             </tags>
-          </configuration>
+            </configuration>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-pmd-plugin</artifactId>
-          <version>2.7.1</version>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -392,7 +360,7 @@
         <artifactId>maven-pmd-plugin</artifactId>
         <version>2.7.1</version>
         <configuration>
-          <targetJdk>1.7</targetJdk>
+          <targetJdk>1.5</targetJdk>
           <rulesets>
             <ruleset>jetty/pmd_ruleset.xml</ruleset>
           </rulesets>
@@ -401,10 +369,11 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>findbugs-maven-plugin</artifactId>
-        <version>2.5.2</version>
+        <version>2.3.2</version>
       </plugin>
     </plugins>
   </reporting>
+<!--
   <repositories>
     <repository>
       <snapshots>
@@ -415,58 +384,53 @@
       <url>http://oss.sonatype.org/content/groups/jetty</url>
     </repository>
   </repositories>
+-->
   <modules>
-    <module>jetty-ant</module>
     <module>jetty-util</module>
     <module>jetty-jmx</module>
     <module>jetty-io</module>
     <module>jetty-http</module>
+    <module>jetty-websocket</module>
     <module>jetty-continuation</module>
     <module>jetty-server</module>
+    <module>jetty-client</module>
     <module>jetty-xml</module>
     <module>jetty-security</module>
+    <module>jetty-jaspi</module>
     <module>jetty-servlet</module>
     <module>jetty-webapp</module>
-    <module>jetty-spdy</module>
-    <module>jetty-websocket</module>
     <module>jetty-servlets</module>
-    <module>jetty-util-ajax</module>
-    <module>jetty-maven-plugin</module>
-    <module>jetty-jspc-maven-plugin</module>
     <module>jetty-deploy</module>
-    <module>jetty-start</module>
-    <module>jetty-plus</module>
-    <module>jetty-annotations</module>
+    <module>jetty-ajp</module>
     <module>jetty-jndi</module>
-    <module>jetty-jsp</module>
-    <module>jetty-jaas</module>
-    <module>jetty-spring</module>
-    <module>jetty-client</module>
-    <module>jetty-proxy</module>
-    <module>jetty-jaspi</module>
-    <module>jetty-osgi</module>
+    <module>jetty-annotations</module>
+    <module>jetty-plus</module>
     <module>jetty-rewrite</module>
-    <module>jetty-nosql</module>
-    <module>tests</module>
-    <module>examples</module>
-    <module>jetty-distribution</module>
-    <module>jetty-runner</module>
+    <module>jetty-policy</module>
     <module>jetty-monitor</module>
-    <module>jetty-http-spi</module>
-
-    <!-- modules that need fixed and added back, or simply dropped and not maintained
-    <module>jetty-rhttp</module>
-    -->
+    <module>jetty-start</module>
+    <module>jetty-nested</module>
     <module>jetty-overlay-deployer</module>
+    <module>jetty-nosql</module>
+    <module>jetty-http-spi</module>
+    <module>jetty-jsp</module>
+    <module>jetty-distribution</module>
+    <module>test-continuation</module>
+    <!--module>test-continuation-jetty6</module-->
+    <module>test-jetty-servlet</module>
+    <module>test-jetty-webapp</module>
+    <module>test-jetty-nested</module>
+    <module>example-jetty-embedded</module>
+    <module>tests</module>
   </modules>
   <dependencyManagement>
     <dependencies>
       <!-- Orbit Deps -->
       <dependency>
-         <groupId>org.eclipse.jetty.orbit</groupId>
-         <artifactId>javax.servlet</artifactId>
-         <version>3.0.0.v201112011016</version>
-       </dependency>
+        <groupId>org.eclipse.jetty.orbit</groupId>
+        <artifactId>javax.servlet</artifactId>
+        <version>${orbit-servlet-api-version}</version>
+      </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.orbit</groupId>
         <artifactId>javax.annotation</artifactId>
@@ -561,18 +525,10 @@
         <artifactId>slf4j-api</artifactId>
         <version>${slf4j-version}</version>
       </dependency>
-      <!-- NOTICE: we no longer use junit.jar as it bundles/aggregates too many
-           3rd party libraries in itself
       <dependency>
         <groupId>junit</groupId>
         <artifactId>junit</artifactId>
         <version>4.11</version>
-      </dependency>
-        -->
-      <dependency>
-        <groupId>junit</groupId>
-        <artifactId>junit-dep</artifactId>
-        <version>4.10</version>
       </dependency>
       <dependency>
         <groupId>org.hamcrest</groupId>
@@ -588,12 +544,6 @@
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
         <version>1.9.5</version>
-        <exclusions>
-          <exclusion>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-          </exclusion>
-        </exclusions>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -601,22 +551,80 @@
     Usage:
     configure settings.xml for jetty.eclipse.website server entry
     > mvn -Paggregate-site javadoc:aggregate jxr:jxr
-    then
     > mvn -N site:deploy
     or
     > mvn -N site:sshdeploy     (for ssh users w/passphrase and ssh-agent)
    -->
   <profiles>
     <profile>
-      <id>eclipse-release</id>
+      <!-- Modules that are only for JDK7+ builds -->
+      <id>JDK7-plus-modules</id>
+      <activation>
+        <jdk>[1.7,)</jdk>
+      </activation>
       <modules>
-        <module>aggregates/jetty-all</module>
+        <module>jetty-spdy</module>
       </modules>
     </profile>
     <profile>
-      <id>ci</id>
+      <id>eclipse-release</id>
+   <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>enforce-java</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <requireJavaVersion>
+                  <version>[1.7,)</version>
+                </requireJavaVersion>
+              </rules>    
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+    </profile>
+    <profile>
+      <!--
+        Moves the jetty-aggregate build tree to a profile called 'aggregates'.
+        It is active by default, but being in a profile allows it to be
+        disabled via the "-P-aggregates" command line on maven.
+        (Useful for running site plugin with deep reporting and avoiding
+         duplicate hits on aggregated classes) -->
+      <id>aggregates</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+        <file>
+          <exists>${basedir}/pom.xml</exists>
+        </file>
+      </activation>
       <modules>
-        <module>aggregates/jetty-all</module>
+        <module>jetty-aggregate</module>
+      </modules>
+    </profile>
+    <profile>
+      <!--
+        Moves the jetty-osgi build tree to a profile called 'osgi'.
+        It is active by default, but being in a profile allows it to be
+        disabled via the "-P-osgi" command line on maven (if need be).
+        -->
+      <id>osgi</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+        <file>
+          <exists>${basedir}/pom.xml</exists>
+        </file>
+      </activation>
+      <modules>
+        <module>jetty-osgi</module>
       </modules>
     </profile>
     <profile>
@@ -643,6 +651,63 @@
             </executions>
           </plugin>
         </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>cobertura</id>
+      <reporting>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>cobertura-maven-plugin</artifactId>
+            <configuration>
+              <maxmem>512m</maxmem>
+            </configuration>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <reportSets>
+              <reportSet>
+                <id>just-javadoc-no-aggregate</id>
+                <reports>
+                  <report>javadoc</report>
+                </reports>
+                <inherited>true</inherited>
+                <configuration>
+                  <minmemory>256m</minmemory>
+                  <maxmemory>1g</maxmemory>
+                  <excludePackageNames>com.acme</excludePackageNames>
+                  <links>
+                    <link>http://java.sun.com/j2se/1.5.0/docs/api</link>
+                    <link>http://java.sun.com/javaee/5/docs/api</link>
+                    <link>http://junit.sourceforge.net/javadoc/</link>
+                  </links>
+                  <tags>
+                    <tag>
+                      <name>org.apache.xbean.XBean</name>
+                      <placement>X</placement>
+                      <head />
+                    </tag>
+                  </tags>
+                </configuration>
+              </reportSet>
+            </reportSets>
+          </plugin>
+         </plugins>
+      </reporting>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-surefire-plugin</artifactId>
+              <configuration>
+                <testFailureIgnore>true</testFailureIgnore>
+              </configuration>
+            </plugin>
+          </plugins>
+        </pluginManagement>
       </build>
     </profile>
     <profile>
@@ -686,8 +751,8 @@
             <configuration>
               <excludePackageNames>com.acme</excludePackageNames>
               <links>
-                <link>http://docs.oracle.com/javase/7/docs/api/</link>
-                <link>http://docs.oracle.com/javaee/6/api</link>
+                <link>http://java.sun.com/j2se/1.5.0/docs/api</link>
+                <link>http://java.sun.com/javaee/5/docs/api</link>
                 <link>http://junit.sourceforge.net/javadoc/</link>
               </links>
               <tags>
@@ -710,145 +775,11 @@
                       })();
                    </script>
                 ]]>
-              </header>
+              </header>           
             </configuration>
           </plugin>
         </plugins>
       </build>
     </profile>
-    <profile>
-      <id>api-change</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>clirr-maven-plugin</artifactId>
-            <version>2.5</version>
-            <executions>
-              <execution>
-                <id>compare-api</id>
-                <phase>package</phase>
-                <goals>
-                  <goal>clirr</goal>
-                </goals>
-              </execution>
-            </executions>
-            <configuration>
-              <minSeverity>info</minSeverity>
-              <comparisonVersion>9.0.3.v20130506</comparisonVersion>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
- <profile>
-            <id>7u9</id>
-            <activation>
-                <property>
-                    <name>java.version</name>
-                    <value>1.7.0_9</value>
-                </property>
-            </activation>
-            <properties>
-                <npn.version>1.1.3.v20130313</npn.version>
-            </properties>
-        </profile>
-        <profile>
-            <id>7u10</id>
-            <activation>
-                <property>
-                    <name>java.version</name>
-                    <value>1.7.0_10</value>
-                </property>
-            </activation>
-            <properties>
-                <npn.version>1.1.3.v20130313</npn.version>
-            </properties>
-        </profile>
-        <profile>
-            <id>7u11</id>
-            <activation>
-                <property>
-                    <name>java.version</name>
-                    <value>1.7.0_11</value>
-                </property>
-            </activation>
-            <properties>
-                <npn.version>1.1.3.v20130313</npn.version>
-            </properties>
-        </profile>
-        <profile>
-            <id>7u13</id>
-            <activation>
-                <property>
-                    <name>java.version</name>
-                    <value>1.7.0_13</value>
-                </property>
-            </activation>
-            <properties>
-                <npn.version>1.1.4.v20130313</npn.version>
-            </properties>
-        </profile>
-        <profile>
-            <id>7u15</id>
-            <activation>
-                <property>
-                    <name>java.version</name>
-                    <value>1.7.0_15</value>
-                </property>
-            </activation>
-            <properties>
-                <npn.version>1.1.5.v20130313</npn.version>
-            </properties>
-        </profile>
-        <profile>
-            <id>7u17</id>
-            <activation>
-                <property>
-                    <name>java.version</name>
-                    <value>1.7.0_17</value>
-                </property>
-            </activation>
-            <properties>
-                <npn.version>1.1.5.v20130313</npn.version>
-            </properties>
-        </profile>
-        <profile>
-            <id>7u21</id>
-            <activation>
-                <property>
-                    <name>java.version</name>
-                    <value>1.7.0_21</value>
-                </property>
-            </activation>
-            <properties>
-                <npn.version>1.1.5.v20130313</npn.version>
-            </properties>
-        </profile>
-        <profile>
-           <id>7u25</id>
-            <activation>
-                <property>
-                    <name>java.version</name>
-                    <value>1.7.0_25</value>
-                </property>
-            </activation>
-            <properties>
-                <npn.version>1.1.5.v20130313</npn.version>
-            </properties>
-        </profile>
-        <profile>
-           <id>7u40</id>
-            <activation>
-                <property>
-                    <name>java.version</name>
-                    <value>1.7.0_40</value>
-                </property>
-            </activation>
-            <properties>
-                <npn.version>1.1.6.v20130911</npn.version>
-            </properties>
-        </profile>
   </profiles>
 </project>
-

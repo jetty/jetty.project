@@ -27,12 +27,12 @@ import org.eclipse.jetty.xml.XmlConfiguration;
 
 
 /**
- *
+ * 
  * JettyWebConfiguration.
+ * 
+ * Looks for Xmlconfiguration files in WEB-INF.  Searches in order for the first of jettyX-web.xml, jetty-web.xml or web-jetty.xml
  *
- * Looks for XmlConfiguration files in WEB-INF.  Searches in order for the first of jetty6-web.xml, jetty-web.xml or web-jetty.xml
- *
- *
+ * 
  *
  */
 public class JettyWebXmlConfiguration extends AbstractConfiguration
@@ -47,8 +47,8 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
 
     public static final String XML_CONFIGURATION = "org.eclipse.jetty.webapp.JettyWebXmlConfiguration";
     public static final String JETTY_WEB_XML = "jetty-web.xml";
-
-    /**
+    
+    /** 
      * Configure
      * Apply web-jetty.xml configuration
      * @see Configuration#configure(WebAppContext)
@@ -62,15 +62,15 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
             LOG.debug("Cannot configure webapp after it is started");
             return;
         }
-
+        
         LOG.debug("Configuring web-jetty.xml");
-
+        
         Resource web_inf = context.getWebInf();
         // handle any WEB-INF descriptors
         if(web_inf!=null&&web_inf.isDirectory())
         {
             // do jetty.xml file
-            Resource jetty=web_inf.addPath("jetty8-web.xml");
+            Resource jetty=web_inf.addPath("jetty7-web.xml");
             if(!jetty.exists())
                 jetty=web_inf.addPath(JETTY_WEB_XML);
             if(!jetty.exists())
@@ -78,16 +78,16 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
 
             if(jetty.exists())
             {
-                // No server classes while configuring
+                // No server classes while configuring 
                 String[] old_server_classes = context.getServerClasses();
                 try
                 {
                     context.setServerClasses(null);
                     if(LOG.isDebugEnabled())
                         LOG.debug("Configure: "+jetty);
-
+                    
                     XmlConfiguration jetty_config = (XmlConfiguration)context.getAttribute(XML_CONFIGURATION);
-
+                    
                     if (jetty_config==null)
                     {
                         jetty_config=new XmlConfiguration(jetty.getURL());
@@ -96,7 +96,7 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
                     {
                         context.removeAttribute(XML_CONFIGURATION);
                     }
-                    setupXmlConfiguration(jetty_config, web_inf);
+                    setupXmlConfiguration(context,jetty_config, web_inf);
                     try
                     {
                         jetty_config.configure(context);
@@ -108,7 +108,7 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
                 }
                 finally
                 {
-                    if (old_server_classes != null)
+                    if (context.getServerClasses()==null)
                         context.setServerClasses(old_server_classes);
                 }
             }
@@ -119,12 +119,20 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
      * Configures some well-known properties before the XmlConfiguration reads
      * the configuration.
      * @param jetty_config The configuration object.
-     * @param web_inf the WEB-INF location
+     */
+    private void setupXmlConfiguration(WebAppContext context, XmlConfiguration jetty_config, Resource web_inf)
+    {
+        setupXmlConfiguration(jetty_config,web_inf);
+    }
+    
+    /**
+     * Configures some well-known properties before the XmlConfiguration reads
+     * the configuration.
+     * @param jetty_config The configuration object.
      */
     private void setupXmlConfiguration(XmlConfiguration jetty_config, Resource web_inf)
     {
-        Map<String,String> props = jetty_config.getProperties();
-        // TODO - should this be an id rather than a property?
-        props.put(PROPERTY_THIS_WEB_INF_URL, String.valueOf(web_inf.getURL()));
+    	Map<String,String> props = jetty_config.getProperties();
+    	props.put(PROPERTY_THIS_WEB_INF_URL, String.valueOf(web_inf.getURL()));
     }
 }

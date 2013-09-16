@@ -23,11 +23,9 @@ import static org.junit.Assert.assertTrue;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.EnumSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -35,14 +33,16 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 
+import junit.framework.AssertionFailedError;
+
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.toolchain.test.TestingDir;
+import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.hamcrest.Matchers;
@@ -65,9 +65,9 @@ public class DefaultServletTest
     public void init() throws Exception
     {
         server = new Server();
+        server.setSendServerVersion(false);
 
-        connector = new LocalConnector(server);
-        connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendServerVersion(false);
+        connector = new LocalConnector();
 
         context = new ServletContextHandler();
         context.setContextPath("/context");
@@ -107,7 +107,9 @@ public class DefaultServletTest
         defholder.setInitParameter("resourceBase", resBasePath);
 
         StringBuffer req1 = new StringBuffer();
-        req1.append("GET /context/;JSESSIONID=1234567890 HTTP/1.0\n\n");
+        req1.append("GET /context/;JSESSIONID=1234567890 HTTP/1.1\n");
+        req1.append("Host: localhost\n");
+        req1.append("\n");
 
         String response = connector.getResponses(req1.toString());
 
@@ -147,7 +149,8 @@ public class DefaultServletTest
          * Intentionally bad request URI. Sending a non-encoded URI with typically encoded characters '<', '>', and
          * '"'.
          */
-        req1.append("GET /context/;<script>window.alert(\"hi\");</script> HTTP/1.0\n");
+        req1.append("GET /context/;<script>window.alert(\"hi\");</script> HTTP/1.1\n");
+        req1.append("Host: localhost\n");
         req1.append("\n");
 
         String response = connector.getResponses(req1.toString());
@@ -473,37 +476,31 @@ public class DefaultServletTest
         String resBasePath = resBase.getAbsolutePath();
 
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
-        defholder.setInitParameter("dirAllowed", "false");
-        defholder.setInitParameter("redirectWelcome", "false");
-        defholder.setInitParameter("welcomeServlets", "false");
-        defholder.setInitParameter("gzip", "false");
         defholder.setInitParameter("acceptRanges", "true");
         defholder.setInitParameter("resourceBase", resBasePath);
 
-        String response = connector.getResponses("GET /context/data.txt HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n\r\n");
+        String response = connector.getResponses(
+                "GET /context/data.txt HTTP/1.1\r\n" +
+                        "Host: localhost\r\n" +
+                        "\r\n");
         assertResponseContains("200 OK", response);
         assertResponseContains("Accept-Ranges: bytes", response);
 
-
-
-        response = connector.getResponses("GET /context/data.txt HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n"+
-                "Range: bytes=0-9\r\n" +
-                "\r\n");
+        response = connector.getResponses(
+                "GET /context/data.txt HTTP/1.1\r\n" +
+                        "Host: localhost\r\n" +
+                        "Range: bytes=0-9\r\n" +
+                        "\r\n");
         assertResponseContains("206 Partial", response);
         assertResponseContains("Content-Type: text/plain", response);
         assertResponseContains("Content-Length: 10", response);
         assertResponseContains("Content-Range: bytes 0-9/80", response);
 
-
-        response = connector.getResponses("GET /context/data.txt HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n"+
-                "Range: bytes=0-9,20-29,40-49\r\n" +
-                "\r\n");
+        response = connector.getResponses(
+                "GET /context/data.txt HTTP/1.1\r\n" +
+                        "Host: localhost\r\n" +
+                        "Range: bytes=0-9,20-29,40-49\r\n" +
+                        "\r\n");
         int start = response.indexOf("--jetty");
         String body = response.substring(start);
         String boundary = body.substring(0, body.indexOf("\r\n"));
@@ -514,11 +511,11 @@ public class DefaultServletTest
         assertResponseContains("Content-Length: " + body.length(), response);
         assertTrue(body.endsWith(boundary + "--\r\n"));
 
-        response = connector.getResponses("GET /context/data.txt HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n"+
-                "Range: bytes=0-9,20-29,40-49,70-79\r\n" +
-                "\r\n");
+        response = connector.getResponses(
+                "GET /context/data.txt HTTP/1.1\r\n" +
+                        "Host: localhost\r\n" +
+                        "Range: bytes=0-9,20-29,40-49,70-79\r\n" +
+                        "\r\n");
         start = response.indexOf("--jetty");
         body = response.substring(start);
         boundary = body.substring(0, body.indexOf("\r\n"));
@@ -530,11 +527,11 @@ public class DefaultServletTest
         assertResponseContains("Content-Length: " + body.length(), response);
         assertTrue(body.endsWith(boundary + "--\r\n"));
 
-        response = connector.getResponses("GET /context/data.txt HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n"+
-                "Range: bytes=0-9,20-29,40-49,60-60,70-79\r\n" +
-                "\r\n");
+        response = connector.getResponses(
+                "GET /context/data.txt HTTP/1.1\r\n" +
+                        "Host: localhost\r\n" +
+                        "Range: bytes=0-9,20-29,40-49,60-60,70-79\r\n" +
+                        "\r\n");
         start = response.indexOf("--jetty");
         body = response.substring(start);
         boundary = body.substring(0, body.indexOf("\r\n"));
@@ -548,34 +545,30 @@ public class DefaultServletTest
         assertTrue(body.endsWith(boundary + "--\r\n"));
 
         //test a range request with a file with no suffix, therefore no mimetype
-
         File nofilesuffix = new File(resBase, "nofilesuffix");
         createFile(nofilesuffix, "01234567890123456789012345678901234567890123456789012345678901234567890123456789");
-
-        response = connector.getResponses("GET /context/nofilesuffix HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n"+  
-                "\r\n");
+        response = connector.getResponses(
+                                          "GET /context/nofilesuffix HTTP/1.1\r\n" +
+                                          "Host: localhost\r\n" +
+        "\r\n");
         assertResponseContains("200 OK", response);
         assertResponseContains("Accept-Ranges: bytes", response);
 
-
-
-        response = connector.getResponses("GET /context/nofilesuffix HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n"+
-                "Range: bytes=0-9\r\n" +
-                "\r\n");
+        response = connector.getResponses(
+                                          "GET /context/nofilesuffix HTTP/1.1\r\n" +
+                                          "Host: localhost\r\n" +
+                                          "Range: bytes=0-9\r\n" +
+        "\r\n");
         assertResponseContains("206 Partial", response);
         assertResponseContains("Content-Length: 10", response);
         assertTrue(!response.contains("Content-Type:"));
         assertResponseContains("Content-Range: bytes 0-9/80", response);
 
-        response = connector.getResponses("GET /context/nofilesuffix HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n"+     
-                "Range: bytes=0-9,20-29,40-49\r\n" +
-                "\r\n");
+        response = connector.getResponses(
+                                          "GET /context/nofilesuffix HTTP/1.1\r\n" +
+                                          "Host: localhost\r\n" +
+                                          "Range: bytes=0-9,20-29,40-49\r\n" +
+        "\r\n");
         start = response.indexOf("--jetty");
         body = response.substring(start);
         boundary = body.substring(0, body.indexOf("\r\n"));
@@ -586,13 +579,11 @@ public class DefaultServletTest
         assertResponseContains("Content-Length: " + body.length(), response);
         assertTrue(body.endsWith(boundary + "--\r\n"));
 
-
-
-        response = connector.getResponses("GET /context/nofilesuffix HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n"+    
-                "Range: bytes=0-9,20-29,40-49,60-60,70-79\r\n" +
-                "\r\n");
+        response = connector.getResponses(
+                                          "GET /context/nofilesuffix HTTP/1.1\r\n" +
+                                          "Host: localhost\r\n" +
+                                          "Range: bytes=0-9,20-29,40-49,60-60,70-79\r\n" +
+        "\r\n");
         start = response.indexOf("--jetty");
         body = response.substring(start);
         boundary = body.substring(0, body.indexOf("\r\n"));
@@ -604,6 +595,7 @@ public class DefaultServletTest
         assertResponseContains("Content-Range: bytes 70-79/80", response);
         assertResponseContains("Content-Length: " + body.length(), response);
         assertTrue(body.endsWith(boundary + "--\r\n"));
+
     }
 
 
@@ -627,12 +619,12 @@ public class DefaultServletTest
         defholder.setInitParameter("gzip", "false");
         defholder.setInitParameter("resourceBase", resBasePath);
 
-        String response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\n\r\n");
+        String response = connector.getResponses("GET /context/data0.txt HTTP/1.1\r\nHost:localhost:8080\r\n\r\n");
         assertResponseContains("Content-Length: 12", response);
         assertResponseNotContains("Extra Info", response);
 
-        context.addFilter(OutputFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST));
-        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\n\r\n");
+        context.addFilter(OutputFilter.class, "/*", 0);
+        response = connector.getResponses("GET /context/data0.txt HTTP/1.1\r\nHost:localhost:8080\r\n\r\n");
         assertResponseContains("Content-Length: 2", response); // 20 something long
         assertResponseContains("Extra Info", response);
         assertResponseNotContains("Content-Length: 12", response);
@@ -640,8 +632,8 @@ public class DefaultServletTest
         context.getServletHandler().setFilterMappings(new FilterMapping[]{});
         context.getServletHandler().setFilters(new FilterHolder[]{});
 
-        context.addFilter(WriterFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST));
-        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\n\r\n");
+        context.addFilter(WriterFilter.class, "/*", 0);
+        response = connector.getResponses("GET /context/data0.txt HTTP/1.1\r\nHost:localhost:8080\r\n\r\n");
         assertResponseContains("Content-Length: 2", response); // 20 something long
         assertResponseContains("Extra Info", response);
         assertResponseNotContains("Content-Length: 12", response);
@@ -668,13 +660,13 @@ public class DefaultServletTest
         defholder.setInitParameter("gzip", "true");
         defholder.setInitParameter("resourceBase", resBasePath);
 
-        String response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\n\r\n");
+        String response = connector.getResponses("GET /context/data0.txt HTTP/1.1\r\nHost:localhost:8080\r\n\r\n");
         assertResponseContains("Content-Length: 12", response);
         assertResponseContains("Hello Text 0",response);
         assertResponseContains("Vary: Accept-Encoding",response);
         assertResponseNotContains("Content-Encoding: gzip",response);
         
-        response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\n\r\n");
+        response = connector.getResponses("GET /context/data0.txt HTTP/1.1\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\n\r\n");
         assertResponseContains("Content-Length: 9", response);
         assertResponseContains("fake gzip",response);
         assertResponseContains("Vary: Accept-Encoding",response);
@@ -802,19 +794,16 @@ public class DefaultServletTest
     
     public static class OutputFilter implements Filter
     {
-        @Override
         public void init(FilterConfig filterConfig) throws ServletException
         {
         }
 
-        @Override
         public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
         {
             response.getOutputStream().println("Extra Info");
             chain.doFilter(request, response);
         }
 
-        @Override
         public void destroy()
         {
         }
@@ -822,19 +811,16 @@ public class DefaultServletTest
 
     public static class WriterFilter implements Filter
     {
-        @Override
         public void init(FilterConfig filterConfig) throws ServletException
         {
         }
 
-        @Override
         public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
         {
             response.getWriter().println("Extra Info");
             chain.doFilter(request, response);
         }
 
-        @Override
         public void destroy()
         {
         }
@@ -857,7 +843,17 @@ public class DefaultServletTest
 
     private void assertResponseNotContains(String forbidden, String response)
     {
-        Assert.assertThat(response,Matchers.not(Matchers.containsString(forbidden)));
+        int idx = response.indexOf(forbidden);
+        if (idx != (-1))
+        {
+            // Found (when should not have)
+            StringBuffer err = new StringBuffer();
+            err.append("Response contain forbidden string \"").append(forbidden).append("\"");
+            err.append("\n").append(response);
+
+            System.err.println(err);
+            throw new AssertionFailedError(err.toString());
+        }
     }
 
     private int assertResponseContains(String expected, String response)

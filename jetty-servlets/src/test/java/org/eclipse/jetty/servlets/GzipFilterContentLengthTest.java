@@ -25,9 +25,8 @@ import java.util.List;
 import javax.servlet.Servlet;
 
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.http.gzip.CompressedResponseWrapper;
 import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlets.gzip.CompressedResponseWrapper;
 import org.eclipse.jetty.servlets.gzip.GzipTester;
 import org.eclipse.jetty.servlets.gzip.TestServletLengthStreamTypeWrite;
 import org.eclipse.jetty.servlets.gzip.TestServletLengthTypeStreamWrite;
@@ -36,6 +35,7 @@ import org.eclipse.jetty.servlets.gzip.TestServletStreamLengthTypeWriteWithFlush
 import org.eclipse.jetty.servlets.gzip.TestServletStreamTypeLengthWrite;
 import org.eclipse.jetty.servlets.gzip.TestServletTypeLengthStreamWrite;
 import org.eclipse.jetty.servlets.gzip.TestServletTypeStreamLengthWrite;
+import org.eclipse.jetty.testing.HttpTester;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
@@ -77,14 +77,14 @@ public class GzipFilterContentLengthTest
         { TestServletStreamLengthTypeWriteWithFlush.class, GzipFilter.GZIP },
         { TestServletStreamTypeLengthWrite.class, GzipFilter.GZIP },
         { TestServletTypeLengthStreamWrite.class, GzipFilter.GZIP },
-        { TestServletTypeStreamLengthWrite.class, GzipFilter.GZIP },
+        { TestServletTypeStreamLengthWrite.class, GzipFilter.GZIP }, 
         { TestServletLengthStreamTypeWrite.class, GzipFilter.DEFLATE },
         { TestServletLengthTypeStreamWrite.class, GzipFilter.DEFLATE },
         { TestServletStreamLengthTypeWrite.class, GzipFilter.DEFLATE },
         { TestServletStreamLengthTypeWriteWithFlush.class, GzipFilter.DEFLATE },
         { TestServletStreamTypeLengthWrite.class, GzipFilter.DEFLATE },
         { TestServletTypeLengthStreamWrite.class, GzipFilter.DEFLATE },
-        { TestServletTypeStreamLengthWrite.class, GzipFilter.DEFLATE }
+        { TestServletTypeStreamLengthWrite.class, GzipFilter.DEFLATE } 
         });
     }
 
@@ -92,7 +92,7 @@ public class GzipFilterContentLengthTest
     private static final int MEDIUM = CompressedResponseWrapper.DEFAULT_BUFFER_SIZE;
     private static final int SMALL = CompressedResponseWrapper.DEFAULT_BUFFER_SIZE / 4;
     private static final int TINY = CompressedResponseWrapper.DEFAULT_MIN_COMPRESS_SIZE/ 2;
-
+    
     private String compressionType;
 
     public GzipFilterContentLengthTest(Class<? extends Servlet> testServlet, String compressionType)
@@ -100,7 +100,7 @@ public class GzipFilterContentLengthTest
         this.testServlet = testServlet;
         this.compressionType = compressionType;
     }
-
+    
     @Rule
     public TestingDir testingdir = new TestingDir();
 
@@ -138,8 +138,8 @@ public class GzipFilterContentLengthTest
         try
         {
             tester.start();
-            HttpTester.Response response = tester.assertIsResponseNotGzipCompressed("GET",testfile.getName(),filesize,HttpStatus.OK_200);
-            Assert.assertThat(response.get("ETAG"),Matchers.startsWith("W/etag-"));
+            HttpTester response = tester.assertIsResponseNotGzipCompressed("GET",testfile.getName(),filesize,HttpStatus.OK_200);
+            Assert.assertThat(response.getHeader("ETAG"),Matchers.startsWith("W/etag-"));
         }
         finally
         {

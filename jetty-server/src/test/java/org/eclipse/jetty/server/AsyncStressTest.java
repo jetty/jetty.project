@@ -28,17 +28,14 @@ import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import javax.servlet.AsyncContext;
-import javax.servlet.AsyncEvent;
-import javax.servlet.AsyncListener;
-import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.continuation.Continuation;
+import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
-import org.eclipse.jetty.toolchain.test.AdvancedRunner;
-import org.eclipse.jetty.toolchain.test.annotation.Stress;
+import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.toolchain.test.PropertyFlag;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
@@ -47,20 +44,18 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
-@RunWith(AdvancedRunner.class)
 public class AsyncStressTest
 {
     private static final Logger LOG = Log.getLogger(AsyncStressTest.class);
 
-    protected QueuedThreadPool _threads=new QueuedThreadPool();
-    protected Server _server = new Server(_threads);
+    protected Server _server = new Server();
     protected SuspendHandler _handler = new SuspendHandler();
-    protected ServerConnector _connector;
+    protected SelectChannelConnector _connector;
     protected InetAddress _addr;
     protected int _port;
     protected Random _random = new Random();
+    protected QueuedThreadPool _threads=new QueuedThreadPool();
     private final static String[][] __paths =
     {
         {"/path","NORMAL"},
@@ -74,10 +69,10 @@ public class AsyncStressTest
     @Before
     public void init() throws Exception
     {
-        _server.manage(_threads);
         _threads.setMaxThreads(50);
-        _connector = new ServerConnector(_server);
-        _connector.setIdleTimeout(120000);
+        _server.setThreadPool(_threads);
+        _connector = new SelectChannelConnector();
+        _connector.setMaxIdleTime(120000);
         _server.setConnectors(new Connector[]{ _connector });
         _server.setHandler(_handler);
         _server.start();
@@ -93,7 +88,6 @@ public class AsyncStressTest
     }
 
     @Test
-    @Stress("High connection count")
     public void testAsync() throws Throwable
     {
         if (PropertyFlag.isEnabled("test.stress"))
@@ -232,9 +226,10 @@ public class AsyncStressTest
                 if (suspend_for>=0)
                 {
                     final AsyncContext asyncContext = baseRequest.startAsync();
-                    asyncContext.addListener(__asyncListener);
+                    asyncContext.addContinuationListener(__asyncListener);
                     if (suspend_for>0)
                         asyncContext.setTimeout(suspend_for);
+
                     if (complete_after>0)
                     {
                         TimerTask complete = new TimerTask()
@@ -255,7 +250,7 @@ public class AsyncStressTest
                                     System.err.println("\n"+e.toString());
                                     System.err.println(baseRequest+"=="+br);
                                     System.err.println(uri+"=="+br.getUri());
-                                    System.err.println(asyncContext+"=="+br.getHttpChannelState());
+                                    System.err.println(asyncContext+"=="+br.getAsyncContinuation());
 
                                     LOG.warn(e);
                                     System.exit(1);
@@ -332,29 +327,16 @@ public class AsyncStressTest
     }
 
 
-    private static AsyncListener __asyncListener = new AsyncListener()
+    private static ContinuationListener __asyncListener = new ContinuationListener()
     {
-        @Override
-        public void onComplete(AsyncEvent event) throws IOException
+        public void onComplete(Continuation continuation)
         {
         }
 
-        @Override
-        public void onTimeout(AsyncEvent event) throws IOException
+        public void onTimeout(Continuation continuation)
         {
-            event.getSuppliedRequest().setAttribute("TIMEOUT",Boolean.TRUE);
-            event.getSuppliedRequest().getAsyncContext().dispatch();
-        }
-
-        @Override
-        public void onError(AsyncEvent event) throws IOException
-        {
-
-        }
-
-        @Override
-        public void onStartAsync(AsyncEvent event) throws IOException
-        {
+            continuation.setAttribute("TIMEOUT",Boolean.TRUE);
+            continuation.resume();
         }
     };
 }

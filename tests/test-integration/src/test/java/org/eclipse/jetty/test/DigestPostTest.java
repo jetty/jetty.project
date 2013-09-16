@@ -18,37 +18,33 @@
 
 package org.eclipse.jetty.test;
 
+import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.Socket;
-import java.net.URI;
 import java.security.MessageDigest;
 import java.util.Collections;
-import java.util.concurrent.TimeUnit;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.AuthenticationStore;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.util.BytesContentProvider;
-import org.eclipse.jetty.client.util.DigestAuthentication;
-import org.eclipse.jetty.client.util.StringContentProvider;
-import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.client.security.Realm;
+import org.eclipse.jetty.client.security.SimpleRealmResolver;
+import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.security.authentication.DigestAuthenticator;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
@@ -84,7 +80,8 @@ public class DigestPostTest
         try
         {
             _server = new Server();
-            _server.setConnectors(new Connector[] { new ServerConnector(_server) });
+            _server.setConnectors(new Connector[]
+            { new SelectChannelConnector() });
 
             ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SECURITY);
             context.setContextPath("/test");
@@ -128,13 +125,13 @@ public class DigestPostTest
     @Test
     public void testServerDirectlyHTTP10() throws Exception
     {
-        Socket socket = new Socket("127.0.0.1",((NetworkConnector)_server.getConnectors()[0]).getLocalPort());
+        Socket socket = new Socket("127.0.0.1",_server.getConnectors()[0].getLocalPort());
         byte[] bytes = __message.getBytes("UTF-8");
 
         _received=null;
         socket.getOutputStream().write(
                 ("POST /test/ HTTP/1.0\r\n"+
-                "Host: 127.0.0.1:"+((NetworkConnector)_server.getConnectors()[0]).getLocalPort()+"\r\n"+
+                "Host: 127.0.0.1:"+_server.getConnectors()[0].getLocalPort()+"\r\n"+
                 "Content-Length: "+bytes.length+"\r\n"+
                 "\r\n").getBytes("UTF-8"));
         socket.getOutputStream().write(bytes);
@@ -155,12 +152,12 @@ public class DigestPostTest
         "\" qop=auth nc="+NC+" cnonce=\""+cnonce+"\"";
               
         
-        socket = new Socket("127.0.0.1",((NetworkConnector)_server.getConnectors()[0]).getLocalPort());
+        socket = new Socket("127.0.0.1",_server.getConnectors()[0].getLocalPort());
 
         _received=null;
         socket.getOutputStream().write(
                 ("POST /test/ HTTP/1.0\r\n"+
-                "Host: 127.0.0.1:"+((NetworkConnector)_server.getConnectors()[0]).getLocalPort()+"\r\n"+
+                "Host: 127.0.0.1:"+_server.getConnectors()[0].getLocalPort()+"\r\n"+
                 "Content-Length: "+bytes.length+"\r\n"+
                 "Authorization: "+digest+"\r\n"+
                 "\r\n").getBytes("UTF-8"));
@@ -176,13 +173,13 @@ public class DigestPostTest
     @Test
     public void testServerDirectlyHTTP11() throws Exception
     {
-        Socket socket = new Socket("127.0.0.1",((NetworkConnector)_server.getConnectors()[0]).getLocalPort());
+        Socket socket = new Socket("127.0.0.1",_server.getConnectors()[0].getLocalPort());
         byte[] bytes = __message.getBytes("UTF-8");
 
         _received=null;
         socket.getOutputStream().write(
                 ("POST /test/ HTTP/1.1\r\n"+
-                "Host: 127.0.0.1:"+((NetworkConnector)_server.getConnectors()[0]).getLocalPort()+"\r\n"+
+                "Host: 127.0.0.1:"+_server.getConnectors()[0].getLocalPort()+"\r\n"+
                 "Content-Length: "+bytes.length+"\r\n"+
                 "\r\n").getBytes("UTF-8"));
         socket.getOutputStream().write(bytes);
@@ -209,7 +206,7 @@ public class DigestPostTest
         _received=null;
         socket.getOutputStream().write(
                 ("POST /test/ HTTP/1.0\r\n"+
-                "Host: 127.0.0.1:"+((NetworkConnector)_server.getConnectors()[0]).getLocalPort()+"\r\n"+
+                "Host: 127.0.0.1:"+_server.getConnectors()[0].getLocalPort()+"\r\n"+
                 "Content-Length: "+bytes.length+"\r\n"+
                 "Authorization: "+digest+"\r\n"+
                 "\r\n").getBytes("UTF-8"));
@@ -225,61 +222,67 @@ public class DigestPostTest
     @Test
     public void testServerWithHttpClientStringContent() throws Exception
     {
-        String srvUrl = "http://127.0.0.1:" + ((NetworkConnector)_server.getConnectors()[0]).getLocalPort() + "/test/";        
         HttpClient client = new HttpClient();
+        client.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
+        client.setRealmResolver(new SimpleRealmResolver(new TestRealm()));
+        client.start();
 
-        try
-        {
-            AuthenticationStore authStore = client.getAuthenticationStore();
-            authStore.addAuthentication(new DigestAuthentication(new URI(srvUrl), "test", "testuser", "password"));
-            client.start();
+        String srvUrl = "http://127.0.0.1:" + _server.getConnectors()[0].getLocalPort() + "/test/";
 
-            Request request = client.newRequest(srvUrl);
-            request.method(HttpMethod.POST);
-            request.content(new BytesContentProvider(__message.getBytes("UTF8")));
-            _received=null;
-            request = request.timeout(5, TimeUnit.SECONDS);
-            ContentResponse response = request.send();
-            Assert.assertEquals(__message,_received);
-            Assert.assertEquals(200,response.getStatus());
-        }
-        finally
-        {
-            client.stop();
-        }
+        ContentExchange ex = new ContentExchange();
+        ex.setMethod(HttpMethods.POST);
+        ex.setURL(srvUrl);
+        ex.setRequestContent(new ByteArrayBuffer(__message,"UTF-8"));
+
+        _received=null;
+        client.send(ex);
+        ex.waitForDone();
+
+        Assert.assertEquals(__message,_received);
+        Assert.assertEquals(200,ex.getResponseStatus());
     }
-
+    
     @Test
     public void testServerWithHttpClientStreamContent() throws Exception
     {
-        String srvUrl = "http://127.0.0.1:" + ((NetworkConnector)_server.getConnectors()[0]).getLocalPort() + "/test/";       
         HttpClient client = new HttpClient();
-        try
-        {
-            AuthenticationStore authStore = client.getAuthenticationStore();
-            authStore.addAuthentication(new DigestAuthentication(new URI(srvUrl), "test", "testuser", "password"));   
-            client.start();
+        client.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
+        client.setRealmResolver(new SimpleRealmResolver(new TestRealm()));
+        client.start();
 
-            String sent = IO.toString(new FileInputStream("src/test/resources/message.txt"));
-            
-            Request request = client.newRequest(srvUrl);
-            request.method(HttpMethod.POST);
-            request.content(new StringContentProvider(sent));
-            _received=null;
-            request = request.timeout(5, TimeUnit.SECONDS);
-            ContentResponse response = request.send();
-           
-            Assert.assertEquals(200,response.getStatus());
-            Assert.assertEquals(sent,_received);
+        String srvUrl = "http://127.0.0.1:" + _server.getConnectors()[0].getLocalPort() + "/test/";
 
-        }
-        finally
-        {
-            client.stop();
-        }
+        ContentExchange ex = new ContentExchange();
+        ex.setMethod(HttpMethods.POST);
+        ex.setURL(srvUrl);
+        ex.setRequestContentSource(new BufferedInputStream(new FileInputStream("src/test/resources/message.txt")));
+
+        _received=null;
+        client.send(ex);
+        ex.waitForDone();
+
+        String sent = IO.toString(new FileInputStream("src/test/resources/message.txt"));
+        Assert.assertEquals(sent,_received);
+        Assert.assertEquals(200,ex.getResponseStatus());
     }
 
- 
+    public static class TestRealm implements Realm
+    {
+        public String getPrincipal()
+        {
+            return "testuser";
+        }
+
+        public String getId()
+        {
+            return "test";
+        }
+
+        public String getCredentials()
+        {
+            return "password";
+        }
+    }
 
     public static class PostServlet extends HttpServlet
     {

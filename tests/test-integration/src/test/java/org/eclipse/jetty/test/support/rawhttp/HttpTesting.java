@@ -18,25 +18,19 @@
 
 package org.eclipse.jetty.test.support.rawhttp;
 
-import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.StringReader;
 import java.io.StringWriter;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.http.HttpTester;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.test.support.StringUtil;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.StringUtil;
 
 /**
  * Testing utility for performing RAW HTTP request/response.
@@ -48,102 +42,6 @@ public class HttpTesting
     private InetAddress serverHost;
     private int serverPort;
     private int timeoutMillis = 5000;
-    
-    
-    public static List<HttpTester.Response> getParts (String boundary, HttpTester.Response response) throws IOException
-    {
-        List<HttpTester.Response> parts = new ArrayList<HttpTester.Response>();
-
-        BufferedReader buf = new BufferedReader(new StringReader(response.getContent()));
-        String line;
-        String startBoundary = "--" + boundary;
-        String endBoundary = "--" + boundary + "--";
-      
-        StringBuffer partBuff = null;
-        boolean parsingHeader = true;
-        boolean previousBodyLine = false;
-
-        while ((line = buf.readLine()) != null)
-        {
-            if (line.equals(startBoundary))
-            {
-                // end of multipart, start a new one.
-                if (partBuff != null)
-                {
-                    HttpTester.Response part = HttpTester.parseResponse(partBuff.toString());
-                    parts.add(part);
-                }
-                partBuff = new StringBuffer();
-                parsingHeader = true;
-                previousBodyLine = false;
-                continue;
-            }
-
-            if (line.equals(endBoundary))
-            {
-                if (partBuff != null)
-                {
-                    HttpTester.Response part = HttpTester.parseResponse(partBuff.toString());
-                    parts.add(part);
-                }
-                break;
-            }
-
-            if (parsingHeader)
-            {
-                if (line.equals(""))
-                {
-                    parsingHeader = false;
-                    continue;
-                }
-
-                partBuff.append(line);
-            }
-            else
-            {
-                if (previousBodyLine)
-                {
-                    partBuff.append("\n");
-                }
-                partBuff.append(line);
-                previousBodyLine = true;
-            }
-        }
-
-        return parts;
-
-    }
-
-
-
-    public static List<HttpTester.Response> readResponses(ByteBuffer buffer) throws IOException
-    {
-        List<HttpTester.Response> list = new ArrayList<>();
-
-        while(BufferUtil.hasContent(buffer))
-        {
-            HttpTester.Response response = HttpTester.parseResponse(buffer);
-            if (response == null)
-                break;
-            list.add(HttpTester.parseResponse(buffer));
-        }
-        return list;
-    }
-    
-    public static List<HttpTester.Response> readResponses(String string) throws IOException
-    {
-        List<HttpTester.Response> list = new ArrayList<>();
-
-        ByteBuffer buffer = BufferUtil.toBuffer(string);
-        while(BufferUtil.hasContent(buffer))
-        {
-            HttpTester.Response response = HttpTester.parseResponse(buffer);
-            if (response == null)
-                break;
-            list.add(response);
-        }
-        return list;
-    }
 
     public HttpTesting(HttpSocket httpSocket, InetAddress host, int port)
     {
@@ -217,25 +115,11 @@ public class HttpTesting
      * @return the response object
      * @throws IOException
      */
-    public HttpTester.Response read(Socket sock) throws IOException
+    public HttpResponseTester read(Socket sock) throws IOException
     {
-       return HttpTester.parseResponse(readRaw(sock));
-    }
-
-    
-    public  List<HttpTester.Response> readResponses(Socket sock) throws IOException
-    {
-       List<HttpTester.Response> list = new ArrayList<>();
-       String r = readRaw(sock);
-       ByteBuffer buffer = BufferUtil.toBuffer(r);
-       while(BufferUtil.hasContent(buffer))
-       {
-           HttpTester.Response response = HttpTester.parseResponse(buffer);
-           if (response == null)
-               break;
-           list.add(response);
-       }
-       return list;
+        HttpResponseTester response = new HttpResponseTester();
+        response.parse(readRaw(sock));
+        return response;
     }
 
     /**
@@ -246,15 +130,16 @@ public class HttpTesting
      * @return the response object
      * @throws IOException
      */
-    public HttpTester.Response readAvailable(Socket sock) throws IOException
+    public HttpResponseTester readAvailable(Socket sock) throws IOException
     {
-        
+        HttpResponseTester response = new HttpResponseTester();
         String rawResponse = readRawAvailable(sock);
         if (StringUtil.isBlank(rawResponse))
         {
             return null;
         }
-        return HttpTester.parseResponse(rawResponse);
+        response.parse(rawResponse);
+        return response;
     }
 
     /**
@@ -314,7 +199,7 @@ public class HttpTesting
      * @return the response
      * @throws IOException
      */
-    public HttpTester.Response request(CharSequence rawRequest) throws IOException
+    public HttpResponseTester request(CharSequence rawRequest) throws IOException
     {
         Socket sock = open();
         try
@@ -338,10 +223,10 @@ public class HttpTesting
      * @return the response
      * @throws IOException
      */
-    public HttpTester.Response request(HttpTester.Request request) throws IOException
+    public HttpResponseTester request(HttpRequestTester request) throws IOException
     {
-        ByteBuffer byteBuff = request.generate();
-        return request(BufferUtil.toString(byteBuff));
+        String rawRequest = request.generate();
+        return request(rawRequest);
     }
 
     /**
@@ -352,7 +237,7 @@ public class HttpTesting
      * @return the responses.
      * @throws IOException
      */
-   public List<HttpTester.Response> requests(CharSequence rawRequests) throws IOException
+    public List<HttpResponseTester> requests(CharSequence rawRequests) throws IOException
     {
         Socket sock = open();
         try
@@ -362,7 +247,7 @@ public class HttpTesting
             // Collect response
             String rawResponses = IO.toString(sock.getInputStream());
             DEBUG("--raw-response--\n" + rawResponses);
-            return readResponses(rawResponses);
+            return HttpResponseTester.parseMulti(rawResponses);
         }
         finally
         {
@@ -370,6 +255,24 @@ public class HttpTesting
         }
     }
 
+    /**
+     * Initiate a multiple HTTP requests, parse the responses
+     * 
+     * @param requests
+     *            the request objects.
+     * @return the response objects.
+     * @throws IOException
+     */
+    public List<HttpResponseTester> requests(List<HttpRequestTester> requests) throws IOException
+    {
+        StringBuffer rawRequest = new StringBuffer();
+        for (HttpRequestTester request : requests)
+        {
+            rawRequest.append(request.generate());
+        }
+
+        return requests(rawRequest);
+    }
 
     /**
      * Send a data (as request) to open socket.

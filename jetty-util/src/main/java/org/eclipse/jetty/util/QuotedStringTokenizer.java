@@ -334,44 +334,12 @@ public class QuotedStringTokenizer
 
     /* ------------------------------------------------------------ */
     /** Quote a string into an Appendable.
-     * Only quotes and backslash are escaped.
-     * @param buffer The Appendable
-     * @param input The String to quote.
-     */
-    public static void quoteOnly(Appendable buffer, String input)
-    {
-        if(input==null)
-            return;
-
-        try
-        {
-            buffer.append('"');
-            for (int i = 0; i < input.length(); ++i)
-            {
-                char c = input.charAt(i);
-                if (c == '"' || c == '\\')
-                    buffer.append('\\');
-                buffer.append(c);
-            }
-            buffer.append('"');
-        }
-        catch (IOException x)
-        {
-            throw new RuntimeException(x);
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Quote a string into an Appendable.
      * The characters ", \, \n, \r, \t, \f and \b are escaped
      * @param buffer The Appendable
      * @param input The String to quote.
      */
     public static void quote(Appendable buffer, String input)
     {
-        if(input==null)
-            return;
-
         try
         {
             buffer.append('"');
@@ -409,14 +377,46 @@ public class QuotedStringTokenizer
         }
     }
 
+    /* ------------------------------------------------------------ */
+    /** Quote a string into a StringBuffer only if needed.
+     * Quotes are forced if any delim characters are present.
+     *
+     * @param buf The StringBuffer
+     * @param s The String to quote.
+     * @param delim String of characters that must be quoted.
+     * @return true if quoted;
+     */
+    public static boolean quoteIfNeeded(Appendable buf, String s,String delim)
+    {
+        for (int i=0;i<s.length();i++)
+        {
+            char c = s.charAt(i);
+            if (delim.indexOf(c)>=0)
+            {
+            	quote(buf,s);
+            	return true;
+            }
+        }
 
+        try
+        {
+            buf.append(s);
+            return false;
+        }
+        catch(IOException e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+    
+    
     /* ------------------------------------------------------------ */
     public static String unquoteOnly(String s)
     {
         return unquoteOnly(s, false);
     }
-
-
+    
+    
     /* ------------------------------------------------------------ */
     /** Unquote a string, NOT converting unicode sequences
      * @param s The string to unquote.
@@ -460,15 +460,15 @@ public class QuotedStringTokenizer
             }
         }
 
-        return b.toString();
+        return b.toString(); 
     }
-
+    
     /* ------------------------------------------------------------ */
     public static String unquote(String s)
     {
         return unquote(s,false);
     }
-
+    
     /* ------------------------------------------------------------ */
     /** Unquote a string.
      * @param s The string to unquote.
@@ -550,8 +550,8 @@ public class QuotedStringTokenizer
 
         return b.toString();
     }
-
-
+    
+    
     /* ------------------------------------------------------------ */
     /** Check that char c (which is preceded by a backslash) is a valid
      * escape sequence.
@@ -560,15 +560,9 @@ public class QuotedStringTokenizer
      */
     private static boolean isValidEscaping(char c)
     {
-        return ((c == 'n') || (c == 'r') || (c == 't') ||
-                 (c == 'f') || (c == 'b') || (c == '\\') ||
+        return ((c == 'n') || (c == 'r') || (c == 't') || 
+                 (c == 'f') || (c == 'b') || (c == '\\') || 
                  (c == '/') || (c == '"') || (c == 'u'));
-    }
-
-    /* ------------------------------------------------------------ */
-    public static boolean isQuoted(String s)
-    {
-        return s!=null && s.length()>0 && s.charAt(0)=='"' && s.charAt(s.length()-1)=='"';
     }
 
     /* ------------------------------------------------------------ */

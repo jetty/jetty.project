@@ -19,7 +19,6 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
-import java.util.List;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -32,7 +31,7 @@ import org.eclipse.jetty.server.Server;
 /* ------------------------------------------------------------ */
 /**
  * A <code>HandlerContainer</code> that allows a hot swap of a wrapped handler.
- *
+ * 
  */
 public class HotSwapHandler extends AbstractHandlerContainer
 {
@@ -40,7 +39,7 @@ public class HotSwapHandler extends AbstractHandlerContainer
 
     /* ------------------------------------------------------------ */
     /**
-     *
+     * 
      */
     public HotSwapHandler()
     {
@@ -59,7 +58,6 @@ public class HotSwapHandler extends AbstractHandlerContainer
     /**
      * @return Returns the handlers.
      */
-    @Override
     public Handler[] getHandlers()
     {
         return new Handler[]
@@ -77,10 +75,20 @@ public class HotSwapHandler extends AbstractHandlerContainer
             throw new IllegalArgumentException("Parameter handler is null.");
         try
         {
-            updateBean(_handler,handler);
-            _handler=handler;
+            Handler old_handler = _handler;
+            _handler = handler;
             Server server = getServer();
             handler.setServer(server);
+            addBean(handler);
+
+            if (server != null)
+                server.getContainer().update(this,old_handler,handler,"handler");
+
+            // if there is an old handler and it was started, stop it
+            if (old_handler != null)
+            {
+                removeBean(old_handler);
+            }
 
         }
         catch (Exception e)
@@ -113,7 +121,6 @@ public class HotSwapHandler extends AbstractHandlerContainer
     /*
      * @see org.eclipse.jetty.server.server.EventHandler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
      */
-    @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         if (_handler != null && isStarted())
@@ -126,6 +133,10 @@ public class HotSwapHandler extends AbstractHandlerContainer
     @Override
     public void setServer(Server server)
     {
+        Server old_server = getServer();
+        if (server == old_server)
+            return;
+
         if (isRunning())
             throw new IllegalStateException(RUNNING);
 
@@ -134,13 +145,18 @@ public class HotSwapHandler extends AbstractHandlerContainer
         Handler h = getHandler();
         if (h != null)
             h.setServer(server);
+
+        if (server != null && server != old_server)
+            server.getContainer().update(this,null,_handler,"handler");
     }
 
     /* ------------------------------------------------------------ */
+    @SuppressWarnings(
+    { "rawtypes", "unchecked" })
     @Override
-    protected void expandChildren(List<Handler> list, Class<?> byClass)
+    protected Object expandChildren(Object list, Class byClass)
     {
-        expandHandler(_handler,list,byClass);
+        return expandHandler(_handler,list,byClass);
     }
 
     /* ------------------------------------------------------------ */

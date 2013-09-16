@@ -31,9 +31,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.ConnectorStatistics;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -41,11 +39,6 @@ import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-/**
- * StatisticsServlet
- *
- *
- */
 public class StatisticsServlet extends HttpServlet
 {
     private static final Logger LOG = Log.getLogger(StatisticsServlet.class);
@@ -55,11 +48,6 @@ public class StatisticsServlet extends HttpServlet
     private MemoryMXBean _memoryBean;
     private Connector[] _connectors;
 
-    
-    
-    /** 
-     * @see javax.servlet.GenericServlet#init()
-     */
     public void init() throws ServletException
     {
         ServletContext context = getServletContext();
@@ -85,23 +73,14 @@ public class StatisticsServlet extends HttpServlet
         {
             _restrictToLocalhost = "true".equals(getInitParameter("restrictToLocalhost"));
         }
+
     }
 
-    
-    
-    /** 
-     * @see javax.servlet.http.HttpServlet#doPost(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
-     */
     public void doPost(HttpServletRequest sreq, HttpServletResponse sres) throws ServletException, IOException
     {
         doGet(sreq, sres);
     }
 
-    
-    
-    /** 
-     * @see javax.servlet.http.HttpServlet#doGet(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
-     */
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
     {
         if (_statsHandler == null)
@@ -168,16 +147,14 @@ public class StatisticsServlet extends HttpServlet
         sb.append("    <dispatched>").append(_statsHandler.getDispatched()).append("</dispatched>\n");
         sb.append("    <dispatchedActive>").append(_statsHandler.getDispatchedActive()).append("</dispatchedActive>\n");
         sb.append("    <dispatchedActiveMax>").append(_statsHandler.getDispatchedActiveMax()).append("</dispatchedActiveMax>\n");
-        sb.append("    <dispatchedTimeTotalMs>").append(_statsHandler.getDispatchedTimeTotal()).append("</dispatchedTimeTotalMs>\n");
-        sb.append("    <dispatchedTimeMeanMs>").append(_statsHandler.getDispatchedTimeMean()).append("</dispatchedTimeMeanMs>\n");
-        sb.append("    <dispatchedTimeMaxMs>").append(_statsHandler.getDispatchedTimeMax()).append("</dispatchedTimeMaxMs>\n");
-        sb.append("    <dispatchedTimeStdDevMs>").append(_statsHandler.getDispatchedTimeStdDev()).append("</dispatchedTimeStdDevMs>\n");
- 
-        sb.append("    <asyncRequests>").append(_statsHandler.getAsyncRequests()).append("</asyncRequests>\n");
-        sb.append("    <requestsSuspended>").append(_statsHandler.getAsyncRequestsWaiting()).append("</requestsSuspended>\n");
-        sb.append("    <requestsSuspendedMax>").append(_statsHandler.getAsyncRequestsWaitingMax()).append("</requestsSuspendedMax>\n");
-        sb.append("    <requestsResumed>").append(_statsHandler.getAsyncDispatches()).append("</requestsResumed>\n");
+        sb.append("    <dispatchedTimeTotal>").append(_statsHandler.getDispatchedTimeTotal()).append("</dispatchedTimeTotal>\n");
+        sb.append("    <dispatchedTimeMean>").append(_statsHandler.getDispatchedTimeMean()).append("</dispatchedTimeMean>\n");
+        sb.append("    <dispatchedTimeMax>").append(_statsHandler.getDispatchedTimeMax()).append("</dispatchedTimeMax>\n");
+        sb.append("    <dispatchedTimeStdDev").append(_statsHandler.getDispatchedTimeStdDev()).append("</dispatchedTimeStdDev>\n");
+        
+        sb.append("    <requestsSuspended>").append(_statsHandler.getSuspends()).append("</requestsSuspended>\n");
         sb.append("    <requestsExpired>").append(_statsHandler.getExpires()).append("</requestsExpired>\n");
+        sb.append("    <requestsResumed>").append(_statsHandler.getResumes()).append("</requestsResumed>\n");
         sb.append("  </requests>\n");
 
         sb.append("  <responses>\n");
@@ -192,32 +169,23 @@ public class StatisticsServlet extends HttpServlet
         sb.append("  <connections>\n");
         for (Connector connector : _connectors)
         {
-            sb.append("    <connector>\n");
-            sb.append("      <name>").append(connector.getClass().getName()).append("@").append(connector.hashCode()).append("</name>\n");
-            sb.append("      <protocols>\n");
-            for (String protocol:connector.getProtocols())
-                sb.append("      <protocol>").append(protocol).append("</protocol>\n");
-            sb.append("      </protocols>\n");
-
-            ConnectorStatistics connectorStats = null;
-
-            if (connector instanceof AbstractConnector)
-                connectorStats = ((AbstractConnector)connector).getBean(ConnectorStatistics.class);
-            if (connectorStats == null)
-                sb.append("      <statsOn>false</statsOn>\n");
-            else
+        	sb.append("    <connector>\n");
+        	sb.append("      <name>").append(connector.getName()).append("</name>\n");
+        	sb.append("      <statsOn>").append(connector.getStatsOn()).append("</statsOn>\n");
+            if (connector.getStatsOn())
             {
-                sb.append("      <statsOn>true</statsOn>\n");
-                sb.append("      <connections>").append(connectorStats.getConnections()).append("</connections>\n");
-                sb.append("      <connectionsOpen>").append(connectorStats.getConnectionsOpen()).append("</connectionsOpen>\n");
-                sb.append("      <connectionsOpenMax>").append(connectorStats.getConnectionsOpenMax()).append("</connectionsOpenMax>\n");
-                sb.append("      <connectionsDurationTotal>").append(connectorStats.getConnectionsDurationTotal()).append("</connectionsDurationTotal>\n");
-                sb.append("      <connectionsDurationMean>").append(connectorStats.getConnectionsDurationMean()).append("</connectionsDurationMean>\n");
-                sb.append("      <connectionsDurationMax>").append(connectorStats.getConnectionsDurationMax()).append("</connectionsDurationMax>\n");
-                sb.append("      <connectionsDurationStdDev>").append(connectorStats.getConnectionsDurationStdDev()).append("</connectionsDurationStdDev>\n");
-                sb.append("      <messagesIn>").append(connectorStats.getMessagesIn()).append("</messagesIn>\n");
-                sb.append("      <messagesOut>").append(connectorStats.getMessagesIn()).append("</messagesOut>\n");
-                sb.append("      <elapsedMs>").append(connectorStats.getStartedMillis()).append("</elapsedMs>\n");
+            	sb.append("    <statsOnMs>").append(connector.getStatsOnMs()).append("</statsOnMs>\n");
+            	sb.append("    <connections>").append(connector.getConnections()).append("</connections>\n");
+            	sb.append("    <connectionsOpen>").append(connector.getConnectionsOpen()).append("</connectionsOpen>\n");
+            	sb.append("    <connectionsOpenMax>").append(connector.getConnectionsOpenMax()).append("</connectionsOpenMax>\n");
+            	sb.append("    <connectionsDurationTotal>").append(connector.getConnectionsDurationTotal()).append("</connectionsDurationTotal>\n");
+            	sb.append("    <connectionsDurationMean>").append(connector.getConnectionsDurationMean()).append("</connectionsDurationMean>\n");
+            	sb.append("    <connectionsDurationMax>").append(connector.getConnectionsDurationMax()).append("</connectionsDurationMax>\n");
+                sb.append("    <connectionsDurationStdDev>").append(connector.getConnectionsDurationStdDev()).append("</connectionsDurationStdDev>\n");
+                sb.append("    <requests>").append(connector.getRequests()).append("</requests>\n");
+                sb.append("    <connectionsRequestsMean>").append(connector.getConnectionsRequestsMean()).append("</connectionsRequestsMean>\n");
+                sb.append("    <connectionsRequestsMax>").append(connector.getConnectionsRequestsMax()).append("</connectionsRequestsMax>\n");
+                sb.append("    <connectionsRequestsStdDev>").append(connector.getConnectionsRequestsStdDev()).append("</connectionsRequestsStdDev>\n");
             }
             sb.append("    </connector>\n");
         }
@@ -227,7 +195,7 @@ public class StatisticsServlet extends HttpServlet
         sb.append("    <heapMemoryUsage>").append(_memoryBean.getHeapMemoryUsage().getUsed()).append("</heapMemoryUsage>\n");
         sb.append("    <nonHeapMemoryUsage>").append(_memoryBean.getNonHeapMemoryUsage().getUsed()).append("</nonHeapMemoryUsage>\n");
         sb.append("  </memory>\n");
-        
+
         sb.append("</statistics>\n");
 
         response.setContentType("text/xml");
@@ -235,12 +203,6 @@ public class StatisticsServlet extends HttpServlet
         pout.write(sb.toString());
     }
 
-    
-    
-    /**
-     * @param response
-     * @throws IOException
-     */
     private void sendTextResponse(HttpServletResponse response) throws IOException
     {
         StringBuilder sb = new StringBuilder();
@@ -249,29 +211,22 @@ public class StatisticsServlet extends HttpServlet
         sb.append("<h2>Connections:</h2>\n");
         for (Connector connector : _connectors)
         {
-            sb.append("<h3>").append(connector.getClass().getName()).append("@").append(connector.hashCode()).append("</h3>");
-            sb.append("Protocols:");
-            for (String protocol:connector.getProtocols())
-                sb.append(protocol).append("&nbsp;");
-            sb.append("    <br />\n");
+            sb.append("<h3>").append(connector.getName()).append("</h3>");
 
-            ConnectorStatistics connectorStats = null;
-
-            if (connector instanceof AbstractConnector)
-                connectorStats = ((AbstractConnector)connector).getBean(ConnectorStatistics.class);
-
-            if (connectorStats != null)
+            if (connector.getStatsOn())
             {
-                sb.append("Statistics gathering started ").append(connectorStats.getStartedMillis()).append("ms ago").append("<br />\n");
-                sb.append("Total connections: ").append(connectorStats.getConnections()).append("<br />\n");
-                sb.append("Current connections open: ").append(connectorStats.getConnectionsOpen()).append("<br />\n");;
-                sb.append("Max concurrent connections open: ").append(connectorStats.getConnectionsOpenMax()).append("<br />\n");
-                sb.append("Total connections duration: ").append(connectorStats.getConnectionsDurationTotal()).append("<br />\n");
-                sb.append("Mean connection duration: ").append(connectorStats.getConnectionsDurationMean()).append("<br />\n");
-                sb.append("Max connection duration: ").append(connectorStats.getConnectionsDurationMax()).append("<br />\n");
-                sb.append("Connection duration standard deviation: ").append(connectorStats.getConnectionsDurationStdDev()).append("<br />\n");
-                sb.append("Total messages in: ").append(connectorStats.getMessagesIn()).append("<br />\n");                
-                sb.append("Total messages out: ").append(connectorStats.getMessagesOut()).append("<br />\n");
+                sb.append("Statistics gathering started ").append(connector.getStatsOnMs()).append("ms ago").append("<br />\n");
+                sb.append("Total connections: ").append(connector.getConnections()).append("<br />\n");
+                sb.append("Current connections open: ").append(connector.getConnectionsOpen()).append("<br />\n");
+                sb.append("Max concurrent connections open: ").append(connector.getConnectionsOpenMax()).append("<br />\n");
+                sb.append("Total connections duration: ").append(connector.getConnectionsDurationTotal()).append("<br />\n");
+                sb.append("Mean connection duration: ").append(connector.getConnectionsDurationMean()).append("<br />\n");
+                sb.append("Max connection duration: ").append(connector.getConnectionsDurationMax()).append("<br />\n");
+                sb.append("Connection duration standard deviation: ").append(connector.getConnectionsDurationStdDev()).append("<br />\n");
+                sb.append("Total requests: ").append(connector.getRequests()).append("<br />\n");
+                sb.append("Mean requests per connection: ").append(connector.getConnectionsRequestsMean()).append("<br />\n");
+                sb.append("Max requests per connection: ").append(connector.getConnectionsRequestsMax()).append("<br />\n");
+                sb.append("Requests per connection standard deviation: ").append(connector.getConnectionsRequestsStdDev()).append("<br />\n");
             }
             else
             {

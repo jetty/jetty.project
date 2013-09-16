@@ -38,11 +38,7 @@ import org.eclipse.jetty.deploy.graph.Path;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.AttributesMap;
-import org.eclipse.jetty.util.annotation.ManagedAttribute;
-import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.annotation.ManagedOperation;
-import org.eclipse.jetty.util.annotation.Name;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -60,8 +56,7 @@ import org.eclipse.jetty.util.log.Logger;
  * <p>
  * <img src="doc-files/DeploymentManager.png">
  */
-@ManagedObject("Deployment Manager")
-public class DeploymentManager extends ContainerLifeCycle
+public class DeploymentManager extends AggregateLifeCycle
 {
     private static final Logger LOG = Log.getLogger(DeploymentManager.class);
 
@@ -134,7 +129,7 @@ public class DeploymentManager extends ContainerLifeCycle
      */
     public void addApp(App app)
     {
-        LOG.debug("Deployable added: {}",app.getOriginId());
+        LOG.info("Deployable added: " + app.getOriginId());
         AppEntry entry = new AppEntry();
         entry.app = app;
         entry.setLifeCycleNode(_lifecycle.getNodeByName("undeployed"));
@@ -150,7 +145,7 @@ public class DeploymentManager extends ContainerLifeCycle
     /* ------------------------------------------------------------ */
     /** Set the AppProviders.
      * The providers passed are added via {@link #addBean(Object)} so that 
-     * their lifecycles may be managed as a {@link ContainerLifeCycle}.
+     * their lifecycles may be managed as a {@link AggregateLifeCycle}.
      * @param providers
      */
     public void setAppProviders(Collection<AppProvider> providers)
@@ -165,7 +160,6 @@ public class DeploymentManager extends ContainerLifeCycle
                 addBean(provider);
     }
 
-    @ManagedAttribute("Application Providers")
     public Collection<AppProvider> getAppProviders()
     {
         return Collections.unmodifiableList(_providers);
@@ -175,7 +169,11 @@ public class DeploymentManager extends ContainerLifeCycle
     {
         if (isRunning())
             throw new IllegalStateException();
-        _providers.add(provider);
+        
+        List<AppProvider> old = new ArrayList<AppProvider>(_providers);
+        if (_providers.add(provider) && getServer()!=null)
+            getServer().getContainer().update(this, null, provider, "provider");
+            
         addBean(provider);        
     }
 
@@ -284,7 +282,6 @@ public class DeploymentManager extends ContainerLifeCycle
         return _apps;
     }
 
-    @ManagedAttribute("Deployed Apps")
     public Collection<App> getApps()
     {
         List<App> ret = new ArrayList<App>();
@@ -363,7 +360,6 @@ public class DeploymentManager extends ContainerLifeCycle
         return _contextAttributes;
     }
 
-    @ManagedAttribute("Deployed Contexts")
     public ContextHandlerCollection getContexts()
     {
         return _contexts;
@@ -405,7 +401,7 @@ public class DeploymentManager extends ContainerLifeCycle
                 if (! AppLifeCycle.UNDEPLOYED.equals(entry.lifecyleNode.getName()))
                     requestAppGoal(entry.app,AppLifeCycle.UNDEPLOYED);
                 it.remove();
-                LOG.debug("Deployable removed: {}",entry.app);
+                LOG.info("Deployable removed: " + entry.app);
             }
         }
     }
@@ -413,8 +409,11 @@ public class DeploymentManager extends ContainerLifeCycle
     public void removeAppProvider(AppProvider provider)
     {
         if(_providers.remove(provider))
+        {
             removeBean(provider);
-        
+            if (getServer()!=null)
+                getServer().getContainer().update(this, provider,null, "provider");
+        }
         try
         {
             provider.stop();
@@ -512,8 +511,7 @@ public class DeploymentManager extends ContainerLifeCycle
      * @param nodeName
      *            the name of the node to attain
      */
-    @ManagedOperation(value="request the app to be moved to the specified lifecycle node", impact="ACTION")
-    public void requestAppGoal(@Name("appId") String appId, @Name("nodeName") String nodeName)
+    public void requestAppGoal(String appId, String nodeName)
     {
         AppEntry appentry = findAppByOriginId(appId);
         if (appentry == null)
@@ -564,7 +562,7 @@ public class DeploymentManager extends ContainerLifeCycle
 
     public void undeployAll()
     {
-        LOG.debug("Undeploy All");
+        LOG.info("Undeploy All");
         for (AppEntry appentry : _apps)
         {
             requestAppGoal(appentry,"undeployed");
@@ -586,8 +584,7 @@ public class DeploymentManager extends ContainerLifeCycle
         return _lifecycle.getNodes();
     }
     
-    @ManagedOperation(value="list apps that are located at specified App LifeCycle nodes", impact="ACTION")
-    public Collection<App> getApps(@Name("nodeName") String nodeName)
+    public Collection<App> getApps(String nodeName)
     {
         return getApps(_lifecycle.getNodeByName(nodeName));
     }

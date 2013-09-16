@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
 
 <!-- =============================================================== -->
 <!-- Mixin the DebugHandler                                          -->
@@ -10,7 +10,7 @@
     <Get id="oldhandler" name="handler"/>
     <Set name="handler">
       <New id="DebugHandler" class="org.eclipse.jetty.server.handler.DebugHandler">
-        <Set name="handler"><Ref refid="oldhandler"/></Set>
+        <Set name="handler"><Ref id="oldhandler"/></Set>
 	<Set name="outputStream">
 	  <New class="org.eclipse.jetty.util.RolloverFileOutputStream">
 	    <Arg type="String"><Property name="jetty.logs" default="./logs"/>/yyyy_mm_dd.debug.log</Arg>

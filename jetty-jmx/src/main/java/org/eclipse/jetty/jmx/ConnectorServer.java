@@ -48,13 +48,13 @@ public class ConnectorServer extends AbstractLifeCycle
 
     JMXConnectorServer _connectorServer;
     Registry _registry;
-
+    
     /* ------------------------------------------------------------ */
     /**
      * Constructs connector server
-     *
+     * 
      * @param serviceURL the address of the new connector server.
-     * The actual address of the new connector server, as returned
+     * The actual address of the new connector server, as returned 
      * by its getAddress method, will not necessarily be exactly the same.
      * @param name object name string to be assigned to connector server bean
      * @throws Exception
@@ -64,18 +64,18 @@ public class ConnectorServer extends AbstractLifeCycle
     {
         this(serviceURL, null, name);
     }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * Constructs connector server
-     *
+     * 
      * @param svcUrl the address of the new connector server.
-     * The actual address of the new connector server, as returned
+     * The actual address of the new connector server, as returned 
      * by its getAddress method, will not necessarily be exactly the same.
      * @param environment  a set of attributes to control the new connector
      * server's behavior. This parameter can be null. Keys in this map must
      * be Strings. The appropriate type of each associated value depends on
-     * the attribute. The contents of environment are not changed by this call.
+     * the attribute. The contents of environment are not changed by this call. 
      * @param name object name string to be assigned to connector server bean
      * @throws Exception
      */
@@ -107,11 +107,11 @@ public class ConnectorServer extends AbstractLifeCycle
         throws Exception
     {
         _connectorServer.start();
-        ShutdownThread.register(0, this);
-
+        ShutdownThread.register(0, this);       
+        
         LOG.info("JMX Remote URL: {}", _connectorServer.getAddress().toString());
     }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStop()
@@ -127,7 +127,7 @@ public class ConnectorServer extends AbstractLifeCycle
 
     /**
      * Check that local RMI registry is used, and ensure it is started. If local RMI registry is being used and not started, start it.
-     *
+     * 
      * @param hostPath
      *            hostname and port number of RMI registry
      * @throws Exception
@@ -170,11 +170,11 @@ public class ConnectorServer extends AbstractLifeCycle
 
             _registry = LocateRegistry.createRegistry(rmiPort);
             Thread.sleep(1000);
-
+            
             rmiHost = InetAddress.getLocalHost().getCanonicalHostName();
             return rmiHost + ':' + Integer.toString(rmiPort);
         }
-
+        
         return null;
     }
 

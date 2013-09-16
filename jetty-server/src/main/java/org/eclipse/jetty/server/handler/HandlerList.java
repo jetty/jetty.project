@@ -30,7 +30,7 @@ import org.eclipse.jetty.server.Request;
 /* ------------------------------------------------------------ */
 /** HandlerList.
  * This extension of {@link HandlerCollection} will call
- * each contained handler in turn until either an exception is thrown, the response
+ * each contained handler in turn until either an exception is thrown, the response 
  * is committed or a positive response status is set.
  */
 public class HandlerList extends HandlerCollection
@@ -40,11 +40,11 @@ public class HandlerList extends HandlerCollection
      * @see Handler#handle(String, Request, HttpServletRequest, HttpServletResponse)
      */
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) 
         throws IOException, ServletException
     {
         Handler[] handlers = getHandlers();
-
+        
         if (handlers!=null && isStarted())
         {
             for (int i=0;i<handlers.length;i++)

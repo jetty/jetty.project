@@ -24,53 +24,42 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
 
-import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterConfig;
-import javax.servlet.FilterRegistration;
-import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 
+import org.eclipse.jetty.server.DispatcherType;
+import org.eclipse.jetty.servlet.api.FilterRegistration;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /* --------------------------------------------------------------------- */
-/**
- *
+/** 
+ * 
  */
 public class FilterHolder extends Holder<Filter>
 {
     private static final Logger LOG = Log.getLogger(FilterHolder.class);
-
+    
     /* ------------------------------------------------------------ */
     private transient Filter _filter;
     private transient Config _config;
     private transient FilterRegistration.Dynamic _registration;
-
+    
     /* ---------------------------------------------------------------- */
-    /** Constructor
+    /** Constructor 
      */
     public FilterHolder()
     {
-        this(Source.EMBEDDED);
-    }
-
-
+    }   
+ 
+    
     /* ---------------------------------------------------------------- */
-    /** Constructor
-     */
-    public FilterHolder(Holder.Source source)
-    {
-        super(source);
-    }
-
-    /* ---------------------------------------------------------------- */
-    /** Constructor
+    /** Constructor 
      */
     public FilterHolder(Class<? extends Filter> filter)
     {
-        this(Source.EMBEDDED);
         setHeldClass(filter);
     }
 
@@ -79,17 +68,16 @@ public class FilterHolder extends Holder<Filter>
      */
     public FilterHolder(Filter filter)
     {
-        this(Source.EMBEDDED);
         setFilter(filter);
     }
-
+    
     /* ------------------------------------------------------------ */
     @Override
     public void doStart()
         throws Exception
     {
         super.doStart();
-
+        
         if (!javax.servlet.Filter.class
             .isAssignableFrom(_class))
         {
@@ -97,27 +85,12 @@ public class FilterHolder extends Holder<Filter>
             super.stop();
             throw new IllegalStateException(msg);
         }
-    }
-    
-    
-    
 
-
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public void initialize() throws Exception
-    {
-        super.initialize();
-        
         if (_filter==null)
         {
             try
             {
-                ServletContext context=_servletHandler.getServletContext();
-                _filter=(context instanceof ServletContextHandler.Context)
-                    ?((ServletContextHandler.Context)context).createFilter(getHeldClass())
-                    :getHeldClass().newInstance();
+                _filter=((ServletContextHandler.Context)_servletHandler.getServletContext()).createFilter(getHeldClass());
             }
             catch (ServletException se)
             {
@@ -129,18 +102,16 @@ public class FilterHolder extends Holder<Filter>
                 throw se;
             }
         }
-
+        
         _config=new Config();
-        LOG.debug("Filter.init {}",_filter);
         _filter.init(_config);
     }
-
 
     /* ------------------------------------------------------------ */
     @Override
     public void doStop()
         throws Exception
-    {
+    {      
         if (_filter!=null)
         {
             try
@@ -154,9 +125,9 @@ public class FilterHolder extends Holder<Filter>
         }
         if (!_extInstance)
             _filter=null;
-
+        
         _config=null;
-        super.doStop();
+        super.doStop();   
     }
 
     /* ------------------------------------------------------------ */
@@ -180,7 +151,7 @@ public class FilterHolder extends Holder<Filter>
         if (getName()==null)
             setName(filter.getClass().getName());
     }
-
+    
     /* ------------------------------------------------------------ */
     public Filter getFilter()
     {
@@ -193,7 +164,7 @@ public class FilterHolder extends Holder<Filter>
     {
         return getName();
     }
-
+    
     /* ------------------------------------------------------------ */
     public FilterRegistration.Dynamic getRegistration()
     {
@@ -201,7 +172,7 @@ public class FilterHolder extends Holder<Filter>
             _registration = new Registration();
         return _registration;
     }
-
+    
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */

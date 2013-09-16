@@ -32,24 +32,24 @@ import org.eclipse.jetty.jndi.local.localContextRoot;
 import org.eclipse.jetty.util.log.Logger;
 
 
-/*------------------------------------------------*/
+/*------------------------------------------------*/    
 /**
  * InitialContextFactory.java
  *
  * Factory for the default InitialContext.
  * Created: Tue Jul  1 19:08:08 2003
  *
- *
+ * 
  * @version 1.0
  */
 public class InitialContextFactory implements javax.naming.spi.InitialContextFactory
 {
     private static Logger __log = NamingUtil.__log;
-
+    
     public static class DefaultParser implements NameParser
-    {
-        static Properties syntax = new Properties();
-        static
+    { 
+        static Properties syntax = new Properties();   
+        static 
         {
             syntax.put("jndi.syntax.direction", "left_to_right");
             syntax.put("jndi.syntax.separator", "/");
@@ -61,10 +61,10 @@ public class InitialContextFactory implements javax.naming.spi.InitialContextFac
             return new CompoundName (name, syntax);
         }
     };
+    
 
 
-
-    /*------------------------------------------------*/
+    /*------------------------------------------------*/    
     /**
      * Get Context that has access to default Namespace.
      * This method won't be called if a name URL beginning
@@ -74,7 +74,7 @@ public class InitialContextFactory implements javax.naming.spi.InitialContextFac
      * @param env a <code>Hashtable</code> value
      * @return a <code>Context</code> value
      */
-    public Context getInitialContext(Hashtable env)
+    public Context getInitialContext(Hashtable env) 
     {
         __log.debug("InitialContextFactory.getInitialContext()");
 
@@ -83,4 +83,4 @@ public class InitialContextFactory implements javax.naming.spi.InitialContextFac
 
         return ctx;
     }
-}
+} 

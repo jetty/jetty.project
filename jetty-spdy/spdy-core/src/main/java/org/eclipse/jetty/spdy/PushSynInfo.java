@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.spdy;
 
-import org.eclipse.jetty.spdy.api.PushInfo;
 import org.eclipse.jetty.spdy.api.SynInfo;
 
 /* ------------------------------------------------------------ */
@@ -31,8 +30,8 @@ public class PushSynInfo extends SynInfo
     
     private int associatedStreamId;
     
-    public PushSynInfo(int associatedStreamId, PushInfo pushInfo){
-        super(pushInfo.getTimeout(), pushInfo.getUnit(), pushInfo.getHeaders(), pushInfo.isClose(), (byte)0);
+    public PushSynInfo(int associatedStreamId, SynInfo synInfo){
+        super(synInfo.getHeaders(), synInfo.isClose(), synInfo.getPriority());
         this.associatedStreamId = associatedStreamId;
     }
     

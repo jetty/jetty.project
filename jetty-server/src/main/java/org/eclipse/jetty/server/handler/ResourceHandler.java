@@ -21,27 +21,24 @@ package org.eclipse.jetty.server.handler;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.MalformedURLException;
-import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
 
-import javax.servlet.AsyncContext;
-import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpHeaders;
+import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.WriterOutputStream;
-import org.eclipse.jetty.server.HttpOutput;
+import org.eclipse.jetty.server.AbstractHttpConnection;
+import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -69,16 +66,15 @@ public class ResourceHandler extends HandlerWrapper
     Resource _stylesheet;
     String[] _welcomeFiles={"index.html"};
     MimeTypes _mimeTypes = new MimeTypes();
-    String _cacheControl;
+    ByteArrayBuffer _cacheControl;
+    boolean _aliases;
     boolean _directory;
     boolean _etags;
-    int _minMemoryMappedContentLength=-1;
-    int _minAsyncContentLength=0;
 
     /* ------------------------------------------------------------ */
     public ResourceHandler()
     {
-
+    	
     }
 
     /* ------------------------------------------------------------ */
@@ -91,6 +87,28 @@ public class ResourceHandler extends HandlerWrapper
     public void setMimeTypes(MimeTypes mimeTypes)
     {
         _mimeTypes = mimeTypes;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return True if resource aliases are allowed.
+     */
+    public boolean isAliases()
+    {
+        return _aliases;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Set if resource aliases (eg symlink, 8.3 names, case insensitivity) are allowed.
+     * Allowing aliases can significantly increase security vulnerabilities.
+     * If this handler is deployed inside a ContextHandler, then the
+     * {@link ContextHandler#isAliases()} takes precedent.
+     * @param aliases True if aliases are supported.
+     */
+    public void setAliases(boolean aliases)
+    {
+        _aliases = aliases;
     }
 
     /* ------------------------------------------------------------ */
@@ -109,50 +127,6 @@ public class ResourceHandler extends HandlerWrapper
     public void setDirectoriesListed(boolean directory)
     {
         _directory = directory;
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Get minimum memory mapped file content length.
-     * @return the minimum size in bytes of a file resource that will
-     * be served using a memory mapped buffer, or -1 (default) for no memory mapped
-     * buffers.
-     */
-    public int getMinMemoryMappedContentLength()
-    {
-        return _minMemoryMappedContentLength;
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Set minimum memory mapped file content length.
-     * @param minMemoryMappedFileSize the minimum size in bytes of a file resource that will
-     * be served using a memory mapped buffer, or -1 for no memory mapped
-     * buffers.
-     */
-    public void setMinMemoryMappedContentLength(int minMemoryMappedFileSize)
-    {
-        _minMemoryMappedContentLength = minMemoryMappedFileSize;
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Get the minimum content length for async handling.
-     * @return The minimum size in bytes of the content before asynchronous 
-     * handling is used, or -1 for no async handling or 0 (default) for using
-     * {@link HttpServletResponse#getBufferSize()} as the minimum length.
-     */
-    public int getMinAsyncContentLength()
-    {
-        return _minAsyncContentLength;
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Set the minimum content length for async handling.
-     * @param minAsyncContentLength The minimum size in bytes of the content before asynchronous 
-     * handling is used, or -1 for no async handling or 0 for using
-     * {@link HttpServletResponse#getBufferSize()} as the minimum length.
-     */
-    public void setMinAsyncContentLength(int minAsyncContentLength)
-    {
-        _minAsyncContentLength = minAsyncContentLength;
     }
 
     /* ------------------------------------------------------------ */
@@ -180,6 +154,12 @@ public class ResourceHandler extends HandlerWrapper
     {
         Context scontext = ContextHandler.getCurrentContext();
         _context = (scontext==null?null:scontext.getContextHandler());
+
+        if (_context!=null)
+            _aliases=_context.isAliases();
+
+        if (!_aliases && !FileResource.getCheckAliases())
+            throw new IllegalStateException("Alias checking disabled");
 
         super.doStart();
     }
@@ -233,7 +213,7 @@ public class ResourceHandler extends HandlerWrapper
             throw new IllegalArgumentException(resourceBase);
         }
     }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * @return Returns the stylesheet as a Resource.
@@ -256,12 +236,12 @@ public class ResourceHandler extends HandlerWrapper
     	        {
     	            LOG.warn(e.toString());
     	            LOG.debug(e);
-    	        }
+    	        }	 
     	    }
     	    return _defaultStylesheet;
     	}
     }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * @param stylesheet The location of the stylesheet to be used as a String.
@@ -281,7 +261,7 @@ public class ResourceHandler extends HandlerWrapper
     	{
     		LOG.warn(e.toString());
             LOG.debug(e);
-            throw new IllegalArgumentException(stylesheet);
+            throw new IllegalArgumentException(stylesheet.toString());
     	}
     }
 
@@ -291,7 +271,7 @@ public class ResourceHandler extends HandlerWrapper
      */
     public String getCacheControl()
     {
-        return _cacheControl;
+        return _cacheControl.toString();
     }
 
     /* ------------------------------------------------------------ */
@@ -300,7 +280,7 @@ public class ResourceHandler extends HandlerWrapper
      */
     public void setCacheControl(String cacheControl)
     {
-        _cacheControl=cacheControl;
+        _cacheControl=cacheControl==null?null:new ByteArrayBuffer(cacheControl);
     }
 
     /* ------------------------------------------------------------ */
@@ -339,12 +319,12 @@ public class ResourceHandler extends HandlerWrapper
     {
         String servletPath;
         String pathInfo;
-        Boolean included = request.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI) != null;
+        Boolean included = request.getAttribute(Dispatcher.INCLUDE_REQUEST_URI) != null;
         if (included != null && included.booleanValue())
         {
-            servletPath = (String)request.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH);
-            pathInfo = (String)request.getAttribute(RequestDispatcher.INCLUDE_PATH_INFO);
-
+            servletPath = (String)request.getAttribute(Dispatcher.INCLUDE_SERVLET_PATH);
+            pathInfo = (String)request.getAttribute(Dispatcher.INCLUDE_PATH_INFO);
+ 
             if (servletPath == null && pathInfo == null)
             {
                 servletPath = request.getServletPath();
@@ -356,7 +336,7 @@ public class ResourceHandler extends HandlerWrapper
             servletPath = request.getServletPath();
             pathInfo = request.getPathInfo();
         }
-
+        
         String pathInContext=URIUtil.addPaths(servletPath,pathInfo);
         return getResource(pathInContext);
     }
@@ -391,7 +371,6 @@ public class ResourceHandler extends HandlerWrapper
     /*
      * @see org.eclipse.jetty.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
-    @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         if (baseRequest.isHandled())
@@ -399,9 +378,9 @@ public class ResourceHandler extends HandlerWrapper
 
         boolean skipContentBody = false;
 
-        if(!HttpMethod.GET.is(request.getMethod()))
+        if(!HttpMethods.GET.equals(request.getMethod()))
         {
-            if(!HttpMethod.HEAD.is(request.getMethod()))
+            if(!HttpMethods.HEAD.equals(request.getMethod()))
             {
                 //try another handler
                 super.handle(target, baseRequest, request, response);
@@ -409,31 +388,35 @@ public class ResourceHandler extends HandlerWrapper
             }
             skipContentBody = true;
         }
-
+        
         Resource resource = getResource(request);
-        // If resource is not found
+        
         if (resource==null || !resource.exists())
         {
-            // inject the jetty-dir.css file if it matches
             if (target.endsWith("/jetty-dir.css"))
-            {
+            {	                
                 resource = getStylesheet();
                 if (resource==null)
                     return;
                 response.setContentType("text/css");
             }
-            else
+            else 
             {
                 //no resource - try other handlers
                 super.handle(target, baseRequest, request, response);
                 return;
             }
         }
+            
+        if (!_aliases && resource.getAlias()!=null)
+        {
+            LOG.info(resource+" aliased to "+resource.getAlias());
+            return;
+        }
 
         // We are going to serve something
         baseRequest.setHandled(true);
 
-        // handle directories
         if (resource.isDirectory())
         {
             if (!request.getPathInfo().endsWith(URIUtil.SLASH))
@@ -453,26 +436,26 @@ public class ResourceHandler extends HandlerWrapper
             }
         }
 
-        // Handle ETAGS
+        // set some headers
         long last_modified=resource.lastModified();
         String etag=null;
         if (_etags)
         {
             // simple handling of only a single etag
-            String ifnm = request.getHeader(HttpHeader.IF_NONE_MATCH.asString());
+            String ifnm = request.getHeader(HttpHeaders.IF_NONE_MATCH);
             etag=resource.getWeakETag();
             if (ifnm!=null && resource!=null && ifnm.equals(etag))
             {
                 response.setStatus(HttpStatus.NOT_MODIFIED_304);
-                baseRequest.getResponse().getHttpFields().put(HttpHeader.ETAG,etag);
+                baseRequest.getResponse().getHttpFields().put(HttpHeaders.ETAG_BUFFER,etag);
                 return;
             }
         }
         
-        // Handle if modified since 
+        
         if (last_modified>0)
         {
-            long if_modified=request.getDateHeader(HttpHeader.IF_MODIFIED_SINCE.asString());
+            long if_modified=request.getDateHeader(HttpHeaders.IF_MODIFIED_SINCE);
             if (if_modified>0 && last_modified/1000<=if_modified/1000)
             {
                 response.setStatus(HttpStatus.NOT_MODIFIED_304);
@@ -480,91 +463,33 @@ public class ResourceHandler extends HandlerWrapper
             }
         }
 
-        // set the headers
-        String mime=_mimeTypes.getMimeByExtension(resource.toString());
+        Buffer mime=_mimeTypes.getMimeByExtension(resource.toString());
         if (mime==null)
             mime=_mimeTypes.getMimeByExtension(request.getPathInfo());
-        doResponseHeaders(response,resource,mime);
+
+        // set the headers
+        doResponseHeaders(response,resource,mime!=null?mime.toString():null);
+        response.setDateHeader(HttpHeaders.LAST_MODIFIED,last_modified);
         if (_etags)
-            baseRequest.getResponse().getHttpFields().put(HttpHeader.ETAG,etag);
+            baseRequest.getResponse().getHttpFields().put(HttpHeaders.ETAG_BUFFER,etag);
         
         if(skipContentBody)
             return;
-        
-        
         // Send the content
         OutputStream out =null;
         try {out = response.getOutputStream();}
         catch(IllegalStateException e) {out = new WriterOutputStream(response.getWriter());}
 
-        // Has the output been wrapped
-        if (!(out instanceof HttpOutput))
-            // Write content via wrapped output
-            resource.writeTo(out,0,resource.length());
+        // See if a short direct method can be used?
+        if (out instanceof AbstractHttpConnection.Output)
+        {
+            // TODO file mapped buffers
+            ((AbstractHttpConnection.Output)out).sendContent(resource.getInputStream());
+        }
         else
         {
-            // select async by size
-            int min_async_size=_minAsyncContentLength==0?response.getBufferSize():_minAsyncContentLength;
-            
-            if (request.isAsyncSupported() && 
-                min_async_size>0 &&
-                resource.length()>=min_async_size)
-            {
-                final AsyncContext async = request.startAsync();
-                Callback callback = new Callback()
-                {
-                    @Override
-                    public void succeeded()
-                    {
-                        async.complete();
-                    }
-
-                    @Override
-                    public void failed(Throwable x)
-                    {
-                        LOG.warn(x.toString());
-                        LOG.debug(x);
-                        async.complete();
-                    }   
-                };
-
-                // Can we use a memory mapped file?
-                if (_minMemoryMappedContentLength>0 && 
-                    resource.length()>_minMemoryMappedContentLength &&
-                    resource instanceof FileResource)
-                {
-                    ByteBuffer buffer = BufferUtil.toBuffer(resource.getFile());
-                    ((HttpOutput)out).sendContent(buffer,callback);
-                }
-                else  // Do a blocking write of a channel (if available) or input stream
-                {
-                    // Close of the channel/inputstream is done by the async sendContent
-                    ReadableByteChannel channel= resource.getReadableByteChannel();
-                    if (channel!=null)
-                        ((HttpOutput)out).sendContent(channel,callback);
-                    else
-                        ((HttpOutput)out).sendContent(resource.getInputStream(),callback);
-                }
-            }
-            else
-            {
-                // Can we use a memory mapped file?
-                if (_minMemoryMappedContentLength>0 && 
-                    resource.length()>_minMemoryMappedContentLength &&
-                    resource instanceof FileResource)
-                {
-                    ByteBuffer buffer = BufferUtil.toBuffer(resource.getFile());
-                    ((HttpOutput)out).sendContent(buffer);
-                }
-                else  // Do a blocking write of a channel (if available) or input stream
-                {
-                    ReadableByteChannel channel= resource.getReadableByteChannel();
-                    if (channel!=null)
-                        ((HttpOutput)out).sendContent(channel);
-                    else
-                        ((HttpOutput)out).sendContent(resource.getInputStream());
-                }
-            }
+            // Write content normally
+            resource.writeTo(out,0,resource.length());
         }
     }
 
@@ -602,20 +527,19 @@ public class ResourceHandler extends HandlerWrapper
             HttpFields fields = ((Response)response).getHttpFields();
 
             if (length>0)
-                ((Response)response).setLongContentLength(length);
+                fields.putLongField(HttpHeaders.CONTENT_LENGTH_BUFFER,length);
 
             if (_cacheControl!=null)
-                fields.put(HttpHeader.CACHE_CONTROL,_cacheControl);
+                fields.put(HttpHeaders.CACHE_CONTROL_BUFFER,_cacheControl);
         }
         else
         {
-            if (length>Integer.MAX_VALUE)
-                response.setHeader(HttpHeader.CONTENT_LENGTH.asString(),Long.toString(length));
-            else if (length>0)
-                response.setContentLength((int)length);
+            if (length>0)
+                response.setHeader(HttpHeaders.CONTENT_LENGTH,Long.toString(length));
 
             if (_cacheControl!=null)
-                response.setHeader(HttpHeader.CACHE_CONTROL.asString(),_cacheControl);
+                response.setHeader(HttpHeaders.CACHE_CONTROL,_cacheControl.toString());
         }
+
     }
 }

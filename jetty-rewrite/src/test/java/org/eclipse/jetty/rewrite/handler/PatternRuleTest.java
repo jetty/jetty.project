@@ -18,10 +18,7 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.IOException;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -29,6 +26,8 @@ import org.eclipse.jetty.server.Request;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 public class PatternRuleTest
 {
@@ -133,9 +132,8 @@ public class PatternRuleTest
     {
         _rule.setPattern(matchCase[0]);
         final String uri=matchCase[1];
-        
         String result = _rule.matchAndApply(uri,
-        new Request(null,null)
+        new Request()
         {
             {
                 setRequestURI(uri);

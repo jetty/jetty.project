@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+
+<!-- =============================================================== -->
+<!-- Configure the Jetty Server Nested inside another                -->
+<!--  Servlet Container.                                             -->
+<!--                                                                 -->
+<!-- Documentation of this file format can be found at:              -->
+<!-- http://wiki.eclipse.org/Jetty/Reference/jetty.xml_syntax        -->
+<!--                                                                 -->
+<!-- =============================================================== -->
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+    <Call name="addConnector">
+      <Arg>
+          <New id="NestedConnector" class="org.eclipse.jetty.nested.NestedConnector">
+            <Set name="statsOn">false</Set>
+            <Set name="forwarded">true</Set>
+            <Set name="forwardedHostHeader">x-forwarded_for</Set>
+            <Set name="forwardedCipherSuiteHeader">sslclientcipher</Set>
+            <Set name="forwardedSslSessionIdHeader">sslsessionid</Set>
+            <Call name="addLifeCycleListener">
+              <Arg>
+                <New class="org.eclipse.jetty.osgi.nested.NestedConnectorListener" id="NestedConnectorListener">
+                  <Set name="nestedConnector"><Ref id="NestedConnector"/></Set>
+                </New>
+              </Arg>
+            </Call>
+          </New>
+      </Arg>
+    </Call>
+
+</Configure>

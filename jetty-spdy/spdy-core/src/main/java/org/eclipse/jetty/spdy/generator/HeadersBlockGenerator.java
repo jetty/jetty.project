@@ -25,8 +25,8 @@ import java.util.Locale;
 
 import org.eclipse.jetty.spdy.CompressionDictionary;
 import org.eclipse.jetty.spdy.CompressionFactory;
+import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.SPDY;
-import org.eclipse.jetty.util.Fields;
 
 public class HeadersBlockGenerator
 {
@@ -38,13 +38,13 @@ public class HeadersBlockGenerator
         this.compressor = compressor;
     }
 
-    public ByteBuffer generate(short version, Fields headers)
+    public ByteBuffer generate(short version, Headers headers)
     {
         // TODO: ByteArrayOutputStream is quite inefficient, but grows on demand; optimize using ByteBuffer ?
         Charset iso1 = Charset.forName("ISO-8859-1");
         ByteArrayOutputStream buffer = new ByteArrayOutputStream(headers.size() * 64);
         writeCount(version, buffer, headers.size());
-        for (Fields.Field header : headers)
+        for (Headers.Header header : headers)
         {
             String name = header.name().toLowerCase(Locale.ENGLISH);
             byte[] nameBytes = name.getBytes(iso1);

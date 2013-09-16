@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Mort Bay Consulting//DTD Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Mort Bay Consulting//DTD Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
 
 <!-- =============================================================== -->
 <!-- Configure the Jetty Server                                      -->
@@ -35,16 +35,18 @@
 
     <!-- Use this connector for many frequently idle connections
          and for threadless continuations.
-    -->
+    -->    
     <Call name="addConnector">
       <Arg>
-          <New class="org.eclipse.jetty.server.ServerConnector">
+          <New class="org.eclipse.jetty.server.nio.SelectChannelConnector">
             <Set name="host"><SystemProperty name="jetty.host" /></Set>
             <Set name="port"><SystemProperty name="jetty.port" default="8080"/></Set>
-            <Set name="idleTimeout">30000</Set>
+            <Set name="maxIdleTime">30000</Set>
             <Set name="Acceptors">2</Set>
             <Set name="statsOn">false</Set>
             <Set name="confidentialPort">8443</Set>
+      <Set name="lowResourcesConnections">10000</Set>
+      <Set name="lowResourcesMaxIdleTime">5000</Set>
           </New>
       </Arg>
     </Call>
@@ -54,7 +56,7 @@
     <!-- see jetty-ssl.xml to add an ssl connector. use                  -->
     <!-- java -jar start.jar etc/jetty-ssl.xml                           -->
     <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
-
+    
     <!-- =========================================================== -->
     <!-- Set up global session ID manager                            -->
     <!-- =========================================================== -->
@@ -67,10 +69,10 @@
     -->
 
     <!-- =========================================================== -->
-    <!-- Set handler Collection Structure                            -->
+    <!-- Set handler Collection Structure                            --> 
     <!-- =========================================================== -->
     <Set name="handler">
-
+    
       <!-- ==========================================================  -->
       <!-- RewriteHandler Sample Configuration                         -->
       <!-- ==========================================================  -->
@@ -78,7 +80,7 @@
 
         <Set name="originalPathAttribute">requestedPath</Set>
         <Set name="rewriteRequestURI">true</Set>
-
+        
         <Set name="rules">
           <Array type="org.eclipse.jetty.rewrite.handler.Rule">
 
@@ -88,7 +90,7 @@
                 <Set name="replacement">/test</Set>
               </New>
             </Item>
-
+            
             <Item>
               <New id="response" class="org.eclipse.jetty.rewrite.handler.ResponsePatternRule">
                 <Set name="pattern">/session/</Set>
@@ -126,7 +128,7 @@
                 <Set name="replacement">/demo</Set>
               </New>
             </Item>
-
+            
             <Item>
               <New id="forwardedHttps" class="org.eclipse.jetty.rewrite.handler.ForwardedSchemeHeaderRule">
                 <Set name="header">X-Forwarded-Scheme</Set>
@@ -156,10 +158,10 @@
                     </New>
                   </Arg>
                 </Call>
-
+     
              </New>
            </Item>
-
+ 
           </Array>
         </Set>
 
@@ -182,7 +184,7 @@
         </Set>
       </New>
     </Set>
-
+    
     <!-- =========================================================== -->
     <!-- Configure the context deployer                              -->
     <!-- A context deployer will deploy contexts described in        -->
@@ -194,10 +196,10 @@
     <!-- in the $JETTY_HOME/contexts directory                       -->
     <!--                                                             -->
     <!-- =========================================================== -->
-    <Call name="addBean">
+    <Call name="addLifeCycle">
       <Arg>
         <New class="org.eclipse.jetty.server.deployer.ContextDeployer">
-          <Set name="contexts"><Ref refid="Contexts"/></Set>
+          <Set name="contexts"><Ref id="Contexts"/></Set>
           <Set name="configurationDir"><SystemProperty name="jetty.home" default="."/>/contexts</Set>
           <Set name="scanInterval">1</Set>
         </New>
@@ -217,10 +219,10 @@
     <!-- Normally only one type of deployer need be used.            -->
     <!--                                                             -->
     <!-- =========================================================== -->
-    <Call name="addBean">
+    <Call name="addLifeCycle">
       <Arg>
         <New class="org.eclipse.jetty.server.deployer.WebAppDeployer">
-          <Set name="contexts"><Ref refid="Contexts"/></Set>
+          <Set name="contexts"><Ref id="Contexts"/></Set>
           <Set name="webAppDir"><SystemProperty name="jetty.home" default="."/>/webapps</Set>
     <Set name="parentLoaderPriority">false</Set>
     <Set name="extract">true</Set>
@@ -256,7 +258,7 @@
     <!-- contexts configuration (see $(jetty.home)/contexts/test.xml -->
     <!-- for an example).                                            -->
     <!-- =========================================================== -->
-    <Ref refid="RequestLog">
+    <Ref id="RequestLog">
       <Set name="requestLog">
         <New id="RequestLogImpl" class="org.eclipse.jetty.server.NCSARequestLog">
           <Set name="filename"><SystemProperty name="jetty.logs" default="./logs"/>/yyyy_mm_dd.request.log</Set>
@@ -274,6 +276,8 @@
     <!-- extra options                                               -->
     <!-- =========================================================== -->
     <Set name="stopAtShutdown">true</Set>
-    <Set name="stopTimeout">1000</Set>
+    <Set name="sendServerVersion">true</Set>
+    <Set name="sendDateHeader">true</Set>
+    <Set name="gracefulShutdown">1000</Set>
 
 </Configure>

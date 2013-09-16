@@ -44,9 +44,6 @@ import org.eclipse.jetty.util.log.Logger;
  * </PRE>
  * 
  * Based on RFC2616 3.12, 14.16, 14.35.1, 14.35.2
- * <p>
- * And yes the spec does strangely say that while 10-20, is bytes 10 to 20 and 10- is bytes 10 until the end that -20 IS NOT bytes 0-20, but the last 20 bytes of the content.
- * 
  * @version $version$
  * 
  */
@@ -81,7 +78,7 @@ public class InclusiveByteRange
      * @param size Size of the resource.
      * @return LazyList of satisfiable ranges
      */
-    public static List<InclusiveByteRange> satisfiableRanges(Enumeration headers, long size)
+    public static List satisfiableRanges(Enumeration headers, long size)
     {
         Object satRanges=null;
         

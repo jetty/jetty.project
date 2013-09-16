@@ -21,54 +21,31 @@ package org.eclipse.jetty.util;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import org.junit.Assert;
 import org.junit.Test;
 
 public class Utf8StringBuilderTest
 {
     @Test
-    public void testFastFail_1() throws Exception
+    public void testInvalid() throws Exception
     {
-        byte[] part1 = TypeUtil.fromHexString("cebae1bdb9cf83cebcceb5");
-        byte[] part2 = TypeUtil.fromHexString("f4908080"); // INVALID
-        // Here for test tracking reasons, not needed to satisfy test
-        // byte[] part3 = TypeUtil.fromHexString("656469746564");
+        String[] invalids =
+        { "c0af", "EDA080", "f08080af", "f8808080af", "e080af", "F4908080", "fbbfbfbfbf", "10FFFF",
+          "CeBaE1BdB9Cf83CeBcCeB5EdA080656469746564" };
 
-        Utf8StringBuilder buffer = new Utf8StringBuilder();
-        // Part 1 is valid
-        buffer.append(part1,0,part1.length);
-        try
+        for (String i : invalids)
         {
-            // Part 2 is invalid
-            buffer.append(part2,0,part2.length);
-            Assert.fail("Should have thrown a NotUtf8Exception");
-        }
-        catch (Utf8Appendable.NotUtf8Exception e)
-        {
-            // expected path
-        }
-    }
+            byte[] bytes = TypeUtil.fromHexString(i);
+            try
+            {
+                Utf8StringBuilder buffer = new Utf8StringBuilder();
+                buffer.append(bytes,0,bytes.length);
 
-    @Test
-    public void testFastFail_2() throws Exception
-    {
-        byte[] part1 = TypeUtil.fromHexString("cebae1bdb9cf83cebcceb5f4");
-        byte[] part2 = TypeUtil.fromHexString("90"); // INVALID
-        // Here for test search/tracking reasons, not needed to satisfy test
-        // byte[] part3 = TypeUtil.fromHexString("8080656469746564");
-
-        Utf8StringBuilder buffer = new Utf8StringBuilder();
-        // Part 1 is valid
-        buffer.append(part1,0,part1.length);
-        try
-        {
-            // Part 2 is invalid
-            buffer.append(part2,0,part2.length);
-            Assert.fail("Should have thrown a NotUtf8Exception");
-        }
-        catch (Utf8Appendable.NotUtf8Exception e)
-        {
-            // expected path
+                assertEquals(i,"not expected",buffer.toString());
+            }
+            catch (Utf8Appendable.NotUtf8Exception e)
+            {
+                assertTrue(i,true);
+            }
         }
     }
 
@@ -106,14 +83,13 @@ public class Utf8StringBuilderTest
         Utf8StringBuilder buffer = new Utf8StringBuilder();
         try
         {
-            for (byte aByte : bytes) {
+            for (byte aByte : bytes)
                 buffer.append(aByte);
-            }
-            Assert.fail("Should have resulted in an Utf8Appendable.NotUtf8Exception");
+            assertTrue(false);
         }
-        catch (Utf8Appendable.NotUtf8Exception e)
+        catch (IllegalArgumentException e)
         {
-            // expected path
+            assertTrue(true);
         }
         assertEquals("abc\ufffd",buffer.toString());
     }

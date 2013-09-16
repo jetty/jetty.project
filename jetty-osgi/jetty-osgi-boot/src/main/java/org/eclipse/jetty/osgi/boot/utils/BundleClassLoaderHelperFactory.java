@@ -32,19 +32,15 @@ public class BundleClassLoaderHelperFactory
     
     private static BundleClassLoaderHelperFactory _instance = new BundleClassLoaderHelperFactory();
     
-    
-    /* ------------------------------------------------------------ */
     public static BundleClassLoaderHelperFactory getFactory()
     {
         return _instance;
     }
     
-    /* ------------------------------------------------------------ */
     private BundleClassLoaderHelperFactory()
     {
     }
     
-    /* ------------------------------------------------------------ */
     public BundleClassLoaderHelper getHelper()
     {
         //use the default

@@ -19,8 +19,8 @@
 package org.eclipse.jetty.spdy.frames;
 
 import org.eclipse.jetty.spdy.PushSynInfo;
+import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.SynInfo;
-import org.eclipse.jetty.util.Fields;
 
 public class SynStreamFrame extends ControlFrame
 {
@@ -28,9 +28,9 @@ public class SynStreamFrame extends ControlFrame
     private final int associatedStreamId;
     private final byte priority;
     private final short slot;
-    private final Fields headers;
+    private final Headers headers;
 
-    public SynStreamFrame(short version, byte flags, int streamId, int associatedStreamId, byte priority, short slot, Fields headers)
+    public SynStreamFrame(short version, byte flags, int streamId, int associatedStreamId, byte priority, short slot, Headers headers)
     {
         super(version, ControlFrameType.SYN_STREAM, flags);
         this.streamId = streamId;
@@ -60,7 +60,7 @@ public class SynStreamFrame extends ControlFrame
         return slot;
     }
 
-    public Fields getHeaders()
+    public Headers getHeaders()
     {
         return headers;
     }

@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
 
 <!-- =============================================================== -->
 <!-- Mixin the Statistics Handler                                    -->
@@ -12,7 +12,7 @@
 
     <Set name="handler">
      <New id="IPAccessHandler" class="org.eclipse.jetty.server.handler.IPAccessHandler">
-      <Set name="handler"><Ref refid="oldhandler"/></Set>
+      <Set name="handler"><Ref id="oldhandler"/></Set>
       <Set name="white">
         <Array type="String">
 	  <Item>127.0.0.1</Item>
@@ -27,5 +27,5 @@
       </Set>
      </New>
     </Set>
-
+    
 </Configure>

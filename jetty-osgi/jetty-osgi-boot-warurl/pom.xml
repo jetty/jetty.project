@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
-    <version>9.0.6-SNAPSHOT</version>
+    <version>7.6.13-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
@@ -64,8 +64,10 @@
           </executions>
           <configuration>
               <instructions>
+                  <Bundle-SymbolicName>org.eclipse.jetty.osgi.boot.warurl;singleton:=true</Bundle-SymbolicName>
                   <Bundle-Name>RFC66 War URL</Bundle-Name>
                   <Bundle-Activator>org.eclipse.jetty.osgi.boot.warurl.WarUrlActivator</Bundle-Activator>
+                  <_nouses>true</_nouses>
               </instructions>
           </configuration>
       </plugin>
@@ -78,4 +80,6 @@
       </plugin>
     </plugins>
   </build>
+
+
 </project>

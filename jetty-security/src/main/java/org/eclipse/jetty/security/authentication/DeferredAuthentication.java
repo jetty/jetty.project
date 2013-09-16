@@ -21,8 +21,6 @@ package org.eclipse.jetty.security.authentication;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Locale;
 
 import javax.servlet.ServletOutputStream;
@@ -31,6 +29,7 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.ServerAuthException;
@@ -59,13 +58,12 @@ public class DeferredAuthentication implements Authentication.Deferred
     /**
      * @see org.eclipse.jetty.server.Authentication.Deferred#authenticate(ServletRequest)
      */
-    @Override
     public Authentication authenticate(ServletRequest request)
     {
         try
         {
             Authentication authentication = _authenticator.validateRequest(request,__deferredResponse,true);
-
+            
             if (authentication!=null && (authentication instanceof Authentication.User) && !(authentication instanceof Authentication.ResponseSent))
             {
                 LoginService login_service= _authenticator.getLoginService();
@@ -73,7 +71,6 @@ public class DeferredAuthentication implements Authentication.Deferred
                 
                 if (identity_service!=null)
                     _previousAssociation=identity_service.associate(((Authentication.User)authentication).getUserIdentity());
-                
                 return authentication;
             }
         }
@@ -81,15 +78,13 @@ public class DeferredAuthentication implements Authentication.Deferred
         {
             LOG.debug(e);
         }
-
-        return this;
+        return Authentication.UNAUTHENTICATED;
     }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.server.Authentication.Deferred#authenticate(javax.servlet.ServletRequest, javax.servlet.ServletResponse)
      */
-    @Override
     public Authentication authenticate(ServletRequest request, ServletResponse response)
     {
         try
@@ -106,27 +101,28 @@ public class DeferredAuthentication implements Authentication.Deferred
         {
             LOG.debug(e);
         }
-        return this;
+        return Authentication.UNAUTHENTICATED;
     }
 
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.server.Authentication.Deferred#login(java.lang.String, java.lang.String)
      */
-    @Override
-    public Authentication login(String username, Object password, ServletRequest request)
+    public Authentication login(String username, String password)
     {
-        if (username == null)
-            return null;
+        LoginService login_service= _authenticator.getLoginService();
+        IdentityService identity_service=login_service.getIdentityService();
         
-        UserIdentity identity = _authenticator.login(username, password, request);
-        if (identity != null)
+        if (login_service!=null)
         {
-            IdentityService identity_service = _authenticator.getLoginService().getIdentityService();
-            UserAuthentication authentication = new UserAuthentication("API",identity);
-            if (identity_service != null)
-                _previousAssociation=identity_service.associate(identity);
-            return authentication;
+            UserIdentity user = login_service.login(username,password);
+            if (user!=null)
+            {
+                UserAuthentication authentication = new UserAuthentication("API",user);
+                if (identity_service!=null)
+                    _previousAssociation=identity_service.associate(user);
+                return authentication;
+            }
         }
         return null;
     }
@@ -146,207 +142,151 @@ public class DeferredAuthentication implements Authentication.Deferred
     {
         return response==__deferredResponse;
     }
-
+    
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     final static HttpServletResponse __deferredResponse = new HttpServletResponse()
     {
-        @Override
         public void addCookie(Cookie cookie)
         {
         }
 
-        @Override
         public void addDateHeader(String name, long date)
         {
         }
 
-        @Override
         public void addHeader(String name, String value)
         {
         }
 
-        @Override
         public void addIntHeader(String name, int value)
         {
         }
 
-        @Override
         public boolean containsHeader(String name)
         {
             return false;
         }
 
-        @Override
         public String encodeRedirectURL(String url)
         {
             return null;
         }
 
-        @Override
         public String encodeRedirectUrl(String url)
         {
             return null;
         }
 
-        @Override
         public String encodeURL(String url)
         {
             return null;
         }
 
-        @Override
         public String encodeUrl(String url)
         {
             return null;
         }
 
-        @Override
         public void sendError(int sc) throws IOException
         {
         }
 
-        @Override
         public void sendError(int sc, String msg) throws IOException
         {
         }
 
-        @Override
         public void sendRedirect(String location) throws IOException
         {
         }
 
-        @Override
         public void setDateHeader(String name, long date)
         {
         }
 
-        @Override
         public void setHeader(String name, String value)
         {
         }
 
-        @Override
         public void setIntHeader(String name, int value)
         {
         }
 
-        @Override
         public void setStatus(int sc)
         {
         }
 
-        @Override
         public void setStatus(int sc, String sm)
         {
         }
 
-        @Override
         public void flushBuffer() throws IOException
         {
         }
 
-        @Override
         public int getBufferSize()
         {
             return 1024;
         }
 
-        @Override
         public String getCharacterEncoding()
         {
             return null;
         }
 
-        @Override
         public String getContentType()
         {
             return null;
         }
 
-        @Override
         public Locale getLocale()
         {
             return null;
         }
 
-        @Override
         public ServletOutputStream getOutputStream() throws IOException
         {
             return __nullOut;
         }
 
-        @Override
         public PrintWriter getWriter() throws IOException
         {
             return IO.getNullPrintWriter();
         }
 
-        @Override
         public boolean isCommitted()
         {
             return true;
         }
 
-        @Override
         public void reset()
         {
         }
 
-        @Override
         public void resetBuffer()
         {
         }
 
-        @Override
         public void setBufferSize(int size)
         {
         }
 
-        @Override
         public void setCharacterEncoding(String charset)
         {
         }
 
-        @Override
         public void setContentLength(int len)
         {
         }
 
-        @Override
         public void setContentType(String type)
         {
         }
 
-        @Override
         public void setLocale(Locale loc)
         {
         }
-
-        @Override
-	public Collection<String> getHeaderNames()
-	{
-	    return Collections.emptyList();
-	}
-
-	@Override
-	public String getHeader(String arg0)
-	{
-	    return null;
-	}
-
-	@Override
-	public Collection<String> getHeaders(String arg0)
-	{
-            return Collections.emptyList();
-	}
-
-	@Override
-	public int getStatus()
-	{
-	    return 0;
-	}
 
     };
 
@@ -368,5 +308,5 @@ public class DeferredAuthentication implements Authentication.Deferred
         }
     };
 
-
+    
 }

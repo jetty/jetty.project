@@ -46,12 +46,12 @@ public class RunAsAnnotationHandler extends AbstractIntrospectableAnnotationHand
         super(false);
         _context = wac;
     }
-
+    
     public void doHandle (Class clazz)
     {
         if (!Servlet.class.isAssignableFrom(clazz))
             return;
-
+        
         javax.annotation.security.RunAs runAs = (javax.annotation.security.RunAs)clazz.getAnnotation(javax.annotation.security.RunAs.class);
         if (runAs != null)
         {
@@ -63,7 +63,7 @@ public class RunAsAnnotationHandler extends AbstractIntrospectableAnnotationHand
                 {
                     MetaData metaData = _context.getMetaData();
                     Descriptor d = metaData.getOriginDescriptor(holder.getName()+".servlet.run-as");
-                    //if a descriptor has already set the value for run-as, do not
+                    //if a descriptor has already set the value for run-as, do not 
                     //let the annotation override it
                     if (d == null)
                     {
@@ -107,7 +107,7 @@ public class RunAsAnnotationHandler extends AbstractIntrospectableAnnotationHand
         {
             for (ServletHolder h : holders)
             {
-                if (h.getClassName() != null && h.getClassName().equals(clazz.getName()))
+                if (h.getClassName().equals(clazz.getName()))
                 {
                     holder = h;
                 }

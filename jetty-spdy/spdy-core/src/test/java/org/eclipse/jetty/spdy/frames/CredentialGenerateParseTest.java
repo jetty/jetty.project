@@ -23,7 +23,7 @@ import java.nio.ByteBuffer;
 import java.security.KeyStore;
 import java.security.cert.Certificate;
 
-import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.spdy.StandardByteBufferPool;
 import org.eclipse.jetty.spdy.StandardCompressionFactory;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.generator.Generator;
@@ -44,7 +44,7 @@ public class CredentialGenerateParseTest
         System.arraycopy(temp, 0, certificates, 0, temp.length);
         System.arraycopy(temp, 0, certificates, temp.length, temp.length);
         CredentialFrame frame1 = new CredentialFrame(SPDY.V3, slot, proof, certificates);
-        Generator generator = new Generator(new MappedByteBufferPool(), new StandardCompressionFactory().newCompressor());
+        Generator generator = new Generator(new StandardByteBufferPool(), new StandardCompressionFactory().newCompressor());
         ByteBuffer buffer = generator.control(frame1);
 
         Assert.assertNotNull(buffer);
@@ -72,7 +72,7 @@ public class CredentialGenerateParseTest
         byte[] proof = new byte[]{0, 1, 2};
         Certificate[] certificates = loadCertificates();
         CredentialFrame frame1 = new CredentialFrame(SPDY.V3, slot, proof, certificates);
-        Generator generator = new Generator(new MappedByteBufferPool(), new StandardCompressionFactory().newCompressor());
+        Generator generator = new Generator(new StandardByteBufferPool(), new StandardCompressionFactory().newCompressor());
         ByteBuffer buffer = generator.control(frame1);
 
         Assert.assertNotNull(buffer);

@@ -30,6 +30,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class HalfCloseRaceTest
@@ -38,9 +40,9 @@ public class HalfCloseRaceTest
     public void testHalfCloseRace() throws Exception
     {
         Server server = new Server();
-        ServerConnector connector = new ServerConnector(server);
+        SelectChannelConnector connector = new SelectChannelConnector();
         connector.setPort(0);
-        connector.setIdleTimeout(500);
+        connector.setMaxIdleTime(500);
         server.addConnector(connector);
         TestHandler handler = new TestHandler();
         server.setHandler(handler);
@@ -67,7 +69,6 @@ public class HalfCloseRaceTest
         {
         }
 
-        @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);

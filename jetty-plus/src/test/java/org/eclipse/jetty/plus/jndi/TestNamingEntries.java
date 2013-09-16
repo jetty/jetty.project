@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.plus.jndi;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
@@ -43,6 +37,12 @@ import javax.naming.spi.ObjectFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  *
@@ -135,16 +135,16 @@ public class TestNamingEntries
     public void init()
     {
         this.someObject = new SomeObject(4);
+        
+        
 
-
-
-
+        
     }
-
-    /**
+    
+    /** 
      * after each test we should scrape out any lingering bindings to prevent cross test pollution
      * as observed when running java 7
-     *
+     * 
      * @throws Exception
      */
     @After

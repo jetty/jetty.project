@@ -25,7 +25,7 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.server.Authentication;
@@ -38,12 +38,14 @@ import org.eclipse.jetty.util.security.Constraint;
 public class SpnegoAuthenticator extends LoginAuthenticator
 {
     private static final Logger LOG = Log.getLogger(SpnegoAuthenticator.class);
+    
     private String _authMethod = Constraint.__SPNEGO_AUTH;
-
+    
     public SpnegoAuthenticator()
     {
+    	
     }
-
+    
     /**
      * Allow for a custom authMethod value to be set for instances where SPENGO may not be appropriate
      * @param authMethod
@@ -52,26 +54,24 @@ public class SpnegoAuthenticator extends LoginAuthenticator
     {
     	_authMethod = authMethod;
     }
-
-    @Override
+    
     public String getAuthMethod()
     {
         return _authMethod;
     }
 
-    @Override
     public Authentication validateRequest(ServletRequest request, ServletResponse response, boolean mandatory) throws ServerAuthException
-    {
+    {        
         HttpServletRequest req = (HttpServletRequest)request;
         HttpServletResponse res = (HttpServletResponse)response;
-
-        String header = req.getHeader(HttpHeader.AUTHORIZATION.asString());
+        
+        String header = req.getHeader(HttpHeaders.AUTHORIZATION);
 
         if (!mandatory)
         {
             return new DeferredAuthentication(this);
         }
-
+        
         // check to see if we have authorization headers required to continue
         if ( header == null )
         {
@@ -81,33 +81,32 @@ public class SpnegoAuthenticator extends LoginAuthenticator
             	 {
                      return Authentication.UNAUTHENTICATED;
             	 }
-
+            	 
                 LOG.debug("SpengoAuthenticator: sending challenge");
-                res.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), HttpHeader.NEGOTIATE.asString());
+                res.setHeader(HttpHeaders.WWW_AUTHENTICATE, HttpHeaders.NEGOTIATE);
                 res.sendError(HttpServletResponse.SC_UNAUTHORIZED);
                 return Authentication.SEND_CONTINUE;
-            }
+            } 
             catch (IOException ioe)
             {
                 throw new ServerAuthException(ioe);
-            }
+            }       
         }
-        else if (header != null && header.startsWith(HttpHeader.NEGOTIATE.asString()))
+        else if (header != null && header.startsWith(HttpHeaders.NEGOTIATE))
         {
             String spnegoToken = header.substring(10);
-
-            UserIdentity user = login(null,spnegoToken, request);
-
+            
+            UserIdentity user = _loginService.login(null,spnegoToken);
+            
             if ( user != null )
             {
                 return new UserAuthentication(getAuthMethod(),user);
             }
         }
-
+        
         return Authentication.UNAUTHENTICATED;
     }
 
-    @Override
     public boolean secureResponse(ServletRequest request, ServletResponse response, boolean mandatory, User validatedUser) throws ServerAuthException
     {
         return true;

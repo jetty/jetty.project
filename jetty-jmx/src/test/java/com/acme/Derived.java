@@ -18,21 +18,11 @@
 
 package com.acme;
 
-import org.eclipse.jetty.util.annotation.ManagedAttribute;
-import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.annotation.ManagedOperation;
-import org.eclipse.jetty.util.annotation.Name;
 
-@ManagedObject(value="Test the mbean stuff")
 public class Derived extends Base implements Signature
 {
     String fname="Full Name";
 
-    Managed managedInstance = new Managed();
-    
-    SuperManaged superManagedInstance = new SuperManaged();
-    
-    @ManagedAttribute(value="The full name of something", name="fname", setter="setFullName")
     public String getFullName()
     {
         return fname;
@@ -43,39 +33,18 @@ public class Derived extends Base implements Signature
         fname=name;
     }
 
-    @ManagedOperation("publish something")
     public void publish()
     {
         System.err.println("publish");
     }
     
-    @ManagedOperation("Doodle something")
-    public void doodle(@Name(value="doodle", description="A description of the argument") String doodle)
+    public void doodle(String doodle)
     {
         System.err.println("doodle "+doodle);
     }
 
-    public String bad()
+    public void somethingElse()
     {
-        return "bad";
+        
     }
-
-    @ManagedAttribute("sample managed object")
-    public Managed getManagedInstance()
-    {
-        return managedInstance;
-    }
-
-    public void setManagedInstance(Managed managedInstance)
-    {
-        this.managedInstance = managedInstance;
-    }
-    
-    
-    @ManagedAttribute("sample super managed object")
-    public SuperManaged getSuperManagedInstance()
-    {
-        return superManagedInstance;
-    }
-
 }

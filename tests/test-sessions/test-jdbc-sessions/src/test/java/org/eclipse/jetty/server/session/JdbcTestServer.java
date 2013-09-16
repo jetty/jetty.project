@@ -18,14 +18,6 @@
 
 package org.eclipse.jetty.server.session;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Statement;
-import java.util.HashSet;
-import java.util.Set;
-
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -85,7 +77,6 @@ public class JdbcTestServer extends AbstractTestServer
             idManager.setScavengeInterval(_scavengePeriod);
             idManager.setWorkerName("w"+(__workers++));
             idManager.setDriverInfo(DRIVER_CLASS, (config==null?DEFAULT_CONNECTION_URL:config));
-            //System.err.println("new jdbcidmgr inst="+idManager);
             return idManager;
         }
     }
@@ -102,49 +93,4 @@ public class JdbcTestServer extends AbstractTestServer
         return manager;
     }
 
-    
-    public boolean existsInSessionTable(String id)
-    throws Exception
-    {
-        Class.forName(DRIVER_CLASS);
-        Connection con = null;
-        try
-        {
-            con = DriverManager.getConnection(DEFAULT_CONNECTION_URL);
-            PreparedStatement statement = con.prepareStatement("select * from "+((JDBCSessionIdManager)_sessionIdManager)._sessionIdTable+" where id = ?");
-            statement.setString(1, id);
-            ResultSet result = statement.executeQuery();
-            return result.next();
-        }
-        finally
-        {
-            if (con != null)
-                con.close();
-        }
-    }
-    
-    public Set<String> getSessionIds ()
-    throws Exception
-    {
-        HashSet<String> ids = new HashSet<String>();
-        Class.forName(DRIVER_CLASS);
-        Connection con = null;
-        try
-        {
-            con = DriverManager.getConnection(DEFAULT_CONNECTION_URL);
-            PreparedStatement statement = con.prepareStatement("select * from "+((JDBCSessionIdManager)_sessionIdManager)._sessionIdTable);
-          
-            ResultSet result = statement.executeQuery();
-            while (result.next())
-            {
-                ids.add(result.getString(1));
-            }
-            return ids;
-        }
-        finally
-        {
-            if (con != null)
-                con.close();
-        }
-    }
 }

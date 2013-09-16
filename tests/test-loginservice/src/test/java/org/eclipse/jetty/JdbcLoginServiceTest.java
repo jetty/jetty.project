@@ -18,34 +18,39 @@
 
 package org.eclipse.jetty;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.URI;
+import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.util.Collections;
 import java.util.HashSet;
+import java.util.Collections;
 import java.util.Set;
+
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.derby.tools.ij;
+import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.AuthenticationStore;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.util.BasicAuthentication;
-import org.eclipse.jetty.client.util.BytesContentProvider;
-import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.client.security.Realm;
+import org.eclipse.jetty.client.security.SimpleRealmResolver;
+import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.util.security.Constraint;
+import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
@@ -53,27 +58,22 @@ import org.eclipse.jetty.security.JDBCLoginService;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.NetworkConnector;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Loader;
-import org.eclipse.jetty.util.security.Constraint;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 public class JdbcLoginServiceTest
-{
+{ 
     private static String _content =
         "Lorem ipsum dolor sit amet, consectetur adipiscing elit. In quis felis nunc. "+
         "Quisque suscipit mauris et ante auctor ornare rhoncus lacus aliquet. Pellentesque "+
@@ -91,11 +91,11 @@ public class JdbcLoginServiceTest
     private static File _docRoot;
     private static Server _server;
     private static HttpClient _client;
-    private static String __realm = "JdbcRealm";
+    private static Realm _realm;
     private static String _protocol;
     private static String _baseUrl;
     private static String _requestContent;
-
+    
     protected static boolean createDB(String homeDir, String fileName, String dbUrl)
     {
         FileInputStream fileStream = null;
@@ -103,10 +103,10 @@ public class JdbcLoginServiceTest
         {
             File scriptFile = new File(fileName);
             fileStream = new FileInputStream(scriptFile);
-
+            
             Loader.loadClass(fileStream.getClass(), "org.apache.derby.jdbc.EmbeddedDriver").newInstance();
             Connection connection = DriverManager.getConnection(dbUrl, "", "");
-
+            
             OutputStream out = new ByteArrayOutputStream();
             int result = ij.runScript(connection, fileStream, "UTF-8", out, "UTF-8");
 
@@ -132,9 +132,29 @@ public class JdbcLoginServiceTest
         throws Exception
     {
         setProtocol("http");
-
-        LoginService loginService = new JDBCLoginService(__realm, "./src/test/resources/jdbcrealm.properties");
-        server.addBean(loginService);
+        setRealm(new Realm()
+                 {
+                     public String getId()
+                     {
+                         return "JdbcRealm";
+                     }
+                
+                     public String getPrincipal()
+                     {
+                         return "jetty";
+                     }
+                
+                     public String getCredentials()
+                     {
+                         return "jetty";
+                     }
+                 });
+                        
+        SelectChannelConnector connector = new SelectChannelConnector();
+        server.addConnector(connector);
+        
+        LoginService loginService = new JDBCLoginService("JdbcRealm", "./src/test/resources/jdbcrealm.properties");
+        server.addBean(loginService); 
 
         ConstraintSecurityHandler security = new ConstraintSecurityHandler();
         server.setHandler(security);
@@ -148,29 +168,29 @@ public class JdbcLoginServiceTest
         mapping.setPathSpec( "/*" );
         mapping.setConstraint( constraint );
 
-        Set<String> knownRoles = new HashSet<>();
+        Set<String> knownRoles = new HashSet<String>();
         knownRoles.add("user");
         knownRoles.add("admin");
-
+        
         security.setConstraintMappings(Collections.singletonList(mapping), knownRoles);
         security.setAuthenticator(new BasicAuthenticator());
         security.setLoginService(loginService);
         security.setStrict(false);
-
+        
         ServletContextHandler root = new ServletContextHandler();
         root.setContextPath("/");
         root.setResourceBase(getBasePath());
         ServletHolder servletHolder = new ServletHolder( new DefaultServlet() );
         servletHolder.setInitParameter( "gzip", "true" );
-        root.addServlet( servletHolder, "/*" );
+        root.addServlet( servletHolder, "/*" );    
 
-        Handler handler = new TestHandler(getBasePath());
-
+        Handler handler = new TestHandler(getBasePath());       
+        
         HandlerCollection handlers = new HandlerCollection();
         handlers.setHandlers(new Handler[]{handler, root});
         security.setHandler(handlers);
     }
-
+ 
     @BeforeClass
      public static void setUp()
          throws Exception
@@ -178,7 +198,7 @@ public class JdbcLoginServiceTest
          _docRoot = new File("target/test-output/docroot/");
          _docRoot.mkdirs();
          _docRoot.deleteOnExit();
-
+         
          File content = new File(_docRoot,"input.txt");
          FileOutputStream out = new FileOutputStream(content);
          out.write(_content.getBytes("utf-8"));
@@ -192,17 +212,15 @@ public class JdbcLoginServiceTest
              dbRoot.mkdirs();
              createDB(dbPath, "src/test/resources/createdb.sql", "jdbc:derby:jdbcrealm;create=true");
          }
-
-         _server = new Server(0);
+         
+         _server = new Server();
          configureServer(_server);
          _server.start();
 
-         int port = ((NetworkConnector)_server.getConnectors()[0]).getLocalPort();
+         int port = _server.getConnectors()[0].getLocalPort();
          _baseUrl = _protocol+"://localhost:"+port+ "/";
-
-
      }
-
+     
      @AfterClass
      public static void tearDown()
          throws Exception
@@ -213,99 +231,106 @@ public class JdbcLoginServiceTest
              _server = null;
          }
      }
-
+     
      @Test
      public void testPut() throws Exception
      {
-         try
-         {
-             startClient();
-
-             Request request = _client.newRequest(getBaseUrl() + "output.txt");
-             request.method(HttpMethod.PUT);
-             request.content(new BytesContentProvider(_content.getBytes()));
-             ContentResponse response = request.send();
-             int responseStatus = response.getStatus();
-             boolean statusOk = (responseStatus == 200 || responseStatus == 201);
-             assertTrue(statusOk);
-             String content = IO.toString(new FileInputStream(new File(_docRoot,"output.txt")));
-             assertEquals(_content,content);
-         }
-         finally
-         {
-             stopClient();
-         }
+         startClient(_realm);
+     
+         ContentExchange putExchange = new ContentExchange();
+         putExchange.setURL(getBaseUrl() + "output.txt");
+         putExchange.setMethod(HttpMethods.PUT);
+         putExchange.setRequestContent(new ByteArrayBuffer(_content.getBytes()));
+     
+         _client.send(putExchange);
+         int state = putExchange.waitForDone();
+     
+         int responseStatus = putExchange.getResponseStatus();
+     
+         stopClient();
+     
+         boolean statusOk = (responseStatus == 200 || responseStatus == 201);
+         assertTrue(statusOk);
+         
+         String content = IO.toString(new FileInputStream(new File(_docRoot,"output.txt")));
+         assertEquals(_content,content);
      }
-
+     
      @Test
      public void testGet() throws Exception
      {
-         try
+         startClient(_realm);
+     
+         ContentExchange getExchange = new ContentExchange();
+         getExchange.setURL(getBaseUrl() + "input.txt");
+         getExchange.setMethod(HttpMethods.GET);
+     
+         _client.send(getExchange);
+         int state = getExchange.waitForDone();
+     
+         String content = "";
+         int responseStatus = getExchange.getResponseStatus();
+         if (responseStatus == HttpStatus.OK_200)
          {
-             startClient();
-
-             ContentResponse response = _client.GET(getBaseUrl() + "input.txt");
-             assertEquals(HttpServletResponse.SC_OK,response.getStatus());
-             assertEquals(_content, response.getContentAsString());
+             content = getExchange.getResponseContent();
          }
-         finally
-         {
-             stopClient();
-         }
+     
+         stopClient();
+     
+         assertEquals(HttpStatus.OK_200,responseStatus);
+         assertEquals(_content,content);
      }
 
-     //Head requests to jetty-client are not working: see https://bugs.eclipse.org/bugs/show_bug.cgi?id=394552
-     @Ignore
+     @Test
      public void testHead() throws Exception
      {
-         try
-         {
-             startClient();
+         startClient(_realm);
+     
+         ContentExchange getExchange = new ContentExchange();
+         getExchange.setURL(getBaseUrl() + "input.txt");
+         getExchange.setMethod(HttpMethods.HEAD);
+     
+         _client.send(getExchange);
+         int state = getExchange.waitForDone();
+     
+         int responseStatus = getExchange.getResponseStatus();
 
-             Request request = _client.newRequest(getBaseUrl() + "input.txt");
-             request.method(HttpMethod.HEAD);
-             ContentResponse response = request.send();
-             int responseStatus = response.getStatus();
-             assertEquals(HttpStatus.OK_200,responseStatus);
-         }
-         finally
-         {
-             stopClient();
-         }
+         stopClient();
+     
+         assertEquals(HttpStatus.OK_200,responseStatus);
      }
 
      @Test
      public void testPost() throws Exception
      {
-         try
-         {
-             startClient();
-
-             Request request = _client.newRequest(getBaseUrl() + "test");
-             request.method(HttpMethod.POST);
-             request.content(new BytesContentProvider(_content.getBytes()));
-             ContentResponse response = request.send();
-             assertEquals(HttpStatus.OK_200,response.getStatus());
-             assertEquals(_content,_requestContent);
-         }
-         finally
-         {
-             stopClient();
-         }
+         startClient(_realm);
+     
+         ContentExchange postExchange = new ContentExchange();
+         postExchange.setURL(getBaseUrl() + "test");
+         postExchange.setMethod(HttpMethods.POST);
+         postExchange.setRequestContent(new ByteArrayBuffer(_content.getBytes()));
+    
+         _client.send(postExchange);
+         int state = postExchange.waitForDone();
+     
+         int responseStatus = postExchange.getResponseStatus();
+  
+         stopClient();
+     
+         assertEquals(HttpStatus.OK_200,responseStatus);
+         assertEquals(_content,_requestContent);
      }
-
-     protected void startClient()
+     
+     protected void startClient(Realm realm)
          throws Exception
      {
          _client = new HttpClient();
-         QueuedThreadPool executor = new QueuedThreadPool();
-         executor.setName(executor.getName() + "-client");
-         _client.setExecutor(executor);
-         AuthenticationStore authStore = _client.getAuthenticationStore();
-         authStore.addAuthentication(new BasicAuthentication(URI.create(_baseUrl), __realm, "jetty", "jetty"));
+         _client.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
+         if (realm != null)
+             _client.setRealmResolver(new SimpleRealmResolver(realm));
          _client.start();
      }
-
+     
      protected void stopClient()
          throws Exception
      {
@@ -315,35 +340,42 @@ public class JdbcLoginServiceTest
              _client = null;
          }
      }
-
+     
      protected static String getBasePath()
      {
          return _docRoot.getAbsolutePath();
      }
-
+     
      protected String getBaseUrl()
      {
          return _baseUrl;
      }
-
+     
      protected HttpClient getClient()
      {
          return _client;
      }
-
-
+     
+     protected Realm getRealm()
+     {
+         return _realm;
+     }
+     
      protected String getContent()
      {
          return _content;
      }
-
+     
      protected static void setProtocol(String protocol)
      {
          _protocol = protocol;
      }
-
-
-
+     
+     protected static void setRealm(Realm realm)
+     {
+         _realm = realm;
+     }
+     
      public static void copyStream(InputStream in, OutputStream out)
      {
          try
@@ -372,7 +404,7 @@ public class JdbcLoginServiceTest
              this.resourcePath = repositoryPath;
          }
 
-         public void handle(String target, org.eclipse.jetty.server.Request baseRequest,
+         public void handle(String target, Request baseRequest,
                  HttpServletRequest request, HttpServletResponse response)
              throws IOException, ServletException
          {
@@ -382,7 +414,7 @@ public class JdbcLoginServiceTest
              }
 
              OutputStream out = null;
-
+             
              if (baseRequest.getMethod().equals("PUT"))
              {
                  baseRequest.setHandled(true);
@@ -390,12 +422,12 @@ public class JdbcLoginServiceTest
                  File file = new File(resourcePath, URLDecoder.decode(request.getPathInfo()));
                  file.getParentFile().mkdirs();
                  file.deleteOnExit();
-
+             
                  out = new FileOutputStream(file);
 
                      response.setStatus(HttpServletResponse.SC_CREATED);
              }
-
+             
              if (baseRequest.getMethod().equals("POST"))
              {
                  baseRequest.setHandled(true);
@@ -403,22 +435,24 @@ public class JdbcLoginServiceTest
 
                  response.setStatus(HttpServletResponse.SC_OK);
              }
-
+             
              if (out != null)
              {
-                 try (ServletInputStream in = request.getInputStream())
+                 ServletInputStream in = request.getInputStream();
+                 try
                  {
-                     copyStream(in, out);
+                     copyStream( in, out );
                  }
                  finally
                  {
+                     in.close();
                      out.close();
                  }
-
+                 
                  if (!(out instanceof FileOutputStream))
                      _requestContent = out.toString();
              }
-
+             
          }
      }
 }

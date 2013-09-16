@@ -2,7 +2,7 @@
     <parent>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-project</artifactId>
-        <version>9.0.6-SNAPSHOT</version>
+        <version>7.6.13-SNAPSHOT</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -32,10 +32,10 @@
                     </execution>
                 </executions>
             </plugin>
-            <!--
-            Required for OSGI
-            -->
             <plugin>
+                <!--
+                Required for OSGI
+                -->
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
                 <configuration>
@@ -52,31 +52,31 @@
                 </configuration>
             </plugin>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>unpack</id>
-                        <phase>generate-test-resources</phase>
-                        <goals>
-                            <goal>unpack</goal>
-                        </goals>
-                        <configuration>
-                            <artifactItems>
-                                <artifactItem>
-                                    <groupId>org.eclipse.jetty.toolchain</groupId>
-                                    <artifactId>jetty-test-policy</artifactId>
-                                    <version>${jetty-test-policy-version}</version>
-                                    <type>jar</type>
-                                    <overWrite>true</overWrite>
-                                    <includes>**/*.keystore,**/*.pem</includes>
-                                    <outputDirectory>${jetty.test.policy.loc}</outputDirectory>
-                                </artifactItem>
-                            </artifactItems>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-dependency-plugin</artifactId>
+              <executions>
+                <execution>
+                  <id>unpack</id>
+                  <phase>generate-test-resources</phase>
+                  <goals>
+                    <goal>unpack</goal>
+                  </goals>
+                  <configuration>
+                    <artifactItems>
+                      <artifactItem>
+                        <groupId>org.eclipse.jetty.toolchain</groupId>
+                        <artifactId>jetty-test-policy</artifactId>
+                        <version>${jetty-test-policy-version}</version>
+                        <type>jar</type>
+                        <overWrite>true</overWrite>
+                        <includes>**/*.keystore,**/*.pem</includes>
+                        <outputDirectory>${jetty.test.policy.loc}</outputDirectory>
+                      </artifactItem>
+                    </artifactItems>
+                  </configuration>
+                </execution>
+              </executions>
+            </plugin>   
         </plugins>
     </build>
 
@@ -84,11 +84,6 @@
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-http</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-io</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -109,29 +104,15 @@
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
-        <!--
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-websocket</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
-        </dependency>-->
+        </dependency>
         <dependency>
             <groupId>org.eclipse.jetty.toolchain</groupId>
             <artifactId>jetty-test-helper</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>com.ning</groupId>
-            <artifactId>async-http-client</artifactId>
-            <version>1.7.5</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
-            <version>4.2.1</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

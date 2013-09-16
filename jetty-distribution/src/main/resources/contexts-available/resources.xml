@@ -1,0 +1,27 @@
+<?xml version="1.0"  encoding="ISO-8859-1"?>
+<!DOCTYPE Configure PUBLIC "-//Mort Bay Consulting//DTD Configure//EN" "http://jetty.eclipse.org/configure.dtd">
+
+<!--
+Configure a custom context for serving static resources 
+
+This context contains only a ResourceHandler
+to serve static html files and images.
+-->
+
+<Configure class="org.eclipse.jetty.server.handler.ContextHandler">
+  <Call class="org.eclipse.jetty.util.log.Log" name="debug"><Arg>Configure javadoc.xml</Arg></Call>
+  <Set name="contextPath">/resources</Set>
+  <Set name="resourceBase"><SystemProperty name="jetty.home" default="."/>/resources/</Set>
+  <Set name="handler">
+    <New class="org.eclipse.jetty.server.handler.ResourceHandler">
+      <Set name="welcomeFiles">
+        <Array type="String">
+          <Item>index.html</Item>
+        </Array>
+      </Set>
+      <Set name="cacheControl">max-age=3600,public</Set>
+    </New>
+  </Set>
+
+</Configure>
+

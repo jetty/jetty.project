@@ -21,17 +21,13 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.io.InputStream;
 
-import javax.servlet.AsyncContext;
-import javax.servlet.AsyncEvent;
-import javax.servlet.AsyncListener;
-import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 
-class SuspendHandler extends HandlerWrapper implements AsyncListener
+class SuspendHandler extends HandlerWrapper
 {
     private int _read;
     private long _suspendFor=-1;
@@ -81,7 +77,7 @@ class SuspendHandler extends HandlerWrapper implements AsyncListener
     {
         _completeAfter = completeAfter;
     }
-
+    
     @Override
     public void handle(String target, final Request baseRequest, final HttpServletRequest request, final HttpServletResponse response) throws IOException, ServletException
     {
@@ -101,7 +97,7 @@ class SuspendHandler extends HandlerWrapper implements AsyncListener
             }
 
             final AsyncContext asyncContext = baseRequest.startAsync();
-            asyncContext.addListener(this);
+            asyncContext.addContinuationListener(LocalAsyncContextTest.__asyncListener);
             if (_suspendFor>0)
                 asyncContext.setTimeout(_suspendFor);
 
@@ -114,7 +110,7 @@ class SuspendHandler extends HandlerWrapper implements AsyncListener
                         try
                         {
                             Thread.sleep(_completeAfter);
-                            response.getOutputStream().println("COMPLETED");
+                            response.getOutputStream().print("COMPLETED");
                             response.setStatus(200);
                             baseRequest.setHandled(true);
                             asyncContext.complete();
@@ -128,7 +124,7 @@ class SuspendHandler extends HandlerWrapper implements AsyncListener
             }
             else if (_completeAfter==0)
             {
-                response.getOutputStream().println("COMPLETED");
+                response.getOutputStream().print("COMPLETED");
                 response.setStatus(200);
                 baseRequest.setHandled(true);
                 asyncContext.complete();
@@ -171,25 +167,4 @@ class SuspendHandler extends HandlerWrapper implements AsyncListener
         }
     }
 
-    @Override
-    public void onComplete(AsyncEvent asyncEvent) throws IOException
-    {
-    }
-
-    @Override
-    public void onTimeout(AsyncEvent asyncEvent) throws IOException
-    {
-        asyncEvent.getSuppliedRequest().setAttribute("TIMEOUT",Boolean.TRUE);
-        asyncEvent.getAsyncContext().dispatch();
-    }
-
-    @Override
-    public void onError(AsyncEvent asyncEvent) throws IOException
-    {
-    }
-
-    @Override
-    public void onStartAsync(AsyncEvent asyncEvent) throws IOException
-    {
-    }
 }

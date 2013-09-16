@@ -18,12 +18,10 @@
 
 package org.eclipse.jetty.spdy.api;
 
-import java.util.concurrent.TimeUnit;
-
 /**
  * <p>A container for RST_STREAM frames data: the stream id and the stream status.</p>
  */
-public class RstInfo extends Info
+public class RstInfo
 {
     private final int streamId;
     private final StreamStatus streamStatus;
@@ -31,27 +29,13 @@ public class RstInfo extends Info
     /**
      * <p>Creates a new {@link RstInfo} with the given stream id and stream status</p>
      *
-     * @param timeout      the operation's timeout
-     * @param unit         the timeout's unit
-     * @param streamId     the stream id
+     * @param streamId  the stream id
      * @param streamStatus the stream status
-     */
-    public RstInfo(long timeout, TimeUnit unit, int streamId, StreamStatus streamStatus)
-    {
-        super(timeout, unit);
-        this.streamId = streamId;
-        this.streamStatus = streamStatus;
-    }
-
-    /**
-     * <p>Creates a new {@link RstInfo} with the given stream id and stream status</p>
-     *
-     * @param streamId
-     * @param streamStatus
      */
     public RstInfo(int streamId, StreamStatus streamStatus)
     {
-        this(0, TimeUnit.SECONDS, streamId, streamStatus);
+        this.streamId = streamId;
+        this.streamStatus = streamStatus;
     }
 
     /**

@@ -18,32 +18,27 @@
 
 package org.eclipse.jetty.servlets;
 
-
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.EnumSet;
+import java.lang.reflect.Array;
 import java.util.Map;
 
-import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-
-import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.ServletTester;
+import org.eclipse.jetty.servlet.FilterMapping;
+import org.eclipse.jetty.testing.HttpTester;
+import org.eclipse.jetty.testing.ServletTester;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.After;
@@ -55,7 +50,7 @@ public class MultipartFilterTest
     private File _dir;
     private ServletTester tester;
 
-
+    
     public static class BoundaryServlet extends TestServlet
     {
         @Override
@@ -80,13 +75,14 @@ public class MultipartFilterTest
             assertNotNull(req.getParameter("fileup"));
             assertNotNull(req.getParameter("fileup"+MultiPartFilter.CONTENT_TYPE_SUFFIX));
             assertEquals(req.getParameter("fileup"+MultiPartFilter.CONTENT_TYPE_SUFFIX), "application/octet-stream");
+            
             super.doPost(req, resp);
         }
-
+        
     }
+    
 
-
-
+    
     @Before
     public void setUp() throws Exception
     {
@@ -96,11 +92,11 @@ public class MultipartFilterTest
         _dir.deleteOnExit();
         assertTrue(_dir.isDirectory());
 
-        tester=new ServletTester("/context");
-        tester.getContext().setResourceBase(_dir.getCanonicalPath());
-        tester.getContext().addServlet(TestServlet.class, "/");
-        tester.getContext().setAttribute("javax.servlet.context.tempdir", _dir);
-        FilterHolder multipartFilter = tester.getContext().addFilter(MultiPartFilter.class,"/*", EnumSet.of(DispatcherType.REQUEST));
+        tester=new ServletTester();
+        tester.setContextPath("/context");
+        tester.setResourceBase(_dir.getCanonicalPath());
+        tester.addServlet(TestServlet.class, "/");
+        FilterHolder multipartFilter = tester.addFilter(MultiPartFilter.class,"/*",FilterMapping.DEFAULT);
         multipartFilter.setInitParameter("deleteFiles", "true");
         tester.start();
     }
@@ -109,66 +105,99 @@ public class MultipartFilterTest
     public void tearDown() throws Exception
     {
         tester.stop();
-        tester=null;
     }
 
     @Test
     public void testBadPost() throws Exception
     {
         // generated and parsed test
-        HttpTester.Request request = HttpTester.newRequest();
-        HttpTester.Response response;
+        HttpTester request = new HttpTester();
+        HttpTester response = new HttpTester();
 
         // test GET
         request.setMethod("POST");
         request.setVersion("HTTP/1.0");
         request.setHeader("Host","tester");
         request.setURI("/context/dump");
-
+        
         String boundary="XyXyXy";
         request.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
-
-
+        
+        
         String content = "--" + boundary + "\r\n"+
         "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r\n"+
         "Content-Type: application/octet-stream\r\n\r\n"+
         "How now brown cow."+
         "\r\n--" + boundary + "-\r\n\r\n";
-
+        
         request.setContent(content);
-
-
-        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
-        assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,response.getStatus());
+        
+        
+        response.parse(tester.getResponses(request.generate()));
+        assertTrue(response.getMethod()==null);
+        assertEquals(HttpServletResponse.SC_OK,response.getStatus());
     }
-
+    
 
     @Test
     public void testPost() throws Exception
     {
         // generated and parsed test
-        HttpTester.Request request = HttpTester.newRequest();
-        HttpTester.Response response;
+        HttpTester request = new HttpTester();
+        HttpTester response = new HttpTester();
 
         // test GET
         request.setMethod("POST");
         request.setVersion("HTTP/1.0");
         request.setHeader("Host","tester");
         request.setURI("/context/dump");
-
+        
         String boundary="XyXyXy";
         request.setHeader("Content-Type","multipart/form-data; boundary=\""+boundary+"\"");
-
-
+        
+        
         String content = "--" + boundary + "\r\n"+
         "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r\n"+
         "Content-Type: application/octet-stream\r\n\r\n"+
         "How now brown cow."+
         "\r\n--" + boundary + "--\r\n\r\n";
-
+        
         request.setContent(content);
+        
+        response.parse(tester.getResponses(request.generate()));
+        assertTrue(response.getMethod()==null);
+        assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+        assertTrue(response.getContent().indexOf("brown cow")>=0);
+    }
+    
+    
+    @Test
+    public void testContentTypeWithCharset() throws Exception
+    {
+        // generated and parsed test
+        HttpTester request = new HttpTester();
+        HttpTester response = new HttpTester();
 
-        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
+        // test GET
+        request.setMethod("POST");
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host","tester");
+        request.setURI("/context/dump");
+        
+        String boundary="XyXyXy";
+        request.setHeader("Content-Type","multipart/form-data; boundary=\""+boundary+"\"; charset=ISO-8859-1");
+        
+        
+        String content = "--" + boundary + "\r\n"+
+        "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r\n"+
+        "Content-Type: application/octet-stream\r\n\r\n"+
+        "How now brown cow."+
+        "\r\n--" + boundary + "--\r\n\r\n";
+        
+        request.setContent(content);
+        
+        response.parse(tester.getResponses(request.generate()));
+        assertTrue(response.getMethod()==null);
         assertEquals(HttpServletResponse.SC_OK,response.getStatus());
         assertTrue(response.getContent().indexOf("brown cow")>=0);
     }
@@ -177,28 +206,29 @@ public class MultipartFilterTest
     public void testEncodedPost() throws Exception
     {
         // generated and parsed test
-        HttpTester.Request request = HttpTester.newRequest();
-        HttpTester.Response response;
+        HttpTester request = new HttpTester();
+        HttpTester response = new HttpTester();
 
         // test GET
         request.setMethod("POST");
         request.setVersion("HTTP/1.0");
         request.setHeader("Host","tester");
         request.setURI("/context/dump");
-
+        
         String boundary="XyXyXy";
         request.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
-
-
+        
+        
         String content = "--" + boundary + "\r\n"+
         "Content-Disposition: form-data; name=\"fileup\"; filename=\"Diplomsko Delo Lektorirano KON&#268;NA.doc\"\r\n"+
         "Content-Type: application/octet-stream\r\n\r\n"+
         "How now brown cow."+
         "\r\n--" + boundary + "--\r\n\r\n";
-
+        
         request.setContent(content);
-
-        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
+        
+        response.parse(tester.getResponses(request.generate()));
+        assertTrue(response.getMethod()==null);
         assertEquals(HttpServletResponse.SC_OK,response.getStatus());
         assertTrue(response.getContent().indexOf("brown cow")>=0);
     }
@@ -207,8 +237,9 @@ public class MultipartFilterTest
     public void testBadlyEncodedFilename() throws Exception
     {
         // generated and parsed test
-        HttpTester.Request request = HttpTester.newRequest();
-        HttpTester.Response response;
+        HttpTester request = new HttpTester();
+        HttpTester response = new HttpTester();
+
         // test GET
         request.setMethod("POST");
         request.setVersion("HTTP/1.0");
@@ -227,10 +258,13 @@ public class MultipartFilterTest
         
         request.setContent(content);
         
-        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
+        response.parse(tester.getResponses(request.generate()));
         
         //System.out.printf("Content: [%s]%n", response.getContent());
+
+        assertThat(response.getMethod(), nullValue());
         assertThat(response.getStatus(), is(HttpServletResponse.SC_OK));
+        
         assertThat(response.getContent(), containsString("Filename [Taken on Aug 22 \\ 2012.jpg]"));
         assertThat(response.getContent(), containsString("How now brown cow."));
     }
@@ -239,8 +273,9 @@ public class MultipartFilterTest
     public void testBadlyEncodedMSFilename() throws Exception
     {
         // generated and parsed test
-        HttpTester.Request request = HttpTester.newRequest();
-        HttpTester.Response response;
+        HttpTester request = new HttpTester();
+        HttpTester response = new HttpTester();
+
         // test GET
         request.setMethod("POST");
         request.setVersion("HTTP/1.0");
@@ -259,11 +294,13 @@ public class MultipartFilterTest
         
         request.setContent(content);
         
-        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
+        response.parse(tester.getResponses(request.generate()));
         
         //System.out.printf("Content: [%s]%n", response.getContent());
 
-        assertThat(response.getStatus(), is(HttpServletResponse.SC_OK));       
+        assertThat(response.getMethod(), nullValue());
+        assertThat(response.getStatus(), is(HttpServletResponse.SC_OK));
+        
         assertThat(response.getContent(), containsString("Filename [c:\\this\\really\\is\\some\\path\\to\\a\\file.txt]"));
         assertThat(response.getContent(), containsString("How now brown cow.")); 
     }
@@ -272,8 +309,9 @@ public class MultipartFilterTest
     public void testCorrectlyEncodedMSFilename() throws Exception
     {
         // generated and parsed test
-        HttpTester.Request request = HttpTester.newRequest();
-        HttpTester.Response response;
+        HttpTester request = new HttpTester();
+        HttpTester response = new HttpTester();
+
         // test GET
         request.setMethod("POST");
         request.setVersion("HTTP/1.0");
@@ -292,10 +330,13 @@ public class MultipartFilterTest
         
         request.setContent(content);
         
-        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
+        response.parse(tester.getResponses(request.generate()));
         
         //System.out.printf("Content: [%s]%n", response.getContent());
-        assertThat(response.getStatus(), is(HttpServletResponse.SC_OK));        
+
+        assertThat(response.getMethod(), nullValue());
+        assertThat(response.getStatus(), is(HttpServletResponse.SC_OK));
+        
         assertThat(response.getContent(), containsString("Filename [c:\\this\\really\\is\\some\\path\\to\\a\\file.txt]"));
         assertThat(response.getContent(), containsString("How now brown cow.")); 
     }
@@ -307,18 +348,18 @@ public class MultipartFilterTest
     @Test
     public void testPostWithContentTransferEncodingBase64() throws Exception {
         // generated and parsed test
-        HttpTester.Request request = HttpTester.newRequest();
-        HttpTester.Response response;
+        HttpTester request = new HttpTester();
+        HttpTester response = new HttpTester();
 
         // test GET
         request.setMethod("POST");
         request.setVersion("HTTP/1.0");
         request.setHeader("Host","tester");
         request.setURI("/context/dump");
-
+        
         String boundary="XyXyXy";
         request.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
-
+        
         // part content is "How now brown cow." run through a base64 encoder
         String content = "--" + boundary + "\r\n"+
         "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r\n"+
@@ -326,10 +367,11 @@ public class MultipartFilterTest
         "Content-Type: application/octet-stream\r\n\r\n"+
         "SG93IG5vdyBicm93biBjb3cuCg=="+
         "\r\n--" + boundary + "--\r\n\r\n";
-
+        
         request.setContent(content);
-
-        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
+        
+        response.parse(tester.getResponses(request.generate()));
+        assertTrue(response.getMethod()==null);
         assertEquals(HttpServletResponse.SC_OK,response.getStatus());
         assertTrue(response.getContent().indexOf("brown cow")>=0);
     }
@@ -338,21 +380,20 @@ public class MultipartFilterTest
      * Test multipart with parts encoded in quoted-printable (RFC1521 section 5)
      */
     @Test
-    public void testPostWithContentTransferEncodingQuotedPrintable() throws Exception
-    {
+    public void testPostWithContentTransferEncodingQuotedPrintable() throws Exception {
         // generated and parsed test
-        HttpTester.Request request = HttpTester.newRequest();
-        HttpTester.Response response;
+        HttpTester request = new HttpTester();
+        HttpTester response = new HttpTester();
 
         // test GET
         request.setMethod("POST");
         request.setVersion("HTTP/1.0");
         request.setHeader("Host","tester");
         request.setURI("/context/dump");
-
+        
         String boundary="XyXyXy";
         request.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
-
+        
         /*
          * Part content is "How now brown cow." run through Apache Commons Codec
          * quoted printable encoding.
@@ -363,10 +404,11 @@ public class MultipartFilterTest
         "Content-Type: application/octet-stream\r\n\r\n"+
         "=48=6F=77=20=6E=6F=77=20=62=72=6F=77=6E=20=63=6F=77=2E"+
         "\r\n--" + boundary + "--\r\n\r\n";
-
+        
         request.setContent(content);
-
-        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
+        
+        response.parse(tester.getResponses(request.generate()));
+        assertTrue(response.getMethod()==null);
         assertEquals(HttpServletResponse.SC_OK,response.getStatus());
         assertTrue(response.getContent().indexOf("brown cow")>=0);
     }
@@ -376,20 +418,19 @@ public class MultipartFilterTest
     public void testNoBoundary() throws Exception
     {
         // generated and parsed test
-        HttpTester.Request request = HttpTester.newRequest();
-        HttpTester.Response response;
-
+        HttpTester request = new HttpTester();
+        HttpTester response = new HttpTester();
+        tester.addServlet(BoundaryServlet.class,"/testb");
         tester.setAttribute("fileName", "abc");
         tester.setAttribute("desc", "123");
         tester.setAttribute("title", "ttt");
         request.setMethod("POST");
         request.setVersion("HTTP/1.0");
         request.setHeader("Host","tester");
-        request.setURI("/context/dump");
+        request.setURI("/context/testb");
 
         request.setHeader("Content-Type","multipart/form-data");
 
-        // generated and parsed test
         String content = "--\r\n"+
         "Content-Disposition: form-data; name=\"fileName\"\r\n"+
         "Content-Type: text/plain; charset=US-ASCII\r\n"+
@@ -417,7 +458,8 @@ public class MultipartFilterTest
         "----\r\n";
         request.setContent(content);
 
-        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
+        response.parse(tester.getResponses(request.generate()));
+        assertTrue(response.getMethod()==null);
         assertEquals(HttpServletResponse.SC_OK,response.getStatus());
     }
     
@@ -427,10 +469,8 @@ public class MultipartFilterTest
     { 
         String boundary="XyXyXy";
         // generated and parsed test
-        HttpTester.Request request = HttpTester.newRequest();
-        HttpTester.Response response;
-        
-        
+        HttpTester request = new HttpTester();
+        HttpTester response = new HttpTester();
         tester.addServlet(BoundaryServlet.class,"/testb");
         tester.setAttribute("fileName", "abc");
         tester.setAttribute("desc", "123");
@@ -468,7 +508,8 @@ public class MultipartFilterTest
         "--XyXyXy--\n";
         request.setContent(content);
 
-        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
+        response.parse(tester.getResponses(request.generate()));
+        assertTrue(response.getMethod()==null);
         assertEquals(HttpServletResponse.SC_OK,response.getStatus()); 
     }
     
@@ -478,8 +519,8 @@ public class MultipartFilterTest
     { 
         String boundary="XyXyXy";
         // generated and parsed test
-        HttpTester.Request request = HttpTester.newRequest();
-        HttpTester.Response response;
+        HttpTester request = new HttpTester();
+        HttpTester response = new HttpTester();
         tester.addServlet(BoundaryServlet.class,"/testb");
         tester.setAttribute("fileName", "abc");
         tester.setAttribute("desc", "123");
@@ -517,7 +558,8 @@ public class MultipartFilterTest
         "--XyXyXy--\r";
         request.setContent(content);
 
-        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
+        response.parse(tester.getResponses(request.generate()));
+        assertTrue(response.getMethod()==null);
         assertEquals(HttpServletResponse.SC_OK,response.getStatus()); 
     }
     
@@ -527,8 +569,8 @@ public class MultipartFilterTest
     { 
         String boundary="XyXyXy";
         // generated and parsed test
-        HttpTester.Request request = HttpTester.newRequest();
-        HttpTester.Response response;
+        HttpTester request = new HttpTester();
+        HttpTester response = new HttpTester();
         tester.addServlet(BoundaryServlet.class,"/testb");
         tester.setAttribute("fileName", "\nabc\n");
         tester.setAttribute("desc", "\n123\n");
@@ -569,26 +611,28 @@ public class MultipartFilterTest
         "--XyXyXy--\r";
         request.setContent(content);
 
-        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
+        response.parse(tester.getResponses(request.generate()));
+        assertTrue(response.getMethod()==null);
         assertEquals(HttpServletResponse.SC_OK,response.getStatus()); 
     }
-
+    
+    
     @Test
     public void testNoBody()
     throws Exception
     {
         String boundary="XyXyXy";
         // generated and parsed test
-        HttpTester.Request request = HttpTester.newRequest();
-        HttpTester.Response response;
-        
+        HttpTester request = new HttpTester();
+        HttpTester response = new HttpTester();
         request.setMethod("POST");
         request.setVersion("HTTP/1.0");
         request.setHeader("Host","tester");
         request.setURI("/context/dump");
         request.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
         
-        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
+        response.parse(tester.getResponses(request.generate()));
+        assertTrue(response.getMethod()==null);
         assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, response.getStatus());
         assertTrue(response.getContent().indexOf("Missing content")>=0);
     }
@@ -601,8 +645,8 @@ public class MultipartFilterTest
 
         String boundary="XyXyXy";
         // generated and parsed test
-        HttpTester.Request request = HttpTester.newRequest();
-        HttpTester.Response response;
+        HttpTester request = new HttpTester();
+        HttpTester response = new HttpTester();
         request.setMethod("POST");
         request.setVersion("HTTP/1.0");
         request.setHeader("Host","tester");
@@ -610,7 +654,8 @@ public class MultipartFilterTest
         request.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
         request.setContent(whitespace);
         
-        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
+        response.parse(tester.getResponses(request.generate()));
+        assertTrue(response.getMethod()==null);
         assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, response.getStatus());
         assertTrue(response.getContent().indexOf("Missing initial")>=0);
     }
@@ -624,8 +669,8 @@ public class MultipartFilterTest
 
         String boundary="XyXyXy";
         // generated and parsed test
-        HttpTester.Request request = HttpTester.newRequest();
-        HttpTester.Response response;
+        HttpTester request = new HttpTester();
+        HttpTester response = new HttpTester();
         request.setMethod("POST");
         request.setVersion("HTTP/1.0");
         request.setHeader("Host","tester");
@@ -633,7 +678,8 @@ public class MultipartFilterTest
         request.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
         request.setContent(whitespace);
         
-        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
+        response.parse(tester.getResponses(request.generate()));
+        assertTrue(response.getMethod()==null);
         assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, response.getStatus());
         assertTrue(response.getContent().indexOf("Missing initial")>=0);
     }
@@ -657,8 +703,8 @@ public class MultipartFilterTest
         "--AaB03x--\r\n";
 
         // generated and parsed test
-        HttpTester.Request request = HttpTester.newRequest();
-        HttpTester.Response response;
+        HttpTester request = new HttpTester();
+        HttpTester response = new HttpTester();
         request.setMethod("POST");
         request.setVersion("HTTP/1.0");
         request.setHeader("Host","tester");
@@ -666,10 +712,12 @@ public class MultipartFilterTest
         request.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
         request.setContent(body);
 
-        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
+        response.parse(tester.getResponses(request.generate()));
+        assertTrue(response.getMethod()==null);
         assertEquals(HttpServletResponse.SC_OK, response.getStatus());
         assertTrue(response.getContent().contains("aaaa,bbbbb"));
     }
+
     @Test
     public void testLeadingWhitespaceBodyWithoutCRLF()
     throws Exception
@@ -689,8 +737,8 @@ public class MultipartFilterTest
         "--AaB03x--\r\n";
 
         // generated and parsed test
-        HttpTester.Request request = HttpTester.newRequest();
-        HttpTester.Response response;
+        HttpTester request = new HttpTester();
+        HttpTester response = new HttpTester();
         request.setMethod("POST");
         request.setVersion("HTTP/1.0");
         request.setHeader("Host","tester");
@@ -698,48 +746,19 @@ public class MultipartFilterTest
         request.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
         request.setContent(body);
 
-        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
+        response.parse(tester.getResponses(request.generate()));
+        assertTrue(response.getMethod()==null);
         assertEquals(HttpServletResponse.SC_OK, response.getStatus());
         assertTrue(response.getContent().contains("aaaa,bbbbb"));
     }
-    
-    public void testContentTypeWithCharSet() throws Exception
-    {
-        // generated and parsed test
-        HttpTester.Request request = HttpTester.newRequest();
-        HttpTester.Response response;
-
-        // test GET
-        request.setMethod("POST");
-        request.setVersion("HTTP/1.0");
-        request.setHeader("Host","tester");
-        request.setURI("/context/dump");
-
-        String boundary="XyXyXy";
-        request.setHeader("Content-Type","multipart/form-data; boundary=\""+boundary+"\"; charset=ISO-8859-1");
-
-
-        String content = "--" + boundary + "\r\n"+
-        "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r\n"+
-        "Content-Type: application/octet-stream\r\n\r\n"+
-        "How now brown cow."+
-        "\r\n--" + boundary + "--\r\n\r\n";
-
-        request.setContent(content);
-
-        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
-        assertEquals(HttpServletResponse.SC_OK,response.getStatus());
-        assertTrue(response.getContent().indexOf("brown cow")>=0);
-    }
-    
     
     @Test
     public void testBufferOverflowNoCRLF () throws Exception
     {
         String boundary="XyXyXy";
         // generated and parsed test
-        HttpTester.Request request = HttpTester.newRequest();
-        HttpTester.Response response;
+        HttpTester request = new HttpTester();
+        HttpTester response = new HttpTester();
         tester.addServlet(BoundaryServlet.class,"/testb");
         tester.setAttribute("fileName", "abc");
         tester.setAttribute("desc", "123");
@@ -761,7 +780,7 @@ public class MultipartFilterTest
         }
         request.setContent(baos.toString());
 
-        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
+        response.parse(tester.getResponses(request.generate()));
         assertTrue(response.getContent().contains("Buffer size exceeded"));
         assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, response.getStatus());
     }
@@ -772,39 +791,42 @@ public class MultipartFilterTest
      */
     public static class TestServletParameterMap extends DumpServlet
     {
+
         @Override
         protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
         {
-            String[] content = req.getParameterMap().get("\"strup\"Content-Type: application/octet-stream");           
-            assertThat (content[0], containsString("How now brown cow."));
+            String content = (String)req.getParameter("\"strup\"Content-Type: application/octet-stream");
+            
+            assertThat(content, containsString("How now brown cow."));
+                   
             super.doPost(req, resp);
-        }
+        } 
     }
-
-    /**
-     * Validate that the getParameterMap() call is correctly unencoding the parameters in the
+    
+    /** 
+     * Validate that the getParameterMap() call is correctly unencoding the parameters in the 
      * map that it returns.
      * @throws Exception
      */
     @Test
     public void testParameterMap() throws Exception
     {
-        tester.addServlet(TestServletParameterMap.class,"/test2");
-
         // generated and parsed test
-        HttpTester.Request request = HttpTester.newRequest();
-        HttpTester.Response response;
+        HttpTester request = new HttpTester();
+        HttpTester response = new HttpTester();
 
+        tester.addServlet(TestServletParameterMap.class,"/test2");
+        
         // test GET
         request.setMethod("POST");
         request.setVersion("HTTP/1.0");
         request.setHeader("Host","tester");
-        request.setURI("/context/dump");
-
+        request.setURI("/context/test2");
+        
         String boundary="XyXyXy";
         request.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
-
-
+        
+        
         String content = "--" + boundary + "\r\n"+
         "Content-Disposition: form-data; name=\"fileup\"; filename=\"Diplomsko Delo Lektorirano KON&#268;NA.doc\"\r\n"+
         "Content-Type: application/octet-stream\r\n\r\n"+
@@ -814,14 +836,16 @@ public class MultipartFilterTest
         "Content-Type: application/octet-stream\r\n\r\n"+
         "How now brown cow."+
         "\r\n--" + boundary + "--\r\n\r\n";
-
+        
         request.setContent(content);
-
-        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
+        
+        response.parse(tester.getResponses(request.generate()));
+        assertTrue(response.getMethod()==null);
         assertEquals(HttpServletResponse.SC_OK,response.getStatus());
         assertTrue(response.getContent().indexOf("brown cow")>=0);
     }
-
+    
+    
     public static class TestServletCharSet extends HttpServlet
     {
 
@@ -849,15 +873,18 @@ public class MultipartFilterTest
     throws Exception
     {
         // generated and parsed test
-        HttpTester.Request request = HttpTester.newRequest();
-        HttpTester.Response response;
-        tester.addServlet(TestServletCharSet.class,"/test3");
+        HttpTester request = new HttpTester() {
+            
+        };
+        HttpTester response = new HttpTester();
+
+        tester.addServlet(TestServletCharSet.class,"/test2");
         
         // test GET
         request.setMethod("POST");
         request.setVersion("HTTP/1.0");
         request.setHeader("Host","tester");
-        request.setURI("/context/test3");
+        request.setURI("/context/test2");
         
         String boundary="XyXyXy";
         request.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
@@ -870,11 +897,14 @@ public class MultipartFilterTest
         baos.write("ttt\u01FCzzz".getBytes(StringUtil.__UTF8));
         baos.write(("\r\n--" + boundary + "--\r\n\r\n").getBytes());
   
-        
-        request.setContent(baos.toByteArray());   
-        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
+        request.setContentBytes(baos.toByteArray());   
+
+        response.parse(tester.getResponses(new ByteArrayBuffer(request.generate().getBytes(StringUtil.__UTF8))).toString());
     }
 
+    
+    
+    
     public static class DumpServlet extends HttpServlet
     {
         private static final long serialVersionUID = 201012011130L;

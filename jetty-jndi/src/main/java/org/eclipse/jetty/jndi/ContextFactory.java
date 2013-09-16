@@ -32,6 +32,7 @@ import javax.naming.StringRefAddr;
 import javax.naming.spi.ObjectFactory;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
+
 import org.eclipse.jetty.util.log.Logger;
 
 
@@ -40,54 +41,47 @@ import org.eclipse.jetty.util.log.Logger;
  * ContextFactory.java
  *
  * This is an object factory that produces a jndi naming
- * context based on a classloader.
- *
+ * context based on a classloader. 
+ * 
  *  It is used for the java:comp context.
- *
+ *  
  *  This object factory is bound at java:comp. When a
  *  lookup arrives for java:comp,  this object factory
  *  is invoked and will return a context specific to
  *  the caller's environment (so producing the java:comp/env
  *  specific to a webapp).
- *
+ *  
  *  The context selected is based on classloaders. First
  *  we try looking at the thread context classloader if it is set, and walk its
  *  hierarchy, creating a context if none is found. If the thread context classloader
  *  is not set, then we use the classloader associated with the current Context.
  *  
  *  If there is no current context, or no classloader, we return null.
- *
+ * 
  * Created: Fri Jun 27 09:26:40 2003
  *
- *
- *
+ * 
+ * 
  */
 public class ContextFactory implements ObjectFactory
 {
     private static Logger __log = NamingUtil.__log;
-
+    
     /**
      * Map of classloaders to contexts.
      */
     private static final WeakHashMap __contextMap = new WeakHashMap();
-
+    
     /**
      * Threadlocal for injecting a context to use
      * instead of looking up the map.
      */
-    private static final ThreadLocal<Context> __threadContext = new ThreadLocal<Context>();
-    
-    /**
-     * Threadlocal for setting a classloader which must be used 
-     * when finding the comp context.
-     */
-    private static final ThreadLocal<ClassLoader> __threadClassLoader = new ThreadLocal<ClassLoader>();
-    
+    private static final ThreadLocal __threadContext = new ThreadLocal();
 
-
-    /**
+    
+    /** 
      * Find or create a context which pertains to a classloader.
-     *
+     * 
      * If the thread context classloader is set, we try to find an already-created naming context
      * for it. If one does not exist, we walk its classloader hierarchy until one is found, or we 
      * run out of parent classloaders. In the latter case, we will create a new naming context associated
@@ -108,31 +102,16 @@ public class ContextFactory implements ObjectFactory
     {
         //First, see if we have had a context injected into us to use.
         Context ctx = (Context)__threadContext.get();
-        if (ctx != null)
+        if (ctx != null) 
         {
             if(__log.isDebugEnabled()) __log.debug("Using the Context that is bound on the thread");
             return ctx;
         }
-
-        //See if there is a classloader to use for finding the comp context
-        //Don't use its parent hierarchy if set.
-        ClassLoader loader = (ClassLoader)__threadClassLoader.get();
-        if (loader != null)
-        {
-            if (__log.isDebugEnabled() && loader != null) __log.debug("Using threadlocal classloader");
-            ctx = getContextForClassLoader(loader);
-            if (ctx == null)
-            {
-                ctx = newNamingContext(obj, loader, env, name, nameCtx);
-                __contextMap.put (loader, ctx);
-                if(__log.isDebugEnabled())__log.debug("Made context "+name.get(0)+" for classloader: "+loader);
-            }
-            return ctx;
-        }
+        
        
-        //If the thread context classloader is set, then try its hierarchy to find a matching context
         ClassLoader tccl = Thread.currentThread().getContextClassLoader();
-        loader = tccl;      
+        ClassLoader loader = tccl;
+        //If the thread context classloader is set, then try its hierarchy to find a matching context
         if (loader != null)
         {
             if (__log.isDebugEnabled() && loader != null) __log.debug("Trying thread context classloader");
@@ -212,38 +191,29 @@ public class ContextFactory implements ObjectFactory
         
         return (Context)__contextMap.get(loader);
     }
-
+    
 
     /**
      * Associate the given Context with the current thread.
-     * disassociate method should be called to reset the context.
+     * resetComponentContext method should be called to reset the context.
      * @param ctx the context to associate to the current thread.
      * @return the previous context associated on the thread (can be null)
      */
-    public static Context associateContext(final Context ctx)
+    public static Context setComponentContext(final Context ctx) 
     {
         Context previous = (Context)__threadContext.get();
         __threadContext.set(ctx);
         return previous;
     }
 
-    public static void disassociateContext(final Context ctx)
+    /**
+     * Set back the context with the given value.
+     * Don't return the previous context, use setComponentContext() method for this.
+     * @param ctx the context to associate to the current thread.
+     */
+    public static void resetComponentContext(final Context ctx) 
     {
-        __threadContext.remove();
-    }
-    
-    
-    public static ClassLoader associateClassLoader(final ClassLoader loader)
-    {
-        ClassLoader prev = (ClassLoader)__threadClassLoader.get();
-        __threadClassLoader.set(loader);
-        return prev;
-    }
-    
-    
-    public static void disassociateClassLoader ()
-    {
-        __threadClassLoader.remove();
+        __threadContext.set(ctx);
     }
 
     public static void dump(Appendable out, String indent) throws IOException
@@ -256,10 +226,10 @@ public class ContextFactory implements ObjectFactory
             boolean last=++i==size;
             ClassLoader loader=entry.getKey();
             out.append(indent).append(" +- ").append(loader.getClass().getSimpleName()).append("@").append(Long.toHexString(loader.hashCode())).append(": ");
-
+            
             NamingContext context = entry.getValue();
             context.dump(out,indent+(last?"    ":" |  "));
         }
     }
 
-}
+} 

@@ -21,7 +21,6 @@ package org.eclipse.jetty.webapp;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.resource.Resource;
 
 /**
  * DiscoveredAnnotation
@@ -37,27 +36,15 @@ public abstract class DiscoveredAnnotation
     protected WebAppContext _context;
     protected String _className;
     protected Class<?> _clazz;
-    protected Resource _resource; //resource it was discovered on, can be null (eg from WEB-INF/classes)
     
     public abstract void apply();
     
     public DiscoveredAnnotation (WebAppContext context, String className)
     {
-        this(context,className, null);
-    } 
-    
-    
-    public DiscoveredAnnotation(WebAppContext context, String className, Resource resource)
-    {
         _context = context;
         _className = className;
-        _resource = resource;
-    }
+    } 
     
-    public Resource getResource ()
-    {
-        return _resource;
-    }
     
     public Class<?> getTargetClass()
     {

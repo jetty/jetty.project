@@ -23,73 +23,20 @@ import java.security.AccessControlException;
 import java.util.Properties;
 
 import org.eclipse.jetty.util.DateCache;
-import org.eclipse.jetty.util.annotation.ManagedAttribute;
-import org.eclipse.jetty.util.annotation.ManagedObject;
 
 /**
- * StdErr Logging implementation. 
+ * StdErr Logging. This implementation of the Logging facade sends all logs to StdErr with minimal formatting.
  * <p>
- * A Jetty {@link Logger} that sends all logs to STDERR ({@link System#err}) with basic formatting.
+ * If the system property "org.eclipse.jetty.LEVEL" is set to one of the following (ALL, DEBUG, INFO, WARN), then set
+ * the eclipse jetty root level logger level to that specified level. (Default level is INFO)
  * <p>
- * Supports named loggers, and properties based configuration. 
+ * If the system property "org.eclipse.jetty.util.log.SOURCE" is set, then the source method/file of a log is logged.
+ * For named debuggers, the system property name+".SOURCE" is checked, eg "org.eclipse.jetty.util.log.stderr.SOURCE". 
+ * If it is not not set, then "org.eclipse.jetty.util.log.SOURCE" is used as the default.
  * <p>
- * Configuration Properties:
- * <dl>
- *   <dt>${name|hierarchy}.LEVEL=(ALL|DEBUG|INFO|WARN|OFF)</dt>
- *   <dd>
- *   Sets the level that the Logger should log at.<br/>
- *   Names can be a package name, or a fully qualified class name.<br/>
- *   Default: INFO<br/>
- *   <br/>
- *   Examples:
- *   <dl>
- *   <dt>org.eclipse.jetty.LEVEL=WARN</dt>
- *   <dd>indicates that all of the jetty specific classes, in any package that 
- *   starts with <code>org.eclipse.jetty</code> should log at level WARN.</dd>
- *   <dt>org.eclipse.jetty.io.ChannelEndPoint.LEVEL=ALL</dt>
- *   <dd>indicates that the specific class, ChannelEndPoint, should log all
- *   logging events that it can generate, including DEBUG, INFO, WARN (and even special
- *   internally ignored exception cases).</dd>
- *   </dl>  
- *   </dd>
- *   
- *   <dt>${name}.SOURCE=(true|false)</dt>
- *   <dd>
- *   Logger specific, attempt to print the java source file name and line number
- *   where the logging event originated from.<br/>
- *   Name must be a fully qualified class name (package name hierarchy is not supported
- *   by this configurable)<br/>
- *   Warning: this is a slow operation and will have an impact on performance!<br/>
- *   Default: false
- *   </dd>
- *   
- *   <dt>${name}.STACKS=(true|false)</dt>
- *   <dd>
- *   Logger specific, control the display of stacktraces.<br/>
- *   Name must be a fully qualified class name (package name hierarchy is not supported
- *   by this configurable)<br/>
- *   Default: true
- *   </dd>
- *   
- *   <dt>org.eclipse.jetty.util.log.stderr.SOURCE=(true|false)</dt>
- *   <dd>Special Global Configuration, attempt to print the java source file name and line number
- *   where the logging event originated from.<br/>
- *   Default: false
- *   </dd>
- *   
- *   <dt>org.eclipse.jetty.util.log.stderr.LONG=(true|false)</dt>
- *   <dd>Special Global Configuration, when true, output logging events to STDERR using
- *   long form, fully qualified class names.  when false, use abbreviated package names<br/>
- *   Default: false
- *   </dd>
- *   <dt>org.eclipse.jetty.util.log.stderr.ESCAPE=(true|false)</dt>
- *   <dd>Global Configuration, when true output logging events to STDERR are always
- *   escaped so that control characters are replaced with '?";  '\r' with '<' and '\n' replaced '|'<br/>
- *   Default: true
- *   </dd>
- * </dl>
+ * If the system property "org.eclipse.jetty.util.log.stderr.LONG" is set, then the full, unabbreviated name of the logger is
+ * used for logging.
  */
-@ManagedObject("Jetty StdErr Logging Implementation")
 public class StdErrLog extends AbstractLogger
 {
     private static final String EOL = System.getProperty("line.separator");
@@ -99,12 +46,11 @@ public class StdErrLog extends AbstractLogger
     private final static boolean __source = Boolean.parseBoolean(Log.__props.getProperty("org.eclipse.jetty.util.log.SOURCE",
             Log.__props.getProperty("org.eclipse.jetty.util.log.stderr.SOURCE","false")));
     private final static boolean __long = Boolean.parseBoolean(Log.__props.getProperty("org.eclipse.jetty.util.log.stderr.LONG","false"));
-    private final static boolean __escape = Boolean.parseBoolean(Log.__props.getProperty("org.eclipse.jetty.util.log.stderr.ESCAPE","true"));
 
     static
     {
         __props.putAll(Log.__props);
-
+        
         String deprecatedProperties[] =
         { "DEBUG", "org.eclipse.jetty.util.log.DEBUG", "org.eclipse.jetty.util.log.stderr.DEBUG" };
 
@@ -131,7 +77,6 @@ public class StdErrLog extends AbstractLogger
     public static final int LEVEL_DEBUG = 1;
     public static final int LEVEL_INFO = 2;
     public static final int LEVEL_WARN = 3;
-    public static final int LEVEL_OFF = 10;
 
     private int _level = LEVEL_INFO;
     // Level that this Logger was configured as (remembered in special case of .setDebugEnabled())
@@ -146,56 +91,16 @@ public class StdErrLog extends AbstractLogger
     private final String _abbrevname;
     private boolean _hideStacks = false;
 
-    /**
-     * Obtain a StdErrLog reference for the specified class, a convenience method used most often during testing to allow for control over a specific logger.
-     * <p>
-     * Must be actively using StdErrLog as the Logger implementation.
-     * 
-     * @param clazz
-     *            the Class reference for the logger to use.
-     * @return the StdErrLog logger
-     * @throws RuntimeException
-     *             if StdErrLog is not the active Logger implementation.
-     */
-    public static StdErrLog getLogger(Class<?> clazz)
-    {
-        Logger log = Log.getLogger(clazz);
-        if (log instanceof StdErrLog)
-        {
-            return (StdErrLog)log;
-        }
-        throw new RuntimeException("Logger for " + clazz + " is not of type StdErrLog");
-    }
-
-    /**
-     * Construct an anonymous StdErrLog (no name).
-     * <p>
-     * NOTE: Discouraged usage!
-     */
     public StdErrLog()
     {
         this(null);
     }
 
-    /**
-     * Construct a named StdErrLog using the {@link Log} defined properties
-     * 
-     * @param name
-     *            the name of the logger
-     */
     public StdErrLog(String name)
     {
         this(name,__props);
     }
 
-    /**
-     * Construct a named Logger using the provided properties to configure logger.
-     * 
-     * @param name
-     *            the name of the logger
-     * @param props
-     *            the configuration properties
-     */
     public StdErrLog(String name, Properties props)
     {
         if (props!=null && props!=__props)
@@ -207,24 +112,12 @@ public class StdErrLog extends AbstractLogger
 
         try
         {
-            String source = getLoggingProperty(props,_name,"SOURCE");
-            _source = source==null?__source:Boolean.parseBoolean(source);
+            _source = Boolean.parseBoolean(props.getProperty(_name + ".SOURCE",Boolean.toString(_source)));
         }
         catch (AccessControlException ace)
         {
             _source = __source;
         }
-
-        try
-        {
-            // allow stacktrace display to be controlled by properties as well
-            String stacks = getLoggingProperty(props,_name,"STACKS");
-            _hideStacks = stacks==null?false:!Boolean.parseBoolean(stacks);
-        }
-        catch (AccessControlException ignore)
-        {
-            /* ignore */
-        }        
     }
 
     /**
@@ -268,26 +161,6 @@ public class StdErrLog extends AbstractLogger
         // Default Logging Level
         return getLevelId("log.LEVEL",props.getProperty("log.LEVEL","INFO"));
     }
-    
-    public static String getLoggingProperty(Properties props, String name, String property)
-    {
-        // Calculate the level this named logger should operate under.
-        // Checking with FQCN first, then each package segment from longest to shortest.
-        String nameSegment = name;
-
-        while ((nameSegment != null) && (nameSegment.length() > 0))
-        {
-            String s = props.getProperty(nameSegment+"."+property);
-            if (s!=null)
-                return s;
-
-            // Trim and try again.
-            int idx = nameSegment.lastIndexOf('.');
-            nameSegment = (idx >= 0)?nameSegment.substring(0,idx):null;
-        }
-
-        return null;
-    }
 
     protected static int getLevelId(String levelSegment, String levelName)
     {
@@ -312,12 +185,8 @@ public class StdErrLog extends AbstractLogger
         {
             return LEVEL_WARN;
         }
-        else if ("OFF".equalsIgnoreCase(levelStr))
-        {
-            return LEVEL_OFF;
-        }
 
-        System.err.println("Unknown StdErrLog level [" + levelSegment + "]=[" + levelStr + "], expecting only [ALL, DEBUG, INFO, WARN, OFF] as values.");
+        System.err.println("Unknown StdErrLog level [" + levelSegment + "]=[" + levelStr + "], expecting only [ALL, DEBUG, INFO, WARN] as values.");
         return -1;
     }
 
@@ -450,7 +319,6 @@ public class StdErrLog extends AbstractLogger
         }
     }
 
-    @ManagedAttribute("is debug enabled for root logger Log.LOG")
     public boolean isDebugEnabled()
     {
         return (_level <= LEVEL_DEBUG);
@@ -460,7 +328,6 @@ public class StdErrLog extends AbstractLogger
      * Legacy interface where a programmatic configuration of the logger level
      * is done as a wholesale approach.
      */
-    @Override
     public void setDebugEnabled(boolean enabled)
     {
         if (enabled)
@@ -476,7 +343,7 @@ public class StdErrLog extends AbstractLogger
         else
         {
             this._level = this._configuredLevel;
-
+            
             for (Logger log : Log.getLoggers().values())
             {
                 if (log.getName().startsWith(getName()) && log instanceof StdErrLog)
@@ -536,9 +403,8 @@ public class StdErrLog extends AbstractLogger
 
     private void format(StringBuilder buffer, String level, String msg, Object... args)
     {
-        long now = System.currentTimeMillis();
-        int ms=(int)(now%1000);
         String d = _dateCache.now();
+        int ms = _dateCache.lastMs();
         tag(buffer,d,ms,level);
         format(buffer,msg,args);
     }
@@ -548,7 +414,7 @@ public class StdErrLog extends AbstractLogger
         format(buffer,level,msg);
         if (isHideStacks())
         {
-            format(buffer,": "+String.valueOf(thrown));
+            format(buffer,String.valueOf(thrown));
         }
         else
         {
@@ -582,7 +448,6 @@ public class StdErrLog extends AbstractLogger
             buffer.append(_abbrevname);
         }
         buffer.append(':');
-        buffer.append(Thread.currentThread().getName()).append(": ");
         if (_source)
         {
             Throwable source = new Throwable();
@@ -648,34 +513,29 @@ public class StdErrLog extends AbstractLogger
 
     private void escape(StringBuilder builder, String string)
     {
-        if (__escape)
+        for (int i = 0; i < string.length(); ++i)
         {
-            for (int i = 0; i < string.length(); ++i)
+            char c = string.charAt(i);
+            if (Character.isISOControl(c))
             {
-                char c = string.charAt(i);
-                if (Character.isISOControl(c))
+                if (c == '\n')
                 {
-                    if (c == '\n')
-                    {
-                        builder.append('|');
-                    }
-                    else if (c == '\r')
-                    {
-                        builder.append('<');
-                    }
-                    else
-                    {
-                        builder.append('?');
-                    }
+                    builder.append('|');
+                }
+                else if (c == '\r')
+                {
+                    builder.append('<');
                 }
                 else
                 {
-                    builder.append(c);
+                    builder.append('?');
                 }
             }
+            else
+            {
+                builder.append(c);
+            }
         }
-        else
-            builder.append(string);
     }
 
     private void format(StringBuilder buffer, Throwable thrown)
@@ -708,14 +568,15 @@ public class StdErrLog extends AbstractLogger
     /**
      * Create a Child Logger of this Logger.
      */
-    @Override
     protected Logger newLogger(String fullname)
     {
         StdErrLog logger = new StdErrLog(fullname);
         // Preserve configuration for new loggers configuration
         logger.setPrintLongNames(_printLongNames);
+        // Let Level come from configured Properties instead - sel.setLevel(_level);
+        logger.setSource(_source);
         logger._stderr = this._stderr;
-
+        
         // Force the child to have any programmatic configuration
         if (_level!=_configuredLevel)
             logger._level=_level;

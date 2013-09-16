@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
@@ -25,14 +25,14 @@
     <Item>org.eclipse.jetty.servlet.DefaultServlet</Item>
   </Array>
 
-  <Call name="addBean">
+  <Call name="addLifeCycle">
     <Arg>
       <New id="DeploymentManager" class="org.eclipse.jetty.deploy.DeploymentManager">
         <Set name="contexts">
-          <Ref refid="Contexts" />
-        </Set>
-
-        <Ref refid="DeploymentManager">
+          <Ref id="Contexts" />
+        </Set>      
+        
+        <Ref id="DeploymentManager">
           <Call name="addLifeCycleBinding">
             <Arg>
               <New class="org.eclipse.jetty.deploy.bindings.GlobalWebappConfigBinding">
@@ -41,21 +41,28 @@
             </Arg>
           </Call>
        </Ref>
-
+        
         <!-- Providers of Apps -->
         <Set name="appProviders">
           <Array type="org.eclipse.jetty.deploy.AppProvider">
             <Item>
-             <New class="org.eclipse.jetty.deploy.providers.WebAppProvider">
-              <Set name="monitoredDirName"><SystemProperty name="jetty.home" />/webapps</Set>
+             <New class="org.eclipse.jetty.deploy.providers.ContextProvider">
+              <Set name="monitoredDirName"><SystemProperty name="jetty.home" />/contexts</Set>
               <Set name="scanInterval">1</Set>
               <Set name="configurationManager">
-                <New class="org.eclipse.jetty.deploy.PropertiesConfigurationManager">
+                <New class="org.eclipse.jetty.deploy.FileConfigurationManager">
                   <Set name="file">
                     <SystemProperty name="jetty.home"/>/xml-configured-jetty.properties
                   </Set>
                 </New>
               </Set>
+             </New>
+            </Item>
+            <Item>
+             <New class="org.eclipse.jetty.deploy.providers.WebAppProvider">
+              <Set name="monitoredDirName"><SystemProperty name="jetty.home" />/webapps</Set>
+              <Set name="scanInterval">1</Set>
+              <Set name="contextXmlDir"><SystemProperty name="jetty.home" />/contexts</Set>
              </New>
             </Item>
           </Array>

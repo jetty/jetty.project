@@ -18,14 +18,14 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.IOException;
 
-import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaders;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 public class RedirectPatternRuleTest extends AbstractRuleTestCase
 {
@@ -51,6 +51,6 @@ public class RedirectPatternRuleTest extends AbstractRuleTestCase
         String location = "http://eclipse.com";
         _rule.setLocation(location);
         _rule.apply(null, _request, _response);
-        assertEquals(location, _response.getHeader(HttpHeader.LOCATION.asString()));
+        assertEquals(location, _response.getHeader(HttpHeaders.LOCATION));
     }
 }

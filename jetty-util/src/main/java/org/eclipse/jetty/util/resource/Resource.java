@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.util.resource;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -27,7 +26,7 @@ import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
-import java.nio.channels.ReadableByteChannel;
+import java.net.URLConnection;
 import java.text.DateFormat;
 import java.util.Arrays;
 import java.util.Date;
@@ -45,7 +44,7 @@ import org.eclipse.jetty.util.log.Logger;
 /** 
  * Abstract resource class.
  */
-public abstract class Resource implements ResourceFactory, Closeable
+public abstract class Resource implements ResourceFactory
 {
     private static final Logger LOG = Log.getLogger(Resource.class);
     public static boolean __defaultUseCaches = true;
@@ -114,7 +113,6 @@ public abstract class Resource implements ResourceFactory, Closeable
             }
             catch(Exception e)
             {
-                LOG.warn(e.toString());
                 LOG.debug(Log.EXCEPTION,e);
                 return new BadResource(url,e.toString());
             }
@@ -150,7 +148,7 @@ public abstract class Resource implements ResourceFactory, Closeable
      * @param useCaches controls URLConnection caching
      * @return A Resource object.
      */
-    public static Resource newResource(String resource, boolean useCaches)       
+    public static Resource newResource (String resource, boolean useCaches)       
     throws MalformedURLException, IOException
     {
         URL url=null;
@@ -172,7 +170,11 @@ public abstract class Resource implements ResourceFactory, Closeable
                         resource=resource.substring(2);
                     
                     File file=new File(resource).getCanonicalFile();
-                    return new FileResource(file);
+                    url=Resource.toURL(file);            
+                    
+                    URLConnection connection=url.openConnection();
+                    connection.setUseCaches(useCaches);
+                    return new FileResource(url,connection,file);
                 }
                 catch(Exception e2)
                 {
@@ -191,9 +193,15 @@ public abstract class Resource implements ResourceFactory, Closeable
     }
 
     /* ------------------------------------------------------------ */
-    public static Resource newResource(File file)
+    public static Resource newResource (File file)
+    throws MalformedURLException, IOException
     {
-        return new FileResource(file);
+        file = file.getCanonicalFile();
+        URL url = Resource.toURL(file);
+
+        URLConnection connection = url.openConnection();
+        FileResource fileResource = new FileResource(url, connection, file);
+        return fileResource;
     }
 
     /* ------------------------------------------------------------ */
@@ -291,7 +299,7 @@ public abstract class Resource implements ResourceFactory, Closeable
     @Override
     protected void finalize()
     {
-        close();
+        release();
     }
     
     /* ------------------------------------------------------------ */
@@ -300,18 +308,9 @@ public abstract class Resource implements ResourceFactory, Closeable
     
     /* ------------------------------------------------------------ */
     /** Release any temporary resources held by the resource.
-     * @deprecated use {@link #close()}
      */
-    public final void release()
-    {
-        close();
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Release any temporary resources held by the resource.
-     */
-    @Override
-    public abstract void close();
+    public abstract void release();
+    
 
     /* ------------------------------------------------------------ */
     /**
@@ -387,14 +386,14 @@ public abstract class Resource implements ResourceFactory, Closeable
      */
     public abstract InputStream getInputStream()
         throws java.io.IOException;
-    
+
     /* ------------------------------------------------------------ */
     /**
-     * Returns an readable bytechannel to the resource or null if one is not available.
+     * Returns an output stream to the resource
      */
-    public abstract ReadableByteChannel getReadableByteChannel()
-        throws java.io.IOException;
-
+    public abstract OutputStream getOutputStream()
+        throws java.io.IOException, SecurityException;
+    
     /* ------------------------------------------------------------ */
     /**
      * Deletes the given resource
@@ -420,19 +419,19 @@ public abstract class Resource implements ResourceFactory, Closeable
     /**
      * Returns the resource contained inside the current resource with the
      * given name.
-     * @param path The path segment to add, which is not encoded
+     * @param path The path segment to add, which should be encoded by the
+     * encode method. 
      */
     public abstract Resource addPath(String path)
         throws IOException,MalformedURLException;
 
     /* ------------------------------------------------------------ */
-    /** Get a resource from within this resource.
+    /** Get a resource from withing this resource.
      * <p>
      * This method is essentially an alias for {@link #addPath(String)}, but without checked exceptions.
      * This method satisfied the {@link ResourceFactory} interface.
      * @see org.eclipse.jetty.util.resource.ResourceFactory#getResource(java.lang.String)
      */
-    @Override
     public Resource getResource(String path)
     {
         try
@@ -447,12 +446,14 @@ public abstract class Resource implements ResourceFactory, Closeable
     }
 
     /* ------------------------------------------------------------ */
-    /** 
-     * @deprecated
+    /** Encode according to this resource type.
+     * The default implementation calls URI.encodePath(uri)
+     * @param uri 
+     * @return String encoded for this resource type.
      */
     public String encode(String uri)
     {
-        return null;
+        return URIUtil.encodePath(uri);
     }
         
     /* ------------------------------------------------------------ */
@@ -615,13 +616,18 @@ public abstract class Resource implements ResourceFactory, Closeable
     public void writeTo(OutputStream out,long start,long count)
         throws IOException
     {
-        try (InputStream in = getInputStream())
+        InputStream in = getInputStream();
+        try
         {
             in.skip(start);
             if (count<0)
                 IO.copy(in,out);
             else
                 IO.copy(in,out,count);
+        }
+        finally
+        {
+            in.close();
         }
     }    
     
@@ -631,10 +637,7 @@ public abstract class Resource implements ResourceFactory, Closeable
     {
         if (destination.exists())
             throw new IllegalArgumentException(destination+" exists");
-        try (OutputStream out = new FileOutputStream(destination))
-        {
-            writeTo(out,0,-1);
-        }
+        writeTo(new FileOutputStream(destination),0,-1);
     }
 
     /* ------------------------------------------------------------ */

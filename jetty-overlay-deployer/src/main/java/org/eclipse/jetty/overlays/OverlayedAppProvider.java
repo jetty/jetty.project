@@ -32,7 +32,6 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -390,7 +389,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
                 List<URL> libs = new ArrayList<URL>();
                 for (String jar :instance_lib.list())
                 {
-                    if (!jar.toLowerCase(Locale.ENGLISH).endsWith(".jar"))
+                    if (!jar.toLowerCase().endsWith(".jar"))
                         continue;
                     libs.add(instance_lib.addPath(jar).getURL());
                 }
@@ -611,7 +610,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
         {
             for (String jar :lib.list())
             {
-                if (!jar.toLowerCase(Locale.ENGLISH).endsWith(".jar"))
+                if (!jar.toLowerCase().endsWith(".jar"))
                     continue;
                 libs.add(lib.addPath(jar).getURL());
             }
@@ -833,12 +832,12 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
                 File origin = new File(new URI(_scanDir.toURI()+ruri));
                 String name=origin.getName();
                 
-                Monitor monitor = Monitor.valueOf(origin.getParentFile().getName().toUpperCase(Locale.ENGLISH));
+                Monitor monitor = Monitor.valueOf(origin.getParentFile().getName().toUpperCase());
                 
                 String ext=".war";
                 
                 // check directory vs archive 
-                if (origin.isDirectory() || !origin.exists() && !ruri.toLowerCase(Locale.ENGLISH).endsWith(ext))
+                if (origin.isDirectory() || !origin.exists() && !ruri.toLowerCase().endsWith(ext))
                 {
                     // directories have priority over archives
                     directory=origin;
@@ -847,7 +846,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
                 else
                 {
                     // check extension name
-                    if (!ruri.toLowerCase(Locale.ENGLISH).endsWith(ext))
+                    if (!ruri.toLowerCase().endsWith(ext))
                         continue;
 
                     name=name.substring(0,name.length()-4);

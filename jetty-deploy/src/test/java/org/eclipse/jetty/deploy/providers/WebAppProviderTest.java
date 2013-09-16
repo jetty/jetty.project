@@ -40,10 +40,10 @@ public class WebAppProviderTest
     {
         jetty = new XmlConfiguredJetty(testdir);
         jetty.addConfiguration("jetty.xml");
-        jetty.addConfiguration("jetty-http.xml");
         jetty.addConfiguration("jetty-deploy-wars.xml");
 
         // Setup initial context
+        jetty.copyContext("foo.xml","foo.xml");
         jetty.copyWebapp("foo-webapp-1.war","foo.war");
 
         // Should not throw an Exception
@@ -69,7 +69,7 @@ public class WebAppProviderTest
         File workDir = jetty.getJettyDir("workish");
 
         System.err.println("workDir="+workDir);
-
+        
         // Test for regressions
         assertDirNotExists("root of work directory",workDir,"webinf");
         assertDirNotExists("root of work directory",workDir,"jsp");
@@ -80,19 +80,16 @@ public class WebAppProviderTest
 
     private static boolean hasJettyGeneratedPath(File basedir, String expectedWarFilename)
     {
-        File[] paths = basedir.listFiles();
-        if (paths != null)
+        for (File path : basedir.listFiles())
         {
-            for (File path : paths)
+            if (path.exists() && path.isDirectory() && path.getName().startsWith("jetty-") && path.getName().contains(expectedWarFilename))
             {
-                if (path.exists() && path.isDirectory() && path.getName().startsWith("jetty-") && path.getName().contains(expectedWarFilename))
-                {
-                    System.err.println("Found expected generated directory: " + path);
-                    return true;
-                }
+                System.out.println("Found expected generated directory: " + path);
+                return true;
             }
-            System.err.println("did not find "+expectedWarFilename+" in "+Arrays.asList(paths));
         }
+
+        System.err.println("did not find "+expectedWarFilename+" in "+Arrays.asList(basedir.listFiles()));
         return false;
     }
 

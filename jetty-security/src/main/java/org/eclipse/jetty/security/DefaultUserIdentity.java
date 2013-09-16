@@ -31,11 +31,11 @@ import org.eclipse.jetty.server.UserIdentity;
  *
  */
 public class DefaultUserIdentity implements UserIdentity
-{
+{    
     private final Subject _subject;
     private final Principal _userPrincipal;
     private final String[] _roles;
-
+    
     public DefaultUserIdentity(Subject subject, Principal userPrincipal, String[] roles)
     {
         _subject=subject;
@@ -54,19 +54,13 @@ public class DefaultUserIdentity implements UserIdentity
     }
 
     public boolean isUserInRole(String role, Scope scope)
-    {  
+    {
         if (scope!=null && scope.getRoleRefMap()!=null)
-        {
-            String mappedRole = scope.getRoleRefMap().get(role);
-            if (mappedRole != null)
-                role = mappedRole;
-        }
-        
+            role=scope.getRoleRefMap().get(role);
+
         for (String r :_roles)
-        {
             if (r.equals(role))
                 return true;
-        }
         return false;
     }
 

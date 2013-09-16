@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.eclipse.jetty.util.annotation.Name;
 import org.junit.Ignore;
 
 @Ignore
@@ -34,9 +33,6 @@ public class TestConfiguration extends HashMap<String,Object>
 {
     public static int VALUE=77;
 
-    public final Object ID = new Object();
-    
-    public final String name;
     public TestConfiguration nested;
     public String testString="default";
     public Object testObject;
@@ -54,19 +50,7 @@ public class TestConfiguration extends HashMap<String,Object>
     private Set set;
     private ConstructorArgTestClass constructorArgTestClass;
     public Map map;
-    
 
-    
-    public TestConfiguration()
-    {
-        this("");
-    }
-    
-    public TestConfiguration(@Name("name") String n)
-    {
-        name=n;
-    }
-    
     public void setTest(Object value)
     {
         testObject=value;
@@ -188,5 +172,4 @@ public class TestConfiguration extends HashMap<String,Object>
     {
         this.map = map;
     }
-    
 }

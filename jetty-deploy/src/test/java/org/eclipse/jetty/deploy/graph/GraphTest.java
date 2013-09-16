@@ -18,8 +18,10 @@
 
 package org.eclipse.jetty.deploy.graph;
 
-import org.junit.Assert;
+import junit.framework.Assert;
+
 import org.junit.Test;
+
 
 public class GraphTest
 {
@@ -33,22 +35,22 @@ public class GraphTest
     @Test
     public void testPath()
     {
-
+        
         Path path = new Path();
-
-        Assert.assertEquals(0, path.nodes());
+        
+        Assert.assertEquals(0,path.nodes());
         Assert.assertEquals(null,path.firstNode());
         Assert.assertEquals(null,path.lastNode());
-
+        
         path.add(new Edge(nodeA ,nodeB));
         Assert.assertEquals(2,path.nodes());
         Assert.assertEquals(nodeA,path.firstNode());
         Assert.assertEquals(nodeB,path.lastNode());
-
+        
         path.add(new Edge(nodeB ,nodeC));
         Assert.assertEquals(3,path.nodes());
         Assert.assertEquals(nodeA,path.firstNode());
-        Assert.assertEquals(nodeC,path.lastNode());
+        Assert.assertEquals(nodeC,path.lastNode());       
     }
 
     @Test
@@ -88,7 +90,7 @@ public class GraphTest
         Assert.assertEquals(2,path.nodes());
         path = graph.getPath(nodeB,nodeC);
         Assert.assertEquals(2,path.nodes());
-
+    
     }
 
     @Test
@@ -103,12 +105,12 @@ public class GraphTest
         Assert.assertEquals(4,graph.getEdges().size());
         Path path = graph.getPath(nodeA,nodeC);
         Assert.assertEquals(3,path.nodes());
-
+        
         path = graph.getPath(nodeC,nodeA);
         Assert.assertEquals(null,path);
-
+        
     }
-
+    
     @Test
     public void testSquareCyclic()
     {
@@ -121,16 +123,16 @@ public class GraphTest
         Assert.assertEquals(4,graph.getEdges().size());
         Path path = graph.getPath(nodeA,nodeB);
         Assert.assertEquals(2,path.nodes());
-
+        
         path = graph.getPath(nodeA,nodeC);
         Assert.assertEquals(3,path.nodes());
         path = graph.getPath(nodeA,nodeD);
         Assert.assertEquals(4,path.nodes());
-
+        
         graph.addNode(nodeE);
         path = graph.getPath(nodeA,nodeE);
         Assert.assertEquals(null,path);
     }
-
-
+    
+    
 }

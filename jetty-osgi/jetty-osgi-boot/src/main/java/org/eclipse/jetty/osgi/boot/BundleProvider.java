@@ -20,11 +20,6 @@ package org.eclipse.jetty.osgi.boot;
 
 import org.osgi.framework.Bundle;
 
-/**
- * BundleProvider
- *
- * Jetty DeploymentManager Provider api for webapps or ContextHandlers that are discovered as osgi bundles.
- */
 public interface BundleProvider
 {
     public boolean bundleAdded (Bundle bundle) throws Exception;

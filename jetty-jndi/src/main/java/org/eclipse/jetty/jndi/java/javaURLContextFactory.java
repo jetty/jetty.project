@@ -38,10 +38,10 @@ import org.eclipse.jetty.util.log.Logger;
  * <p><h4>Usage</h4>
  * <pre>
  */
-public class javaURLContextFactory implements ObjectFactory
+public class javaURLContextFactory implements ObjectFactory 
 {
     private static final Logger LOG = Log.getLogger(javaURLContextFactory.class);
-
+        
     /**
      * Either return a new context or the resolution of a url.
      *
@@ -53,7 +53,7 @@ public class javaURLContextFactory implements ObjectFactory
      * @exception Exception if an error occurs
      */
     public Object getObjectInstance(Object url, Name name, Context ctx, Hashtable env)
-        throws Exception
+        throws Exception 
     {
         // null object means return a root context for doing resolutions
         if (url == null)
@@ -61,7 +61,7 @@ public class javaURLContextFactory implements ObjectFactory
             if(LOG.isDebugEnabled())LOG.debug(">>> new root context requested ");
             return new javaRootURLContext(env);
         }
-
+        
         // return the resolution of the url
         if (url instanceof String)
         {
@@ -74,7 +74,7 @@ public class javaURLContextFactory implements ObjectFactory
         if (url instanceof String[])
         {
             if(LOG.isDebugEnabled())LOG.debug(">>> resolution of array of urls requested");
-            String[] urls = (String[])url;
+            String[] urls = (String[])url; 
             Context rootctx = new javaRootURLContext (env);
             Object object = null;
             NamingException e = null;

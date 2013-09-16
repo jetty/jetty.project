@@ -57,7 +57,7 @@ public class PlusDecorator implements Decorator
     public void decorateFilterHolder(FilterHolder filter) throws ServletException
     {
     }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#decorateFilterInstance(javax.servlet.Filter)
@@ -86,7 +86,7 @@ public class PlusDecorator implements Decorator
     {
         decorate(holder);
     }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#decorateServletInstance(javax.servlet.Servlet)
@@ -116,7 +116,7 @@ public class PlusDecorator implements Decorator
         destroy(s);
     }
 
-    /**
+    /** 
      * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#destroyListenerInstance(java.util.EventListener)
      */
     public void destroyListenerInstance(EventListener l)
@@ -125,14 +125,14 @@ public class PlusDecorator implements Decorator
     }
 
 
-    protected void decorate (Object o)
+    protected void decorate (Object o) 
     throws ServletException
-    {
+    {       
 
         RunAsCollection runAses = (RunAsCollection)_context.getAttribute(RunAsCollection.RUNAS_COLLECTION);
         if (runAses != null)
             runAses.setRunAs(o);
-
+        
         InjectionCollection injections = (InjectionCollection)_context.getAttribute(InjectionCollection.INJECTION_COLLECTION);
         if (injections != null)
             injections.inject(o);
@@ -149,11 +149,11 @@ public class PlusDecorator implements Decorator
                 throw new ServletException(e);
             }
         }
-    }
-
+    } 
+    
     protected void destroy (Object o)
     {
-        LifeCycleCallbackCollection callbacks = (LifeCycleCallbackCollection)_context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION);
+        LifeCycleCallbackCollection callbacks = (LifeCycleCallbackCollection)_context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION); 
         if (callbacks != null)
         {
             try

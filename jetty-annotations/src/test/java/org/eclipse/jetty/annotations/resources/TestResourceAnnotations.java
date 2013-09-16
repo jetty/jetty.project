@@ -18,12 +18,8 @@
 
 package org.eclipse.jetty.annotations.resources;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-
 import java.lang.reflect.Field;
 import java.util.List;
-
 import javax.naming.Context;
 import javax.naming.InitialContext;
 
@@ -37,6 +33,9 @@ import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class TestResourceAnnotations
 {

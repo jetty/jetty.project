@@ -5,7 +5,7 @@
 # To get the service to restart correctly on reboot, uncomment below (3 lines):
 # ========================
 # chkconfig: 3 99 99
-# description: Jetty 9 webserver
+# description: Jetty 7 webserver
 # processname: jetty
 # ========================
 
@@ -52,7 +52,7 @@
 #
 #    <Arg><Property name="jetty.home" default="."/>/webapps/jetty.war</Arg>
 #
-# JETTY_PORT (Deprecated - use JETTY_ARGS)
+# JETTY_PORT
 #   Override the default port for Jetty servers. If not set then the
 #   default value in the xml configuration file will be used. The java
 #   system property "jetty.port" will be set to this value for use in
@@ -76,8 +76,6 @@
 #   
 # JETTY_ARGS
 #   The default arguments to pass to jetty.
-#   For example
-#      JETTY_ARGS=jetty.port=8080 jetty.spdy.port=8443 jetty.secure.port=443
 #
 # JETTY_USER
 #   if set, then used as a username to run the server as
@@ -163,7 +161,7 @@ then
   ETC=$HOME/etc
 fi
 
-for CONFIG in $ETC/default/jetty{,9} $HOME/.jettyrc; do
+for CONFIG in $ETC/default/jetty{,7} $HOME/.jettyrc; do
   if [ -f "$CONFIG" ] ; then 
     readConfig "$CONFIG"
   fi
@@ -188,15 +186,13 @@ if [ -z "$JETTY_HOME" ]
 then
   JETTY_SH=$0
   case "$JETTY_SH" in
-    /*)     JETTY_HOME=${JETTY_SH%/*/*} ;;
-    ./*/*)  JETTY_HOME=${JETTY_SH%/*/*} ;;
-    ./*)    JETTY_HOME=.. ;;
-    */*/*)  JETTY_HOME=./${JETTY_SH%/*/*} ;;
-    */*)    JETTY_HOME=. ;;
-    *)      JETTY_HOME=.. ;;
+    /*)   ;;
+    ./*)  ;;
+    *)    JETTY_SH=./$JETTY_SH ;;
   esac
+  JETTY_HOME=${JETTY_SH%/*/*}
 
-  if [ ! -f "$JETTY_HOME/$JETTY_INSTALL_TRACE_FILE" ]
+  if [ ! -f "${JETTY_SH%/*/*}/$JETTY_INSTALL_TRACE_FILE" ]
   then 
     JETTY_HOME=
   fi
@@ -221,13 +217,13 @@ if [ -z "$JETTY_HOME" ] ; then
         "/home"
         )
   JETTY_DIR_NAMES=(
-        "jetty-9"
-        "jetty9"
-        "jetty-9.*"
+        "jetty-7"
+        "jetty7"
+        "jetty-7.*"
         "jetty"
-        "Jetty-9"
-        "Jetty9"
-        "Jetty-9.*"
+        "Jetty-7"
+        "Jetty7"
+        "Jetty-7.*"
         "Jetty"
         )
         
@@ -373,7 +369,7 @@ fi
 #####################################################
 if [ "$JETTY_PORT" ] 
 then
-  JETTY_ARGS+=("jetty.port=$JETTY_PORT")
+  JAVA_OPTIONS+=("-Djetty.port=$JETTY_PORT")
 fi
 
 #####################################################
@@ -421,8 +417,8 @@ if (( DEBUG ))
 then
   echo "JETTY_HOME     =  $JETTY_HOME"
   echo "JETTY_CONF     =  $JETTY_CONF"
+  echo "JETTY_RUN      =  $JETTY_RUN"
   echo "JETTY_PID      =  $JETTY_PID"
-  echo "JETTY_START    =  $JETTY_START"
   echo "JETTY_ARGS     =  $JETTY_ARGS"
   echo "CONFIGS        =  ${CONFIGS[*]}"
   echo "JAVA_OPTIONS   =  ${JAVA_OPTIONS[*]}"
@@ -572,21 +568,22 @@ case "$ACTION" in
     fi
 
     exec "${RUN_CMD[@]}"
+
     ;;
 
   check|status)
     echo "Checking arguments to Jetty: "
-    echo "START_INI      =  $START_INI"
     echo "JETTY_HOME     =  $JETTY_HOME"
     echo "JETTY_CONF     =  $JETTY_CONF"
+    echo "JETTY_RUN      =  $JETTY_RUN"
     echo "JETTY_PID      =  $JETTY_PID"
-    echo "JETTY_START    =  $JETTY_START"
+    echo "JETTY_PORT     =  $JETTY_PORT"
     echo "JETTY_LOGS     =  $JETTY_LOGS"
+    echo "START_INI      =  $START_INI"
     echo "CONFIGS        =  ${CONFIGS[*]}"
-    echo "CLASSPATH      =  $CLASSPATH"
-    echo "JAVA           =  $JAVA"
     echo "JAVA_OPTIONS   =  ${JAVA_OPTIONS[*]}"
-    echo "JETTY_ARGS     =  $JETTY_ARGS"
+    echo "JAVA           =  $JAVA"
+    echo "CLASSPATH      =  $CLASSPATH"
     echo "RUN_CMD        =  ${RUN_CMD[*]}"
     echo
     

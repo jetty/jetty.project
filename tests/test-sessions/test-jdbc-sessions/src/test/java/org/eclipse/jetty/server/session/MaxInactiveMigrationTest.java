@@ -31,10 +31,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.util.log.Log;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -46,7 +47,7 @@ import org.junit.Test;
  * Test
  */
 public class MaxInactiveMigrationTest
-{
+{      
     private JdbcTestServer testServer1;
     private JdbcTestServer testServer2;
     private HttpClient client;
@@ -72,6 +73,7 @@ public class MaxInactiveMigrationTest
         testServer1.start();
         testServer2.start();
         client = new HttpClient();
+        client.setConnectorType(HttpClient.CONNECTOR_SOCKET);
         client.start();
     }
 
@@ -81,11 +83,11 @@ public class MaxInactiveMigrationTest
         testServer1.stop();
         testServer2.stop();
         client.stop();
-        try
+        try 
         {
             DriverManager.getConnection( "jdbc:derby:sessions;shutdown=true" );
-        }
-        catch( SQLException expected )
+        } 
+        catch( SQLException expected ) 
         {
         }
     }
@@ -97,18 +99,22 @@ public class MaxInactiveMigrationTest
         int port=server.getPort();
 
         //Log.getLog().setDebugEnabled(true);
-        Request request = client.newRequest("http://localhost:" + port + "" + "/test");
+        
+        ContentExchange exchange1 = new ContentExchange(true);
+        exchange1.setMethod(HttpMethods.GET);
+        exchange1.setURL("http://localhost:" + port + "" + "/test");
         if (sessionCookie != null)
-            request.header("Cookie", sessionCookie);
-        ContentResponse response = request.send();
-        assertEquals(HttpServletResponse.SC_OK, response.getStatus());
+            exchange1.getRequestFields().add("Cookie", sessionCookie);
+        client.send(exchange1);
+        exchange1.waitForDone();
+        assertEquals(HttpServletResponse.SC_OK, exchange1.getResponseStatus());
 
-        sessionCookie = response.getHeaders().getStringField("Set-Cookie");
+        sessionCookie = exchange1.getResponseFields().getStringField("Set-Cookie");
         assertTrue( sessionCookie != null );
         // Mangle the cookie, replacing Path with $Path, etc.
         sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
-        return response.getContentAsString();
+        return exchange1.getResponseContent();
     }
 
 
@@ -123,12 +129,12 @@ public class MaxInactiveMigrationTest
             HttpSession session = request.getSession( true );
             Integer counter = ( Integer )session.getAttribute( ATTR_COUNTER );
             if( counter == null ) {
-                counter = 0;
+                counter = new Integer( 0 );
             }
-            counter = counter + 1;
+            counter = new Integer( counter.intValue() + 1 );
             session.setAttribute( ATTR_COUNTER, counter );
             PrintWriter writer = response.getWriter();
-            writer.write( "Hello World " + counter);
+            writer.write( "Hello World " + counter.intValue() );
             writer.flush();
         }
 

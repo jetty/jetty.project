@@ -38,9 +38,7 @@ import org.osgi.framework.ServiceRegistration;
 /**
  * ServiceContextProvider
  *
- * Jetty DeploymentManager Provider that is able to deploy ContextHandlers discovered via OSGi as services.
- * 
- * 
+ *
  */
 public class ServiceContextProvider extends AbstractContextProvider implements ServiceProvider
 { 
@@ -95,9 +93,6 @@ public class ServiceContextProvider extends AbstractContextProvider implements S
     {
         if (context == null || serviceRef == null)
             return false;
-        
-        if (context instanceof org.eclipse.jetty.webapp.WebAppContext)
-            return false; //the ServiceWebAppProvider will deploy it
         
         String watermark = (String)serviceRef.getProperty(OSGiWebappConstants.WATERMARK);
         if (watermark != null && !"".equals(watermark))

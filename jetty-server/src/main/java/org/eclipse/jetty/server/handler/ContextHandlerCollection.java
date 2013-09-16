@@ -19,43 +19,41 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.PathMap;
+import org.eclipse.jetty.server.AsyncContinuation;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HandlerContainer;
-import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.util.ArrayTernaryTrie;
-import org.eclipse.jetty.util.ArrayUtil;
-import org.eclipse.jetty.util.Trie;
-import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.annotation.ManagedOperation;
+import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /** ContextHandlerCollection.
- *
- * This {@link org.eclipse.jetty.server.handler.HandlerCollection} is creates a
+ * 
+ * This {@link org.eclipse.jetty.server.handler.HandlerCollection} is creates a 
  * {@link org.eclipse.jetty.http.PathMap} to it's contained handlers based
  * on the context path and virtual hosts of any contained {@link org.eclipse.jetty.server.handler.ContextHandler}s.
  * The contexts do not need to be directly contained, only children of the contained handlers.
  * Multiple contexts may have the same context path and they are called in order until one
- * handles the request.
- *
+ * handles the request.  
+ * 
+ * @org.apache.xbean.XBean element="contexts"
  */
-@ManagedObject("Context Handler Collection")
 public class ContextHandlerCollection extends HandlerCollection
 {
     private static final Logger LOG = Log.getLogger(ContextHandlerCollection.class);
-
-    private volatile Trie<ContextHandler[]> _contexts;
+ 
+    private volatile PathMap _contextMap;
     private Class<? extends ContextHandler> _contextClass = ContextHandler.class;
-
+    
     /* ------------------------------------------------------------ */
     public ContextHandlerCollection()
     {
@@ -67,82 +65,100 @@ public class ContextHandlerCollection extends HandlerCollection
     /**
      * Remap the context paths.
      */
-    @ManagedOperation("update the mapping of context path to context")
     public void mapContexts()
     {
-        int capacity=512;
+        PathMap contextMap = new PathMap();
+        Handler[] branches = getHandlers();
         
-        // Loop until we have a big enough trie to hold all the context paths
-        Trie<ContextHandler[]> trie;
-        loop: while(true)
+        
+        for (int b=0;branches!=null && b<branches.length;b++)
         {
-            trie=new ArrayTernaryTrie<>(false,capacity);
-
-            Handler[] branches = getHandlers();
-
-            // loop over each group of contexts
-            for (int b=0;branches!=null && b<branches.length;b++)
+            Handler[] handlers=null;
+            
+            if (branches[b] instanceof ContextHandler)
             {
-                Handler[] handlers=null;
+                handlers = new Handler[]{ branches[b] };
+            }
+            else if (branches[b] instanceof HandlerContainer)
+            {
+                handlers = ((HandlerContainer)branches[b]).getChildHandlersByClass(ContextHandler.class);
+            }
+            else 
+                continue;
+            
+            for (int i=0;i<handlers.length;i++)
+            {
+                ContextHandler handler=(ContextHandler)handlers[i];
 
-                if (branches[b] instanceof ContextHandler)
-                {
-                    handlers = new Handler[]{ branches[b] };
-                }
-                else if (branches[b] instanceof HandlerContainer)
-                {
-                    handlers = ((HandlerContainer)branches[b]).getChildHandlersByClass(ContextHandler.class);
-                }
-                else
-                    continue;
+                String contextPath=handler.getContextPath();
 
-                // for each context handler in a group
-                for (int i=0;handlers!=null && i<handlers.length;i++)
+                if (contextPath==null || contextPath.indexOf(',')>=0 || contextPath.startsWith("*"))
+                    throw new IllegalArgumentException ("Illegal context spec:"+contextPath);
+
+                if(!contextPath.startsWith("/"))
+                    contextPath='/'+contextPath;
+
+                if (contextPath.length()>1)
                 {
-                    ContextHandler handler=(ContextHandler)handlers[i];
-                    String contextPath=handler.getContextPath().substring(1);
-                    ContextHandler[] contexts=trie.get(contextPath);
-                    
-                    if (!trie.put(contextPath,ArrayUtil.addToArray(contexts,handler,ContextHandler.class)))
+                    if (contextPath.endsWith("/"))
+                        contextPath+="*";
+                    else if (!contextPath.endsWith("/*"))
+                        contextPath+="/*";
+                }
+
+                Object contexts=contextMap.get(contextPath);
+                String[] vhosts=handler.getVirtualHosts();
+
+                
+                if (vhosts!=null && vhosts.length>0)
+                {
+                    Map hosts;
+
+                    if (contexts instanceof Map)
+                        hosts=(Map)contexts;
+                    else
                     {
-                        capacity+=512;
-                        continue loop;
+                        hosts=new HashMap(); 
+                        hosts.put("*",contexts);
+                        contextMap.put(contextPath, hosts);
+                    }
+
+                    for (int j=0;j<vhosts.length;j++)
+                    {
+                        String vhost=vhosts[j];
+                        contexts=hosts.get(vhost);
+                        contexts=LazyList.add(contexts,branches[b]);
+                        hosts.put(vhost,contexts);
                     }
                 }
+                else if (contexts instanceof Map)
+                {
+                    Map hosts=(Map)contexts;
+                    contexts=hosts.get("*");
+                    contexts= LazyList.add(contexts, branches[b]);
+                    hosts.put("*",contexts);
+                }
+                else
+                {
+                    contexts= LazyList.add(contexts, branches[b]);
+                    contextMap.put(contextPath, contexts);
+                }
             }
-            
-            break;
         }
-        
-        // Sort the contexts so those with virtual hosts are considered before those without
-        for (String ctx : trie.keySet())
-        {
-            ContextHandler[] contexts=trie.get(ctx);
-            ContextHandler[] sorted=new ContextHandler[contexts.length];
-            int i=0;
-            for (ContextHandler handler:contexts)
-                if (handler.getVirtualHosts()!=null && handler.getVirtualHosts().length>0)
-                    sorted[i++]=handler;
-            for (ContextHandler handler:contexts)
-                if (handler.getVirtualHosts()==null || handler.getVirtualHosts().length==0)
-                    sorted[i++]=handler;
-            trie.put(ctx,sorted);
-        }
+        _contextMap=contextMap;
 
-        //for (String ctx : trie.keySet())
-        //    System.err.printf("'%s'->%s%n",ctx,Arrays.asList(trie.get(ctx)));
-        _contexts=trie;
     }
+    
 
-
+    
     /* ------------------------------------------------------------ */
-    /*
+    /* 
      * @see org.eclipse.jetty.server.server.handler.HandlerCollection#setHandlers(org.eclipse.jetty.server.server.Handler[])
      */
     @Override
     public void setHandlers(Handler[] handlers)
     {
-        _contexts=null;
+        _contextMap=null;
         super.setHandlers(handlers);
         if (isStarted())
             mapContexts();
@@ -155,10 +171,10 @@ public class ContextHandlerCollection extends HandlerCollection
         mapContexts();
         super.doStart();
     }
-
+    
 
     /* ------------------------------------------------------------ */
-    /*
+    /* 
      * @see org.eclipse.jetty.server.server.Handler#handle(java.lang.String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
     @Override
@@ -167,8 +183,8 @@ public class ContextHandlerCollection extends HandlerCollection
         Handler[] handlers = getHandlers();
         if (handlers==null || handlers.length==0)
 	    return;
-
-	HttpChannelState async = baseRequest.getHttpChannelState();
+	
+	AsyncContinuation async = baseRequest.getAsyncContinuation();
 	if (async.isAsync())
 	{
 	    ContextHandler context=async.getContextHandler();
@@ -178,33 +194,69 @@ public class ContextHandlerCollection extends HandlerCollection
 	        return;
 	    }
 	}
-
+	
 	// data structure which maps a request to a context; first-best match wins
-	// { context path => [ context ] }
+	// { context path => 
+	//     { virtual host => context } 
 	// }
-	if (target.startsWith("/"))
+	PathMap map = _contextMap;
+	if (map!=null && target!=null && target.startsWith("/"))
 	{
-	    int limit = target.length()-1;
+	    // first, get all contexts matched by context path
+	    Object contexts = map.getLazyMatches(target);
 
-	    while (limit>=0)
-	    {
-	        // Get best match
-	        ContextHandler[] contexts = _contexts.getBest(target,1,limit);
-	        if (contexts==null)
-	            break;
+            for (int i=0; i<LazyList.size(contexts); i++)
+            {
+                // then, match against the virtualhost of each context
+                Map.Entry entry = (Map.Entry)LazyList.get(contexts, i);
+                Object list = entry.getValue();
 
-	        int l=contexts[0].getContextPath().length();
-	        if (l==1 || target.length()==l || target.charAt(l)=='/')
-	        {
-	            for (ContextHandler handler : contexts)
-	            {
-	                handler.handle(target,baseRequest, request, response);
-	                if (baseRequest.isHandled())
-	                    return;
-	            }
-	        }
-	        
-	        limit=l-2;
+                if (list instanceof Map)
+                {
+                    Map hosts = (Map)list;
+                    String host = normalizeHostname(request.getServerName());
+           
+                    // explicitly-defined virtual hosts, most specific
+                    list=hosts.get(host);
+                    for (int j=0; j<LazyList.size(list); j++)
+                    {
+                        Handler handler = (Handler)LazyList.get(list,j);
+                        handler.handle(target,baseRequest, request, response);
+                        if (baseRequest.isHandled())
+                            return;
+                    }
+                    
+                    // wildcard for one level of names 
+                    list=hosts.get("*."+host.substring(host.indexOf(".")+1));
+                    for (int j=0; j<LazyList.size(list); j++)
+                    {
+                        Handler handler = (Handler)LazyList.get(list,j);
+                        handler.handle(target,baseRequest, request, response);
+                        if (baseRequest.isHandled())
+                            return;
+                    }
+                    
+                    // no virtualhosts defined for the context, least specific
+                    // will handle any request that does not match to a specific virtual host above
+                    list=hosts.get("*");
+                    for (int j=0; j<LazyList.size(list); j++)
+                    {
+                        Handler handler = (Handler)LazyList.get(list,j);
+                        handler.handle(target,baseRequest, request, response);
+                        if (baseRequest.isHandled())
+                            return;
+                    }
+                }
+                else
+                {
+                    for (int j=0; j<LazyList.size(list); j++)
+                    {
+                        Handler handler = (Handler)LazyList.get(list,j);
+                        handler.handle(target,baseRequest, request, response);
+                        if (baseRequest.isHandled())
+                            return;
+                    }
+                }
 	    }
 	}
 	else
@@ -218,14 +270,14 @@ public class ContextHandlerCollection extends HandlerCollection
 	    }
 	}
     }
-
-
+    
+    
     /* ------------------------------------------------------------ */
     /** Add a context handler.
      * @param contextPath  The context path to add
      * @return the ContextHandler just added
      */
-    public ContextHandler addContext(String contextPath,String resourceBase)
+    public ContextHandler addContext(String contextPath,String resourceBase) 
     {
         try
         {
@@ -248,7 +300,7 @@ public class ContextHandlerCollection extends HandlerCollection
     /**
      * @return The class to use to add new Contexts
      */
-    public Class<?> getContextClass()
+    public Class getContextClass()
     {
         return _contextClass;
     }
@@ -258,12 +310,23 @@ public class ContextHandlerCollection extends HandlerCollection
     /**
      * @param contextClass The class to use to add new Contexts
      */
-    public void setContextClass(Class<? extends ContextHandler> contextClass)
+    public void setContextClass(Class contextClass)
     {
         if (contextClass ==null || !(ContextHandler.class.isAssignableFrom(contextClass)))
             throw new IllegalArgumentException();
         _contextClass = contextClass;
     }
-
-
+    
+    /* ------------------------------------------------------------ */
+    private String normalizeHostname( String host )
+    {
+        if ( host == null )
+            return null;
+        
+        if ( host.endsWith( "." ) )
+            return host.substring( 0, host.length() -1);
+      
+        return host;
+    }
+    
 }

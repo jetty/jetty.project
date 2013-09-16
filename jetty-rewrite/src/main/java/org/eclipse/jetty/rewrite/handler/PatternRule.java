@@ -55,7 +55,6 @@ public abstract class PatternRule extends Rule
     /* (non-Javadoc)
      * @see org.eclipse.jetty.server.server.handler.rules.RuleBase#matchAndApply(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
      */
-    @Override
     public String matchAndApply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
         if (PathMap.match(_pattern, target))
@@ -78,7 +77,6 @@ public abstract class PatternRule extends Rule
     /**
      * Returns the rule pattern.
      */
-    @Override
     public String toString()
     {
         return super.toString()+"["+_pattern+"]";                

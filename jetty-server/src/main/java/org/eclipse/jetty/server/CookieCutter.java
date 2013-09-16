@@ -200,6 +200,7 @@ public class CookieCutter
                                 continue;
 
                             case ';':
+                            // case ',':
                                 if (tokenstart>=0)
                                     value = hdr.substring(tokenstart, tokenend+1);
                                 else
@@ -245,6 +246,7 @@ public class CookieCutter
                                 continue;
 
                             case ';':
+                            // case ',':
                                 if (tokenstart>=0)
                                 {
                                     name = hdr.substring(tokenstart, tokenend+1);
@@ -278,6 +280,7 @@ public class CookieCutter
                 // If after processing the current character we have a value and a name, then it is a cookie
                 if (value!=null && name!=null)
                 {
+                    // TODO handle unquoting during parsing!  But quoting is uncommon
                     name=QuotedStringTokenizer.unquoteOnly(name);
                     value=QuotedStringTokenizer.unquoteOnly(value);
                     

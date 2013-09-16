@@ -16,6 +16,7 @@
 //  ========================================================================
 //
 
+
 package org.eclipse.jetty.monitor;
 
 import java.lang.management.ManagementFactory;
@@ -29,13 +30,14 @@ import java.util.Map;
 
 import org.eclipse.jetty.monitor.thread.ThreadMonitorException;
 import org.eclipse.jetty.monitor.thread.ThreadMonitorInfo;
-import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.log.Logger;
 
-@ManagedObject("Busy Thread Monitor")
+
+/* ------------------------------------------------------------ */
 public class ThreadMonitor extends AbstractLifeCycle implements Runnable
 {
     private static final Logger LOG = Log.getLogger(ThreadMonitor.class);

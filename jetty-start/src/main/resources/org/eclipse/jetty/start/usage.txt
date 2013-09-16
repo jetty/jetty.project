@@ -14,9 +14,7 @@ Command Line Options:
   --list-options   List the details of each classpath OPTION
   
   --list-config    List the start.config file.
-                            
-  --exec-print	   Same as --dry-run
-
+                                    
   --dry-run        Print the command line that the start.jar generates,
                    then exit. This may be used to generate command lines
                    when the start.ini includes -X or -D arguments.
@@ -27,8 +25,6 @@ Command Line Options:
                    JVM instance.
                      
   --stop           Send a stop signal to the running Jetty instance.
-                   The server must have been started with a STOP.PORT=<port>
-		   property set and the stop command must have the same property.
   
   --daemon         Start in daemon mode with stderr and stdout 
                    redirected to ${jetty.log}/start.log
@@ -46,9 +42,8 @@ Command Line Options:
                    will NOT be read. A --ini option with no file indicates that
                    start.ini should not be read.
                    
-  --download=<http-uri>:location
-                   If the file does not exist at the given location, then
-                   download it from the given http URI
+  --pre=<file>     Specify a configuration file that is to be processed
+                   before any configuration files listed in start.ini
 
 System Properties:
   These are set with a command line like "java -Dname=value ..." and are
@@ -59,11 +54,10 @@ System Properties:
       A Low Level Jetty Logger Implementation to use
       (default: org.eclipse.jetty.util.log.Slf4jLog)
       
-    [name|hierarchy].LEVEL=[loglevel]
-      Change loglevel for the stderr and javautil Loggers. Slf4j
+    org.eclipse.jetty.util.log.DEBUG=[boolean]
+      Debug logging for the stderr and javautil Loggers. Slf4j
       and other loggers must be separately configured for debug.
-      For example: Dorg.eclipse.jetty.LEVEL=DEBUG
-      (default: INFO)
+      (default: false)
       
     org.eclipse.jetty.util.log.IGNORED=[boolean]
       Ignored exceptions are logged, independent of DEBUG settings
@@ -129,11 +123,10 @@ Available Configurations:
 Defaults:
   A start.ini file may be used to specify default arguments to start.jar,
   which are used if no command line arguments are provided and override 
-  the defaults in the start.config file. If a line of start.ini contains
-  a directory (eg start.d/) then that directory is scanned for *.ini files 
-  will be processed in name sorted order.
-  
-  If --ini options are provided on  the command line, then start.ini will NOT be read. 
+  the defaults in the start.config file. If the directory jetty.home/start.d
+  exists, then multiple *.ini files will be read from that directory in 
+  alphabetical order. If --ini options are provided on  the command line,
+  then start.ini and start.d will NOT be read. 
   
   The current start.ini arguments are:
 

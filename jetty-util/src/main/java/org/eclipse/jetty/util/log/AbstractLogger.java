@@ -25,7 +25,6 @@ package org.eclipse.jetty.util.log;
  */
 public abstract class AbstractLogger implements Logger
 {
-    @Override
     public final Logger getLogger(String name)
     {
         if (isBlank(name))

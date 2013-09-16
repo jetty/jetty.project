@@ -18,12 +18,9 @@
 
 package org.eclipse.jetty.server.session;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Random;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -33,21 +30,18 @@ import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpSessionEvent;
 import javax.servlet.http.HttpSessionListener;
 
+import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 
 /**
  * AbstractLastAccessTimeTest
- *
- * This test checks that a session can migrate from node A to node B, kept in use in node B
- * past the time at which it would have expired due to inactivity on node A but is NOT
- * scavenged by node A. In other words, it tests that a session that migrates from one node
- * to another is not timed out on the original node.
  */
 public abstract class AbstractLastAccessTimeTest
 {
@@ -58,8 +52,8 @@ public abstract class AbstractLastAccessTimeTest
     {
         String contextPath = "";
         String servletMapping = "/server";
-        int maxInactivePeriod = 8; //session will timeout after 8 seconds
-        int scavengePeriod = 2; //scavenging occurs every 2 seconds
+        int maxInactivePeriod = 8;
+        int scavengePeriod = 2;
         AbstractTestServer server1 = createServer(0, maxInactivePeriod, scavengePeriod);
         TestServlet servlet1 = new TestServlet();
         ServletHolder holder1 = new ServletHolder(servlet1);
@@ -67,27 +61,30 @@ public abstract class AbstractLastAccessTimeTest
         TestSessionListener listener1 = new TestSessionListener();
         context.addEventListener(listener1);
         context.addServlet(holder1, servletMapping);
-
+        server1.start();
+        int port1=server1.getPort();
         try
         {
-            server1.start();
-            int port1=server1.getPort();
             AbstractTestServer server2 = createServer(0, maxInactivePeriod, scavengePeriod);
             server2.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
-
+            server2.start();
+            int port2=server2.getPort();
             try
             {
-                server2.start();
-                int port2=server2.getPort();
                 HttpClient client = new HttpClient();
+                client.setConnectorType(HttpClient.CONNECTOR_SOCKET);
                 client.start();
                 try
                 {
                     // Perform one request to server1 to create a session
-                    ContentResponse response1 = client.GET("http://localhost:" + port1 + contextPath + servletMapping + "?action=init");
-                    assertEquals(HttpServletResponse.SC_OK, response1.getStatus());
-                    assertEquals("test", response1.getContentAsString());
-                    String sessionCookie = response1.getHeaders().getStringField("Set-Cookie");
+                    ContentExchange exchange1 = new ContentExchange(true);
+                    exchange1.setMethod(HttpMethods.GET);
+                    exchange1.setURL("http://localhost:" + port1 + contextPath + servletMapping + "?action=init");
+                    client.send(exchange1);
+                    exchange1.waitForDone();
+                    assertEquals(HttpServletResponse.SC_OK, exchange1.getResponseStatus());
+                    assertEquals("test", exchange1.getResponseContent());
+                    String sessionCookie = exchange1.getResponseFields().getStringField("Set-Cookie");
                     assertTrue( sessionCookie != null );
                     // Mangle the cookie, replacing Path with $Path, etc.
                     sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
@@ -100,16 +97,19 @@ public abstract class AbstractLastAccessTimeTest
                     int requestInterval = 500;
                     for (int i = 0; i < maxInactivePeriod * (1000 / requestInterval); ++i)
                     {
-                        Request request = client.newRequest("http://localhost:" + port2 + contextPath + servletMapping);
-                        request.header("Cookie", sessionCookie);
-                        ContentResponse response2 = request.send();
-                        assertEquals(HttpServletResponse.SC_OK , response2.getStatus());
-                        assertEquals("test", response2.getContentAsString());
+                        ContentExchange exchange2 = new ContentExchange(true);
+                        exchange2.setMethod(HttpMethods.GET);
+                        exchange2.setURL("http://localhost:" + port2 + contextPath + servletMapping);
+                        exchange2.getRequestFields().add("Cookie", sessionCookie);
+                        client.send(exchange2);
+                        exchange2.waitForDone();
+                        assertEquals(HttpServletResponse.SC_OK , exchange2.getResponseStatus());
+                        assertEquals("test", exchange2.getResponseContent());
 
-                        String setCookie = response2.getHeaders().getStringField("Set-Cookie");
-                        if (setCookie!=null)
+                        String setCookie = exchange1.getResponseFields().getStringField("Set-Cookie");
+                        if (setCookie!=null)                    
                             sessionCookie = setCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
-
+                        
                         Thread.sleep(requestInterval);
                     }
 
@@ -118,7 +118,8 @@ public abstract class AbstractLastAccessTimeTest
                     Thread.sleep(scavengePeriod * 2500L);
 
                     //check that the session was not scavenged over on server1 by ensuring that the SessionListener destroy method wasn't called
-                    assertFalse(listener1.destroyed);
+                    assertTrue (listener1.destroyed == false);  
+
                 }
                 finally
                 {
@@ -141,13 +142,13 @@ public abstract class AbstractLastAccessTimeTest
         public boolean destroyed = false;
         public boolean created = false;
 
-        @Override
+ 
         public void sessionDestroyed(HttpSessionEvent se)
         {
-           destroyed = true;
+            destroyed = true;
         }
 
-        @Override
+   
         public void sessionCreated(HttpSessionEvent se)
         {
             created = true;
@@ -155,11 +156,8 @@ public abstract class AbstractLastAccessTimeTest
     }
 
 
-
     public static class TestServlet extends HttpServlet
     {
-
-
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse) throws ServletException, IOException
         {
@@ -168,6 +166,7 @@ public abstract class AbstractLastAccessTimeTest
             {
                 HttpSession session = request.getSession(true);
                 session.setAttribute("test", "test");
+                
                 sendResult(session, httpServletResponse.getWriter());
 
             }
@@ -179,16 +178,18 @@ public abstract class AbstractLastAccessTimeTest
                 sendResult(session, httpServletResponse.getWriter());
 
                 if (session!=null)
-                {
+                {                                       
                     session.setAttribute("test", "test");
                 }
+                
+
             }
         }
-
+        
         private void sendResult(HttpSession session, PrintWriter writer)
         {
                 if (session != null)
-                {
+                {                    
                         writer.print(session.getAttribute("test"));
                 }
                 else

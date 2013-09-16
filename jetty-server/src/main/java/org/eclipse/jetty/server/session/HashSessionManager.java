@@ -19,11 +19,12 @@
 package org.eclipse.jetty.server.session;
 
 import java.io.DataInputStream;
-import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Map;
@@ -36,7 +37,6 @@ import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -56,7 +56,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class HashSessionManager extends AbstractSessionManager
 {
-    final static Logger LOG = SessionHandler.LOG;
+    final static Logger __log = SessionHandler.LOG;
 
     protected final ConcurrentMap<String,HashedSession> _sessions=new ConcurrentHashMap<String,HashedSession>();
     private static int __id;
@@ -71,7 +71,7 @@ public class HashSessionManager extends AbstractSessionManager
     private boolean _lazyLoad=false;
     private volatile boolean _sessionsLoaded=false;
     private boolean _deleteUnrestorableSessions=false;
-
+    
 
 
 
@@ -157,10 +157,10 @@ public class HashSessionManager extends AbstractSessionManager
     public int getSessions()
     {
         int sessions=super.getSessions();
-        if (LOG.isDebugEnabled())
+        if (__log.isDebugEnabled())
         {
             if (_sessions.size()!=sessions)
-                LOG.warn("sessions: "+_sessions.size()+"!="+sessions);
+                __log.warn("sessions: "+_sessions.size()+"!="+sessions);
         }
         return sessions;
     }
@@ -230,7 +230,7 @@ public class HashSessionManager extends AbstractSessionManager
                             }
                             catch (Exception e)
                             {
-                                LOG.warn(e);
+                                __log.warn(e);
                             }
                         }
                     };
@@ -365,7 +365,7 @@ public class HashSessionManager extends AbstractSessionManager
             }
             catch(Exception e)
             {
-                LOG.warn(e);
+                __log.warn(e);
             }
         }
 
@@ -415,37 +415,6 @@ public class HashSessionManager extends AbstractSessionManager
             sessions=new ArrayList<HashedSession>(_sessions.values());
         }
     }
-    
-    
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.server.SessionManager#renewSessionId(java.lang.String, java.lang.String, java.lang.String, java.lang.String)
-     */
-    @Override
-    public void renewSessionId(String oldClusterId, String oldNodeId, String newClusterId, String newNodeId)
-    {
-        try
-        {
-            Map<String,HashedSession> sessions=_sessions;
-            if (sessions == null)
-                return;
-
-            HashedSession session = sessions.remove(oldClusterId);
-            if (session == null)
-                return;
-
-            session.remove(); //delete any previously saved session
-            session.setClusterId(newClusterId); //update ids
-            session.setNodeId(newNodeId);
-            session.save(); //save updated session: TODO consider only saving file if idled
-            sessions.put(newClusterId, session);
-        }
-        catch (Exception e)
-        {
-            LOG.warn(e);
-        }
-    }
 
     /* ------------------------------------------------------------ */
     @Override
@@ -492,13 +461,13 @@ public class HashSessionManager extends AbstractSessionManager
     {
         return _lazyLoad;
     }
-
+    
     /* ------------------------------------------------------------ */
     public boolean isDeleteUnrestorableSessions()
     {
         return _deleteUnrestorableSessions;
     }
-
+    
     /* ------------------------------------------------------------ */
     public void setDeleteUnrestorableSessions(boolean deleteUnrestorableSessions)
     {
@@ -517,7 +486,7 @@ public class HashSessionManager extends AbstractSessionManager
 
         if (!_storeDir.canRead())
         {
-            LOG.warn ("Unable to restore Sessions: Cannot read from Session storage directory "+_storeDir.getAbsolutePath());
+            __log.warn ("Unable to restore Sessions: Cannot read from Session storage directory "+_storeDir.getAbsolutePath());
             return;
         }
 
@@ -559,7 +528,7 @@ public class HashSessionManager extends AbstractSessionManager
                 if (isDeleteUnrestorableSessions() && file.exists() && file.getParentFile().equals(_storeDir) )
                 {
                     file.delete();
-                    LOG.warn("Deleting file for unrestorable session "+idInCuster, error);
+                    __log.warn("Deleting file for unrestorable session "+idInCuster, error);
                 }
                 else
                 {
@@ -568,6 +537,7 @@ public class HashSessionManager extends AbstractSessionManager
             }
             else
                file.delete(); //delete successfully restored file
+                
         }
         return null;
     }
@@ -582,62 +552,87 @@ public class HashSessionManager extends AbstractSessionManager
 
         if (!_storeDir.canWrite())
         {
-            LOG.warn ("Unable to save Sessions: Session persistence storage directory "+_storeDir.getAbsolutePath()+ " is not writeable");
+            __log.warn ("Unable to save Sessions: Session persistence storage directory "+_storeDir.getAbsolutePath()+ " is not writeable");
             return;
         }
 
         for (HashedSession session : _sessions.values())
-            session.save(reactivate);
+            session.save(true);
     }
-    
 
     /* ------------------------------------------------------------ */
     public HashedSession restoreSession (InputStream is, HashedSession session) throws Exception
     {
-        DataInputStream di = new DataInputStream(is);
-
-        String clusterId = di.readUTF();
-        di.readUTF(); // nodeId
-
-        long created = di.readLong();
-        long accessed = di.readLong();
-        int requests = di.readInt();
-
-        if (session == null)
-            session = (HashedSession)newSession(created, accessed, clusterId);
-        session.setRequests(requests);
-
-        int size = di.readInt();
-
-        restoreSessionAttributes(di, size, session);
-
+        /*
+         * Take care of this class's fields first by calling
+         * defaultReadObject
+         */
+        DataInputStream in = new DataInputStream(is);
         try
         {
-            int maxIdle = di.readInt();
-            session.setMaxInactiveInterval(maxIdle);
-        }
-        catch (EOFException e)
-        {
-            LOG.debug("No maxInactiveInterval persisted for session "+clusterId);
-            LOG.ignore(e);
-        }
+            String clusterId = in.readUTF();
+            in.readUTF(); // nodeId
+            long created = in.readLong();
+            long accessed = in.readLong();
+            int requests = in.readInt();
 
-        return session;
+            if (session == null)
+                session = (HashedSession)newSession(created, accessed, clusterId);
+            session.setRequests(requests);
+            int size = in.readInt();
+            if (size>0)
+            {
+                ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(in);
+                try
+                {
+                    for (int i=0; i<size;i++)
+                    {
+                        String key = ois.readUTF();
+                        Object value = ois.readObject();
+                        session.setAttribute(key,value);
+                    }
+                }
+                finally
+                {
+                    IO.close(ois);
+                }
+            }
+            return session;
+        }
+        finally
+        {
+            IO.close(in);
+        }
     }
 
-    
-    private void restoreSessionAttributes (InputStream is, int size, HashedSession session)
-    throws Exception
+
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    protected class ClassLoadingObjectInputStream extends ObjectInputStream
     {
-        if (size>0)
+        /* ------------------------------------------------------------ */
+        public ClassLoadingObjectInputStream(java.io.InputStream in) throws IOException
         {
-            ClassLoadingObjectInputStream ois =  new ClassLoadingObjectInputStream(is);
-        
-            for (int i=0; i<size;i++)
+            super(in);
+        }
+
+        /* ------------------------------------------------------------ */
+        public ClassLoadingObjectInputStream () throws IOException
+        {
+            super();
+        }
+
+        /* ------------------------------------------------------------ */
+        @Override
+        public Class<?> resolveClass (java.io.ObjectStreamClass cl) throws IOException, ClassNotFoundException
+        {
+            try
             {
-                String key = ois.readUTF();
-                Object value = ois.readObject();
-                session.setAttribute(key,value);
+                return Class.forName(cl.getName(), false, Thread.currentThread().getContextClassLoader());
+            }
+            catch (ClassNotFoundException e)
+            {
+                return super.resolveClass(cl);
             }
         }
     }

@@ -25,7 +25,6 @@ import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
-import java.nio.channels.ReadableByteChannel;
 import java.security.Permission;
 
 import org.eclipse.jetty.util.URIUtil;
@@ -81,7 +80,7 @@ public class URLResource extends Resource
     /** Release any resources held by the resource.
      */
     @Override
-    public synchronized void close()
+    public synchronized void release()
     {
         if (_in!=null)
         {
@@ -225,11 +224,16 @@ public class URLResource extends Resource
         }
     }
 
+
     /* ------------------------------------------------------------ */
+    /**
+     * Returns an output stream to the resource
+     */
     @Override
-    public ReadableByteChannel getReadableByteChannel() throws IOException
+    public OutputStream getOutputStream()
+        throws java.io.IOException, SecurityException
     {
-        return null;
+        throw new IOException( "Output not supported");
     }
 
     /* ------------------------------------------------------------ */
@@ -312,6 +316,6 @@ public class URLResource extends Resource
     @Override
     public boolean isContainedIn (Resource containingResource) throws MalformedURLException
     {
-        return false;
+        return false; //TODO check this!
     }
 }

@@ -92,6 +92,14 @@ class BadResource extends URLResource
         
     /* --------------------------------------------------------- */
     @Override
+    public OutputStream getOutputStream()
+        throws java.io.IOException, SecurityException
+    {
+        throw new FileNotFoundException(_message);
+    }
+        
+    /* --------------------------------------------------------- */
+    @Override
     public boolean delete()
         throws SecurityException
     {

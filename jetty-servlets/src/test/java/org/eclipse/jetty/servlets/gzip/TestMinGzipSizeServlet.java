@@ -27,6 +27,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.io.Buffer;
 
 /**
  * Test servlet for testing against unusual minGzip configurable.
@@ -58,9 +59,11 @@ public class TestMinGzipSizeServlet extends TestDirContentServlet
         }
         else
         {
-            String mime = mimeTypes.getMimeByExtension(fileName);
-            if (mime != null)
-                response.setContentType(mime);
+            Buffer buf = mimeTypes.getMimeByExtension(fileName);
+            if (buf != null)
+            {
+                response.setContentType(buf.toString());
+            }
         }
         ServletOutputStream out = response.getOutputStream();
         out.write(dataBytes);

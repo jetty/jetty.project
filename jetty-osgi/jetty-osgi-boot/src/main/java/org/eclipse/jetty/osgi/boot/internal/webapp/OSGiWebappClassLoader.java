@@ -33,6 +33,7 @@ import java.util.jar.JarFile;
 
 import javax.servlet.http.HttpServlet;
 
+import org.eclipse.jetty.osgi.boot.utils.BundleClassLoaderHelper;
 import org.eclipse.jetty.osgi.boot.utils.BundleClassLoaderHelperFactory;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -43,21 +44,19 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleReference;
 
 /**
- * OSGiWebappClassLoader
- * 
- * 
- * Extends the webapp classloader to also use the classloader of the Bundle defining the webapp.
+ * Extends the webappclassloader to insert the classloader provided by the osgi
+ * bundle at the same level than any other jars palced in the webappclassloader.
  */
 public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleReference
 {
 
-    private static final Logger __logger = Log.getLogger(OSGiWebappClassLoader.class.getName());
+    private Logger __logger = Log.getLogger(OSGiWebappClassLoader.class.getName().toString());
 
     /**
      * when a logging framework is setup in the osgi classloaders, it can access
      * this and register the classes that must not be found in the jar.
      */
-    public static final Set<String> JAR_WITH_SUCH_CLASS_MUST_BE_EXCLUDED = new HashSet<String>();
+    public static Set<String> JAR_WITH_SUCH_CLASS_MUST_BE_EXCLUDED = new HashSet<String>();
 
     public static void addClassThatIdentifiesAJarThatMustBeRejected(Class<?> zclass)
     {
@@ -80,9 +79,10 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
 
     private boolean _lookInOsgiFirst = true;
 
-    /* ------------------------------------------------------------ */
+    private Set<String> _libsAlreadyInManifest = new HashSet<String>();
+
     /**
-     * @param parent The parent classloader.
+     * @param parent The parent classloader. In this case
      * @param context The WebAppContext
      * @param contributor The bundle that defines this web-application.
      * @throws IOException
@@ -94,10 +94,7 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
         _contributor = contributor;
         _osgiBundleClassLoader = BundleClassLoaderHelperFactory.getFactory().getHelper().getBundleClassLoader(contributor);
     }
-    
-    
-    
-    /* ------------------------------------------------------------ */
+
     /**
      * Returns the <code>Bundle</code> that defined this web-application.
      * 
@@ -109,7 +106,17 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
         return _contributor;
     }
 
-    /* ------------------------------------------------------------ */
+    /**
+     * Reads the manifest. If the manifest is already configured to loads a few
+     * libs we should not add them to the classpath of the webapp. Not really
+     * important as we resolve classes through the osgi classloader first and
+     * then default on the libs of the webapp.
+     */
+    private void computeLibsAlreadyInOSGiClassLoader()
+    {
+        // TODO
+    }
+
     @Override
     public Enumeration<URL> getResources(String name) throws IOException
     {
@@ -124,10 +131,7 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
             return Collections.enumeration(toList(urls, osgiUrls));
         }
     }
-    
-    
-    
-    /* ------------------------------------------------------------ */
+
     @Override
     public URL getResource(String name)
     {
@@ -142,10 +146,7 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
             return url != null ? url : _osgiBundleClassLoader.getResource(name);
         }
     }
-    
-    
-    
-    /* ------------------------------------------------------------ */
+
     private List<URL> toList(Enumeration<URL> e, Enumeration<URL> e2)
     {
         List<URL> list = new ArrayList<URL>();
@@ -156,8 +157,9 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
         return list;
     }
 
-    
-    /* ------------------------------------------------------------ */
+    /**
+     * 
+     */
     protected Class<?> findClass(String name) throws ClassNotFoundException
     {
         try
@@ -176,10 +178,7 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
             }
         }
     }
-    
-    
-    
-    /* ------------------------------------------------------------ */
+
     /**
      * Parse the classpath ourselves to be able to filter things. This is a
      * derivative work of the super class
@@ -208,8 +207,6 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
 
     }
 
-    
-    /* ------------------------------------------------------------ */
     /**
      * @param lib
      * @return true if the lib should be included in the webapp classloader.
@@ -258,8 +255,6 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
 
     private static Field _contextField;
 
-    
-    /* ------------------------------------------------------------ */
     /**
      * In the case of the generation of a webapp via a jetty context file we
      * need a proper classloader to setup the app before we have the

@@ -41,7 +41,7 @@ import org.eclipse.jetty.xml.XmlParser;
 public class WebDescriptor extends Descriptor
 {
     private static final Logger LOG = Log.getLogger(WebDescriptor.class);
-
+ 
     protected static XmlParser _parserSingleton;
     protected MetaDataComplete _metaDataComplete;
     protected int _majorVersion = 3; //default to container version
@@ -51,7 +51,7 @@ public class WebDescriptor extends Descriptor
 
     protected boolean _isOrdered = false;
     protected List<String> _ordering = new ArrayList<String>();
-
+    
     @Override
     public void ensureParser()
     throws ClassNotFoundException
@@ -63,12 +63,12 @@ public class WebDescriptor extends Descriptor
         _parser = _parserSingleton;
     }
 
-
+    
     public XmlParser newParser()
     throws ClassNotFoundException
     {
         XmlParser xmlParser=new XmlParser();
-        //set up cache of DTDs and schemas locally
+        //set up cache of DTDs and schemas locally        
         URL dtd22=Loader.getResource(Servlet.class,"javax/servlet/resources/web-app_2_2.dtd",true);
         URL dtd23=Loader.getResource(Servlet.class,"javax/servlet/resources/web-app_2_3.dtd",true);
         URL j2ee14xsd=Loader.getResource(Servlet.class,"javax/servlet/resources/j2ee_1_4.xsd",true);
@@ -101,7 +101,7 @@ public class WebDescriptor extends Descriptor
             if (jsp20xsd == null) jsp20xsd = Loader.getResource(Servlet.class, "javax/servlet/resources/jsp_2_0.xsd", true);
             if (jsp21xsd == null) jsp21xsd = Loader.getResource(Servlet.class, "javax/servlet/resources/jsp_2_1.xsd", true);
         }
-
+        
         redirect(xmlParser,"web-app_2_2.dtd",dtd22);
         redirect(xmlParser,"-//Sun Microsystems, Inc.//DTD Web Application 2.2//EN",dtd22);
         redirect(xmlParser,"web.dtd",dtd23);
@@ -135,13 +135,13 @@ public class WebDescriptor extends Descriptor
         redirect(xmlParser,"http://www.ibm.com/webservices/xsd/javaee_web_services_client_1_2.xsd",webservice12xsd);
         return xmlParser;
     }
-
-
+    
+    
     public WebDescriptor (Resource xml)
     {
         super(xml);
     }
-
+    
     public void parse ()
     throws Exception
     {
@@ -149,25 +149,25 @@ public class WebDescriptor extends Descriptor
         processVersion();
         processOrdering();
     }
-
+    
     public MetaDataComplete getMetaDataComplete()
     {
         return _metaDataComplete;
     }
-
-
-
+    
+ 
+    
     public int getMajorVersion ()
     {
         return _majorVersion;
     }
-
+    
     public int getMinorVersion()
     {
         return _minorVersion;
     }
-
-
+  
+    
     public void processVersion ()
     {
         String version = _root.getAttribute("version", "DTD");
@@ -182,7 +182,7 @@ public class WebDescriptor extends Descriptor
                 _minorVersion = 2;
             }
         }
-        else
+        else 
         {
            int dot = version.indexOf(".");
            if (dot > 0)
@@ -191,7 +191,7 @@ public class WebDescriptor extends Descriptor
                _minorVersion = Integer.parseInt(version.substring(dot+1));
            }
         }
-
+     
         if (_majorVersion < 2 && _minorVersion < 5)
             _metaDataComplete = MetaDataComplete.True; // does not apply before 2.5
         else
@@ -202,22 +202,22 @@ public class WebDescriptor extends Descriptor
             else
                 _metaDataComplete = Boolean.valueOf(s).booleanValue()?MetaDataComplete.True:MetaDataComplete.False;
         }
-
+            
         if (LOG.isDebugEnabled())
-            LOG.debug(_xml.toString()+": Calculated metadatacomplete = " + _metaDataComplete + " with version=" + version);
+            LOG.debug(_xml.toString()+": Calculated metadatacomplete = " + _metaDataComplete + " with version=" + version);     
     }
-
+    
     public void processOrdering ()
     {
-        //Process the web.xml's optional <absolute-ordering> element
+        //Process the web.xml's optional <absolute-ordering> element              
         XmlParser.Node ordering = _root.get("absolute-ordering");
         if (ordering == null)
            return;
-
+        
         _isOrdered = true;
         //If an absolute-ordering was already set, then ignore it in favor of this new one
        // _processor.setOrdering(new AbsoluteOrdering());
-
+   
         Iterator<Object> iter = ordering.iterator();
         XmlParser.Node node = null;
         while (iter.hasNext())
@@ -234,43 +234,43 @@ public class WebDescriptor extends Descriptor
                 _ordering.add(node.toString(false,true));
         }
     }
-
+  
     public void addClassName (String className)
     {
         if (!_classNames.contains(className))
             _classNames.add(className);
     }
-
+    
     public ArrayList<String> getClassNames ()
     {
         return _classNames;
     }
-
+    
     public void setDistributable (boolean distributable)
     {
         _distributable = distributable;
     }
-
+    
     public boolean isDistributable()
     {
         return _distributable;
     }
-
+    
     public void setValidating (boolean validating)
     {
        _validating = validating;
     }
-
-
+    
+    
     public boolean isOrdered()
     {
         return _isOrdered;
     }
-
+    
     public List<String> getOrdering()
     {
         return _ordering;
     }
 
-
+  
 }

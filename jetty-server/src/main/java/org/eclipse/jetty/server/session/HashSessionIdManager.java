@@ -61,7 +61,7 @@ public class HashSessionIdManager extends AbstractSessionIdManager
     {
         return Collections.unmodifiableCollection(_sessions.keySet());
     }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * @return Collection of Sessions for the passed session ID
@@ -81,11 +81,42 @@ public class HashSessionIdManager extends AbstractSessionIdManager
         }
         return sessions;
     }
+    /* ------------------------------------------------------------ */
+    /** Get the session ID with any worker ID.
+     * 
+     * @param clusterId
+     * @param request
+     * @return sessionId plus any worker ID.
+     */
+    public String getNodeId(String clusterId,HttpServletRequest request) 
+    {
+        // used in Ajp13Parser
+        String worker=request==null?null:(String)request.getAttribute("org.eclipse.jetty.ajp.JVMRoute");
+        if (worker!=null) 
+            return clusterId+'.'+worker; 
+        
+        if (_workerName!=null) 
+            return clusterId+'.'+_workerName;
+       
+        return clusterId;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Get the session ID without any worker ID.
+     * 
+     * @param nodeId the node id
+     * @return sessionId without any worker ID.
+     */
+    public String getClusterId(String nodeId) 
+    {
+        int dot=nodeId.lastIndexOf('.');
+        return (dot>0)?nodeId.substring(0,dot):nodeId;
+    }
     
     /* ------------------------------------------------------------ */
     @Override
     protected void doStart() throws Exception
-    {
+    {        
         super.doStart();
     }
 
@@ -93,7 +124,7 @@ public class HashSessionIdManager extends AbstractSessionIdManager
     @Override
     protected void doStop() throws Exception
     {
-        _sessions.clear();
+        _sessions.clear(); 
         super.doStop();
     }
 
@@ -101,7 +132,6 @@ public class HashSessionIdManager extends AbstractSessionIdManager
     /**
      * @see SessionIdManager#idInUse(String)
      */
-    @Override
     public boolean idInUse(String id)
     {
         synchronized (this)
@@ -114,12 +144,11 @@ public class HashSessionIdManager extends AbstractSessionIdManager
     /**
      * @see SessionIdManager#addSession(HttpSession)
      */
-    @Override
     public void addSession(HttpSession session)
     {
         String id = getClusterId(session.getId());
         WeakReference<HttpSession> ref = new WeakReference<HttpSession>(session);
-
+        
         synchronized (this)
         {
             Set<WeakReference<HttpSession>> sessions = _sessions.get(id);
@@ -136,11 +165,10 @@ public class HashSessionIdManager extends AbstractSessionIdManager
     /**
      * @see SessionIdManager#removeSession(HttpSession)
      */
-    @Override
     public void removeSession(HttpSession session)
     {
         String id = getClusterId(session.getId());
-
+        
         synchronized (this)
         {
             Collection<WeakReference<HttpSession>> sessions = _sessions.get(id);
@@ -171,7 +199,6 @@ public class HashSessionIdManager extends AbstractSessionIdManager
     /**
      * @see SessionIdManager#invalidateAll(String)
      */
-    @Override
     public void invalidateAll(String id)
     {
         Collection<WeakReference<HttpSession>> sessions;
@@ -179,7 +206,7 @@ public class HashSessionIdManager extends AbstractSessionIdManager
         {
             sessions = _sessions.remove(id);
         }
-
+        
         if (sessions!=null)
         {
             for (WeakReference<HttpSession> ref: sessions)
@@ -189,42 +216,6 @@ public class HashSessionIdManager extends AbstractSessionIdManager
                     session.invalidate();
             }
             sessions.clear();
-        }
-    }
-    
-    
-    /* ------------------------------------------------------------ */
-    @Override
-    public void renewSessionId (String oldClusterId, String oldNodeId, HttpServletRequest request)
-    {
-        //generate a new id
-        String newClusterId = newSessionId(request.hashCode());
-
-
-        synchronized (this)
-        {
-            Set<WeakReference<HttpSession>> sessions = _sessions.remove(oldClusterId); //get the list of sessions with same id from other contexts
-            if (sessions!=null)
-            {
-                for (Iterator<WeakReference<HttpSession>> iter = sessions.iterator(); iter.hasNext();)
-                {
-                    WeakReference<HttpSession> ref = iter.next();
-                    HttpSession s = ref.get();
-                    if (s == null)
-                    {
-                        continue;
-                    }
-                    else
-                    {
-                        if (s instanceof AbstractSession)
-                        {
-                            AbstractSession abstractSession = (AbstractSession)s;
-                            abstractSession.getSessionManager().renewSessionId(oldClusterId, oldNodeId, newClusterId, getNodeId(newClusterId, request));
-                        }
-                    }
-                }
-                _sessions.put(newClusterId, sessions);
-            }
         }
     }
 

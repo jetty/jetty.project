@@ -22,10 +22,10 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.spdy.api.Handler;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.SPDYException;
 import org.eclipse.jetty.spdy.api.Session;
@@ -33,34 +33,22 @@ import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StringDataInfo;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.generator.Generator;
-import org.eclipse.jetty.toolchain.test.AdvancedRunner;
-import org.eclipse.jetty.toolchain.test.annotation.Slow;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.Fields;
-import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
-@RunWith(AdvancedRunner.class)
 public class AsyncTimeoutTest
 {
-    @Slow
     @Test
     public void testAsyncTimeoutInControlFrames() throws Exception
     {
         final long timeout = 1000;
         final TimeUnit unit = TimeUnit.MILLISECONDS;
 
-        ByteBufferPool bufferPool = new MappedByteBufferPool();
+        ByteBufferPool bufferPool = new StandardByteBufferPool();
         Executor threadPool = Executors.newCachedThreadPool();
-        Scheduler scheduler = new TimerScheduler();
-        scheduler.start(); // TODO need to use jetty lifecycles better here
-        Generator generator = new Generator(bufferPool, new StandardCompressionFactory.StandardCompressor());
-        Session session = new StandardSession(SPDY.V2, bufferPool, threadPool, scheduler, new TestController(),
-                null, null, 1, null, generator, new FlowControlStrategy.None())
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        Generator generator = new Generator(new StandardByteBufferPool(), new StandardCompressionFactory.StandardCompressor());
+        Session session = new StandardSession(SPDY.V2, bufferPool, threadPool, scheduler, new TestController(), null, 1, null, generator, new FlowControlStrategy.None())
         {
             @Override
             public void flush()
@@ -78,10 +66,15 @@ public class AsyncTimeoutTest
         };
 
         final CountDownLatch failedLatch = new CountDownLatch(1);
-        session.syn(new SynInfo(timeout, unit, new Fields(), true, (byte)0), null, new Promise.Adapter<Stream>()
+        session.syn(new SynInfo(true), null, timeout, unit, new Handler<Stream>()
         {
             @Override
-            public void failed(Throwable x)
+            public void completed(Stream stream)
+            {
+            }
+
+            @Override
+            public void failed(Stream stream, Throwable x)
             {
                 failedLatch.countDown();
             }
@@ -90,30 +83,27 @@ public class AsyncTimeoutTest
         Assert.assertTrue(failedLatch.await(2 * timeout, unit));
     }
 
-    @Slow
     @Test
     public void testAsyncTimeoutInDataFrames() throws Exception
     {
         final long timeout = 1000;
         final TimeUnit unit = TimeUnit.MILLISECONDS;
 
-        ByteBufferPool bufferPool = new MappedByteBufferPool();
+        ByteBufferPool bufferPool = new StandardByteBufferPool();
         Executor threadPool = Executors.newCachedThreadPool();
-        Scheduler scheduler = new TimerScheduler();
-        scheduler.start();
-        Generator generator = new Generator(bufferPool, new StandardCompressionFactory.StandardCompressor());
-        Session session = new StandardSession(SPDY.V2, bufferPool, threadPool, scheduler, new TestController(),
-                null, null, 1, null, generator, new FlowControlStrategy.None())
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        Generator generator = new Generator(new StandardByteBufferPool(), new StandardCompressionFactory.StandardCompressor());
+        Session session = new StandardSession(SPDY.V2, bufferPool, threadPool, scheduler, new TestController(), null, 1, null, generator, new FlowControlStrategy.None())
         {
             @Override
-            protected void write(ByteBuffer buffer, Callback callback)
+            protected void write(ByteBuffer buffer, Handler<FrameBytes> handler, FrameBytes frameBytes)
             {
                 try
                 {
                     // Wait if we're writing the data frame (control frame's first byte is 0x80)
                     if (buffer.get(0) == 0)
                         unit.sleep(2 * timeout);
-                    super.write(buffer, callback);
+                    super.write(buffer, handler, frameBytes);
                 }
                 catch (InterruptedException x)
                 {
@@ -122,12 +112,17 @@ public class AsyncTimeoutTest
             }
         };
 
-        Stream stream = session.syn(new SynInfo(5, TimeUnit.SECONDS, new Fields(), false, (byte)0), null);
+        Stream stream = session.syn(new SynInfo(false), null).get(5, TimeUnit.SECONDS);
         final CountDownLatch failedLatch = new CountDownLatch(1);
-        stream.data(new StringDataInfo(timeout, unit, "data", true), new Callback.Adapter()
+        stream.data(new StringDataInfo("data", true), timeout, unit, new Handler<Void>()
         {
             @Override
-            public void failed(Throwable x)
+            public void completed(Void context)
+            {
+            }
+
+            @Override
+            public void failed(Void context, Throwable x)
             {
                 failedLatch.countDown();
             }
@@ -136,12 +131,13 @@ public class AsyncTimeoutTest
         Assert.assertTrue(failedLatch.await(2 * timeout, unit));
     }
 
-    private static class TestController implements Controller
+    private static class TestController implements Controller<StandardSession.FrameBytes>
     {
         @Override
-        public void write(ByteBuffer buffer, Callback callback)
+        public int write(ByteBuffer buffer, Handler<StandardSession.FrameBytes> handler, StandardSession.FrameBytes context)
         {
-            callback.succeeded();
+            handler.completed(context);
+            return buffer.remaining();
         }
 
         @Override

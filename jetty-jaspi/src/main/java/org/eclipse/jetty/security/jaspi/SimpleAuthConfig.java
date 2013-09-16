@@ -70,7 +70,7 @@ public class SimpleAuthConfig implements ServerAuthConfig
         return true;
     }
 
-    public void refresh() 
+    public void refresh()
     {
     }
 }

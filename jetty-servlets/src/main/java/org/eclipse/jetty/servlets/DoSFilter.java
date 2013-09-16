@@ -50,10 +50,6 @@ import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.annotation.ManagedAttribute;
-import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.annotation.ManagedOperation;
-import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Timeout;
@@ -126,7 +122,6 @@ import org.eclipse.jetty.util.thread.Timeout;
  * </dl>
  * </p>
  */
-@ManagedObject("limits exposure to abuse from request flooding, whether malicious, or as a result of a misconfigured client")
 public class DoSFilter implements Filter
 {
     private static final Logger LOG = Log.getLogger(DoSFilter.class);
@@ -182,8 +177,8 @@ public class DoSFilter implements Filter
     private volatile int _maxRequestsPerSec;
     private Queue<Continuation>[] _queue;
     private ContinuationListener[] _listeners;
-    private final ConcurrentHashMap<String, RateTracker> _rateTrackers = new ConcurrentHashMap<>();
-    private final List<String> _whitelist = new CopyOnWriteArrayList<>();
+    private final ConcurrentHashMap<String, RateTracker> _rateTrackers = new ConcurrentHashMap<String, RateTracker>();
+    private final List<String> _whitelist = new CopyOnWriteArrayList<String>();
     private final Timeout _requestTimeoutQ = new Timeout();
     private final Timeout _trackerTimeoutQ = new Timeout();
     private Thread _timerThread;
@@ -197,7 +192,7 @@ public class DoSFilter implements Filter
         _listeners = new ContinuationListener[getMaxPriority() + 1];
         for (int p = 0; p < _queue.length; p++)
         {
-            _queue[p] = new ConcurrentLinkedQueue<>();
+            _queue[p] = new ConcurrentLinkedQueue<Continuation>();
 
             final int priority = p;
             _listeners[p] = new ContinuationListener()
@@ -352,6 +347,7 @@ public class DoSFilter implements Filter
             }
 
             // We are over the limit.
+            LOG.warn("DOS ALERT: ip=" + request.getRemoteAddr() + ",session=" + request.getRequestedSessionId() + ",user=" + request.getUserPrincipal());
 
             // So either reject it, delay it or throttle it
             long delayMs = getDelayMs();
@@ -361,7 +357,6 @@ public class DoSFilter implements Filter
                 case -1:
                 {
                     // Reject this request
-                    LOG.warn("DOS ALERT: Request rejected ip=" + request.getRemoteAddr() + ",session=" + request.getRequestedSessionId() + ",user=" + request.getUserPrincipal());
                     if (insertHeaders)
                         response.addHeader("DoSFilter", "unavailable");
                     response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
@@ -370,14 +365,12 @@ public class DoSFilter implements Filter
                 case 0:
                 {
                     // fall through to throttle code
-                    LOG.warn("DOS ALERT: Request throttled ip=" + request.getRemoteAddr() + ",session=" + request.getRequestedSessionId() + ",user=" + request.getUserPrincipal());
                     request.setAttribute(__TRACKER, tracker);
                     break;
                 }
                 default:
                 {
                     // insert a delay before throttling the request
-                    LOG.warn("DOS ALERT: Request delayed="+delayMs+"ms ip=" + request.getRemoteAddr() + ",session=" + request.getRequestedSessionId() + ",user=" + request.getUserPrincipal());
                     if (insertHeaders)
                         response.addHeader("DoSFilter", "delayed");
                     Continuation continuation = ContinuationSupport.getContinuation(request);
@@ -721,7 +714,6 @@ public class DoSFilter implements Filter
 
     public void destroy()
     {
-        LOG.debug("Destroy {}",this);
         _running = false;
         _timerThread.interrupt();
         _requestTimeoutQ.cancelAll();
@@ -749,7 +741,6 @@ public class DoSFilter implements Filter
      *
      * @return maximum number of requests
      */
-    @ManagedAttribute("maximum number of requests allowed from a connection per second")
     public int getMaxRequestsPerSec()
     {
         return _maxRequestsPerSec;
@@ -771,7 +762,6 @@ public class DoSFilter implements Filter
      * Get delay (in milliseconds) that is applied to all requests
      * over the rate limit, before they are considered at all.
      */
-    @ManagedAttribute("delay applied to all requests over the rate limit (in ms)")
     public long getDelayMs()
     {
         return _delayMs;
@@ -794,7 +784,6 @@ public class DoSFilter implements Filter
      *
      * @return maximum wait time
      */
-    @ManagedAttribute("maximum time the filter will block waiting throttled connections, (0 for no delay, -1 to reject requests)")
     public long getMaxWaitMs()
     {
         return _maxWaitMs;
@@ -817,7 +806,6 @@ public class DoSFilter implements Filter
      *
      * @return number of requests
      */
-    @ManagedAttribute("number of requests over rate limit")
     public int getThrottledRequests()
     {
         return _throttledRequests;
@@ -841,7 +829,6 @@ public class DoSFilter implements Filter
      *
      * @return wait time
      */
-    @ManagedAttribute("amount of time to async wait for semaphore")
     public long getThrottleMs()
     {
         return _throttleMs;
@@ -863,7 +850,6 @@ public class DoSFilter implements Filter
      *
      * @return maximum processing time
      */
-    @ManagedAttribute("maximum time to allow requests to process (in ms)")
     public long getMaxRequestMs()
     {
         return _maxRequestMs;
@@ -887,7 +873,6 @@ public class DoSFilter implements Filter
      *
      * @return maximum tracking time
      */
-    @ManagedAttribute("maximum time to track of request rates for connection before discarding")
     public long getMaxIdleTrackerMs()
     {
         return _maxIdleTrackerMs;
@@ -910,7 +895,6 @@ public class DoSFilter implements Filter
      *
      * @return value of the flag
      */
-    @ManagedAttribute("inser DoSFilter headers in response")
     public boolean isInsertHeaders()
     {
         return _insertHeaders;
@@ -931,7 +915,6 @@ public class DoSFilter implements Filter
      *
      * @return value of the flag
      */
-    @ManagedAttribute("usage rate is tracked by session if one exists")
     public boolean isTrackSessions()
     {
         return _trackSessions;
@@ -953,7 +936,6 @@ public class DoSFilter implements Filter
      *
      * @return value of the flag
      */
-    @ManagedAttribute("usage rate is tracked by IP+port is session tracking not used")
     public boolean isRemotePort()
     {
         return _remotePort;
@@ -973,7 +955,6 @@ public class DoSFilter implements Filter
     /**
      * @return whether this filter is enabled
      */
-    @ManagedAttribute("whether this filter is enabled")
     public boolean isEnabled()
     {
         return _enabled;
@@ -992,7 +973,6 @@ public class DoSFilter implements Filter
      *
      * @return comma-separated whitelist
      */
-    @ManagedAttribute("list of IPs that will not be rate limited")
     public String getWhitelist()
     {
         StringBuilder result = new StringBuilder();
@@ -1013,33 +993,20 @@ public class DoSFilter implements Filter
      */
     public void setWhitelist(String value)
     {
-        List<String> result = new ArrayList<>();
+        List<String> result = new ArrayList<String>();
         for (String address : value.split(","))
             addWhitelistAddress(result, address);
-        clearWhitelist();
+        _whitelist.clear();
         _whitelist.addAll(result);
         LOG.debug("Whitelisted IP addresses: {}", result);
     }
 
-    /**
-     * Clears the list of whitelisted IP addresses
-     */
-    @ManagedOperation("clears the list of IP addresses that will not be rate limited")
     public void clearWhitelist()
     {
         _whitelist.clear();
     }
 
-    /**
-     * Adds the given IP address, either in the form of a dotted decimal notation A.B.C.D
-     * or in the CIDR notation A.B.C.D/M, to the list of whitelisted IP addresses.
-     *
-     * @param address the address to add
-     * @return whether the address was added to the list
-     * @see #removeWhitelistAddress(String)
-     */
-    @ManagedOperation("adds an IP address that will not be rate limited")
-    public boolean addWhitelistAddress(@Name("address") String address)
+    public boolean addWhitelistAddress(String address)
     {
         return addWhitelistAddress(_whitelist, address);
     }
@@ -1050,15 +1017,7 @@ public class DoSFilter implements Filter
         return address.length() > 0 && list.add(address);
     }
 
-    /**
-     * Removes the given address from the list of whitelisted IP addresses.
-     *
-     * @param address the address to remove
-     * @return whether the address was removed from the list
-     * @see #addWhitelistAddress(List, String)
-     */
-    @ManagedOperation("removes an IP address that will not be rate limited")
-    public boolean removeWhitelistAddress(@Name("address") String address)
+    public boolean removeWhitelistAddress(String address)
     {
         return _whitelist.remove(address);
     }
