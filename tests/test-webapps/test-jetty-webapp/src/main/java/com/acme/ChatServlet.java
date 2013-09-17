@@ -141,8 +141,7 @@ public class ChatServlet extends HttpServlet
                     AsyncContext async = request.startAsync();
                     async.setTimeout(asyncTimeout);
                     async.addListener(member);
-                    if (!member._async.compareAndSet(null, async))
-                        throw new IllegalStateException();
+                    member._async.set(async);
                 }
             }
         }
