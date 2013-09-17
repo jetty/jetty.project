@@ -399,8 +399,8 @@
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <includeGroupIds>javax.annotation,org.eclipse.jetty.orbit</includeGroupIds>
-              <includeArtifactIds>javax.annotation-api,org.objectweb.asm</includeArtifactIds>
+              <includeGroupIds>javax.annotation,org.eclipse.jetty.orbit,org.ow2.asm</includeGroupIds>
+              <includeArtifactIds>javax.annotation-api,asm,asm-commons</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/annotations</outputDirectory>
             </configuration>
@@ -543,10 +543,6 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>org.objectweb.asm</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
       <artifactId>javax.activation</artifactId>
     </dependency>
     <dependency>
@@ -577,6 +573,15 @@
     <dependency>
       <groupId>org.glassfish</groupId>
       <artifactId>javax.el</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm-commons</artifactId>
     </dependency>
 
     <!-- jetty deps -->

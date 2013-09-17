@@ -20,18 +20,14 @@ package org.eclipse.jetty.annotations;
 
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.EventListener;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ServiceLoader;
-import java.util.StringTokenizer;
 
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.annotation.HandlesTypes;
 
-import org.eclipse.jetty.annotations.AnnotationParser.DiscoverableAnnotationHandler;
 import org.eclipse.jetty.plus.annotation.ContainerInitializer;
-import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -55,7 +51,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
     public static final String CONTAINER_INITIALIZER_LISTENER = "org.eclipse.jetty.containerInitializerListener";
   
     
-    protected List<DiscoverableAnnotationHandler> _discoverableAnnotationHandlers = new ArrayList<DiscoverableAnnotationHandler>();
+    protected List<AbstractDiscoverableAnnotationHandler> _discoverableAnnotationHandlers = new ArrayList<AbstractDiscoverableAnnotationHandler>();
     protected ClassInheritanceHandler _classInheritanceHandler;
     protected List<ContainerInitializerAnnotationHandler> _containerInitializerAnnotationHandlers = new ArrayList<ContainerInitializerAnnotationHandler>();
    
@@ -141,7 +137,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
     }
 
    
-    public void addDiscoverableAnnotationHandler(DiscoverableAnnotationHandler handler)
+    public void addDiscoverableAnnotationHandler(AbstractDiscoverableAnnotationHandler handler)
     {
         _discoverableAnnotationHandlers.add(handler);
     }
@@ -203,7 +199,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
            parseWebInfClasses(context, parser);
            parseWebInfLib (context, parser);
            
-           for (DiscoverableAnnotationHandler h:_discoverableAnnotationHandlers)
+           for (AbstractDiscoverableAnnotationHandler h:_discoverableAnnotationHandlers)
                context.getMetaData().addDiscoveredAnnotations(((AbstractDiscoverableAnnotationHandler)h).getAnnotationList());      
        }
     }
@@ -414,7 +410,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
 
         //always parse for discoverable annotations as well as class hierarchy and servletcontainerinitializer related annotations
         parser.clearHandlers();
-        for (DiscoverableAnnotationHandler h:_discoverableAnnotationHandlers)
+        for (AbstractDiscoverableAnnotationHandler h:_discoverableAnnotationHandlers)
         {
             if (h instanceof AbstractDiscoverableAnnotationHandler)
                 ((AbstractDiscoverableAnnotationHandler)h).setResource(null); //
@@ -482,7 +478,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
                 //only register the discoverable annotation handlers if this fragment is not metadata complete, or has no fragment descriptor
                 if (f == null || !isMetaDataComplete(f))
                 {
-                    for (DiscoverableAnnotationHandler h:_discoverableAnnotationHandlers)
+                    for (AbstractDiscoverableAnnotationHandler h:_discoverableAnnotationHandlers)
                     {
                         if (h instanceof AbstractDiscoverableAnnotationHandler)
                             ((AbstractDiscoverableAnnotationHandler)h).setResource(r);
@@ -508,7 +504,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
         LOG.debug("Scanning classes in WEB-INF/classes");
 
         parser.clearHandlers();
-        for (DiscoverableAnnotationHandler h:_discoverableAnnotationHandlers)
+        for (AbstractDiscoverableAnnotationHandler h:_discoverableAnnotationHandlers)
         {
             if (h instanceof AbstractDiscoverableAnnotationHandler)
                 ((AbstractDiscoverableAnnotationHandler)h).setResource(null); //

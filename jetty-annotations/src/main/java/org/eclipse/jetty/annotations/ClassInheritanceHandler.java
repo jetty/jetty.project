@@ -20,7 +20,8 @@ package org.eclipse.jetty.annotations;
 
 import java.util.List;
 
-import org.eclipse.jetty.annotations.AnnotationParser.ClassHandler;
+import org.eclipse.jetty.annotations.AnnotationParser.AbstractHandler;
+import org.eclipse.jetty.annotations.AnnotationParser.ClassInfo;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -30,7 +31,7 @@ import org.eclipse.jetty.util.log.Logger;
  *
  * As asm scans for classes, remember the type hierarchy.
  */
-public class ClassInheritanceHandler implements ClassHandler
+public class ClassInheritanceHandler extends AbstractHandler
 {
     private static final Logger LOG = Log.getLogger(ClassInheritanceHandler.class);
     
@@ -46,17 +47,17 @@ public class ClassInheritanceHandler implements ClassHandler
         _inheritanceMap = map;
     }
 
-    public void handle(String className, int version, int access, String signature, String superName, String[] interfaces)
+    public void handle(ClassInfo classInfo)
     {
         try
         {
-            for (int i=0; interfaces != null && i<interfaces.length;i++)
+            for (int i=0; classInfo.getInterfaces() != null && i < classInfo.getInterfaces().length;i++)
             {
-                _inheritanceMap.add (interfaces[i], className);
+                _inheritanceMap.add (classInfo.getInterfaces()[i], classInfo.getClassName());
             }
             //To save memory, we don't record classes that only extend Object, as that can be assumed
-            if (!"java.lang.Object".equals(superName))
-                _inheritanceMap.add(superName, className);
+            if (!"java.lang.Object".equals(classInfo.getSuperName()))
+                _inheritanceMap.add(classInfo.getSuperName(), classInfo.getClassName());
         }
         catch (Exception e)
         {

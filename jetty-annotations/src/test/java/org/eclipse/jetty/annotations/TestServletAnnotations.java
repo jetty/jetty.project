@@ -50,7 +50,7 @@ public class TestServletAnnotations
 
         WebAppContext wac = new WebAppContext();
         WebServletAnnotationHandler handler = new WebServletAnnotationHandler(wac);
-        parser.registerAnnotationHandler("javax.servlet.annotation.WebServlet", handler);
+        parser.registerHandler(handler);
 
         parser.parse(classes, new ClassNameResolver ()
         {

@@ -23,7 +23,7 @@ import java.util.List;
 import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.annotations.AbstractDiscoverableAnnotationHandler;
-import org.eclipse.jetty.annotations.AnnotationParser.Value;
+import org.eclipse.jetty.annotations.AnnotationParser.ClassInfo;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.DiscoveredAnnotation;
@@ -47,19 +47,13 @@ public class ServerEndpointAnnotationHandler extends AbstractDiscoverableAnnotat
         super(context,list);
     }
 
-    @Override
-    public String getAnnotationName()
-    {
-        return ANNOTATION_NAME;
-    }
 
     @Override
-    public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotationName,
-            List<Value> values)
+    public void handle(ClassInfo info, String annotationName)
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("handleClass: {}, {}, {}",className,annotationName,values);
+            LOG.debug("handleClass: {}, {}, {}",info.getClassName(),annotationName);
         }
 
         if (!ANNOTATION_NAME.equals(annotationName))
@@ -68,21 +62,7 @@ public class ServerEndpointAnnotationHandler extends AbstractDiscoverableAnnotat
             return;
         }
 
-        ServerEndpointAnnotation annotation = new ServerEndpointAnnotation(_context,className,_resource);
+        ServerEndpointAnnotation annotation = new ServerEndpointAnnotation(_context,info.getClassName(),_resource);
         addAnnotation(annotation);
-    }
-
-    @Override
-    public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
-            List<Value> values)
-    {
-        /* @ServerEndpoint annotation not supported for fields */
-    }
-
-    @Override
-    public void handleMethod(String className, String methodName, int access, String desc, String signature, String[] exceptions, String annotation,
-            List<Value> values)
-    {
-        /* @ServerEndpoint annotation not supported for methods */
     }
 }

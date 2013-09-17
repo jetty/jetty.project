@@ -102,8 +102,12 @@
       <artifactId>javax.annotation-api</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>org.objectweb.asm</artifactId>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm-commons</artifactId>
     </dependency>
   </dependencies>
 </project>

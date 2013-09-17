@@ -25,13 +25,13 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 
+import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -39,23 +39,43 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.JarScanner;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.commons.EmptyVisitor;
+import org.objectweb.asm.Opcodes;
+
 
 /**
  * AnnotationParser
  *
- * Use asm to scan classes for annotations. A SAX-style parsing is done, with
- * a handler being able to be registered to handle each annotation type.
+ * Use asm to scan classes for annotations. A SAX-style parsing is done.
+ * Handlers are registered which will be called back when various types of
+ * entity are encountered, eg a class, a method, a field. 
+ * 
+ * Handlers are not called back in any particular order and are assumed
+ * to be order-independent.
+ * 
+ * As a registered Handler will be called back for each annotation discovered
+ * on a class, a method, a field, the Handler should test to see if the annotation
+ * is one that it is interested in.
+ * 
+ * For the servlet spec, we are only interested in annotations on classes, methods and fields,
+ * so the callbacks for handling finding a class, a method a field are themselves
+ * not fully implemented.
  */
 public class AnnotationParser
 {
     private static final Logger LOG = Log.getLogger(AnnotationParser.class);
 
-    protected Set<String> _parsedClassNames = new HashSet<String>();
-    protected List<Handler> _handlers = new ArrayList<Handler>();
+    protected Set<String> _parsedClassNames = new ConcurrentHashSet<String>();
+    protected Set<Handler> _handlers = new ConcurrentHashSet<Handler>();
 
+    /**
+     * Convert internal name to simple name
+     * 
+     * @param name
+     * @return
+     */
     public static String normalize (String name)
     {
         if (name==null)
@@ -69,292 +89,354 @@ public class AnnotationParser
 
         return name.replace('/', '.');
     }
-
-
-
-    public abstract class Value
+    
+    /**
+     * Convert internal names to simple names.
+     * 
+     * @param list
+     * @return
+     */
+    public static String[] normalize (String[] list)
     {
-        String _name;
-
-        public Value (String name)
-        {
-            _name = name;
-        }
-
-        public String getName()
-        {
-            return _name;
-        }
-
-        public abstract Object getValue();
-
+        if (list == null)
+            return null;       
+        String[] normalList = new String[list.length];
+        int i=0;
+        for (String s : list)
+            normalList[i++] = normalize(s);
+        return normalList;
     }
 
-
-
-
-    public class SimpleValue extends Value
+    
+    /**
+     * ClassInfo
+     * 
+     * Immutable information gathered by parsing class header.
+     * 
+     */
+    public class ClassInfo 
     {
-        Object _val;
-
-        public SimpleValue(String name)
+        final String _className;
+        final int _version;
+        final int _access;
+        final String _signature;
+        final String _superName; 
+        final String[] _interfaces;
+        
+        public ClassInfo(String className, int version, int access, String signature, String superName, String[] interfaces)
         {
-            super(name);
+            super();
+            _className = className;
+            _version = version;
+            _access = access;
+            _signature = signature;
+            _superName = superName;
+            _interfaces = interfaces;
         }
 
-        public void setValue(Object val)
+        public String getClassName()
         {
-            _val=val;
+            return _className;
         }
-        @Override
+
+        public int getVersion()
+        {
+            return _version;
+        }
+
+        public int getAccess()
+        {
+            return _access;
+        }
+
+        public String getSignature()
+        {
+            return _signature;
+        }
+
+        public String getSuperName()
+        {
+            return _superName;
+        }
+
+        public String[] getInterfaces()
+        {
+            return _interfaces;
+        }
+    }
+
+    
+    /**
+     * MethodInfo
+     * 
+     * Immutable information gathered by parsing a method on a class.
+     */
+    public class MethodInfo
+    {
+        final String _className;
+        final String _methodName; 
+        final int _access;
+        final String _desc; 
+        final String _signature;
+        final String[] _exceptions;
+        
+        public MethodInfo(String className, String methodName, int access, String desc, String signature, String[] exceptions)
+        {
+            super();
+            _className = className;
+            _methodName = methodName;
+            _access = access;
+            _desc = desc;
+            _signature = signature;
+            _exceptions = exceptions;
+        }
+
+        public String getClassName()
+        {
+            return _className;
+        }
+
+        public String getMethodName()
+        {
+            return _methodName;
+        }
+
+        public int getAccess()
+        {
+            return _access;
+        }
+
+        public String getDesc()
+        {
+            return _desc;
+        }
+
+        public String getSignature()
+        {
+            return _signature;
+        }
+
+        public String[] getExceptions()
+        {
+            return _exceptions;
+        } 
+    }
+    
+    
+    
+    /**
+     * FieldInfo
+     *
+     * Immutable information gathered by parsing a field on a class.
+     * 
+     */
+    public class FieldInfo
+    {
+        final String _className;
+        final String _fieldName;
+        final int _access;
+        final String _fieldType;
+        final String _signature;
+        final Object _value;
+        
+        public FieldInfo(String className, String fieldName, int access, String fieldType, String signature, Object value)
+        {
+            super();
+            _className = className;
+            _fieldName = fieldName;
+            _access = access;
+            _fieldType = fieldType;
+            _signature = signature;
+            _value = value;
+        }
+
+        public String getClassName()
+        {
+            return _className;
+        }
+
+        public String getFieldName()
+        {
+            return _fieldName;
+        }
+
+        public int getAccess()
+        {
+            return _access;
+        }
+
+        public String getFieldType()
+        {
+            return _fieldType;
+        }
+
+        public String getSignature()
+        {
+            return _signature;
+        }
+
         public Object getValue()
         {
-            return _val;
-        }
-
-        @Override
-        public String toString()
-        {
-            return "("+getName()+":"+_val+")";
+            return _value;
         }
     }
-
-    public class ListValue extends Value
-    {
-        List<Value> _val;
-
-        public ListValue (String name)
-        {
-            super(name);
-            _val = new ArrayList<Value>();
-        }
-
-        @Override
-        public Object getValue()
-        {
-            return _val;
-        }
-
-        public List<Value> getList()
-        {
-            return _val;
-        }
-
-        public void addValue (Value v)
-        {
-            _val.add(v);
-        }
-
-        public int size ()
-        {
-            return _val.size();
-        }
-
-        @Override
-        public String toString()
-        {
-            StringBuffer buff = new StringBuffer();
-            buff.append("(");
-            buff.append(getName());
-            buff.append(":");
-            for (Value n: _val)
-            {
-                buff.append(" "+n.toString());
-            }
-            buff.append(")");
-
-            return buff.toString();
-        }
-    }
-
-
-
+    
+    
     /**
      * Handler
      *
      * Signature for all handlers that respond to parsing class files.
      */
-    public interface Handler
+    public static interface Handler
     {
-       
+        public void handle(ClassInfo classInfo);
+        public void handle(MethodInfo methodInfo);
+        public void handle (FieldInfo fieldInfo);
+        public void handle (ClassInfo info, String annotationName);
+        public void handle (MethodInfo info, String annotationName);
+        public void handle (FieldInfo info, String annotationName);
     }
     
     
     
     /**
-     * DiscoverableAnnotationHandler
+     * AbstractHandler
      *
-     * Processes an annotation when it is discovered on a class.
+     * Convenience base class to provide no-ops for all Handler methods.
+     * 
      */
-    public interface DiscoverableAnnotationHandler extends Handler
+    public static abstract class AbstractHandler implements Handler
     {
-        /**
-         * Process an annotation that was discovered on a class
-         * @param className
-         * @param version
-         * @param access
-         * @param signature
-         * @param superName
-         * @param interfaces
-         * @param annotation
-         * @param values
-         */
-        public void handleClass (String className, int version, int access,
-                                 String signature, String superName, String[] interfaces,
-                                 String annotation, List<Value>values);
 
+        @Override
+        public void handle(ClassInfo classInfo)
+        {
+           //no-op
+        }
+
+        @Override
+        public void handle(MethodInfo methodInfo)
+        {
+            // no-op           
+        }
+
+        @Override
+        public void handle(FieldInfo fieldInfo)
+        {
+            // no-op 
+        }
+
+        @Override
+        public void handle(ClassInfo info, String annotationName)
+        {
+            // no-op 
+        }
+
+        @Override
+        public void handle(MethodInfo info, String annotationName)
+        {
+            // no-op            
+        }
+
+        @Override
+        public void handle(FieldInfo info, String annotationName)
+        {
+           // no-op
+        }        
+    }
+
+    
+    
+    /**
+     * MyMethodVisitor
+     * 
+     * ASM Visitor for parsing a method. We are only interested in the annotations on methods.
+     */
+    public class MyMethodVisitor extends MethodVisitor
+    {
+        final MethodInfo _mi;
+            
         /**
-         * Process an annotation that was discovered on a method
-         * @param className
-         * @param methodName
+         * @param classname
          * @param access
-         * @param desc
+         * @param name
+         * @param methodDesc
          * @param signature
          * @param exceptions
-         * @param annotation
-         * @param values
          */
-        public void handleMethod (String className, String methodName, int access,
-                                  String desc, String signature,String[] exceptions,
-                                  String annotation, List<Value>values);
+        public MyMethodVisitor(final String className,
+                               final int access,
+                               final String name,
+                               final String methodDesc,
+                               final String signature,
+                               final String[] exceptions)
+        {
+            super(Opcodes.ASM4);
+            _mi = new MethodInfo(className, name, access, methodDesc,signature, exceptions);
+        }
 
         
         /**
-         * Process an annotation that was discovered on a field
-         * @param className
-         * @param fieldName
-         * @param access
-         * @param fieldType
-         * @param signature
-         * @param value
-         * @param annotation
-         * @param values
+         * We are only interested in finding the annotations on methods.
+         * 
+         * @see org.objectweb.asm.MethodVisitor#visitAnnotation(java.lang.String, boolean)
          */
-        public void handleField (String className, String fieldName,  int access,
-                                 String fieldType, String signature, Object value,
-                                 String annotation, List<Value>values);
+        @Override
+        public AnnotationVisitor visitAnnotation(String desc, boolean visible)
+        {
+            String annotationName = normalize(desc);
+            for (Handler h:_handlers)
+                h.handle(_mi, annotationName);
+            return null;
+        }
+    }
+
+
+    
+    /**
+     * MyFieldVisitor
+     * 
+     * An ASM visitor for parsing Fields. 
+     * We are only interested in visiting annotations on Fields.
+     *
+     */
+    public class MyFieldVisitor extends FieldVisitor
+    {   
+        final FieldInfo _fieldInfo;
         
-        
+    
         /**
-         * Get the name of the annotation processed by this handler. Can be null
+         * @param classname
          */
-        public String getAnnotationName();
-    }
-
-
-    
-    /**
-     * ClassHandler
-     *
-     * Responds to finding a Class
-     */
-    public interface ClassHandler extends Handler
-    {
-        public void handle (String className, int version, int access, String signature, String superName, String[] interfaces);
-    }
-
-    
-    
-    /**
-     * MethodHandler
-     *
-     * Responds to finding a Method
-     */
-    public interface MethodHandler extends Handler
-    {
-        public void handle (String className, String methodName, int access,  String desc, String signature,String[] exceptions);
-    }
-
-    
-    /**
-     * FieldHandler
-     *
-     * Responds to finding a Field
-     */
-    public interface FieldHandler extends Handler
-    {
-        public void handle (String className, String fieldName, int access, String fieldType, String signature, Object value);
-    }
-
-    
-    
-    /**
-     * MyAnnotationVisitor
-     *
-     * ASM Visitor for Annotations
-     */
-    public class MyAnnotationVisitor implements AnnotationVisitor
-    {
-        List<Value> _annotationValues;
-        String _annotationName;
-
-        public MyAnnotationVisitor (String annotationName, List<Value> values)
+        public MyFieldVisitor(final String className, 
+                              final int access,
+                              final String fieldName,
+                              final String fieldType,
+                              final String signature,
+                              final Object value)
         {
-            _annotationValues = values;
-            _annotationName = annotationName;
+            super(Opcodes.ASM4);
+            _fieldInfo = new FieldInfo(className, fieldName, access, fieldType, signature, value);
         }
 
-        public List<Value> getAnnotationValues()
-        {
-            return _annotationValues;
-        }
 
         /**
-         * Visit a single-valued (name,value) pair for this annotation
-         * @see org.objectweb.asm.AnnotationVisitor#visit(java.lang.String, java.lang.Object)
+         * Parse an annotation found on a Field.
+         * 
+         * @see org.objectweb.asm.FieldVisitor#visitAnnotation(java.lang.String, boolean)
          */
         @Override
-        public void visit(String aname, Object avalue)
+        public AnnotationVisitor visitAnnotation(String desc, boolean visible)
         {
-           SimpleValue v = new SimpleValue(aname);
-           v.setValue(avalue);
-           _annotationValues.add(v);
-        }
+            String annotationName = normalize(desc);
+            for (Handler h : _handlers)
+               h.handle(_fieldInfo, annotationName);
 
-        /**
-         * Visit a (name,value) pair whose value is another Annotation
-         * @see org.objectweb.asm.AnnotationVisitor#visitAnnotation(java.lang.String, java.lang.String)
-         */
-        @Override
-        public AnnotationVisitor visitAnnotation(String name, String desc)
-        {
-            String s = normalize(desc);
-            ListValue v = new ListValue(s);
-            _annotationValues.add(v);
-            MyAnnotationVisitor visitor = new MyAnnotationVisitor(s, v.getList());
-            return visitor;
-        }
-
-        /**
-         * Visit an array valued (name, value) pair for this annotation
-         * @see org.objectweb.asm.AnnotationVisitor#visitArray(java.lang.String)
-         */
-        @Override
-        public AnnotationVisitor visitArray(String name)
-        {
-            ListValue v = new ListValue(name);
-            _annotationValues.add(v);
-            MyAnnotationVisitor visitor = new MyAnnotationVisitor(null, v.getList());
-            return visitor;
-        }
-
-        /**
-         * Visit a enum-valued (name,value) pair for this annotation
-         * @see org.objectweb.asm.AnnotationVisitor#visitEnum(java.lang.String, java.lang.String, java.lang.String)
-         */
-        @Override
-        public void visitEnum(String name, String desc, String value)
-        {
-            //TODO
-        }
-
-        @Override
-        public void visitEnd()
-        {
+            return null;
         }
     }
 
-
+  
 
 
     /**
@@ -362,77 +444,55 @@ public class AnnotationParser
      *
      * ASM visitor for a class.
      */
-    public class MyClassVisitor extends EmptyVisitor
+    public class MyClassVisitor extends ClassVisitor
     {
-        String _className;
-        int _access;
-        String _signature;
-        String _superName;
-        String[] _interfaces;
-        int _version;
+
+        ClassInfo _ci;
+        
+        public MyClassVisitor()
+        {
+            super(Opcodes.ASM4);
+        }
 
 
         @Override
-        public void visit (int version,
+        public void visit (final int version,
                            final int access,
                            final String name,
                            final String signature,
                            final String superName,
                            final String[] interfaces)
-        {
-            _className = normalize(name);
-            _access = access;
-            _signature = signature;
-            _superName = superName;
-            _interfaces = interfaces;
-            _version = version;
+        {           
+            _ci = new ClassInfo(normalize(name), version, access, signature, normalize(superName), normalize(interfaces));
+            
+            _parsedClassNames.add(_ci.getClassName());                 
 
-            _parsedClassNames.add(_className);
-            //call all registered ClassHandlers
-            String[] normalizedInterfaces = null;
-            if (interfaces!= null)
-            {
-                normalizedInterfaces = new String[interfaces.length];
-                int i=0;
-                for (String s : interfaces)
-                    normalizedInterfaces[i++] = normalize(s);
-            }
-
-            for (Handler h : AnnotationParser.this._handlers)
-            {
-                if (h instanceof ClassHandler)
-                {
-                    ((ClassHandler)h).handle(_className, _version, _access, _signature, normalize(_superName), normalizedInterfaces);
-                }
-            }
+            for (Handler h:_handlers)
+               h.handle(_ci);
         }
+        
 
+        /**
+         * Visit an annotation on a Class
+         * 
+         * @see org.objectweb.asm.ClassVisitor#visitAnnotation(java.lang.String, boolean)
+         */
         @Override
         public AnnotationVisitor visitAnnotation (String desc, boolean visible)
         {
-            MyAnnotationVisitor visitor = new MyAnnotationVisitor(normalize(desc), new ArrayList<Value>())
-            {
-                @Override
-                public void visitEnd()
-                {
-                    super.visitEnd();
+            String annotationName = normalize(desc);
+            for (Handler h : _handlers)
+                h.handle(_ci, annotationName);
 
-                    //call all AnnotationHandlers with classname, annotation name + values
-                    for (Handler h : AnnotationParser.this._handlers)
-                    {
-                        if (h instanceof DiscoverableAnnotationHandler)
-                        {
-                            DiscoverableAnnotationHandler dah = (DiscoverableAnnotationHandler)h;
-                            if (_annotationName.equalsIgnoreCase(dah.getAnnotationName()))
-                                dah.handleClass(_className, _version, _access, _signature, _superName, _interfaces, _annotationName, _annotationValues);
-                        }
-                    }
-                }
-            };
-
-            return visitor;
+            return null;
         }
 
+
+        /**
+         * Visit a method to extract its annotations
+         * 
+         * @see org.objectweb.asm.ClassVisitor#visitMethod(int, java.lang.String, java.lang.String, java.lang.String, java.lang.String[])
+         */
         @Override
         public MethodVisitor visitMethod (final int access,
                                           final String name,
@@ -441,35 +501,14 @@ public class AnnotationParser
                                           final String[] exceptions)
         {
 
-            return new EmptyVisitor ()
-            {
-                @Override
-                public AnnotationVisitor visitAnnotation(String desc, boolean visible)
-                {
-                    MyAnnotationVisitor visitor = new MyAnnotationVisitor (normalize(desc), new ArrayList<Value>())
-                    {
-                        @Override
-                        public void visitEnd()
-                        {
-                            super.visitEnd();
-                            //call all AnnotationHandlers with classname, method, annotation name + values
-                            for (Handler h : AnnotationParser.this._handlers)
-                            {
-                                if (h instanceof DiscoverableAnnotationHandler)
-                                {
-                                    DiscoverableAnnotationHandler dah = (DiscoverableAnnotationHandler)h;
-                                    if (_annotationName.equalsIgnoreCase(dah.getAnnotationName()))
-                                        dah.handleMethod(_className, name, access, methodDesc, signature, exceptions, _annotationName, _annotationValues);
-                                }
-                            }
-                        }
-                    };
-
-                    return visitor;
-                }
-            };
+            return new MyMethodVisitor(_ci.getClassName(), access, name, methodDesc, signature, exceptions);
         }
 
+        /**
+         * Visit a field to extract its annotations
+         * 
+         * @see org.objectweb.asm.ClassVisitor#visitField(int, java.lang.String, java.lang.String, java.lang.String, java.lang.Object)
+         */
         @Override
         public FieldVisitor visitField (final int access,
                                         final String fieldName,
@@ -477,99 +516,11 @@ public class AnnotationParser
                                         final String signature,
                                         final Object value)
         {
-
-            return new EmptyVisitor ()
-            {
-                @Override
-                public AnnotationVisitor visitAnnotation(String desc, boolean visible)
-                {
-                    MyAnnotationVisitor visitor = new MyAnnotationVisitor(normalize(desc), new ArrayList<Value>())
-                    {
-                        @Override
-                        public void visitEnd()
-                        {
-                            super.visitEnd();
-                            for (Handler h : AnnotationParser.this._handlers)
-                            {
-                                if (h instanceof DiscoverableAnnotationHandler)
-                                {
-                                    DiscoverableAnnotationHandler dah = (DiscoverableAnnotationHandler)h;
-                                    if (_annotationName.equalsIgnoreCase(dah.getAnnotationName()))
-                                        dah.handleField(_className, fieldName, access, fieldType, signature, value, _annotationName, _annotationValues);
-                                }
-                            }
-                        }
-                    };
-                    return visitor;
-                }
-            };
+            return new MyFieldVisitor(_ci.getClassName(), access, fieldName, fieldType, signature, value);
         }
     }
 
-
-    /**
-     * Register a handler that will be called back when the named annotation is
-     * encountered on a class.
-     *
-     * @deprecated see {@link #registerHandler(Handler)}
-     * @param annotationName
-     * @param handler
-     */
-    @Deprecated
-    public void registerAnnotationHandler (String annotationName, DiscoverableAnnotationHandler handler)
-    {
-        _handlers.add(handler);
-    }
-
-    
-    /**
-     * @deprecated no replacement provided
-     * @param annotationName
-     */
-    @Deprecated
-    public List<DiscoverableAnnotationHandler> getAnnotationHandlers(String annotationName)
-    {
-        List<DiscoverableAnnotationHandler> handlers = new ArrayList<DiscoverableAnnotationHandler>();
-        for (Handler h:_handlers)
-        {
-            if (h instanceof DiscoverableAnnotationHandler)
-            {
-                DiscoverableAnnotationHandler dah = (DiscoverableAnnotationHandler)h;
-                if (annotationName.equals(dah.getAnnotationName()))
-                    handlers.add(dah);
-            }
-        }
  
-        return handlers;
-    }
-
-    /**
-     * @deprecated no replacement available
-     */
-    @Deprecated
-    public List<DiscoverableAnnotationHandler> getAnnotationHandlers()
-    {
-        List<DiscoverableAnnotationHandler> allAnnotationHandlers = new ArrayList<DiscoverableAnnotationHandler>();
-        for (Handler h:_handlers)
-        {
-            if (h instanceof DiscoverableAnnotationHandler)
-            allAnnotationHandlers.add((DiscoverableAnnotationHandler)h);
-        }
-        return allAnnotationHandlers;
-    }
-
-    /**
-     * @deprecated see {@link #registerHandler(Handler)}
-     * @param handler
-     */
-    @Deprecated
-    public void registerClassHandler (ClassHandler handler)
-    {
-        _handlers.add(handler);
-    }
-    
-    
-    
     /**
      * Add a particular handler
      * 

@@ -20,7 +20,9 @@ package org.eclipse.jetty.annotations;
 
 import java.util.List;
 
-import org.eclipse.jetty.annotations.AnnotationParser.Value;
+import org.eclipse.jetty.annotations.AnnotationParser.ClassInfo;
+import org.eclipse.jetty.annotations.AnnotationParser.FieldInfo;
+import org.eclipse.jetty.annotations.AnnotationParser.MethodInfo;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.DiscoveredAnnotation;
@@ -41,31 +43,28 @@ public class WebListenerAnnotationHandler extends AbstractDiscoverableAnnotation
     }
     
     /** 
-     * @see org.eclipse.jetty.annotations.AnnotationParser.DiscoverableAnnotationHandler#handleClass(java.lang.String, int, int, java.lang.String, java.lang.String, java.lang.String[], java.lang.String, java.util.List)
+     * @see org.eclipse.jetty.annotations.AnnotationParser.DiscoverableAnnotationHandler#handle(ClassAnnotationInfo)
      */
-    public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
-                            List<Value> values)
+    public void handle(ClassInfo info, String annotationName)
     {
-        WebListenerAnnotation wlAnnotation = new WebListenerAnnotation(_context, className, _resource);
+        if (annotationName == null || !"javax.servlet.annotation.WebListener".equals(annotationName))
+            return;
+        
+        WebListenerAnnotation wlAnnotation = new WebListenerAnnotation(_context, info.getClassName(), _resource);
         addAnnotation(wlAnnotation);
     }
 
-    public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
-                            List<Value> values)
+    public void handle(FieldInfo info, String annotationName)
     {
-        LOG.warn ("@WebListener is not applicable to fields: "+className+"."+fieldName);
+        if (annotationName == null || !"javax.servlet.annotation.WebListener".equals(annotationName))
+            return;
+        LOG.warn ("@WebListener is not applicable to fields: "+info.getClassName()+"."+info.getFieldName());
     }
 
-    public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation,
-                             List<Value> values)
+    public void handle(MethodInfo info, String annotationName)
     {
-        LOG.warn ("@WebListener is not applicable to methods: "+className+"."+methodName+" "+signature);
+        if (annotationName == null || !"javax.servlet.annotation.WebListener".equals(annotationName))
+            return;
+        LOG.warn ("@WebListener is not applicable to methods: "+info.getClassName()+"."+info.getMethodName()+" "+info.getSignature());
     }
-
-    @Override
-    public String getAnnotationName()
-    {
-        return "javax.servlet.annotation.WebListener";
-    }
-
 }

@@ -23,7 +23,6 @@ import java.io.File;
 import org.eclipse.jetty.annotations.AbstractDiscoverableAnnotationHandler;
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.annotations.AnnotationParser;
-import org.eclipse.jetty.annotations.AnnotationParser.DiscoverableAnnotationHandler;
 import org.eclipse.jetty.annotations.ClassNameResolver;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -52,7 +51,7 @@ public class MavenAnnotationConfiguration extends AnnotationConfiguration
                throw new IllegalStateException ("No metadata");
 
             parser.clearHandlers();
-            for (DiscoverableAnnotationHandler h:_discoverableAnnotationHandlers)
+            for (AbstractDiscoverableAnnotationHandler h:_discoverableAnnotationHandlers)
             {
                 if (h instanceof AbstractDiscoverableAnnotationHandler)
                     ((AbstractDiscoverableAnnotationHandler)h).setResource(null); //

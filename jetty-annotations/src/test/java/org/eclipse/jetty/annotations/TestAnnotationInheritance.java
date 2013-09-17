@@ -30,8 +30,10 @@ import java.util.Map;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 
-import org.eclipse.jetty.annotations.AnnotationParser.DiscoverableAnnotationHandler;
-import org.eclipse.jetty.annotations.AnnotationParser.Value;
+import org.eclipse.jetty.annotations.AnnotationParser.AbstractHandler;
+import org.eclipse.jetty.annotations.AnnotationParser.ClassInfo;
+import org.eclipse.jetty.annotations.AnnotationParser.FieldInfo;
+import org.eclipse.jetty.annotations.AnnotationParser.MethodInfo;
 import org.eclipse.jetty.util.MultiMap;
 import org.junit.After;
 import org.junit.Test;
@@ -44,34 +46,32 @@ public class TestAnnotationInheritance
     List<String> classNames = new ArrayList<String>();
   
     
-    class SampleHandler implements DiscoverableAnnotationHandler
+    class SampleHandler extends AbstractHandler
     {
         public final List<String> annotatedClassNames = new ArrayList<String>();
         public final List<String> annotatedMethods = new ArrayList<String>();
         public final List<String> annotatedFields = new ArrayList<String>();
 
-        public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
-                                List<Value> values)
+        public void handle(ClassInfo info, String annotation)
         {
-            annotatedClassNames.add(className);
+            if (annotation == null || !"org.eclipse.jetty.annotations.Sample".equals(annotation))
+                return;
+            
+            annotatedClassNames.add(info.getClassName());
         }
 
-        public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
-                                List<Value> values)
-        {
-            annotatedFields.add(className+"."+fieldName);
+        public void handle(FieldInfo info, String annotation)
+        {   
+            if (annotation == null || !"org.eclipse.jetty.annotations.Sample".equals(annotation))
+                return;
+            annotatedFields.add(info.getClassName()+"."+info.getFieldName());
         }
 
-        public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation,
-                                 List<Value> values)
+        public void handle(MethodInfo info, String annotation)
         {
-            annotatedMethods.add(className+"."+methodName);
-        }
-        
-        @Override
-        public String getAnnotationName()
-        {
-            return "org.eclipse.jetty.annotations.Sample";
+            if (annotation == null || !"org.eclipse.jetty.annotations.Sample".equals(annotation))
+                return;
+            annotatedMethods.add(info.getClassName()+"."+info.getMethodName());
         }
     }
 
@@ -129,7 +129,7 @@ public class TestAnnotationInheritance
     {
         SampleHandler handler = new SampleHandler();
         AnnotationParser parser = new AnnotationParser();
-        parser.registerAnnotationHandler("org.eclipse.jetty.annotations.Sample", handler);
+        parser.registerHandler(handler);
         parser.parse(ClassB.class, new ClassNameResolver ()
         {
             public boolean isExcluded(String name)
@@ -166,7 +166,7 @@ public class TestAnnotationInheritance
     {
         AnnotationParser parser = new AnnotationParser();
         SampleHandler handler = new SampleHandler();
-        parser.registerAnnotationHandler("org.eclipse.jetty.annotations.Sample", handler);
+        parser.registerHandler(handler);
         parser.parse(ClassA.class.getName(), new ClassNameResolver()
         {
             public boolean isExcluded(String name)
@@ -207,7 +207,7 @@ public class TestAnnotationInheritance
     {
         AnnotationParser parser = new AnnotationParser();
         ClassInheritanceHandler handler = new ClassInheritanceHandler();
-        parser.registerClassHandler(handler);
+        parser.registerHandler(handler);
 
         class Foo implements InterfaceD
         {
