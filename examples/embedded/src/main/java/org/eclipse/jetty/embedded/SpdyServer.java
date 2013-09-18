@@ -57,6 +57,7 @@ public class SpdyServer
         // Setup Threadpool
         QueuedThreadPool threadPool = new QueuedThreadPool(512);
 
+        // Setup Jetty Server instance
         Server server = new Server(threadPool);
         server.manage(threadPool);
         server.setDumpAfterStart(false);
@@ -73,9 +74,13 @@ public class SpdyServer
         config.addCustomizer(new ForwardedRequestCustomizer());
         config.addCustomizer(new SecureRequestCustomizer());
         config.setSendServerVersion(true);
-        
-        
-        // Http Connector
+
+
+        // Http Connector Setup
+
+        // A plain HTTP connector listening on port 8080. Note that it's also possible to have port 8080 configured as
+        // a non SSL SPDY connector. But the specification and most browsers do not allow to use SPDY without SSL
+        // encryption. However some browsers allow it to be configured.
         HttpConnectionFactory http = new HttpConnectionFactory(config);
         ServerConnector httpConnector = new ServerConnector(server,http);
         httpConnector.setPort(8080);
@@ -83,6 +88,9 @@ public class SpdyServer
         server.addConnector(httpConnector);
         
         // SSL configurations
+
+        // We need a SSLContextFactory for the SSL encryption. That SSLContextFactory will be used by the SPDY
+        // connector.
         SslContextFactory sslContextFactory = new SslContextFactory();
         sslContextFactory.setKeyStorePath(jetty_home + "/etc/keystore");
         sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
@@ -100,13 +108,20 @@ public class SpdyServer
 
 
         // Spdy Connector
+
+        // Make sure that the required NPN implementations are available.
         SPDYServerConnectionFactory.checkNPNAvailable();
 
+        // A ReferrerPushStrategy is being initialized.
+        // See: http://www.eclipse.org/jetty/documentation/current/spdy-configuring-push.html for more details.
         PushStrategy push = new ReferrerPushStrategy();
         HTTPSPDYServerConnectionFactory spdy2 = new HTTPSPDYServerConnectionFactory(2,config,push);
         spdy2.setInputBufferSize(8192);
         spdy2.setInitialWindowSize(32768);
 
+        // We need a connection factory per protocol that our server is supposed to support on the NPN port. We then
+        // create a ServerConnector and pass in the supported factories. NPN will then be used to negotiate the
+        // protocol with the client.
         HTTPSPDYServerConnectionFactory spdy3 = new HTTPSPDYServerConnectionFactory(3,config,push);
         spdy2.setInputBufferSize(8192);
 
@@ -115,12 +130,15 @@ public class SpdyServer
         npn.setInputBufferSize(1024);
         
         SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory,npn.getProtocol());
-        
+
+        // Setup the npn connector on port 8443
         ServerConnector spdyConnector = new ServerConnector(server,ssl,npn,spdy3,spdy2,http);
         spdyConnector.setPort(8443);
 
         server.addConnector(spdyConnector);
-        
+
+        // The following section adds some handlers, deployers and webapp providers.
+        // See: http://www.eclipse.org/jetty/documentation/current/advanced-embedding.html for details.
         
         // Setup handlers
         HandlerCollection handlers = new HandlerCollection();
