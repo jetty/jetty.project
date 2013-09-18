@@ -21,26 +21,49 @@ package org.eclipse.jetty.websocket.jsr356.server;
 import static org.hamcrest.Matchers.*;
 
 import java.net.URI;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Queue;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import javax.servlet.Servlet;
+import javax.servlet.http.HttpServlet;
+
+import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.junit.AfterClass;
+import org.junit.After;
 import org.junit.Assert;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+@RunWith(value = Parameterized.class)
 public class SessionTest
 {
+
+    private final Servlet testServlet;
+    private final String testServletMapping;
+
     private static WSServer server;
     private static URI serverUri;
 
-    @BeforeClass
-    public static void startServer() throws Exception
+    public SessionTest(Servlet testServlet, String testServletMapping) {
+        this.testServlet = testServlet;
+        this.testServletMapping = testServletMapping;
+    }
+
+    @Parameterized.Parameters
+    public static Collection<Object[]> data() {
+        return Arrays.asList(new Object[][]{{null, null}, {new HttpServlet() {}, "/*"}});
+    }
+
+    @Before
+    public void startServer() throws Exception
     {
         server = new WSServer(MavenTestingUtils.getTargetTestingDir(SessionTest.class.getSimpleName()),"app");
         server.copyWebInf("empty-web.xml");
@@ -50,11 +73,14 @@ public class SessionTest
         serverUri = server.getServerBaseURI();
 
         WebAppContext webapp = server.createWebAppContext();
+        if (testServlet != null) {
+            webapp.addServlet(new ServletHolder(testServlet), testServletMapping);
+        }
         server.deployWebapp(webapp);
     }
 
-    @AfterClass
-    public static void stopServer()
+    @After
+    public void stopServer()
     {
         server.stop();
     }

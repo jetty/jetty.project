@@ -281,6 +281,12 @@ public class ServletUpgradeRequest extends UpgradeRequest
 
     public String getRequestPath()
     {
-        return req.getServletPath();
+        String servletPath = req.getServletPath();
+
+        if (!servletPath.isEmpty()) {
+            return servletPath;
+        } else {
+            return req.getPathInfo();
+        }
     }
 }
