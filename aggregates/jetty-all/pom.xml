@@ -8,7 +8,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty.aggregate</groupId>
   <artifactId>jetty-all</artifactId>
-  <version>9.0.5.v20130815</version>
+  <version>9.0.6-SNAPSHOT</version>
   <name>Jetty :: Aggregate :: All core Jetty</name>
   <url>http://www.eclipse.org/jetty</url>
   <build>

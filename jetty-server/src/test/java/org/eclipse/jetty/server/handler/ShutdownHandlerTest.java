@@ -51,8 +51,9 @@ public class ShutdownHandlerTest
     public void startServer() throws Exception
     {
         MockitoAnnotations.initMocks(this);
+        shutdownHandler = new ShutdownHandler(shutdownToken);
+        server.setHandler(shutdownHandler);
         server.start();
-        shutdownHandler = new ShutdownHandler(server,shutdownToken);
     }
 
     @Test

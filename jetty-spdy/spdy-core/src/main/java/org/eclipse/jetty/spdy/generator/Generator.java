@@ -29,6 +29,7 @@ import org.eclipse.jetty.spdy.frames.ControlFrameType;
 
 public class Generator
 {
+    final static boolean useDirectBuffers=false;
     private final EnumMap<ControlFrameType, ControlFrameGenerator> generators = new EnumMap<>(ControlFrameType.class);
     private final DataFrameGenerator dataFrameGenerator;
 

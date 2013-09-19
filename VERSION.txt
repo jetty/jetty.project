@@ -85,6 +85,49 @@ jetty-9.0.5.v20130815 - 15 August 2013
  + 414951 QueuedThreadPool fix constructor that missed to pass the idleTimeout
  + 414972 HttpClient may read bytes with pre-tunnelled connection.
 
+jetty-8.1.13.v20130916 - 16 September 2013
+ + 412629 PropertyFileLoginModule doesn't cache user configuration file even
+   for refreshInterval=0
+ + 413484 setAttribute in nosql session management better handles _dirty status
+ + 413684 deprecated unsafe alias checkers
+ + 414235 RequestLogHandler configured on a context fails to handle forwarded
+   requests
+ + 414393 StringIndexOutofBoundsException with > 8k multipart content without
+   CR or LF
+ + 414431 Avoid debug NPE race
+ + 414507 Ensure AnnotationParser ignores parent dir hierarchy when checking
+   for hidden dirnames
+ + 414652 WebSocket's sendMessage() may hang on congested connections.
+ + 415192 <jsp-file> maps to JspPropertyGroupServlet instead of JspServlet
+ + 415401 Add XmlConfiguration.initializeDefaults that allows to set default
+   values for any XmlConfiguration that may be overridden in the config file
+ + 416266 HttpServletResponse.encodeURL() encodes on first request when only
+   SessionTrackingMode.COOKIE is used
+ + 416585 WebInfConfiguration examines webapp classloader first instead of its
+   parent when looking for container jars
+ + 416787 StringIndexOutOfBounds with a pathMap of ""
+ + 416990 JMX names statically unique
+
+jetty-7.6.13.v20130916 - 16 September 2013
+ + 412629 PropertyFileLoginModule doesn't cache user configuration file even
+   for refreshInterval=0
+ + 413484 setAttribute in nosql session management better handles _dirty status
+ + 413684 deprecated unsafe alias checkers
+ + 414235 RequestLogHandler configured on a context fails to handle forwarded
+   requests
+ + 414393 StringIndexOutofBoundsException with > 8k multipart content without
+   CR or LF
+ + 414431 Avoid debug NPE race
+ + 414507 Ensure AnnotationParser ignores parent dir hierarchy when checking
+   for hidden dirnames
+ + 414652 WebSocket's sendMessage() may hang on congested connections.
+ + 415192 <jsp-file> maps to JspPropertyGroupServlet instead of JspServlet
+ + 415401 Add XmlConfiguration.initializeDefaults that allows to set default
+   values for any XmlConfiguration that may be overridden in the config file
+ + 416585 WebInfConfiguration examines webapp classloader first instead of its
+   parent when looking for container jars
+ + 416990 JMX names statically unique
+
 jetty-9.0.4.v20130625 - 25 June 2013
  + 396706 CGI support parameters
  + 397051 Make JDBCLoginService data members protected to facilitate
