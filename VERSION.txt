@@ -1,4 +1,52 @@
-jetty-9.0.6-SNAPSHOT
+jetty-9.0.6.v20130919 - 19 September 2013
+ + 411069 better set compiler defaults to 1.7, including webdefault.xml for jsp
+ + 411934 War overlay configuration assumes src/main/webapp exists
+ + 413484 setAttribute in nosql session management better handles _dirty status
+ + 413684 deprecated unsafe alias checkers
+ + 413737 hide stacktrace in ReferrerPushStrategyTest
+ + 414431 Avoid debug NPE race
+ + 414898 Only upgrade v0 to v1 cookies on dquote , ; backslash space and tab
+   in the value
+ + 415192 <jsp-file> maps to JspPropertyGroupServlet instead of JspServlet
+ + 415194 Deployer gives management of context to context collection
+ + 415302 
+ + 415330 Avoid multiple callbacks at EOF
+ + 415401 Add initalizeDefaults call to SpringConfigurationProcessor
+ + 415548 migrate ProxyHTTPToSPDYTest to use HttpClient to avoid intermittent
+   NPE part 2
+ + 415605 fix status code logging for async requests
+ + 415999 Fix some of FindBugs warnings
+ + 416015 Handle null Accept-Language and other headers
+ + 416096 DefaultServlet leaves open file descriptors with file sizes greater
+   than response buffer
+ + 416102 Clean up of async sendContent process
+ + 416103 Added AllowSymLinkAliasChecker.java
+ + 416251 ProxyHTTPToSPDYConnection now sends a 502 to the client if it
+   receives a rst frame from the upstream spdy server
+ + 416266 HttpServletResponse.encodeURL() encodes on first request when only
+   SessionTrackingMode.COOKIE is used
+ + 416314 jetty async client wrong behaviour for HEAD Method + Redirect.
+ + 416321 handle failure during blocked committing write
+ + 416453 Add comments to embedded SplitFileServer example
+ + 416477 Improved consumeAll error handling
+ + 416568 Simplified servlet exception logging
+ + 416577 enhanced shutdown handler to send shutdown at startup
+ + 416585 WebInfConfiguration examines webapp classloader first instead of its
+   parent when looking for container jars
+ + 416597 Allow classes and jars on the webappcontext extraclasspath to be
+   scanned for annotations
+ + 416663 Content-length set by resourcehandler
+ + 416674 run all jetty-ant tests on random ports
+ + 416679 Change warning to debug if no transaction manager present
+ + 416787 StringIndexOutOfBounds with a pathMap of ""
+ + 416940 avoid download of spring-beans.dtd
+ + 416990 JMX names statically unique
+ + 417110 Demo / html body end tag missing in authfail.html
+ + 417225 added Container.addEventListener method
+ + 417260 Protected targets matched as true URI path segments
+ + 417289 SPDY replace use of direct buffers with indirect buffers or make it
+   configurable
+ + 417475 Do not null context Trie during dynamic deploy
 
 jetty-9.0.5.v20130815 - 15 August 2013
  + 414898 Only upgrade v0 to v1 cookies on dquote , ; backslash space and tab
