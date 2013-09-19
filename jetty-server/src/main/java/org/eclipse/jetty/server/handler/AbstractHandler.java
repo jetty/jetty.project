@@ -55,6 +55,8 @@ public abstract class AbstractHandler extends ContainerLifeCycle implements Hand
     protected void doStart() throws Exception
     {
         LOG.debug("starting {}",this);
+        if (_server==null)
+            LOG.warn("No Server set for {}",this);
         super.doStart();
     }
 

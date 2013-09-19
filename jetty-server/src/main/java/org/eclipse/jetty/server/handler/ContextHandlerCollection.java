@@ -142,7 +142,6 @@ public class ContextHandlerCollection extends HandlerCollection
     @Override
     public void setHandlers(Handler[] handlers)
     {
-        _contexts=null;
         super.setHandlers(handlers);
         if (isStarted())
             mapContexts();
