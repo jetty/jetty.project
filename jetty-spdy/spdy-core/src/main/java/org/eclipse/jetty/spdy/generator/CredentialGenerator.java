@@ -53,7 +53,7 @@ public class CredentialGenerator extends ControlFrameGenerator
         int frameBodyLength = 2 + 4 + proof.length + certificates.size() * 4 + certificatesLength;
 
         int totalLength = ControlFrame.HEADER_LENGTH + frameBodyLength;
-        ByteBuffer buffer = getByteBufferPool().acquire(totalLength, true);
+        ByteBuffer buffer = getByteBufferPool().acquire(totalLength, Generator.useDirectBuffers);
         BufferUtil.clearToFill(buffer);
         generateControlFrameHeader(credential, frameBodyLength, buffer);
 

@@ -80,7 +80,7 @@ public class SPDYConnection extends AbstractConnection implements Controller, Id
     @Override
     public void onFillable()
     {
-        ByteBuffer buffer = bufferPool.acquire(bufferSize, true);
+        ByteBuffer buffer = bufferPool.acquire(bufferSize, false);
         boolean readMore = read(buffer) == 0;
         bufferPool.release(buffer);
         if (readMore)
