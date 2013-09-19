@@ -69,7 +69,7 @@ public class ContainerInitializerAnnotationHandler extends AbstractHandler
     {        
         if (annotationName == null || !_annotation.getName().equals(annotationName))
             return;
-        _initializer.addAnnotatedTypeName(info.getClassName());
+        _initializer.addAnnotatedTypeName(info.getClassInfo().getClassName());
     }
 
     /**
@@ -81,7 +81,7 @@ public class ContainerInitializerAnnotationHandler extends AbstractHandler
     {
         if (annotationName == null || !_annotation.getName().equals(annotationName))
             return;
-       _initializer.addAnnotatedTypeName(info.getClassName());
+       _initializer.addAnnotatedTypeName(info.getClassInfo().getClassName());
     }
 
     

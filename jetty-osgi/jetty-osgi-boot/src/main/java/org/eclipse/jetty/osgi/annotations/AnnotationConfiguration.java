@@ -152,16 +152,6 @@ public class AnnotationConfiguration extends org.eclipse.jetty.annotations.Annot
         Resource bundleRes = parser.getResource(bundle);
         
         parser.clearHandlers();
-        for (AbstractDiscoverableAnnotationHandler h:_discoverableAnnotationHandlers)
-        {
-            if (h instanceof AbstractDiscoverableAnnotationHandler)
-            {
-                if (webbundle == bundle)                    
-                ((AbstractDiscoverableAnnotationHandler)h).setResource(null); 
-                else
-                    ((AbstractDiscoverableAnnotationHandler)h).setResource(bundleRes);  
-            }
-        }
         parser.registerHandlers(_discoverableAnnotationHandlers);
         parser.registerHandler(_classInheritanceHandler);
         parser.registerHandlers(_containerInitializerAnnotationHandlers);

@@ -116,6 +116,7 @@ public class AnnotationParser
      */
     public class ClassInfo 
     {
+        final Resource _containingResource;
         final String _className;
         final int _version;
         final int _access;
@@ -123,9 +124,10 @@ public class AnnotationParser
         final String _superName; 
         final String[] _interfaces;
         
-        public ClassInfo(String className, int version, int access, String signature, String superName, String[] interfaces)
+        public ClassInfo(Resource resource, String className, int version, int access, String signature, String superName, String[] interfaces)
         {
             super();
+            _containingResource = resource;
             _className = className;
             _version = version;
             _access = access;
@@ -163,6 +165,11 @@ public class AnnotationParser
         {
             return _interfaces;
         }
+
+        public Resource getContainingResource()
+        {
+            return _containingResource;
+        }
     }
 
     
@@ -173,17 +180,17 @@ public class AnnotationParser
      */
     public class MethodInfo
     {
-        final String _className;
+        final ClassInfo _classInfo;
         final String _methodName; 
         final int _access;
         final String _desc; 
         final String _signature;
         final String[] _exceptions;
         
-        public MethodInfo(String className, String methodName, int access, String desc, String signature, String[] exceptions)
+        public MethodInfo(ClassInfo classInfo, String methodName, int access, String desc, String signature, String[] exceptions)
         {
             super();
-            _className = className;
+            _classInfo = classInfo;
             _methodName = methodName;
             _access = access;
             _desc = desc;
@@ -191,9 +198,9 @@ public class AnnotationParser
             _exceptions = exceptions;
         }
 
-        public String getClassName()
+        public ClassInfo getClassInfo()
         {
-            return _className;
+            return _classInfo;
         }
 
         public String getMethodName()
@@ -219,7 +226,7 @@ public class AnnotationParser
         public String[] getExceptions()
         {
             return _exceptions;
-        } 
+        }
     }
     
     
@@ -232,17 +239,17 @@ public class AnnotationParser
      */
     public class FieldInfo
     {
-        final String _className;
+        final ClassInfo _classInfo;
         final String _fieldName;
         final int _access;
         final String _fieldType;
         final String _signature;
         final Object _value;
         
-        public FieldInfo(String className, String fieldName, int access, String fieldType, String signature, Object value)
+        public FieldInfo(ClassInfo classInfo, String fieldName, int access, String fieldType, String signature, Object value)
         {
             super();
-            _className = className;
+            _classInfo = classInfo;
             _fieldName = fieldName;
             _access = access;
             _fieldType = fieldType;
@@ -250,9 +257,9 @@ public class AnnotationParser
             _value = value;
         }
 
-        public String getClassName()
+        public ClassInfo getClassInfo()
         {
-            return _className;
+            return _classInfo;
         }
 
         public String getFieldName()
@@ -355,6 +362,7 @@ public class AnnotationParser
     public class MyMethodVisitor extends MethodVisitor
     {
         final MethodInfo _mi;
+        
             
         /**
          * @param classname
@@ -364,7 +372,8 @@ public class AnnotationParser
          * @param signature
          * @param exceptions
          */
-        public MyMethodVisitor(final String className,
+        public MyMethodVisitor(
+                               final ClassInfo classInfo,
                                final int access,
                                final String name,
                                final String methodDesc,
@@ -372,7 +381,7 @@ public class AnnotationParser
                                final String[] exceptions)
         {
             super(Opcodes.ASM4);
-            _mi = new MethodInfo(className, name, access, methodDesc,signature, exceptions);
+            _mi = new MethodInfo(classInfo, name, access, methodDesc,signature, exceptions);
         }
 
         
@@ -408,7 +417,7 @@ public class AnnotationParser
         /**
          * @param classname
          */
-        public MyFieldVisitor(final String className, 
+        public MyFieldVisitor(final ClassInfo classInfo,
                               final int access,
                               final String fieldName,
                               final String fieldType,
@@ -416,7 +425,7 @@ public class AnnotationParser
                               final Object value)
         {
             super(Opcodes.ASM4);
-            _fieldInfo = new FieldInfo(className, fieldName, access, fieldType, signature, value);
+            _fieldInfo = new FieldInfo(classInfo, fieldName, access, fieldType, signature, value);
         }
 
 
@@ -447,11 +456,13 @@ public class AnnotationParser
     public class MyClassVisitor extends ClassVisitor
     {
 
+        final Resource _containingResource;
         ClassInfo _ci;
         
-        public MyClassVisitor()
+        public MyClassVisitor(Resource containingResource)
         {
             super(Opcodes.ASM4);
+            _containingResource = containingResource;
         }
 
 
@@ -463,7 +474,7 @@ public class AnnotationParser
                            final String superName,
                            final String[] interfaces)
         {           
-            _ci = new ClassInfo(normalize(name), version, access, signature, normalize(superName), normalize(interfaces));
+            _ci = new ClassInfo(_containingResource, normalize(name), version, access, signature, normalize(superName), normalize(interfaces));
             
             _parsedClassNames.add(_ci.getClassName());                 
 
@@ -501,7 +512,7 @@ public class AnnotationParser
                                           final String[] exceptions)
         {
 
-            return new MyMethodVisitor(_ci.getClassName(), access, name, methodDesc, signature, exceptions);
+            return new MyMethodVisitor(_ci, access, name, methodDesc, signature, exceptions);
         }
 
         /**
@@ -516,7 +527,7 @@ public class AnnotationParser
                                         final String signature,
                                         final Object value)
         {
-            return new MyFieldVisitor(_ci.getClassName(), access, fieldName, fieldType, signature, value);
+            return new MyFieldVisitor(_ci, access, fieldName, fieldType, signature, value);
         }
     }
 
@@ -601,7 +612,7 @@ public class AnnotationParser
                 if (resource!= null)
                 {
                     Resource r = Resource.newResource(resource);
-                    scanClass(r.getInputStream());
+                    scanClass(null, r.getInputStream());
                 }
             }
         }
@@ -632,7 +643,7 @@ public class AnnotationParser
                     if (resource!= null)
                     {
                         Resource r = Resource.newResource(resource);
-                        scanClass(r.getInputStream());
+                        scanClass(null, r.getInputStream());
                     }
                 }
             }
@@ -681,7 +692,7 @@ public class AnnotationParser
                 if (resource!= null)
                 {
                     Resource r = Resource.newResource(resource);
-                    scanClass(r.getInputStream());
+                    scanClass(null, r.getInputStream());
                 }
             }
         }
@@ -695,7 +706,7 @@ public class AnnotationParser
      * @param resolver
      * @throws Exception
      */
-    public void parseDir (Resource dir, ClassNameResolver resolver)
+    protected void parseDir (Resource dir, ClassNameResolver resolver)
     throws Exception
     {
         //skip dirs whose name start with . (ie hidden)
@@ -723,7 +734,7 @@ public class AnnotationParser
                         {
                             Resource r = Resource.newResource(res.getURL());
                             if (LOG.isDebugEnabled()) {LOG.debug("Scanning class {}", r);};
-                            scanClass(r.getInputStream());
+                            scanClass(dir, r.getInputStream());
                         }
 
                     }
@@ -763,7 +774,7 @@ public class AnnotationParser
             {
                 try
                 {
-                    parseJarEntry(jarUri, entry, resolver);
+                    parseJarEntry(Resource.newResource(jarUri), entry, resolver);
                 }
                 catch (Exception e)
                 {
@@ -849,13 +860,15 @@ public class AnnotationParser
 
         if (fullname.endsWith(".class"))
         {
-            scanClass(r.getInputStream());
+            scanClass(null, r.getInputStream());
             return;
         }
         
         if (LOG.isDebugEnabled()) LOG.warn("Resource not scannable for classes: {}", r);
     }
 
+    
+  
 
     /**
      * Parse a resource that is a jar file.
@@ -864,13 +877,13 @@ public class AnnotationParser
      * @param resolver
      * @throws Exception
      */
-    public void parseJar (Resource jarResource,  final ClassNameResolver resolver)
+    protected void parseJar (Resource jarResource,  final ClassNameResolver resolver)
     throws Exception
     {
         if (jarResource == null)
             return;
         
-        URI uri = jarResource.getURI();
+       
         if (jarResource.toString().endsWith(".jar"))
         {
             if (LOG.isDebugEnabled()) {LOG.debug("Scanning jar {}", jarResource);};
@@ -879,14 +892,14 @@ public class AnnotationParser
             InputStream in = jarResource.getInputStream();
             if (in==null)
                 return;
-
+            
             JarInputStream jar_in = new JarInputStream(in);
             try
             { 
                 JarEntry entry = jar_in.getNextJarEntry();
                 while (entry!=null)
                 {      
-                    parseJarEntry(uri, entry, resolver);
+                    parseJarEntry(jarResource, entry, resolver);
                     entry = jar_in.getNextJarEntry();
                 }
             }
@@ -904,7 +917,7 @@ public class AnnotationParser
      * @param resolver
      * @throws Exception
      */
-    protected void parseJarEntry (URI jar, JarEntry entry, final ClassNameResolver resolver)
+    protected void parseJarEntry (Resource jar, JarEntry entry, final ClassNameResolver resolver)
     throws Exception
     {
         if (jar == null || entry == null)
@@ -925,9 +938,9 @@ public class AnnotationParser
                     ||
                 (!resolver.isExcluded(shortName) && (!isParsed(shortName) || resolver.shouldOverride(shortName))))
             {
-                Resource clazz = Resource.newResource("jar:"+jar+"!/"+name);
+                Resource clazz = Resource.newResource("jar:"+jar.getURI()+"!/"+name);
                 if (LOG.isDebugEnabled()) {LOG.debug("Scanning class from jar {}", clazz);};
-                scanClass(clazz.getInputStream());
+                scanClass(jar, clazz.getInputStream());
             }
         }
     }
@@ -937,14 +950,15 @@ public class AnnotationParser
     /**
      * Use ASM on a class
      * 
+     * @param containingResource the dir or jar that the class is contained within, can be null if not known
      * @param is
      * @throws IOException
      */
-    protected void scanClass (InputStream is)
+    protected void scanClass (Resource containingResource, InputStream is)
     throws IOException
     {
         ClassReader reader = new ClassReader(is);
-        reader.accept(new MyClassVisitor(), ClassReader.SKIP_CODE|ClassReader.SKIP_DEBUG|ClassReader.SKIP_FRAMES);
+        reader.accept(new MyClassVisitor(containingResource), ClassReader.SKIP_CODE|ClassReader.SKIP_DEBUG|ClassReader.SKIP_FRAMES);
     }
     
     /**

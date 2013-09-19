@@ -62,7 +62,7 @@ public class ServerEndpointAnnotationHandler extends AbstractDiscoverableAnnotat
             return;
         }
 
-        ServerEndpointAnnotation annotation = new ServerEndpointAnnotation(_context,info.getClassName(),_resource);
+        ServerEndpointAnnotation annotation = new ServerEndpointAnnotation(_context,info.getClassName(),info.getContainingResource());
         addAnnotation(annotation);
     }
 }

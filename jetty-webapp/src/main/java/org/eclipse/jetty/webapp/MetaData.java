@@ -18,6 +18,12 @@
 
 package org.eclipse.jetty.webapp;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -28,6 +34,8 @@ import javax.servlet.ServletContext;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.resource.EmptyResource;
+import org.eclipse.jetty.util.resource.JarResource;
 import org.eclipse.jetty.util.resource.Resource;
 
 
@@ -43,18 +51,18 @@ public class MetaData
     private static final Logger LOG = Log.getLogger(MetaData.class);
 
     public static final String ORDERED_LIBS = "javax.servlet.context.orderedLibs";
+    public static final Resource NON_FRAG_RESOURCE = EmptyResource.INSTANCE;
 
     protected Map<String, OriginInfo> _origins  =new HashMap<String,OriginInfo>();
     protected WebDescriptor _webDefaultsRoot;
     protected WebDescriptor _webXmlRoot;
     protected final List<WebDescriptor> _webOverrideRoots=new ArrayList<WebDescriptor>();
-    protected boolean _metaDataComplete;
-    protected final List<DiscoveredAnnotation> _annotations = new ArrayList<DiscoveredAnnotation>();
+    protected boolean _metaDataComplete;  
     protected final List<DescriptorProcessor> _descriptorProcessors = new ArrayList<DescriptorProcessor>();
     protected final List<FragmentDescriptor> _webFragmentRoots = new ArrayList<FragmentDescriptor>();
     protected final Map<String,FragmentDescriptor> _webFragmentNameMap = new HashMap<String,FragmentDescriptor>();
     protected final Map<Resource, FragmentDescriptor> _webFragmentResourceMap = new HashMap<Resource, FragmentDescriptor>();
-    protected final Map<Resource, List<DiscoveredAnnotation>> _webFragmentAnnotations = new HashMap<Resource, List<DiscoveredAnnotation>>();
+    protected final Map<Resource, List<DiscoveredAnnotation>> _annotations = new HashMap<Resource, List<DiscoveredAnnotation>>();
     protected final List<Resource> _webInfClasses = new ArrayList<Resource>();
     protected final List<Resource> _webInfJars = new ArrayList<Resource>();
     protected final List<Resource> _orderedWebInfJars = new ArrayList<Resource>();
@@ -135,7 +143,7 @@ public class MetaData
         _webFragmentRoots.clear();
         _webFragmentNameMap.clear();
         _webFragmentResourceMap.clear();
-        _webFragmentAnnotations.clear();
+        _annotations.clear();
         _webInfJars.clear();
         _orderedWebInfJars.clear();
         _orderedContainerResources.clear();
@@ -276,45 +284,37 @@ public class MetaData
             return;
         for (DiscoveredAnnotation a:annotations)
         {
-            Resource r = a.getResource();
-            if (r == null || !_webInfJars.contains(r))
-                _annotations.add(a);
-            else 
-                addDiscoveredAnnotation(a.getResource(), a);
-                
+            addDiscoveredAnnotation(a);       
         }
     }
-    
-    
-    public void addDiscoveredAnnotation(Resource resource, DiscoveredAnnotation annotation)
-    {
-        List<DiscoveredAnnotation> list = _webFragmentAnnotations.get(resource);
-        if (list == null)
-        {
-            list = new ArrayList<DiscoveredAnnotation>();
-            _webFragmentAnnotations.put(resource, list);
-        }
-        list.add(annotation);
-    }
-    
 
-    public void addDiscoveredAnnotations(Resource resource, List<DiscoveredAnnotation> annotations)
+    public void addDiscoveredAnnotation (DiscoveredAnnotation annotation)
     {
-        List<DiscoveredAnnotation> list = _webFragmentAnnotations.get(resource);
+        if (annotation == null)
+            return;
+        
+        //if no resource associated with an annotation or the resource is not one of the WEB-INF/lib jars,
+        //map it to empty resource
+        Resource resource = annotation.getResource();
+        if (resource == null ||  !_webInfJars.contains(resource))
+            resource = EmptyResource.INSTANCE;
+
+        List<DiscoveredAnnotation> list = _annotations.get(resource);
         if (list == null)
         {
             list = new ArrayList<DiscoveredAnnotation>();
-            _webFragmentAnnotations.put(resource, list);
+            _annotations.put(resource, list);
         }
-            
-        list.addAll(annotations);
+        list.add(annotation);           
     }
+
 
     public void addDescriptorProcessor(DescriptorProcessor p)
     {
         _descriptorProcessors.add(p);
     }
 
+    
     public void orderFragments ()
     {
         //if we have already ordered them don't do it again
@@ -373,13 +373,20 @@ public class MetaData
             }
         }
 
-        for (DiscoveredAnnotation a:_annotations)
+        //get an apply the annotations that are not associated with a fragment (and hence for
+        //which no ordering applies
+        List<DiscoveredAnnotation> nonFragAnnotations = _annotations.get(NON_FRAG_RESOURCE);
+        if (nonFragAnnotations != null)
         {
-            LOG.debug("apply {}",a);
-            a.apply();
+            for (DiscoveredAnnotation a:nonFragAnnotations)
+            {
+                LOG.debug("apply {}",a);
+                a.apply();
+            }
         }
-
-
+      
+        //apply the annotations that are associated with a fragment, according to the 
+        //established ordering
         List<Resource> resources = getOrderedWebInfJars();
         for (Resource r:resources)
         {
@@ -393,7 +400,7 @@ public class MetaData
                 }
             }
 
-            List<DiscoveredAnnotation> fragAnnotations = _webFragmentAnnotations.get(r);
+            List<DiscoveredAnnotation> fragAnnotations = _annotations.get(r);
             if (fragAnnotations != null)
             {
                 for (DiscoveredAnnotation a:fragAnnotations)

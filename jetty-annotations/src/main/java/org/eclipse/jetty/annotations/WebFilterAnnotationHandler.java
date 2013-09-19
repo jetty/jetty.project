@@ -53,7 +53,7 @@ public class WebFilterAnnotationHandler extends AbstractDiscoverableAnnotationHa
         if (annotationName == null || !"javax.servlet.annotation.WebFilter".equals(annotationName))
             return;
         
-        WebFilterAnnotation wfAnnotation = new WebFilterAnnotation(_context, info.getClassName(), _resource);
+        WebFilterAnnotation wfAnnotation = new WebFilterAnnotation(_context, info.getClassName(), info.getContainingResource());
         addAnnotation(wfAnnotation);
     }
 
@@ -62,7 +62,7 @@ public class WebFilterAnnotationHandler extends AbstractDiscoverableAnnotationHa
     {  
         if (annotationName == null || !"javax.servlet.annotation.WebFilter".equals(annotationName))
             return;
-        LOG.warn ("@WebFilter not applicable for fields: "+info.getClassName()+"."+info.getFieldName());
+        LOG.warn ("@WebFilter not applicable for fields: "+info.getClassInfo().getClassName()+"."+info.getFieldName());
     }
 
     @Override
@@ -70,6 +70,6 @@ public class WebFilterAnnotationHandler extends AbstractDiscoverableAnnotationHa
     {  
         if (annotationName == null || !"javax.servlet.annotation.WebFilter".equals(annotationName))
             return;
-        LOG.warn ("@WebFilter not applicable for methods: "+info.getClassName()+"."+info.getMethodName()+" "+info.getSignature());
+        LOG.warn ("@WebFilter not applicable for methods: "+info.getClassInfo().getClassName()+"."+info.getMethodName()+" "+info.getSignature());
     }
 }

@@ -102,7 +102,7 @@ public class TestAnnotationParser
             {                
                 if (annotation == null || !"org.eclipse.jetty.annotations.Sample".equals(annotation))
                     return;
-                assertEquals("org.eclipse.jetty.annotations.ClassA",info.getClassName());
+                assertEquals("org.eclipse.jetty.annotations.ClassA",info.getClassInfo().getClassName());
                 assertTrue(methods.contains(info.getMethodName()));
                 assertEquals("org.eclipse.jetty.annotations.Sample",annotation);
             }
@@ -157,7 +157,7 @@ public class TestAnnotationParser
             {  
                 if (annotation == null || ! "org.eclipse.jetty.annotations.Multi".equals(annotation))
                     return;
-                assertTrue("org.eclipse.jetty.annotations.ClassB".equals(info.getClassName()));
+                assertTrue("org.eclipse.jetty.annotations.ClassB".equals(info.getClassInfo().getClassName()));
                 assertTrue("a".equals(info.getMethodName()));
             }
         }

@@ -51,11 +51,6 @@ public class MavenAnnotationConfiguration extends AnnotationConfiguration
                throw new IllegalStateException ("No metadata");
 
             parser.clearHandlers();
-            for (AbstractDiscoverableAnnotationHandler h:_discoverableAnnotationHandlers)
-            {
-                if (h instanceof AbstractDiscoverableAnnotationHandler)
-                    ((AbstractDiscoverableAnnotationHandler)h).setResource(null); //
-            }
             parser.registerHandlers(_discoverableAnnotationHandlers);
             parser.registerHandler(_classInheritanceHandler);
             parser.registerHandlers(_containerInitializerAnnotationHandlers);
@@ -87,7 +82,7 @@ public class MavenAnnotationConfiguration extends AnnotationConfiguration
     public void doParse (final WebAppContext context, final AnnotationParser parser, Resource resource)
     throws Exception
     { 
-            parser.parseDir(resource, new ClassNameResolver()
+            parser.parse(resource, new ClassNameResolver()
             {
                 public boolean isExcluded (String name)
                 {

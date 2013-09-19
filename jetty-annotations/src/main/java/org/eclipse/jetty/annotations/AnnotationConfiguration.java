@@ -197,10 +197,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
            //    In case there is no others then it is
            //          WEB-INF/classes + order of the elements.
            parseWebInfClasses(context, parser);
-           parseWebInfLib (context, parser);
-           
-           for (AbstractDiscoverableAnnotationHandler h:_discoverableAnnotationHandlers)
-               context.getMetaData().addDiscoveredAnnotations(((AbstractDiscoverableAnnotationHandler)h).getAnnotationList());      
+           parseWebInfLib (context, parser);   
        }
     }
 
@@ -232,7 +229,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
     }
 
     /**
-     * @return a new AnnotationParser. This method can be overridden to use a different impleemntation of
+     * @return a new AnnotationParser. This method can be overridden to use a different implementation of
      * the AnnotationParser. Note that this is considered internal API.
      */
     protected AnnotationParser createAnnotationParser()
@@ -259,12 +256,8 @@ public class AnnotationConfiguration extends AbstractConfiguration
     public void createServletContainerInitializerAnnotationHandlers (WebAppContext context, List<ServletContainerInitializer> scis)
     throws Exception
     {
-
-
         if (scis == null || scis.isEmpty())
             return; // nothing to do
-        
-
 
         List<ContainerInitializer> initializers = new ArrayList<ContainerInitializer>();
         context.setAttribute(CONTAINER_INITIALIZERS, initializers);
@@ -300,7 +293,6 @@ public class AnnotationConfiguration extends AbstractConfiguration
                         if (c.isAnnotation())
                         {
                             if (LOG.isDebugEnabled()) LOG.debug("Registering annotation handler for "+c.getName());
-
                            _containerInitializerAnnotationHandlers.add(new ContainerInitializerAnnotationHandler(initializer, c));
                         }
                     }
@@ -410,11 +402,6 @@ public class AnnotationConfiguration extends AbstractConfiguration
 
         //always parse for discoverable annotations as well as class hierarchy and servletcontainerinitializer related annotations
         parser.clearHandlers();
-        for (AbstractDiscoverableAnnotationHandler h:_discoverableAnnotationHandlers)
-        {
-            if (h instanceof AbstractDiscoverableAnnotationHandler)
-                ((AbstractDiscoverableAnnotationHandler)h).setResource(null); //
-        }
         parser.registerHandlers(_discoverableAnnotationHandlers);
         parser.registerHandler(_classInheritanceHandler);
         parser.registerHandlers(_containerInitializerAnnotationHandlers);
@@ -477,14 +464,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
                 
                 //only register the discoverable annotation handlers if this fragment is not metadata complete, or has no fragment descriptor
                 if (f == null || !isMetaDataComplete(f))
-                {
-                    for (AbstractDiscoverableAnnotationHandler h:_discoverableAnnotationHandlers)
-                    {
-                        if (h instanceof AbstractDiscoverableAnnotationHandler)
-                            ((AbstractDiscoverableAnnotationHandler)h).setResource(r);
-                    }
                     parser.registerHandlers(_discoverableAnnotationHandlers);
-                }
 
                 parser.parse(uri, new WebAppClassNameResolver(context));
             }
@@ -504,11 +484,6 @@ public class AnnotationConfiguration extends AbstractConfiguration
         LOG.debug("Scanning classes in WEB-INF/classes");
 
         parser.clearHandlers();
-        for (AbstractDiscoverableAnnotationHandler h:_discoverableAnnotationHandlers)
-        {
-            if (h instanceof AbstractDiscoverableAnnotationHandler)
-                ((AbstractDiscoverableAnnotationHandler)h).setResource(null); //
-        }
         parser.registerHandlers(_discoverableAnnotationHandlers);
         parser.registerHandler(_classInheritanceHandler);
         parser.registerHandlers(_containerInitializerAnnotationHandlers);
@@ -550,6 +525,4 @@ public class AnnotationConfiguration extends AbstractConfiguration
     {
         return (d!=null && d.getMetaDataComplete() == MetaDataComplete.True);
     }
-
-
 }

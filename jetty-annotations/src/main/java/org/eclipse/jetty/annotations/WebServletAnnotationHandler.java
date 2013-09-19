@@ -61,7 +61,7 @@ public class WebServletAnnotationHandler extends AbstractDiscoverableAnnotationH
         if (annotationName == null || !"javax.servlet.annotation.WebServlet".equals(annotationName))
             return;
         
-        WebServletAnnotation annotation = new WebServletAnnotation (_context, info.getClassName(), _resource);
+        WebServletAnnotation annotation = new WebServletAnnotation (_context, info.getClassName(), info.getContainingResource());
         addAnnotation(annotation);
     }
 

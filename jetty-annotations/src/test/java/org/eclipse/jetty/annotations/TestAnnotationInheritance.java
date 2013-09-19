@@ -64,14 +64,14 @@ public class TestAnnotationInheritance
         {   
             if (annotation == null || !"org.eclipse.jetty.annotations.Sample".equals(annotation))
                 return;
-            annotatedFields.add(info.getClassName()+"."+info.getFieldName());
+            annotatedFields.add(info.getClassInfo().getClassName()+"."+info.getFieldName());
         }
 
         public void handle(MethodInfo info, String annotation)
         {
             if (annotation == null || !"org.eclipse.jetty.annotations.Sample".equals(annotation))
                 return;
-            annotatedMethods.add(info.getClassName()+"."+info.getMethodName());
+            annotatedMethods.add(info.getClassInfo().getClassName()+"."+info.getMethodName());
         }
     }
 
@@ -205,8 +205,10 @@ public class TestAnnotationInheritance
     @Test
     public void testTypeInheritanceHandling() throws Exception
     {
+        MultiMap map = new MultiMap();
+        
         AnnotationParser parser = new AnnotationParser();
-        ClassInheritanceHandler handler = new ClassInheritanceHandler();
+        ClassInheritanceHandler handler = new ClassInheritanceHandler(map);
         parser.registerHandler(handler);
 
         class Foo implements InterfaceD
@@ -221,7 +223,6 @@ public class TestAnnotationInheritance
 
         parser.parse(classNames, null);
 
-        MultiMap map = handler.getMap();
         assertNotNull(map);
         assertFalse(map.isEmpty());
         assertEquals(2, map.size());

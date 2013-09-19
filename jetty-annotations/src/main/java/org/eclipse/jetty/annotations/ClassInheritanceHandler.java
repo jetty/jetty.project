@@ -36,11 +36,7 @@ public class ClassInheritanceHandler extends AbstractHandler
     private static final Logger LOG = Log.getLogger(ClassInheritanceHandler.class);
     
     MultiMap<String> _inheritanceMap;
-    
-    public ClassInheritanceHandler()
-    {
-       _inheritanceMap = new MultiMap<>();
-    }
+ 
     
     public ClassInheritanceHandler(MultiMap<String> map)
     {
@@ -63,15 +59,5 @@ public class ClassInheritanceHandler extends AbstractHandler
         {
             LOG.warn(e);
         }  
-    }
-    
-    public List<String> getClassNamesExtendingOrImplementing (String className)
-    {
-        return _inheritanceMap.getValues(className);
-    }
-    
-    public MultiMap<String> getMap ()
-    {
-        return _inheritanceMap;
     }
 }
