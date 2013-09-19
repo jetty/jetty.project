@@ -189,6 +189,7 @@ public class ShutdownHandler extends HandlerWrapper
 
         LOG.info("Shutting down by request from " + getRemoteAddr(request));
 
+        final Server server=getServer();
         new Thread()
         {
             @Override
@@ -196,7 +197,7 @@ public class ShutdownHandler extends HandlerWrapper
             {
                 try
                 {
-                    shutdownServer();
+                    shutdownServer(server);
                 }
                 catch (InterruptedException e)
                 {
@@ -227,9 +228,9 @@ public class ShutdownHandler extends HandlerWrapper
         return _shutdownToken.equals(tok);
     }
 
-    private void shutdownServer() throws Exception
+    private void shutdownServer(Server server) throws Exception
     {
-        getServer().stop();
+        server.stop();
 
         if (_exitJvm)
         {
