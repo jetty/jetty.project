@@ -48,7 +48,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
     private static final Logger LOG = Log.getLogger(AnnotationConfiguration.class);
     public static final String CLASS_INHERITANCE_MAP  = "org.eclipse.jetty.classInheritanceMap";
     public static final String CONTAINER_INITIALIZERS = "org.eclipse.jetty.containerInitializers";
-    public static final String CONTAINER_INITIALIZER_LISTENER = "org.eclipse.jetty.containerInitializerListener";
+    public static final String CONTAINER_INITIALIZER_STARTER = "org.eclipse.jetty.containerInitializerStarter";
   
     
     protected List<AbstractDiscoverableAnnotationHandler> _discoverableAnnotationHandlers = new ArrayList<AbstractDiscoverableAnnotationHandler>();
@@ -147,11 +147,11 @@ public class AnnotationConfiguration extends AbstractConfiguration
     {
         context.removeAttribute(CLASS_INHERITANCE_MAP);
         context.removeAttribute(CONTAINER_INITIALIZERS);
-        ServletContainerInitializerListener listener = (ServletContainerInitializerListener)context.getAttribute(CONTAINER_INITIALIZER_LISTENER);
-        if (listener != null)
+        ServletContainerInitializersStarter starter = (ServletContainerInitializersStarter)context.getAttribute(CONTAINER_INITIALIZER_STARTER);
+        if (starter != null)
         {
-            context.removeBean(listener);
-            context.removeAttribute(CONTAINER_INITIALIZER_LISTENER);
+            context.removeBean(starter);
+            context.removeAttribute(CONTAINER_INITIALIZER_STARTER);
         }
     }
     
@@ -209,15 +209,17 @@ public class AnnotationConfiguration extends AbstractConfiguration
     @Override
     public void postConfigure(WebAppContext context) throws Exception
     {
-        MultiMap<String> map = (MultiMap<String>)context.getAttribute(CLASS_INHERITANCE_MAP);
-        if (map != null)
-            map.clear();
+        MultiMap<String> classMap = (MultiMap<String>)context.getAttribute(CLASS_INHERITANCE_MAP);
+        List<ContainerInitializer> initializers = (List<ContainerInitializer>)context.getAttribute(CONTAINER_INITIALIZERS);
         
         context.removeAttribute(CLASS_INHERITANCE_MAP);
+        if (classMap != null)
+            classMap.clear();
         
-        List<ContainerInitializer> initializers = (List<ContainerInitializer>)context.getAttribute(CONTAINER_INITIALIZERS);
+        context.removeAttribute(CONTAINER_INITIALIZERS);
         if (initializers != null)
             initializers.clear();
+        
         if (_discoverableAnnotationHandlers != null)
             _discoverableAnnotationHandlers.clear();
       
@@ -303,17 +305,14 @@ public class AnnotationConfiguration extends AbstractConfiguration
             else
                 if (LOG.isDebugEnabled()) LOG.debug("No annotation on initializer "+service.getClass());
         }
-
-
-
-        //add a bean which will call the servletcontainerinitializers when appropriate
-        ServletContainerInitializerListener listener = (ServletContainerInitializerListener)context.getAttribute(CONTAINER_INITIALIZER_LISTENER);
-        if (listener != null)
-            throw new IllegalStateException("ServletContainerInitializerListener already exists");
-        listener = new ServletContainerInitializerListener();
-        listener.setWebAppContext(context);
-        context.setAttribute(CONTAINER_INITIALIZER_LISTENER, listener);
-        context.addBean(listener, true);
+        
+        //add a bean to the context which will call the servletcontainerinitializers when appropriate
+        ServletContainerInitializersStarter starter = (ServletContainerInitializersStarter)context.getAttribute(CONTAINER_INITIALIZER_STARTER);
+        if (starter != null)
+            throw new IllegalStateException("ServletContainerInitializersStarter already exists");
+        starter = new ServletContainerInitializersStarter(context);
+        context.setAttribute(CONTAINER_INITIALIZER_STARTER, starter);
+        context.addBean(starter, true);
     }
 
 

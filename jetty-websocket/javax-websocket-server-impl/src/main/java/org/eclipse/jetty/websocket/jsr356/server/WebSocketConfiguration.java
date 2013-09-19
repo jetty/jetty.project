@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.jsr356.server;
 
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -70,7 +71,7 @@ public class WebSocketConfiguration extends AbstractConfiguration
         return jettyContainer;
     }
 
-    public static boolean isJSR356Context(WebAppContext context)
+    public static boolean isJSR356Context(ContextHandler context)
     {
         Object enable = context.getAttribute(ENABLE);
         if (enable instanceof Boolean)
