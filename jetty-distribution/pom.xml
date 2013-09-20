@@ -439,8 +439,8 @@
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <includeGroupIds>org.eclipse.jetty.orbit,org.glassfish.web, org.glassfish, javax.el, javax.servlet.jsp</includeGroupIds>
-              <includeArtifactIds>javax.servlet.jsp.jstl,org.apache.taglibs.standard.glassfish,org.eclipse.jdt.core, javax.servlet.jsp-api, javax.servlet.jsp, javax.el-api, javax.el</includeArtifactIds>
+              <includeGroupIds>org.eclipse.jetty.orbit,org.glassfish.web, org.glassfish, javax.el, javax.servlet.jsp, org.eclipse.jetty.toolchain</includeGroupIds>
+              <includeArtifactIds>javax.servlet.jsp.jstl,org.apache.taglibs.standard.glassfish,org.eclipse.jdt.core, javax.servlet.jsp-api, javax.servlet.jsp, jetty-jsp-jdt, javax.el-api, javax.el</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/jsp</outputDirectory>
             </configuration>
@@ -566,6 +566,10 @@
     <dependency>
       <groupId>org.glassfish.web</groupId>
       <artifactId>javax.servlet.jsp</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-jsp-jdt</artifactId>
     </dependency>
     <dependency>
       <groupId>javax.servlet.jsp</groupId>
