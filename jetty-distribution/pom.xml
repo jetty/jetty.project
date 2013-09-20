@@ -446,6 +446,19 @@
             </configuration>
           </execution>
           <execution>
+            <id>copy-jaspi-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>org.eclipse.jetty.orbit</includeGroupIds>
+              <includeArtifactIds>javax.security.auth.message</includeArtifactIds>
+              <includeTypes>jar</includeTypes>
+              <outputDirectory>${assembly-directory}/lib/jaspi</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
             <id>unpack-config-deps</id>
             <phase>generate-resources</phase>
             <goals>
@@ -713,6 +726,11 @@
       <artifactId>example-async-rest-webapp</artifactId>
       <version>${project.version}</version>
       <type>war</type>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-jaspi</artifactId>
+      <version>${project.version}</version>
     </dependency>
   </dependencies>
 </project>
