@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.annotations;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -726,8 +727,14 @@ public class AnnotationParser
                 else
                 {
                     //we've already verified the directories, so just verify the class file name
-                    String filename = res.getFile().getName();
-                    if (isValidClassFileName(filename))
+                    boolean valid = true;
+                    File file = res.getFile();
+                    if (file == null)
+                        LOG.warn("Unable to validate class file name for {}", res);
+                    else
+                        valid = isValidClassFileName(file.getName());
+                   
+                    if (valid)
                     {
                         String name = res.getName();
                         if ((resolver == null)|| (!resolver.isExcluded(name) && (!isParsed(name) || resolver.shouldOverride(name))))
