@@ -345,8 +345,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                 _onIdle=true;
             }
 
-            if (_maxIdleTime>0 && (System.currentTimeMillis()-_idleTimestamp)>_maxIdleTime)
-                _connection.onIdleExpired(idleForMs);
+            _connection.onIdleExpired(idleForMs);
         }
         finally
         {
