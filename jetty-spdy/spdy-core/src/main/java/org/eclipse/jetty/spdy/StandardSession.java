@@ -533,7 +533,6 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
             streamListener = notifyOnSyn(listener, stream, synInfo);
         }
         stream.setStreamFrameListener(streamListener);
-        flush();
         // The onSyn() listener may have sent a frame that closed the stream
         if (stream.isClosed())
             removeStream(stream);
@@ -698,7 +697,6 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
 
         RstInfo rstInfo = new RstInfo(frame.getStreamId(), StreamStatus.from(frame.getVersion(), frame.getStatusCode()));
         notifyOnRst(listener, rstInfo);
-        flush();
 
         if (stream != null)
             removeStream(stream);
@@ -722,7 +720,6 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         }
         SettingsInfo settingsInfo = new SettingsInfo(frame.getSettings(), frame.isClearPersisted());
         notifyOnSettings(listener, settingsInfo);
-        flush();
     }
 
     private void onPing(PingFrame frame)
@@ -732,7 +729,6 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         {
             PingResultInfo pingResultInfo = new PingResultInfo(frame.getPingId());
             notifyOnPing(listener, pingResultInfo);
-            flush();
         }
         else
         {
@@ -747,7 +743,6 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
             //TODO: Find a better name for GoAwayResultInfo
             GoAwayResultInfo goAwayResultInfo = new GoAwayResultInfo(frame.getLastStreamId(), SessionStatus.from(frame.getStatusCode()));
             notifyOnGoAway(listener, goAwayResultInfo);
-            flush();
             // SPDY does not require to send back a response to a GO_AWAY.
             // We notified the application of the last good stream id and
             // tried our best to flush remaining data.
@@ -788,7 +783,6 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
     private void onCredential(CredentialFrame frame)
     {
         LOG.warn("{} frame not yet supported", frame.getType());
-        flush();
     }
 
     protected void close()

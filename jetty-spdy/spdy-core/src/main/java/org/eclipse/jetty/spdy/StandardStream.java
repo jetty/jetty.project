@@ -246,7 +246,6 @@ public class StandardStream extends IdleTimeout implements IStream
                 throw new IllegalStateException();
             }
         }
-        session.flush();
     }
 
     @Override
@@ -270,7 +269,6 @@ public class StandardStream extends IdleTimeout implements IStream
 
         updateCloseState(dataInfo.isClose(), false);
         notifyOnData(dataInfo);
-        session.flush();
     }
 
     @Override
