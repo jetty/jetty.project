@@ -113,7 +113,6 @@ public class WSServer
 
         // @formatter:off
         context.setConfigurations(new Configuration[] {
-                new WebSocketConfiguration(),
                 new AnnotationConfiguration(),
                 new WebXmlConfiguration(),
                 new WebInfConfiguration(),
