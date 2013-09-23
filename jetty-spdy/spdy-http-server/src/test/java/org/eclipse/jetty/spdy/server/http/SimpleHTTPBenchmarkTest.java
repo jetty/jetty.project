@@ -35,6 +35,7 @@ import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.SynInfo;
+import org.eclipse.jetty.spdy.http.HTTPSPDYHeader;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -54,7 +55,7 @@ import static org.junit.Assert.assertTrue;
 public class SimpleHTTPBenchmarkTest extends AbstractHTTPSPDYTest
 {
     private static final Logger LOG = Log.getLogger(SimpleHTTPBenchmarkTest.class);
-    private final int dataSize = 4096*100;
+    private final int dataSize = 4096 * 100;
     private Session session;
     private int requestCount = 100;
 
@@ -81,7 +82,7 @@ public class SimpleHTTPBenchmarkTest extends AbstractHTTPSPDYTest
                 assertThat(httpRequest.getHeader("host"), is("localhost:" + connector.getLocalPort()));
                 httpResponse.getOutputStream().write(data);
             }
-        }), null);
+        }, 0), null);
     }
 
     @Test
@@ -97,8 +98,8 @@ public class SimpleHTTPBenchmarkTest extends AbstractHTTPSPDYTest
             long timeElapsed = System.nanoTime() - start;
             LOG.info("Requests with {}b response took: {}ms", dataSize, timeElapsed / 1000 / 1000);
         }
-        long timeElapsedOverall = (System.nanoTime() - overallStart)/1000/1000;
-        LOG.info("Time elapsed overall: {}ms avg: {}ms", timeElapsedOverall, timeElapsedOverall/iterations);
+        long timeElapsedOverall = (System.nanoTime() - overallStart) / 1000 / 1000;
+        LOG.info("Time elapsed overall: {}ms avg: {}ms", timeElapsedOverall, timeElapsedOverall / iterations);
     }
 
     private void sendGetRequest() throws Exception
