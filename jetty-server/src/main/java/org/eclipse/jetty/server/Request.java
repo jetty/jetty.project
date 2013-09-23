@@ -515,7 +515,7 @@ public class Request implements HttpServletRequest
     {
         return (int)_fields.getLongField(HttpHeader.CONTENT_LENGTH.toString());
     }
-    
+
     /* ------------------------------------------------------------ */
     /*
      * @see javax.servlet.ServletRequest.getContentLengthLong()
@@ -526,6 +526,12 @@ public class Request implements HttpServletRequest
         return _fields.getLongField(HttpHeader.CONTENT_LENGTH.toString());
     }
 
+    /* ------------------------------------------------------------ */
+    public long getContentRead()
+    {
+        return _input.getContentRead();
+    }
+    
     /* ------------------------------------------------------------ */
     /*
      * @see javax.servlet.ServletRequest#getContentType()
