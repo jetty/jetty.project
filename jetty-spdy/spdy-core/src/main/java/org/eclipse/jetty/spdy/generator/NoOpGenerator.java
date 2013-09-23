@@ -39,7 +39,7 @@ public class NoOpGenerator extends ControlFrameGenerator
 
         int frameBodyLength = 0;
         int totalLength = ControlFrame.HEADER_LENGTH + frameBodyLength;
-        ByteBuffer buffer = getByteBufferPool().acquire(totalLength, true);
+        ByteBuffer buffer = getByteBufferPool().acquire(totalLength, Generator.useDirectBuffers);
         BufferUtil.clearToFill(buffer);
         generateControlFrameHeader(noOp, frameBodyLength, buffer);
 
