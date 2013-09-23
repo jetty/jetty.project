@@ -92,7 +92,7 @@ public abstract class IteratingCallback implements Callback
                 else if (_state.compareAndSet(State.ITERATING,State.WAITING))
                     // no callback yet, so break the loop and wait for it
                     break;
-                
+
                 // The callback must have happened and we are either WAITING already or FAILED
                 // the loop test will work out which
             }

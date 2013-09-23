@@ -57,8 +57,9 @@ public class SPDYClientConnectionFactory implements ClientConnectionFactory
         FlowControlStrategy flowControlStrategy = client.newFlowControlStrategy();
 
         SessionFrameListener listener = (SessionFrameListener)context.get(SPDY_SESSION_LISTENER_CONTEXT_KEY);
-        StandardSession session = new StandardSession(client.getVersion(), byteBufferPool, factory.getExecutor(),
+        StandardSession session = new StandardSession(client.getVersion(), byteBufferPool,
                 factory.getScheduler(), connection, endPoint, connection, 1, listener, generator, flowControlStrategy);
+
         session.setWindowSize(client.getInitialWindowSize());
         parser.addListener(session);
         connection.setSession(session);

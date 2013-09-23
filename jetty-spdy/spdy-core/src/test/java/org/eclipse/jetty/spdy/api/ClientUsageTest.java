@@ -36,7 +36,7 @@ public class ClientUsageTest
     @Test
     public void testClientRequestResponseNoBody() throws Exception
     {
-        Session session = new StandardSession(SPDY.V2, null, null, null, null, null, null, 1, null, null, null);
+        Session session = new StandardSession(SPDY.V2, null, null, null, null, null, 1, null, null, null);
 
         session.syn(new SynInfo(new Fields(), true), new StreamFrameListener.Adapter()
         {
@@ -62,7 +62,7 @@ public class ClientUsageTest
     @Test
     public void testClientReceivesPush1() throws InterruptedException, ExecutionException, TimeoutException
     {
-        Session session = new StandardSession(SPDY.V2, null, null, null, null, null, null, 1, null, null, null);
+        Session session = new StandardSession(SPDY.V2, null, null, null, null, null, 1, null, null, null);
 
         session.syn(new SynInfo(new Fields(), true), new StreamFrameListener.Adapter()
         {
@@ -99,7 +99,7 @@ public class ClientUsageTest
     @Test
     public void testClientReceivesPush2() throws InterruptedException, ExecutionException, TimeoutException
     {
-        Session session = new StandardSession(SPDY.V2, null, null, null, null, null, null, 1, new SessionFrameListener.Adapter()
+        Session session = new StandardSession(SPDY.V2, null, null, null, null, null, 1, new SessionFrameListener.Adapter()
         {
             public StreamFrameListener onPush(Stream stream, PushInfo pushInfo)
             {
@@ -137,7 +137,7 @@ public class ClientUsageTest
     @Test
     public void testClientRequestWithBodyResponseNoBody() throws Exception
     {
-        Session session = new StandardSession(SPDY.V2, null, null, null, null, null, null, 1, null, null, null);
+        Session session = new StandardSession(SPDY.V2, null, null, null, null, null, 1, null, null, null);
 
         Stream stream = session.syn(new SynInfo(5, TimeUnit.SECONDS, new Fields(), false, (byte)0),
                 new StreamFrameListener.Adapter()
@@ -166,7 +166,7 @@ public class ClientUsageTest
     @Test
     public void testAsyncClientRequestWithBodyResponseNoBody() throws Exception
     {
-        Session session = new StandardSession(SPDY.V2, null, null, null, null, null, null, 1, null, null, null);
+        Session session = new StandardSession(SPDY.V2, null, null, null, null, null, 1, null, null, null);
 
         final String context = "context";
         session.syn(new SynInfo(new Fields(), false), new StreamFrameListener.Adapter()
@@ -209,7 +209,7 @@ public class ClientUsageTest
     @Test
     public void testAsyncClientRequestWithBodyAndResponseWithBody() throws Exception
     {
-        Session session = new StandardSession(SPDY.V2, null, null, null, null, null, null, 1, null, null, null);
+        Session session = new StandardSession(SPDY.V2, null, null, null, null, null, 1, null, null, null);
 
         session.syn(new SynInfo(new Fields(), false), new StreamFrameListener.Adapter()
                 {

@@ -107,7 +107,7 @@ public class SPDYServerConnectionFactory extends AbstractConnectionFactory
         FlowControlStrategy flowControlStrategy = newFlowControlStrategy(version);
 
         StandardSession session = new StandardSession(getVersion(), connector.getByteBufferPool(),
-                connector.getExecutor(), connector.getScheduler(), connection, endPoint, connection, 2, listener,
+                connector.getScheduler(), connection, endPoint, connection, 2, listener,
                 generator, flowControlStrategy);
         session.setWindowSize(getInitialWindowSize());
         parser.addListener(session);

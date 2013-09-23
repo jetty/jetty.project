@@ -192,7 +192,7 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
     {
         private HTTPSession(short version, Connector connector)
         {
-            super(version, connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), null,
+            super(version, connector.getByteBufferPool(), connector.getScheduler(), null,
                     getEndPoint(), null, 1, proxyEngineSelector, null, null);
         }
 
