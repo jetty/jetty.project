@@ -312,6 +312,7 @@ public class LowResourceMonitor extends AbstractLifeCycle
                 LOG.info("Low Resources cleared");
                 _reasons=null;
                 _lowStarted=0;
+                _cause=null;
                 clearLowResources();
             }
         }
