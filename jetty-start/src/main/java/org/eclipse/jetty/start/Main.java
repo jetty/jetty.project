@@ -67,18 +67,8 @@ import java.util.regex.Pattern;
  * </li>
  * <li>Module Resolution</li>
  * <li>Properties Resolution</li>
- * <li>Execution
- * <ul>
- * <li>--list-modules</li>
- * <li>--list-classpath</li>
- * <li>--list-config</li>
- * <li>--version</li>
- * <li>--help</li>
- * <li>--dry-run</li>
- * <li>--exec</li>
- * <li>--stop</li>
- * <li>(or normal startup)</li>
- * </ul>
+ * <li>Present Optional Informational Options</li>
+ * <li>Normal Startup</li>
  * </li>
  * </ol>
  */

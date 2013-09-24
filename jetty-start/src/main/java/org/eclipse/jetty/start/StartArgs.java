@@ -26,6 +26,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -206,14 +207,21 @@ public class StartArgs
             System.out.println(" (no properties specified)");
             return;
         }
-
+        
+        List<String> sortedKeys = new ArrayList<>();
         @SuppressWarnings("unchecked")
         Enumeration<String> keyEnum = (Enumeration<String>)properties.propertyNames();
         while (keyEnum.hasMoreElements())
         {
-            String name = keyEnum.nextElement();
-            String value = properties.getProperty(name);
-            System.out.printf(" %s = %s%n",name,value);
+            sortedKeys.add(keyEnum.nextElement());
+        }
+        
+        Collections.sort(sortedKeys);
+
+        for(String key: sortedKeys)
+        {
+            String value = properties.getProperty(key);
+            System.out.printf(" %s = %s%n",key,value);
         }
     }
 
@@ -228,8 +236,12 @@ public class StartArgs
             System.out.println(" (no system properties specified)");
             return;
         }
+        
+        List<String> sortedKeys = new ArrayList<>();
+        sortedKeys.addAll(systemPropertyKeys);
+        Collections.sort(sortedKeys);
 
-        for (String key : systemPropertyKeys)
+        for (String key : sortedKeys)
         {
             String value = System.getProperty(key);
             System.out.printf(" %s = %s%n",key,value);
