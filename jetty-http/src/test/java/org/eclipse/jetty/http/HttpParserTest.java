@@ -31,7 +31,6 @@ import org.eclipse.jetty.http.HttpParser.State;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.hamcrest.Matchers;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -42,8 +41,8 @@ public class HttpParserTest
 {
     /* ------------------------------------------------------------------------------- */
     /**
-     * Parse until {@link #END END} state.
-     * If the parser is already in the END state, then it is {@link #reset reset} and re-parsed.
+     * Parse until {@link State#END} state.
+     * If the parser is already in the END state, then it is {@link HttpParser#reset()} and re-parsed.
      * @param parser The parser to test
      * @throws IllegalStateException If the buffers have already been partially parsed.
      */

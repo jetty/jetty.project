@@ -57,7 +57,7 @@ public class WebServletAnnotation extends DiscoveredAnnotation
     }
     
     /**
-     * @see org.eclipse.jetty.annotations.ClassAnnotation#apply()
+     * @see DiscoveredAnnotation#apply()
      */
     public void apply()
     {

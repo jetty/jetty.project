@@ -328,7 +328,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
     /**
      * Check to see if the ServletContainerIntializer loaded via the ServiceLoader came
      * from a jar that is excluded by the fragment ordering. See ServletSpec 3.0 p.85.
-     * @param orderedJars
+     * @param context
      * @param service
      * @return
      */
