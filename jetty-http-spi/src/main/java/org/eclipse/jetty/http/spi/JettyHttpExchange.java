@@ -57,7 +57,7 @@ public class JettyHttpExchange extends HttpExchange implements JettyExchange
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.http.spi.JettyExchange#getRequestHeaders()
+     * @see JettyHttpExchangeDelegate#getRequestHeaders()
      */
     @Override
     public Headers getRequestHeaders()
@@ -67,7 +67,7 @@ public class JettyHttpExchange extends HttpExchange implements JettyExchange
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.http.spi.JettyExchange#getResponseHeaders()
+     * @see JettyHttpExchangeDelegate#getResponseHeaders()
      */
     @Override
     public Headers getResponseHeaders()
@@ -77,7 +77,7 @@ public class JettyHttpExchange extends HttpExchange implements JettyExchange
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.http.spi.JettyExchange#getRequestURI()
+     * @see JettyHttpExchangeDelegate#getRequestURI()
      */
     @Override
     public URI getRequestURI()
@@ -87,7 +87,7 @@ public class JettyHttpExchange extends HttpExchange implements JettyExchange
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.http.spi.JettyExchange#getRequestMethod()
+     * @see JettyHttpExchangeDelegate#getRequestMethod()
      */
     @Override
     public String getRequestMethod()
@@ -97,7 +97,7 @@ public class JettyHttpExchange extends HttpExchange implements JettyExchange
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.http.spi.JettyExchange#getHttpContext()
+     * @see JettyHttpExchangeDelegate#getHttpContext()
      */
     @Override
     public HttpContext getHttpContext()
@@ -107,7 +107,7 @@ public class JettyHttpExchange extends HttpExchange implements JettyExchange
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.http.spi.JettyExchange#close()
+     * @see JettyHttpExchangeDelegate#close()
      */
     @Override
     public void close()
@@ -127,7 +127,7 @@ public class JettyHttpExchange extends HttpExchange implements JettyExchange
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.http.spi.JettyExchange#getRequestBody()
+     * @see JettyHttpExchangeDelegate#getRequestBody()
      */
     @Override
     public InputStream getRequestBody()
@@ -137,7 +137,7 @@ public class JettyHttpExchange extends HttpExchange implements JettyExchange
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.http.spi.JettyExchange#getResponseBody()
+     * @see JettyHttpExchangeDelegate#getResponseBody()
      */
     @Override
     public OutputStream getResponseBody()
@@ -147,7 +147,7 @@ public class JettyHttpExchange extends HttpExchange implements JettyExchange
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.http.spi.JettyExchange#sendResponseHeaders(int, long)
+     * @see JettyHttpExchangeDelegate#sendResponseHeaders(int, long)
      */
     @Override
     public void sendResponseHeaders(int rCode, long responseLength) throws IOException
@@ -157,7 +157,7 @@ public class JettyHttpExchange extends HttpExchange implements JettyExchange
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.http.spi.JettyExchange#getRemoteAddress()
+     * @see JettyHttpExchangeDelegate#getRemoteAddress()
      */
     @Override
     public InetSocketAddress getRemoteAddress()
@@ -167,7 +167,7 @@ public class JettyHttpExchange extends HttpExchange implements JettyExchange
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.http.spi.JettyExchange#getResponseCode()
+     * @see JettyHttpExchangeDelegate#getResponseCode()
      */
     @Override
     public int getResponseCode()
@@ -177,7 +177,7 @@ public class JettyHttpExchange extends HttpExchange implements JettyExchange
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.http.spi.JettyExchange#getLocalAddress()
+     * @see JettyHttpExchangeDelegate#getLocalAddress()
      */
     @Override
     public InetSocketAddress getLocalAddress()
@@ -187,7 +187,7 @@ public class JettyHttpExchange extends HttpExchange implements JettyExchange
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.http.spi.JettyExchange#getProtocol()
+     * @see JettyHttpExchangeDelegate#getProtocol()
      */
     @Override
     public String getProtocol()
@@ -197,7 +197,7 @@ public class JettyHttpExchange extends HttpExchange implements JettyExchange
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.http.spi.JettyExchange#getAttribute(java.lang.String)
+     * @see JettyHttpExchangeDelegate#getAttribute(java.lang.String)
      */
     @Override
     public Object getAttribute(String name)
@@ -207,7 +207,7 @@ public class JettyHttpExchange extends HttpExchange implements JettyExchange
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.http.spi.JettyExchange#setAttribute(java.lang.String, java.lang.Object)
+     * @see JettyHttpExchangeDelegate#setAttribute(java.lang.String, java.lang.Object)
      */
     @Override
     public void setAttribute(String name, Object value)
@@ -217,7 +217,7 @@ public class JettyHttpExchange extends HttpExchange implements JettyExchange
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.http.spi.JettyExchange#setStreams(java.io.InputStream, java.io.OutputStream)
+     * @see JettyHttpExchangeDelegate#setStreams(java.io.InputStream, java.io.OutputStream)
      */
     @Override
     public void setStreams(InputStream i, OutputStream o)
