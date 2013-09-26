@@ -79,11 +79,22 @@ public class WebSocketClient extends ContainerLifeCycle
 
     public WebSocketClient()
     {
-        this(null);
+        this(null,null);
     }
 
+    public WebSocketClient(Executor executor)
+    {
+        this(executor,null);
+    }
+    
     public WebSocketClient(SslContextFactory sslContextFactory)
     {
+        this(null,sslContextFactory);
+    }
+    
+    public WebSocketClient(Executor executor, SslContextFactory sslContextFactory)
+    {
+        this.executor=executor;
         this.sslContextFactory = sslContextFactory;
         this.policy = WebSocketPolicy.newClientPolicy();
         this.bufferPool = new MappedByteBufferPool();
@@ -92,6 +103,7 @@ public class WebSocketClient extends ContainerLifeCycle
         this.eventDriverFactory = new EventDriverFactory(policy);
         this.sessionFactory = new WebSocketSessionFactory();
     }
+
 
     public Future<Session> connect(Object websocket, URI toUri) throws IOException
     {
@@ -147,7 +159,7 @@ public class WebSocketClient extends ContainerLifeCycle
         LOG.debug("connect websocket {} to {}",websocket,toUri);
 
         // Grab Connection Manager
-        initConnectionManager();
+        initialiseClient();
         ConnectionManager manager = getConnectionManager();
 
         // Setup Driver for user provided websocket
@@ -185,8 +197,19 @@ public class WebSocketClient extends ContainerLifeCycle
         return promise;
     }
 
-    private synchronized void initConnectionManager() throws IOException
+    private synchronized void initialiseClient() throws IOException
     {
+        if (executor == null)
+        {
+            QueuedThreadPool threadPool = new QueuedThreadPool();
+            String name = WebSocketClient.class.getSimpleName() + "@" + hashCode();
+            threadPool.setName(name);
+            executor = threadPool;
+            addBean(executor,true);
+        }
+        else
+            addBean(executor,false);
+        
         if (connectionManager != null)
         {
             return;
@@ -218,14 +241,6 @@ public class WebSocketClient extends ContainerLifeCycle
         }
 
         String name = WebSocketClient.class.getSimpleName() + "@" + hashCode();
-
-        if (executor == null)
-        {
-            QueuedThreadPool threadPool = new QueuedThreadPool();
-            threadPool.setName(name);
-            executor = threadPool;
-        }
-        addBean(executor);
 
         if (bufferPool == null)
         {
@@ -465,6 +480,7 @@ public class WebSocketClient extends ContainerLifeCycle
 
     public void setExecutor(Executor executor)
     {
+        updateBean(this.executor,executor);
         this.executor = executor;
     }
 

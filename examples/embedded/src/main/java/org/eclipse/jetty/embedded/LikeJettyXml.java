@@ -48,7 +48,9 @@ public class LikeJettyXml
     public static void main(String[] args) throws Exception
     {
         String jetty_home = System.getProperty("jetty.home","../../jetty-distribution/target/distribution");
+        String jetty_base = System.getProperty("jetty.home","../../jetty-distribution/target/distribution/demo-base");
         System.setProperty("jetty.home",jetty_home);
+        System.setProperty("jetty.base",jetty_base);
 
 
         // === jetty.xml ===
@@ -132,7 +134,7 @@ public class LikeJettyXml
         deployer.setContextAttribute("org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",".*/servlet-api-[^/]*\\.jar$");
 
         WebAppProvider webapp_provider = new WebAppProvider();
-        webapp_provider.setMonitoredDirName(jetty_home + "/webapps");
+        webapp_provider.setMonitoredDirName(jetty_base + "/webapps");
         webapp_provider.setDefaultsDescriptor(jetty_home + "/etc/webdefault.xml");
         webapp_provider.setScanInterval(1);
         webapp_provider.setExtractWars(true);
@@ -176,7 +178,7 @@ public class LikeJettyXml
         // === test-realm.xml ===
         HashLoginService login = new HashLoginService();
         login.setName("Test Realm");
-        login.setConfig(jetty_home + "/etc/realm.properties");
+        login.setConfig(jetty_base + "/etc/realm.properties");
         login.setRefreshInterval(0);
         server.addBean(login);
 

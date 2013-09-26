@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
+import java.util.concurrent.Executor;
+
 import javax.websocket.DeploymentException;
 import javax.websocket.Endpoint;
 import javax.websocket.server.ServerEndpoint;
@@ -42,9 +44,9 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     private final MappedWebSocketCreator mappedCreator;
     private final WebSocketServerFactory webSocketServerFactory;
 
-    public ServerContainer(MappedWebSocketCreator creator, WebSocketServerFactory factory)
+    public ServerContainer(MappedWebSocketCreator creator, WebSocketServerFactory factory, Executor executor)
     {
-        super();
+        super(executor);
         this.mappedCreator = creator;
         this.webSocketServerFactory = factory;
         EventDriverFactory eventDriverFactory = this.webSocketServerFactory.getEventDriverFactory();

@@ -65,7 +65,7 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
         context.setAttribute(WebSocketUpgradeFilter.class.getName(),filter);
 
         // Create the Jetty ServerContainer implementation
-        ServerContainer jettyContainer = new ServerContainer(filter,filter.getFactory());
+        ServerContainer jettyContainer = new ServerContainer(filter,filter.getFactory(),context.getServer().getThreadPool());
         context.addBean(jettyContainer);
 
         // Store a reference to the ServerContainer per javax.websocket spec 1.0 final section 6.4 Programmatic Server Deployment

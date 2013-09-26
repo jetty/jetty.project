@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.embedded;
 
+import java.lang.management.ManagementFactory;
+
+import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -30,6 +33,10 @@ public class OneWebApp
         // a randomly available port will be assigned that you can either look in the logs for the port,
         // or programmatically obtain it for use in test cases.
         Server server = new Server(8080);
+        
+        // Setup JMX
+        MBeanContainer mbContainer=new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
+        server.addBean(mbContainer);
 
         // The WebAppContext is the entity that controls the environment in which a web application lives and
         // breathes. In this example the context path is being set to "/" so it is suitable for serving root context
@@ -38,7 +45,7 @@ public class OneWebApp
         // PlusConfiguration) to choosing where the webapp will unpack itself.
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
-        webapp.setWar("../../tests/test-webapps/test-jetty-webapp/target/test-jetty-webapp-9.0.0-SNAPSHOT.war");
+        webapp.setWar("../../jetty-distribution/target/distribution/demo-base/webapps/test.war");
 
         // A WebAppContext is a ContextHandler as well so it needs to be set to the server so it is aware of where to
         // send the appropriate requests.
