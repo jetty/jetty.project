@@ -26,9 +26,7 @@ import java.nio.channels.ReadPendingException;
 import java.nio.channels.WritePendingException;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.ExecutorCallback;
 import org.eclipse.jetty.util.FutureCallback;
-
 
 
 /**
