@@ -32,6 +32,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.JarInputStream;
@@ -862,7 +863,9 @@ public class AnnotationParser
             //treat it as a jar that we need to open and scan all entries from  
             //TODO alternative impl
             /*
+            long start = System.nanoTime();
             Collection<Resource> resources = Resource.newResource("jar:"+jarResource+"!/").getAllResources();
+            System.err.println(jarResource+String.valueOf(resources.size())+" resources listed in "+ ((TimeUnit.MILLISECONDS.convert(System.nanoTime()-start, TimeUnit.NANOSECONDS))));
             for (Resource r:resources)
             {
                 //skip directories
@@ -875,7 +878,6 @@ public class AnnotationParser
                 //check file is a valid class file name
                 if (isValidClassFileName(name) && isValidClassFilePath(name))
                 {
-
                     String shortName =  name.replace('/', '.').substring(0,name.length()-6);
 
                     if ((resolver == null)
@@ -886,9 +888,10 @@ public class AnnotationParser
                         scanClass(handlers, jarResource, r.getInputStream());
                     }
                 }
-            }*/
+            }
+            */
 
-            InputStream in = jarResource.getInputStream();
+           InputStream in = jarResource.getInputStream();
             if (in==null)
                 return;
 
@@ -905,7 +908,7 @@ public class AnnotationParser
             finally
             {
                 jar_in.close();
-            } 
+            }
         }   
     }
 

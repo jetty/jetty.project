@@ -298,10 +298,10 @@ public class AnnotationConfiguration extends AbstractConfiguration
         if (LOG.isDebugEnabled()) 
         {
             start = System.nanoTime();
-            LOG.debug("Scanning for annotations: webxml={}, configurationDiscovered={}, multiThreaded={}, threads={}", 
+            LOG.debug("Scanning for annotations: webxml={}, configurationDiscovered={}, multiThreaded={}", 
                       context.getServletContext().getEffectiveMajorVersion(), 
                       context.isConfigurationDiscovered(),
-                      multiThreadedScan, maxThreads);
+                      multiThreadedScan);
         }
              
         parseContainerPath(context, parser);
