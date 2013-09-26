@@ -84,17 +84,17 @@ public class WebSocketClient extends ContainerLifeCycle
 
     public WebSocketClient(Executor executor)
     {
-        this(executor,null);
+        this(null,executor);
     }
-    
+
     public WebSocketClient(SslContextFactory sslContextFactory)
     {
-        this(null,sslContextFactory);
+        this(sslContextFactory,null);
     }
-    
-    public WebSocketClient(Executor executor, SslContextFactory sslContextFactory)
+
+    public WebSocketClient(SslContextFactory sslContextFactory, Executor executor)
     {
-        this.executor=executor;
+        this.executor = executor;
         this.sslContextFactory = sslContextFactory;
         this.policy = WebSocketPolicy.newClientPolicy();
         this.bufferPool = new MappedByteBufferPool();
@@ -103,7 +103,6 @@ public class WebSocketClient extends ContainerLifeCycle
         this.eventDriverFactory = new EventDriverFactory(policy);
         this.sessionFactory = new WebSocketSessionFactory();
     }
-
 
     public Future<Session> connect(Object websocket, URI toUri) throws IOException
     {
@@ -208,8 +207,10 @@ public class WebSocketClient extends ContainerLifeCycle
             addBean(executor,true);
         }
         else
+        {
             addBean(executor,false);
-        
+        }
+
         if (connectionManager != null)
         {
             return;
