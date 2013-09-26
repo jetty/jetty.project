@@ -43,11 +43,6 @@ public class WebServletAnnotationHandler extends AbstractDiscoverableAnnotationH
         super(context);
     }
 
-    public WebServletAnnotationHandler (WebAppContext context, List<DiscoveredAnnotation> list)
-    {
-        super(context, list);
-    }
-    
 
     /**
      * Handle discovering a WebServlet annotation.

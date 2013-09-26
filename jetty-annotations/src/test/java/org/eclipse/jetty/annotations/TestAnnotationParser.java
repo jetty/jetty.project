@@ -31,12 +31,14 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import org.eclipse.jetty.annotations.AnnotationParser.ClassInfo;
 import org.eclipse.jetty.annotations.AnnotationParser.FieldInfo;
+import org.eclipse.jetty.annotations.AnnotationParser.Handler;
 import org.eclipse.jetty.annotations.AnnotationParser.MethodInfo;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.IO;
@@ -108,10 +110,8 @@ public class TestAnnotationParser
             }
         }
 
-        parser.registerHandler(new SampleAnnotationHandler());
-
         //long start = System.currentTimeMillis();
-        parser.parse(classNames,new ClassNameResolver()
+        parser.parse(Collections.singleton(new SampleAnnotationHandler()), classNames,new ClassNameResolver()
         {
             public boolean isExcluded(String name)
             {
@@ -162,8 +162,7 @@ public class TestAnnotationParser
             }
         }
 
-        parser.registerHandler(new MultiAnnotationHandler());
-        parser.parse(classNames,null);
+        parser.parse(Collections.singleton(new MultiAnnotationHandler()), classNames,null);
     }
 
     @Test
@@ -171,7 +170,8 @@ public class TestAnnotationParser
     {
         File badClassesJar = MavenTestingUtils.getTestResourceFile("bad-classes.jar");
         AnnotationParser parser = new AnnotationParser();
-        parser.parse(badClassesJar.toURI(),null);
+        Set<Handler> emptySet = Collections.emptySet();
+        parser.parse(emptySet, badClassesJar.toURI(),null);
         // only the valid classes inside bad-classes.jar should be parsed. If any invalid classes are parsed and exception would be thrown here
     }
 
@@ -194,10 +194,9 @@ public class TestAnnotationParser
 
         // Setup annotation scanning
         AnnotationParser parser = new AnnotationParser();
-        parser.registerHandler(tracker);
         
         // Parse
-        parser.parse(basedir.toURI(),null);
+        parser.parse(Collections.singleton(tracker), basedir.toURI(),null);
         
         // Validate
         Assert.assertThat("Found Class", tracker.foundClasses, contains(ClassA.class.getName()));

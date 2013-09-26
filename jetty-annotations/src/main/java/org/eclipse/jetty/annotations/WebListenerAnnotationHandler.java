@@ -18,14 +18,11 @@
 
 package org.eclipse.jetty.annotations;
 
-import java.util.List;
-
 import org.eclipse.jetty.annotations.AnnotationParser.ClassInfo;
 import org.eclipse.jetty.annotations.AnnotationParser.FieldInfo;
 import org.eclipse.jetty.annotations.AnnotationParser.MethodInfo;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.webapp.DiscoveredAnnotation;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 public class WebListenerAnnotationHandler extends AbstractDiscoverableAnnotationHandler
@@ -37,11 +34,7 @@ public class WebListenerAnnotationHandler extends AbstractDiscoverableAnnotation
        super(context);
     }
     
-    public WebListenerAnnotationHandler (WebAppContext context, List<DiscoveredAnnotation> list)
-    {
-       super(context, list);
-    }
-    
+  
     /** 
      * @see org.eclipse.jetty.annotations.AnnotationParser.DiscoverableAnnotationHandler#handle(ClassAnnotationInfo)
      */

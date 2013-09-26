@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.annotations;
 
-import java.util.List;
-
 import org.eclipse.jetty.annotations.AnnotationParser.AbstractHandler;
 import org.eclipse.jetty.webapp.DiscoveredAnnotation;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -37,15 +35,9 @@ public abstract class AbstractDiscoverableAnnotationHandler extends AbstractHand
 
     public AbstractDiscoverableAnnotationHandler(WebAppContext context)
     {
-        this(context, null);
+        _context = context;
     }
     
-    public AbstractDiscoverableAnnotationHandler(WebAppContext  context, List<DiscoveredAnnotation> list)
-    {
-        _context = context;
-      
-    }
-
 
     public void addAnnotation (DiscoveredAnnotation a)
     {

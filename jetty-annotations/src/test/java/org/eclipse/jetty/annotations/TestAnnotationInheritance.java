@@ -24,8 +24,10 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -34,6 +36,7 @@ import org.eclipse.jetty.annotations.AnnotationParser.AbstractHandler;
 import org.eclipse.jetty.annotations.AnnotationParser.ClassInfo;
 import org.eclipse.jetty.annotations.AnnotationParser.FieldInfo;
 import org.eclipse.jetty.annotations.AnnotationParser.MethodInfo;
+import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.eclipse.jetty.util.MultiMap;
 import org.junit.After;
 import org.junit.Test;
@@ -92,8 +95,7 @@ public class TestAnnotationInheritance
 
         SampleHandler handler = new SampleHandler();
         AnnotationParser parser = new AnnotationParser();
-        parser.registerHandler(handler);
-        parser.parse(classNames, new ClassNameResolver ()
+        parser.parse(Collections.singleton(handler), classNames, new ClassNameResolver ()
         {
             public boolean isExcluded(String name)
             {
@@ -129,8 +131,7 @@ public class TestAnnotationInheritance
     {
         SampleHandler handler = new SampleHandler();
         AnnotationParser parser = new AnnotationParser();
-        parser.registerHandler(handler);
-        parser.parse(ClassB.class, new ClassNameResolver ()
+        parser.parse(Collections.singleton(handler), ClassB.class, new ClassNameResolver ()
         {
             public boolean isExcluded(String name)
             {
@@ -166,8 +167,7 @@ public class TestAnnotationInheritance
     {
         AnnotationParser parser = new AnnotationParser();
         SampleHandler handler = new SampleHandler();
-        parser.registerHandler(handler);
-        parser.parse(ClassA.class.getName(), new ClassNameResolver()
+        parser.parse(Collections.singleton(handler), ClassA.class.getName(), new ClassNameResolver()
         {
             public boolean isExcluded(String name)
             {
@@ -187,7 +187,7 @@ public class TestAnnotationInheritance
         handler.annotatedFields.clear();
         handler.annotatedMethods.clear();
 
-        parser.parse (ClassA.class.getName(), new ClassNameResolver()
+        parser.parse (Collections.singleton(handler), ClassA.class.getName(), new ClassNameResolver()
         {
             public boolean isExcluded(String name)
             {
@@ -205,11 +205,10 @@ public class TestAnnotationInheritance
     @Test
     public void testTypeInheritanceHandling() throws Exception
     {
-        MultiMap map = new MultiMap();
+       ConcurrentHashMap<String, ConcurrentHashSet<String>> map = new ConcurrentHashMap<String, ConcurrentHashSet<String>>();
         
         AnnotationParser parser = new AnnotationParser();
         ClassInheritanceHandler handler = new ClassInheritanceHandler(map);
-        parser.registerHandler(handler);
 
         class Foo implements InterfaceD
         {
@@ -221,21 +220,22 @@ public class TestAnnotationInheritance
         classNames.add(InterfaceD.class.getName());
         classNames.add(Foo.class.getName());
 
-        parser.parse(classNames, null);
+        parser.parse(Collections.singleton(handler), classNames, null);
 
         assertNotNull(map);
         assertFalse(map.isEmpty());
         assertEquals(2, map.size());
-        Map stringArrayMap = map.toStringArrayMap();
-        assertTrue (stringArrayMap.keySet().contains("org.eclipse.jetty.annotations.ClassA"));
-        assertTrue (stringArrayMap.keySet().contains("org.eclipse.jetty.annotations.InterfaceD"));
-        String[] classes = (String[])stringArrayMap.get("org.eclipse.jetty.annotations.ClassA");
-        assertEquals(1, classes.length);
-        assertEquals ("org.eclipse.jetty.annotations.ClassB", classes[0]);
+      
+        
+        assertTrue (map.keySet().contains("org.eclipse.jetty.annotations.ClassA"));
+        assertTrue (map.keySet().contains("org.eclipse.jetty.annotations.InterfaceD"));
+        ConcurrentHashSet<String> classes = map.get("org.eclipse.jetty.annotations.ClassA");
+        assertEquals(1, classes.size());
+        assertEquals ("org.eclipse.jetty.annotations.ClassB", classes.iterator().next());
 
-        classes = (String[])stringArrayMap.get("org.eclipse.jetty.annotations.InterfaceD");
-        assertEquals(2, classes.length);
-        assertEquals ("org.eclipse.jetty.annotations.ClassB", classes[0]);
-        assertEquals(Foo.class.getName(), classes[1]);
+        classes = map.get("org.eclipse.jetty.annotations.InterfaceD");
+        assertEquals(2, classes.size());
+        assertTrue(classes.contains("org.eclipse.jetty.annotations.ClassB"));
+        assertTrue(classes.contains(Foo.class.getName()));
     }
 }

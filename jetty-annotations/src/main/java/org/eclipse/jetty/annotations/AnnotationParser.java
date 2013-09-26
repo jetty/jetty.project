@@ -26,10 +26,14 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 import java.util.jar.JarInputStream;
 
 import org.eclipse.jetty.util.ConcurrentHashSet;
@@ -69,7 +73,7 @@ public class AnnotationParser
     private static final Logger LOG = Log.getLogger(AnnotationParser.class);
 
     protected Set<String> _parsedClassNames = new ConcurrentHashSet<String>();
-    protected Set<Handler> _handlers = new ConcurrentHashSet<Handler>();
+   
 
     /**
      * Convert internal name to simple name
@@ -363,6 +367,7 @@ public class AnnotationParser
     public class MyMethodVisitor extends MethodVisitor
     {
         final MethodInfo _mi;
+        final Set<? extends Handler> _handlers;
         
             
         /**
@@ -373,7 +378,7 @@ public class AnnotationParser
          * @param signature
          * @param exceptions
          */
-        public MyMethodVisitor(
+        public MyMethodVisitor(final Set<? extends Handler> handlers,
                                final ClassInfo classInfo,
                                final int access,
                                final String name,
@@ -382,6 +387,7 @@ public class AnnotationParser
                                final String[] exceptions)
         {
             super(Opcodes.ASM4);
+            _handlers = handlers;
             _mi = new MethodInfo(classInfo, name, access, methodDesc,signature, exceptions);
         }
 
@@ -413,12 +419,14 @@ public class AnnotationParser
     public class MyFieldVisitor extends FieldVisitor
     {   
         final FieldInfo _fieldInfo;
+        final Set<? extends Handler> _handlers;
         
     
         /**
          * @param classname
          */
-        public MyFieldVisitor(final ClassInfo classInfo,
+        public MyFieldVisitor(final Set<? extends Handler> handlers,
+                              final ClassInfo classInfo,
                               final int access,
                               final String fieldName,
                               final String fieldType,
@@ -426,6 +434,7 @@ public class AnnotationParser
                               final Object value)
         {
             super(Opcodes.ASM4);
+            _handlers = handlers;
             _fieldInfo = new FieldInfo(classInfo, fieldName, access, fieldType, signature, value);
         }
 
@@ -458,11 +467,13 @@ public class AnnotationParser
     {
 
         final Resource _containingResource;
+        final Set<? extends Handler> _handlers;
         ClassInfo _ci;
         
-        public MyClassVisitor(Resource containingResource)
+        public MyClassVisitor(Set<? extends Handler> handlers, Resource containingResource)
         {
             super(Opcodes.ASM4);
+            _handlers = handlers;
             _containingResource = containingResource;
         }
 
@@ -513,7 +524,7 @@ public class AnnotationParser
                                           final String[] exceptions)
         {
 
-            return new MyMethodVisitor(_ci, access, name, methodDesc, signature, exceptions);
+            return new MyMethodVisitor(_handlers, _ci, access, name, methodDesc, signature, exceptions);
         }
 
         /**
@@ -528,57 +539,11 @@ public class AnnotationParser
                                         final String signature,
                                         final Object value)
         {
-            return new MyFieldVisitor(_ci, access, fieldName, fieldType, signature, value);
+            return new MyFieldVisitor(_handlers, _ci, access, fieldName, fieldType, signature, value);
         }
     }
 
  
-    /**
-     * Add a particular handler
-     * 
-     * @param h
-     */
-    public void registerHandler(Handler h)
-    {
-        if (h == null)
-            return;
-        
-        _handlers.add(h);
-    }
-    
-    
-    /**
-     * Add a list of handlers
-     * 
-     * @param handlers
-     */
-    public void registerHandlers(List<? extends Handler> handlers)
-    {
-        if (handlers == null)
-            return;
-        _handlers.addAll(handlers);
-    }
-    
-    
-    /**
-     * Remove a particular handler
-     * 
-     * @param h
-     */
-    public boolean deregisterHandler(Handler h)
-    {
-        return _handlers.remove(h);
-    }
-    
-    
-    /**
-     * Remove all registered handlers
-     */
-    public void clearHandlers()
-    {
-        _handlers.clear();
-    }
-    
 
     /**
      * True if the class has already been processed, false otherwise
@@ -598,7 +563,7 @@ public class AnnotationParser
      * @param resolver
      * @throws Exception
      */
-    public void parse (String className, ClassNameResolver resolver)
+    public void parse (Set<? extends Handler> handlers, String className, ClassNameResolver resolver)
     throws Exception
     {
         if (className == null)
@@ -613,7 +578,7 @@ public class AnnotationParser
                 if (resource!= null)
                 {
                     Resource r = Resource.newResource(resource);
-                    scanClass(null, r.getInputStream());
+                    scanClass(handlers, null, r.getInputStream());
                 }
             }
         }
@@ -629,7 +594,7 @@ public class AnnotationParser
      * @param visitSuperClasses
      * @throws Exception
      */
-    public void parse (Class<?> clazz, ClassNameResolver resolver, boolean visitSuperClasses)
+    public void parse (Set<? extends Handler> handlers, Class<?> clazz, ClassNameResolver resolver, boolean visitSuperClasses)
     throws Exception
     {
         Class<?> cz = clazz;
@@ -644,7 +609,7 @@ public class AnnotationParser
                     if (resource!= null)
                     {
                         Resource r = Resource.newResource(resource);
-                        scanClass(null, r.getInputStream());
+                        scanClass(handlers, null, r.getInputStream());
                     }
                 }
             }
@@ -664,13 +629,13 @@ public class AnnotationParser
      * @param resolver
      * @throws Exception
      */
-    public void parse (String[] classNames, ClassNameResolver resolver)
+    public void parse (Set<? extends Handler> handlers, String[] classNames, ClassNameResolver resolver)
     throws Exception
     {
         if (classNames == null)
             return;
 
-        parse(Arrays.asList(classNames), resolver);
+        parse(handlers, Arrays.asList(classNames), resolver);
     }
 
     
@@ -681,7 +646,7 @@ public class AnnotationParser
      * @param resolver
      * @throws Exception
      */
-    public void parse (List<String> classNames, ClassNameResolver resolver)
+    public void parse (Set<? extends Handler> handlers, List<String> classNames, ClassNameResolver resolver)
     throws Exception
     {
         for (String s:classNames)
@@ -693,7 +658,7 @@ public class AnnotationParser
                 if (resource!= null)
                 {
                     Resource r = Resource.newResource(resource);
-                    scanClass(null, r.getInputStream());
+                    scanClass(handlers, null, r.getInputStream());
                 }
             }
         }
@@ -707,7 +672,7 @@ public class AnnotationParser
      * @param resolver
      * @throws Exception
      */
-    protected void parseDir (Resource dir, ClassNameResolver resolver)
+    protected void parseDir (Set<? extends Handler> handlers, Resource dir, ClassNameResolver resolver)
     throws Exception
     {
         //skip dirs whose name start with . (ie hidden)
@@ -723,7 +688,7 @@ public class AnnotationParser
             {
                 Resource res = dir.addPath(files[f]);
                 if (res.isDirectory())
-                    parseDir(res, resolver);
+                    parseDir(handlers, res, resolver);
                 else
                 {
                     //we've already verified the directories, so just verify the class file name
@@ -741,7 +706,7 @@ public class AnnotationParser
                         {
                             Resource r = Resource.newResource(res.getURL());
                             if (LOG.isDebugEnabled()) {LOG.debug("Scanning class {}", r);};
-                            scanClass(dir, r.getInputStream());
+                            scanClass(handlers, dir, r.getInputStream());
                         }
 
                     }
@@ -765,7 +730,7 @@ public class AnnotationParser
      * @param resolver
      * @throws Exception
      */
-    public void parse (ClassLoader loader, boolean visitParents, boolean nullInclusive, final ClassNameResolver resolver)
+    public void parse (final Set<? extends Handler> handlers, ClassLoader loader, boolean visitParents, boolean nullInclusive, final ClassNameResolver resolver)
     throws Exception
     {
         if (loader==null)
@@ -781,7 +746,7 @@ public class AnnotationParser
             {
                 try
                 {
-                    parseJarEntry(Resource.newResource(jarUri), entry, resolver);
+                    parseJarEntry(handlers, Resource.newResource(jarUri), entry, resolver);
                 }
                 catch (Exception e)
                 {
@@ -802,7 +767,7 @@ public class AnnotationParser
      * @param resolver
      * @throws Exception
      */
-    public void parse (URI[] uris, final ClassNameResolver resolver)
+    public void parse (final Set<? extends Handler> handlers, final URI[] uris, final ClassNameResolver resolver)
     throws Exception
     {
         if (uris==null)
@@ -812,7 +777,7 @@ public class AnnotationParser
         {
             try
             {
-                parse(uri, resolver);
+                parse(handlers, uri, resolver);
             }
             catch (Exception e)
             {
@@ -828,13 +793,13 @@ public class AnnotationParser
      * @param resolver
      * @throws Exception
      */
-    public void parse (URI uri, final ClassNameResolver resolver)
+    public void parse (final Set<? extends Handler> handlers, URI uri, final ClassNameResolver resolver)
     throws Exception
     {
         if (uri == null)
             return;
 
-        parse (Resource.newResource(uri), resolver);
+        parse (handlers, Resource.newResource(uri), resolver);
         
      
     }
@@ -846,7 +811,7 @@ public class AnnotationParser
      * @param resolver
      * @throws Exception
      */
-    public void parse (Resource r, final ClassNameResolver resolver)
+    public void parse (final Set<? extends Handler> handlers, Resource r, final ClassNameResolver resolver)
     throws Exception
     {
         if (r == null)
@@ -854,20 +819,20 @@ public class AnnotationParser
         
         if (r.exists() && r.isDirectory())
         {
-            parseDir(r, resolver);
+            parseDir(handlers, r, resolver);
             return;
         }
 
         String fullname = r.toString();
         if (fullname.endsWith(".jar"))
         {
-            parseJar(r, resolver);
+            parseJar(handlers, r, resolver);
             return;
         }
 
         if (fullname.endsWith(".class"))
         {
-            scanClass(null, r.getInputStream());
+            scanClass(handlers, null, r.getInputStream());
             return;
         }
         
@@ -884,29 +849,56 @@ public class AnnotationParser
      * @param resolver
      * @throws Exception
      */
-    protected void parseJar (Resource jarResource,  final ClassNameResolver resolver)
+    protected void parseJar (Set<? extends Handler> handlers, Resource jarResource,  final ClassNameResolver resolver)
     throws Exception
     {
         if (jarResource == null)
             return;
-        
        
         if (jarResource.toString().endsWith(".jar"))
         {
             if (LOG.isDebugEnabled()) {LOG.debug("Scanning jar {}", jarResource);};
-            
-            //treat it as a jar that we need to open and scan all entries from             
+
+            //treat it as a jar that we need to open and scan all entries from  
+            //TODO alternative impl
+            /*
+            Collection<Resource> resources = Resource.newResource("jar:"+jarResource+"!/").getAllResources();
+            for (Resource r:resources)
+            {
+                //skip directories
+                if (r.isDirectory())
+                    continue;
+
+                String name = r.getName();
+                name = name.substring(name.indexOf("!/")+2);
+
+                //check file is a valid class file name
+                if (isValidClassFileName(name) && isValidClassFilePath(name))
+                {
+
+                    String shortName =  name.replace('/', '.').substring(0,name.length()-6);
+
+                    if ((resolver == null)
+                            ||
+                        (!resolver.isExcluded(shortName) && (!isParsed(shortName) || resolver.shouldOverride(shortName))))
+                    {
+                        if (LOG.isDebugEnabled()) {LOG.debug("Scanning class from jar {}", r);};
+                        scanClass(handlers, jarResource, r.getInputStream());
+                    }
+                }
+            }*/
+
             InputStream in = jarResource.getInputStream();
             if (in==null)
                 return;
-            
+
             JarInputStream jar_in = new JarInputStream(in);
             try
             { 
                 JarEntry entry = jar_in.getNextJarEntry();
                 while (entry!=null)
                 {      
-                    parseJarEntry(jarResource, entry, resolver);
+                    parseJarEntry(handlers, jarResource, entry, resolver);
                     entry = jar_in.getNextJarEntry();
                 }
             }
@@ -924,7 +916,7 @@ public class AnnotationParser
      * @param resolver
      * @throws Exception
      */
-    protected void parseJarEntry (Resource jar, JarEntry entry, final ClassNameResolver resolver)
+    protected void parseJarEntry (Set<? extends Handler> handlers, Resource jar, JarEntry entry, final ClassNameResolver resolver)
     throws Exception
     {
         if (jar == null || entry == null)
@@ -947,7 +939,7 @@ public class AnnotationParser
             {
                 Resource clazz = Resource.newResource("jar:"+jar.getURI()+"!/"+name);
                 if (LOG.isDebugEnabled()) {LOG.debug("Scanning class from jar {}", clazz);};
-                scanClass(jar, clazz.getInputStream());
+                scanClass(handlers, jar, clazz.getInputStream());
             }
         }
     }
@@ -961,11 +953,11 @@ public class AnnotationParser
      * @param is
      * @throws IOException
      */
-    protected void scanClass (Resource containingResource, InputStream is)
+    protected void scanClass (Set<? extends Handler> handlers, Resource containingResource, InputStream is)
     throws IOException
     {
         ClassReader reader = new ClassReader(is);
-        reader.accept(new MyClassVisitor(containingResource), ClassReader.SKIP_CODE|ClassReader.SKIP_DEBUG|ClassReader.SKIP_FRAMES);
+        reader.accept(new MyClassVisitor(handlers, containingResource), ClassReader.SKIP_CODE|ClassReader.SKIP_DEBUG|ClassReader.SKIP_FRAMES);
     }
     
     /**

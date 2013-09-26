@@ -39,8 +39,8 @@ import org.eclipse.jetty.plus.annotation.ContainerInitializer;
  */
 public class ContainerInitializerAnnotationHandler extends AbstractHandler
 {
-    ContainerInitializer _initializer;
-    Class _annotation;
+    final ContainerInitializer _initializer;
+    final Class _annotation;
 
     public ContainerInitializerAnnotationHandler (ContainerInitializer initializer, Class annotation)
     {

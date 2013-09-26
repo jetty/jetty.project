@@ -27,7 +27,9 @@ import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.server.Connector;
@@ -54,7 +56,7 @@ public class WebInfConfiguration extends AbstractConfiguration
      * If set, to a list of URLs, these resources are added to the context
      * resource base as a resource collection.
      */
-    public static final String RESOURCE_URLS = "org.eclipse.jetty.resources";
+    public static final String RESOURCE_DIRS = "org.eclipse.jetty.resources";
 
     protected Resource _preUnpackBaseResource;
 
@@ -140,7 +142,7 @@ public class WebInfConfiguration extends AbstractConfiguration
             }
         }
         webInfJarNameMatcher.match(webInfPattern, uris, true); //null is inclusive, no pattern == all jars match
-        
+       
         //No pattern to appy to classes, just add to metadata
         context.getMetaData().setWebInfClassesDirs(findClassDirs(context));
     }
@@ -175,7 +177,7 @@ public class WebInfConfiguration extends AbstractConfiguration
 
         // Look for extra resource
         @SuppressWarnings("unchecked")
-        List<Resource> resources = (List<Resource>)context.getAttribute(RESOURCE_URLS);
+        Set<Resource> resources = (Set<Resource>)context.getAttribute(RESOURCE_DIRS);
         if (resources!=null)
         {
             Resource[] collection=new Resource[resources.size()+1];

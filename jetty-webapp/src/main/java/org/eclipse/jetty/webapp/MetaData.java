@@ -288,7 +288,17 @@ public class MetaData
         }
     }
 
-    public void addDiscoveredAnnotation (DiscoveredAnnotation annotation)
+    
+    /**
+     * Add an annotation that has been discovered on a class, method or field within a resource
+     * eg a jar or dir.
+     * 
+     * This method is synchronized as it is anticipated that it may be called by many threads
+     * during the annotation scanning phase.
+     * 
+     * @param annotation
+     */
+    public synchronized void addDiscoveredAnnotation (DiscoveredAnnotation annotation)
     {
         if (annotation == null)
             return;

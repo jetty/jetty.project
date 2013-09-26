@@ -25,6 +25,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 
@@ -74,9 +75,8 @@ public class TestServletAnnotations
         List<DiscoveredAnnotation> results = new ArrayList<DiscoveredAnnotation>();
         
         TestWebServletAnnotationHandler handler = new TestWebServletAnnotationHandler(wac, results);
-        parser.registerHandler(handler);
-
-        parser.parse(classes, new ClassNameResolver ()
+       
+        parser.parse(Collections.singleton(handler), classes, new ClassNameResolver ()
         {
             public boolean isExcluded(String name)
             {

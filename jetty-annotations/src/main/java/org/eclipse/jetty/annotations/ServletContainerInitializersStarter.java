@@ -21,8 +21,10 @@ package org.eclipse.jetty.annotations;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.plus.annotation.ContainerInitializer;
+import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
@@ -60,11 +62,11 @@ public class ServletContainerInitializersStarter extends AbstractLifeCycle
         if (initializers == null)
             return;
 
-        MultiMap classMap = (MultiMap)_context.getAttribute(AnnotationConfiguration.CLASS_INHERITANCE_MAP);
+       ConcurrentHashMap<String, ConcurrentHashSet<String>> map = ( ConcurrentHashMap<String, ConcurrentHashSet<String>>)_context.getAttribute(AnnotationConfiguration.CLASS_INHERITANCE_MAP);
         
         for (ContainerInitializer i : initializers)
         {
-            configureHandlesTypes(_context, i, classMap);
+            configureHandlesTypes(_context, i, map);
 
             //instantiate ServletContainerInitializers, call doStart
             try
@@ -80,13 +82,13 @@ public class ServletContainerInitializersStarter extends AbstractLifeCycle
     }
   
 
-    private void configureHandlesTypes (WebAppContext context, ContainerInitializer initializer, MultiMap<String> classMap)
+    private void configureHandlesTypes (WebAppContext context, ContainerInitializer initializer, ConcurrentHashMap<String, ConcurrentHashSet<String>> classMap)
     {
         doHandlesTypesAnnotations(context, initializer, classMap);
         doHandlesTypesClasses(context, initializer, classMap);
     }
     
-    private void doHandlesTypesAnnotations(WebAppContext context, ContainerInitializer initializer, MultiMap<String> classMap)
+    private void doHandlesTypesAnnotations(WebAppContext context, ContainerInitializer initializer, ConcurrentHashMap<String, ConcurrentHashSet<String>> classMap)
     {
         if (initializer == null)
             return;
@@ -96,26 +98,26 @@ public class ServletContainerInitializersStarter extends AbstractLifeCycle
         //We have already found the classes that directly have an annotation that was in the HandlesTypes
         //annotation of the ServletContainerInitializer. For each of those classes, walk the inheritance
         //hierarchy to find classes that extend or implement them.
-        if (initializer.getAnnotatedTypeNames() != null)
+        Set<String> annotatedClassNames = initializer.getAnnotatedTypeNames();
+        if (annotatedClassNames != null && !annotatedClassNames.isEmpty())
         {
             if (classMap == null)
                 throw new IllegalStateException ("No class hierarchy");
 
-            Set<String> annotatedClassNames = new HashSet<String>(initializer.getAnnotatedTypeNames());
             for (String name : annotatedClassNames)
             {
                 //add the class that has the annotation
                 initializer.addApplicableTypeName(name);
 
                 //find and add the classes that inherit the annotation               
-                addInheritedTypes(classMap, initializer, (List<String>)classMap.getValues(name));
+                addInheritedTypes(classMap, initializer, (ConcurrentHashSet<String>)classMap.get(name));
             }
         }
     }
 
     
 
-    private void doHandlesTypesClasses (WebAppContext context, ContainerInitializer initializer, MultiMap<String> classMap)
+    private void doHandlesTypesClasses (WebAppContext context, ContainerInitializer initializer, ConcurrentHashMap<String, ConcurrentHashSet<String>> classMap)
     {
         if (initializer == null)
             return;
@@ -135,14 +137,14 @@ public class ServletContainerInitializersStarter extends AbstractLifeCycle
                 {
                     //find and add the classes that implement or extend the class.
                     //but not including the class itself
-                    addInheritedTypes(classMap, initializer, (List<String>)classMap.getValues(c.getName()));
+                    addInheritedTypes(classMap, initializer, (ConcurrentHashSet<String>)classMap.get(c.getName()));
                 }
             }
         }
     }
     
     
-    private void addInheritedTypes (MultiMap classMap, ContainerInitializer initializer, List<String> names)
+    private void addInheritedTypes (ConcurrentHashMap<String, ConcurrentHashSet<String>> classMap, ContainerInitializer initializer, ConcurrentHashSet<String> names)
     {
         if (names == null || names.isEmpty())
             return;
@@ -153,7 +155,7 @@ public class ServletContainerInitializersStarter extends AbstractLifeCycle
             initializer.addApplicableTypeName(s);
 
             //walk the hierarchy and find all types that extend or implement the class
-            addInheritedTypes(classMap, initializer, (List<String>)classMap.getValues(s));
+            addInheritedTypes(classMap, initializer, (ConcurrentHashSet<String>)classMap.get(s));
         }
     }
 }

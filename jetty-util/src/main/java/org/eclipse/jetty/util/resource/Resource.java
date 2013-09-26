@@ -29,7 +29,9 @@ import java.net.URI;
 import java.net.URL;
 import java.nio.channels.ReadableByteChannel;
 import java.text.DateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 
 import org.eclipse.jetty.util.B64Code;
@@ -659,6 +661,34 @@ public abstract class Resource implements ResourceFactory, Closeable
         catch (IOException e)
         {
             throw new RuntimeException(e);
+        }
+    }
+    
+    /* ------------------------------------------------------------ */
+    public Collection<Resource> getAllResources()
+    {
+        try
+        {
+            ArrayList<Resource> deep=new ArrayList<>();
+            {
+                String[] list=list();
+                if (list!=null)
+                {
+                    for (String i:list)
+                    {
+                        Resource r=addPath(i);
+                        if (r.isDirectory())
+                            deep.addAll(r.getAllResources());
+                        else
+                            deep.add(r);
+                    }
+                }
+            }
+            return deep;
+        }
+        catch(Exception e)
+        {
+            throw new IllegalStateException(e);
         }
     }
     
