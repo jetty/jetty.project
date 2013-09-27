@@ -56,7 +56,7 @@ public class FileResource extends Resource
     /* ------------------------------------------------------------ */
     private final File _file;
     private final String _uri;
-    private final URL _alias;
+    private final URI _alias;
     
     /* -------------------------------------------------------- */
     public FileResource(URL url)
@@ -135,7 +135,7 @@ public class FileResource extends Resource
     }
 
     /* -------------------------------------------------------- */
-    private static URL checkAlias(File file)
+    private static URI checkAlias(File file)
     {
         try
         {
@@ -145,7 +145,7 @@ public class FileResource extends Resource
             if (!abs.equals(can))
             {
                 LOG.debug("ALIAS abs={} can={}",abs,can);
-                return new File(can).toURI().toURL();
+                return new File(can).toURI();
             }
         }
         catch(IOException e)
@@ -154,7 +154,7 @@ public class FileResource extends Resource
             LOG.debug(e);
             try
             {
-                return new URL("http://eclipse.org/bad/canonical/alias");
+                return new URI("http://eclipse.org/bad/canonical/alias");
             }
             catch(Exception e2)
             {
@@ -205,7 +205,7 @@ public class FileResource extends Resource
     
     /* ------------------------------------------------------------ */
     @Override
-    public URL getAlias()
+    public URI getAlias()
     {
         return _alias;
     }
@@ -400,6 +400,12 @@ public class FileResource extends Resource
         {
             throw new IllegalStateException(e);
         }
+    }
+    
+    @Override
+    public URI getURI()
+    {
+        return _file.toURI();
     }
 
     @Override

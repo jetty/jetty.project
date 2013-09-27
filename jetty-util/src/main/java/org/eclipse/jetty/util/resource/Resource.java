@@ -471,7 +471,7 @@ public abstract class Resource implements ResourceFactory, Closeable
     /**
      * @return The canonical Alias of this resource or null if none.
      */
-    public URL getAlias()
+    public URI getAlias()
     {
         return null;
     }

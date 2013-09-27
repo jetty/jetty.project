@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.security.AccessController;
@@ -1651,6 +1652,15 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     public Resource newResource(URL url) throws IOException
     {
         return Resource.newResource(url);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Convert URL to Resource wrapper for {@link Resource#newResource(URL)} enables extensions to provide alternate resource implementations.
+     */
+    public Resource newResource(URI uri) throws IOException
+    {
+        return Resource.newResource(uri);
     }
 
     /* ------------------------------------------------------------ */

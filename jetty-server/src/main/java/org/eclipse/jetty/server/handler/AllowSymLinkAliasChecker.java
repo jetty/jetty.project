@@ -54,7 +54,7 @@ public class AllowSymLinkAliasChecker implements AliasCheck
             {
                 // we can use the real path method to check the symlinks resolve to the alias
                 URI real = file.toPath().toRealPath().toUri();
-                if (real.equals(resource.getAlias().toURI()))
+                if (real.equals(resource.getAlias()))
                 {
                     LOG.debug("Allow symlink {} --> {}",resource,real);
                     return true;
@@ -77,7 +77,7 @@ public class AllowSymLinkAliasChecker implements AliasCheck
                         d=link.toFile().getAbsoluteFile().getCanonicalFile();
                     }
                 }
-                if (resource.getAlias().toURI().equals(d.toURI()))
+                if (resource.getAlias().equals(d.toURI()))
                 {
                     LOG.debug("Allow symlink {} --> {}",resource,d);
                     return true;
