@@ -57,7 +57,7 @@ public class SSLExternalServerTest extends AbstractHTTPSPDYTest
         return new SPDYClient.Factory(threadPool, null, sslContextFactory, 30000);
     }
 
-    @Test
+    @Test(timeout=5000)
     public void testExternalServer() throws Exception
     {
         String host = "encrypted.google.com";
