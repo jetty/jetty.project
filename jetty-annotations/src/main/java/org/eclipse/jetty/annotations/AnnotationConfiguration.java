@@ -285,7 +285,6 @@ public class AnnotationConfiguration extends AbstractConfiguration
     {
         AnnotationParser parser = createAnnotationParser();
         boolean multiThreadedScan = isUseMultiThreading(context);
-        int maxThreads = 0;
         int maxScanWait = 0;
         if (multiThreadedScan)
         {

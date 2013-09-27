@@ -21,15 +21,20 @@ package org.eclipse.jetty.plus.annotation;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletContainerInitializer;
 
 import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 public class ContainerInitializer
 {
+    private static final Logger LOG = Log.getLogger(ContainerInitializer.class);
+    
     final protected ServletContainerInitializer _target;
     final protected Class[] _interestedTypes;
     protected Set<String> _applicableTypeNames = new ConcurrentHashSet<String>();
@@ -95,7 +100,14 @@ public class ContainerInitializer
                     classes.add(Loader.loadClass(context.getClass(), s));
 
                 context.getServletContext().setExtendedListenerTypes(true);
-                _target.onStartup(classes, context.getServletContext());
+                if (LOG.isDebugEnabled())
+                {
+                    long start = System.nanoTime();
+                    _target.onStartup(classes, context.getServletContext());
+                    LOG.debug("ContainerInitializer {} called in {}ms", _target.getClass().getName(), TimeUnit.MILLISECONDS.convert(System.nanoTime()-start, TimeUnit.NANOSECONDS));
+                }
+                else
+                    _target.onStartup(classes, context.getServletContext());
             }
             finally
             { 
