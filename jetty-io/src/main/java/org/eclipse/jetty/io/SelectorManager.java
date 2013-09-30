@@ -231,7 +231,10 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         }
         catch (Exception x)
         {
-            LOG.info("Exception while notifying connection " + connection, x);
+            if (isRunning())
+                LOG.warn("Exception while notifying connection " + connection, x);
+            else
+                LOG.debug("Exception while notifying connection {}",connection, x);
         }
     }
 

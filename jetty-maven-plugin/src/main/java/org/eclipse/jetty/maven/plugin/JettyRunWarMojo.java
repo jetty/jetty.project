@@ -83,7 +83,7 @@ public class JettyRunWarMojo extends AbstractJettyMojo
 
     
     /**
-     * @see org.mortbay.jetty.plugin.AbstractJettyMojo#checkPomConfiguration()
+     * @see AbstractJettyMojo#checkPomConfiguration()
      */
     public void checkPomConfiguration() throws MojoExecutionException
     {
@@ -94,7 +94,7 @@ public class JettyRunWarMojo extends AbstractJettyMojo
 
     
     /**
-     * @see org.eclipse.jetty.server.plugin.AbstractJettyMojo#configureScanner()
+     * @see AbstractJettyMojo#configureScanner()
      */
     public void configureScanner() throws MojoExecutionException
     {
