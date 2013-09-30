@@ -709,19 +709,20 @@ public class JettyRunForkedMojo extends AbstractMojo
             if (PluginLog.getLog().isDebugEnabled())
                 PluginLog.getLog().debug(Arrays.toString(cmd.toArray()));
             
-            forkedProcess = builder.start();
             PluginLog.getLog().info("Forked process starting");
 
             if (waitForChild)
             {
+                forkedProcess = builder.start();
                 startPump("STDOUT",forkedProcess.getInputStream());
                 startPump("STDERR",forkedProcess.getErrorStream());
                 int exitcode = forkedProcess.waitFor();            
                 PluginLog.getLog().info("Forked execution exit: "+exitcode);
             }
             else
-            {   //we're not going to be reading the stderr as we're not waiting for the child to finish
-                forkedProcess.getErrorStream().close();
+            {   //merge stderr and stdout from child
+                builder.redirectErrorStream(true);
+                forkedProcess = builder.start();
 
                 //wait for the child to be ready before terminating.
                 //child indicates it has finished starting by printing on stdout the token passed to it
@@ -754,6 +755,7 @@ public class JettyRunForkedMojo extends AbstractMojo
                 {
                     throw new MojoExecutionException ("Problem determining if forked process is ready: "+e.getMessage());
                 }
+
             }
         }
         catch (InterruptedException ex)
