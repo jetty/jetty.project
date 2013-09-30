@@ -286,7 +286,7 @@ public abstract class HttpInput<T> extends ServletInputStream
                 }
                 catch (IOException e)
                 {
-                    LOG.warn(e);
+                    LOG.debug(e);
                     break loop;
                 }
             }

@@ -21,6 +21,7 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -321,13 +322,13 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
                     // Complete generating the response
                     _response.closeOutput();
             }
-            catch(EofException e)
+            catch(EofException|ClosedChannelException e)
             {
                 LOG.debug(e);
             }
             catch(Exception e)
             {
-                LOG.warn(e);
+                LOG.warn("complete failed",e);
             }
             finally
             {
@@ -599,7 +600,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
         }
         catch (IOException e)
         {
-            LOG.warn(e);
+            LOG.warn("badMessage",e);
         }
         finally
         {
@@ -719,7 +720,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
         @Override
         public void failed(final Throwable x)
         {
-            if (x instanceof EofException)
+            if (x instanceof EofException || x instanceof ClosedChannelException)
             {
                 LOG.debug(x);
                 _callback.failed(x);
@@ -727,7 +728,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
             }
             else
             {
-                LOG.warn(x);
+                LOG.warn("commit failed",x);
                 _transport.send(HttpGenerator.RESPONSE_500_INFO,null,true,new Callback()
                 {
                     @Override
