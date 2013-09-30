@@ -399,6 +399,7 @@ public class ContextHandlerTest
     public void testAttributes() throws Exception
     {
         ContextHandler handler = new ContextHandler();
+        handler.setServer(new Server());
         handler.setAttribute("aaa","111");
         assertEquals("111",handler.getServletContext().getAttribute("aaa"));
         assertEquals(null,handler.getAttribute("bbb"));
