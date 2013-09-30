@@ -64,6 +64,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
     public static final String MAX_SCAN_WAIT = "org.eclipse.jetty.annotations.maxWait";
     
     public static final int DEFAULT_MAX_SCAN_WAIT = 60; /* time in sec */  
+    public static final boolean DEFAULT_MULTI_THREADED = true;
     
     protected List<AbstractDiscoverableAnnotationHandler> _discoverableAnnotationHandlers = new ArrayList<AbstractDiscoverableAnnotationHandler>();
     protected ClassInheritanceHandler _classInheritanceHandler;
@@ -207,13 +208,11 @@ public class AnnotationConfiguration extends AbstractConfiguration
     @Override
     public void configure(WebAppContext context) throws Exception
     {
-       boolean metadataComplete = context.getMetaData().isMetaDataComplete();
        context.addDecorator(new AnnotationDecorator(context));
-
 
        //Even if metadata is complete, we still need to scan for ServletContainerInitializers - if there are any
       
-       if (!metadataComplete)
+       if (!context.getMetaData().isMetaDataComplete())
        {
            //If metadata isn't complete, if this is a servlet 3 webapp or isConfigDiscovered is true, we need to search for annotations
            if (context.getServletContext().getEffectiveMajorVersion() >= 3 || context.isConfigurationDiscovered())
@@ -223,18 +222,13 @@ public class AnnotationConfiguration extends AbstractConfiguration
                _discoverableAnnotationHandlers.add(new WebListenerAnnotationHandler(context));
            }
        }
-       else
-           if (LOG.isDebugEnabled()) LOG.debug("Metadata-complete==true,  not processing discoverable servlet annotations for context "+context);
-
-
 
        //Regardless of metadata, if there are any ServletContainerInitializers with @HandlesTypes, then we need to scan all the
        //classes so we can call their onStartup() methods correctly
        createServletContainerInitializerAnnotationHandlers(context, getNonExcludedInitializers(context));
 
        if (!_discoverableAnnotationHandlers.isEmpty() || _classInheritanceHandler != null || !_containerInitializerAnnotationHandlers.isEmpty())
-           scanForAnnotations(context);
-          
+           scanForAnnotations(context);      
     }
 
 
@@ -297,8 +291,9 @@ public class AnnotationConfiguration extends AbstractConfiguration
         if (LOG.isDebugEnabled()) 
         {
             start = System.nanoTime();
-            LOG.debug("Scanning for annotations: webxml={}, configurationDiscovered={}, multiThreaded={}", 
+            LOG.debug("Scanning for annotations: webxml={}, metadatacomplete={}, configurationDiscovered={}, multiThreaded={}", 
                       context.getServletContext().getEffectiveMajorVersion(), 
+                      context.getMetaData().isMetaDataComplete(),
                       context.isConfigurationDiscovered(),
                       multiThreadedScan);
         }
@@ -389,18 +384,16 @@ public class AnnotationConfiguration extends AbstractConfiguration
         Object o = context.getAttribute(MULTI_THREADED);
         if (o instanceof Boolean)
         {
-            if (((Boolean)o).booleanValue())
-                return true;
+            return ((Boolean)o).booleanValue();
         }
         //try server attribute to see if we should use multithreading
         o = context.getServer().getAttribute(MULTI_THREADED);
         if (o instanceof Boolean)
         {
-            if (((Boolean)o).booleanValue())
-                return true;
+            return ((Boolean)o).booleanValue();
         }
         //try system property to see if we should use multithreading
-        return Boolean.getBoolean(MULTI_THREADED);
+        return Boolean.valueOf(System.getProperty(MULTI_THREADED, Boolean.toString(DEFAULT_MULTI_THREADED)));
     }
 
    
