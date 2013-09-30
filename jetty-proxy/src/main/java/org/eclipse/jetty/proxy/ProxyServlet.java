@@ -28,8 +28,10 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -47,7 +49,6 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -206,7 +207,8 @@ public class ProxyServlet extends HttpServlet
      * <tr>
      * <td>maxThreads</td>
      * <td>256</td>
-     * <td>The max number of threads of HttpClient's Executor</td>
+     * <td>The max number of threads of HttpClient's Executor.  If not set, or set to the value of "-", then the
+     * Jetty server thread pool will be used.</td>
      * </tr>
      * <tr>
      * <td>maxConnections</td>
@@ -244,21 +246,30 @@ public class ProxyServlet extends HttpServlet
         ServletConfig config = getServletConfig();
 
         HttpClient client = newHttpClient();
+        
         // Redirects must be proxied as is, not followed
         client.setFollowRedirects(false);
 
         // Must not store cookies, otherwise cookies of different clients will mix
         client.setCookieStore(new HttpCookieStore.Empty());
 
+        Executor executor;
         String value = config.getInitParameter("maxThreads");
-        if (value == null)
-            value = "256";
-        QueuedThreadPool executor = new QueuedThreadPool(Integer.parseInt(value));
-        String servletName = config.getServletName();
-        int dot = servletName.lastIndexOf('.');
-        if (dot >= 0)
-            servletName = servletName.substring(dot + 1);
-        executor.setName(servletName);
+        if (value == null || "-".equals(value))
+        {
+            executor = (Executor)getServletContext().getAttribute("org.eclipse.jetty.server.Executor");
+        }
+        else
+        {
+            QueuedThreadPool qtp= new QueuedThreadPool(Integer.parseInt(value));
+            String servletName = config.getServletName();
+            int dot = servletName.lastIndexOf('.');
+            if (dot >= 0)
+                servletName = servletName.substring(dot + 1);
+            qtp.setName(servletName);
+            executor=qtp;
+        }
+        
         client.setExecutor(executor);
 
         value = config.getInitParameter("maxConnections");

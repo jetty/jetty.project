@@ -19,8 +19,13 @@
 package org.eclipse.jetty.annotations;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
-import org.eclipse.jetty.annotations.AnnotationParser.ClassHandler;
+import org.eclipse.jetty.annotations.AnnotationParser.AbstractHandler;
+import org.eclipse.jetty.annotations.AnnotationParser.ClassInfo;
+import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -30,33 +35,33 @@ import org.eclipse.jetty.util.log.Logger;
  *
  * As asm scans for classes, remember the type hierarchy.
  */
-public class ClassInheritanceHandler implements ClassHandler
+public class ClassInheritanceHandler extends AbstractHandler
 {
     private static final Logger LOG = Log.getLogger(ClassInheritanceHandler.class);
     
-    MultiMap<String> _inheritanceMap;
+    ConcurrentHashMap<String, ConcurrentHashSet<String>> _inheritanceMap;
+ 
     
-    public ClassInheritanceHandler()
-    {
-       _inheritanceMap = new MultiMap<>();
-    }
-    
-    public ClassInheritanceHandler(MultiMap<String> map)
+    public ClassInheritanceHandler(ConcurrentHashMap<String, ConcurrentHashSet<String>> map)
     {
         _inheritanceMap = map;
     }
 
-    public void handle(String className, int version, int access, String signature, String superName, String[] interfaces)
+    public void handle(ClassInfo classInfo)
     {
         try
         {
-            for (int i=0; interfaces != null && i<interfaces.length;i++)
+            for (int i=0; classInfo.getInterfaces() != null && i < classInfo.getInterfaces().length;i++)
             {
-                _inheritanceMap.add (interfaces[i], className);
+                addToInheritanceMap(classInfo.getInterfaces()[i], classInfo.getClassName());
+                //_inheritanceMap.add (classInfo.getInterfaces()[i], classInfo.getClassName());
             }
             //To save memory, we don't record classes that only extend Object, as that can be assumed
-            if (!"java.lang.Object".equals(superName))
-                _inheritanceMap.add(superName, className);
+            if (!"java.lang.Object".equals(classInfo.getSuperName()))
+            {
+                addToInheritanceMap(classInfo.getSuperName(), classInfo.getClassName());
+                //_inheritanceMap.add(classInfo.getSuperName(), classInfo.getClassName());
+            }
         }
         catch (Exception e)
         {
@@ -64,13 +69,21 @@ public class ClassInheritanceHandler implements ClassHandler
         }  
     }
     
-    public List<String> getClassNamesExtendingOrImplementing (String className)
+    private void addToInheritanceMap (String interfaceOrSuperClassName, String implementingOrExtendingClassName)
     {
-        return _inheritanceMap.getValues(className);
-    }
-    
-    public MultiMap<String> getMap ()
-    {
-        return _inheritanceMap;
+      
+        //As it is likely that the interfaceOrSuperClassName is already in the map, try getting it first
+        ConcurrentHashSet<String> implementingClasses = _inheritanceMap.get(interfaceOrSuperClassName);
+        //If it isn't in the map, then add it in, but test to make sure that someone else didn't get in 
+        //first and add it
+        if (implementingClasses == null)
+        {
+            implementingClasses = new ConcurrentHashSet<String>();
+            ConcurrentHashSet<String> tmp = _inheritanceMap.putIfAbsent(interfaceOrSuperClassName, implementingClasses);
+            if (tmp != null)
+                implementingClasses = tmp;
+        }
+        
+        implementingClasses.add(implementingOrExtendingClassName);
     }
 }

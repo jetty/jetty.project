@@ -36,7 +36,7 @@ public class DataFrameGenerator
 
     public ByteBuffer generate(int streamId, int length, DataInfo dataInfo)
     {
-        ByteBuffer buffer = bufferPool.acquire(DataFrame.HEADER_LENGTH + length, true);
+        ByteBuffer buffer = bufferPool.acquire(DataFrame.HEADER_LENGTH + length, Generator.useDirectBuffers);
         BufferUtil.clearToFill(buffer);
         buffer.limit(length + DataFrame.HEADER_LENGTH);
         buffer.position(DataFrame.HEADER_LENGTH);

@@ -19,11 +19,12 @@
 package org.eclipse.jetty.maven.plugin;
 
 import java.io.File;
+import java.util.HashSet;
+import java.util.Set;
 
-import org.eclipse.jetty.annotations.AbstractDiscoverableAnnotationHandler;
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.annotations.AnnotationParser;
-import org.eclipse.jetty.annotations.AnnotationParser.DiscoverableAnnotationHandler;
+import org.eclipse.jetty.annotations.AnnotationParser.Handler;
 import org.eclipse.jetty.annotations.ClassNameResolver;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -51,15 +52,11 @@ public class MavenAnnotationConfiguration extends AnnotationConfiguration
             if (metaData == null)
                throw new IllegalStateException ("No metadata");
 
-            parser.clearHandlers();
-            for (DiscoverableAnnotationHandler h:_discoverableAnnotationHandlers)
-            {
-                if (h instanceof AbstractDiscoverableAnnotationHandler)
-                    ((AbstractDiscoverableAnnotationHandler)h).setResource(null); //
-            }
-            parser.registerHandlers(_discoverableAnnotationHandlers);
-            parser.registerHandler(_classInheritanceHandler);
-            parser.registerHandlers(_containerInitializerAnnotationHandlers);
+            Set<Handler> handlers = new HashSet<Handler>();
+            handlers.addAll(_discoverableAnnotationHandlers);
+            if (_classInheritanceHandler != null)
+                handlers.add(_classInheritanceHandler);
+            handlers.addAll(_containerInitializerAnnotationHandlers);
 
 
             for (File f:jwac.getClassPathFiles())
@@ -67,7 +64,7 @@ public class MavenAnnotationConfiguration extends AnnotationConfiguration
                 //scan the equivalent of the WEB-INF/classes directory that has been synthesised by the plugin
                 if (f.isDirectory() && f.exists())
                 {
-                    doParse(context, parser, Resource.newResource(f.toURI()));
+                    doParse(handlers, context, parser, Resource.newResource(f.toURI()));
                 }
             }
 
@@ -78,32 +75,19 @@ public class MavenAnnotationConfiguration extends AnnotationConfiguration
                 Resource classesDir = context.getWebInf().addPath("classes/");
                 if (classesDir.exists())
                 {
-                    doParse(context, parser, classesDir);
+                    doParse(handlers, context, parser, classesDir);
                 }
             }
         }
     }
     
     
-    public void doParse (final WebAppContext context, final AnnotationParser parser, Resource resource)
+    public void doParse (final Set<? extends Handler> handlers, final WebAppContext context, final AnnotationParser parser, Resource resource)
     throws Exception
     { 
-            parser.parseDir(resource, new ClassNameResolver()
-            {
-                public boolean isExcluded (String name)
-                {
-                    if (context.isSystemClass(name)) return true;
-                    if (context.isServerClass(name)) return false;
-                    return false;
-                }
-
-                public boolean shouldOverride (String name)
-                {
-                    //looking at webapp classpath, found already-parsed class of same name - did it come from system or duplicate in webapp?
-                    if (context.isParentLoaderPriority())
-                        return false;
-                    return true;
-                }
-            });            
+        if (_parserTasks != null)
+            _parserTasks.add(new ParserTask(parser, handlers, resource, _webAppClassNameResolver));
+        else
+            parser.parse(handlers, resource, _webAppClassNameResolver);          
     }
 }

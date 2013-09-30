@@ -316,7 +316,7 @@ public class ContextHandlerGetResourceTest
 
             Resource resource=context.getResource(path);
             assertNotNull(resource);
-            assertEquals(context.getResource("/subdir/TextFile.Long.txt").getURL(),resource.getAlias());
+            assertEquals(context.getResource("/subdir/TextFile.Long.txt").getURI(),resource.getAlias());
             
             URL url=context.getServletContext().getResource(path);
             assertNotNull(url);

@@ -45,6 +45,7 @@ import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.jsr356.server.blockhead.BlockheadClient;
 import org.eclipse.jetty.websocket.jsr356.server.blockhead.HttpResponse;
 import org.eclipse.jetty.websocket.jsr356.server.blockhead.IncomingFramesCapture;
+import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -144,7 +145,7 @@ public class ConfiguratorTest
         context.setContextPath("/");
         server.setHandler(context);
 
-        ServerContainer container = WebSocketConfiguration.configureContext(context);
+        ServerContainer container = WebSocketServerContainerInitializer.configureContext(context);
         container.addEndpoint(CaptureHeadersSocket.class);
         container.addEndpoint(EmptySocket.class);
         container.addEndpoint(NoExtensionsSocket.class);

@@ -212,7 +212,7 @@ public class OSGiWebInfConfiguration extends WebInfConfiguration
                     }
                 }
                 if (!appendedResourcesPath.isEmpty())
-                    context.setAttribute(WebInfConfiguration.RESOURCE_URLS, new ArrayList<Resource>(appendedResourcesPath.values()));
+                    context.setAttribute(WebInfConfiguration.RESOURCE_DIRS, new HashSet<Resource>(appendedResourcesPath.values()));
             }
         }
         

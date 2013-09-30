@@ -43,7 +43,7 @@ public class SettingsGenerator extends ControlFrameGenerator
         int size = settings.size();
         int frameBodyLength = 4 + 8 * size;
         int totalLength = ControlFrame.HEADER_LENGTH + frameBodyLength;
-        ByteBuffer buffer = getByteBufferPool().acquire(totalLength, true);
+        ByteBuffer buffer = getByteBufferPool().acquire(totalLength, Generator.useDirectBuffers);
         BufferUtil.clearToFill(buffer);
         generateControlFrameHeader(settingsFrame, frameBodyLength, buffer);
 

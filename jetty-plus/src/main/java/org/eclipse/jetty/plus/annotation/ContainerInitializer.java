@@ -18,26 +18,33 @@
 
 package org.eclipse.jetty.plus.annotation;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletContainerInitializer;
-import javax.servlet.ServletContextListener;
 
+import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 public class ContainerInitializer
 {
-    protected ServletContainerInitializer _target;
-    protected Class[] _interestedTypes;
-    protected Set<String> _applicableTypeNames;
-    protected Set<String> _annotatedTypeNames;
+    private static final Logger LOG = Log.getLogger(ContainerInitializer.class);
+    
+    final protected ServletContainerInitializer _target;
+    final protected Class[] _interestedTypes;
+    protected Set<String> _applicableTypeNames = new ConcurrentHashSet<String>();
+    protected Set<String> _annotatedTypeNames = new ConcurrentHashSet<String>();
 
 
-    public void setTarget (ServletContainerInitializer target)
+    public ContainerInitializer (ServletContainerInitializer target, Class[] classes)
     {
         _target = target;
+        _interestedTypes = classes;
     }
 
     public ServletContainerInitializer getTarget ()
@@ -50,10 +57,6 @@ public class ContainerInitializer
         return _interestedTypes;
     }
 
-    public void setInterestedTypes (Class[] interestedTypes)
-    {
-        _interestedTypes = interestedTypes;
-    }
 
     /**
      * A class has been found that has an annotation of interest
@@ -62,26 +65,22 @@ public class ContainerInitializer
      */
     public void addAnnotatedTypeName (String className)
     {
-        if (_annotatedTypeNames == null)
-            _annotatedTypeNames = new HashSet<String>();
         _annotatedTypeNames.add(className);
     }
 
     public Set<String> getAnnotatedTypeNames ()
     {
-        return _annotatedTypeNames;
+        return Collections.unmodifiableSet(_annotatedTypeNames);
     }
 
     public void addApplicableTypeName (String className)
     {
-        if (_applicableTypeNames == null)
-            _applicableTypeNames = new HashSet<String>();
         _applicableTypeNames.add(className);
     }
 
     public Set<String> getApplicableTypeNames ()
     {
-        return _applicableTypeNames;
+        return Collections.unmodifiableSet(_applicableTypeNames);
     }
 
 
@@ -97,13 +96,18 @@ public class ContainerInitializer
 
             try
             {
-                if (_applicableTypeNames != null)
-                {
-                    for (String s : _applicableTypeNames)
-                        classes.add(Loader.loadClass(context.getClass(), s));
-                }
+                for (String s : _applicableTypeNames)
+                    classes.add(Loader.loadClass(context.getClass(), s));
+
                 context.getServletContext().setExtendedListenerTypes(true);
-                _target.onStartup(classes, context.getServletContext());
+                if (LOG.isDebugEnabled())
+                {
+                    long start = System.nanoTime();
+                    _target.onStartup(classes, context.getServletContext());
+                    LOG.debug("ContainerInitializer {} called in {}ms", _target.getClass().getName(), TimeUnit.MILLISECONDS.convert(System.nanoTime()-start, TimeUnit.NANOSECONDS));
+                }
+                else
+                    _target.onStartup(classes, context.getServletContext());
             }
             finally
             { 

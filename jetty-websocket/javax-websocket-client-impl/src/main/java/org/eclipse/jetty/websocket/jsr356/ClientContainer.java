@@ -26,6 +26,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 
 import javax.websocket.ClientEndpoint;
@@ -72,6 +73,11 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
 
     public ClientContainer()
     {
+        this(null);
+    }
+    
+    public ClientContainer(Executor executor)
+    {
         endpointClientMetadataCache = new ConcurrentHashMap<>();
         decoderFactory = new DecoderFactory(PrimitiveDecoderMetadataSet.INSTANCE);
         encoderFactory = new EncoderFactory(PrimitiveEncoderMetadataSet.INSTANCE);
@@ -80,7 +86,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         decoderFactory.init(empty);
         encoderFactory.init(empty);
 
-        client = new WebSocketClient();
+        client = new WebSocketClient(executor);
         client.setEventDriverFactory(new JsrEventDriverFactory(client.getPolicy()));
         client.setSessionFactory(new JsrSessionFactory(this));
         addBean(client);

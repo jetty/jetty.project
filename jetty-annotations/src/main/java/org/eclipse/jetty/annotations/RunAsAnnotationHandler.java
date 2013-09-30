@@ -23,7 +23,6 @@ import java.util.List;
 import javax.servlet.Servlet;
 
 import org.eclipse.jetty.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
-import org.eclipse.jetty.annotations.AnnotationParser.Value;
 import org.eclipse.jetty.plus.annotation.RunAsCollection;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.log.Log;
@@ -87,14 +86,12 @@ public class RunAsAnnotationHandler extends AbstractIntrospectableAnnotationHand
 
     }
 
-    public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
-                            List<Value> values)
+    public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation)
     {
        LOG.warn ("@RunAs annotation not applicable for fields: "+className+"."+fieldName);
     }
 
-    public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation,
-                             List<Value> values)
+    public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation)
     {
         LOG.warn("@RunAs annotation ignored on method: "+className+"."+methodName+" "+signature);
     }

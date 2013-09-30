@@ -60,6 +60,7 @@ public class BlockheadClientConstructionTest
         this.expectedHttpUri = URI.create(httpuri);
     }
 
+    @SuppressWarnings("resource")
     @Test
     public void testURIs() throws URISyntaxException
     {

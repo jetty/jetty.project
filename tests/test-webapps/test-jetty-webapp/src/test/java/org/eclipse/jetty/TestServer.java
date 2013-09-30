@@ -100,7 +100,7 @@ public class TestServer
         httpConnector.setIdleTimeout(30000);
         server.addConnector(httpConnector);
 
-        
+        /*
         // SSL configurations
         SslContextFactory sslContextFactory = new SslContextFactory();
         sslContextFactory.setKeyStorePath(jetty_root + "/jetty-server/src/main/config/etc/keystore");
@@ -135,7 +135,7 @@ public class TestServer
         spdyConnector.setIdleTimeout(15000);
         server.addConnector(spdyConnector);
         
-        
+        */
         
         // Handlers
         HandlerCollection handlers = new HandlerCollection();

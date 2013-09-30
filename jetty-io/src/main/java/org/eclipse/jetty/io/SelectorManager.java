@@ -232,7 +232,10 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         }
         catch (Exception x)
         {
-            LOG.info("Exception while notifying connection " + connection, x);
+            if (isRunning())
+                LOG.warn("Exception while notifying connection " + connection, x);
+            else
+                LOG.debug("Exception while notifying connection {}",connection, x);
         }
     }
 
@@ -421,7 +424,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             String name = _thread.getName();
             try
             {
-                _thread.setName(name + "-selector-" + _id);
+                _thread.setName(name + "-selector-" + SelectorManager.this.getClass().getSimpleName()+"@"+Integer.toHexString(SelectorManager.this.hashCode())+"/"+_id);
                 LOG.debug("Starting {} on {}", _thread, this);
                 while (isRunning())
                     select();

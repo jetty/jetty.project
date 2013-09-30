@@ -177,7 +177,7 @@ public class ConnectHandler extends HandlerWrapper
 
     protected SelectorManager newSelectorManager()
     {
-        return new Manager(getExecutor(), getScheduler(), 1);
+        return new ConnectManager(getExecutor(), getScheduler(), 1);
     }
 
     @Override
@@ -429,10 +429,10 @@ public class ConnectHandler extends HandlerWrapper
         dump(out, indent, getBeans(), TypeUtil.asList(getHandlers()));
     }
 
-    protected class Manager extends SelectorManager
+    protected class ConnectManager extends SelectorManager
     {
 
-        private Manager(Executor executor, Scheduler scheduler, int selectors)
+        private ConnectManager(Executor executor, Scheduler scheduler, int selectors)
         {
             super(executor, scheduler, selectors);
         }

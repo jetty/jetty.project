@@ -21,26 +21,91 @@ package org.eclipse.jetty.websocket.jsr356.server;
 import static org.hamcrest.Matchers.*;
 
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.junit.AfterClass;
+import org.junit.After;
 import org.junit.Assert;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class SessionTest
 {
-    private static WSServer server;
-    private static URI serverUri;
+    private static interface Case
+    {
+        public void customize(WebAppContext context);
+    }
 
-    @BeforeClass
-    public static void startServer() throws Exception
+    @Parameters
+    public static Collection<Case[]> data()
+    {
+        List<Case[]> cases = new ArrayList<>();
+        cases.add(new Case[]
+        { new Case()
+        {
+            @Override
+            public void customize(WebAppContext context)
+            {
+                // no customization
+            }
+        } });
+        cases.add(new Case[]
+        { new Case()
+        {
+            @Override
+            public void customize(WebAppContext context)
+            {
+                // Test with DefaultServlet only
+                context.addServlet(DefaultServlet.class,"/");
+            }
+        } });
+        cases.add(new Case[]
+        { new Case()
+        {
+            @Override
+            public void customize(WebAppContext context)
+            {
+                // Test with Servlet mapped to "/*"
+                context.addServlet(DefaultServlet.class,"/*");
+            }
+        } });
+        cases.add(new Case[]
+        { new Case()
+        {
+            @Override
+            public void customize(WebAppContext context)
+            {
+                // Test with Servlet mapped to "/info/*"
+                context.addServlet(DefaultServlet.class,"/info/*");
+            }
+        } });
+        return cases;
+    }
+
+    private final Case testcase;
+    private WSServer server;
+    private URI serverUri;
+
+    public SessionTest(Case testcase)
+    {
+        this.testcase = testcase;
+    }
+
+    @Before
+    public void startServer() throws Exception
     {
         server = new WSServer(MavenTestingUtils.getTargetTestingDir(SessionTest.class.getSimpleName()),"app");
         server.copyWebInf("empty-web.xml");
@@ -50,11 +115,12 @@ public class SessionTest
         serverUri = server.getServerBaseURI();
 
         WebAppContext webapp = server.createWebAppContext();
+        testcase.customize(webapp);
         server.deployWebapp(webapp);
     }
 
-    @AfterClass
-    public static void stopServer()
+    @After
+    public void stopServer()
     {
         server.stop();
     }

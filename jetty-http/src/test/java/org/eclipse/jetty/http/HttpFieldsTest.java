@@ -272,6 +272,12 @@ public class HttpFieldsTest
     public void testSetCookie() throws Exception
     {
         HttpFields fields = new HttpFields();
+
+        fields.addSetCookie("null",null,null,null,-1,null,false,false,-1);
+        assertEquals("null=",fields.getStringField("Set-Cookie"));
+
+        fields.clear();
+        
         fields.addSetCookie("minimal","value",null,null,-1,null,false,false,-1);
         assertEquals("minimal=value",fields.getStringField("Set-Cookie"));
 

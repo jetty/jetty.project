@@ -46,12 +46,14 @@ public class MinimalServlets
         // on a given context path.
 
         // !! This is a raw Servlet, not a servlet that has been configured through a web.xml or anything like that !!
-        handler.addServletWithMapping(HelloServlet.class,"/*");
+        handler.addServletWithMapping(HelloServlet.class, "/*");
 
+        // Start things up! By using the server.join() the server thread will join with the current thread.
+        // See "http://docs.oracle.com/javase/1.5.0/docs/api/java/lang/Thread.html#join()" for more details.
         server.start();
         server.join();
     }
-    
+
     @SuppressWarnings("serial")
     public static class HelloServlet extends HttpServlet
     {

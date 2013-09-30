@@ -28,7 +28,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
-import org.eclipse.jetty.websocket.jsr356.server.WebSocketConfiguration;
+import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 
 /**
  * Tool to help debug JSR based websocket circumstances reported around browsers.
@@ -89,7 +89,7 @@ public class JsrBrowserDebugTool
         holder.setInitParameter("dirAllowed","true");
         server.setHandler(context);
 
-        ServerContainer container = WebSocketConfiguration.configureContext(context);
+        ServerContainer container = WebSocketServerContainerInitializer.configureContext(context);
         container.addEndpoint(JsrBrowserSocket.class);
 
         LOG.info("{} setup on port {}",this.getClass().getName(),port);

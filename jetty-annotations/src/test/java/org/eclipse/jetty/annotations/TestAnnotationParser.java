@@ -18,8 +18,11 @@
 
 package org.eclipse.jetty.annotations;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -28,24 +31,26 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.eclipse.jetty.annotations.AnnotationParser.DiscoverableAnnotationHandler;
-import org.eclipse.jetty.annotations.AnnotationParser.Value;
+import org.eclipse.jetty.annotations.AnnotationParser.ClassInfo;
+import org.eclipse.jetty.annotations.AnnotationParser.FieldInfo;
+import org.eclipse.jetty.annotations.AnnotationParser.Handler;
+import org.eclipse.jetty.annotations.AnnotationParser.MethodInfo;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.junit.Assert;
 import org.junit.Rule;
-import org.junit.Rule;
 import org.junit.Test;
 
 public class TestAnnotationParser
 {
-    public static class TrackingAnnotationHandler implements DiscoverableAnnotationHandler
+    public static class TrackingAnnotationHandler extends AnnotationParser.AbstractHandler
     {
         private final String annotationName;
         public final Set<String> foundClasses;
@@ -57,30 +62,11 @@ public class TestAnnotationParser
         }
 
         @Override
-        public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
-                List<Value> values)
+        public void handle(ClassInfo info, String annotation)
         {
-            foundClasses.add(className);
-        }
-
-        @Override
-        public void handleMethod(String className, String methodName, int access, String desc, String signature, String[] exceptions, String annotation,
-                List<Value> values)
-        {
-            /* ignore */
-        }
-
-        @Override
-        public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
-                List<Value> values)
-        {
-            /* ignore */
-        }
-
-        @Override
-        public String getAnnotationName()
-        {
-            return this.annotationName;
+            if (annotation == null || !annotationName.equals(annotation))
+                return;
+            foundClasses.add(info.getClassName());
         }
     }
 
@@ -94,47 +80,38 @@ public class TestAnnotationParser
         { "org.eclipse.jetty.annotations.ClassA" };
         AnnotationParser parser = new AnnotationParser();
 
-        class SampleAnnotationHandler implements DiscoverableAnnotationHandler
+        class SampleAnnotationHandler extends AnnotationParser.AbstractHandler
         {
             private List<String> methods = Arrays.asList("a","b","c","d","l");
 
-            public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
-                    List<Value> values)
+            public void handle(ClassInfo info, String annotation)
             {
-                assertEquals("org.eclipse.jetty.annotations.ClassA",className);
+                if (annotation == null || !"org.eclipse.jetty.annotations.Sample".equals(annotation))
+                    return;
+
+                assertEquals("org.eclipse.jetty.annotations.ClassA",info.getClassName());
             }
 
-            public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
-                    List<Value> values)
-            {
-                assertEquals("m",fieldName);
-                assertEquals(org.objectweb.asm.Type.OBJECT,org.objectweb.asm.Type.getType(fieldType).getSort());
-                assertEquals(1,values.size());
-                Value anv1 = values.get(0);
-                assertEquals("value",anv1.getName());
-                assertEquals(7,anv1.getValue());
-
+            public void handle(FieldInfo info, String annotation)
+            {                
+                if (annotation == null || !"org.eclipse.jetty.annotations.Sample".equals(annotation))
+                    return;
+                assertEquals("m",info.getFieldName());
+                assertEquals(org.objectweb.asm.Type.OBJECT,org.objectweb.asm.Type.getType(info.getFieldType()).getSort());
             }
 
-            public void handleMethod(String className, String methodName, int access, String desc, String signature, String[] exceptions, String annotation,
-                    List<Value> values)
-            {
-                assertEquals("org.eclipse.jetty.annotations.ClassA",className);
-                assertTrue(methods.contains(methodName));
+            public void handle(MethodInfo info, String annotation)
+            {                
+                if (annotation == null || !"org.eclipse.jetty.annotations.Sample".equals(annotation))
+                    return;
+                assertEquals("org.eclipse.jetty.annotations.ClassA",info.getClassInfo().getClassName());
+                assertTrue(methods.contains(info.getMethodName()));
                 assertEquals("org.eclipse.jetty.annotations.Sample",annotation);
-            }
-
-            @Override
-            public String getAnnotationName()
-            {
-                return "org.eclipse.jetty.annotations.Sample";
             }
         }
 
-        parser.registerHandler(new SampleAnnotationHandler());
-
         //long start = System.currentTimeMillis();
-        parser.parse(classNames,new ClassNameResolver()
+        parser.parse(Collections.singleton(new SampleAnnotationHandler()), classNames,new ClassNameResolver()
         {
             public boolean isExcluded(String name)
             {
@@ -159,38 +136,33 @@ public class TestAnnotationParser
         { "org.eclipse.jetty.annotations.ClassB" };
         AnnotationParser parser = new AnnotationParser();
 
-        class MultiAnnotationHandler implements DiscoverableAnnotationHandler
+        class MultiAnnotationHandler extends AnnotationParser.AbstractHandler
         {
-            public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
-                    List<Value> values)
+            public void handle(ClassInfo info, String annotation)
             {
-                assertTrue("org.eclipse.jetty.annotations.ClassB".equals(className));
+                if (annotation == null || ! "org.eclipse.jetty.annotations.Multi".equals(annotation))
+                    return;
+                assertTrue("org.eclipse.jetty.annotations.ClassB".equals(info.getClassName()));
             }
 
-            public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
-                    List<Value> values)
-            {
+            public void handle(FieldInfo info, String annotation)
+            {                
+                if (annotation == null || ! "org.eclipse.jetty.annotations.Multi".equals(annotation))
+                    return;
                 // there should not be any
                 fail();
             }
 
-            public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation,
-                    List<Value> values)
-            {
-                assertTrue("org.eclipse.jetty.annotations.ClassB".equals(className));
-                assertTrue("a".equals(methodName));
+            public void handle(MethodInfo info, String annotation)
+            {  
+                if (annotation == null || ! "org.eclipse.jetty.annotations.Multi".equals(annotation))
+                    return;
+                assertTrue("org.eclipse.jetty.annotations.ClassB".equals(info.getClassInfo().getClassName()));
+                assertTrue("a".equals(info.getMethodName()));
             }
-
-            @Override
-            public String getAnnotationName()
-            {
-                return "org.eclipse.jetty.annotations.Multi";
-            }
-
         }
 
-        parser.registerHandler(new MultiAnnotationHandler());
-        parser.parse(classNames,null);
+        parser.parse(Collections.singleton(new MultiAnnotationHandler()), classNames,null);
     }
 
     @Test
@@ -198,7 +170,8 @@ public class TestAnnotationParser
     {
         File badClassesJar = MavenTestingUtils.getTestResourceFile("bad-classes.jar");
         AnnotationParser parser = new AnnotationParser();
-        parser.parse(badClassesJar.toURI(),null);
+        Set<Handler> emptySet = Collections.emptySet();
+        parser.parse(emptySet, badClassesJar.toURI(),null);
         // only the valid classes inside bad-classes.jar should be parsed. If any invalid classes are parsed and exception would be thrown here
     }
 
@@ -221,10 +194,9 @@ public class TestAnnotationParser
 
         // Setup annotation scanning
         AnnotationParser parser = new AnnotationParser();
-        parser.registerHandler(tracker);
         
         // Parse
-        parser.parse(basedir.toURI(),null);
+        parser.parse(Collections.singleton(tracker), basedir.toURI(),null);
         
         // Validate
         Assert.assertThat("Found Class", tracker.foundClasses, contains(ClassA.class.getName()));

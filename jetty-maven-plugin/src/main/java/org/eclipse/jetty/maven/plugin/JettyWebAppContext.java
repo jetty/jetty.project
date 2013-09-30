@@ -47,7 +47,6 @@ import org.eclipse.jetty.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebInfConfiguration;
 import org.eclipse.jetty.webapp.WebXmlConfiguration;
-import org.eclipse.jetty.websocket.jsr356.server.WebSocketConfiguration;
 
 /**
  * JettyWebAppContext
@@ -112,7 +111,6 @@ public class JettyWebAppContext extends WebAppContext
                 new FragmentConfiguration(),
                 _envConfig = new EnvConfiguration(),
                 new PlusConfiguration(),
-                new WebSocketConfiguration(),
                 new MavenAnnotationConfiguration(),
                 new JettyWebXmlConfiguration()
         });

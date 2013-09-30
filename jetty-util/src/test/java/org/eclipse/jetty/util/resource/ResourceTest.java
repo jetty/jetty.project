@@ -30,9 +30,9 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
-
 import java.util.zip.ZipFile;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -297,10 +297,20 @@ public class ResourceTest
         assertTrue(entries.contains("numbers"));
         IO.delete(extract);
 
-
-
     }
 
+    /* ------------------------------------------------------------ */
+    @Test
+    public void testJarFileGetAllResoures()
+    throws Exception
+    {
+        String s = "jar:"+__userURL+"TestData/test.zip!/subdir/";
+        Resource r = Resource.newResource(s);
+        Collection<Resource> deep=r.getAllResources();
+        
+        assertEquals(4, deep.size());
+    }
+    
     @Test
     public void testJarFileIsContainedIn ()
     throws Exception

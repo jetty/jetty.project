@@ -32,6 +32,8 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.file.StandardOpenOption;
 import java.security.Permission;
 
+import javax.management.RuntimeErrorException;
+
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -54,7 +56,7 @@ public class FileResource extends Resource
     /* ------------------------------------------------------------ */
     private final File _file;
     private final String _uri;
-    private final URL _alias;
+    private final URI _alias;
     
     /* -------------------------------------------------------- */
     public FileResource(URL url)
@@ -133,7 +135,7 @@ public class FileResource extends Resource
     }
 
     /* -------------------------------------------------------- */
-    private static URL checkAlias(File file)
+    private static URI checkAlias(File file)
     {
         try
         {
@@ -143,14 +145,24 @@ public class FileResource extends Resource
             if (!abs.equals(can))
             {
                 LOG.debug("ALIAS abs={} can={}",abs,can);
-                return new File(can).toURI().toURL();
+                return new File(can).toURI();
             }
         }
         catch(IOException e)
         {
-            LOG.warn(e);
+            LOG.warn("bad alias for {}: {}",file,e.toString());
+            LOG.debug(e);
+            try
+            {
+                return new URI("http://eclipse.org/bad/canonical/alias");
+            }
+            catch(Exception e2)
+            {
+                LOG.ignore(e2);
+                throw new RuntimeException(e);
+            }
         }
-          
+
         return null;
     }
     
@@ -193,7 +205,7 @@ public class FileResource extends Resource
     
     /* ------------------------------------------------------------ */
     @Override
-    public URL getAlias()
+    public URI getAlias()
     {
         return _alias;
     }
@@ -388,6 +400,12 @@ public class FileResource extends Resource
         {
             throw new IllegalStateException(e);
         }
+    }
+    
+    @Override
+    public URI getURI()
+    {
+        return _file.toURI();
     }
 
     @Override

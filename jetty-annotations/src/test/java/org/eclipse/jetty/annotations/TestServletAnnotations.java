@@ -25,12 +25,14 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
+import org.eclipse.jetty.webapp.DiscoveredAnnotation;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.Test;
 
@@ -41,6 +43,27 @@ import org.junit.Test;
  */
 public class TestServletAnnotations
 {
+    
+    public class TestWebServletAnnotationHandler extends WebServletAnnotationHandler
+    {
+        List<DiscoveredAnnotation> _list = null;
+
+        public TestWebServletAnnotationHandler(WebAppContext context, List<DiscoveredAnnotation> list)
+        {
+            super(context);
+            _list = list;
+        }
+
+        @Override
+        public void addAnnotation(DiscoveredAnnotation a)
+        {
+            super.addAnnotation(a);
+            _list.add(a);
+        }
+        
+        
+        
+    }
     @Test
     public void testServletAnnotation() throws Exception
     {
@@ -49,10 +72,11 @@ public class TestServletAnnotations
         AnnotationParser parser = new AnnotationParser();
 
         WebAppContext wac = new WebAppContext();
-        WebServletAnnotationHandler handler = new WebServletAnnotationHandler(wac);
-        parser.registerAnnotationHandler("javax.servlet.annotation.WebServlet", handler);
-
-        parser.parse(classes, new ClassNameResolver ()
+        List<DiscoveredAnnotation> results = new ArrayList<DiscoveredAnnotation>();
+        
+        TestWebServletAnnotationHandler handler = new TestWebServletAnnotationHandler(wac, results);
+       
+        parser.parse(Collections.singleton(handler), classes, new ClassNameResolver ()
         {
             public boolean isExcluded(String name)
             {
@@ -65,10 +89,11 @@ public class TestServletAnnotations
             }
         });
 
-        assertEquals(1, handler.getAnnotationList().size());
-        assertTrue(handler.getAnnotationList().get(0) instanceof WebServletAnnotation);
+  
+        assertEquals(1, results.size());
+        assertTrue(results.get(0) instanceof WebServletAnnotation);
 
-        handler.getAnnotationList().get(0).apply();
+        results.get(0).apply();
 
         ServletHolder[] holders = wac.getServletHandler().getServlets();
         assertNotNull(holders);

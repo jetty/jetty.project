@@ -20,7 +20,9 @@ package org.eclipse.jetty.annotations;
 
 import java.util.List;
 
-import org.eclipse.jetty.annotations.AnnotationParser.Value;
+import org.eclipse.jetty.annotations.AnnotationParser.ClassInfo;
+import org.eclipse.jetty.annotations.AnnotationParser.FieldInfo;
+import org.eclipse.jetty.annotations.AnnotationParser.MethodInfo;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.DiscoveredAnnotation;
@@ -41,11 +43,6 @@ public class WebServletAnnotationHandler extends AbstractDiscoverableAnnotationH
         super(context);
     }
 
-    public WebServletAnnotationHandler (WebAppContext context, List<DiscoveredAnnotation> list)
-    {
-        super(context, list);
-    }
-    
 
     /**
      * Handle discovering a WebServlet annotation.
@@ -54,34 +51,30 @@ public class WebServletAnnotationHandler extends AbstractDiscoverableAnnotationH
      * @see org.eclipse.jetty.annotations.AnnotationParser.DiscoverableAnnotationHandler#handleClass(java.lang.String, int, int, java.lang.String, java.lang.String, java.lang.String[], java.lang.String, java.util.List)
      */
     @Override
-    public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotationName,
-                            List<Value> values)
+    public void handle(ClassInfo info, String annotationName)
     {
-        if (!"javax.servlet.annotation.WebServlet".equals(annotationName))
+        if (annotationName == null || !"javax.servlet.annotation.WebServlet".equals(annotationName))
             return;
-
-        WebServletAnnotation annotation = new WebServletAnnotation (_context, className, _resource);
+        
+        WebServletAnnotation annotation = new WebServletAnnotation (_context, info.getClassName(), info.getContainingResource());
         addAnnotation(annotation);
     }
 
     @Override
-    public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
-                            List<Value> values)
+    public void handle(FieldInfo info, String annotationName)
     {
+        if (annotationName == null || !"javax.servlet.annotation.WebServlet".equals(annotationName))
+            return;
+        
         LOG.warn ("@WebServlet annotation not supported for fields");
     }
 
     @Override
-    public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation,
-                             List<Value> values)
+    public void handle(MethodInfo info, String annotationName)
     {
+        if (annotationName == null || !"javax.servlet.annotation.WebServlet".equals(annotationName))
+            return;
+        
         LOG.warn ("@WebServlet annotation not supported for methods");
-    }
-
-
-    @Override
-    public String getAnnotationName()
-    {
-        return "javax.servlet.annotation.WebServlet";
     }
 }

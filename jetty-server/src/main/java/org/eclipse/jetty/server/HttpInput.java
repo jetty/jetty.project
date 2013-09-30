@@ -51,6 +51,7 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
 {
     private final static Logger LOG = Log.getLogger(HttpInput.class);
 
+    private final byte[] _oneByteBuffer = new byte[1];
     private HttpChannelState _channelState;
     private Throwable _onError;
     private ReadListener _listener;
@@ -59,6 +60,7 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
     protected State _state = BLOCKING;
     private State _eof=null;
     private final Object _lock;
+    private long _contentRead;
 
     protected HttpInput()
     {
@@ -82,6 +84,7 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
             _state = BLOCKING;
             _eof=null;
             _onError=null;
+            _contentRead=0;
         }
     }
 
@@ -118,9 +121,8 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
     @Override
     public int read() throws IOException
     {
-        byte[] bytes = new byte[1];
-        int read = read(bytes, 0, 1);
-        return read < 0 ? -1 : 0xff & bytes[0];
+        int read = read(_oneByteBuffer, 0, 1);
+        return read < 0 ? -1 : 0xff & _oneByteBuffer[0];
     }
 
     @Override
@@ -144,6 +146,7 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
     public int read(byte[] b, int off, int len) throws IOException
     {
         T item = null;
+        int l;
         synchronized (lock())
         {
             // System.err.printf("read s=%s q=%d e=%s%n",_state,_inputQ.size(),_eof);
@@ -159,10 +162,14 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
                 if (item==null)
                     return _state.noContent();
             }
+            
+            l=get(item, b, off, len);
+            _contentRead+=l;
+            
         }
-
-        return get(item, b, off, len);
+        return l;
     }
+    
     protected abstract int remaining(T item);
 
     protected abstract int get(T item, byte[] buffer, int offset, int length);
@@ -179,14 +186,20 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
         return true;
     }
 
-    /* ------------------------------------------------------------ */
+    public long getContentRead()
+    {
+        synchronized (lock())
+        {
+            return _contentRead;
+        }
+    }
+    
     /** Add some content to the input stream
      * @param item
      */
     public abstract void content(T item);
 
 
-    /* ------------------------------------------------------------ */
     /** This method should be called to signal to the HttpInput
      * that an EOF has arrived before all the expected content.
      * Typically this will result in an EOFException being thrown
@@ -206,7 +219,6 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
         }
     }
 
-    /* ------------------------------------------------------------ */
     public void messageComplete()
     {
         synchronized (lock())
@@ -221,7 +233,6 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
         }
     }
 
-    /* ------------------------------------------------------------ */
     public void consumeAll()
     {
         synchronized (lock())
@@ -355,7 +366,6 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
         }
     }
 
-
     protected static class State
     {
         public void waitForContent(HttpInput<?> in) throws IOException
@@ -431,7 +441,6 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
             return "EOF";
         }
     };
-
 
     public void init(HttpChannelState state)
     {

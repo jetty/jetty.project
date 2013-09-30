@@ -18,12 +18,11 @@
 
 package org.eclipse.jetty.annotations;
 
-import java.util.List;
-
-import org.eclipse.jetty.annotations.AnnotationParser.Value;
+import org.eclipse.jetty.annotations.AnnotationParser.ClassInfo;
+import org.eclipse.jetty.annotations.AnnotationParser.FieldInfo;
+import org.eclipse.jetty.annotations.AnnotationParser.MethodInfo;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.webapp.DiscoveredAnnotation;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
@@ -39,38 +38,31 @@ public class WebFilterAnnotationHandler extends AbstractDiscoverableAnnotationHa
     {
         super(context);
     }
-    
-    public WebFilterAnnotationHandler (WebAppContext context, List<DiscoveredAnnotation> list)
-    {
-        super(context, list);
-    }
+   
     
     @Override
-    public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
-                            List<Value> values)
+    public void handle(ClassInfo info, String annotationName)
     {
-        WebFilterAnnotation wfAnnotation = new WebFilterAnnotation(_context, className, _resource);
+        if (annotationName == null || !"javax.servlet.annotation.WebFilter".equals(annotationName))
+            return;
+        
+        WebFilterAnnotation wfAnnotation = new WebFilterAnnotation(_context, info.getClassName(), info.getContainingResource());
         addAnnotation(wfAnnotation);
     }
 
     @Override
-    public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
-                            List<Value> values)
-    {
-        LOG.warn ("@WebFilter not applicable for fields: "+className+"."+fieldName);
+    public void handle(FieldInfo info, String annotationName)
+    {  
+        if (annotationName == null || !"javax.servlet.annotation.WebFilter".equals(annotationName))
+            return;
+        LOG.warn ("@WebFilter not applicable for fields: "+info.getClassInfo().getClassName()+"."+info.getFieldName());
     }
 
     @Override
-    public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation,
-                             List<Value> values)
-    {
-        LOG.warn ("@WebFilter not applicable for methods: "+className+"."+methodName+" "+signature);
+    public void handle(MethodInfo info, String annotationName)
+    {  
+        if (annotationName == null || !"javax.servlet.annotation.WebFilter".equals(annotationName))
+            return;
+        LOG.warn ("@WebFilter not applicable for methods: "+info.getClassInfo().getClassName()+"."+info.getMethodName()+" "+info.getSignature());
     }
-
-    @Override
-    public String getAnnotationName()
-    {
-        return "javax.servlet.annotation.WebFilter";
-    }
-
 }

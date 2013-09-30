@@ -281,6 +281,14 @@ public class ServletUpgradeRequest extends UpgradeRequest
 
     public String getRequestPath()
     {
-        return req.getServletPath();
+        // Since this can be called from a filter, we need to be smart about determining the target request path
+        String contextPath = req.getContextPath();
+        String requestPath = req.getRequestURI();
+        if (requestPath.startsWith(contextPath))
+        {
+            requestPath = requestPath.substring(contextPath.length());
+        }
+
+        return requestPath;
     }
 }

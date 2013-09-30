@@ -60,7 +60,7 @@ public class HeadersGenerator extends ControlFrameGenerator
 
         int totalLength = ControlFrame.HEADER_LENGTH + frameLength;
 
-        ByteBuffer buffer = getByteBufferPool().acquire(totalLength, true);
+        ByteBuffer buffer = getByteBufferPool().acquire(totalLength, Generator.useDirectBuffers);
         BufferUtil.clearToFill(buffer);
         generateControlFrameHeader(headers, frameLength, buffer);
 
