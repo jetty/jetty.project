@@ -97,6 +97,8 @@ import org.eclipse.jetty.util.resource.Resource;
  * <p>
  * The maximum size of a form that can be processed by this context is controlled by the system properties org.eclipse.jetty.server.Request.maxFormKeys
  * and org.eclipse.jetty.server.Request.maxFormContentSize.  These can also be configured with {@link #setMaxFormContentSize(int)} and {@link #setMaxFormKeys(int)}
+ * <p>
+ * This servers executore is made available via a context attributed "org.eclipse.jetty.server.Executor".
  *
  * @org.apache.xbean.XBean description="Creates a basic HTTP context"
  */
@@ -719,6 +721,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         Thread current_thread = null;
         Context old_context = null;
 
+        _attributes.setAttribute("org.eclipse.jetty.server.Executor",getServer().getThreadPool());
+        
         try
         {
             // Set the classloader

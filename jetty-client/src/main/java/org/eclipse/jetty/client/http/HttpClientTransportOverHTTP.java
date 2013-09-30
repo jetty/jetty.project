@@ -27,7 +27,7 @@ public class HttpClientTransportOverHTTP extends AbstractHttpClientTransport
 {
     public HttpClientTransportOverHTTP()
     {
-        this(1);
+        this(Runtime.getRuntime().availableProcessors());
     }
 
     public HttpClientTransportOverHTTP(int selectors)
