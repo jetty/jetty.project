@@ -69,7 +69,7 @@ public class SslBytesClientTest extends SslBytesTest
         client.start();
 
         SSLContext sslContext = sslContextFactory.getSslContext();
-        acceptor = (SSLServerSocket)sslContext.getServerSocketFactory().createServerSocket(43191);
+        acceptor = (SSLServerSocket)sslContext.getServerSocketFactory().createServerSocket(0);
 
         int serverPort = acceptor.getLocalPort();
 
