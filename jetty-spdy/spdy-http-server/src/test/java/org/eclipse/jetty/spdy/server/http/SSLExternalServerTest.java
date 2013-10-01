@@ -41,6 +41,7 @@ import org.junit.Assume;
 import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore("Reliance on external server fails test")
 public class SSLExternalServerTest extends AbstractHTTPSPDYTest
 {
     public SSLExternalServerTest(short version)
