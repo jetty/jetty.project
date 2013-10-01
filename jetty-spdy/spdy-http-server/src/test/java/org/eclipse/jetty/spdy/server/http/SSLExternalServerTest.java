@@ -38,6 +38,7 @@ import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
 import org.junit.Assume;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class SSLExternalServerTest extends AbstractHTTPSPDYTest
@@ -58,6 +59,7 @@ public class SSLExternalServerTest extends AbstractHTTPSPDYTest
     }
 
     @Test(timeout=5000)
+    @Ignore
     public void testExternalServer() throws Exception
     {
         String host = "encrypted.google.com";
