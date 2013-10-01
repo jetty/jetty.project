@@ -239,7 +239,7 @@ public class ProxyServletTest
         result.setProxyConfiguration(new ProxyConfiguration("localhost", proxyConnector.getLocalPort()));
         QueuedThreadPool threadPool = new QueuedThreadPool();
         threadPool.setName("foo");
-        threadPool.setMaxThreads(2);
+        threadPool.setMaxThreads(20);
         result.setExecutor(threadPool);
         result.start();
 
@@ -269,10 +269,9 @@ public class ProxyServletTest
 
         for ( int i = 0; i < 10; ++i )
         {
-
-        Assert.assertEquals(200, responses[i].getStatus());
-        Assert.assertTrue(responses[i].getHeaders().containsKey(PROXIED_HEADER));
-        Assert.assertArrayEquals(content, responses[i].getContent());
+            Assert.assertEquals(200, responses[i].getStatus());
+            Assert.assertTrue(responses[i].getHeaders().containsKey(PROXIED_HEADER));
+            Assert.assertArrayEquals(content, responses[i].getContent());
         }
     }
 

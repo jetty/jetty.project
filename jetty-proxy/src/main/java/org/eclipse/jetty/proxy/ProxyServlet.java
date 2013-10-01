@@ -258,6 +258,8 @@ public class ProxyServlet extends HttpServlet
         if (value == null || "-".equals(value))
         {
             executor = (Executor)getServletContext().getAttribute("org.eclipse.jetty.server.Executor");
+            if (executor==null)
+                throw new IllegalStateException("No server executor for proxy");
         }
         else
         {
