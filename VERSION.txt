@@ -1,3 +1,30 @@
+jetty-9.1.0.RC0 - 30 September 2013
+ + 412469 make module for jetty-jaspi
+ + 416453 Add comments to embedded SplitFileServer example
+ + 416577 enhanced shutdown handler to send shutdown at startup
+ + 416674 run all jetty-ant tests on random ports
+ + 416940 avoid download of spring-beans.dtd
+ + 417152 WebSocket / Do all setup in websocket specific
+   ServletContainerInitializer
+ + 417239 re-implemented Request.getContentRead()
+ + 417284 Precompiled regex in HttpField
+ + 417289 SPDY replace use of direct buffers with indirect buffers or make it
+   configurable
+ + 417340 Upgrade JDT compiler to one that supports source/target of Java 1.7
+ + 417382 Upgrade to asm 4.1 and refactor annotation parsing
+ + 417475 Do not null context Trie during dynamic deploy
+ + 417490 WebSocket / @PathParam annotated parameters are null when the servlet
+   mapping uses a wildcard
+ + 417561 Refactor annotation related code: change log messages
+ + 417574 Setting options with _JAVA_OPTIONS breaks run-forked with
+   <waitForChild>true</waitForChild>
+ + 417831 Remove jetty-logging.properties from distro/resources
+ + 417938 Startup / Sort properties presented in --list-config alphabetically
+ + 418014 Handle NTFS canonical exceptions during alias check
+ + 418068 WebSocketClient has lazy or injected Executor
+ + 418212 org.eclipse.jetty.spdy.server.http.SSLExternalServerTest hangs
+ + 418227 Null cookie value test
+
 jetty-9.1.0.M0 - 16 September 2013
  + 393473 Add support for JSR-356 (javax.websocket) draft
  + 395444 Websockets not working with Chrome (deflate problem)
