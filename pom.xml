@@ -442,7 +442,7 @@
     <!-- modules that need fixed and added back, or simply dropped and not maintained
     <module>jetty-rhttp</module>
     -->
-    <module>jetty-overlay-deployer</module>
+    <!--<module>jetty-overlay-deployer</module>-->
   </modules>
   <dependencyManagement>
     <dependencies>
