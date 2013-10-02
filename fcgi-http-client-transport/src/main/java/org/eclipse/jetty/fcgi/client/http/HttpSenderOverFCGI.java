@@ -1,6 +1,8 @@
 package org.eclipse.jetty.fcgi.client.http;
 
 import java.net.URI;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.eclipse.jetty.client.HttpChannel;
 import org.eclipse.jetty.client.HttpContent;
@@ -52,11 +54,20 @@ public class HttpSenderOverFCGI extends HttpSender
 
         headers.put(FCGI.Headers.GATEWAY_INTERFACE, "CGI/1.1");
 
+        HttpClientTransportOverFCGI transport = (HttpClientTransportOverFCGI)getHttpChannel().getHttpDestination().getHttpClient().getTransport();
+        Pattern uriPattern = transport.getURIPattern();
+        Matcher matcher = uriPattern.matcher(uri.toString());
+
+        // TODO: what if the URI does not match ? Here is kinda too late to abort the request ?
+        // TODO: perhaps this works in conjuntion with the ProxyServlet, which is mapped to the same URI regexp
+        // TODO: so that if the call arrives here, we are sure it matches.
+
 //        headers.put(Headers.PATH_INFO, ???);
 //        headers.put(Headers.PATH_TRANSLATED, ???);
 
         headers.put(FCGI.Headers.QUERY_STRING, uri.getQuery());
 
+        // TODO: the fields below are probably provided by ProxyServlet as X-Forwarded-*
 //        headers.put(Headers.REMOTE_ADDR, ???);
 //        headers.put(Headers.REMOTE_HOST, ???);
 //        headers.put(Headers.REMOTE_USER, ???);
@@ -70,11 +81,11 @@ public class HttpSenderOverFCGI extends HttpSender
         // TODO: translate remaining HTTP header into the HTTP_* format
 
         int request = getHttpChannel().getRequest();
-        boolean noContent = !content.hasContent();
+        boolean hasContent = content.hasContent();
         Generator.Result result = generator.generateRequestHeaders(request, headers,
-                noContent ? new Callback.Adapter() : callback);
+                hasContent ? callback : new Callback.Adapter());
         getHttpChannel().flush(result);
-        if (noContent)
+        if (!hasContent)
         {
             result = generator.generateRequestContent(request, null, true, callback);
             getHttpChannel().flush(result);
