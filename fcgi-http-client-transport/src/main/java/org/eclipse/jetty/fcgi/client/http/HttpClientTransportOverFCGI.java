@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.fcgi.client.http;
 
+import java.util.regex.Pattern;
+
 import org.eclipse.jetty.client.AbstractHttpClientTransport;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.api.Connection;
@@ -26,14 +28,22 @@ import org.eclipse.jetty.io.EndPoint;
 // TODO: add parameter to tell whether use multiplex destinations or not
 public class HttpClientTransportOverFCGI extends AbstractHttpClientTransport
 {
-    public HttpClientTransportOverFCGI()
+    private final Pattern uriPattern;
+
+    public HttpClientTransportOverFCGI(Pattern uriPattern)
     {
-        this(1);
+        this(1, uriPattern);
     }
 
-    public HttpClientTransportOverFCGI(int selectors)
+    public HttpClientTransportOverFCGI(int selectors, Pattern uriPattern)
     {
         super(selectors);
+        this.uriPattern = uriPattern;
+    }
+
+    public Pattern getURIPattern()
+    {
+        return uriPattern;
     }
 
     @Override
