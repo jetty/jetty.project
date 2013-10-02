@@ -36,7 +36,6 @@ public class Flusher
     private final Queue<Generator.Result> queue = new ConcurrentArrayQueue<>();
     private final Callback flushCallback = new FlushCallback();
     private final EndPoint endPoint;
-    private boolean flushing;
 
     public Flusher(EndPoint endPoint)
     {
@@ -48,10 +47,9 @@ public class Flusher
         synchronized (queue)
         {
             for (Generator.Result result : results)
+            {
                 queue.offer(result);
-            if (flushing)
-                return;
-            flushing = true;
+            }
         }
         endPoint.write(flushCallback);
     }
@@ -68,27 +66,15 @@ public class Flusher
         @Override
         protected boolean process() throws Exception
         {
-            // We are flushing, we completed a write, notify
-            if (active != null)
-            {
-                active.succeeded();
-                active = null;
-            }
-
             // Look if other writes are needed.
             Generator.Result result;
             synchronized (queue)
             {
                 if (queue.isEmpty())
-                {
-                    // No more writes to do, switch to non-flushing
-                    flushing = false;
                     return false;
-                }
                 // TODO: here is where we want to gather more results to perform gathered writes
                 result = queue.poll();
             }
-
             active = result;
             List<ByteBuffer> buffers = result.getByteBuffers();
             endPoint.write(this, buffers.toArray(new ByteBuffer[buffers.size()]));
@@ -102,17 +88,21 @@ public class Flusher
         }
 
         @Override
+        public void succeeded()
+        {
+            if (active != null)
+                active.succeeded();
+            active = null;
+            super.succeeded();
+        }
+
+        @Override
         public void failed(Throwable x)
         {
-            super.failed(x);
-
-            // TODO: set flushing=false ?
-
             if (active != null)
-            {
                 active.failed(x);
-                active = null;
-            }
+            active = null;
+            super.failed(x);
         }
     }
 
