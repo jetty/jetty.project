@@ -33,7 +33,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import javax.servlet.AsyncContext;
+import javax.servlet.GenericServlet;
 import javax.servlet.ServletConfig;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.UnavailableException;
 import javax.servlet.http.HttpServlet;
@@ -62,7 +64,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
  * <p/>
  * To facilitate JMX monitoring, the {@link HttpClient} instance is set as context attribute,
  * prefixed with the servlet's name and exposed by the mechanism provided by
- * {@link ContextHandler#MANAGED_ATTRIBUTES}.
+ * {@link ServletContext#setAttribute(String, Object)}.
  * <p/>
  * The following init parameters may be used to configure the servlet:
  * <ul>
