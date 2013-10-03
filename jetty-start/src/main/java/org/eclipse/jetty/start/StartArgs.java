@@ -79,7 +79,7 @@ public class StartArgs
     private List<String> jvmArgs = new ArrayList<>();
     private List<String> moduleStartdIni = new ArrayList<>();
     private List<String> moduleStartIni = new ArrayList<>();
-    private Map<String,String> propertySource = new HashMap<>();
+    private Map<String, String> propertySource = new HashMap<>();
     private String moduleGraphFilename;
 
     private Modules allModules;
@@ -207,7 +207,7 @@ public class StartArgs
             System.out.println(" (no properties specified)");
             return;
         }
-        
+
         List<String> sortedKeys = new ArrayList<>();
         @SuppressWarnings("unchecked")
         Enumeration<String> keyEnum = (Enumeration<String>)properties.propertyNames();
@@ -215,10 +215,10 @@ public class StartArgs
         {
             sortedKeys.add(keyEnum.nextElement());
         }
-        
+
         Collections.sort(sortedKeys);
 
-        for(String key: sortedKeys)
+        for (String key : sortedKeys)
         {
             String value = properties.getProperty(key);
             System.out.printf(" %s = %s%n",key,value);
@@ -236,7 +236,7 @@ public class StartArgs
             System.out.println(" (no system properties specified)");
             return;
         }
-        
+
         List<String> sortedKeys = new ArrayList<>();
         sortedKeys.addAll(systemPropertyKeys);
         Collections.sort(sortedKeys);
@@ -680,10 +680,10 @@ public class StartArgs
             exec = true;
             return;
         }
-        
+
         // Arbitrary Libraries
-        
-        if(arg.startsWith("--lib="))
+
+        if (arg.startsWith("--lib="))
         {
             String cp = getValue(arg);
             classpath.addClasspath(cp);
@@ -779,13 +779,27 @@ public class StartArgs
         {
             String key = arg.substring(0,idx);
             String value = arg.substring(idx + 1);
-            
-            if (source!=CMD_LINE_SOURCE)
+
+            if (source != CMD_LINE_SOURCE)
             {
                 if (propertySource.containsKey(key))
+                {
                     throw new UsageException(ERR_BAD_ARG,"Property %s in %s already set in %s",key,source,propertySource.get(key));
+                }
                 propertySource.put(key,source);
             }
+
+            if ("OPTION".equals(key) || "OPTIONS".equals(key))
+            {
+                StringBuilder warn = new StringBuilder();
+                warn.append("The behavior of the argument ");
+                warn.append(arg).append(" (seen in ").append(source);
+                warn.append(") has changed, and is now considered a normal property.  ");
+                warn.append(key).append(" no longer controls what libraries are on your classpath,");
+                warn.append(" use --module instead. See --help for details.");
+                StartLog.warn(warn.toString());
+            }
+
             properties.setProperty(key,value);
             return;
         }
