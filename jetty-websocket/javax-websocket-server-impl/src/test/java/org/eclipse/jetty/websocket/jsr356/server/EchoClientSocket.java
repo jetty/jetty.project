@@ -30,6 +30,7 @@ import javax.websocket.OnClose;
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
+import javax.websocket.RemoteEndpoint.Basic;
 import javax.websocket.Session;
 
 @ClientEndpoint
@@ -37,6 +38,7 @@ public class EchoClientSocket extends TrackingSocket
 {
     public final CountDownLatch eventCountLatch;
     private Session session;
+    private Basic remote;
 
     public EchoClientSocket(int expectedEventCount)
     {
@@ -76,6 +78,7 @@ public class EchoClientSocket extends TrackingSocket
     public void onOpen(Session session)
     {
         this.session = session;
+        this.remote = session.getBasicRemote();
         openLatch.countDown();
     }
 
@@ -93,16 +96,16 @@ public class EchoClientSocket extends TrackingSocket
 
     public void sendObject(Object obj) throws IOException, EncodeException
     {
-        session.getBasicRemote().sendObject(obj);
+        remote.sendObject(obj);
     }
 
     public void sendPartialBinary(ByteBuffer part, boolean fin) throws IOException
     {
-        session.getBasicRemote().sendBinary(part,fin);
+        remote.sendBinary(part,fin);
     }
 
     public void sendPartialText(String part, boolean fin) throws IOException
     {
-        session.getBasicRemote().sendText(part,fin);
+        remote.sendText(part,fin);
     }
 }

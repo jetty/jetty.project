@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.metadata;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;

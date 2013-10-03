@@ -32,9 +32,11 @@ import javax.websocket.WebSocketContainer;
 
 import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.jsr356.server.EchoCase.PartialBinary;
 import org.eclipse.jetty.websocket.jsr356.server.EchoCase.PartialText;
+import org.eclipse.jetty.websocket.jsr356.server.samples.binary.ByteBufferSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.partial.PartialTextSessionSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.partial.PartialTextSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.primitives.BooleanObjectTextSocket;
@@ -54,6 +56,7 @@ import org.eclipse.jetty.websocket.jsr356.server.samples.primitives.LongObjectTe
 import org.eclipse.jetty.websocket.jsr356.server.samples.primitives.LongTextSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.primitives.ShortObjectTextSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.primitives.ShortTextSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.streaming.InputStreamSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.streaming.ReaderParamSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.streaming.ReaderSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.streaming.StringReturnReaderParamSocket;
@@ -178,6 +181,12 @@ public class EchoTest
 
         // PathParam based
         EchoCase.add(TESTCASES,IntParamTextSocket.class).requestPath("/echo/primitives/integer/params/5678").addMessage(1234).expect("1234|5678");
+        
+        // ByteBuffer based
+        EchoCase.add(TESTCASES,ByteBufferSocket.class).addMessage(BufferUtil.toBuffer("Hello World")).expect("Hello World");
+
+        // InputStream based
+        EchoCase.add(TESTCASES,InputStreamSocket.class).addMessage(BufferUtil.toBuffer("Hello World")).expect("Hello World");
 
         // Reader based
         EchoCase.add(TESTCASES,ReaderSocket.class).addMessage("Hello World").expect("Hello World");
