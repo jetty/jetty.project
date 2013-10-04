@@ -91,7 +91,7 @@ public class ErrorPageTest
         assertThat(response,Matchers.containsString("ERROR_CODE: 599"));
         assertThat(response,Matchers.containsString("ERROR_EXCEPTION: null"));
         assertThat(response,Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
-        assertThat(response,Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$FailServlet-1"));
+        assertThat(response,Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$FailServlet-"));
         assertThat(response,Matchers.containsString("ERROR_REQUEST_URI: /fail/code"));
     }
     
@@ -104,7 +104,7 @@ public class ErrorPageTest
         assertThat(response,Matchers.containsString("ERROR_CODE: 500"));
         assertThat(response,Matchers.containsString("ERROR_EXCEPTION: java.lang.IllegalStateException"));
         assertThat(response,Matchers.containsString("ERROR_EXCEPTION_TYPE: class java.lang.IllegalStateException"));
-        assertThat(response,Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$FailServlet-1"));
+        assertThat(response,Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$FailServlet-"));
         assertThat(response,Matchers.containsString("ERROR_REQUEST_URI: /fail/exception"));
     }
     
@@ -117,7 +117,7 @@ public class ErrorPageTest
         assertThat(response,Matchers.containsString("ERROR_CODE: 598"));
         assertThat(response,Matchers.containsString("ERROR_EXCEPTION: null"));
         assertThat(response,Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
-        assertThat(response,Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$FailServlet-1"));
+        assertThat(response,Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$FailServlet-"));
         assertThat(response,Matchers.containsString("ERROR_REQUEST_URI: /fail/global"));
     }
     
@@ -130,7 +130,7 @@ public class ErrorPageTest
         assertThat(response,Matchers.containsString("ERROR_CODE: 500"));
         assertThat(response,Matchers.containsString("ERROR_EXCEPTION: java.lang.NumberFormatException: For input string: \"NAN\""));
         assertThat(response,Matchers.containsString("ERROR_EXCEPTION_TYPE: class java.lang.NumberFormatException"));
-        assertThat(response,Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$FailServlet-1"));
+        assertThat(response,Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$FailServlet-"));
         assertThat(response,Matchers.containsString("ERROR_REQUEST_URI: /fail/global"));
     }
 

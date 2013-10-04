@@ -216,6 +216,8 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
     {
         _className = className;
         _class=null;
+        if (_name==null)
+            _name=className+"-"+Integer.toHexString(this.hashCode());
     }
 
     /* ------------------------------------------------------------ */
@@ -229,7 +231,7 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
         {
             _className=held.getName();
             if (_name==null)
-                _name=held.getName()+"-"+this.hashCode();
+                _name=held.getName()+"-"+Integer.toHexString(this.hashCode());
         }
     }
 
