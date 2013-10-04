@@ -21,17 +21,26 @@ package org.eclipse.jetty.spdy.client.http;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.MultiplexHttpDestination;
+import org.eclipse.jetty.client.Origin;
 
 public class HttpDestinationOverSPDY extends MultiplexHttpDestination<HttpConnectionOverSPDY>
 {
-    public HttpDestinationOverSPDY(HttpClient client, String scheme, String host, int port)
+    public HttpDestinationOverSPDY(HttpClient client, Origin origin)
     {
-        super(client, scheme, host, port);
+        super(client, origin);
     }
 
     @Override
     protected void send(HttpConnectionOverSPDY connection, HttpExchange exchange)
     {
         connection.send(exchange);
+    }
+
+    @Override
+    public void abort(Throwable cause)
+    {
+        // TODO: in case of connection failure, we need to abort also
+        // TODO: all pending exchanges, so we need to track them.
+        super.abort(cause);
     }
 }

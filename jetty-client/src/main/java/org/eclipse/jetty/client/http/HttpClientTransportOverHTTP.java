@@ -18,16 +18,21 @@
 
 package org.eclipse.jetty.client.http;
 
+import java.io.IOException;
+import java.util.Map;
+
 import org.eclipse.jetty.client.AbstractHttpClientTransport;
 import org.eclipse.jetty.client.HttpDestination;
-import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.client.Origin;
+import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.Promise;
 
 public class HttpClientTransportOverHTTP extends AbstractHttpClientTransport
 {
     public HttpClientTransportOverHTTP()
     {
-        this(Runtime.getRuntime().availableProcessors());
+        this(Math.max(1, Runtime.getRuntime().availableProcessors() / 2));
     }
 
     public HttpClientTransportOverHTTP(int selectors)
@@ -36,21 +41,20 @@ public class HttpClientTransportOverHTTP extends AbstractHttpClientTransport
     }
 
     @Override
-    public HttpDestination newHttpDestination(String scheme, String host, int port)
+    public HttpDestination newHttpDestination(Origin origin)
     {
-        return new HttpDestinationOverHTTP(getHttpClient(), scheme, host, port);
+        return new HttpDestinationOverHTTP(getHttpClient(), origin);
     }
 
     @Override
-    protected Connection newConnection(EndPoint endPoint, HttpDestination destination)
+    public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
     {
-        return new HttpConnectionOverHTTP(endPoint, destination);
-    }
 
-    @Override
-    public org.eclipse.jetty.client.api.Connection tunnel(org.eclipse.jetty.client.api.Connection connection)
-    {
-        HttpConnectionOverHTTP httpConnection = (HttpConnectionOverHTTP)connection;
-        return tunnel(httpConnection.getEndPoint(), httpConnection.getHttpDestination(), connection);
+        HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
+        HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, destination);
+        @SuppressWarnings("unchecked")
+        Promise<Connection> promise = (Promise<Connection>)context.get(HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
+        promise.succeeded(connection);
+        return connection;
     }
 }

@@ -29,9 +29,9 @@ public abstract class MultiplexHttpDestination<C extends Connection> extends Htt
     private final AtomicReference<ConnectState> connect = new AtomicReference<>(ConnectState.DISCONNECTED);
     private C connection;
 
-    protected MultiplexHttpDestination(HttpClient client, String scheme, String host, int port)
+    protected MultiplexHttpDestination(HttpClient client, Origin origin)
     {
-        super(client, scheme, host, port);
+        super(client, origin);
     }
 
     @Override

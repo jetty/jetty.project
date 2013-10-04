@@ -48,8 +48,9 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpContentResponse;
+import org.eclipse.jetty.client.HttpProxy;
+import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.ProxyConfiguration;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
@@ -110,7 +111,7 @@ public class ProxyServletTest
     private HttpClient prepareClient() throws Exception
     {
         HttpClient result = new HttpClient();
-        result.setProxyConfiguration(new ProxyConfiguration("localhost", proxyConnector.getLocalPort()));
+        result.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyConnector.getLocalPort()));
         result.start();
         return result;
     }
@@ -236,7 +237,7 @@ public class ProxyServletTest
         prepareProxy(new ProxyServlet());
 
         HttpClient result = new HttpClient();
-        result.setProxyConfiguration(new ProxyConfiguration("localhost", proxyConnector.getLocalPort()));
+        result.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyConnector.getLocalPort()));
         QueuedThreadPool threadPool = new QueuedThreadPool();
         threadPool.setName("foo");
         threadPool.setMaxThreads(20);
@@ -631,7 +632,7 @@ public class ProxyServletTest
             }
         });
         int port = serverConnector.getLocalPort();
-        client.getProxyConfiguration().getExcludedOrigins().add("127.0.0.1:" + port);
+        client.getProxyConfiguration().getProxies().get(0).getExcludedOrigins().add(new Origin("http", "127.0.0.1", port));
 
         // Try with a proxied host
         ContentResponse response = client.newRequest("localhost", port)
@@ -865,7 +866,7 @@ public class ProxyServletTest
             }
         });
 
-        ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
+        client.newRequest("localhost", serverConnector.getLocalPort())
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 

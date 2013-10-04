@@ -19,9 +19,9 @@
 package org.eclipse.jetty.client;
 
 import java.net.SocketAddress;
+import java.util.Map;
 
-import org.eclipse.jetty.client.api.Connection;
-import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.io.ClientConnectionFactory;
 
 /**
  * {@link HttpClientTransport} represents what transport implementations should provide
@@ -34,8 +34,11 @@ import org.eclipse.jetty.util.Promise;
  * but the HTTP exchange may also be carried using the SPDY protocol or the FCGI protocol or, in future,
  * other protocols.
  */
-public interface HttpClientTransport
+public interface HttpClientTransport extends ClientConnectionFactory
 {
+    public static final String HTTP_DESTINATION_CONTEXT_KEY = "http.destination";
+    public static final String HTTP_CONNECTION_PROMISE_CONTEXT_KEY = "http.connection.promise";
+
     /**
      * Sets the {@link HttpClient} instance on this transport.
      * <p />
@@ -53,27 +56,16 @@ public interface HttpClientTransport
      * {@link HttpDestination} controls the destination-connection cardinality: protocols like
      * HTTP have 1-N cardinality, while multiplexed protocols like SPDY have a 1-1 cardinality.
      *
-     * @param scheme the destination scheme
-     * @param host the destination host
-     * @param port the destination port
+     * @param origin the destination origin
      * @return a new, transport-specific, {@link HttpDestination} object
      */
-    public HttpDestination newHttpDestination(String scheme, String host, int port);
+    public HttpDestination newHttpDestination(Origin origin);
 
     /**
      * Establishes a physical connection to the given {@code address}.
      *
-     * @param destination the destination
      * @param address the address to connect to
-     * @param promise the promise to notify when the connection succeeds or fails
+     * @param context the context information to establish the connection
      */
-    public void connect(HttpDestination destination, SocketAddress address, Promise<Connection> promise);
-
-    /**
-     * Establishes an encrypted tunnel over the given {@code connection}
-     *
-     * @param connection the connection to tunnel
-     * @return the tunnelled connection
-     */
-    public Connection tunnel(Connection connection);
+    public void connect(SocketAddress address, Map<String, Object> context);
 }

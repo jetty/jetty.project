@@ -51,7 +51,6 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
-import org.eclipse.jetty.client.http.HttpConnectionPool;
 import org.eclipse.jetty.client.http.HttpDestinationOverHTTP;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.http.HttpField;
@@ -85,7 +84,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         Assert.assertEquals(200, response.getStatus());
 
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
-        HttpConnectionPool connectionPool = destination.getHttpConnectionPool();
+        ConnectionPool connectionPool = destination.getConnectionPool();
 
         long start = System.nanoTime();
         HttpConnectionOverHTTP connection = null;
@@ -637,7 +636,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                     public void onBegin(Request request)
                     {
                         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
-                        destination.getHttpConnectionPool().getActiveConnections().peek().close();
+                        destination.getConnectionPool().getActiveConnections().peek().close();
                     }
                 })
                 .send(new Response.Listener.Adapter()

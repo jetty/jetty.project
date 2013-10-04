@@ -21,6 +21,7 @@ package org.eclipse.jetty.client;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -35,9 +36,13 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.client.http.HttpDestinationOverHTTP;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.InputStreamContentProvider;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
@@ -244,15 +249,30 @@ public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
         client = new HttpClient(new HttpClientTransportOverHTTP()
         {
             @Override
-            protected SslConnection newSslConnection(HttpClient httpClient, EndPoint endPoint, SSLEngine engine)
+            public HttpDestination newHttpDestination(Origin origin)
             {
-                return new SslConnection(httpClient.getByteBufferPool(), httpClient.getExecutor(), endPoint, engine)
+                return new HttpDestinationOverHTTP(getHttpClient(), origin)
                 {
                     @Override
-                    protected boolean onReadTimeout()
+                    protected ClientConnectionFactory newSslClientConnectionFactory(ClientConnectionFactory connectionFactory)
                     {
-                        sslIdle.set(true);
-                        return super.onReadTimeout();
+                        HttpClient client = getHttpClient();
+                        return new SslClientConnectionFactory(client.getSslContextFactory(), client.getByteBufferPool(), client.getExecutor(), connectionFactory)
+                        {
+                            @Override
+                            protected SslConnection newSslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine engine)
+                            {
+                                return new SslConnection(byteBufferPool, executor, endPoint, engine)
+                                {
+                                    @Override
+                                    protected boolean onReadTimeout()
+                                    {
+                                        sslIdle.set(true);
+                                        return super.onReadTimeout();
+                                    }
+                                };
+                            }
+                        };
                     }
                 };
             }

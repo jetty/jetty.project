@@ -589,7 +589,7 @@ public class HttpRequest implements Request
             path += "?" + query;
         URI result = URI.create(path);
         if (!result.isAbsolute() && !result.isOpaque())
-            result = URI.create(client.address(getScheme(), getHost(), getPort()) + path);
+            result = URI.create(new Origin(getScheme(), getHost(), getPort()).asString() + path);
         return result;
     }
 

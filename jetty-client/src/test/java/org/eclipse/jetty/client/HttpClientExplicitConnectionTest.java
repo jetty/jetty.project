@@ -25,7 +25,6 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
-import org.eclipse.jetty.client.http.HttpConnectionPool;
 import org.eclipse.jetty.client.http.HttpDestinationOverHTTP;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
@@ -60,7 +59,7 @@ public class HttpClientExplicitConnectionTest extends AbstractHttpClientServerTe
             Assert.assertEquals(200, response.getStatus());
 
             HttpDestinationOverHTTP httpDestination = (HttpDestinationOverHTTP)destination;
-            HttpConnectionPool connectionPool = httpDestination.getHttpConnectionPool();
+            ConnectionPool connectionPool = httpDestination.getConnectionPool();
             Assert.assertTrue(connectionPool.getActiveConnections().isEmpty());
             Assert.assertTrue(connectionPool.getIdleConnections().isEmpty());
         }
@@ -92,7 +91,7 @@ public class HttpClientExplicitConnectionTest extends AbstractHttpClientServerTe
         Assert.assertFalse(httpConnection.getEndPoint().isOpen());
 
         HttpDestinationOverHTTP httpDestination = (HttpDestinationOverHTTP)destination;
-        HttpConnectionPool connectionPool = httpDestination.getHttpConnectionPool();
+        ConnectionPool connectionPool = httpDestination.getConnectionPool();
         Assert.assertTrue(connectionPool.getActiveConnections().isEmpty());
         Assert.assertTrue(connectionPool.getIdleConnections().isEmpty());
     }

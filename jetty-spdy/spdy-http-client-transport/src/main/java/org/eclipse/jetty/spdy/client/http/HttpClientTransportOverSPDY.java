@@ -18,12 +18,17 @@
 
 package org.eclipse.jetty.spdy.client.http;
 
+import java.io.IOException;
 import java.net.SocketAddress;
+import java.util.Map;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.HttpDestination;
+import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.api.Connection;
+import org.eclipse.jetty.io.ClientConnectionFactory;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
 import org.eclipse.jetty.spdy.client.SPDYClient;
@@ -32,11 +37,22 @@ import org.eclipse.jetty.util.Promise;
 public class HttpClientTransportOverSPDY implements HttpClientTransport
 {
     private final SPDYClient client;
-    private volatile HttpClient httpClient;
+    private final ClientConnectionFactory connectionFactory;
+    private HttpClient httpClient;
 
     public HttpClientTransportOverSPDY(SPDYClient client)
     {
         this.client = client;
+        this.connectionFactory = client.getClientConnectionFactory();
+        client.setClientConnectionFactory(new ClientConnectionFactory()
+        {
+            @Override
+            public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
+            {
+                HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
+                return destination.getClientConnectionFactory().newConnection(endPoint, context);
+            }
+        });
     }
 
     @Override
@@ -46,51 +62,46 @@ public class HttpClientTransportOverSPDY implements HttpClientTransport
     }
 
     @Override
-    public HttpDestination newHttpDestination(String scheme, String host, int port)
+    public HttpDestination newHttpDestination(Origin origin)
     {
-        return new HttpDestinationOverSPDY(httpClient, scheme, host, port);
+        return new HttpDestinationOverSPDY(httpClient, origin);
     }
 
     @Override
-    public void connect(final HttpDestination destination, SocketAddress address, final Promise<Connection> promise)
+    public void connect(SocketAddress address, Map<String, Object> context)
     {
+        final HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
+        @SuppressWarnings("unchecked")
+        final Promise<Connection> promise = (Promise<Connection>)context.get(HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
+
         SessionFrameListener.Adapter listener = new SessionFrameListener.Adapter()
         {
             @Override
             public void onFailure(Session session, Throwable x)
             {
-                // TODO: is this correct ?
-                // TODO: if I get a stream error (e.g. invalid response headers)
-                // TODO: I must abort the *current* exchange, while below I will abort
-                // TODO: the queued exchanges only.
-                // TODO: The problem is that a single destination/connection multiplexes
-                // TODO: several exchanges, so I would need to cancel them all,
-                // TODO: or only the one that failed ?
                 destination.abort(x);
             }
         };
 
         client.connect(address, listener, new Promise<Session>()
-                {
-                    @Override
-                    public void succeeded(Session session)
-                    {
-                        Connection result = new HttpConnectionOverSPDY(destination, session);
-                        promise.succeeded(result);
-                    }
+        {
+            @Override
+            public void succeeded(Session session)
+            {
+                promise.succeeded(new HttpConnectionOverSPDY(destination, session));
+            }
 
-                    @Override
-                    public void failed(Throwable x)
-                    {
-                        promise.failed(x);
-                    }
-                }
-        );
+            @Override
+            public void failed(Throwable x)
+            {
+                promise.failed(x);
+            }
+        }, context);
     }
 
     @Override
-    public Connection tunnel(Connection connection)
+    public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
     {
-        throw new UnsupportedOperationException();
+        return connectionFactory.newConnection(endPoint, context);
     }
 }

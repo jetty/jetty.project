@@ -63,43 +63,4 @@ public interface Destination
      * @param promise the promise of a new, unpooled, {@link Connection}
      */
     void newConnection(Promise<Connection> promise);
-
-    public static class Address
-    {
-        private final String host;
-        private final int port;
-
-        public Address(String host, int port)
-        {
-            this.host = host;
-            this.port = port;
-        }
-
-        public String getHost()
-        {
-            return host;
-        }
-
-        public int getPort()
-        {
-            return port;
-        }
-
-        @Override
-        public boolean equals(Object obj)
-        {
-            if (this == obj) return true;
-            if (obj == null || getClass() != obj.getClass()) return false;
-            Address that = (Address)obj;
-            return host.equals(that.host) && port == that.port;
-        }
-
-        @Override
-        public int hashCode()
-        {
-            int result = host.hashCode();
-            result = 31 * result + port;
-            return result;
-        }
-    }
 }

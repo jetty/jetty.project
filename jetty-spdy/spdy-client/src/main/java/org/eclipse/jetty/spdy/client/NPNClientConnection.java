@@ -20,10 +20,11 @@ package org.eclipse.jetty.spdy.client;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.Executor;
+import java.util.Map;
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RuntimeIOException;
@@ -32,20 +33,22 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class NextProtoNegoClientConnection extends AbstractConnection implements NextProtoNego.ClientProvider
+public class NPNClientConnection extends AbstractConnection implements NextProtoNego.ClientProvider
 {
     private final Logger LOG = Log.getLogger(getClass());
     private final SPDYClient client;
-    private final Object attachment;
+    private final ClientConnectionFactory connectionFactory;
     private final SSLEngine engine;
+    private final Map<String, Object> context;
     private volatile boolean completed;
 
-    public NextProtoNegoClientConnection(EndPoint endPoint, Executor executor, SPDYClient client, Object attachment, SSLEngine engine)
+    public NPNClientConnection(EndPoint endPoint, SPDYClient client, ClientConnectionFactory connectionFactory, SSLEngine sslEngine, Map<String, Object> context)
     {
-        super(endPoint, executor);
+        super(endPoint, client.getFactory().getExecutor());
         this.client = client;
-        this.attachment = attachment;
-        this.engine = engine;
+        this.connectionFactory = connectionFactory;
+        this.engine = sslEngine;
+        this.context = context;
         NextProtoNego.put(engine, this);
     }
 
@@ -92,7 +95,7 @@ public class NextProtoNegoClientConnection extends AbstractConnection implements
         {
             LOG.debug(x);
             NextProtoNego.remove(engine);
-            getEndPoint().close();
+            close();
             return -1;
         }
     }
@@ -115,16 +118,22 @@ public class NextProtoNegoClientConnection extends AbstractConnection implements
     {
         NextProtoNego.remove(engine);
         completed = true;
-        String protocol = client.selectProtocol(protocols);
-        return protocol == null ? null : protocol;
+        return client.selectProtocol(protocols);
     }
 
     private void replaceConnection()
     {
         EndPoint endPoint = getEndPoint();
-        Connection connection = client.getConnectionFactory().newConnection(endPoint, attachment);
-        endPoint.getConnection().onClose();
-        endPoint.setConnection(connection);
-        connection.onOpen();
+        try
+        {
+            Connection oldConnection = endPoint.getConnection();
+            Connection newConnection = connectionFactory.newConnection(endPoint, context);
+            ClientConnectionFactory.Helper.replaceConnection(oldConnection, newConnection);
+        }
+        catch (Throwable x)
+        {
+            LOG.debug(x);
+            close();
+        }
     }
 }

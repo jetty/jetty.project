@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.client.http;
+package org.eclipse.jetty.client;
 
 import java.io.IOException;
 import java.util.concurrent.BlockingDeque;
@@ -33,9 +33,9 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class HttpConnectionPool implements Dumpable
+public class ConnectionPool implements Dumpable
 {
-    private static final Logger LOG = Log.getLogger(HttpConnectionPool.class);
+    private static final Logger LOG = Log.getLogger(ConnectionPool.class);
 
     private final AtomicInteger connectionCount = new AtomicInteger();
     private final Destination destination;
@@ -44,7 +44,7 @@ public class HttpConnectionPool implements Dumpable
     private final BlockingDeque<Connection> idleConnections;
     private final BlockingQueue<Connection> activeConnections;
 
-    public HttpConnectionPool(Destination destination, int maxConnections, Promise<Connection> connectionPromise)
+    public ConnectionPool(Destination destination, int maxConnections, Promise<Connection> connectionPromise)
     {
         this.destination = destination;
         this.maxConnections = maxConnections;

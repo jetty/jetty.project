@@ -37,7 +37,6 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
-import org.eclipse.jetty.client.http.HttpConnectionPool;
 import org.eclipse.jetty.client.http.HttpDestinationOverHTTP;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.http.HttpHeader;
@@ -85,7 +84,7 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
         }
 
         // Re-run after warmup
-        iterations = 50_000;
+        iterations = 5_000;
         for (int i = 0; i < runs; ++i)
         {
             run(random, iterations);
@@ -111,7 +110,7 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
                 for (String host : Arrays.asList("localhost", "127.0.0.1"))
                 {
                     HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, connector.getLocalPort());
-                    HttpConnectionPool connectionPool = destination.getHttpConnectionPool();
+                    ConnectionPool connectionPool = destination.getConnectionPool();
                     for (Connection connection : new ArrayList<>(connectionPool.getActiveConnections()))
                     {
                         HttpConnectionOverHTTP active = (HttpConnectionOverHTTP)connection;

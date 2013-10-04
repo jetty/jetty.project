@@ -21,30 +21,32 @@ package org.eclipse.jetty.client.http;
 import java.io.IOException;
 import java.util.Arrays;
 
+import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpExchange;
+import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
-public class HttpDestinationOverHTTP extends HttpDestination  implements Promise<Connection>
+public class HttpDestinationOverHTTP extends HttpDestination implements Promise<Connection>
 {
-    private final HttpConnectionPool connectionPool;
+    private final ConnectionPool connectionPool;
 
-    public HttpDestinationOverHTTP(HttpClient client, String scheme, String host, int port)
+    public HttpDestinationOverHTTP(HttpClient client, Origin origin)
     {
-        super(client, scheme, host, port);
-        this.connectionPool = newHttpConnectionPool(client);
+        super(client, origin);
+        this.connectionPool = newConnectionPool(client);
     }
 
-    protected HttpConnectionPool newHttpConnectionPool(HttpClient client)
+    protected ConnectionPool newConnectionPool(HttpClient client)
     {
-        return new HttpConnectionPool(this, client.getMaxConnectionsPerDestination(), this);
+        return new ConnectionPool(this, client.getMaxConnectionsPerDestination(), this);
     }
 
-    public HttpConnectionPool getHttpConnectionPool()
+    public ConnectionPool getConnectionPool()
     {
         return connectionPool;
     }
