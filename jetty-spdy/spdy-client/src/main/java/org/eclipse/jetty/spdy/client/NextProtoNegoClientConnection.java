@@ -19,17 +19,14 @@
 package org.eclipse.jetty.spdy.client;
 
 import java.io.IOException;
-import java.nio.channels.SocketChannel;
 import java.util.List;
 import java.util.concurrent.Executor;
-
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RuntimeIOException;
-import org.eclipse.jetty.io.ssl.SslConnection.DecryptedEndPoint;
 import org.eclipse.jetty.npn.NextProtoNego;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -38,19 +35,17 @@ import org.eclipse.jetty.util.log.Logger;
 public class NextProtoNegoClientConnection extends AbstractConnection implements NextProtoNego.ClientProvider
 {
     private final Logger LOG = Log.getLogger(getClass());
-    private final SocketChannel channel;
-    private final Object attachment;
     private final SPDYClient client;
+    private final Object attachment;
     private final SSLEngine engine;
     private volatile boolean completed;
 
-    public NextProtoNegoClientConnection(SocketChannel channel, DecryptedEndPoint endPoint, Object attachment, Executor executor, SPDYClient client)
+    public NextProtoNegoClientConnection(EndPoint endPoint, Executor executor, SPDYClient client, Object attachment, SSLEngine engine)
     {
         super(endPoint, executor);
-        this.channel = channel;
-        this.attachment = attachment;
         this.client = client;
-        this.engine = endPoint.getSslConnection().getSSLEngine();
+        this.attachment = attachment;
+        this.engine = engine;
         NextProtoNego.put(engine, this);
     }
 
@@ -127,7 +122,7 @@ public class NextProtoNegoClientConnection extends AbstractConnection implements
     private void replaceConnection()
     {
         EndPoint endPoint = getEndPoint();
-        Connection connection = client.getConnectionFactory().newConnection(channel, endPoint, attachment);
+        Connection connection = client.getConnectionFactory().newConnection(endPoint, attachment);
         endPoint.getConnection().onClose();
         endPoint.setConnection(connection);
         connection.onOpen();

@@ -70,19 +70,29 @@ import org.eclipse.jetty.util.thread.Scheduler;
  */
 public class SPDYClient
 {
-    private final SPDYClientConnectionFactory connectionFactory = new SPDYClientConnectionFactory();
-    final short version;
-    final Factory factory;
+    private final short version;
+    private final Factory factory;
     private volatile SocketAddress bindAddress;
     private volatile long idleTimeout = -1;
     private volatile int initialWindowSize;
-    private volatile boolean executeOnFillable;
+    private volatile boolean dispatchIO;
 
     protected SPDYClient(short version, Factory factory)
     {
         this.version = version;
         this.factory = factory;
         setInitialWindowSize(65536);
+        setDispatchIO(true);
+    }
+
+    public short getVersion()
+    {
+        return version;
+    }
+
+    public Factory getFactory()
+    {
+        return factory;
     }
 
     /**
@@ -144,11 +154,10 @@ public class SPDYClient
                 channel.bind(bindAddress);
             channel.socket().setTcpNoDelay(true);
             channel.configureBlocking(false);
-
-            SessionPromise result = new SessionPromise(promise, channel, this, listener);
-
             channel.connect(address);
-            factory.selector.connect(channel, result);
+
+            SessionContext context = new SessionContext(this, listener, promise);
+            factory.selector.connect(channel, context);
         }
         catch (IOException x)
         {
@@ -176,14 +185,14 @@ public class SPDYClient
         this.initialWindowSize = initialWindowSize;
     }
 
-    public boolean isExecuteOnFillable()
+    public boolean isDispatchIO()
     {
-        return executeOnFillable;
+        return dispatchIO;
     }
 
-    public void setExecuteOnFillable(boolean executeOnFillable)
+    public void setDispatchIO(boolean dispatchIO)
     {
-        this.executeOnFillable = executeOnFillable;
+        this.dispatchIO = dispatchIO;
     }
 
     protected String selectProtocol(List<String> serverProtocols)
@@ -199,7 +208,7 @@ public class SPDYClient
 
     public SPDYClientConnectionFactory getConnectionFactory()
     {
-        return connectionFactory;
+        return factory.connectionFactory;
     }
 
     protected SSLEngine newSSLEngine(SslContextFactory sslContextFactory, SocketChannel channel)
@@ -218,6 +227,7 @@ public class SPDYClient
 
     public static class Factory extends ContainerLifeCycle
     {
+        private final SPDYClientConnectionFactory connectionFactory = new SPDYClientConnectionFactory();
         private final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
         private final ByteBufferPool bufferPool = new MappedByteBufferPool();
         private final Scheduler scheduler;
@@ -225,7 +235,7 @@ public class SPDYClient
         private final SslContextFactory sslContextFactory;
         private final SelectorManager selector;
         private final long idleTimeout;
-        private long connectTimeout = 15000;
+        private long connectTimeout;
 
         public Factory()
         {
@@ -255,6 +265,7 @@ public class SPDYClient
         public Factory(Executor executor, Scheduler scheduler, SslContextFactory sslContextFactory, long idleTimeout)
         {
             this.idleTimeout = idleTimeout;
+            setConnectTimeout(15000);
 
             if (executor == null)
                 executor = new QueuedThreadPool();
@@ -347,9 +358,9 @@ public class SPDYClient
             @Override
             protected EndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
             {
-                SessionPromise attachment = (SessionPromise)key.attachment();
+                SessionContext context = (SessionContext)key.attachment();
 
-                long clientIdleTimeout = attachment.client.getIdleTimeout();
+                long clientIdleTimeout = context.client.getIdleTimeout();
                 if (clientIdleTimeout < 0)
                     clientIdleTimeout = idleTimeout;
 
@@ -359,8 +370,8 @@ public class SPDYClient
             @Override
             public Connection newConnection(final SocketChannel channel, EndPoint endPoint, final Object attachment)
             {
-                SessionPromise sessionPromise = (SessionPromise)attachment;
-                final SPDYClient client = sessionPromise.client;
+                SessionContext context = (SessionContext)attachment;
+                final SPDYClient client = context.client;
 
                 try
                 {
@@ -370,66 +381,57 @@ public class SPDYClient
                         SslConnection sslConnection = new SslConnection(bufferPool, getExecutor(), endPoint, engine);
                         sslConnection.setRenegotiationAllowed(sslContextFactory.isRenegotiationAllowed());
                         DecryptedEndPoint sslEndPoint = sslConnection.getDecryptedEndPoint();
-                        NextProtoNegoClientConnection connection = new NextProtoNegoClientConnection(channel, sslEndPoint, attachment, getExecutor(), client);
+                        NextProtoNegoClientConnection connection = new NextProtoNegoClientConnection(sslEndPoint, getExecutor(), client, attachment, engine);
                         sslEndPoint.setConnection(connection);
                         return sslConnection;
                     }
-
-                    SPDYClientConnectionFactory connectionFactory = new SPDYClientConnectionFactory();
-                    return connectionFactory.newConnection(channel, endPoint, attachment);
+                    else
+                    {
+                        return connectionFactory.newConnection(endPoint, attachment);
+                    }
                 }
                 catch (RuntimeException x)
                 {
-                    sessionPromise.failed(x);
+                    context.failed(x);
                     throw x;
                 }
             }
         }
     }
 
-    static class SessionPromise extends FuturePromise<Session>
+    protected static class SessionContext implements Promise<Session>
     {
-        private final SocketChannel channel;
-        private final Promise<Session> wrappedPromise;
-        final SPDYClient client;
-        final SessionFrameListener listener;
+        private final Promise<Session> promise;
+        private final SPDYClient client;
+        private final SessionFrameListener listener;
 
-        private SessionPromise(Promise<Session> promise, SocketChannel channel, SPDYClient client,
-                               SessionFrameListener listener)
+        private SessionContext(SPDYClient client, SessionFrameListener listener, Promise<Session> promise)
         {
-            this.channel = channel;
             this.client = client;
             this.listener = listener;
-            this.wrappedPromise = promise;
+            this.promise = promise;
+        }
+
+        public SPDYClient getSPDYClient()
+        {
+            return client;
+        }
+
+        public SessionFrameListener getSessionFrameListener()
+        {
+            return listener;
         }
 
         @Override
         public void succeeded(Session result)
         {
-            wrappedPromise.succeeded(result);
-            super.succeeded(result);
+            promise.succeeded(result);
         }
 
         @Override
         public void failed(Throwable cause)
         {
-            wrappedPromise.failed(cause);
-            super.failed(cause);
-        }
-
-        @Override
-        public boolean cancel(boolean mayInterruptIfRunning)
-        {
-            try
-            {
-                super.cancel(mayInterruptIfRunning);
-                channel.close();
-                return true;
-            }
-            catch (IOException x)
-            {
-                return true;
-            }
+            promise.failed(cause);
         }
     }
 }

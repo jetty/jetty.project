@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.spdy.client;
 
-import java.nio.channels.SocketChannel;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -28,36 +26,36 @@ import org.eclipse.jetty.spdy.FlowControlStrategy;
 import org.eclipse.jetty.spdy.StandardCompressionFactory;
 import org.eclipse.jetty.spdy.StandardSession;
 import org.eclipse.jetty.spdy.client.SPDYClient.Factory;
-import org.eclipse.jetty.spdy.client.SPDYClient.SessionPromise;
 import org.eclipse.jetty.spdy.generator.Generator;
 import org.eclipse.jetty.spdy.parser.Parser;
 
 public class SPDYClientConnectionFactory
 {
-    public Connection newConnection(SocketChannel channel, EndPoint endPoint, Object attachment)
+    public Connection newConnection(EndPoint endPoint, Object attachment)
     {
-        SessionPromise sessionPromise = (SessionPromise)attachment;
-        SPDYClient client = sessionPromise.client;
-        Factory factory = client.factory;
+        SPDYClient.SessionContext context = (SPDYClient.SessionContext)attachment;
+        SPDYClient client = context.getSPDYClient();
+        Factory factory = client.getFactory();
         ByteBufferPool bufferPool = factory.getByteBufferPool();
 
         CompressionFactory compressionFactory = new StandardCompressionFactory();
         Parser parser = new Parser(compressionFactory.newDecompressor());
         Generator generator = new Generator(bufferPool, compressionFactory.newCompressor());
 
-        SPDYConnection connection = new ClientSPDYConnection(endPoint, bufferPool, parser, factory, client.isExecuteOnFillable());
+        SPDYConnection connection = new ClientSPDYConnection(endPoint, bufferPool, parser, factory, client.isDispatchIO());
 
         FlowControlStrategy flowControlStrategy = client.newFlowControlStrategy();
 
-        StandardSession session = new StandardSession(client.version, bufferPool, factory.getExecutor(),
-                factory.getScheduler(), connection, endPoint, connection, 1, sessionPromise.listener, generator,
-                flowControlStrategy);
+        StandardSession session = new StandardSession(client.getVersion(), bufferPool, factory.getExecutor(),
+                factory.getScheduler(), connection, endPoint, connection, 1, context.getSessionFrameListener(),
+                generator, flowControlStrategy);
         session.setWindowSize(client.getInitialWindowSize());
         parser.addListener(session);
-        sessionPromise.succeeded(session);
         connection.setSession(session);
 
-        factory.sessionOpened(session);
+        /*connection = context.getConnectionProvider().decorateConnection(endPoint, connection);*/
+
+        context.succeeded(session);
 
         return connection;
     }
@@ -66,11 +64,17 @@ public class SPDYClientConnectionFactory
     {
         private final Factory factory;
 
-        public ClientSPDYConnection(EndPoint endPoint, ByteBufferPool bufferPool, Parser parser, Factory factory,
-                                    boolean executeOnFillable)
+        public ClientSPDYConnection(EndPoint endPoint, ByteBufferPool bufferPool, Parser parser, Factory factory, boolean dispatchIO)
         {
-            super(endPoint, bufferPool, parser, factory.getExecutor(), executeOnFillable);
+            super(endPoint, bufferPool, parser, factory.getExecutor(), dispatchIO);
             this.factory = factory;
+        }
+
+        @Override
+        public void onOpen()
+        {
+            super.onOpen();
+            factory.sessionOpened(getSession());
         }
 
         @Override

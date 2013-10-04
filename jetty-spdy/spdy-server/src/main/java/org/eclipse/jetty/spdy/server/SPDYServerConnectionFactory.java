@@ -42,14 +42,10 @@ import org.eclipse.jetty.spdy.parser.Parser;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 @ManagedObject("SPDY Server Connection Factory")
 public class SPDYServerConnectionFactory extends AbstractConnectionFactory
 {
-    private static final Logger LOG = Log.getLogger(SPDYServerConnectionFactory.class);
-
     // This method is placed here so as to provide a check for NPN before attempting to load any
     // NPN classes.
     public static void checkNPNAvailable()
@@ -66,11 +62,11 @@ public class SPDYServerConnectionFactory extends AbstractConnectionFactory
         }
     }
 
+    private final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
     private final short version;
     private final ServerSessionFrameListener listener;
     private int initialWindowSize;
-    private boolean executeOnFillable = true;
-    private final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
+    private boolean dispatchIO;
 
     public SPDYServerConnectionFactory(int version)
     {
@@ -83,6 +79,7 @@ public class SPDYServerConnectionFactory extends AbstractConnectionFactory
         this.version = (short)version;
         this.listener = listener;
         setInitialWindowSize(65536);
+        setDispatchIO(true);
     }
 
     @ManagedAttribute("SPDY version")
@@ -105,14 +102,14 @@ public class SPDYServerConnectionFactory extends AbstractConnectionFactory
 
         ServerSessionFrameListener listener = provideServerSessionFrameListener(connector, endPoint);
         SPDYConnection connection = new ServerSPDYConnection(connector, endPoint, parser, listener,
-                executeOnFillable, getInputBufferSize());
+                isDispatchIO(), getInputBufferSize());
 
         FlowControlStrategy flowControlStrategy = newFlowControlStrategy(version);
 
         StandardSession session = new StandardSession(getVersion(), connector.getByteBufferPool(),
                 connector.getExecutor(), connector.getScheduler(), connection, endPoint, connection, 2, listener,
                 generator, flowControlStrategy);
-        session.setWindowSize(initialWindowSize);
+        session.setWindowSize(getInitialWindowSize());
         parser.addListener(session);
         connection.setSession(session);
 
@@ -142,15 +139,15 @@ public class SPDYServerConnectionFactory extends AbstractConnectionFactory
         this.initialWindowSize = initialWindowSize;
     }
 
-    @ManagedAttribute("Execute onFillable")
-    public boolean isExecuteOnFillable()
+    @ManagedAttribute("Dispatch I/O to a pooled thread")
+    public boolean isDispatchIO()
     {
-        return executeOnFillable;
+        return dispatchIO;
     }
 
-    public void setExecuteOnFillable(boolean executeOnFillable)
+    public void setDispatchIO(boolean dispatchIO)
     {
-        this.executeOnFillable = executeOnFillable;
+        this.dispatchIO = dispatchIO;
     }
 
     protected boolean sessionOpened(Session session)
@@ -191,10 +188,10 @@ public class SPDYServerConnectionFactory extends AbstractConnectionFactory
         private final AtomicBoolean connected = new AtomicBoolean();
 
         private ServerSPDYConnection(Connector connector, EndPoint endPoint, Parser parser,
-                                     ServerSessionFrameListener listener, boolean executeOnFillable, int bufferSize)
+                                     ServerSessionFrameListener listener, boolean dispatchIO, int bufferSize)
         {
             super(endPoint, connector.getByteBufferPool(), parser, connector.getExecutor(),
-                    executeOnFillable, bufferSize);
+                    dispatchIO, bufferSize);
             this.listener = listener;
         }
 
