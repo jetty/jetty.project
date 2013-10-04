@@ -827,7 +827,6 @@ public class ServletHandler extends ScopedHandler
     public ServletHolder addServletWithMapping (String className,String pathSpec)
     {
         ServletHolder holder = newServletHolder(Holder.Source.EMBEDDED);
-        holder.setName(className+"-"+LazyList.size(_servlets));
         holder.setClassName(className);
         addServletWithMapping(holder,pathSpec);
         return holder;
@@ -945,7 +944,6 @@ public class ServletHandler extends ScopedHandler
     public FilterHolder addFilterWithMapping (String className,String pathSpec,EnumSet<DispatcherType> dispatches)
     {
         FilterHolder holder = newFilterHolder(Holder.Source.EMBEDDED);
-        holder.setName(className+"-"+_filters.length);
         holder.setClassName(className);
         
         addFilterWithMapping(holder,pathSpec,dispatches);
@@ -1015,7 +1013,6 @@ public class ServletHandler extends ScopedHandler
     public FilterHolder addFilterWithMapping (String className,String pathSpec,int dispatches)
     {
         FilterHolder holder = newFilterHolder(Holder.Source.EMBEDDED);
-        holder.setName(className+"-"+_filters.length);
         holder.setClassName(className);
         
         addFilterWithMapping(holder,pathSpec,dispatches);
