@@ -179,8 +179,6 @@ public class AnnotationConfiguration extends org.eclipse.jetty.annotations.Annot
         ClassNameResolver classNameResolver = createClassNameResolver(context);
         if (_parserTasks != null)
             _parserTasks.add(new BundleParserTask(parser, handlers, bundleRes, classNameResolver));
-        else
-            parser.parse(handlers, bundle, classNameResolver);
     }
     
     /**
