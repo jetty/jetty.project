@@ -134,6 +134,7 @@ public class PathMap<O> extends HashMap<String,O>
             MappedEntry<O> entry = new MappedEntry<>("",object);
             entry.setMapped("");
             _exactMap.put("", entry);
+            _prefixDefault = entry;
             return super.put("", object);
         }
 
@@ -381,6 +382,7 @@ public class PathMap<O> extends HashMap<String,O>
         _suffixMap=new ArrayTernaryTrie<>(false);
         _default=null;
         _defaultSingletonList=null;
+        _prefixDefault=null;
         super.clear();
     }
 
