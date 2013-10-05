@@ -54,11 +54,17 @@ import org.eclipse.jetty.util.log.Logger;
  * entries, that are then further refined by several specific black list exceptions
  * </ul>
  * <p>
- * An empty white list is treated as match all. If there is at least one entry in
+ * By default an empty white list is treated as match all. If there is at least one entry in
  * the white list, then a request must match a white list entry. Black list entries
  * are always applied, so that even if an entry matches the white list, a black list
  * entry will override it.
  * <p>
+ * <p>
+ * You can change white list policy setting whiteListByPath to true. In this mode a request will be white listed
+ * IF it has a matching URL in the white list, otherwise the black list applies, e.g. in default mode when
+ * whiteListByPath = false and wl = "127.0.0.1|/foo", /bar request from 127.0.0.1 will be blacklisted,
+ * if whiteListByPath=true then not.
+ * </p>
  * Internet addresses may be specified as absolute address or as a combination of
  * four octet wildcard specifications (a.b.c.d) that are defined as follows.
  * </p>
@@ -104,6 +110,7 @@ public class IPAccessHandler extends HandlerWrapper
     // true means nodefault match
     PathMap<IPAddressMap<Boolean>> _white = new PathMap<IPAddressMap<Boolean>>(true);
     PathMap<IPAddressMap<Boolean>> _black = new PathMap<IPAddressMap<Boolean>>(true);
+    boolean _whiteListByPath = false;
 
     /* ------------------------------------------------------------ */
     /**
@@ -173,6 +180,17 @@ public class IPAccessHandler extends HandlerWrapper
     public void setBlack(String[] entries)
     {
         set(entries, _black);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Re-initialize the mode of path matching
+     *
+     * @param whiteListByPath matching mode
+     */
+    public void setWhiteListByPath(boolean whiteListByPath)
+    {
+        this._whiteListByPath = whiteListByPath;
     }
 
     /* ------------------------------------------------------------ */
@@ -287,9 +305,12 @@ public class IPAccessHandler extends HandlerWrapper
         if (_white.size()>0)
         {
             boolean match = false;
+            boolean matchedByPath = false;
+
             Object whiteObj = _white.getLazyMatches(path);
             if (whiteObj != null)
             {
+                matchedByPath = true;
                 List whiteList = (whiteObj instanceof List) ? (List)whiteObj : Collections.singletonList(whiteObj);
 
                 for (Object entry: whiteList)
@@ -300,7 +321,9 @@ public class IPAccessHandler extends HandlerWrapper
                 }
             }
 
-            if (!match)
+            if (!_whiteListByPath && !match) // Default behaviour
+                return false;
+            else if (_whiteListByPath && matchedByPath && !match) // Fail if only matched by path
                 return false;
         }
 
