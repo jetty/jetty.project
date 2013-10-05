@@ -124,7 +124,10 @@ public class IPAccessHandlerTest
             output.flush();
 
             Response response = readResponse(input);
-            assertEquals(_code, response.getCode());
+            Object[] params = new Object[]{
+                    "Request WBHUC", _white, _black, _host, _uri, _code,
+                    "Response", response.getCode()};
+            assertEquals(Arrays.deepToString(params), _code, response.getCode());
         }
         finally
         {
