@@ -102,7 +102,9 @@ public class WebSocketLoadRFC6455Test
 
             //long start = System.nanoTime();
             for (WebSocketClient client : clients)
+            {
                 threadPool.execute(client);
+            }
 
             int parallelism = ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors();
             long maxTimePerIteration = 5;
@@ -111,7 +113,9 @@ public class WebSocketLoadRFC6455Test
             // System.err.println("Elapsed: " + TimeUnit.NANOSECONDS.toMillis(end - start) + " ms");
 
             for (WebSocketClient client : clients)
+            {
                 client.close();
+            }
         }
         finally
         {
