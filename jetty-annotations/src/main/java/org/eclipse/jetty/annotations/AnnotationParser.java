@@ -371,15 +371,6 @@ public class AnnotationParser
         final MethodInfo _mi;
         final Set<? extends Handler> _handlers;
         
-            
-        /**
-         * @param classname
-         * @param access
-         * @param name
-         * @param methodDesc
-         * @param signature
-         * @param exceptions
-         */
         public MyMethodVisitor(final Set<? extends Handler> handlers,
                                final ClassInfo classInfo,
                                final int access,
@@ -424,9 +415,6 @@ public class AnnotationParser
         final Set<? extends Handler> _handlers;
         
     
-        /**
-         * @param classname
-         */
         public MyFieldVisitor(final Set<? extends Handler> handlers,
                               final ClassInfo classInfo,
                               final int access,
