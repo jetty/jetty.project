@@ -293,7 +293,7 @@ public class WebInfConfiguration extends AbstractConfiguration
         try
         {
             // Put the tmp dir in the work directory if we had one
-            File work =  new File(System.getProperty("jetty.home"),"work");
+            File work =  new File(System.getProperty("jetty.base"),"work");
             if (work.exists() && work.canWrite() && work.isDirectory())
             {
                 makeTempDirectory(work, context, false); //make a tmp dir inside work, don't delete if it exists
