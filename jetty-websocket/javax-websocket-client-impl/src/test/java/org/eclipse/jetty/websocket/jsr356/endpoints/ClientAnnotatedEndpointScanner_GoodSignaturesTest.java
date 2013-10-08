@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.jsr356.endpoints;
 
 import static org.hamcrest.Matchers.*;
 
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -43,6 +44,8 @@ import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicErrorSessionThr
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicErrorSocket;
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicErrorThrowableSessionSocket;
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicErrorThrowableSocket;
+import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicInputStreamSocket;
+import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicInputStreamWithThrowableSocket;
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicOpenSessionSocket;
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicOpenSocket;
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.BasicPongMessageSocket;
@@ -97,6 +100,7 @@ public class ClientAnnotatedEndpointScanner_GoodSignaturesTest
         Field fError = findFieldRef(AnnotatedEndpointMetadata.class,"onError");
         Field fText = findFieldRef(AnnotatedEndpointMetadata.class,"onText");
         Field fBinary = findFieldRef(AnnotatedEndpointMetadata.class,"onBinary");
+        Field fBinaryStream = findFieldRef(AnnotatedEndpointMetadata.class,"onBinaryStream");
         Field fPong = findFieldRef(AnnotatedEndpointMetadata.class,"onPong");
 
         // @formatter:off
@@ -120,6 +124,9 @@ public class ClientAnnotatedEndpointScanner_GoodSignaturesTest
         Case.add(data, BasicBinaryMessageByteBufferSocket.class, fBinary, ByteBuffer.class);
         // -- Pong Events
         Case.add(data, BasicPongMessageSocket.class, fPong, PongMessage.class);
+        // -- InputStream Events
+        Case.add(data, BasicInputStreamSocket.class, fBinaryStream, InputStream.class);
+        Case.add(data, BasicInputStreamWithThrowableSocket.class, fBinaryStream, InputStream.class);
         // @formatter:on
 
         // TODO: validate return types

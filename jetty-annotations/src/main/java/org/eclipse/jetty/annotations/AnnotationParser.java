@@ -39,6 +39,7 @@ import java.util.jar.JarInputStream;
 
 import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -370,15 +371,6 @@ public class AnnotationParser
         final MethodInfo _mi;
         final Set<? extends Handler> _handlers;
         
-            
-        /**
-         * @param classname
-         * @param access
-         * @param name
-         * @param methodDesc
-         * @param signature
-         * @param exceptions
-         */
         public MyMethodVisitor(final Set<? extends Handler> handlers,
                                final ClassInfo classInfo,
                                final int access,
@@ -423,9 +415,6 @@ public class AnnotationParser
         final Set<? extends Handler> _handlers;
         
     
-        /**
-         * @param classname
-         */
         public MyFieldVisitor(final Set<? extends Handler> handlers,
                               final ClassInfo classInfo,
                               final int access,
@@ -614,6 +603,7 @@ public class AnnotationParser
                     }
                 }
             }
+
             if (visitSuperClasses)
                 cz = cz.getSuperclass();
             else
@@ -650,19 +640,29 @@ public class AnnotationParser
     public void parse (Set<? extends Handler> handlers, List<String> classNames, ClassNameResolver resolver)
     throws Exception
     {
+        MultiException me = new MultiException();
+        
         for (String s:classNames)
         {
-            if ((resolver == null) || (!resolver.isExcluded(s) &&  (!isParsed(s) || resolver.shouldOverride(s))))
+            try
             {
-                s = s.replace('.', '/')+".class";
-                URL resource = Loader.getResource(this.getClass(), s);
-                if (resource!= null)
+                if ((resolver == null) || (!resolver.isExcluded(s) &&  (!isParsed(s) || resolver.shouldOverride(s))))
                 {
-                    Resource r = Resource.newResource(resource);
-                    scanClass(handlers, null, r.getInputStream());
+                    s = s.replace('.', '/')+".class";
+                    URL resource = Loader.getResource(this.getClass(), s);
+                    if (resource!= null)
+                    {
+                        Resource r = Resource.newResource(resource);
+                        scanClass(handlers, null, r.getInputStream());
+                    }
                 }
             }
+            catch (Exception e)
+            {
+                me.add(new RuntimeException("Error scanning class "+s, e));
+            }
         }
+        me.ifExceptionThrow();
     }
 
     
@@ -682,25 +682,27 @@ public class AnnotationParser
 
         if (LOG.isDebugEnabled()) {LOG.debug("Scanning dir {}", dir);};
 
+        MultiException me = new MultiException();
+        
         String[] files=dir.list();
         for (int f=0;files!=null && f<files.length;f++)
         {
-            try
+            Resource res = dir.addPath(files[f]);
+            if (res.isDirectory())
+                parseDir(handlers, res, resolver);
+            else
             {
-                Resource res = dir.addPath(files[f]);
-                if (res.isDirectory())
-                    parseDir(handlers, res, resolver);
+                //we've already verified the directories, so just verify the class file name
+                boolean valid = true;
+                File file = res.getFile();
+                if (file == null)
+                    LOG.warn("Unable to validate class file name for {}", res);
                 else
+                    valid = isValidClassFileName(file.getName());
+
+                if (valid)
                 {
-                    //we've already verified the directories, so just verify the class file name
-                    boolean valid = true;
-                    File file = res.getFile();
-                    if (file == null)
-                        LOG.warn("Unable to validate class file name for {}", res);
-                    else
-                        valid = isValidClassFileName(file.getName());
-                   
-                    if (valid)
+                    try
                     {
                         String name = res.getName();
                         if ((resolver == null)|| (!resolver.isExcluded(name) && (!isParsed(name) || resolver.shouldOverride(name))))
@@ -709,15 +711,16 @@ public class AnnotationParser
                             if (LOG.isDebugEnabled()) {LOG.debug("Scanning class {}", r);};
                             scanClass(handlers, dir, r.getInputStream());
                         }
-
+                    }
+                    catch (Exception ex)
+                    {
+                        me.add(new RuntimeException("Error scanning file "+files[f],ex));
                     }
                 }
             }
-            catch (Exception ex)
-            {
-                LOG.warn(Log.EXCEPTION,ex);
-            }
         }
+
+        me.ifExceptionThrow();
     }
 
 
@@ -740,6 +743,8 @@ public class AnnotationParser
         if (!(loader instanceof URLClassLoader))
             return; //can't extract classes?
 
+        final MultiException me = new MultiException();
+        
         JarScanner scanner = new JarScanner()
         {
             @Override
@@ -751,13 +756,14 @@ public class AnnotationParser
                 }
                 catch (Exception e)
                 {
-                    LOG.warn("Problem parsing jar entry: {}", entry.getName());
+                    me.add(new RuntimeException("Error parsing entry "+entry.getName()+" from jar "+ jarUri, e));
                 }
             }
 
         };
 
         scanner.scan(null, loader, nullInclusive, visitParents);
+        me.ifExceptionThrow();
     }
 
 
@@ -774,6 +780,8 @@ public class AnnotationParser
         if (uris==null)
             return;
 
+        MultiException me = new MultiException();
+        
         for (URI uri:uris)
         {
             try
@@ -782,10 +790,10 @@ public class AnnotationParser
             }
             catch (Exception e)
             {
-                LOG.warn("Problem parsing classes from {}", uri);
+                me.add(new RuntimeException("Problem parsing classes from "+ uri, e));
             }
         }
-
+        me.ifExceptionThrow();
     }
 
     /**
@@ -801,8 +809,6 @@ public class AnnotationParser
             return;
 
         parse (handlers, Resource.newResource(uri), resolver);
-        
-     
     }
 
     
@@ -895,13 +901,22 @@ public class AnnotationParser
             if (in==null)
                 return;
 
+            MultiException me = new MultiException();
+            
             JarInputStream jar_in = new JarInputStream(in);
             try
             { 
                 JarEntry entry = jar_in.getNextJarEntry();
                 while (entry!=null)
                 {      
-                    parseJarEntry(handlers, jarResource, entry, resolver);
+                    try
+                    {
+                        parseJarEntry(handlers, jarResource, entry, resolver);                        
+                    }
+                    catch (Exception e)
+                    {
+                        me.add(new RuntimeException("Error scanning entry "+entry.getName()+" from jar "+jarResource, e));
+                    }
                     entry = jar_in.getNextJarEntry();
                 }
             }
@@ -909,7 +924,8 @@ public class AnnotationParser
             {
                 jar_in.close();
             }
-        }   
+            me.ifExceptionThrow();
+        }        
     }
 
     /**

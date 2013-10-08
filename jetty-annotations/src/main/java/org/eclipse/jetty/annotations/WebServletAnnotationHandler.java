@@ -18,14 +18,11 @@
 
 package org.eclipse.jetty.annotations;
 
-import java.util.List;
-
 import org.eclipse.jetty.annotations.AnnotationParser.ClassInfo;
 import org.eclipse.jetty.annotations.AnnotationParser.FieldInfo;
 import org.eclipse.jetty.annotations.AnnotationParser.MethodInfo;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.webapp.DiscoveredAnnotation;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
@@ -47,8 +44,7 @@ public class WebServletAnnotationHandler extends AbstractDiscoverableAnnotationH
     /**
      * Handle discovering a WebServlet annotation.
      *
-     *
-     * @see org.eclipse.jetty.annotations.AnnotationParser.DiscoverableAnnotationHandler#handleClass(java.lang.String, int, int, java.lang.String, java.lang.String, java.lang.String[], java.lang.String, java.util.List)
+     * @see org.eclipse.jetty.annotations.AnnotationParser.Handler#handle(ClassInfo, String)
      */
     @Override
     public void handle(ClassInfo info, String annotationName)

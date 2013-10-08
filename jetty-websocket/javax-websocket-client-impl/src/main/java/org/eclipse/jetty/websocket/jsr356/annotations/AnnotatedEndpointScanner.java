@@ -64,8 +64,8 @@ public class AnnotatedEndpointScanner<T extends Annotation, C extends EndpointCo
         paramsOnError.add(JsrParamIdOnError.INSTANCE);
 
         metadata.customizeParamsOnMessage(paramsOnMessage);
-        paramsOnMessage.add(JsrParamIdBinary.INSTANCE);
         paramsOnMessage.add(JsrParamIdText.INSTANCE);
+        paramsOnMessage.add(JsrParamIdBinary.INSTANCE);
         paramsOnMessage.add(JsrParamIdPong.INSTANCE);
     }
 

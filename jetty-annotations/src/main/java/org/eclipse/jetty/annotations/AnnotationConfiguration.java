@@ -278,24 +278,18 @@ public class AnnotationConfiguration extends AbstractConfiguration
     throws Exception
     {
         AnnotationParser parser = createAnnotationParser();
-        boolean multiThreadedScan = isUseMultiThreading(context);
-        int maxScanWait = 0;
-        if (multiThreadedScan)
-        {
-            _parserTasks = new ArrayList<ParserTask>();
-            maxScanWait = getMaxScanWait(context);
-        }
+        _parserTasks = new ArrayList<ParserTask>();
 
         long start = 0; 
         
         if (LOG.isDebugEnabled()) 
         {
-            start = System.nanoTime();
-            LOG.debug("Scanning for annotations: webxml={}, metadatacomplete={}, configurationDiscovered={}, multiThreaded={}", 
+            LOG.debug("Scanning for annotations: webxml={}, metadatacomplete={}, configurationDiscovered={}, multiThreaded={}, maxScanWait={}", 
                       context.getServletContext().getEffectiveMajorVersion(), 
                       context.getMetaData().isMetaDataComplete(),
                       context.isConfigurationDiscovered(),
-                      multiThreadedScan);
+                      isUseMultiThreading(context),
+                      getMaxScanWait(context));
         }
              
         parseContainerPath(context, parser);
@@ -307,23 +301,15 @@ public class AnnotationConfiguration extends AbstractConfiguration
         parseWebInfClasses(context, parser);
         parseWebInfLib (context, parser); 
         
-        if (!multiThreadedScan)
-        {
-            if (LOG.isDebugEnabled())
-            {
-                long end = System.nanoTime();
-                LOG.debug("Annotation parsing millisec={}",(TimeUnit.MILLISECONDS.convert(end-start, TimeUnit.NANOSECONDS)));
-            }
-            return;
-        }
 
         if (LOG.isDebugEnabled())
             start = System.nanoTime();
         
-        //execute scan asynchronously using jetty's thread pool  
+        //execute scan, either effectively synchronously (1 thread only), or asychronously (limited by number of processors available) 
+        final Semaphore task_limit = (isUseMultiThreading(context)? new Semaphore(Runtime.getRuntime().availableProcessors()):new Semaphore(1));     
         final CountDownLatch latch = new CountDownLatch(_parserTasks.size());
         final MultiException me = new MultiException();
-        final Semaphore task_limit=new Semaphore(Runtime.getRuntime().availableProcessors());
+    
         for (final ParserTask p:_parserTasks)
         {
             task_limit.acquire();
@@ -349,13 +335,10 @@ public class AnnotationConfiguration extends AbstractConfiguration
             });
         }
        
-        boolean timeout = !latch.await(maxScanWait, TimeUnit.SECONDS);
+        boolean timeout = !latch.await(getMaxScanWait(context), TimeUnit.SECONDS);
         
         if (LOG.isDebugEnabled())
-        {
-            long end = System.nanoTime();
-            LOG.debug("Annotation parsing millisec={}",(TimeUnit.MILLISECONDS.convert(end-start, TimeUnit.NANOSECONDS)));
-        }
+            LOG.debug("Annotation parsing millisec={}",(TimeUnit.MILLISECONDS.convert(System.nanoTime()-start, TimeUnit.NANOSECONDS)));
         
         if (timeout)
             me.add(new Exception("Timeout scanning annotations"));
@@ -607,9 +590,6 @@ public class AnnotationConfiguration extends AbstractConfiguration
             //queue it up for scanning if using multithreaded mode
             if (_parserTasks != null)
                 _parserTasks.add(new ParserTask(parser, handlers, r, _containerClassNameResolver));  
-            else
-                //just scan it now
-                parser.parse(handlers, r, _containerClassNameResolver);
         } 
     }
 
@@ -664,8 +644,6 @@ public class AnnotationConfiguration extends AbstractConfiguration
 
                 if (_parserTasks != null)
                     _parserTasks.add (new ParserTask(parser, handlers,r, _webAppClassNameResolver));
-                else
-                    parser.parse(handlers, r, _webAppClassNameResolver);
             }
         }
 
@@ -694,8 +672,6 @@ public class AnnotationConfiguration extends AbstractConfiguration
         {
             if (_parserTasks != null)
                 _parserTasks.add(new ParserTask(parser, handlers, dir, _webAppClassNameResolver));
-            else
-                parser.parse(handlers, dir, _webAppClassNameResolver);
         }
     }
 

@@ -12,7 +12,6 @@ resources
 lib/servlet-api-3.1.jar
 lib/jetty-schemas-3.1.jar
 lib/jetty-http-${jetty.version}.jar
-lib/jetty-continuation-${jetty.version}.jar
 lib/jetty-server-${jetty.version}.jar
 lib/jetty-xml-${jetty.version}.jar
 lib/jetty-util-${jetty.version}.jar

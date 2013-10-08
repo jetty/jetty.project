@@ -1,5 +1,5 @@
 #
-# Stats module
+# Xinetd module
 #
 
 [depend]

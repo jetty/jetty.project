@@ -25,7 +25,6 @@ import java.util.Set;
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.annotations.AnnotationParser;
 import org.eclipse.jetty.annotations.AnnotationParser.Handler;
-import org.eclipse.jetty.annotations.ClassNameResolver;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -86,8 +85,6 @@ public class MavenAnnotationConfiguration extends AnnotationConfiguration
     throws Exception
     { 
         if (_parserTasks != null)
-            _parserTasks.add(new ParserTask(parser, handlers, resource, _webAppClassNameResolver));
-        else
-            parser.parse(handlers, resource, _webAppClassNameResolver);          
+            _parserTasks.add(new ParserTask(parser, handlers, resource, _webAppClassNameResolver));       
     }
 }

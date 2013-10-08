@@ -49,7 +49,7 @@ import org.junit.Test;
 
 public class SynDataReplyDataLoadTest extends AbstractTest
 {
-    @Test
+    @Test(timeout=60000)
     public void testSynDataReplyDataLoad() throws Exception
     {
         ServerSessionFrameListener serverSessionFrameListener = new ServerSessionFrameListener.Adapter()
