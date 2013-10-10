@@ -40,7 +40,7 @@ public class JsrBrowserConfigurator extends ServerEndpointConfig.Configurator
 
     private String getHeaderValue(HandshakeRequest request, String key)
     {
-        List<String> value = request.getHeaders().get("User-Agent");
+        List<String> value = request.getHeaders().get(key);
         return QuoteUtil.join(value,",");
     }
 
