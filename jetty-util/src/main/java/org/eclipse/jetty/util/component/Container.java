@@ -58,14 +58,14 @@ public interface Container
     
     /**
      * Add an event listener. 
-     * @see Container#addBean(Object), which also adds listeners if the bean is-a Listener
+     * @see Container#addBean(Object)
      * @param listener
      */
     public void addEventListener(Listener listener);
     
     /**
      * Remove an event listener. 
-     * @see Container#removeBean(Object), which also adds listeners if the bean is-a Listener
+     * @see Container#removeBean(Object)
      * @param listener
      */
     public void removeEventListener(Listener listener);

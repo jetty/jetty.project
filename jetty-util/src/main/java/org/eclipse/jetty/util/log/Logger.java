@@ -91,7 +91,7 @@ public interface Logger
      * Formats and logs at debug level.
      * avoids autoboxing of integers
      * @param msg the formatting string
-     * @param args the optional arguments
+     * @param value long value
      */
     public void debug(String msg, long value);
 
