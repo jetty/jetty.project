@@ -20,7 +20,6 @@ package org.eclipse.jetty.spdy.server;
 
 import java.io.IOException;
 import java.util.List;
-
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 
@@ -63,33 +62,58 @@ public class NextProtoNegoServerConnection extends AbstractConnection implements
     @Override
     public void onFillable()
     {
-        while (true)
-        {
-            int filled = fill();
-            if (filled == 0 && nextProtocol == null)
-                fillInterested();
-            if (filled <= 0 || nextProtocol != null)
-                break;
-        }
+        int filled = fill();
 
-        if (nextProtocol == null && engine.getHandshakeStatus() == SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING)
+        if (filled == 0)
         {
-            // The client sent the NPN extension, but did not send the NextProtocol
-            // message with the chosen protocol so we need to close
-            LOG.debug("{} missing next protocol. SSLEngine: {}", this, engine);
+            if (nextProtocol == null)
+            {
+                if (engine.getHandshakeStatus() == SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING)
+                {
+                    // Here the SSL handshake is finished, but while the client sent
+                    // the NPN extension, the server application did not select the
+                    // protocol; we need to close as the protocol cannot be negotiated.
+                    LOG.debug("{} missing next protocol. SSLEngine: {}", this, engine);
+                    close();
+                }
+                else
+                {
+                    // Here the SSL handshake is not finished yet but we filled 0 bytes,
+                    // so we need to read more.
+                    fillInterested();
+                }
+            }
+            else
+            {
+                ConnectionFactory connectionFactory = connector.getConnectionFactory(nextProtocol);
+                if (connectionFactory == null)
+                {
+                    LOG.debug("{} application selected protocol '{}', but no correspondent {} has been configured",
+                            this, nextProtocol, ConnectionFactory.class.getName());
+                    close();
+                }
+                else
+                {
+                    EndPoint endPoint = getEndPoint();
+                    Connection oldConnection = endPoint.getConnection();
+                    Connection newConnection = connectionFactory.newConnection(connector, endPoint);
+                    LOG.debug("{} switching from {} to {}", this, oldConnection, newConnection);
+                    oldConnection.onClose();
+                    endPoint.setConnection(newConnection);
+                    getEndPoint().getConnection().onOpen();
+                }
+            }
+        }
+        else if (filled < 0)
+        {
+            // Something went bad, we need to close.
+            LOG.debug("{} closing on client close", this);
             close();
         }
-
-        if (nextProtocol != null)
+        else
         {
-            ConnectionFactory connectionFactory = connector.getConnectionFactory(nextProtocol);
-            EndPoint endPoint = getEndPoint();
-            Connection oldConnection = endPoint.getConnection();
-            oldConnection.onClose();
-            Connection connection = connectionFactory.newConnection(connector, endPoint);
-            LOG.debug("{} switching from {} to {}", this, oldConnection, connection);
-            endPoint.setConnection(connection);
-            getEndPoint().getConnection().onOpen();
+            // Must never happen, since we fill using an empty buffer
+            throw new IllegalStateException();
         }
     }
 
@@ -102,8 +126,7 @@ public class NextProtoNegoServerConnection extends AbstractConnection implements
         catch (IOException x)
         {
             LOG.debug(x);
-            NextProtoNego.remove(engine);
-            getEndPoint().close();
+            close();
             return -1;
         }
     }
@@ -126,5 +149,14 @@ public class NextProtoNegoServerConnection extends AbstractConnection implements
         LOG.debug("{} protocol selected {}", this, protocol);
         nextProtocol = protocol != null ? protocol : defaultProtocol;
         NextProtoNego.remove(engine);
+    }
+
+    @Override
+    public void close()
+    {
+        NextProtoNego.remove(engine);
+        EndPoint endPoint = getEndPoint();
+        endPoint.shutdownOutput();
+        endPoint.close();
     }
 }
