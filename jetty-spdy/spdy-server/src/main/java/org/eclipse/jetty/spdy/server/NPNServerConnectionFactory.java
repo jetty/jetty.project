@@ -22,7 +22,6 @@ package org.eclipse.jetty.spdy.server;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.Connection;
@@ -110,7 +109,7 @@ public class NPNServerConnectionFactory extends AbstractConnectionFactory
                 ep=null;
         }
 
-        return configure(new NextProtoNegoServerConnection(endPoint, engine, connector,protocols,_defaultProtocol),connector,endPoint);
+        return configure(new NPNServerConnection(endPoint, engine, connector,protocols,_defaultProtocol),connector,endPoint);
     }
 
     @Override
