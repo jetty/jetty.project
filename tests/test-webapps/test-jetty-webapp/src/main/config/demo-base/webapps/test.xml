@@ -35,6 +35,12 @@ detected.
     <Arg type="Boolean">true</Arg>
   </Call>
   
+  <!-- Enable symlinks 
+  <Call name="addAliasCheck">
+    <Arg><New class="org.eclipse.jetty.server.handler.AllowSymLinkAliasChecker"/></Arg>
+  </Call>
+  -->
+  
   <!-- virtual hosts
   <Set name="virtualHosts">
     <Array type="String">
