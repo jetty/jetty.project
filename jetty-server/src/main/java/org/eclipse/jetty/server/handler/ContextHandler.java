@@ -1722,6 +1722,16 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     {
         return _aliasChecks;
     }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @param checks list of AliasCheck instances
+     */
+    public void setAliasChecks(List<AliasCheck> checks)
+    {
+        _aliasChecks.clear();
+        _aliasChecks.addAll(checks);
+    }
 
     /* ------------------------------------------------------------ */
     /**
