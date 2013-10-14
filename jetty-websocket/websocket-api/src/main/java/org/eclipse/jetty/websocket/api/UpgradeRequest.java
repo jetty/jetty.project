@@ -198,16 +198,6 @@ public class UpgradeRequest
         return version;
     }
 
-    public String getProtocolVersion()
-    {
-        String version = getHeader("Sec-WebSocket-Version");
-        if (version == null)
-        {
-            return "13";
-        }
-        return version;
-    }
-
     public String getQueryString()
     {
         return requestURI.getQuery();
