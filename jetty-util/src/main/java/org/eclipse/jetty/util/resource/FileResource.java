@@ -109,7 +109,20 @@ public class FileResource extends Resource
         File file=new File(uri);
         _file=file;
         _uri=normalizeURI(_file,uri);
-        _alias=checkAlias(_file);
+
+        if (!_uri.equals(_file.toURI()) && !_uri.toString().equals(_file.toURI().toString()))
+        {
+            try
+            {
+                _alias=_file.toURI().toURL();
+            }
+            catch (MalformedURLException e)
+            {
+                throw new IllegalArgumentException(e);
+            }
+        }
+        else
+            _alias=checkAlias(_file);
     }
 
     /* -------------------------------------------------------- */
@@ -394,7 +407,7 @@ public class FileResource extends Resource
     {
         try
         {
-            return _file.toURI().toURL();
+            return new URL(_uri);
         }
         catch (MalformedURLException e)
         {

@@ -2673,8 +2673,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             
             if (a.length()>r.length())
                 return a.startsWith(r) && a.length()==r.length()+1 && a.endsWith("/");
-            else
+            if (a.length()<r.length())
                 return r.startsWith(a) && r.length()==a.length()+1 && r.endsWith("/");
+            
+            return a.equals(r); 
         }
     }
 
