@@ -748,14 +748,30 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 }
                 catch (ClosedSelectorException | ClosedChannelException x)
                 {
-                    LOG.debug(x);
+                    failed(x);
                 }
             }
 
             protected void failed(Throwable failure)
             {
                 if (failed.compareAndSet(false, true))
+                {
+                    timeout.cancel();
+                    close();
                     connectionFailed(channel, failure, attachment);
+                }
+            }
+
+            private void close()
+            {
+                try
+                {
+                    channel.close();
+                }
+                catch (IOException x)
+                {
+                    LOG.ignore(x);
+                }
             }
         }
 
@@ -775,19 +791,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 if (channel.isConnectionPending())
                 {
                     LOG.debug("Channel {} timed out while connecting, closing it", channel);
-                    try
-                    {
-                        // This will unregister the channel from the selector
-                        channel.close();
-                    }
-                    catch (IOException x)
-                    {
-                        LOG.ignore(x);
-                    }
-                    finally
-                    {
-                        connect.failed(new SocketTimeoutException());
-                    }
+                    connect.failed(new SocketTimeoutException());
                 }
             }
         }
