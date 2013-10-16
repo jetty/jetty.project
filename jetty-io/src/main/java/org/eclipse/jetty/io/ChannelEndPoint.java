@@ -35,7 +35,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * Channel End Point.
  * <p>Holds the channel and socket for an NIO endpoint.
  */
-public class ChannelEndPoint extends AbstractEndPoint implements SocketBased
+public class ChannelEndPoint extends AbstractEndPoint
 {
     private static final Logger LOG = Log.getLogger(ChannelEndPoint.class);
 
@@ -208,7 +208,6 @@ public class ChannelEndPoint extends AbstractEndPoint implements SocketBased
         return _channel;
     }
 
-    @Override
     public Socket getSocket()
     {
         return _socket;

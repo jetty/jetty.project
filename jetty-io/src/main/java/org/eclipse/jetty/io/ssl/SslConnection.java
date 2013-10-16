@@ -107,21 +107,6 @@ public class SslConnection extends AbstractConnection
         this._bufferPool = byteBufferPool;
         this._sslEngine = sslEngine;
         this._decryptedEndPoint = newDecryptedEndPoint();
-
-        // commented out for now as it might cause native code being stuck in preClose0.
-        // See: https://java.net/jira/browse/GRIZZLY-547
-
-//        if (endPoint instanceof SocketBased)
-//        {
-//            try
-//            {
-//                ((SocketBased)endPoint).getSocket().setSoLinger(true, 30000);
-//            }
-//            catch (SocketException e)
-//            {
-//                throw new RuntimeIOException(e);
-//            }
-//        }
     }
 
     protected DecryptedEndPoint newDecryptedEndPoint()
