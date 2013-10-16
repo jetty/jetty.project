@@ -1390,7 +1390,7 @@ public class SslContextFactory extends AbstractLifeCycle
     {
         try
         {
-            javax.security.cert.X509Certificate javaxCerts[]=sslSession.getPeerCertificateChain();
+            Certificate[] javaxCerts=sslSession.getPeerCertificates();
             if (javaxCerts==null||javaxCerts.length==0)
                 return null;
 
