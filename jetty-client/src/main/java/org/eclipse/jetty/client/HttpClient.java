@@ -555,7 +555,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @return the max time a connection can take to connect to destinations
+     * @return the max time, in milliseconds, a connection can take to connect to destinations
      */
     public long getConnectTimeout()
     {
@@ -563,7 +563,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @param connectTimeout the max time a connection can take to connect to destinations
+     * @param connectTimeout the max time, in milliseconds, a connection can take to connect to destinations
      * @see java.net.Socket#connect(SocketAddress, int)
      */
     public void setConnectTimeout(long connectTimeout)
@@ -588,7 +588,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @return the max time a connection can be idle (that is, without traffic of bytes in either direction)
+     * @return the max time, in milliseconds, a connection can be idle (that is, without traffic of bytes in either direction)
      */
     public long getIdleTimeout()
     {
@@ -596,7 +596,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @param idleTimeout the max time a connection can be idle (that is, without traffic of bytes in either direction)
+     * @param idleTimeout the max time, in milliseconds, a connection can be idle (that is, without traffic of bytes in either direction)
      */
     public void setIdleTimeout(long idleTimeout)
     {
