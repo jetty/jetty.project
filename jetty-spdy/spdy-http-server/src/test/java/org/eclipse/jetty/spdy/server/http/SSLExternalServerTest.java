@@ -28,6 +28,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.spdy.api.ReplyInfo;
+import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
@@ -41,12 +42,12 @@ import org.junit.Assume;
 import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore("Reliance on external server fails test")
 public class SSLExternalServerTest extends AbstractHTTPSPDYTest
 {
     public SSLExternalServerTest(short version)
     {
-        super(version);
+        // Google Servers do not support SPDY/2 anymore
+        super(SPDY.V3);
     }
 
     @Override
@@ -59,8 +60,8 @@ public class SSLExternalServerTest extends AbstractHTTPSPDYTest
         return new SPDYClient.Factory(threadPool, null, sslContextFactory, 30000);
     }
 
-    @Test(timeout=5000)
-    @Ignore
+    @Test
+    @Ignore("Relies on an external server")
     public void testExternalServer() throws Exception
     {
         String host = "encrypted.google.com";
