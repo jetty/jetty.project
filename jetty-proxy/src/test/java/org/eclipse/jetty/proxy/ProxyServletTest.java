@@ -49,7 +49,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpContentResponse;
 import org.eclipse.jetty.client.HttpProxy;
-import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
@@ -632,7 +631,7 @@ public class ProxyServletTest
             }
         });
         int port = serverConnector.getLocalPort();
-        client.getProxyConfiguration().getProxies().get(0).getExcludedOrigins().add(new Origin("http", "127.0.0.1", port));
+        client.getProxyConfiguration().getProxies().get(0).getExcludedAddresses().add("127.0.0.1:" + port);
 
         // Try with a proxied host
         ContentResponse response = client.newRequest("localhost", port)

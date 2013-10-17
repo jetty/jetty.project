@@ -58,8 +58,8 @@ public class ProxyConfiguration
 
     public static abstract class Proxy
     {
-        private final Set<Origin> included = new HashSet<>();
-        private final Set<Origin> excluded = new HashSet<>();
+        private final Set<String> included = new HashSet<>();
+        private final Set<String> excluded = new HashSet<>();
         private final Origin.Address address;
         private final boolean secure;
 
@@ -87,16 +87,20 @@ public class ProxyConfiguration
 
         /**
          * @return the list of origins that must be proxied
+         * @see #matches(Origin)
+         * @see #getExcludedAddresses()
          */
-        public Set<Origin> getIncludedOrigins()
+        public Set<String> getIncludedAddresses()
         {
             return included;
         }
 
         /**
          * @return the list of origins that must not be proxied.
+         * @see #matches(Origin)
+         * @see #getIncludedAddresses()
          */
-        public Set<Origin> getExcludedOrigins()
+        public Set<String> getExcludedAddresses()
         {
             return excluded;
         }
@@ -110,7 +114,7 @@ public class ProxyConfiguration
         }
 
         /**
-         * Matches the given {@code origin} with the included and excluded origins,
+         * Matches the given {@code origin} with the included and excluded addresses,
          * returning true if the given {@code origin} is to be proxied.
          *
          * @param origin the origin to test for proxying
@@ -118,7 +122,36 @@ public class ProxyConfiguration
          */
         public boolean matches(Origin origin)
         {
-            return included.contains(origin) || !excluded.contains(origin);
+            boolean result = included.isEmpty();
+            Origin.Address address = origin.getAddress();
+            for (String included : this.included)
+            {
+                if (matches(address, included))
+                {
+                    result = true;
+                    break;
+                }
+            }
+            for (String excluded : this.excluded)
+            {
+                if (matches(address, excluded))
+                {
+                    result = false;
+                    break;
+                }
+            }
+            return result;
+        }
+
+        private boolean matches(Origin.Address address, String pattern)
+        {
+            // TODO: add support for CIDR notation like 192.168.0.0/24, see DoSFilter
+            int colon = pattern.indexOf(':');
+            if (colon < 0)
+                return pattern.equals(address.getHost());
+            String host = pattern.substring(0, colon);
+            String port = pattern.substring(colon + 1);
+            return host.equals(address.getHost()) && port.equals(String.valueOf(address.getPort()));
         }
 
         /**
