@@ -242,7 +242,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     }
 
     /**
-     * @param name Name of the BoundedThreadPool to use when naming Threads.
+     * @param name Name of this thread pool to use when naming threads.
      */
     public void setName(String name)
     {
@@ -303,7 +303,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     }
 
     /**
-     * @return The name of the BoundedThreadPool.
+     * @return The name of the this thread pool
      */
     @ManagedAttribute("name of the thread pool")
     public String getName()
