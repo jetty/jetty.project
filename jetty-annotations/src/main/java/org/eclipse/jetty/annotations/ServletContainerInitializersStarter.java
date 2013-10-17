@@ -18,14 +18,12 @@
 
 package org.eclipse.jetty.annotations;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.plus.annotation.ContainerInitializer;
 import org.eclipse.jetty.util.ConcurrentHashSet;
-import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -71,6 +69,8 @@ public class ServletContainerInitializersStarter extends AbstractLifeCycle
             //instantiate ServletContainerInitializers, call doStart
             try
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Calling ServletContainerInitializer "+i.getTarget().getClass().getName());
                 i.callStartup(_context);
             }
             catch (Exception e)
