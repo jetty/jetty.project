@@ -54,7 +54,7 @@ public class HttpRequest implements Request
     private static final AtomicLong ids = new AtomicLong();
 
     private final HttpFields headers = new HttpFields();
-    private final Fields params = new Fields();
+    private final Fields params = new Fields(true);
     private final Map<String, Object> attributes = new HashMap<>();
     private final List<RequestListener> requestListeners = new ArrayList<>();
     private final List<Response.ResponseListener> responseListeners = new ArrayList<>();

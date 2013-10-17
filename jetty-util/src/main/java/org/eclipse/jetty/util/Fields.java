@@ -29,20 +29,33 @@ import java.util.Set;
 
 /**
  * <p>A container for name/value pairs, known as fields.</p>
- * <p>A {@link Field} is composed of a case-insensitive name string and
+ * <p>A {@link Field} is composed of a name string that can be case-sensitive
+ * or case-insensitive (by specifying the option at the constructor) and
  * of a case-sensitive set of value strings.</p>
  * <p>The implementation of this class is not thread safe.</p>
  */
 public class Fields implements Iterable<Fields.Field>
 {
+    private final boolean caseSensitive;
     private final Map<String, Field> fields;
 
     /**
-     * <p>Creates an empty modifiable {@link Fields} instance.</p>
+     * <p>Creates an empty, modifiable, case insensitive {@link Fields} instance.</p>
      * @see #Fields(Fields, boolean)
      */
     public Fields()
     {
+        this(false);
+    }
+
+    /**
+     * <p>Creates an empty, modifiable, case insensitive {@link Fields} instance.</p>
+     * @param caseSensitive whether this {@link Fields} instance must be case sensitive
+     * @see #Fields(Fields, boolean)
+     */
+    public Fields(boolean caseSensitive)
+    {
+        this.caseSensitive = caseSensitive;
         fields = new LinkedHashMap<>();
     }
 
@@ -55,6 +68,7 @@ public class Fields implements Iterable<Fields.Field>
      */
     public Fields(Fields original, boolean immutable)
     {
+        this.caseSensitive = original.caseSensitive;
         Map<String, Field> copy = new LinkedHashMap<>();
         copy.putAll(original.fields);
         fields = immutable ? Collections.unmodifiableMap(copy) : copy;
@@ -68,7 +82,18 @@ public class Fields implements Iterable<Fields.Field>
         if (obj == null || getClass() != obj.getClass())
             return false;
         Fields that = (Fields)obj;
-        return fields.equals(that.fields);
+        if (size() != that.size())
+            return false;
+        if (caseSensitive != that.caseSensitive)
+            return false;
+        for (Map.Entry<String, Field> entry : fields.entrySet())
+        {
+            String name = entry.getKey();
+            Field value = entry.getValue();
+            if (!value.equals(that.get(name), caseSensitive))
+                return false;
+        }
+        return true;
     }
 
     @Override
@@ -88,13 +113,18 @@ public class Fields implements Iterable<Fields.Field>
         return result;
     }
 
+    private String normalizeName(String name)
+    {
+        return caseSensitive ? name : name.toLowerCase(Locale.ENGLISH);
+    }
+
     /**
      * @param name the field name
      * @return the {@link Field} with the given name, or null if no such field exists
      */
     public Field get(String name)
     {
-        return fields.get(name.trim().toLowerCase(Locale.ENGLISH));
+        return fields.get(normalizeName(name));
     }
 
     /**
@@ -105,10 +135,9 @@ public class Fields implements Iterable<Fields.Field>
      */
     public void put(String name, String value)
     {
-        name = name.trim();
         // Preserve the case for the field name
         Field field = new Field(name, value);
-        fields.put(name.toLowerCase(Locale.ENGLISH), field);
+        fields.put(normalizeName(name), field);
     }
 
     /**
@@ -119,7 +148,7 @@ public class Fields implements Iterable<Fields.Field>
     public void put(Field field)
     {
         if (field != null)
-            fields.put(field.name().toLowerCase(Locale.ENGLISH), field);
+            fields.put(normalizeName(field.name()), field);
     }
 
     /**
@@ -131,17 +160,18 @@ public class Fields implements Iterable<Fields.Field>
      */
     public void add(String name, String value)
     {
-        name = name.trim();
-        Field field = fields.get(name.toLowerCase(Locale.ENGLISH));
+        String key = normalizeName(name);
+        Field field = fields.get(key);
         if (field == null)
         {
+            // Preserve the case for the field name
             field = new Field(name, value);
-            fields.put(name.toLowerCase(Locale.ENGLISH), field);
+            fields.put(key, field);
         }
         else
         {
             field = new Field(field.name(), field.values(), value);
-            fields.put(name.toLowerCase(Locale.ENGLISH), field);
+            fields.put(key, field);
         }
     }
 
@@ -153,8 +183,7 @@ public class Fields implements Iterable<Fields.Field>
      */
     public Field remove(String name)
     {
-        name = name.trim();
-        return fields.remove(name.toLowerCase(Locale.ENGLISH));
+        return fields.remove(normalizeName(name));
     }
 
     /**
@@ -219,6 +248,17 @@ public class Fields implements Iterable<Fields.Field>
             System.arraycopy(moreValues, 0, this.values, values.length, moreValues.length);
         }
 
+        public boolean equals(Field that, boolean caseSensitive)
+        {
+            if (this == that)
+                return true;
+            if (that == null)
+                return false;
+            if (caseSensitive)
+                return equals(that);
+            return name.equalsIgnoreCase(that.name) && Arrays.equals(values, that.values);
+        }
+
         @Override
         public boolean equals(Object obj)
         {
@@ -227,15 +267,13 @@ public class Fields implements Iterable<Fields.Field>
             if (obj == null || getClass() != obj.getClass())
                 return false;
             Field that = (Field)obj;
-            // Field names must be lowercase, thus we lowercase them before transmission, but keep them as is
-            // internally. That's why we've to compare them case insensitive.
-            return name.equalsIgnoreCase(that.name) && Arrays.equals(values, that.values);
+            return name.equals(that.name) && Arrays.equals(values, that.values);
         }
 
         @Override
         public int hashCode()
         {
-            int result = name.toLowerCase(Locale.ENGLISH).hashCode();
+            int result = name.hashCode();
             result = 31 * result + Arrays.hashCode(values);
             return result;
         }
