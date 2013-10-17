@@ -42,6 +42,7 @@ import javax.servlet.DispatcherType;
 import javax.servlet.Servlet;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
@@ -98,7 +99,7 @@ public class GzipTester
         request.setHeader("Host","tester");
         request.setHeader("Accept-Encoding",compressionType);
         if (ifmodifiedsince>0)
-            request.setHeader(HttpHeader.IF_MODIFIED_SINCE.asString(),HttpFields.formatDate(ifmodifiedsince));
+            request.setHeader(HttpHeader.IF_MODIFIED_SINCE.asString(),DateGenerator.formatDate(ifmodifiedsince));
         if (this.userAgent != null)
             request.setHeader("User-Agent", this.userAgent);
         request.setURI("/context/" + requestedFilename);
@@ -176,7 +177,7 @@ public class GzipTester
         request.setHeader("Host","tester");
         request.setHeader("Accept-Encoding",compressionType);
         if (ifmodifiedsince>0)
-            request.setHeader(HttpHeader.IF_MODIFIED_SINCE.asString(),HttpFields.formatDate(ifmodifiedsince));
+            request.setHeader(HttpHeader.IF_MODIFIED_SINCE.asString(),DateGenerator.formatDate(ifmodifiedsince));
         if (this.userAgent != null)
             request.setHeader("User-Agent", this.userAgent);
         request.setURI("/context/" + requestedFilename);

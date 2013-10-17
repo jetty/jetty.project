@@ -35,6 +35,7 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 
+import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.LocalConnector;
@@ -724,16 +725,16 @@ public class DefaultServletTest
         response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Modified-Since: "+last_modified+"\r\n\r\n");
         assertResponseContains("304", response);
         
-        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Modified-Since: "+HttpFields.formatDate(System.currentTimeMillis()-10000)+"\r\n\r\n");
+        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Modified-Since: "+DateGenerator.formatDate(System.currentTimeMillis()-10000)+"\r\n\r\n");
         assertResponseContains("200", response);
         
-        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Modified-Since: "+HttpFields.formatDate(System.currentTimeMillis()+10000)+"\r\n\r\n");
+        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Modified-Since: "+DateGenerator.formatDate(System.currentTimeMillis()+10000)+"\r\n\r\n");
         assertResponseContains("304", response);
         
-        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Unmodified-Since: "+HttpFields.formatDate(System.currentTimeMillis()+10000)+"\r\n\r\n");
+        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Unmodified-Since: "+DateGenerator.formatDate(System.currentTimeMillis()+10000)+"\r\n\r\n");
         assertResponseContains("200", response);
         
-        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Unmodified-Since: "+HttpFields.formatDate(System.currentTimeMillis()-10000)+"\r\n\r\n");
+        response = connector.getResponses("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Unmodified-Since: "+DateGenerator.formatDate(System.currentTimeMillis()-10000)+"\r\n\r\n");
         assertResponseContains("412", response);
     }
 

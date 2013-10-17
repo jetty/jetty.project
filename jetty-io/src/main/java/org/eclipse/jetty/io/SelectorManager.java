@@ -59,13 +59,13 @@ import org.eclipse.jetty.util.thread.Scheduler;
 public abstract class SelectorManager extends AbstractLifeCycle implements Dumpable
 {
     protected static final Logger LOG = Log.getLogger(SelectorManager.class);
-    
+    public static final String SUBMIT_KEY_UPDATES="org.eclipse.jetty.io.SelectorManager.submitKeyUpdates";
     /**
      * The default connect timeout, in milliseconds
      */
     public static final int DEFAULT_CONNECT_TIMEOUT = 15000;
 
-    private final static boolean __submitKeyUpdates=Boolean.valueOf(System.getProperty("org.eclipse.jetty.io.SelectorManager.SubmitKeyUpdates","FALSE"));
+    private final static boolean __submitKeyUpdates=Boolean.valueOf(System.getProperty(SUBMIT_KEY_UPDATES,"FALSE"));
     
     private final Executor executor;
     private final Scheduler scheduler;
@@ -360,9 +360,8 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         }
 
         /**
-         * Submit a task to update a selector key.  If the System property
-         * "org.eclipse.jetty.io.SelectorManager.SubmitKeyUpdates" is set true (default is false), the
-         * task is passed to {@link #submit(Runnable)}.   Otherwise it is run immediately and the selector 
+         * Submit a task to update a selector key.  If the System property {@link SelectorManager#SUBMIT_KEY_UPDATES}
+         * is set true (default is false), the task is passed to {@link #submit(Runnable)}.   Otherwise it is run immediately and the selector 
          * woken up if need be.   
          * @param update the update to a key
          */
@@ -374,22 +373,9 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             {
                 update.run();
 
-                out: while (true)
-                {
-                    switch (_state.get())
-                    {
-                        case SELECT:
-                            // Avoid multiple wakeup() calls if we the CAS fails
-                            if (!_state.compareAndSet(State.SELECT, State.WAKEUP))
-                                continue;
-                            wakeup();
-                            break out;
-                        default:
-                            break out;
-                    }
-                }
+                if (_state.compareAndSet(State.SELECT, State.WAKEUP))
+                   wakeup();
             }
-            
         }
         
         /**

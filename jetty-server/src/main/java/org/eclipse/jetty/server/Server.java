@@ -32,13 +32,14 @@ import java.util.TimerTask;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -314,17 +315,17 @@ public class Server extends HandlerWrapper implements Attributes
 
 
         // use DateCache timer for Date field reformat
-        final HttpFields.DateGenerator date = new HttpFields.DateGenerator();
+        final DateGenerator date = new DateGenerator();
         long now=System.currentTimeMillis();
         long tick=1000*((now/1000)+1)-now;
-        _dateField=new HttpField.CachedHttpField(HttpHeader.DATE,date.formatDate(now));
+        _dateField=new HttpGenerator.CachedHttpField(HttpHeader.DATE,date.formatDate(now));
         DateCache.getTimer().scheduleAtFixedRate(new TimerTask()
         {
             @Override
             public void run()
             {
                 long now=System.currentTimeMillis();
-                _dateField=new HttpField.CachedHttpField(HttpHeader.DATE,date.formatDate(now));
+                _dateField=new HttpGenerator.CachedHttpField(HttpHeader.DATE,date.formatDate(now));
                 if (!isRunning())
                     this.cancel();
             }

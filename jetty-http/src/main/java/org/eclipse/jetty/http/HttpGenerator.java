@@ -37,6 +37,7 @@ public class HttpGenerator
 {
     private static final Logger LOG = Log.getLogger(HttpGenerator.class);
 
+    private final static byte[] __colon_space = new byte[] {':',' '};
     public static final ResponseInfo CONTINUE_100_INFO = new ResponseInfo(HttpVersion.HTTP_1_1,null,-1,100,null,false);
     public static final ResponseInfo PROGRESS_102_INFO = new ResponseInfo(HttpVersion.HTTP_1_1,null,-1,102,null,false);
     public final static ResponseInfo RESPONSE_500_INFO =
@@ -495,6 +496,9 @@ public class HttpGenerator
             case HTTP_1_1:
                 header.put((byte)' ');
                 header.put(request.getHttpVersion().toBytes());
+                break;
+            default:
+                throw new IllegalStateException();
         }
         header.put(HttpTokens.CRLF);
     }
@@ -585,7 +589,7 @@ public class HttpGenerator
 
                         // write the field to the header
                         content_type=true;
-                        field.putTo(header);
+                        putTo(field,header);
                         break;
                     }
 
@@ -600,7 +604,7 @@ public class HttpGenerator
                     case CONNECTION:
                     {
                         if (request!=null)
-                            field.putTo(header);
+                            putTo(field,header);
 
                         // Lookup and/or split connection value field
                         HttpHeaderValue[] values = new HttpHeaderValue[]{HttpHeaderValue.CACHE.get(field.getValue())};
@@ -672,12 +676,12 @@ public class HttpGenerator
                     case SERVER:
                     {
                         send=send&~SEND_SERVER;
-                        field.putTo(header);
+                        putTo(field,header);
                         break;
                     }
 
                     default:
-                        field.putTo(header);
+                        putTo(field,header);
                 }
             }
         }
@@ -776,7 +780,7 @@ public class HttpGenerator
             {
                 String c = transfer_encoding.getValue();
                 if (c.endsWith(HttpHeaderValue.CHUNKED.toString()))
-                    transfer_encoding.putTo(header);
+                    putTo(transfer_encoding,header);
                 else
                     throw new IllegalArgumentException("BAD TE");
             }
@@ -1006,6 +1010,89 @@ public class HttpGenerator
         public String toString()
         {
             return String.format("ResponseInfo{%s %s %s,%d,%b}",_httpVersion,_status,_reason,_contentLength,_head);
+        }
+    } 
+
+    private static void putSanitisedName(String s,ByteBuffer buffer)
+    {
+        int l=s.length();
+        for (int i=0;i<l;i++)
+        {
+            char c=s.charAt(i);
+            
+            if (c<0 || c>0xff || c=='\r' || c=='\n'|| c==':')
+                buffer.put((byte)'?');
+            else
+                buffer.put((byte)(0xff&c));
+        }
+    }
+
+    private static void putSanitisedValue(String s,ByteBuffer buffer)
+    {
+        int l=s.length();
+        for (int i=0;i<l;i++)
+        {
+            char c=s.charAt(i);
+            
+            if (c<0 || c>0xff || c=='\r' || c=='\n')
+                buffer.put((byte)'?');
+            else
+                buffer.put((byte)(0xff&c));
+        }
+    }
+
+    public static void putTo(HttpField field, ByteBuffer bufferInFillMode)
+    {
+        if (field instanceof CachedHttpField)
+        {
+            ((CachedHttpField)field).putTo(bufferInFillMode);
+        }
+        else
+        {
+            HttpHeader header=field.getHeader();
+            if (header!=null)
+            {
+                bufferInFillMode.put(header.getBytesColonSpace());
+                putSanitisedValue(field.getValue(),bufferInFillMode);
+            }
+            else
+            {
+                putSanitisedName(field.getName(),bufferInFillMode);
+                bufferInFillMode.put(__colon_space);
+                putSanitisedValue(field.getValue(),bufferInFillMode);
+            }
+
+            BufferUtil.putCRLF(bufferInFillMode);
+        }
+    }
+
+    public static void putTo(HttpFields fields, ByteBuffer bufferInFillMode) 
+    {
+        for (HttpField field : fields)
+        {
+            if (field != null)
+                putTo(field,bufferInFillMode);
+        }
+        BufferUtil.putCRLF(bufferInFillMode);
+    }
+    
+    public static class CachedHttpField extends HttpField
+    {
+        private final byte[] _bytes;
+        public CachedHttpField(HttpHeader header,String value)
+        {
+            super(header,value);
+            int cbl=header.getBytesColonSpace().length;
+            _bytes=new byte[cbl+value.length()+2];
+            System.arraycopy(header.getBytesColonSpace(),0,_bytes,0,cbl);
+            System.arraycopy(value.getBytes(StringUtil.__ISO_8859_1_CHARSET),0,_bytes,cbl,value.length());
+            _bytes[_bytes.length-2]=(byte)'\r';
+            _bytes[_bytes.length-1]=(byte)'\n';
+        }
+        
+        public void putTo(ByteBuffer bufferInFillMode)
+        {
+            bufferInFillMode.put(_bytes);
         }
     }
 }

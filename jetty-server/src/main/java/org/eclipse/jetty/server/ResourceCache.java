@@ -31,6 +31,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpContent.ResourceAsHttpContent;
 import org.eclipse.jetty.http.HttpFields;
@@ -345,7 +346,7 @@ public class ResourceCache
             _contentType=(mimeType==null?null:BufferUtil.toBuffer(mimeType));
             boolean exists=resource.exists();
             _lastModified=exists?resource.lastModified():-1;
-            _lastModifiedBytes=_lastModified<0?null:BufferUtil.toBuffer(HttpFields.formatDate(_lastModified));
+            _lastModifiedBytes=_lastModified<0?null:BufferUtil.toBuffer(DateGenerator.formatDate(_lastModified));
             
             _length=exists?(int)resource.length():0;
             _cachedSize.addAndGet(_length);

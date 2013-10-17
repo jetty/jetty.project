@@ -17,11 +17,12 @@
 //
 
 package org.eclipse.jetty.server;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 import javax.servlet.http.Cookie;
 
-import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -41,10 +42,9 @@ public class CookieCutter
 {
     private static final Logger LOG = Log.getLogger(CookieCutter.class);
 
-
     private Cookie[] _cookies;
     private Cookie[] _lastCookies;
-    Object _lazyFields;
+    private final List<String> _fieldList = new ArrayList<>();
     int _fields;
     
     public CookieCutter()
@@ -56,9 +56,7 @@ public class CookieCutter
         if (_cookies!=null)
             return _cookies;
         
-        if (_lastCookies!=null &&
-            _lazyFields!=null &&
-            _fields==LazyList.size(_lazyFields))
+        if (_lastCookies!=null && _fields==_fieldList.size())
             _cookies=_lastCookies;
         else
             parseFields();
@@ -70,7 +68,7 @@ public class CookieCutter
     {
         _cookies=cookies;
         _lastCookies=null;
-        _lazyFields=null;
+        _fieldList.clear();
         _fields=0;
     }
     
@@ -88,20 +86,20 @@ public class CookieCutter
         if (f.length()==0)
             return;
             
-        if (LazyList.size(_lazyFields)>_fields)
+        if (_fieldList.size()>_fields)
         {
-            if (f.equals(LazyList.get(_lazyFields,_fields)))
+            if (f.equals(_fieldList.get(_fields)))
             {
                 _fields++;
                 return;
             }
             
-            while (LazyList.size(_lazyFields)>_fields)
-                _lazyFields=LazyList.remove(_lazyFields,_fields);
+            while (_fieldList.size()>_fields)
+                _fieldList.remove(_fields);
         }
         _cookies=null;
         _lastCookies=null;
-        _lazyFields=LazyList.add(_lazyFields,_fields++,f);
+        _fieldList.add(_fields++,f);
     }
     
     
@@ -110,19 +108,17 @@ public class CookieCutter
         _lastCookies=null;
         _cookies=null;
         
-        Object cookies = null;
+        List<Cookie> cookies = new ArrayList<>();
 
         int version = 0;
 
         // delete excess fields
-        while (LazyList.size(_lazyFields)>_fields)
-            _lazyFields=LazyList.remove(_lazyFields,_fields);
+        while (_fieldList.size()>_fields)
+            _fieldList.remove(_fields);
         
         // For each cookie field
-        for (int f=0;f<_fields;f++)
+        for (String hdr : _fieldList)
         {
-            String hdr = LazyList.get(_lazyFields,f);
-            
             // Parse the header
             String name = null;
             String value = null;
@@ -311,7 +307,7 @@ public class CookieCutter
                             cookie = new Cookie(name, value);
                             if (version > 0)
                                 cookie.setVersion(version);
-                            cookies = LazyList.add(cookies, cookie);
+                            cookies.add(cookie);
                         }
                     }
                     catch (Exception e)
@@ -325,7 +321,7 @@ public class CookieCutter
             }
         }
 
-        _cookies = (Cookie[]) LazyList.toArray(cookies,Cookie.class);
+        _cookies = (Cookie[]) cookies.toArray(new Cookie[cookies.size()]);
         _lastCookies=_cookies;
     }
     
