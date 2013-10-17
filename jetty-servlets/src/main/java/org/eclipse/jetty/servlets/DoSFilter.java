@@ -56,7 +56,8 @@ import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.Timeout;
+import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
+import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
  * Denial of Service filter
@@ -184,12 +185,9 @@ public class DoSFilter implements Filter
     private ContinuationListener[] _listeners;
     private final ConcurrentHashMap<String, RateTracker> _rateTrackers = new ConcurrentHashMap<>();
     private final List<String> _whitelist = new CopyOnWriteArrayList<>();
-    private final Timeout _requestTimeoutQ = new Timeout();
-    private final Timeout _trackerTimeoutQ = new Timeout();
-    private Thread _timerThread;
-    private volatile boolean _running;
+    private Scheduler _scheduler;
 
-    public void init(FilterConfig filterConfig)
+    public void init(FilterConfig filterConfig) throws ServletException
     {
         _context = filterConfig.getServletContext();
 
@@ -275,45 +273,24 @@ public class DoSFilter implements Filter
         parameter = filterConfig.getInitParameter(ENABLED_INIT_PARAM);
         setEnabled(parameter == null || Boolean.parseBoolean(parameter));
 
-        _requestTimeoutQ.setNow();
-        _requestTimeoutQ.setDuration(_maxRequestMs);
-
-        _trackerTimeoutQ.setNow();
-        _trackerTimeoutQ.setDuration(_maxIdleTrackerMs);
-
-        _running = true;
-        _timerThread = (new Thread()
-        {
-            public void run()
-            {
-                try
-                {
-                    while (_running)
-                    {
-                        long now = _requestTimeoutQ.setNow();
-                        _requestTimeoutQ.tick();
-                        _trackerTimeoutQ.setNow(now);
-                        _trackerTimeoutQ.tick();
-                        try
-                        {
-                            Thread.sleep(100);
-                        }
-                        catch (InterruptedException e)
-                        {
-                            LOG.ignore(e);
-                        }
-                    }
-                }
-                finally
-                {
-                    LOG.debug("DoSFilter timer exited");
-                }
-            }
-        });
-        _timerThread.start();
+        _scheduler = startScheduler();
 
         if (_context != null && Boolean.parseBoolean(filterConfig.getInitParameter(MANAGED_ATTR_INIT_PARAM)))
             _context.setAttribute(filterConfig.getFilterName(), this);
+    }
+
+    protected Scheduler startScheduler() throws ServletException
+    {
+        try
+        {
+            Scheduler result = new ScheduledExecutorScheduler();
+            result.start();
+            return result;
+        }
+        catch (Exception x)
+        {
+            throw new ServletException(x);
+        }
     }
 
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain filterChain) throws IOException, ServletException
@@ -329,8 +306,6 @@ public class DoSFilter implements Filter
             return;
         }
 
-        final long now = _requestTimeoutQ.getNow();
-
         // Look for the rate tracker for this request
         RateTracker tracker = (RateTracker)request.getAttribute(__TRACKER);
 
@@ -342,7 +317,7 @@ public class DoSFilter implements Filter
             tracker = getRateTracker(request);
 
             // Calculate the rate and check it is over the allowed limit
-            final boolean overRateLimit = tracker.isRateExceeded(now);
+            final boolean overRateLimit = tracker.isRateExceeded(System.currentTimeMillis());
 
             // pass it through if  we are not currently over the rate limit
             if (!overRateLimit)
@@ -466,23 +441,23 @@ public class DoSFilter implements Filter
     protected void doFilterChain(FilterChain chain, final HttpServletRequest request, final HttpServletResponse response) throws IOException, ServletException
     {
         final Thread thread = Thread.currentThread();
-
-        final Timeout.Task requestTimeout = new Timeout.Task()
+        Runnable requestTimeout = new Runnable()
         {
-            public void expired()
+            @Override
+            public void run()
             {
                 closeConnection(request, response, thread);
             }
         };
 
+        Scheduler.Task task = _scheduler.schedule(requestTimeout, getMaxRequestMs(), TimeUnit.MILLISECONDS);
         try
         {
-            _requestTimeoutQ.schedule(requestTimeout);
             chain.doFilter(request, response);
         }
         finally
         {
-            requestTimeout.cancel();
+            task.cancel();
         }
     }
 
@@ -573,14 +548,14 @@ public class DoSFilter implements Filter
         }
         else
         {
-            if (_trackSessions && session != null && !session.isNew())
+            if (isTrackSessions() && session != null && !session.isNew())
             {
                 loadId = session.getId();
                 type = USER_SESSION;
             }
             else
             {
-                loadId = _remotePort ? (request.getRemoteAddr() + request.getRemotePort()) : request.getRemoteAddr();
+                loadId = isRemotePort() ? (request.getRemoteAddr() + request.getRemotePort()) : request.getRemoteAddr();
                 type = USER_IP;
             }
         }
@@ -590,16 +565,17 @@ public class DoSFilter implements Filter
         if (tracker == null)
         {
             boolean allowed = checkWhitelist(_whitelist, request.getRemoteAddr());
-            tracker = allowed ? new FixedRateTracker(loadId, type, _maxRequestsPerSec)
-                    : new RateTracker(loadId, type, _maxRequestsPerSec);
+            int maxRequestsPerSec = getMaxRequestsPerSec();
+            tracker = allowed ? new FixedRateTracker(loadId, type, maxRequestsPerSec)
+                    : new RateTracker(loadId, type, maxRequestsPerSec);
             RateTracker existing = _rateTrackers.putIfAbsent(loadId, tracker);
             if (existing != null)
                 tracker = existing;
 
             if (type == USER_IP)
             {
-                // USER_IP expiration from _rateTrackers is handled by the _trackerTimeoutQ
-                _trackerTimeoutQ.schedule(tracker);
+                // USER_IP expiration from _rateTrackers is handled by the _scheduler
+                _scheduler.schedule(tracker, getMaxIdleTrackerMs(), TimeUnit.MILLISECONDS);
             }
             else if (session != null)
             {
@@ -722,12 +698,21 @@ public class DoSFilter implements Filter
     public void destroy()
     {
         LOG.debug("Destroy {}",this);
-        _running = false;
-        _timerThread.interrupt();
-        _requestTimeoutQ.cancelAll();
-        _trackerTimeoutQ.cancelAll();
+        stopScheduler();
         _rateTrackers.clear();
         _whitelist.clear();
+    }
+
+    protected void stopScheduler()
+    {
+        try
+        {
+            _scheduler.stop();
+        }
+        catch (Exception x)
+        {
+            LOG.ignore(x);
+        }
     }
 
     /**
@@ -1067,7 +1052,7 @@ public class DoSFilter implements Filter
      * A RateTracker is associated with a connection, and stores request rate
      * data.
      */
-    class RateTracker extends Timeout.Task implements HttpSessionBindingListener, HttpSessionActivationListener, Serializable
+    class RateTracker implements Runnable, HttpSessionBindingListener, HttpSessionActivationListener, Serializable
     {
         private static final long serialVersionUID = 3534663738034577872L;
 
@@ -1138,15 +1123,15 @@ public class DoSFilter implements Filter
             LOG.warn("Unexpected session activation");
         }
 
-        public void expired()
+        @Override
+        public void run()
         {
-            long now = _trackerTimeoutQ.getNow();
             int latestIndex = _next == 0 ? (_timestamps.length - 1) : (_next - 1);
             long last = _timestamps[latestIndex];
-            boolean hasRecentRequest = last != 0 && (now - last) < 1000L;
+            boolean hasRecentRequest = last != 0 && (System.currentTimeMillis() - last) < 1000L;
 
             if (hasRecentRequest)
-                reschedule();
+                _scheduler.schedule(this, getMaxIdleTrackerMs(), TimeUnit.MILLISECONDS);
             else
                 _rateTrackers.remove(_id);
         }
