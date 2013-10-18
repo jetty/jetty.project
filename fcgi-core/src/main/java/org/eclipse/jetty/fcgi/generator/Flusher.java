@@ -36,6 +36,7 @@ public class Flusher
     private final Queue<Generator.Result> queue = new ConcurrentArrayQueue<>();
     private final Callback flushCallback = new FlushCallback();
     private final EndPoint endPoint;
+    private boolean flushing;
 
     public Flusher(EndPoint endPoint)
     {
@@ -47,9 +48,10 @@ public class Flusher
         synchronized (queue)
         {
             for (Generator.Result result : results)
-            {
                 queue.offer(result);
-            }
+            if (flushing)
+                return;
+            flushing = true;
         }
         endPoint.write(flushCallback);
     }
@@ -71,7 +73,11 @@ public class Flusher
             synchronized (queue)
             {
                 if (queue.isEmpty())
+                {
+                    // No more writes to do, switch to non-flushing
+                    flushing = false;
                     return false;
+                }
                 // TODO: here is where we want to gather more results to perform gathered writes
                 result = queue.poll();
             }
