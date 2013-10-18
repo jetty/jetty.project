@@ -54,11 +54,17 @@ import org.eclipse.jetty.util.log.Logger;
  * entries, that are then further refined by several specific black list exceptions
  * </ul>
  * <p>
- * An empty white list is treated as match all. If there is at least one entry in
+ * By default an empty white list is treated as match all. If there is at least one entry in
  * the white list, then a request must match a white list entry. Black list entries
  * are always applied, so that even if an entry matches the white list, a black list
  * entry will override it.
  * <p>
+ * <p>
+ * You can change white list policy setting whiteListByPath to true. In this mode a request will be white listed
+ * IF it has a matching URL in the white list, otherwise the black list applies, e.g. in default mode when
+ * whiteListByPath = false and wl = "127.0.0.1|/foo", /bar request from 127.0.0.1 will be blacklisted,
+ * if whiteListByPath=true then not.
+ * </p>
  * Internet addresses may be specified as absolute address or as a combination of
  * four octet wildcard specifications (a.b.c.d) that are defined as follows.
  * </p>
@@ -101,9 +107,10 @@ import org.eclipse.jetty.util.log.Logger;
 public class IPAccessHandler extends HandlerWrapper
 {
     private static final Logger LOG = Log.getLogger(IPAccessHandler.class);
-
-    IPAddressMap<PathMap> _white = new IPAddressMap<PathMap>();
-    IPAddressMap<PathMap> _black = new IPAddressMap<PathMap>();
+    // true means nodefault match
+    PathMap<IPAddressMap<Boolean>> _white = new PathMap<IPAddressMap<Boolean>>(true);
+    PathMap<IPAddressMap<Boolean>> _black = new PathMap<IPAddressMap<Boolean>>(true);
+    boolean _whiteListByPath = false;
 
     /* ------------------------------------------------------------ */
     /**
@@ -177,6 +184,17 @@ public class IPAccessHandler extends HandlerWrapper
 
     /* ------------------------------------------------------------ */
     /**
+     * Re-initialize the mode of path matching
+     *
+     * @param whiteListByPath matching mode
+     */
+    public void setWhiteListByPath(boolean whiteListByPath)
+    {
+        this._whiteListByPath = whiteListByPath;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
      * Checks the incoming request against the whitelist and blacklist
      *
      * @see org.eclipse.jetty.server.handler.HandlerWrapper#handle(java.lang.String, org.eclipse.jetty.server.Request, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
@@ -213,7 +231,7 @@ public class IPAccessHandler extends HandlerWrapper
      * @param entry new entry
      * @param patternMap target address pattern map
      */
-    protected void add(String entry, IPAddressMap<PathMap> patternMap)
+    protected void add(String entry, PathMap<IPAddressMap<Boolean>> patternMap)
     {
         if (entry != null && entry.length() > 0)
         {
@@ -237,14 +255,15 @@ public class IPAccessHandler extends HandlerWrapper
             if (path!=null && (path.startsWith("|") || path.startsWith("/*.")))
                 path=path.substring(1);
 
-            PathMap pathMap = patternMap.get(addr);
-            if (pathMap == null)
+            IPAddressMap<Boolean> addrMap = patternMap.get(path);
+            if (addrMap == null)
             {
-                pathMap = new PathMap(true);
-                patternMap.put(addr,pathMap);
+                addrMap = new IPAddressMap<Boolean>();
+                patternMap.put(path,addrMap);
             }
-            if (path != null && !"".equals(path))
-                pathMap.put(path,path);
+            if (addr != null && !"".equals(addr))
+                // MUST NOT BE null
+                addrMap.put(addr, true);
 
             if (deprecated)
                 LOG.debug(toString() +" - deprecated specification syntax: "+entry);
@@ -259,7 +278,7 @@ public class IPAccessHandler extends HandlerWrapper
      * @param entries new entries
      * @param patternMap target address pattern map
      */
-    protected void set(String[] entries,  IPAddressMap<PathMap> patternMap)
+    protected void set(String[] entries,  PathMap<IPAddressMap<Boolean>> patternMap)
     {
         patternMap.clear();
 
@@ -286,35 +305,39 @@ public class IPAccessHandler extends HandlerWrapper
         if (_white.size()>0)
         {
             boolean match = false;
+            boolean matchedByPath = false;
 
-            Object whiteObj = _white.getLazyMatches(addr);
+            Object whiteObj = _white.getLazyMatches(path);
             if (whiteObj != null)
             {
+                matchedByPath = true;
                 List whiteList = (whiteObj instanceof List) ? (List)whiteObj : Collections.singletonList(whiteObj);
 
                 for (Object entry: whiteList)
                 {
-                    PathMap pathMap = ((Map.Entry<String,PathMap>)entry).getValue();
-                    if (match = (pathMap!=null && (pathMap.size()==0 || pathMap.match(path)!=null)))
+                    IPAddressMap<Boolean> addrMap = ((Map.Entry<String,IPAddressMap<Boolean>>)entry).getValue();
+                    if (match = (addrMap!=null && (addrMap.size()==0 || addrMap.match(addr)!=null)))
                         break;
                 }
             }
 
-            if (!match)
+            if (!_whiteListByPath && !match) // Default behaviour
+                return false;
+            else if (_whiteListByPath && matchedByPath && !match) // Fail if only matched by path
                 return false;
         }
 
         if (_black.size() > 0)
         {
-            Object blackObj = _black.getLazyMatches(addr);
+            Object blackObj = _black.getLazyMatches(path);
             if (blackObj != null)
             {
                 List blackList = (blackObj instanceof List) ? (List)blackObj : Collections.singletonList(blackObj);
 
                 for (Object entry: blackList)
                 {
-                    PathMap pathMap = ((Map.Entry<String,PathMap>)entry).getValue();
-                    if (pathMap!=null && (pathMap.size()==0 || pathMap.match(path)!=null))
+                    IPAddressMap<Boolean> addrMap = ((Map.Entry<String,IPAddressMap<Boolean>>)entry).getValue();
+                    if (addrMap!=null && (addrMap.size()==0 || addrMap.match(addr)!=null))
                         return false;
                 }
             }
@@ -348,11 +371,11 @@ public class IPAccessHandler extends HandlerWrapper
      * @param buf buffer
      * @param patternMap pattern map to dump
      */
-    protected void dump(StringBuilder buf, IPAddressMap<PathMap> patternMap)
+    protected void dump(StringBuilder buf, PathMap<IPAddressMap<Boolean>> patternMap)
     {
-        for (String addr: patternMap.keySet())
+        for (String path: patternMap.keySet())
         {
-            for (Object path: ((PathMap)patternMap.get(addr)).values())
+            for (String addr: patternMap.get(path).keySet())
             {
                 buf.append("# ");
                 buf.append(addr);

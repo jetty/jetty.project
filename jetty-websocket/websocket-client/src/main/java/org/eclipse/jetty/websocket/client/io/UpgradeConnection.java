@@ -231,11 +231,11 @@ public class UpgradeConnection extends AbstractConnection
     {
         EndPoint endp = getEndPoint();
         Executor executor = getExecutor();
-        WebSocketClientConnection connection = new WebSocketClientConnection(endp,executor,connectPromise);
-
-        // Initialize / Negotiate Extensions
+        
         EventDriver websocket = connectPromise.getDriver();
         WebSocketPolicy policy = websocket.getPolicy();
+
+        WebSocketClientConnection connection = new WebSocketClientConnection(endp,executor,connectPromise,policy);
 
         SessionFactory sessionFactory = connectPromise.getClient().getSessionFactory();
         WebSocketSession session = sessionFactory.createSession(request.getRequestURI(),websocket,connection);

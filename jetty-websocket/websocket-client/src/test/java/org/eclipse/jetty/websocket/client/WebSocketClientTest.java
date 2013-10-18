@@ -29,6 +29,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer;
@@ -46,26 +47,12 @@ import org.junit.runner.RunWith;
 public class WebSocketClientTest
 {
     private BlockheadServer server;
-    private WebSocketClient client;
-
-    @Before
-    public void startClient() throws Exception
-    {
-        client = new WebSocketClient();
-        client.start();
-    }
 
     @Before
     public void startServer() throws Exception
     {
         server = new BlockheadServer();
         server.start();
-    }
-
-    @After
-    public void stopClient() throws Exception
-    {
-        client.stop();
     }
 
     @After
@@ -77,53 +64,71 @@ public class WebSocketClientTest
     @Test(expected = IllegalArgumentException.class)
     public void testAddExtension_NotInstalled() throws Exception
     {
-        JettyTrackingSocket cliSock = new JettyTrackingSocket();
+        WebSocketClient client = new WebSocketClient();
+        client.start();
+        try
+        {
+            TrackingSocket cliSock = new TrackingSocket();
 
-        client.getPolicy().setIdleTimeout(10000);
+            client.getPolicy().setIdleTimeout(10000);
 
-        URI wsUri = server.getWsUri();
-        ClientUpgradeRequest request = new ClientUpgradeRequest();
-        request.setSubProtocols("echo");
-        request.addExtensions("x-bad");
+            URI wsUri = server.getWsUri();
+            ClientUpgradeRequest request = new ClientUpgradeRequest();
+            request.setSubProtocols("echo");
+            request.addExtensions("x-bad");
 
-        // Should trigger failure on bad extension
-        client.connect(cliSock,wsUri,request);
+            // Should trigger failure on bad extension
+            client.connect(cliSock,wsUri,request);
+        }
+        finally
+        {
+            client.stop();
+        }
     }
 
     @Test
     public void testBasicEcho_FromClient() throws Exception
     {
-        JettyTrackingSocket cliSock = new JettyTrackingSocket();
+        WebSocketClient client = new WebSocketClient();
+        client.start();
+        try
+        {
+            TrackingSocket cliSock = new TrackingSocket();
 
-        client.getPolicy().setIdleTimeout(10000);
+            client.getPolicy().setIdleTimeout(10000);
 
-        URI wsUri = server.getWsUri();
-        ClientUpgradeRequest request = new ClientUpgradeRequest();
-        request.setSubProtocols("echo");
-        Future<Session> future = client.connect(cliSock,wsUri,request);
+            URI wsUri = server.getWsUri();
+            ClientUpgradeRequest request = new ClientUpgradeRequest();
+            request.setSubProtocols("echo");
+            Future<Session> future = client.connect(cliSock,wsUri,request);
 
-        final ServerConnection srvSock = server.accept();
-        srvSock.upgrade();
+            final ServerConnection srvSock = server.accept();
+            srvSock.upgrade();
 
-        Session sess = future.get(500,TimeUnit.MILLISECONDS);
-        Assert.assertThat("Session",sess,notNullValue());
-        Assert.assertThat("Session.open",sess.isOpen(),is(true));
-        Assert.assertThat("Session.upgradeRequest",sess.getUpgradeRequest(),notNullValue());
-        Assert.assertThat("Session.upgradeResponse",sess.getUpgradeResponse(),notNullValue());
+            Session sess = future.get(500,TimeUnit.MILLISECONDS);
+            Assert.assertThat("Session",sess,notNullValue());
+            Assert.assertThat("Session.open",sess.isOpen(),is(true));
+            Assert.assertThat("Session.upgradeRequest",sess.getUpgradeRequest(),notNullValue());
+            Assert.assertThat("Session.upgradeResponse",sess.getUpgradeResponse(),notNullValue());
 
-        cliSock.assertWasOpened();
-        cliSock.assertNotClosed();
+            cliSock.assertWasOpened();
+            cliSock.assertNotClosed();
 
-        Assert.assertThat("client.connectionManager.sessions.size",client.getConnectionManager().getSessions().size(),is(1));
+            Assert.assertThat("client.connectionManager.sessions.size",client.getConnectionManager().getSessions().size(),is(1));
 
-        cliSock.getSession().getRemote().sendString("Hello World!",null);
-        srvSock.echoMessage(1,TimeUnit.MILLISECONDS,500);
-        // wait for response from server
-        cliSock.waitForMessage(500,TimeUnit.MILLISECONDS);
+            cliSock.getSession().getRemote().sendStringByFuture("Hello World!");
+            srvSock.echoMessage(1,TimeUnit.MILLISECONDS,500);
+            // wait for response from server
+            cliSock.waitForMessage(500,TimeUnit.MILLISECONDS);
 
-        cliSock.assertMessage("Hello World!");
+            cliSock.assertMessage("Hello World!");
+        }
+        finally
+                {
+            client.stop();
+        }
     }
-    
+
     @Test
     public void testBasicEcho_UsingCallback() throws Exception
     {
@@ -155,39 +160,43 @@ public class WebSocketClientTest
         cliSock.getSession().getRemote().sendString("Hello World!",callback);
         callback.get(1,TimeUnit.SECONDS);
         
-        srvSock.echoMessage(1,TimeUnit.MILLISECONDS,500);
-        // wait for response from server
-        cliSock.waitForMessage(500,TimeUnit.MILLISECONDS);
-
-        cliSock.assertMessage("Hello World!");
     }
 
     @Test
     public void testBasicEcho_FromServer() throws Exception
     {
-        JettyTrackingSocket wsocket = new JettyTrackingSocket();
-        Future<Session> future = client.connect(wsocket,server.getWsUri());
+        WebSocketClient client = new WebSocketClient();
+        client.start();
+        try
+        {
+            TrackingSocket wsocket = new TrackingSocket();
+            Future<Session> future = client.connect(wsocket,server.getWsUri());
 
-        // Server
-        final ServerConnection srvSock = server.accept();
-        srvSock.upgrade();
+            // Server
+            final ServerConnection srvSock = server.accept();
+            srvSock.upgrade();
 
-        // Validate connect
-        Session sess = future.get(500,TimeUnit.MILLISECONDS);
-        Assert.assertThat("Session",sess,notNullValue());
-        Assert.assertThat("Session.open",sess.isOpen(),is(true));
-        Assert.assertThat("Session.upgradeRequest",sess.getUpgradeRequest(),notNullValue());
-        Assert.assertThat("Session.upgradeResponse",sess.getUpgradeResponse(),notNullValue());
+            // Validate connect
+            Session sess = future.get(500,TimeUnit.MILLISECONDS);
+            Assert.assertThat("Session",sess,notNullValue());
+            Assert.assertThat("Session.open",sess.isOpen(),is(true));
+            Assert.assertThat("Session.upgradeRequest",sess.getUpgradeRequest(),notNullValue());
+            Assert.assertThat("Session.upgradeResponse",sess.getUpgradeResponse(),notNullValue());
 
-        // Have server send initial message
+            // Have server send initial message
         srvSock.write(new TextFrame().setPayload("Hello World"));
 
-        // Verify connect
-        future.get(500,TimeUnit.MILLISECONDS);
-        wsocket.assertWasOpened();
-        wsocket.awaitMessage(1,TimeUnit.SECONDS,2);
+            // Verify connect
+            future.get(500,TimeUnit.MILLISECONDS);
+            wsocket.assertWasOpened();
+            wsocket.awaitMessage(1,TimeUnit.SECONDS,2);
 
-        wsocket.assertMessage("Hello World");
+            wsocket.assertMessage("Hello World");
+        }
+        finally
+        {
+            client.stop();
+        }
     }
 
     @Test
@@ -200,7 +209,7 @@ public class WebSocketClientTest
             JettyTrackingSocket wsocket = new JettyTrackingSocket();
 
             URI wsUri = server.getWsUri();
-            Future<Session> future = client.connect(wsocket,wsUri);
+            Future<Session> future = fact.connect(wsocket,wsUri);
 
             ServerConnection ssocket = server.accept();
             ssocket.upgrade();
@@ -240,7 +249,7 @@ public class WebSocketClientTest
             JettyTrackingSocket wsocket = new JettyTrackingSocket();
 
             URI wsUri = server.getWsUri();
-            Future<Session> future = client.connect(wsocket,wsUri);
+            Future<Session> future = factSmall.connect(wsocket,wsUri);
 
             ServerConnection ssocket = server.accept();
             ssocket.upgrade();
@@ -269,6 +278,48 @@ public class WebSocketClientTest
     }
 
     @Test
+    public void testMaxMessageSize() throws Exception
+    {
+        WebSocketClient client = new WebSocketClient();
+        client.start();
+        try
+        {
+            MaxMessageSocket wsocket = new MaxMessageSocket();
+
+            URI wsUri = server.getWsUri();
+            Future<Session> future = client.connect(wsocket,wsUri);
+
+            ServerConnection ssocket = server.accept();
+            ssocket.upgrade();
+
+            wsocket.awaitConnect(1,TimeUnit.SECONDS);
+
+            Session sess = future.get(500,TimeUnit.MILLISECONDS);
+            Assert.assertThat("Session",sess,notNullValue());
+            Assert.assertThat("Session.open",sess.isOpen(),is(true));
+            
+            // Create string that is larger than default size of 64k
+            // but smaller than maxMessageSize of 100k
+            byte buf[] = new byte[80*1024];
+            Arrays.fill(buf,(byte)'x');
+            String msg = StringUtil.toUTF8String(buf,0,buf.length);
+
+            wsocket.getSession().getRemote().sendStringByFuture(msg);
+            ssocket.echoMessage(1,TimeUnit.MILLISECONDS,500);
+            // wait for response from server
+            wsocket.waitForMessage(500,TimeUnit.MILLISECONDS);
+
+            wsocket.assertMessage(msg);
+
+            Assert.assertTrue(wsocket.dataLatch.await(1000,TimeUnit.SECONDS));
+        }
+        finally
+        {
+            client.stop();
+        }
+    }
+
+    @Test
     public void testParameterMap() throws Exception
     {
         WebSocketClient fact = new WebSocketClient();
@@ -278,7 +329,7 @@ public class WebSocketClientTest
             JettyTrackingSocket wsocket = new JettyTrackingSocket();
 
             URI wsUri = server.getWsUri().resolve("/test?snack=cashews&amount=handful&brand=off");
-            Future<Session> future = client.connect(wsocket,wsUri);
+            Future<Session> future = fact.connect(wsocket,wsUri);
 
             ServerConnection ssocket = server.accept();
             ssocket.upgrade();
