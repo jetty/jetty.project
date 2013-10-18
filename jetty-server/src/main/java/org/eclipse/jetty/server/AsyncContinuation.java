@@ -839,14 +839,14 @@ public class AsyncContinuation implements AsyncContext, Continuation
     public void dispatch(ServletContext context, String path)
     {
         _event._dispatchContext=context;
-        _event._pathInContext=path;
+        _event.setPath(path);
         dispatch();
     }
 
     /* ------------------------------------------------------------ */
     public void dispatch(String path)
     {
-        _event._pathInContext=path;
+        _event.setPath(path);
         dispatch();
     }
 
@@ -1115,6 +1115,11 @@ public class AsyncContinuation implements AsyncContext, Continuation
         public ServletContext getServletContext()
         {
             return _dispatchContext==null?_suspendedContext:_dispatchContext;
+        }
+        
+        public void setPath(String path)
+        {
+            _pathInContext=path;
         }
         
         /* ------------------------------------------------------------ */
