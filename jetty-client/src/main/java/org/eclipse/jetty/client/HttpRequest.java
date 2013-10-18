@@ -523,13 +523,13 @@ public class HttpRequest implements Request
         for (Iterator<Fields.Field> iterator = params.iterator(); iterator.hasNext();)
         {
             Fields.Field field = iterator.next();
-            String[] values = field.values();
-            for (int i = 0; i < values.length; ++i)
+            List<String> values = field.getValues();
+            for (int i = 0; i < values.size(); ++i)
             {
                 if (i > 0)
                     result.append("&");
-                result.append(field.name()).append("=");
-                result.append(urlEncode(values[i]));
+                result.append(field.getName()).append("=");
+                result.append(urlEncode(values.get(i)));
             }
             if (iterator.hasNext())
                 result.append("&");

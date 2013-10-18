@@ -222,7 +222,7 @@ public class ClientUsageTest
                     {
                         // Do something with the response
                         Fields headers = replyInfo.getHeaders();
-                        int contentLength = headers.get("content-length").valueAsInt();
+                        int contentLength = headers.get("content-length").getValueAsInt();
                         stream.setAttribute("content-length", contentLength);
                         if (!replyInfo.isClose())
                             stream.setAttribute("builder", new StringBuilder());

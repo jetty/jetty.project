@@ -317,7 +317,7 @@ public class ProxySPDYToHTTPTest
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
-                assertThat("Status code is 302", replyInfo.getHeaders().get(HTTPSPDYHeader.STATUS.name(version)).value(),
+                assertThat("Status code is 302", replyInfo.getHeaders().get(HTTPSPDYHeader.STATUS.name(version)).getValue(),
                         is("302"));
                 assertThat("Location header has been received", replyInfo.getHeaders().get("Location"), is(notNullValue()));
                 replyLatch.countDown();
@@ -484,7 +484,7 @@ public class ProxySPDYToHTTPTest
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
                 Fields headers = replyInfo.getHeaders();
-                assertThat("status is 504", headers.get(HTTPSPDYHeader.STATUS.name(version)).value(), is("504"));
+                assertThat("status is 504", headers.get(HTTPSPDYHeader.STATUS.name(version)).getValue(), is("504"));
                 replyLatch.countDown();
             }
 

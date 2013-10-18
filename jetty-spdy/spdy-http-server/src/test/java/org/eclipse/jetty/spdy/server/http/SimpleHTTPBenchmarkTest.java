@@ -115,7 +115,7 @@ public class SimpleHTTPBenchmarkTest extends AbstractHTTPSPDYTest
             {
                 assertTrue(replyInfo.isClose());
                 Fields replyHeaders = replyInfo.getHeaders();
-                assertThat(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"), CoreMatchers.is(true));
+                assertThat(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).getValue().contains("200"), CoreMatchers.is(true));
                 assertThat(replyHeaders.get(HttpHeader.SERVER.asString()), CoreMatchers.is(notNullValue()));
                 assertThat(replyHeaders.get(HttpHeader.X_POWERED_BY.asString()), CoreMatchers.is(notNullValue()));
                 replyLatch.countDown();
@@ -138,7 +138,7 @@ public class SimpleHTTPBenchmarkTest extends AbstractHTTPSPDYTest
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
                 Fields replyHeaders = replyInfo.getHeaders();
-                assertThat(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"), CoreMatchers.is(true));
+                assertThat(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).getValue().contains("200"), CoreMatchers.is(true));
                 assertThat(replyHeaders.get(HttpHeader.SERVER.asString()), CoreMatchers.is(notNullValue()));
                 assertThat(replyHeaders.get(HttpHeader.X_POWERED_BY.asString()), CoreMatchers.is(notNullValue()));
                 replyLatch.countDown();

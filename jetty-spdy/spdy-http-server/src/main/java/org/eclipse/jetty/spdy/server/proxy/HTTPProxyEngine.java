@@ -76,8 +76,8 @@ public class HTTPProxyEngine extends ProxyEngine
     public StreamFrameListener proxy(final Stream clientStream, SynInfo clientSynInfo, ProxyEngineSelector.ProxyServerInfo proxyServerInfo)
     {
         short version = clientStream.getSession().getVersion();
-        String method = clientSynInfo.getHeaders().get(HTTPSPDYHeader.METHOD.name(version)).value();
-        String path = clientSynInfo.getHeaders().get(HTTPSPDYHeader.URI.name(version)).value();
+        String method = clientSynInfo.getHeaders().get(HTTPSPDYHeader.METHOD.name(version)).getValue();
+        String path = clientSynInfo.getHeaders().get(HTTPSPDYHeader.URI.name(version)).getValue();
 
         Fields headers = new Fields(clientSynInfo.getHeaders(), false);
 
@@ -249,8 +249,8 @@ public class HTTPProxyEngine extends ProxyEngine
     private void addNonSpdyHeadersToRequest(short version, Fields headers, Request request)
     {
         for (Fields.Field header : headers)
-            if (HTTPSPDYHeader.from(version, header.name()) == null)
-                request.header(header.name(), header.value());
+            if (HTTPSPDYHeader.from(version, header.getName()) == null)
+                request.header(header.getName(), header.getValue());
     }
 
     static class LoggingCallback extends Callback.Adapter

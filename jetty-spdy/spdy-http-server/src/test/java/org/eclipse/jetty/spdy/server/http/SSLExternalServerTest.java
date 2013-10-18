@@ -97,7 +97,7 @@ public class SSLExternalServerTest extends AbstractHTTPSPDYTest
                 Fields.Field versionHeader = headers.get(HTTPSPDYHeader.STATUS.name(version));
                 if (versionHeader != null)
                 {
-                    Matcher matcher = Pattern.compile("(\\d{3}).*").matcher(versionHeader.value());
+                    Matcher matcher = Pattern.compile("(\\d{3}).*").matcher(versionHeader.getValue());
                     if (matcher.matches() && Integer.parseInt(matcher.group(1)) < 400)
                         latch.countDown();
                 }

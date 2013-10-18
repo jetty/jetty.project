@@ -200,7 +200,7 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
         public void rst(RstInfo rstInfo, Callback handler)
         {
             HttpGenerator.ResponseInfo info = new HttpGenerator.ResponseInfo(HttpVersion.fromString(headers.get
-                    ("version").value()), null, 0, 502, "SPDY reset received from upstream server", false);
+                    ("version").getValue()), null, 0, 502, "SPDY reset received from upstream server", false);
             send(info, null, true, new Callback.Adapter());
         }
 
@@ -247,24 +247,24 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
 
             headers.remove(HTTPSPDYHeader.SCHEME.name(version));
 
-            String status = headers.remove(HTTPSPDYHeader.STATUS.name(version)).value();
+            String status = headers.remove(HTTPSPDYHeader.STATUS.name(version)).getValue();
             Matcher matcher = statusRegexp.matcher(status);
             matcher.matches();
             int code = Integer.parseInt(matcher.group(1));
             String reason = matcher.group(2).trim();
 
-            HttpVersion httpVersion = HttpVersion.fromString(headers.remove(HTTPSPDYHeader.VERSION.name(version)).value());
+            HttpVersion httpVersion = HttpVersion.fromString(headers.remove(HTTPSPDYHeader.VERSION.name(version)).getValue());
 
             // Convert the Host header from a SPDY special header to a normal header
             Fields.Field host = headers.remove(HTTPSPDYHeader.HOST.name(version));
             if (host != null)
-                headers.put("host", host.value());
+                headers.put("host", host.getValue());
 
             HttpFields fields = new HttpFields();
             for (Fields.Field header : headers)
             {
-                String name = camelize(header.name());
-                fields.put(name, header.value());
+                String name = camelize(header.getName());
+                fields.put(name, header.getValue());
             }
 
             // TODO: handle better the HEAD last parameter
@@ -326,7 +326,7 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
 
     private void addPersistenceHeader(Fields headersToAddTo)
     {
-        HttpVersion httpVersion = HttpVersion.fromString(headers.get("version").value());
+        HttpVersion httpVersion = HttpVersion.fromString(headers.get("version").getValue());
         boolean persistent = false;
         switch (httpVersion)
         {
@@ -334,9 +334,9 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
             {
                 Fields.Field keepAliveHeader = headers.get(HttpHeader.KEEP_ALIVE.asString());
                 if(keepAliveHeader!=null)
-                    persistent = HttpHeaderValue.KEEP_ALIVE.asString().equals(keepAliveHeader.value());
+                    persistent = HttpHeaderValue.KEEP_ALIVE.asString().equals(keepAliveHeader.getValue());
                 if (!persistent)
-                    persistent = HttpMethod.CONNECT.is(headers.get("method").value());
+                    persistent = HttpMethod.CONNECT.is(headers.get("method").getValue());
                 if (persistent)
                     headersToAddTo.add(HttpHeader.CONNECTION.asString(), HttpHeaderValue.KEEP_ALIVE.asString());
                 break;
@@ -345,11 +345,11 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
             {
                 Fields.Field connectionHeader = headers.get(HttpHeader.CONNECTION.asString());
                 if(connectionHeader != null)
-                    persistent = !HttpHeaderValue.CLOSE.asString().equals(connectionHeader.value());
+                    persistent = !HttpHeaderValue.CLOSE.asString().equals(connectionHeader.getValue());
                 else
                     persistent = true;
                 if (!persistent)
-                    persistent = HttpMethod.CONNECT.is(headers.get("method").value());
+                    persistent = HttpMethod.CONNECT.is(headers.get("method").getValue());
                 if (!persistent)
                     headersToAddTo.add(HttpHeader.CONNECTION.asString(), HttpHeaderValue.CLOSE.asString());
                 break;

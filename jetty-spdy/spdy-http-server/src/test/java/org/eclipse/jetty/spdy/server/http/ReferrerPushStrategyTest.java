@@ -175,7 +175,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
 
                 assertThat("Stream is unidirectional", stream.isUnidirectional(), is(true));
                 assertThat("URI header ends with css", pushInfo.getHeaders().get(HTTPSPDYHeader.URI.name(version))
-                        .value().endsWith
+                        .getValue().endsWith
                                 ("" +
                                         ".css"),
                         is(true));
@@ -279,7 +279,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
             public StreamFrameListener onPush(Stream stream, PushInfo pushInfo)
             {
                 LOG.info("onPush: stream: {}, pushInfo: {}", stream, pushInfo);
-                String uriHeader = pushInfo.getHeaders().get(HTTPSPDYHeader.URI.name(version)).value();
+                String uriHeader = pushInfo.getHeaders().get(HTTPSPDYHeader.URI.name(version)).getValue();
                 switch ((int)allExpectedPushesReceivedLatch.getCount())
                 {
                     case 4:
@@ -377,7 +377,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
             public StreamFrameListener onPush(Stream stream, PushInfo pushInfo)
             {
                 LOG.info("Received push for stream: {} {}", stream.getId(), pushInfo);
-                String uriHeader = pushInfo.getHeaders().get(HTTPSPDYHeader.URI.name(version)).value();
+                String uriHeader = pushInfo.getHeaders().get(HTTPSPDYHeader.URI.name(version)).getValue();
                 switch ((int)allExpectedPushesReceivedLatch.getCount())
                 {
                     case 4:
@@ -474,7 +474,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
 
                 assertThat("Stream is unidirectional", stream.isUnidirectional(), is(true));
                 assertThat("URI header ends with css", pushInfo.getHeaders().get(HTTPSPDYHeader.URI.name(version))
-                        .value().endsWith
+                        .getValue().endsWith
                                 ("" +
                                         ".css"),
                         is(true));
@@ -495,7 +495,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
-                assertThat(replyInfo.getHeaders().get(HTTPSPDYHeader.STATUS.name(version)).value(), is("200 OK"));
+                assertThat(replyInfo.getHeaders().get(HTTPSPDYHeader.STATUS.name(version)).getValue(), is("200 OK"));
             }
 
             @Override
@@ -527,7 +527,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
 
                 assertThat("Stream is unidirectional", stream.isUnidirectional(), is(true));
                 assertThat("URI header ends with css", pushInfo.getHeaders().get(HTTPSPDYHeader.URI.name(version))
-                        .value().endsWith
+                        .getValue().endsWith
                                 ("" +
                                         ".css"),
                         is(true));
@@ -747,7 +747,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
             public StreamFrameListener onPush(Stream stream, PushInfo pushInfo)
             {
                 Assert.assertTrue(stream.isUnidirectional());
-                Assert.assertTrue(pushInfo.getHeaders().get(HTTPSPDYHeader.URI.name(version)).value().endsWith("" +
+                Assert.assertTrue(pushInfo.getHeaders().get(HTTPSPDYHeader.URI.name(version)).getValue().endsWith("" +
                         ".css"));
                 return new StreamFrameListener.Adapter()
                 {
@@ -1090,7 +1090,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
     private boolean validateHeader(Fields headers, String name, String expectedValue)
     {
         Fields.Field header = headers.get(name);
-        if (header != null && expectedValue.equals(header.value()))
+        if (header != null && expectedValue.equals(header.getValue()))
             return true;
         System.out.println(name + " not valid! Expected: " + expectedValue + " headers received:" + headers);
         return false;
@@ -1100,9 +1100,9 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
     {
         Fields.Field uriHeader = headers.get(HTTPSPDYHeader.URI.name(version));
         if (uriHeader != null)
-            if (version == SPDY.V2 && uriHeader.value().startsWith("http://"))
+            if (version == SPDY.V2 && uriHeader.getValue().startsWith("http://"))
                 return true;
-            else if (version == SPDY.V3 && uriHeader.value().startsWith("/")
+            else if (version == SPDY.V3 && uriHeader.getValue().startsWith("/")
                     && headers.get(HTTPSPDYHeader.HOST.name(version)) != null && headers.get(HTTPSPDYHeader.SCHEME.name(version)) != null)
                 return true;
         System.out.println(HTTPSPDYHeader.URI.name(version) + " not valid!");

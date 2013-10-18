@@ -98,7 +98,7 @@ public abstract class ProxyEngine
         addViaHeader(headers);
         Fields.Field schemeField = headers.get(HTTPSPDYHeader.SCHEME.name(stream.getSession().getVersion()));
         if(schemeField != null)
-            headers.add("X-Forwarded-Proto", schemeField.value());
+            headers.add("X-Forwarded-Proto", schemeField.getValue());
         InetSocketAddress address = stream.getSession().getRemoteAddress();
         if (address != null)
         {

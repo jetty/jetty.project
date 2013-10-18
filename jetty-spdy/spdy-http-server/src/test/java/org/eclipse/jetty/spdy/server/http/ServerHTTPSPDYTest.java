@@ -108,7 +108,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             {
                 assertTrue(replyInfo.isClose());
                 Fields replyHeaders = replyInfo.getHeaders();
-                assertThat(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"), is(true));
+                assertThat(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).getValue().contains("200"), is(true));
                 assertThat(replyHeaders.get(HttpHeader.SERVER.asString()), is(notNullValue()));
                 assertThat(replyHeaders.get(HttpHeader.X_POWERED_BY.asString()), is(notNullValue()));
                 replyLatch.countDown();
@@ -149,7 +149,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             {
                 assertTrue(replyInfo.isClose());
                 Fields replyHeaders = replyInfo.getHeaders();
-                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).getValue().contains("200"));
                 replyLatch.countDown();
             }
         });
@@ -192,11 +192,11 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             {
                 assertThat("isClose is true", replyInfo.isClose(), is(true));
                 Fields replyHeaders = replyInfo.getHeaders();
-                assertThat("response code is 200 OK", replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value()
+                assertThat("response code is 200 OK", replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).getValue()
                         .contains("200"), is(true));
-                assertThat(replyInfo.getHeaders().get("Set-Cookie").values()[0], is(cookie1 + "=\"" + cookie1Value +
+                assertThat(replyInfo.getHeaders().get("Set-Cookie").getValues().get(0), is(cookie1 + "=\"" + cookie1Value +
                         "\";Version=1"));
-                assertThat(replyInfo.getHeaders().get("Set-Cookie").values()[1], is(cookie2 + "=\"" + cookie2Value +
+                assertThat(replyInfo.getHeaders().get("Set-Cookie").getValues().get(1), is(cookie2 + "=\"" + cookie2Value +
                         "\";Version=1"));
                 replyLatch.countDown();
             }
@@ -234,7 +234,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             {
                 assertTrue(replyInfo.isClose());
                 Fields replyHeaders = replyInfo.getHeaders();
-                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).getValue().contains("200"));
                 replyLatch.countDown();
             }
 
@@ -276,7 +276,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                     {
                         assertTrue(replyInfo.isClose());
                         Fields replyHeaders = replyInfo.getHeaders();
-                        assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                        assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).getValue().contains("200"));
                         replyLatch.countDown();
                     }
                 });
@@ -325,7 +325,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                     {
                         assertTrue(replyInfo.isClose());
                         Fields replyHeaders = replyInfo.getHeaders();
-                        assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                        assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).getValue().contains("200"));
                         replyLatch.countDown();
                     }
                 });
@@ -367,7 +367,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                     {
                         assertTrue(replyInfo.isClose());
                         Fields replyHeaders = replyInfo.getHeaders();
-                        assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                        assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).getValue().contains("200"));
                         replyLatch.countDown();
                     }
                 });
@@ -411,7 +411,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             {
                 assertTrue(replyInfo.isClose());
                 Fields replyHeaders = replyInfo.getHeaders();
-                assertTrue(replyHeaders.toString(), replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                assertTrue(replyHeaders.toString(), replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).getValue().contains("200"));
                 replyLatch.countDown();
             }
         });
@@ -453,7 +453,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             {
                 Assert.assertFalse(replyInfo.isClose());
                 Fields replyHeaders = replyInfo.getHeaders();
-                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).getValue().contains("200"));
                 replyLatch.countDown();
             }
 
@@ -499,7 +499,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             {
                 Assert.assertFalse(replyInfo.isClose());
                 Fields replyHeaders = replyInfo.getHeaders();
-                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).getValue().contains("200"));
                 replyLatch.countDown();
             }
 
@@ -554,7 +554,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 assertEquals(1, replyFrames.incrementAndGet());
                 Assert.assertFalse(replyInfo.isClose());
                 Fields replyHeaders = replyInfo.getHeaders();
-                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).getValue().contains("200"));
                 replyLatch.countDown();
             }
 
@@ -607,7 +607,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             {
                 Assert.assertFalse(replyInfo.isClose());
                 Fields replyHeaders = replyInfo.getHeaders();
-                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).getValue().contains("200"));
                 replyLatch.countDown();
             }
 
@@ -663,7 +663,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             {
                 Assert.assertFalse(replyInfo.isClose());
                 Fields replyHeaders = replyInfo.getHeaders();
-                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).getValue().contains("200"));
                 replyLatch.countDown();
             }
 
@@ -716,7 +716,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             {
                 Assert.assertFalse(replyInfo.isClose());
                 Fields replyHeaders = replyInfo.getHeaders();
-                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).getValue().contains("200"));
                 replyLatch.countDown();
             }
 
@@ -769,7 +769,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             {
                 Assert.assertFalse(replyInfo.isClose());
                 Fields replyHeaders = replyInfo.getHeaders();
-                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).getValue().contains("200"));
                 replyLatch.countDown();
             }
 
@@ -827,7 +827,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             {
                 Assert.assertFalse(replyInfo.isClose());
                 Fields replyHeaders = replyInfo.getHeaders();
-                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).getValue().contains("200"));
                 replyLatch.countDown();
             }
 
@@ -880,8 +880,8 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 assertEquals(1, replies.incrementAndGet());
                 assertTrue(replyInfo.isClose());
                 Fields replyHeaders = replyInfo.getHeaders();
-                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("302"));
-                assertTrue(replyHeaders.get("location").value().endsWith(suffix));
+                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).getValue().contains("302"));
+                assertTrue(replyHeaders.get("location").getValue().endsWith(suffix));
                 replyLatch.countDown();
             }
         });
@@ -918,7 +918,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 assertEquals(1, replies.incrementAndGet());
                 Assert.assertFalse(replyInfo.isClose());
                 Fields replyHeaders = replyInfo.getHeaders();
-                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("404"));
+                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).getValue().contains("404"));
                 replyLatch.countDown();
             }
 
@@ -962,7 +962,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             {
                 assertEquals(1, replies.incrementAndGet());
                 Fields replyHeaders = replyInfo.getHeaders();
-                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("500"));
+                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).getValue().contains("500"));
                 replyLatch.countDown();
                 if (replyInfo.isClose())
                     latch.countDown();
@@ -1018,8 +1018,8 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 assertEquals(1, replyFrames.incrementAndGet());
                 Assert.assertFalse(replyInfo.isClose());
                 Fields replyHeaders = replyInfo.getHeaders();
-                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
-                assertTrue(replyHeaders.get("extra").value().contains("X"));
+                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).getValue().contains("200"));
+                assertTrue(replyHeaders.get("extra").getValue().contains("X"));
                 replyLatch.countDown();
             }
 
@@ -1077,7 +1077,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 assertEquals(1, replyFrames.incrementAndGet());
                 Assert.assertFalse(replyInfo.isClose());
                 Fields replyHeaders = replyInfo.getHeaders();
-                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).getValue().contains("200"));
                 replyLatch.countDown();
             }
 
@@ -1130,7 +1130,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             {
                 Assert.assertFalse(replyInfo.isClose());
                 Fields replyHeaders = replyInfo.getHeaders();
-                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).getValue().contains("200"));
                 replyLatch.countDown();
             }
 
@@ -1191,7 +1191,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
                 Fields replyHeaders = replyInfo.getHeaders();
-                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).getValue().contains("200"));
                 replyLatch.countDown();
             }
         });
@@ -1234,7 +1234,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
                 Fields replyHeaders = replyInfo.getHeaders();
-                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).getValue().contains("200"));
                 replyLatch.countDown();
             }
         });
@@ -1279,7 +1279,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
                 Fields replyHeaders = replyInfo.getHeaders();
-                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).getValue().contains("200"));
                 replyLatch.countDown();
             }
         });
@@ -1347,7 +1347,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
                 Fields replyHeaders = replyInfo.getHeaders();
-                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).getValue().contains("200"));
                 replyLatch.countDown();
             }
         });
@@ -1415,7 +1415,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
                 Fields replyHeaders = replyInfo.getHeaders();
-                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).getValue().contains("200"));
                 responseLatch.countDown();
             }
 
@@ -1456,7 +1456,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
                 Fields replyHeaders = replyInfo.getHeaders();
-                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).getValue().contains("200"));
                 responseLatch.countDown();
             }
         });

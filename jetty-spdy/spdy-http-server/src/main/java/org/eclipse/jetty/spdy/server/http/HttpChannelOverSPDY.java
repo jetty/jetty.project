@@ -19,8 +19,6 @@
 package org.eclipse.jetty.spdy.server.http;
 
 import java.nio.ByteBuffer;
-import java.util.LinkedList;
-import java.util.Queue;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpMethod;
@@ -172,19 +170,19 @@ public class HttpChannelOverSPDY extends HttpChannel<DataInfo>
             return false;
         }
 
-        HttpMethod httpMethod = HttpMethod.fromString(methodHeader.value());
-        HttpVersion httpVersion = HttpVersion.fromString(versionHeader.value());
+        HttpMethod httpMethod = HttpMethod.fromString(methodHeader.getValue());
+        HttpVersion httpVersion = HttpVersion.fromString(versionHeader.getValue());
 
         // TODO should handle URI as byte buffer as some bad clients send WRONG encodings in query string
         // that  we have to deal with
-        ByteBuffer uri = BufferUtil.toBuffer(uriHeader.value());
+        ByteBuffer uri = BufferUtil.toBuffer(uriHeader.getValue());
 
-        LOG.debug("HTTP > {} {} {}", httpMethod, uriHeader.value(), httpVersion);
+        LOG.debug("HTTP > {} {} {}", httpMethod, uriHeader.getValue(), httpVersion);
         startRequest(httpMethod, httpMethod.asString(), uri, httpVersion);
 
         Fields.Field schemeHeader = headers.get(HTTPSPDYHeader.SCHEME.name(version));
         if (schemeHeader != null)
-            getRequest().setScheme(schemeHeader.value());
+            getRequest().setScheme(schemeHeader.getValue());
         return true;
     }
 
@@ -192,7 +190,7 @@ public class HttpChannelOverSPDY extends HttpChannel<DataInfo>
     {
         for (Fields.Field header : headers)
         {
-            String name = header.name();
+            String name = header.getName();
 
             // Skip special SPDY headers, unless it's the "host" header
             HTTPSPDYHeader specialHeader = HTTPSPDYHeader.from(stream.getSession().getVersion(), name);
@@ -217,7 +215,7 @@ public class HttpChannelOverSPDY extends HttpChannel<DataInfo>
                 default:
                 {
                     // Spec says headers must be single valued
-                    String value = header.value();
+                    String value = header.getValue();
                     LOG.debug("HTTP > {}: {}", name, value);
                     parsedHeader(new HttpField(name,value));
                     break;

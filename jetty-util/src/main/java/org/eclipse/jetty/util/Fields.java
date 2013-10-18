@@ -18,11 +18,13 @@
 
 package org.eclipse.jetty.util;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -82,7 +84,7 @@ public class Fields implements Iterable<Fields.Field>
         if (obj == null || getClass() != obj.getClass())
             return false;
         Fields that = (Fields)obj;
-        if (size() != that.size())
+        if (getSize() != that.getSize())
             return false;
         if (caseSensitive != that.caseSensitive)
             return false;
@@ -105,11 +107,11 @@ public class Fields implements Iterable<Fields.Field>
     /**
      * @return a set of field names
      */
-    public Set<String> names()
+    public Set<String> getNames()
     {
         Set<String> result = new LinkedHashSet<>();
         for (Field field : fields.values())
-            result.add(field.name());
+            result.add(field.getName());
         return result;
     }
 
@@ -141,14 +143,14 @@ public class Fields implements Iterable<Fields.Field>
     }
 
     /**
-     * <p>Inserts or replaces the given {@link Field}, mapped to the {@link Field#name() field's name}</p>
+     * <p>Inserts or replaces the given {@link Field}, mapped to the {@link Field#getName() field's name}</p>
      *
      * @param field the field to put
      */
     public void put(Field field)
     {
         if (field != null)
-            fields.put(normalizeName(field.name()), field);
+            fields.put(normalizeName(field.getName()), field);
     }
 
     /**
@@ -170,7 +172,7 @@ public class Fields implements Iterable<Fields.Field>
         }
         else
         {
-            field = new Field(field.name(), field.values(), value);
+            field = new Field(field.getName(), field.getValues(), value);
             fields.put(key, field);
         }
     }
@@ -206,7 +208,7 @@ public class Fields implements Iterable<Fields.Field>
     /**
      * @return the number of fields
      */
-    public int size()
+    public int getSize()
     {
         return fields.size();
     }
@@ -233,19 +235,20 @@ public class Fields implements Iterable<Fields.Field>
     public static class Field
     {
         private final String name;
-        private final String[] values;
+        private final List<String> values;
 
         public Field(String name, String value)
         {
-            this(name, new String[]{value});
+            this(name, Collections.singletonList(value));
         }
 
-        private Field(String name, String[] values, String... moreValues)
+        private Field(String name, List<String> values, String... moreValues)
         {
             this.name = name;
-            this.values = new String[values.length + moreValues.length];
-            System.arraycopy(values, 0, this.values, 0, values.length);
-            System.arraycopy(moreValues, 0, this.values, values.length, moreValues.length);
+            List<String> list = new ArrayList<>(values.size() + moreValues.length);
+            list.addAll(values);
+            list.addAll(Arrays.asList(moreValues));
+            this.values = Collections.unmodifiableList(list);
         }
 
         public boolean equals(Field that, boolean caseSensitive)
@@ -256,7 +259,7 @@ public class Fields implements Iterable<Fields.Field>
                 return false;
             if (caseSensitive)
                 return equals(that);
-            return name.equalsIgnoreCase(that.name) && Arrays.equals(values, that.values);
+            return name.equalsIgnoreCase(that.name) && values.equals(that.values);
         }
 
         @Override
@@ -267,21 +270,21 @@ public class Fields implements Iterable<Fields.Field>
             if (obj == null || getClass() != obj.getClass())
                 return false;
             Field that = (Field)obj;
-            return name.equals(that.name) && Arrays.equals(values, that.values);
+            return name.equals(that.name) && values.equals(that.values);
         }
 
         @Override
         public int hashCode()
         {
             int result = name.hashCode();
-            result = 31 * result + Arrays.hashCode(values);
+            result = 31 * result + values.hashCode();
             return result;
         }
 
         /**
          * @return the field's name
          */
-        public String name()
+        public String getName()
         {
             return name;
         }
@@ -289,29 +292,29 @@ public class Fields implements Iterable<Fields.Field>
         /**
          * @return the first field's value
          */
-        public String value()
+        public String getValue()
         {
-            return values[0];
+            return values.get(0);
         }
 
         /**
-         * <p>Attempts to convert the result of {@link #value()} to an integer,
+         * <p>Attempts to convert the result of {@link #getValue()} to an integer,
          * returning it if the conversion is successful; returns null if the
-         * result of {@link #value()} is null.</p>
+         * result of {@link #getValue()} is null.</p>
          *
-         * @return the result of {@link #value()} converted to an integer, or null
+         * @return the result of {@link #getValue()} converted to an integer, or null
          * @throws NumberFormatException if the conversion fails
          */
-        public Integer valueAsInt()
+        public Integer getValueAsInt()
         {
-            final String value = value();
+            final String value = getValue();
             return value == null ? null : Integer.valueOf(value);
         }
 
         /**
          * @return the field's values
          */
-        public String[] values()
+        public List<String> getValues()
         {
             return values;
         }
@@ -321,13 +324,13 @@ public class Fields implements Iterable<Fields.Field>
          */
         public boolean hasMultipleValues()
         {
-            return values.length > 1;
+            return values.size() > 1;
         }
 
         @Override
         public String toString()
         {
-            return Arrays.toString(values);
+            return String.format("%s=%s", name, values);
         }
     }
 }

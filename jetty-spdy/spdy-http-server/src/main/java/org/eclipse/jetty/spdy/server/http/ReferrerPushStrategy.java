@@ -160,12 +160,12 @@ public class ReferrerPushStrategy implements PushStrategy
         Set<String> result = Collections.<String>emptySet();
         short version = stream.getSession().getVersion();
         if (!isIfModifiedSinceHeaderPresent(requestHeaders) && isValidMethod(requestHeaders.get(HTTPSPDYHeader.METHOD
-                .name(version)).value()) && !isUserAgentBlacklisted(requestHeaders))
+                .name(version)).getValue()) && !isUserAgentBlacklisted(requestHeaders))
         {
-            String scheme = requestHeaders.get(HTTPSPDYHeader.SCHEME.name(version)).value();
-            String host = requestHeaders.get(HTTPSPDYHeader.HOST.name(version)).value();
+            String scheme = requestHeaders.get(HTTPSPDYHeader.SCHEME.name(version)).getValue();
+            String host = requestHeaders.get(HTTPSPDYHeader.HOST.name(version)).getValue();
             String origin = scheme + "://" + host;
-            String url = requestHeaders.get(HTTPSPDYHeader.URI.name(version)).value();
+            String url = requestHeaders.get(HTTPSPDYHeader.URI.name(version)).getValue();
             String absoluteURL = origin + url;
             LOG.debug("Applying push strategy for {}", absoluteURL);
             if (isMainResource(url, responseHeaders))
@@ -178,7 +178,7 @@ public class ReferrerPushStrategy implements PushStrategy
                 Fields.Field referrerHeader = requestHeaders.get("referer");
                 if (referrerHeader != null)
                 {
-                    String referrer = referrerHeader.value();
+                    String referrer = referrerHeader.getValue();
                     MainResource mainResource = mainResources.get(referrer);
                     if (mainResource == null)
                         mainResource = getOrCreateMainResource(referrer);
@@ -237,7 +237,7 @@ public class ReferrerPushStrategy implements PushStrategy
         Fields.Field userAgentHeader = headers.get("user-agent");
         if (userAgentHeader != null)
             for (Pattern userAgentPattern : userAgentBlacklist)
-                if (userAgentPattern.matcher(userAgentHeader.value()).matches())
+                if (userAgentPattern.matcher(userAgentHeader.getValue()).matches())
                     return true;
         return false;
     }
@@ -252,7 +252,7 @@ public class ReferrerPushStrategy implements PushStrategy
                 if (header == null)
                     return true;
 
-                String contentType = header.value().toLowerCase(Locale.ENGLISH);
+                String contentType = header.getValue().toLowerCase(Locale.ENGLISH);
                 for (String pushContentType : pushContentTypes)
                     if (contentType.startsWith(pushContentType))
                         return true;
