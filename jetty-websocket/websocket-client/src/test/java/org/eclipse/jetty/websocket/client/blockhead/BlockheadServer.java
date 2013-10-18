@@ -100,7 +100,8 @@ public class BlockheadServer
             this.socket = socket;
             this.incomingFrames = new IncomingFramesCapture();
             this.policy = WebSocketPolicy.newServerPolicy();
-            this.policy.setMaxMessageSize(100000);
+            this.policy.setMaxBinaryMessageSize(100000);
+            this.policy.setMaxTextMessageSize(100000);
             this.bufferPool = new MappedByteBufferPool(BUFFER_SIZE);
             this.parser = new Parser(policy,bufferPool);
             this.parseCount = new AtomicInteger(0);

@@ -34,7 +34,7 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.junit.Assert;
 
-@WebSocket(maxMessageSize = 100*1024)
+@WebSocket(maxTextMessageSize = 100*1024)
 public class MaxMessageSocket
 {
     private static final Logger LOG = Log.getLogger(MaxMessageSocket.class);

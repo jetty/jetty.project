@@ -22,6 +22,7 @@ import static org.hamcrest.Matchers.*;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
@@ -121,7 +122,7 @@ public class AnnotatedMaxMessageSizeTest
             // Generate text frame
             byte buf[] = new byte[90*1024]; // buffer bigger than maxMessageSize
             Arrays.fill(buf,(byte)'x');
-            client.write(WebSocketFrame.text().setPayload(buf));
+            client.write(new TextFrame().setPayload(ByteBuffer.wrap(buf)));
 
             // Read frame (hopefully close frame saying its too large)
             IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);

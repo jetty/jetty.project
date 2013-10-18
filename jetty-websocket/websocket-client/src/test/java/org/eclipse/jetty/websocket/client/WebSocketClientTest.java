@@ -68,7 +68,7 @@ public class WebSocketClientTest
         client.start();
         try
         {
-            TrackingSocket cliSock = new TrackingSocket();
+            JettyTrackingSocket cliSock = new JettyTrackingSocket();
 
             client.getPolicy().setIdleTimeout(10000);
 
@@ -93,7 +93,7 @@ public class WebSocketClientTest
         client.start();
         try
         {
-            TrackingSocket cliSock = new TrackingSocket();
+            JettyTrackingSocket cliSock = new JettyTrackingSocket();
 
             client.getPolicy().setIdleTimeout(10000);
 
@@ -124,7 +124,7 @@ public class WebSocketClientTest
             cliSock.assertMessage("Hello World!");
         }
         finally
-                {
+        {
             client.stop();
         }
     }
@@ -132,34 +132,42 @@ public class WebSocketClientTest
     @Test
     public void testBasicEcho_UsingCallback() throws Exception
     {
-        JettyTrackingSocket cliSock = new JettyTrackingSocket();
+        WebSocketClient client = new WebSocketClient();
+        client.start();
+        try
+        {
+            JettyTrackingSocket cliSock = new JettyTrackingSocket();
 
-        client.getPolicy().setIdleTimeout(10000);
+            client.getPolicy().setIdleTimeout(10000);
 
-        URI wsUri = server.getWsUri();
-        ClientUpgradeRequest request = new ClientUpgradeRequest();
-        request.setSubProtocols("echo");
-        Future<Session> future = client.connect(cliSock,wsUri,request);
+            URI wsUri = server.getWsUri();
+            ClientUpgradeRequest request = new ClientUpgradeRequest();
+            request.setSubProtocols("echo");
+            Future<Session> future = client.connect(cliSock,wsUri,request);
 
-        final ServerConnection srvSock = server.accept();
-        srvSock.upgrade();
+            final ServerConnection srvSock = server.accept();
+            srvSock.upgrade();
 
-        Session sess = future.get(500,TimeUnit.MILLISECONDS);
-        Assert.assertThat("Session",sess,notNullValue());
-        Assert.assertThat("Session.open",sess.isOpen(),is(true));
-        Assert.assertThat("Session.upgradeRequest",sess.getUpgradeRequest(),notNullValue());
-        Assert.assertThat("Session.upgradeResponse",sess.getUpgradeResponse(),notNullValue());
+            Session sess = future.get(500,TimeUnit.MILLISECONDS);
+            Assert.assertThat("Session",sess,notNullValue());
+            Assert.assertThat("Session.open",sess.isOpen(),is(true));
+            Assert.assertThat("Session.upgradeRequest",sess.getUpgradeRequest(),notNullValue());
+            Assert.assertThat("Session.upgradeResponse",sess.getUpgradeResponse(),notNullValue());
 
-        cliSock.assertWasOpened();
-        cliSock.assertNotClosed();
+            cliSock.assertWasOpened();
+            cliSock.assertNotClosed();
 
-        Assert.assertThat("client.connectionManager.sessions.size",client.getConnectionManager().getSessions().size(),is(1));
+            Assert.assertThat("client.connectionManager.sessions.size",client.getConnectionManager().getSessions().size(),is(1));
 
-        FutureWriteCallback callback = new FutureWriteCallback();
-        
-        cliSock.getSession().getRemote().sendString("Hello World!",callback);
-        callback.get(1,TimeUnit.SECONDS);
-        
+            FutureWriteCallback callback = new FutureWriteCallback();
+
+            cliSock.getSession().getRemote().sendString("Hello World!",callback);
+            callback.get(1,TimeUnit.SECONDS);
+        }
+        finally
+        {
+            client.stop();
+        }
     }
 
     @Test
@@ -169,7 +177,7 @@ public class WebSocketClientTest
         client.start();
         try
         {
-            TrackingSocket wsocket = new TrackingSocket();
+            JettyTrackingSocket wsocket = new JettyTrackingSocket();
             Future<Session> future = client.connect(wsocket,server.getWsUri());
 
             // Server
@@ -184,7 +192,7 @@ public class WebSocketClientTest
             Assert.assertThat("Session.upgradeResponse",sess.getUpgradeResponse(),notNullValue());
 
             // Have server send initial message
-        srvSock.write(new TextFrame().setPayload("Hello World"));
+            srvSock.write(new TextFrame().setPayload("Hello World"));
 
             // Verify connect
             future.get(500,TimeUnit.MILLISECONDS);
@@ -297,10 +305,10 @@ public class WebSocketClientTest
             Session sess = future.get(500,TimeUnit.MILLISECONDS);
             Assert.assertThat("Session",sess,notNullValue());
             Assert.assertThat("Session.open",sess.isOpen(),is(true));
-            
+
             // Create string that is larger than default size of 64k
             // but smaller than maxMessageSize of 100k
-            byte buf[] = new byte[80*1024];
+            byte buf[] = new byte[80 * 1024];
             Arrays.fill(buf,(byte)'x');
             String msg = StringUtil.toUTF8String(buf,0,buf.length);
 
