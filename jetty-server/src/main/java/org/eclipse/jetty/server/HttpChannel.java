@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
+import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -277,6 +278,14 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
                         _request.setAttribute(RequestDispatcher.ERROR_MESSAGE,"Async Timeout");
                         _request.setAttribute(RequestDispatcher.ERROR_REQUEST_URI,_request.getRequestURI());
                         _response.setStatusWithReason(500,"Async Timeout");
+                        
+                        ErrorHandler eh = _state.getContextHandler().getErrorHandler();
+                        if (eh instanceof ErrorHandler.ErrorPageMapper)
+                        {
+                            String error_page=((ErrorHandler.ErrorPageMapper)eh).getErrorPage((HttpServletRequest)_state.getAsyncContextEvent().getSuppliedRequest());
+                            if (error_page!=null)
+                                _state.getAsyncContextEvent().setDispatchTarget(_state.getContextHandler().getServletContext(),error_page);
+                        }
                     }
                     else
                         _request.setDispatcherType(DispatcherType.ASYNC);
