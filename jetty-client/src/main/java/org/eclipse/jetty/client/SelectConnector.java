@@ -155,7 +155,7 @@ class SelectConnector extends AggregateLifeCycle implements HttpClient.Connector
             if (dest.isSecure())
             {
                 LOG.debug("secure to {}, proxied={}",channel,dest.isProxied());
-                ep = new UpgradableEndPoint(ep,newSslEngine(channel));
+                ep = new UpgradableEndPoint(ep,newSslEngine(dest.getSslContextFactory(), channel));
             }
 
             AsyncConnection connection = selectSet.getManager().newConnection(channel,ep, key.attachment());
@@ -172,9 +172,8 @@ class SelectConnector extends AggregateLifeCycle implements HttpClient.Connector
             return scep;
         }
 
-        private synchronized SSLEngine newSslEngine(SocketChannel channel) throws IOException
+        private synchronized SSLEngine newSslEngine(SslContextFactory sslContextFactory, SocketChannel channel) throws IOException
         {
-            SslContextFactory sslContextFactory = _httpClient.getSslContextFactory();
             SSLEngine sslEngine;
             if (channel != null)
             {
