@@ -18,50 +18,56 @@
 
 package org.eclipse.jetty.fcgi.client.http;
 
-import java.util.regex.Pattern;
+import java.io.IOException;
+import java.util.Map;
 
 import org.eclipse.jetty.client.AbstractHttpClientTransport;
 import org.eclipse.jetty.client.HttpDestination;
+import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.api.Connection;
+import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.fcgi.FCGI;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.Promise;
 
 // TODO: add parameter to tell whether use multiplex destinations or not
 public class HttpClientTransportOverFCGI extends AbstractHttpClientTransport
 {
-    private final Pattern uriPattern;
+    private final String scriptRoot;
 
-    public HttpClientTransportOverFCGI(Pattern uriPattern)
+    public HttpClientTransportOverFCGI(String scriptRoot)
     {
-        this(1, uriPattern);
+        this(Runtime.getRuntime().availableProcessors() / 2 + 1, scriptRoot);
     }
 
-    public HttpClientTransportOverFCGI(int selectors, Pattern uriPattern)
+    public HttpClientTransportOverFCGI(int selectors, String scriptRoot)
     {
         super(selectors);
-        this.uriPattern = uriPattern;
-    }
-
-    public Pattern getURIPattern()
-    {
-        return uriPattern;
+        this.scriptRoot = scriptRoot;
     }
 
     @Override
-    public HttpDestination newHttpDestination(String scheme, String host, int port)
+    public HttpDestination newHttpDestination(Origin origin)
     {
-        return new MultiplexHttpDestinationOverFCGI(getHttpClient(), scheme, host, port);
+        return new MultiplexHttpDestinationOverFCGI(getHttpClient(), origin);
     }
 
     @Override
-    protected org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, HttpDestination destination)
+    public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
     {
-        return new HttpConnectionOverFCGI(endPoint, destination);
+        HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
+        HttpConnectionOverFCGI connection = new HttpConnectionOverFCGI(endPoint, destination);
+        @SuppressWarnings("unchecked")
+        Promise<Connection> promise = (Promise<Connection>)context.get(HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
+        promise.succeeded(connection);
+        return connection;
     }
 
-    @Override
-    public Connection tunnel(Connection connection)
+    protected void customize(Request request, HttpFields fastCGIHeaders)
     {
-        HttpConnectionOverFCGI httpConnection = (HttpConnectionOverFCGI)connection;
-        return tunnel(httpConnection.getEndPoint(), httpConnection.getHttpDestination(), connection);
+        String scriptName = fastCGIHeaders.get(FCGI.Headers.SCRIPT_NAME);
+        fastCGIHeaders.put(FCGI.Headers.SCRIPT_FILENAME, scriptRoot + scriptName);
+        fastCGIHeaders.put(FCGI.Headers.DOCUMENT_ROOT, scriptRoot);
     }
 }

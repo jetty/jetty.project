@@ -154,21 +154,21 @@ public class ClientGeneratorTest
         final int id = 13;
         Generator.Result result = generator.generateRequestContent(id, content, true, null);
 
-        final AtomicInteger length = new AtomicInteger();
+        final AtomicInteger totalLength = new AtomicInteger();
         ServerParser parser = new ServerParser(new ServerParser.Listener.Adapter()
         {
             @Override
             public void onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
             {
                 Assert.assertEquals(id, request);
-                length.addAndGet(buffer.remaining());
+                totalLength.addAndGet(buffer.remaining());
             }
 
             @Override
             public void onEnd(int request)
             {
                 Assert.assertEquals(id, request);
-                Assert.assertEquals(contentLength, length.get());
+                Assert.assertEquals(contentLength, totalLength.get());
             }
         });
 

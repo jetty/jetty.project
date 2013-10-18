@@ -214,7 +214,7 @@ public class ClientParserTest
         Generator.Result result1 = generator.generateResponseHeaders(id, code, "OK", fields, null);
         Generator.Result result2 = generator.generateResponseContent(id, content, true, null);
 
-        final AtomicInteger length = new AtomicInteger();
+        final AtomicInteger totalLength = new AtomicInteger();
         final AtomicBoolean verifier = new AtomicBoolean();
         ClientParser parser = new ClientParser(new ClientParser.Listener.Adapter()
         {
@@ -222,14 +222,14 @@ public class ClientParserTest
             public void onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
             {
                 Assert.assertEquals(id, request);
-                length.addAndGet(buffer.remaining());
+                totalLength.addAndGet(buffer.remaining());
             }
 
             @Override
             public void onEnd(int request)
             {
                 Assert.assertEquals(id, request);
-                Assert.assertEquals(contentLength, length.get());
+                Assert.assertEquals(contentLength, totalLength.get());
                 verifier.set(true);
             }
         });

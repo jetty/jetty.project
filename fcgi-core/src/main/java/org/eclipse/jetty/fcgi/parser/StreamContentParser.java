@@ -80,7 +80,14 @@ public class StreamContentParser extends ContentParser
     @Override
     public void noContent()
     {
-        onEnd();
+        try
+        {
+            listener.onEnd(getRequest());
+        }
+        catch (Throwable x)
+        {
+            logger.debug("Exception while invoking listener " + listener, x);
+        }
     }
 
     protected void onContent(ByteBuffer buffer)
@@ -95,16 +102,8 @@ public class StreamContentParser extends ContentParser
         }
     }
 
-    protected void onEnd()
+    protected void end(int request)
     {
-        try
-        {
-            listener.onEnd(getRequest());
-        }
-        catch (Throwable x)
-        {
-            logger.debug("Exception while invoking listener " + listener, x);
-        }
     }
 
     private enum State

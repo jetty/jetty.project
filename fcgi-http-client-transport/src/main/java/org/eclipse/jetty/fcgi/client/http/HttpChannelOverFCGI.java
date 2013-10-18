@@ -111,7 +111,7 @@ public class HttpChannelOverFCGI extends HttpChannel
             receiver.responseSuccess(exchange);
     }
 
-    protected void flush(Generator.Result result)
+    protected void flush(Generator.Result... result)
     {
         flusher.flush(result);
     }

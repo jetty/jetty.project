@@ -55,7 +55,7 @@ public abstract class AbstractHttpClientServerTest
         QueuedThreadPool executor = new QueuedThreadPool();
         executor.setName(executor.getName() + "-client");
 
-        client = new HttpClient(new HttpClientTransportOverFCGI(), null);
+        client = new HttpClient(new HttpClientTransportOverFCGI(""), null);
         client.setExecutor(executor);
         client.start();
     }

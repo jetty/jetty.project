@@ -21,12 +21,13 @@ package org.eclipse.jetty.fcgi.client.http;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.MultiplexHttpDestination;
+import org.eclipse.jetty.client.Origin;
 
 public class MultiplexHttpDestinationOverFCGI extends MultiplexHttpDestination<HttpConnectionOverFCGI>
 {
-    public MultiplexHttpDestinationOverFCGI(HttpClient client, String scheme, String host, int port)
+    public MultiplexHttpDestinationOverFCGI(HttpClient client, Origin origin)
     {
-        super(client, scheme, host, port);
+        super(client, origin);
     }
 
     @Override

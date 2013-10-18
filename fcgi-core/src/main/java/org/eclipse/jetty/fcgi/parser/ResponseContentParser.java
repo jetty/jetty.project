@@ -19,11 +19,13 @@
 package org.eclipse.jetty.fcgi.parser;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
@@ -34,46 +36,89 @@ public class ResponseContentParser extends StreamContentParser
 {
     private static final Logger LOG = Log.getLogger(ResponseContentParser.class);
 
+    private final Map<Integer, ResponseParser> parsers = new ConcurrentHashMap<>();
+    private final ClientParser.Listener listener;
+
     public ResponseContentParser(HeaderParser headerParser, ClientParser.Listener listener)
     {
-        super(headerParser, FCGI.StreamType.STD_OUT, new ResponseListener(headerParser, listener));
+        super(headerParser, FCGI.StreamType.STD_OUT, listener);
+        this.listener = listener;
     }
 
-    private static class ResponseListener extends Parser.Listener.Adapter implements HttpParser.ResponseHandler<ByteBuffer>
+    @Override
+    protected void onContent(ByteBuffer buffer)
     {
-        private final HeaderParser headerParser;
-        private final ClientParser.Listener listener;
+        int request = getRequest();
+        ResponseParser parser = parsers.get(request);
+        if (parser == null)
+        {
+            parser = new ResponseParser(listener, request);
+            parsers.put(request, parser);
+        }
+        parser.parse(buffer);
+    }
+
+    @Override
+    protected void end(int request)
+    {
+        super.end(request);
+        parsers.remove(request);
+    }
+
+    private class ResponseParser implements HttpParser.ResponseHandler<ByteBuffer>
+    {
+        private final HttpFields fields = new HttpFields();
+        private ClientParser.Listener listener;
+        private final int request;
         private final FCGIHttpParser httpParser;
         private State state = State.HEADERS;
-        private boolean begun;
-        private List<HttpField> fields;
+        private boolean seenResponseCode;
 
-        public ResponseListener(HeaderParser headerParser, ClientParser.Listener listener)
+        private ResponseParser(ClientParser.Listener listener, int request)
         {
-            this.headerParser = headerParser;
             this.listener = listener;
+            this.request = request;
             this.httpParser = new FCGIHttpParser(this);
         }
 
-        @Override
-        public void onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
+        public void parse(ByteBuffer buffer)
         {
-            LOG.debug("Request {} {} content {} {}", request, stream, state, buffer);
+            LOG.debug("Response {} {} content {} {}", request, FCGI.StreamType.STD_OUT, state, buffer);
 
-            while (buffer.hasRemaining())
+            int remaining = buffer.remaining();
+            while (remaining > 0)
             {
                 switch (state)
                 {
                     case HEADERS:
                     {
                         if (httpParser.parseHeaders(buffer))
-                            state = State.CONTENT;
+                            state = State.CONTENT_MODE;
+                        remaining = buffer.remaining();
                         break;
                     }
-                    case CONTENT:
+                    case CONTENT_MODE:
                     {
-                        if (httpParser.parseContent(buffer))
-                            reset();
+                        // If we have no indication of the content, then
+                        // the HTTP parser will assume there is no content
+                        // and will not parse it even if it is provided,
+                        // so we have to parse it raw ourselves here.
+                        boolean rawContent = fields.size() == 0 ||
+                                (fields.get(HttpHeader.CONTENT_LENGTH) == null &&
+                                        fields.get(HttpHeader.TRANSFER_ENCODING) == null);
+                        state = rawContent ? State.RAW_CONTENT : State.HTTP_CONTENT;
+                        break;
+                    }
+                    case RAW_CONTENT:
+                    {
+                        notifyContent(buffer);
+                        remaining = 0;
+                        break;
+                    }
+                    case HTTP_CONTENT:
+                    {
+                        httpParser.parseContent(buffer);
+                        remaining = buffer.remaining();
                         break;
                     }
                     default:
@@ -82,22 +127,6 @@ public class ResponseContentParser extends StreamContentParser
                     }
                 }
             }
-        }
-
-        private void reset()
-        {
-            httpParser.reset();
-            state = State.HEADERS;
-            begun = false;
-            fields = null;
-        }
-
-        @Override
-        public void onEnd(int request)
-        {
-            // We are a STD_OUT stream so the end of the request is
-            // signaled by a END_REQUEST. Here we just reset the state.
-            reset();
         }
 
         @Override
@@ -119,41 +148,30 @@ public class ResponseContentParser extends StreamContentParser
         {
             try
             {
-                if ("Status".equalsIgnoreCase(httpField.getName()))
+                String name = httpField.getName();
+                if ("Status".equalsIgnoreCase(name))
                 {
-                    if (!begun)
+                    if (!seenResponseCode)
                     {
-                        begun = true;
+                        seenResponseCode = true;
 
                         // Need to set the response status so the
                         // HttpParser can handle the content properly.
                         String[] parts = httpField.getValue().split(" ");
                         int code = Integer.parseInt(parts[0]);
                         httpParser.setResponseStatus(code);
-
                         String reason = parts.length > 1 ? parts[1] : HttpStatus.getMessage(code);
-                        listener.onBegin(headerParser.getRequest(), code, reason);
 
-                        if (fields != null)
-                        {
-                            for (HttpField field : fields)
-                                listener.onHeader(headerParser.getRequest(), field);
-                            fields = null;
-                        }
+                        notifyBegin(code, reason);
+                        notifyHeaders(fields);
                     }
                 }
                 else
                 {
-                    if (begun)
-                    {
-                        listener.onHeader(headerParser.getRequest(), httpField);
-                    }
+                    if (seenResponseCode)
+                        notifyHeader(httpField);
                     else
-                    {
-                        if (fields == null)
-                            fields = new ArrayList<>();
                         fields.add(httpField);
-                    }
                 }
             }
             catch (Throwable x)
@@ -162,26 +180,61 @@ public class ResponseContentParser extends StreamContentParser
             }
             return false;
         }
-
-        @Override
-        public boolean headerComplete()
+        private void notifyBegin(int code, String reason)
         {
             try
             {
-                if (begun)
-                {
-                    listener.onHeaders(headerParser.getRequest());
-                }
-                else
-                {
-                    fields = null;
-                    // TODO: what here ?
-                }
+                listener.onBegin(request, code, reason);
             }
             catch (Throwable x)
             {
                 logger.debug("Exception while invoking listener " + listener, x);
             }
+        }
+
+        private void notifyHeader(HttpField httpField)
+        {
+            try
+            {
+                listener.onHeader(request, httpField);
+            }
+            catch (Throwable x)
+            {
+                logger.debug("Exception while invoking listener " + listener, x);
+            }
+        }
+
+        private void notifyHeaders(HttpFields fields)
+        {
+            if (fields != null)
+            {
+                for (HttpField field : fields)
+                    notifyHeader(field);
+            }
+        }
+
+        private void notifyHeaders()
+        {
+            try
+            {
+                listener.onHeaders(request);
+            }
+            catch (Throwable x)
+            {
+                logger.debug("Exception while invoking listener " + listener, x);
+            }
+        }
+
+        @Override
+        public boolean headerComplete()
+        {
+            if (!seenResponseCode)
+            {
+                // No Status header but we have other headers, assume 200 OK
+                notifyBegin(200, "OK");
+                notifyHeaders(fields);
+            }
+            notifyHeaders();
             // Return from parsing so that we can parse the content
             return true;
         }
@@ -189,21 +242,27 @@ public class ResponseContentParser extends StreamContentParser
         @Override
         public boolean content(ByteBuffer buffer)
         {
+            notifyContent(buffer);
+            return false;
+        }
+
+        private void notifyContent(ByteBuffer buffer)
+        {
             try
             {
-                listener.onContent(headerParser.getRequest(), FCGI.StreamType.STD_OUT, buffer);
+                listener.onContent(request, FCGI.StreamType.STD_OUT, buffer);
             }
             catch (Throwable x)
             {
                 logger.debug("Exception while invoking listener " + listener, x);
             }
-            return false;
         }
 
         @Override
         public boolean messageComplete()
         {
-            // Return from parsing so that we can parse the next headers
+            // Return from parsing so that we can parse the next headers or the raw content.
+            // No need to notify the listener because it will be done by FCGI_END_REQUEST.
             return true;
         }
 
@@ -218,45 +277,45 @@ public class ResponseContentParser extends StreamContentParser
         {
             // TODO
         }
+    }
 
-        // Methods overridden to make them visible here
-        private static class FCGIHttpParser extends HttpParser
+    // Methods overridden to make them visible here
+    private static class FCGIHttpParser extends HttpParser
+    {
+        private FCGIHttpParser(ResponseHandler<ByteBuffer> handler)
         {
-            private FCGIHttpParser(ResponseHandler<ByteBuffer> handler)
-            {
-                super(handler, 65 * 1024, true);
-                reset();
-            }
-
-            @Override
-            public void reset()
-            {
-                super.reset();
-                setState(State.HEADER);
-            }
-
-            @Override
-            protected boolean parseHeaders(ByteBuffer buffer)
-            {
-                return super.parseHeaders(buffer);
-            }
-
-            @Override
-            protected boolean parseContent(ByteBuffer buffer)
-            {
-                return super.parseContent(buffer);
-            }
-
-            @Override
-            protected void setResponseStatus(int status)
-            {
-                super.setResponseStatus(status);
-            }
+            super(handler, 65 * 1024, true);
+            reset();
         }
 
-        private enum State
+        @Override
+        public void reset()
         {
-            HEADERS, CONTENT
+            super.reset();
+            setState(State.HEADER);
         }
+
+        @Override
+        protected boolean parseHeaders(ByteBuffer buffer)
+        {
+            return super.parseHeaders(buffer);
+        }
+
+        @Override
+        protected boolean parseContent(ByteBuffer buffer)
+        {
+            return super.parseContent(buffer);
+        }
+
+        @Override
+        protected void setResponseStatus(int status)
+        {
+            super.setResponseStatus(status);
+        }
+    }
+
+    private enum State
+    {
+        HEADERS, CONTENT_MODE, RAW_CONTENT, HTTP_CONTENT
     }
 }

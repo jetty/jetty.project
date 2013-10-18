@@ -18,9 +18,11 @@
 
 package org.eclipse.jetty.fcgi.parser;
 
+import java.nio.ByteBuffer;
 import java.util.EnumMap;
 
 import org.eclipse.jetty.fcgi.FCGI;
+import org.eclipse.jetty.http.HttpField;
 
 public class ClientParser extends Parser
 {
@@ -28,9 +30,11 @@ public class ClientParser extends Parser
 
     public ClientParser(Listener listener)
     {
-        contentParsers.put(FCGI.FrameType.STDOUT, new ResponseContentParser(headerParser, listener));
-        contentParsers.put(FCGI.FrameType.STDERR, new StreamContentParser(headerParser, FCGI.StreamType.STD_ERR, listener));
-        contentParsers.put(FCGI.FrameType.END_REQUEST, new EndRequestContentParser(headerParser, listener));
+        ResponseContentParser stdOutParser = new ResponseContentParser(headerParser, listener);
+        contentParsers.put(FCGI.FrameType.STDOUT, stdOutParser);
+        StreamContentParser stdErrParser = new StreamContentParser(headerParser, FCGI.StreamType.STD_ERR, listener);
+        contentParsers.put(FCGI.FrameType.STDERR, stdErrParser);
+        contentParsers.put(FCGI.FrameType.END_REQUEST, new EndRequestContentParser(headerParser, new EndRequestListener(listener, stdOutParser, stdErrParser)));
     }
 
     @Override
@@ -49,6 +53,50 @@ public class ClientParser extends Parser
             public void onBegin(int request, int code, String reason)
             {
             }
+        }
+    }
+
+    private class EndRequestListener implements Listener
+    {
+        private final Listener listener;
+        private final StreamContentParser[] streamParsers;
+
+        private EndRequestListener(Listener listener, StreamContentParser... streamParsers)
+        {
+            this.listener = listener;
+            this.streamParsers = streamParsers;
+        }
+
+        @Override
+        public void onBegin(int request, int code, String reason)
+        {
+            listener.onBegin(request, code, reason);
+        }
+
+        @Override
+        public void onHeader(int request, HttpField field)
+        {
+            listener.onHeader(request, field);
+        }
+
+        @Override
+        public void onHeaders(int request)
+        {
+            listener.onHeaders(request);
+        }
+
+        @Override
+        public void onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
+        {
+            listener.onContent(request, stream, buffer);
+        }
+
+        @Override
+        public void onEnd(int request)
+        {
+            listener.onEnd(request);
+            for (StreamContentParser streamParser : streamParsers)
+                streamParser.end(request);
         }
     }
 }
