@@ -634,10 +634,21 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
             if (!(index1Exists && index2Exists))
             {
                 Statement statement = connection.createStatement();
-                if (!index1Exists)
-                    statement.executeUpdate("create index "+index1+" on "+_sessionTable+" (expiryTime)");
-                if (!index2Exists)
-                    statement.executeUpdate("create index "+index2+" on "+_sessionTable+" (sessionId, contextPath)");
+                try
+                {
+                    if (!index1Exists)
+                        statement.executeUpdate("create index "+index1+" on "+_sessionTable+" (expiryTime)");
+                    if (!index2Exists)
+                        statement.executeUpdate("create index "+index2+" on "+_sessionTable+" (sessionId, contextPath)");
+                }
+                finally
+                {
+                    if (statement!=null)
+                    {
+                        try { statement.close(); }
+                        catch(Exception e) { LOG.warn(e); }
+                    }
+                }
             }
 
             //set up some strings representing the statements for session manipulation
@@ -676,23 +687,37 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
     throws SQLException 
     {
         Connection connection = null;
+        PreparedStatement statement = null;
+        PreparedStatement query = null;
         try
         {
             connection = getConnection();
             connection.setAutoCommit(true);            
-            PreparedStatement query = connection.prepareStatement(_queryId);
+            query = connection.prepareStatement(_queryId);
             query.setString(1, id);
             ResultSet result = query.executeQuery();
             //only insert the id if it isn't in the db already 
             if (!result.next())
             {
-                PreparedStatement statement = connection.prepareStatement(_insertId);
+                statement = connection.prepareStatement(_insertId);
                 statement.setString(1, id);
                 statement.executeUpdate();
             }
         }
         finally
         {
+            if (query!=null)
+            {
+                try { query.close(); }
+                catch(Exception e) { LOG.warn(e); }
+            }
+
+            if (statement!=null)
+            {
+                try { statement.close(); }
+                catch(Exception e) { LOG.warn(e); }
+            }
+
             if (connection != null)
                 connection.close();
         }
@@ -708,16 +733,23 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
     throws SQLException
     {
         Connection connection = null;
+        PreparedStatement statement = null;
         try
         {
             connection = getConnection();
             connection.setAutoCommit(true);
-            PreparedStatement statement = connection.prepareStatement(_deleteId);
+            statement = connection.prepareStatement(_deleteId);
             statement.setString(1, id);
             statement.executeUpdate();
         }
         finally
         {
+            if (statement!=null)
+            {
+                try { statement.close(); }
+                catch(Exception e) { LOG.warn(e); }
+            }
+
             if (connection != null)
                 connection.close();
         }
@@ -735,17 +767,24 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
     throws SQLException
     {
         Connection connection = null;
+        PreparedStatement statement = null;
         try
         {
             connection = getConnection();
             connection.setAutoCommit(true);
-            PreparedStatement statement = connection.prepareStatement(_queryId);
+            statement = connection.prepareStatement(_queryId);
             statement.setString(1, id);
             ResultSet result = statement.executeQuery();
             return result.next();
         }
         finally
         {
+            if (statement!=null)
+            {
+                try { statement.close(); }
+                catch(Exception e) { LOG.warn(e); }
+            }
+
             if (connection != null)
                 connection.close();
         }
@@ -765,6 +804,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
     private void scavenge ()
     {
         Connection connection = null;
+        PreparedStatement statement = null;
         List<String> expiredSessionIds = new ArrayList<String>();
         try
         {            
@@ -775,7 +815,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
                 connection = getConnection();
                 connection.setAutoCommit(true);
                 //"select sessionId from JettySessions where expiryTime > (lastScavengeTime - scanInterval) and expiryTime < lastScavengeTime";
-                PreparedStatement statement = connection.prepareStatement(_selectBoundedExpiredSessions);
+                statement = connection.prepareStatement(_selectBoundedExpiredSessions);
                 long lowerBound = (_lastScavengeTime - _scavengeIntervalMs);
                 long upperBound = _lastScavengeTime;
                 if (LOG.isDebugEnabled()) 
@@ -812,10 +852,21 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
                 if (upperBound > 0)
                 {
                     if (LOG.isDebugEnabled()) LOG.debug("Deleting old expired sessions expired before "+upperBound);
-                    statement = connection.prepareStatement(_deleteOldExpiredSessions);
-                    statement.setLong(1, upperBound);
-                    int rows = statement.executeUpdate();
-                    if (LOG.isDebugEnabled()) LOG.debug("Deleted "+rows+" rows of old sessions expired before "+upperBound);
+                    try
+                    {
+                        statement = connection.prepareStatement(_deleteOldExpiredSessions);
+                        statement.setLong(1, upperBound);
+                        int rows = statement.executeUpdate();
+                        if (LOG.isDebugEnabled()) LOG.debug("Deleted "+rows+" rows of old sessions expired before "+upperBound);
+                    }
+                    finally
+                    {
+                        if (statement!=null)
+                        {
+                            try { statement.close(); }
+                            catch(Exception e) { LOG.warn(e); }
+                        }
+                    }
                 }
             }
         }
@@ -852,6 +903,9 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
     throws Exception
     {
         Connection connection = null;
+        PreparedStatement statement = null;
+        Statement sessionsTableStatement = null;
+        Statement sessionIdsTableStatement = null;
         List<String> expiredSessionIds = new ArrayList<String>();
         try
         {     
@@ -859,7 +913,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
             connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
             connection.setAutoCommit(false);
 
-            PreparedStatement statement = connection.prepareStatement(_selectExpiredSessions);
+            statement = connection.prepareStatement(_selectExpiredSessions);
             long now = System.currentTimeMillis();
             if (LOG.isDebugEnabled()) LOG.debug ("Searching for sessions expired before {}", now);
 
@@ -872,8 +926,8 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
                 if (LOG.isDebugEnabled()) LOG.debug ("Found expired sessionId={}", sessionId); 
             }
             
-            Statement sessionsTableStatement = null;
-            Statement sessionIdsTableStatement = null;
+            sessionsTableStatement = null;
+            sessionIdsTableStatement = null;
 
             if (!expiredSessionIds.isEmpty())
             {
@@ -897,6 +951,24 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         }
         finally
         {
+            if (sessionIdsTableStatement!=null)
+            {
+                try { sessionIdsTableStatement.close(); }
+                catch(Exception e) { LOG.warn(e); }
+            }
+
+            if (sessionsTableStatement!=null)
+            {
+                try { sessionsTableStatement.close(); }
+                catch(Exception e) { LOG.warn(e); }
+            }
+
+            if (statement!=null)
+            {
+                try { statement.close(); }
+                catch(Exception e) { LOG.warn(e); }
+            }
+
             try
             {
                 if (connection != null)
