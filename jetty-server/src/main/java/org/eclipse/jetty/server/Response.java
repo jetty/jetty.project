@@ -585,43 +585,45 @@ public class Response implements HttpServletResponse
             {
                 setHeader(HttpHeader.CACHE_CONTROL, "must-revalidate,no-cache,no-store");
                 setContentType(MimeTypes.Type.TEXT_HTML_8859_1.toString());
-                ByteArrayISO8859Writer writer= new ByteArrayISO8859Writer(2048);
-                if (message != null)
+                try (ByteArrayISO8859Writer writer= new ByteArrayISO8859Writer(2048);)
                 {
-                    message= StringUtil.replace(message, "&", "&amp;");
-                    message= StringUtil.replace(message, "<", "&lt;");
-                    message= StringUtil.replace(message, ">", "&gt;");
-                }
-                String uri= request.getRequestURI();
-                if (uri!=null)
-                {
-                    uri= StringUtil.replace(uri, "&", "&amp;");
-                    uri= StringUtil.replace(uri, "<", "&lt;");
-                    uri= StringUtil.replace(uri, ">", "&gt;");
-                }
+                    if (message != null)
+                    {
+                        message= StringUtil.replace(message, "&", "&amp;");
+                        message= StringUtil.replace(message, "<", "&lt;");
+                        message= StringUtil.replace(message, ">", "&gt;");
+                    }
+                    String uri= request.getRequestURI();
+                    if (uri!=null)
+                    {
+                        uri= StringUtil.replace(uri, "&", "&amp;");
+                        uri= StringUtil.replace(uri, "<", "&lt;");
+                        uri= StringUtil.replace(uri, ">", "&gt;");
+                    }
 
-                writer.write("<html>\n<head>\n<meta http-equiv=\"Content-Type\" content=\"text/html;charset=ISO-8859-1\"/>\n");
-                writer.write("<title>Error ");
-                writer.write(Integer.toString(code));
-                writer.write(' ');
-                if (message==null)
-                writer.write(message);
-                writer.write("</title>\n</head>\n<body>\n<h2>HTTP ERROR: ");
-                writer.write(Integer.toString(code));
-                writer.write("</h2>\n<p>Problem accessing ");
-                writer.write(uri);
-                writer.write(". Reason:\n<pre>    ");
-                writer.write(message);
-                writer.write("</pre>");
-                writer.write("</p>\n<hr /><i><small>Powered by Jetty://</small></i>");
-                writer.write("\n</body>\n</html>\n");
+                    writer.write("<html>\n<head>\n<meta http-equiv=\"Content-Type\" content=\"text/html;charset=ISO-8859-1\"/>\n");
+                    writer.write("<title>Error ");
+                    writer.write(Integer.toString(code));
+                    writer.write(' ');
+                    if (message==null)
+                        writer.write(message);
+                    writer.write("</title>\n</head>\n<body>\n<h2>HTTP ERROR: ");
+                    writer.write(Integer.toString(code));
+                    writer.write("</h2>\n<p>Problem accessing ");
+                    writer.write(uri);
+                    writer.write(". Reason:\n<pre>    ");
+                    writer.write(message);
+                    writer.write("</pre>");
+                    writer.write("</p>\n<hr /><i><small>Powered by Jetty://</small></i>");
+                    writer.write("\n</body>\n</html>\n");
 
-                writer.flush();
-                setContentLength(writer.size());
-                try (ServletOutputStream outputStream = getOutputStream())
-                {
-                    writer.writeTo(outputStream);
-                    writer.destroy();
+                    writer.flush();
+                    setContentLength(writer.size());
+                    try (ServletOutputStream outputStream = getOutputStream())
+                    {
+                        writer.writeTo(outputStream);
+                        writer.destroy();
+                    }
                 }
             }
         }
@@ -816,7 +818,7 @@ public class Response implements HttpServletResponse
     public Collection<String> getHeaders(String name)
     {
         final HttpFields fields = _fields;
-        Collection<String> i = fields.getValuesCollection(name);
+        Collection<String> i = fields.getValuesList(name);
         if (i == null)
             return Collections.emptyList();
         return i;

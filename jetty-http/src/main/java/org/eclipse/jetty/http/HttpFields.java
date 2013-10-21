@@ -217,10 +217,10 @@ public class HttpFields implements Iterable<HttpField>
     /**
      * Get multi headers
      *
-     * @return Enumeration of the values, or null if no such header.
+     * @return List the values
      * @param name the case-insensitive field name
      */
-    public Collection<String> getValuesCollection(String name)
+    public List<String> getValuesList(String name)
     {
         final List<String> list = new ArrayList<>();
         for (HttpField f : _fields)
