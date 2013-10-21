@@ -20,7 +20,7 @@ package org.eclipse.jetty.client;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.regex.Matcher;
@@ -120,7 +120,7 @@ public class Socks4Proxy extends ProxyConfiguration.Proxy
             else
             {
                 // SOCKS 4A
-                byte[] hostBytes = host.getBytes(Charset.forName("UTF-8"));
+                byte[] hostBytes = host.getBytes(StandardCharsets.UTF_8);
                 ByteBuffer buffer = ByteBuffer.allocate(9 + hostBytes.length + 1);
                 buffer.put((byte)4).put((byte)1).putShort(port);
                 buffer.put((byte)0).put((byte)0).put((byte)0).put((byte)1).put((byte)0);

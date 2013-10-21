@@ -21,6 +21,7 @@ package org.eclipse.jetty.spdy.generator;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Locale;
 
@@ -42,7 +43,7 @@ public class HeadersBlockGenerator
     public ByteBuffer generate(short version, Fields headers)
     {
         // TODO: ByteArrayOutputStream is quite inefficient, but grows on demand; optimize using ByteBuffer ?
-        Charset iso1 = Charset.forName("ISO-8859-1");
+        Charset iso1 = StandardCharsets.ISO_8859_1;
         ByteArrayOutputStream buffer = new ByteArrayOutputStream(headers.getSize() * 64);
         writeCount(version, buffer, headers.getSize());
         for (Fields.Field header : headers)

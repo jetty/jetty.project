@@ -20,6 +20,7 @@ package org.eclipse.jetty.client.util;
 
 import java.net.URI;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -217,7 +218,7 @@ public class DigestAuthentication implements Authentication
             if (digester == null)
                 return;
 
-            Charset charset = Charset.forName("ISO-8859-1");
+            Charset charset = StandardCharsets.ISO_8859_1;
             String A1 = user + ":" + realm + ":" + password;
             String hashA1 = toHexString(digester.digest(A1.getBytes(charset)));
 
