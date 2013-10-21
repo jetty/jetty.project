@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.client;
 
+import java.util.Objects;
+
 import org.eclipse.jetty.util.URIUtil;
 
 public class Origin
@@ -32,7 +34,7 @@ public class Origin
 
     public Origin(String scheme, Address address)
     {
-        this.scheme = scheme;
+        this.scheme = Objects.requireNonNull(scheme);
         this.address = address;
     }
 
@@ -77,7 +79,7 @@ public class Origin
 
         public Address(String host, int port)
         {
-            this.host = host;
+            this.host = Objects.requireNonNull(host);
             this.port = port;
         }
 

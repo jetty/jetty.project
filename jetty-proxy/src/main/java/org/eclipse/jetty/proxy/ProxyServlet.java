@@ -31,9 +31,7 @@ import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
 import javax.servlet.AsyncContext;
-import javax.servlet.GenericServlet;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -631,7 +629,12 @@ public class ProxyServlet extends HttpServlet
                 return null;
 
             StringBuilder uri = new StringBuilder(_proxyTo);
-            uri.append(path.substring(_prefix.length()));
+            if (_proxyTo.endsWith("/"))
+                uri.setLength(uri.length() - 1);
+            String rest = path.substring(_prefix.length());
+            if (!rest.startsWith("/"))
+                uri.append("/");
+            uri.append(rest);
             String query = request.getQueryString();
             if (query != null)
                 uri.append("?").append(query);

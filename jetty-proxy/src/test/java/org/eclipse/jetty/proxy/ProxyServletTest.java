@@ -651,6 +651,17 @@ public class ProxyServletTest
     @Test
     public void testTransparentProxy() throws Exception
     {
+        testTransparentProxyWithPrefix("/proxy");
+    }
+
+    @Test
+    public void testTransparentProxyWithRootContext() throws Exception
+    {
+        testTransparentProxyWithPrefix("/");
+    }
+
+    private void testTransparentProxyWithPrefix(String prefix) throws Exception
+    {
         final String target = "/test";
         prepareServer(new HttpServlet()
         {
@@ -664,13 +675,12 @@ public class ProxyServletTest
         });
 
         String proxyTo = "http://localhost:" + serverConnector.getLocalPort();
-        String prefix = "/proxy";
         ProxyServlet.Transparent proxyServlet = new ProxyServlet.Transparent(proxyTo, prefix);
         prepareProxy(proxyServlet);
 
         // Make the request to the proxy, it should transparently forward to the server
         ContentResponse response = client.newRequest("localhost", proxyConnector.getLocalPort())
-                .path(prefix + target)
+                .path((prefix + target).replaceAll("//", "/"))
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
         Assert.assertEquals(200, response.getStatus());
