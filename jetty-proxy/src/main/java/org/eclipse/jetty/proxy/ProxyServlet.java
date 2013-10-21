@@ -389,6 +389,7 @@ public class ProxyServlet extends HttpServlet
                 .version(HttpVersion.fromString(request.getProtocol()));
 
         // Copy headers
+        boolean hasContent = false;
         for (Enumeration<String> headerNames = request.getHeaderNames(); headerNames.hasMoreElements();)
         {
             String headerName = headerNames.nextElement();
@@ -398,8 +399,12 @@ public class ProxyServlet extends HttpServlet
             if (HOP_HEADERS.contains(lowerHeaderName))
                 continue;
 
-            if (_hostHeader!=null && lowerHeaderName.equals("host"))
+            if (_hostHeader != null && HttpHeader.HOST.is(headerName))
                 continue;
+
+            if (request.getContentLength() > 0 || request.getContentType() != null ||
+                    HttpHeader.TRANSFER_ENCODING.is(headerName))
+                hasContent = true;
 
             for (Enumeration<String> headerValues = request.getHeaders(headerName); headerValues.hasMoreElements();)
             {
@@ -420,21 +425,24 @@ public class ProxyServlet extends HttpServlet
         proxyRequest.header(HttpHeader.X_FORWARDED_HOST, request.getHeader(HttpHeader.HOST.asString()));
         proxyRequest.header(HttpHeader.X_FORWARDED_SERVER, request.getLocalName());
 
-        proxyRequest.content(new InputStreamContentProvider(request.getInputStream())
+        if (hasContent)
         {
-            @Override
-            public long getLength()
+            proxyRequest.content(new InputStreamContentProvider(request.getInputStream())
             {
-                return request.getContentLength();
-            }
+                @Override
+                public long getLength()
+                {
+                    return request.getContentLength();
+                }
 
-            @Override
-            protected ByteBuffer onRead(byte[] buffer, int offset, int length)
-            {
-                _log.debug("{} proxying content to upstream: {} bytes", requestId, length);
-                return super.onRead(buffer, offset, length);
-            }
-        });
+                @Override
+                protected ByteBuffer onRead(byte[] buffer, int offset, int length)
+                {
+                    _log.debug("{} proxying content to upstream: {} bytes", requestId, length);
+                    return super.onRead(buffer, offset, length);
+                }
+            });
+        }
 
         final AsyncContext asyncContext = request.startAsync();
         // We do not timeout the continuation, but the proxy request
