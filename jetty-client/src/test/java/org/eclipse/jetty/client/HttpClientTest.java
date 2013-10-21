@@ -54,6 +54,7 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -846,6 +847,14 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
                 .agent(userAgent)
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+
+        Assert.assertEquals(200, response.getStatus());
+
+        response = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .header(HttpHeader.USER_AGENT, userAgent)
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
