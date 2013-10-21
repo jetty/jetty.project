@@ -632,11 +632,6 @@ public class SslConnection extends AbstractConnection
                     }
                 }
             }
-            catch (SSLException e)
-            {
-                getEndPoint().close();
-                throw new EofException(e);
-            }
             catch (Exception e)
             {
                 getEndPoint().close();
