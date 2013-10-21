@@ -65,7 +65,6 @@ public class HttpFields implements Iterable<HttpField>
     {
     }
 
-
     /**
      * Get Collection of header names.
      */
@@ -131,8 +130,6 @@ public class HttpFields implements Iterable<HttpField>
         }
         return null;
     }
-
-
     
     public boolean contains(HttpHeader header, String value)
     {
@@ -156,7 +153,6 @@ public class HttpFields implements Iterable<HttpField>
         return false;
     }
     
-
     private boolean contains(HttpField field,String value)
     {
         String v = field.getValue();
@@ -212,7 +208,6 @@ public class HttpFields implements Iterable<HttpField>
         HttpField field = getField(name);
         return field==null?null:field.getValue();
     }
-
 
     /**
      * Get multi headers
@@ -284,7 +279,6 @@ public class HttpFields implements Iterable<HttpField>
 
         List<String> empty=Collections.emptyList();
         return Collections.enumeration(empty);
-
     }
 
     /**

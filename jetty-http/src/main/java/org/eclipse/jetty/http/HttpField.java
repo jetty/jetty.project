@@ -24,8 +24,6 @@ package org.eclipse.jetty.http;
  */
 public class HttpField
 {
-    
-    
     private final HttpHeader _header;
     private final String _name;
     private final String _value;
@@ -41,7 +39,6 @@ public class HttpField
     {
         this(header,header.asString(),value);
     }
- 
     
     public HttpField(HttpHeader header, HttpHeaderValue value)
     {

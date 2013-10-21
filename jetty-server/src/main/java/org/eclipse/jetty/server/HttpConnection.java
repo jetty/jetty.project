@@ -61,7 +61,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     private final HttpParser _parser;
     private volatile ByteBuffer _requestBuffer = null;
     private volatile ByteBuffer _chunk = null;
-    private BlockingCallback _writeBlocker = new BlockingCallback();
 
 
     public static HttpConnection getCurrentConnection()
@@ -123,8 +122,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     {
         return _parser;
     }
-    
-
 
     @Override
     public int getMessagesIn()
