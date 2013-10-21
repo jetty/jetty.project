@@ -853,5 +853,13 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 .send();
 
         Assert.assertEquals(200, response.getStatus());
+
+        response = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .header(HttpHeader.USER_AGENT, userAgent)
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+
+        Assert.assertEquals(200, response.getStatus());
     }
 }
