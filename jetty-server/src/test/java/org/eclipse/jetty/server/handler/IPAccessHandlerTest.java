@@ -77,6 +77,7 @@ public class IPAccessHandlerTest
         _handler = new IPAccessHandler();
         _handler.setHandler(new AbstractHandler()
             {
+                @Override
                 public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
                 {
                     baseRequest.setHandled(true);
@@ -283,7 +284,7 @@ public class IPAccessHandlerTest
             {"127.0.0.1|/dump/info;127.0.0.1|/dump/test", "", "127.0.0.1", "/dump/fail", "403", false},
 
             {"127.0.0.0-2|", "", "127.0.0.1", "/",          "200", false},
-            {"127.0.0.0-2|", "", "127.0.0.1", "/dump/info", "200", false},
+            {"127.0.0.0-2|", "", "127.0.0.1", "/dump/info", "403", false},
 
             {"127.0.0.0-2|/", "", "127.0.0.1", "/",          "200", false},
             {"127.0.0.0-2|/", "", "127.0.0.1", "/dispatch",  "403", false},
@@ -334,7 +335,7 @@ public class IPAccessHandlerTest
             {"", "127.0.0.1|/dump/info;127.0.0.1|/dump/test", "127.0.0.1", "/dump/fail", "200", false},
 
             {"", "127.0.0.0-2|", "127.0.0.1", "/",          "403", false},
-            {"", "127.0.0.0-2|", "127.0.0.1", "/dump/info", "403", false},
+            {"", "127.0.0.0-2|", "127.0.0.1", "/dump/info", "200", false},
 
             {"", "127.0.0.0-2|/", "127.0.0.1", "/",          "403", false},
             {"", "127.0.0.0-2|/", "127.0.0.1", "/dispatch",  "200", false},
@@ -490,7 +491,7 @@ public class IPAccessHandlerTest
             {"", "127.0.0.1|/dump/info;127.0.0.1|/dump/test", "127.0.0.1", "/dump/fail", "200", true},
 
             {"", "127.0.0.0-2|", "127.0.0.1", "/",          "403", true},
-            {"", "127.0.0.0-2|", "127.0.0.1", "/dump/info", "403", true},
+            {"", "127.0.0.0-2|", "127.0.0.1", "/dump/info", "200", true},
 
             {"", "127.0.0.0-2|/", "127.0.0.1", "/",          "403", true},
             {"", "127.0.0.0-2|/", "127.0.0.1", "/dispatch",  "200", true},
