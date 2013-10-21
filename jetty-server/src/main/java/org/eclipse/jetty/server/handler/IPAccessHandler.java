@@ -20,8 +20,6 @@ package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 
 import javax.servlet.ServletException;
@@ -203,7 +201,7 @@ public class IPAccessHandler extends HandlerWrapper
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         // Get the real remote IP (not the one set by the forwarded headers (which may be forged))
-        HttpChannel channel = baseRequest.getHttpChannel();
+        HttpChannel<?> channel = baseRequest.getHttpChannel();
         if (channel!=null)
         {
             EndPoint endp=channel.getEndPoint();
@@ -307,40 +305,38 @@ public class IPAccessHandler extends HandlerWrapper
             boolean match = false;
             boolean matchedByPath = false;
 
-            Object whiteObj = _white.getLazyMatches(path);
-            if (whiteObj != null)
+            for (Map.Entry<String,IPAddressMap<Boolean>> entry : _white.getMatches(path))
             {
-                matchedByPath = true;
-                List whiteList = (whiteObj instanceof List) ? (List)whiteObj : Collections.singletonList(whiteObj);
-
-                for (Object entry: whiteList)
+                matchedByPath=true;
+                IPAddressMap<Boolean> addrMap = entry.getValue();
+                if ((addrMap!=null && (addrMap.size()==0 || addrMap.match(addr)!=null)))
                 {
-                    IPAddressMap<Boolean> addrMap = ((Map.Entry<String,IPAddressMap<Boolean>>)entry).getValue();
-                    if (match = (addrMap!=null && (addrMap.size()==0 || addrMap.match(addr)!=null)))
-                        break;
+                    match=true;
+                    break;
                 }
             }
-
-            if (!_whiteListByPath && !match) // Default behaviour
-                return false;
-            else if (_whiteListByPath && matchedByPath && !match) // Fail if only matched by path
-                return false;
+            
+            if (_whiteListByPath)
+            {
+                if (matchedByPath && !match)
+                    return false;
+            }
+            else
+            {
+                if (!match)
+                    return false;
+            }
         }
 
         if (_black.size() > 0)
         {
-            Object blackObj = _black.getLazyMatches(path);
-            if (blackObj != null)
+            for (Map.Entry<String,IPAddressMap<Boolean>> entry : _black.getMatches(path))
             {
-                List blackList = (blackObj instanceof List) ? (List)blackObj : Collections.singletonList(blackObj);
-
-                for (Object entry: blackList)
-                {
-                    IPAddressMap<Boolean> addrMap = ((Map.Entry<String,IPAddressMap<Boolean>>)entry).getValue();
-                    if (addrMap!=null && (addrMap.size()==0 || addrMap.match(addr)!=null))
-                        return false;
-                }
+                IPAddressMap<Boolean> addrMap = entry.getValue();
+                if (addrMap!=null && (addrMap.size()==0 || addrMap.match(addr)!=null))
+                    return false;
             }
+            
         }
 
         return true;
@@ -350,6 +346,7 @@ public class IPAccessHandler extends HandlerWrapper
     /**
      * Dump the handler configuration
      */
+    @Override
     public String dump()
     {
         StringBuilder buf = new StringBuilder();
