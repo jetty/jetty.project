@@ -692,15 +692,10 @@ public class AnnotationParser
                 parseDir(handlers, res, resolver);
             else
             {
+System.err.println("TRYING TO SCAN "+res);
                 //we've already verified the directories, so just verify the class file name
-                boolean valid = true;
                 File file = res.getFile();
-                if (file == null)
-                    LOG.warn("Unable to validate class file name for {}", res);
-                else
-                    valid = isValidClassFileName(file.getName());
-
-                if (valid)
+                if (isValidClassFileName((file==null?null:file.getName())))
                 {
                     try
                     {
@@ -711,11 +706,15 @@ public class AnnotationParser
                             if (LOG.isDebugEnabled()) {LOG.debug("Scanning class {}", r);};
                             scanClass(handlers, dir, r.getInputStream());
                         }
-                    }
+                    }                  
                     catch (Exception ex)
                     {
                         me.add(new RuntimeException("Error scanning file "+files[f],ex));
                     }
+                }
+                else
+                {
+                   if (LOG.isDebugEnabled()) LOG.debug("Skipping scan on invalid file {}", res);
                 }
             }
         }
