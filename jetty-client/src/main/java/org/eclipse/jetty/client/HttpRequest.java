@@ -95,7 +95,6 @@ public class HttpRequest implements Request
         HttpField acceptEncodingField = client.getAcceptEncodingField();
         if (acceptEncodingField != null)
             headers.put(acceptEncodingField);
-        headers.put(client.getUserAgentField());
     }
 
     @Override

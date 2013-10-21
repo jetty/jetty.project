@@ -105,6 +105,9 @@ public abstract class HttpConnection implements Connection
                 headers.put(getHttpDestination().getHostField());
         }
 
+        if (request.getAgent() == null)
+            headers.put(getHttpClient().getUserAgentField());
+
         // Add content headers
         if (content != null)
         {
