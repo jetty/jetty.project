@@ -46,7 +46,6 @@ public abstract class AbstractHttpClientServerTest
 
         ServerFCGIConnectionFactory fcgiConnectionFactory = new ServerFCGIConnectionFactory(new HttpConfiguration());
         connector = new ServerConnector(server, fcgiConnectionFactory);
-        connector.setPort(9000);
 
         server.addConnector(connector);
         server.setHandler(handler);

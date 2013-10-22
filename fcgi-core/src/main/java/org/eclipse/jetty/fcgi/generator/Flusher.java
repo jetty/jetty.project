@@ -19,6 +19,7 @@
 package org.eclipse.jetty.fcgi.generator;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 
@@ -108,6 +109,22 @@ public class Flusher
             if (active != null)
                 active.failed(x);
             active = null;
+
+            List<Generator.Result> pending = new ArrayList<>();
+            synchronized (queue)
+            {
+                while (true)
+                {
+                    Generator.Result result = queue.poll();
+                    if (result != null)
+                        pending.add(result);
+                    else
+                        break;
+                }
+            }
+            for (Generator.Result result : pending)
+                result.failed(x);
+
             super.failed(x);
         }
     }

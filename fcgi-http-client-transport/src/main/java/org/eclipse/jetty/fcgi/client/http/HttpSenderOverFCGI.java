@@ -67,10 +67,6 @@ public class HttpSenderOverFCGI extends HttpSender
         fcgiHeaders.put(FCGI.Headers.SERVER_PROTOCOL, request.getVersion().asString());
         fcgiHeaders.put(FCGI.Headers.GATEWAY_INTERFACE, "CGI/1.1");
         fcgiHeaders.put(FCGI.Headers.SERVER_SOFTWARE, "Jetty/" + Jetty.VERSION);
-        // TODO: need to pass SERVER_NAME, SERVER_ADDR, SERVER_PORT, REMOTE_ADDR, REMOTE_PORT
-        // TODO: if the FCGI transport is used within a ProxyServlet, they must have certain values
-        // TODO: for example the remote address is taken from the ProxyServlet request
-        // TODO: if used standalone, they must have other values.
 
         // Translate remaining HTTP header into the HTTP_* format
         for (HttpField field : headers)

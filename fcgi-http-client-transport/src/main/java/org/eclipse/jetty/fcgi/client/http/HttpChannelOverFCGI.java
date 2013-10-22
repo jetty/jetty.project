@@ -19,14 +19,15 @@
 package org.eclipse.jetty.fcgi.client.http;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.client.HttpChannel;
-import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.fcgi.generator.Flusher;
 import org.eclipse.jetty.fcgi.generator.Generator;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.io.IdleTimeout;
 
 public class HttpChannelOverFCGI extends HttpChannel
 {
@@ -36,13 +37,15 @@ public class HttpChannelOverFCGI extends HttpChannel
     private final HttpReceiverOverFCGI receiver;
     private HttpVersion version;
 
-    public HttpChannelOverFCGI(HttpDestination destination, Flusher flusher, int request)
+    public HttpChannelOverFCGI(final HttpConnectionOverFCGI connection, Flusher flusher, int request, long idleTimeout)
     {
-        super(destination);
+        super(connection.getHttpDestination());
         this.flusher = flusher;
         this.request = request;
         this.sender = new HttpSenderOverFCGI(this);
         this.receiver = new HttpReceiverOverFCGI(this);
+        IdleTimeout idle = new FCGIIdleTimeout(connection);
+        idle.setIdleTimeout(idleTimeout);
     }
 
     protected int getRequest()
@@ -64,13 +67,14 @@ public class HttpChannelOverFCGI extends HttpChannel
     @Override
     public void proceed(HttpExchange exchange, boolean proceed)
     {
-        throw new UnsupportedOperationException();
+        sender.proceed(exchange, proceed);
     }
 
     @Override
     public boolean abort(Throwable cause)
     {
-        throw new UnsupportedOperationException();
+        sender.abort(cause);
+        return receiver.abort(cause);
     }
 
     protected void responseBegin(int code, String reason)
@@ -111,8 +115,33 @@ public class HttpChannelOverFCGI extends HttpChannel
             receiver.responseSuccess(exchange);
     }
 
-    protected void flush(Generator.Result... result)
+    protected void flush(Generator.Result... results)
     {
-        flusher.flush(result);
+        flusher.flush(results);
+    }
+
+    private class FCGIIdleTimeout extends IdleTimeout
+    {
+        private final HttpConnectionOverFCGI connection;
+
+        public FCGIIdleTimeout(HttpConnectionOverFCGI connection)
+        {
+            super(connection.getHttpDestination().getHttpClient().getScheduler());
+            this.connection = connection;
+        }
+
+        @Override
+        protected void onIdleExpired(TimeoutException timeout)
+        {
+            LOG.debug("Idle timeout for request {}", request);
+            abort(timeout);
+            close();
+        }
+
+        @Override
+        public boolean isOpen()
+        {
+            return connection.getEndPoint().isOpen();
+        }
     }
 }

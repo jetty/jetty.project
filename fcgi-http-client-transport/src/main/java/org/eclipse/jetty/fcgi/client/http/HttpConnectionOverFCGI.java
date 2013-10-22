@@ -18,10 +18,12 @@
 
 package org.eclipse.jetty.fcgi.client.http;
 
+import java.io.EOFException;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpConnection;
@@ -134,12 +136,24 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
 
     private void shutdown()
     {
-        getEndPoint().shutdownOutput();
+        for (HttpChannelOverFCGI channel : channels.values())
+            channel.abort(new EOFException());
+        close();
+    }
+
+    @Override
+    protected boolean onReadTimeout()
+    {
+        for (HttpChannelOverFCGI channel : channels.values())
+            channel.abort(new TimeoutException());
+        close();
+        return false;
     }
 
     @Override
     public void close()
     {
+        getHttpDestination().close(this);
         getEndPoint().shutdownOutput();
         LOG.debug("{} oshut", this);
         getEndPoint().close();
@@ -168,9 +182,9 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
     @Override
     public String toString()
     {
-        return String.format("%s@%x(l:%s <-> r:%s)",
-                HttpConnection.class.getSimpleName(),
-                hashCode(),
+        return String.format("%s@%h(l:%s <-> r:%s)",
+                getClass().getSimpleName(),
+                this,
                 getEndPoint().getLocalAddress(),
                 getEndPoint().getRemoteAddress());
     }
@@ -190,7 +204,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
 
             // FCGI may be multiplexed, so create one channel for each request.
             int id = acquireRequest();
-            HttpChannelOverFCGI channel = new HttpChannelOverFCGI(getHttpDestination(), flusher, id);
+            HttpChannelOverFCGI channel = new HttpChannelOverFCGI(HttpConnectionOverFCGI.this, flusher, id, request.getIdleTimeout());
             channels.put(id, channel);
             channel.associate(exchange);
             channel.send();
@@ -200,6 +214,12 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
         public void close()
         {
             HttpConnectionOverFCGI.this.close();
+        }
+
+        @Override
+        public String toString()
+        {
+            return HttpConnectionOverFCGI.this.toString();
         }
     }
 

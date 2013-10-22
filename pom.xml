@@ -11,13 +11,19 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.eclipse.jetty.fcgi</groupId>
     <artifactId>fcgi-parent</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>Jetty :: FastCGI</name>
+
+    <properties>
+        <jetty-version>9.1.0-SNAPSHOT</jetty-version>
+    </properties>
 
     <modules>
         <module>fcgi-core</module>
         <module>fcgi-http-client-transport</module>
         <module>fcgi-server</module>
+        <module>fcgi-proxy</module>
     </modules>
 
     <build>
@@ -40,7 +46,6 @@
                     </execution>
                 </executions>
             </plugin>
--->
             <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
@@ -69,6 +74,7 @@
                     </archive>
                 </configuration>
             </plugin>
+-->
         </plugins>
     </build>
 

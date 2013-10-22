@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.fcgi.client.http;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
@@ -47,7 +48,7 @@ import org.junit.Test;
 public class HttpClientTest extends AbstractHttpClientServerTest
 {
     @Test
-    public void test_GET_ResponseWithoutContent() throws Exception
+    public void testGETResponseWithoutContent() throws Exception
     {
         start(new EmptyServerHandler());
 
@@ -60,7 +61,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     }
 
     @Test
-    public void test_GET_ResponseWithContent() throws Exception
+    public void testGETResponseWithContent() throws Exception
     {
         final byte[] data = new byte[]{0, 1, 2, 3, 4, 5, 6, 7};
         start(new AbstractHandler()
@@ -84,7 +85,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     }
 
     @Test
-    public void test_GET_WithParameters_ResponseWithContent() throws Exception
+    public void testGETWithParametersResponseWithContent() throws Exception
     {
         final String paramName1 = "a";
         final String paramName2 = "b";
@@ -116,7 +117,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     }
 
     @Test
-    public void test_GET_WithParametersMultiValued_ResponseWithContent() throws Exception
+    public void testGETWithParametersMultiValuedResponseWithContent() throws Exception
     {
         final String paramName1 = "a";
         final String paramName2 = "b";
@@ -152,7 +153,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     }
 
     @Test
-    public void test_POST_WithParameters() throws Exception
+    public void testPOSTWithParameters() throws Exception
     {
         final String paramName = "a";
         final String paramValue = "\u20AC";
@@ -183,7 +184,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     }
 
     @Test
-    public void test_PUT_WithParameters() throws Exception
+    public void testPUTWithParameters() throws Exception
     {
         final String paramName = "a";
         final String paramValue = "\u20AC";
@@ -215,7 +216,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     }
 
     @Test
-    public void test_POST_WithParameters_WithContent() throws Exception
+    public void testPOSTWithParametersWithContent() throws Exception
     {
         final byte[] content = {0, 1, 2, 3};
         final String paramName = "a";
@@ -248,7 +249,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     }
 
     @Test
-    public void test_POST_WithContent_NotifiesRequestContentListener() throws Exception
+    public void testPOSTWithContentNotifiesRequestContentListener() throws Exception
     {
         final byte[] content = {0, 1, 2, 3};
         start(new EmptyServerHandler());
@@ -274,7 +275,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     }
 
     @Test
-    public void test_POST_WithContent_TracksProgress() throws Exception
+    public void testPOSTWithContentTracksProgress() throws Exception
     {
         start(new EmptyServerHandler());
 
@@ -301,7 +302,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     }
 
     @Test
-    public void test_GZIP_ContentEncoding() throws Exception
+    public void testGZIPContentEncoding() throws Exception
     {
         final byte[] data = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
         start(new AbstractHandler()
@@ -328,7 +329,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @Slow
     @Test
-    public void test_Request_IdleTimeout() throws Exception
+    public void testRequestIdleTimeout() throws Exception
     {
         final long idleTimeout = 1000;
         start(new AbstractHandler()
@@ -373,6 +374,56 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.getStatus());
     }
+    
+    @Test
+    public void testConnectionIdleTimeout() throws Exception
+    {
+        final long idleTimeout = 1000;
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                try
+                {
+                    baseRequest.setHandled(true);
+                    TimeUnit.MILLISECONDS.sleep(2 * idleTimeout);
+                }
+                catch (InterruptedException x)
+                {
+                    throw new ServletException(x);
+                }
+            }
+        });
+
+        connector.setIdleTimeout(idleTimeout);
+
+        try
+        {
+            client.newRequest("localhost", connector.getLocalPort())
+                    .scheme(scheme)
+                    .idleTimeout(4 * idleTimeout, TimeUnit.MILLISECONDS)
+                    .timeout(3 * idleTimeout, TimeUnit.MILLISECONDS)
+                    .send();
+            Assert.fail();
+        }
+        catch (ExecutionException x)
+        {
+            Assert.assertTrue(x.getCause() instanceof EOFException);
+        }
+
+        connector.setIdleTimeout(5 * idleTimeout);
+
+        // Make another request to be sure the connection is recreated
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .idleTimeout(4 * idleTimeout, TimeUnit.MILLISECONDS)
+                .timeout(3 * idleTimeout, TimeUnit.MILLISECONDS)
+                .send();
+
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200, response.getStatus());
+    }
 
     @Test
     public void testSendToIPv6Address() throws Exception
@@ -389,7 +440,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     }
 
     @Test
-    public void test_HEAD_With_ResponseContentLength() throws Exception
+    public void testHEADWithResponseContentLength() throws Exception
     {
         final int length = 1024;
         start(new AbstractHandler()
