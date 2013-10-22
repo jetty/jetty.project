@@ -44,7 +44,7 @@ import org.eclipse.jetty.util.log.Logger;
  * that a websocket may be accept before closing. (Default is 16768)
  * <p/>
  * The initParameter "maxBinaryMessageSize" can be used to set the size in bytes
- * that a websocket may be accept before closing. (Default is 16768)
+ * that a websocket may be accept before closing. (Default is -1 - or unlimited)
  * <p/>
  * The initParameter "minVersion" can be used to set the minimum protocol version
  * accepted. (Default 13 - the RFC6455 version)
