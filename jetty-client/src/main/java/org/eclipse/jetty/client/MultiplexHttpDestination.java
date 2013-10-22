@@ -126,6 +126,19 @@ public abstract class MultiplexHttpDestination<C extends Connection> extends Htt
         return true;
     }
 
+    @Override
+    public void close(Connection connection)
+    {
+        super.close(connection);
+        assert this.connection == connection;
+        while (true)
+        {
+            ConnectState current = connect.get();
+            if (connect.compareAndSet(current, ConnectState.DISCONNECTED))
+                break;
+        }
+    }
+
     protected abstract void send(C connection, HttpExchange exchange);
 
     private enum ConnectState

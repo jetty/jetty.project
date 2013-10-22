@@ -96,7 +96,7 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
         if (exchange != null)
             return exchange.getRequest().abort(new TimeoutException());
 
-        getHttpDestination().remove(this);
+        getHttpDestination().close(this);
         return true;
     }
 
@@ -126,7 +126,7 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
     @Override
     public void close()
     {
-        getHttpDestination().remove(this);
+        getHttpDestination().close(this);
         getEndPoint().shutdownOutput();
         LOG.debug("{} oshut", this);
         getEndPoint().close();

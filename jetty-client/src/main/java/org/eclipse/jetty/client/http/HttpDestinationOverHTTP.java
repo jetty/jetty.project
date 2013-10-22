@@ -155,23 +155,25 @@ public class HttpDestinationOverHTTP extends HttpDestination implements Promise<
         else
         {
             LOG.debug("{} is stopped", client);
-            remove(connection);
+            close(connection);
             connection.close();
         }
     }
 
-    protected void remove(HttpConnectionOverHTTP connection)
+    @Override
+    public void close(Connection oldConnection)
     {
-        connectionPool.remove(connection);
+        super.close(oldConnection);
+        connectionPool.remove(oldConnection);
 
         // We need to execute queued requests even if this connection failed.
         // We may create a connection that is not needed, but it will eventually
         // idle timeout, so no worries
         if (!getHttpExchanges().isEmpty())
         {
-            connection = acquire();
-            if (connection != null)
-                process(connection, false);
+            HttpConnectionOverHTTP newConnection = acquire();
+            if (newConnection != null)
+                process(newConnection, false);
         }
     }
 

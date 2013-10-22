@@ -218,6 +218,10 @@ public abstract class HttpDestination implements Destination, Closeable, Dumpabl
         LOG.debug("Closed {}", this);
     }
 
+    public void close(Connection connection)
+    {
+    }
+
     /**
      * Aborts all the {@link HttpExchange}s queued in this destination.
      *
