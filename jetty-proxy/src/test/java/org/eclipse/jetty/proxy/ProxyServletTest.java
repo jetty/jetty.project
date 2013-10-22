@@ -28,10 +28,10 @@ import java.net.HttpCookie;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -246,7 +246,7 @@ public class ProxyServletTest
         ContentResponse[] responses = new ContentResponse[10];
 
         final byte[] content = new byte[1024];
-        Arrays.fill(content, (byte)'A');
+        new Random().nextBytes(content);
         prepareServer(new HttpServlet()
         {
             @Override
@@ -291,7 +291,7 @@ public class ProxyServletTest
         });
 
         byte[] content = new byte[1024];
-        Arrays.fill(content, (byte)'A');
+        new Random().nextBytes(content);
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
                 .method(HttpMethod.POST)
                 .content(new BytesContentProvider(content))
@@ -331,6 +331,9 @@ public class ProxyServletTest
     @Test
     public void testProxyWithBigRequestContentConsumed() throws Exception
     {
+        final byte[] content = new byte[128 * 1024];
+        new Random().nextBytes(content);
+
         prepareProxy(new ProxyServlet());
         prepareServer(new HttpServlet()
         {
@@ -340,13 +343,18 @@ public class ProxyServletTest
                 if (req.getHeader("Via") != null)
                     resp.addHeader(PROXIED_HEADER, "true");
                 InputStream input = req.getInputStream();
+                int index = 0;
                 while (true)
-                    if (input.read() < 0)
+                {
+                    int value = input.read();
+                    if (value < 0)
                         break;
+                    Assert.assertEquals("Content mismatch at index=" + index, content[index] & 0xFF, value);
+                    ++index;
+                }
             }
         });
 
-        byte[] content = new byte[128 * 1024];
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
                 .method(HttpMethod.POST)
                 .content(new BytesContentProvider(content))
@@ -369,7 +377,7 @@ public class ProxyServletTest
         Files.createDirectories(targetTestsDir);
         final Path temp = Files.createTempFile(targetTestsDir, "test_", null);
         byte[] kb = new byte[1024];
-        Arrays.fill(kb, (byte)'X');
+        new Random().nextBytes(kb);
         try (OutputStream output = Files.newOutputStream(temp, CREATE))
         {
             for (int i = 0; i < length; ++i)

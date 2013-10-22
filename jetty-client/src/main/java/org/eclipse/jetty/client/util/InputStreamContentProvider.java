@@ -112,8 +112,7 @@ public class InputStreamContentProvider implements ContentProvider
      */
     private class InputStreamIterator implements Iterator<ByteBuffer>
     {
-        private final byte[] bytes = new byte[bufferSize];
-        private Exception failure;
+        private Throwable failure;
         private ByteBuffer buffer;
         private Boolean hasNext;
 
@@ -125,6 +124,7 @@ public class InputStreamContentProvider implements ContentProvider
                 if (hasNext != null)
                     return hasNext;
 
+                byte[] bytes = new byte[bufferSize];
                 int read = stream.read(bytes);
                 LOG.debug("Read {} bytes from {}", read, stream);
                 if (read > 0)
@@ -145,7 +145,7 @@ public class InputStreamContentProvider implements ContentProvider
                     return true;
                 }
             }
-            catch (Exception x)
+            catch (Throwable x)
             {
                 LOG.debug(x);
                 if (failure == null)
