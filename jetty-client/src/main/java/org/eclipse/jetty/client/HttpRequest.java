@@ -36,6 +36,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -59,6 +60,7 @@ public class HttpRequest implements Request
     private final Map<String, Object> attributes = new HashMap<>();
     private final List<RequestListener> requestListeners = new ArrayList<>();
     private final List<Response.ResponseListener> responseListeners = new ArrayList<>();
+    private final AtomicReference<Throwable> aborted = new AtomicReference<>();
     private final HttpClient client;
     private final long conversation;
     private final String host;
@@ -73,7 +75,6 @@ public class HttpRequest implements Request
     private long timeout;
     private ContentProvider content;
     private boolean followRedirects;
-    private volatile Throwable aborted;
 
     public HttpRequest(HttpClient client, URI uri)
     {
@@ -504,16 +505,19 @@ public class HttpRequest implements Request
     @Override
     public boolean abort(Throwable cause)
     {
-        aborted = Objects.requireNonNull(cause);
-        // The conversation may be null if it is already completed
-        HttpConversation conversation = client.getConversation(getConversationID(), false);
-        return conversation != null && conversation.abort(cause);
+        if (aborted.compareAndSet(null, Objects.requireNonNull(cause)))
+        {
+            // The conversation may be null if it is already completed
+            HttpConversation conversation = client.getConversation(getConversationID(), false);
+            return conversation != null && conversation.abort(cause);
+        }
+        return false;
     }
 
     @Override
     public Throwable getAbortCause()
     {
-        return aborted;
+        return aborted.get();
     }
 
     private String buildQuery()
