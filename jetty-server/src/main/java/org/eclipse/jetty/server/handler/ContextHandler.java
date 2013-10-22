@@ -135,7 +135,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     private int _maxFormKeys = Integer.getInteger("org.eclipse.jetty.server.Request.maxFormKeys",-1).intValue();
     private int _maxFormContentSize = Integer.getInteger("org.eclipse.jetty.server.Request.maxFormContentSize",-1).intValue();
     private boolean _compactPath = false;
-    private boolean _aliases = false;
+    private boolean _aliasesAllowed = false;
 
     private Object _contextListeners;
     private Object _contextAttributeListeners;
@@ -1318,7 +1318,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
      */
     public boolean isAliases()
     {
-        return _aliases;
+        return _aliasesAllowed;
     }
 
     /* ------------------------------------------------------------ */
@@ -1328,7 +1328,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
      */
     public void setAliases(boolean aliases)
     {
-        _aliases = aliases;
+        _aliasesAllowed = aliases;
     }
 
     /* ------------------------------------------------------------ */
@@ -1537,27 +1537,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             path = URIUtil.canonicalPath(path);
             Resource resource = _baseResource.addPath(path);
             
-            // Is the resource aliased?
-            if (!_aliases && resource.getAlias() != null)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Aliased resource: " + resource + "~=" + resource.getAlias());
-
-                // alias checks
-                for (Iterator<AliasCheck> i=_aliasChecks.iterator();i.hasNext();)
-                {
-                    AliasCheck check = i.next();
-                    if (check.check(path,resource))
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("Aliased resource: " + resource + " approved by " + check);
-                        return resource;
-                    }
-                }
-                return null;
-            }
-
-            return resource;
+            if (checkAlias(path,resource))
+                return resource;
+            return null;
         }
         catch (Exception e)
         {
@@ -1567,6 +1549,31 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         return null;
     }
 
+    /* ------------------------------------------------------------ */
+    public boolean checkAlias(String path, Resource resource)
+    {
+        // Is the resource aliased?
+        if (!_aliasesAllowed && resource.getAlias() != null)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Aliased resource: " + resource + "~=" + resource.getAlias());
+
+            // alias checks
+            for (Iterator<AliasCheck> i=_aliasChecks.iterator();i.hasNext();)
+            {
+                AliasCheck check = i.next();
+                if (check.check(path,resource))
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Aliased resource: " + resource + " approved by " + check);
+                    return true;
+                }
+            }
+            return false;
+        }
+        return true;
+    }
+    
     /* ------------------------------------------------------------ */
     /**
      * Convert URL to Resource wrapper for {@link Resource#newResource(URL)} enables extensions to provide alternate resource implementations.
