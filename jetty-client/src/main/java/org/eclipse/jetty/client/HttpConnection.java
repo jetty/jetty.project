@@ -148,4 +148,10 @@ public abstract class HttpConnection implements Connection
                 authnResult.apply(request);
         }
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%h", getClass().getSimpleName(), this);
+    }
 }

@@ -136,9 +136,9 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
     @Override
     public String toString()
     {
-        return String.format("%s@%x(l:%s <-> r:%s)",
-                HttpConnection.class.getSimpleName(),
-                hashCode(),
+        return String.format("%s@%h(l:%s <-> r:%s)",
+                getClass().getSimpleName(),
+                this,
                 getEndPoint().getLocalAddress(),
                 getEndPoint().getRemoteAddress());
     }
@@ -170,6 +170,12 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
         public void close()
         {
             HttpConnectionOverHTTP.this.close();
+        }
+
+        @Override
+        public String toString()
+        {
+            return HttpConnectionOverHTTP.this.toString();
         }
     }
 }

@@ -94,7 +94,7 @@ public abstract class MultiplexHttpDestination<C extends Connection> extends Htt
     {
         HttpClient client = getHttpClient();
         final HttpExchange exchange = getHttpExchanges().poll();
-        LOG.debug("Processing exchange {} on connection {}", exchange, connection);
+        LOG.debug("Processing {} on {}", exchange, connection);
         if (exchange == null)
             return false;
 
@@ -130,7 +130,6 @@ public abstract class MultiplexHttpDestination<C extends Connection> extends Htt
     public void close(Connection connection)
     {
         super.close(connection);
-        assert this.connection == connection;
         while (true)
         {
             ConnectState current = connect.get();
