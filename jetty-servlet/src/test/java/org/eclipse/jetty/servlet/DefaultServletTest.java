@@ -23,6 +23,7 @@ import static org.junit.Assert.assertTrue;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.EnumSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -40,6 +41,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.OS;
@@ -412,6 +414,40 @@ public class DefaultServletTest
             deleteFile(inde);
             response = connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
             assertResponseContains("JSP support not configured", response);
+        }
+    }
+
+    @Test
+    public void testResourceBase() throws Exception
+    {
+        testdir.ensureEmpty();
+        File resBase = testdir.getFile("docroot");
+        FS.ensureDirExists(resBase);
+        File foobar = new File(resBase, "foobar.txt");
+        File link = new File(resBase, "link.txt");
+        createFile(foobar, "Foo Bar");
+
+        String resBasePath = resBase.getAbsolutePath();
+
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        defholder.setInitParameter("resourceBase", resBasePath);
+        defholder.setInitParameter("gzip", "false");
+
+        String response;
+
+        response = connector.getResponses("GET /context/foobar.txt HTTP/1.0\r\n\r\n");
+        assertResponseContains("Foo Bar", response);
+
+        if (!OS.IS_WINDOWS)
+        {
+            Files.createSymbolicLink(link.toPath(),foobar.toPath());
+            response = connector.getResponses("GET /context/link.txt HTTP/1.0\r\n\r\n");
+            assertResponseContains("404", response);
+            
+            context.addAliasCheck(new ContextHandler.ApproveAliases());
+            
+            response = connector.getResponses("GET /context/link.txt HTTP/1.0\r\n\r\n");
+            assertResponseContains("Foo Bar", response);
         }
     }
 
