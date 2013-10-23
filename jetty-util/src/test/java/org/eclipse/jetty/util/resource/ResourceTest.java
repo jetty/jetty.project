@@ -483,10 +483,10 @@ public class ResourceTest
         assumeTrue(OS.IS_WINDOWS);
 
         String path = __userURL.toURI().getPath().replace('/','\\')+"resource.txt";
-        System.err.println(path);
+        //System.err.println(path);
 
         Resource resource = Resource.newResource(path, false);
-        System.err.println(resource);
+        //System.err.println(resource);
         assertTrue(resource.exists());
 
         /*
