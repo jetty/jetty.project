@@ -45,9 +45,9 @@ public class HttpSenderOverFCGI extends HttpSender
 
         // FastCGI headers based on the URI
         URI uri = request.getURI();
-        String path = uri.getPath();
+        String path = uri.getRawPath();
         fcgiHeaders.put(FCGI.Headers.REQUEST_URI, path);
-        String query = uri.getQuery();
+        String query = uri.getRawQuery();
         fcgiHeaders.put(FCGI.Headers.QUERY_STRING, query == null ? "" : query);
         int lastSegment = path.lastIndexOf('/');
         String scriptName = lastSegment < 0 ? path : path.substring(lastSegment);

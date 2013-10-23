@@ -136,9 +136,12 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
 
     private void shutdown()
     {
+        // First close then abort, to be sure that the
+        // connection cannot be reused from an onFailure()
+        // handler or by blocking code waiting for completion.
+        close();
         for (HttpChannelOverFCGI channel : channels.values())
             channel.abort(new EOFException());
-        close();
     }
 
     @Override

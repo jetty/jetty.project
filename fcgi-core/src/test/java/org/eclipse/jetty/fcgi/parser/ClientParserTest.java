@@ -40,15 +40,15 @@ public class ClientParserTest
         final int id = 13;
         HttpFields fields = new HttpFields();
 
-        final String statusName = "Status";
-        final int code = 200;
+        final int statusCode = 200;
+        final String statusMessage = "OK";
         final String contentTypeName = "Content-Type";
         final String contentTypeValue = "text/html;charset=utf-8";
         fields.put(contentTypeName, contentTypeValue);
 
         ByteBufferPool byteBufferPool = new MappedByteBufferPool();
         ServerGenerator generator = new ServerGenerator(byteBufferPool);
-        Generator.Result result = generator.generateResponseHeaders(id, code, "OK", fields, null);
+        Generator.Result result = generator.generateResponseHeaders(id, statusCode, statusMessage, fields, null);
 
         // Use the fundamental theorem of arithmetic to test the results.
         // This way we know onHeader() has been called the right number of
@@ -62,18 +62,24 @@ public class ClientParserTest
         ClientParser parser = new ClientParser(new ClientParser.Listener.Adapter()
         {
             @Override
+            public void onBegin(int request, int code, String reason)
+            {
+                Assert.assertEquals(statusCode, code);
+                Assert.assertEquals(statusMessage, reason);
+                params.set(params.get() * primes[0]);
+            }
+
+            @Override
             public void onHeader(int request, HttpField field)
             {
                 Assert.assertEquals(id, request);
                 switch (field.getName())
                 {
-                    case statusName:
-                        Assert.assertTrue(field.getValue().startsWith(String.valueOf(code)));
-                        params.set(params.get() * primes[0]);
-                        break;
                     case contentTypeName:
                         Assert.assertEquals(contentTypeValue, field.getValue());
                         params.set(params.get() * primes[1]);
+                        break;
+                    default:
                         break;
                 }
             }
@@ -100,15 +106,11 @@ public class ClientParserTest
     {
         final int id = 13;
         HttpFields fields = new HttpFields();
-
-        final int code = 200;
-        final String contentTypeName = "Content-Length";
-        final String contentTypeValue = "0";
-        fields.put(contentTypeName, contentTypeValue);
+        fields.put("Content-Length", "0");
 
         ByteBufferPool byteBufferPool = new MappedByteBufferPool();
         ServerGenerator generator = new ServerGenerator(byteBufferPool);
-        Generator.Result result1 = generator.generateResponseHeaders(id, code, "OK", fields, null);
+        Generator.Result result1 = generator.generateResponseHeaders(id, 200, "OK", fields, null);
         Generator.Result result2 = generator.generateResponseContent(id, null, true, null);
 
         final AtomicInteger verifier = new AtomicInteger();

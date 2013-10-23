@@ -19,7 +19,7 @@
 package org.eclipse.jetty.fcgi.server;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
@@ -42,12 +43,12 @@ public class HttpChannelOverFCGI extends HttpChannel<ByteBuffer>
 {
     private static final Logger LOG = Log.getLogger(HttpChannelOverFCGI.class);
 
+    private final List<HttpField> fields = new ArrayList<>();
     private final Dispatcher dispatcher;
     private String method;
-    private String uri;
+    private String path;
+    private String query;
     private String version;
-    private boolean started;
-    private List<HttpField> fields;
 
     public HttpChannelOverFCGI(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport, HttpInput<ByteBuffer> input)
     {
@@ -58,57 +59,37 @@ public class HttpChannelOverFCGI extends HttpChannel<ByteBuffer>
     protected void header(HttpField field)
     {
         if (FCGI.Headers.REQUEST_METHOD.equalsIgnoreCase(field.getName()))
-        {
             method = field.getValue();
-            if (uri != null && version != null)
-                startRequest();
-        }
         else if (FCGI.Headers.REQUEST_URI.equalsIgnoreCase(field.getName()))
-        {
-            uri = field.getValue();
-            if (method != null && version != null)
-                startRequest();
-        }
+            path = field.getValue();
+        else if (FCGI.Headers.QUERY_STRING.equalsIgnoreCase(field.getName()))
+            query = field.getValue();
         else if (FCGI.Headers.SERVER_PROTOCOL.equalsIgnoreCase(field.getName()))
-        {
             version = field.getValue();
-            if (method != null && uri != null)
-                startRequest();
-        }
         else
-        {
-            if (started)
-            {
-                resumeHeaders();
-                convertHeader(field);
-            }
-            else
-            {
-                if (fields == null)
-                    fields = new ArrayList<>();
-                fields.add(field);
-            }
-        }
+            fields.add(field);
     }
 
-    private void startRequest()
+    @Override
+    public boolean headerComplete()
     {
-        started = true;
-        startRequest(null, method, ByteBuffer.wrap(uri.getBytes(Charset.forName("UTF-8"))), HttpVersion.fromString(version));
-        resumeHeaders();
-    }
+        String uri = path;
+        if (query != null && query.length() > 0)
+            uri += "?" + query;
+        startRequest(HttpMethod.fromString(method), method, ByteBuffer.wrap(uri.getBytes(StandardCharsets.UTF_8)),
+                HttpVersion.fromString(version));
 
-    private void resumeHeaders()
-    {
-        if (fields != null)
+        for (HttpField fcgiField : fields)
         {
-            for (HttpField field : fields)
-                convertHeader(field);
-            fields = null;
+            HttpField httpField = convertHeader(fcgiField);
+            if (httpField != null)
+                parsedHeader(httpField);
         }
+
+        return super.headerComplete();
     }
 
-    private void convertHeader(HttpField field)
+    private HttpField convertHeader(HttpField field)
     {
         String name = field.getName();
         if (name.startsWith("HTTP_"))
@@ -124,17 +105,9 @@ public class HttpChannelOverFCGI extends HttpChannel<ByteBuffer>
                 httpName.append(Character.toUpperCase(part.charAt(0)));
                 httpName.append(part.substring(1).toLowerCase(Locale.ENGLISH));
             }
-            field = new HttpField(httpName.toString(), field.getValue());
+            return new HttpField(httpName.toString(), field.getValue());
         }
-        parsedHeader(field);
-    }
-
-    @Override
-    public boolean headerComplete()
-    {
-        boolean result = super.headerComplete();
-        started = false;
-        return result;
+        return null;
     }
 
     protected void dispatch()

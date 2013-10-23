@@ -46,6 +46,12 @@ public class ResponseContentParser extends StreamContentParser
     }
 
     @Override
+    public void noContent()
+    {
+        // Does nothing, since for responses the end of content is signaled via a FCGI_END_REQUEST frame
+    }
+
+    @Override
     protected void onContent(ByteBuffer buffer)
     {
         int request = getRequest();
