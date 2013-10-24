@@ -1,5 +1,5 @@
 #
-# Jetty Proxy module
+# Jetty Plus module
 #
 
 [depend]
@@ -11,5 +11,4 @@ jndi
 lib/jetty-plus-${jetty.version}.jar
 
 [xml]
-# Plus requires configuration
 etc/jetty-plus.xml

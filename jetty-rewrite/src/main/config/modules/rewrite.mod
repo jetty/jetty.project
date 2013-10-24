@@ -9,5 +9,4 @@ server
 lib/jetty-rewrite-${jetty.version}.jar
 
 [xml]
-# Annotations needs annotations configuration
 etc/jetty-rewrite.xml

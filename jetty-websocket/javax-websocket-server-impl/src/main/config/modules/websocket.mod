@@ -1,13 +1,12 @@
 #
-# WebSocket Feature
+# WebSocket Module
 #
 
 [depend]
-# WebSocket needs Annotations feature
+# javax.websocket needs annotations
 annotations
 
 [lib]
-# WebSocket needs websocket jars (as defined in start.config)
 lib/websocket/*.jar
 
 

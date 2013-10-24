@@ -9,5 +9,4 @@ deploy
 lib/jetty-overlay-deployer-${jetty.version}.jar
 
 [xml]
-# Plus requires configuration
 etc/jetty-overlay.xml

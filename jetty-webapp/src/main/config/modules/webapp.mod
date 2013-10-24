@@ -1,5 +1,5 @@
 #
-# Base server
+# WebApp Support Module
 #
 
 [depend]

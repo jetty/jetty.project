@@ -1,13 +1,15 @@
+#
+# NPN Module
+#
 
 [files]
 http://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.6.v20130911/npn-boot-1.1.6.v20130911.jar:lib/npn/npn-boot-1.1.6.v20130911.jar
 
 [ini-template]
-
-# NPN boot jar for JRE 1.7.0_40
+# NPN Configuration
+# NPN boot jar for JRE 1.7.0_45
 --exec
 -Xbootclasspath/p:lib/npn/npn-boot-1.1.6.v20130911.jar
-
 
 # For other versions of JRE, an appropriate npn-boot jar must be downloaded
 #
@@ -18,6 +20,7 @@ http://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.6.v20130911/npn
 # 1.7.0u13                                    http://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.4.v20130313/npn-boot-1.1.4.v20130313.jar
 # 1.7.0u15 - 1.7.0u17 - 1.7.0u21 - 1.7.0u25   http://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.5.v20130313/npn-boot-1.1.5.v20130313.jar
 # 1.7.0u40                                    http://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.6.v20130911/npn-boot-1.1.6.v20130911.jar
+# 1.7.0u45                                    http://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.6.v20130911/npn-boot-1.1.6.v20130911.jar
 #
 # Then edit the -Xbootclasspath line above with the correct version
 
