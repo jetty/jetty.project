@@ -290,10 +290,19 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
                         _request.setHandled(false);
                         _response.getHttpOutput().reopen();
                         _request.setDispatcherType(DispatcherType.ERROR);
+                        
+                        Throwable ex=_state.getAsyncContextEvent().getThrowable();
+                        String reason="Async Timeout";
+                        if (ex!=null)
+                        {
+                            reason="Async Exception";
+                            _request.setAttribute(RequestDispatcher.ERROR_EXCEPTION,ex);
+                        }
                         _request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE,new Integer(500));
-                        _request.setAttribute(RequestDispatcher.ERROR_MESSAGE,"Async Timeout");
+                        _request.setAttribute(RequestDispatcher.ERROR_MESSAGE,reason);
                         _request.setAttribute(RequestDispatcher.ERROR_REQUEST_URI,_request.getRequestURI());
-                        _response.setStatusWithReason(500,"Async Timeout");
+        
+                        _response.setStatusWithReason(500,reason);
                         
                         ErrorHandler eh = _state.getContextHandler().getErrorHandler();
                         if (eh instanceof ErrorHandler.ErrorPageMapper)
