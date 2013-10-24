@@ -497,9 +497,10 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
                     {
                         if (_request._async.isExpired()&&!was_continuation)
                         {
-                            _response.setStatus(500,"Async Timeout");
+                            async_exception = (Throwable)_request.getAttribute(RequestDispatcher.ERROR_EXCEPTION);
+                            _response.setStatus(500,async_exception==null?"Async Timeout":"Async Exception");
                             _request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE,new Integer(500));
-                            _request.setAttribute(RequestDispatcher.ERROR_MESSAGE, "Async Timeout");
+                            _request.setAttribute(RequestDispatcher.ERROR_MESSAGE, _response.getReason());
                             _request.setDispatcherType(DispatcherType.ERROR);
                             
                             ErrorHandler eh = _request._async.getContextHandler().getErrorHandler();

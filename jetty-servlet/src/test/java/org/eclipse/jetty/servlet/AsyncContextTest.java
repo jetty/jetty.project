@@ -28,7 +28,10 @@ import java.io.IOException;
 import java.io.StringReader;
 
 import javax.servlet.AsyncContext;
+import javax.servlet.AsyncEvent;
+import javax.servlet.AsyncListener;
 import javax.servlet.DispatcherType;
+import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -36,7 +39,6 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 
 import org.junit.Assert;
-
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
@@ -74,6 +76,7 @@ public class AsyncContextTest
         _contextHandler.addServlet(new ServletHolder(new ForwardingServlet()),"/forward");
         _contextHandler.addServlet(new ServletHolder(new AsyncDispatchingServlet()),"/dispatchingServlet");
         _contextHandler.addServlet(new ServletHolder(new ExpireServlet()),"/expire/*");
+        _contextHandler.addServlet(new ServletHolder(new BadExpireServlet()),"/badexpire/*");
         _contextHandler.addServlet(new ServletHolder(new ErrorServlet()),"/error/*");
         
         ErrorPageErrorHandler error_handler = new ErrorPageErrorHandler();
@@ -264,8 +267,11 @@ public class AsyncContextTest
     @Test
     public void testExpire() throws Exception
     {
-        String request = "GET /ctx/expire HTTP/1.1\r\n" + "Host: localhost\r\n" + "Content-Type: application/x-www-form-urlencoded\r\n"
-                + "Connection: close\r\n" + "\r\n";
+        String request = "GET /ctx/expire HTTP/1.1\r\n" + 
+                "Host: localhost\r\n" + 
+                "Content-Type: application/x-www-form-urlencoded\r\n" +
+                "Connection: close\r\n" + 
+                "\r\n";
         String responseString = _connector.getResponses(request);
                
         BufferedReader br = new BufferedReader(new StringReader(responseString));
@@ -276,7 +282,28 @@ public class AsyncContextTest
         br.readLine();// server
         br.readLine();// empty
 
-        Assert.assertEquals("error servlet","ERROR:/error",br.readLine());
+        Assert.assertEquals("error servlet","ERROR: /error",br.readLine());
+    }
+
+    @Test
+    public void testBadExpire() throws Exception
+    {
+        String request = "GET /ctx/badexpire HTTP/1.1\r\n" + 
+          "Host: localhost\r\n" + 
+          "Content-Type: application/x-www-form-urlencoded\r\n" +
+          "Connection: close\r\n" + 
+          "\r\n";
+        String responseString = _connector.getResponses(request);
+        
+        BufferedReader br = new BufferedReader(new StringReader(responseString));
+
+        assertEquals("HTTP/1.1 500 Async Exception",br.readLine());
+        br.readLine();// connection close
+        br.readLine();// server
+        br.readLine();// empty
+
+        Assert.assertEquals("error servlet","ERROR: /error",br.readLine());
+        Assert.assertEquals("error servlet","EXCEPTION: java.io.IOException: TEST",br.readLine());
     }
 
     private class DispatchingRunnable implements Runnable
@@ -313,7 +340,9 @@ public class AsyncContextTest
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
-            response.getOutputStream().print("ERROR:" + request.getServletPath() + "\n");
+            response.getOutputStream().print("ERROR: " + request.getServletPath() + "\n");
+            if (request.getAttribute(RequestDispatcher.ERROR_EXCEPTION)!=null)
+                response.getOutputStream().print("EXCEPTION: " + request.getAttribute(RequestDispatcher.ERROR_EXCEPTION) + "\n");
         }
     }
     
@@ -327,6 +356,44 @@ public class AsyncContextTest
             if (request.getDispatcherType()==DispatcherType.REQUEST)
             {
                 AsyncContext asyncContext = request.startAsync();
+                asyncContext.setTimeout(100);
+            }
+        }
+    }
+    
+    private class BadExpireServlet extends HttpServlet
+    {
+        private static final long serialVersionUID = 1L;
+
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            if (request.getDispatcherType()==DispatcherType.REQUEST)
+            {
+                AsyncContext asyncContext = request.startAsync();
+                asyncContext.addListener(new AsyncListener()
+                {
+                    @Override
+                    public void onTimeout(AsyncEvent event) throws IOException
+                    {
+                        throw new IOException("TEST");
+                    }
+                    
+                    @Override
+                    public void onStartAsync(AsyncEvent event) throws IOException
+                    {                      
+                    }
+                    
+                    @Override
+                    public void onError(AsyncEvent event) throws IOException
+                    {                        
+                    }
+                    
+                    @Override
+                    public void onComplete(AsyncEvent event) throws IOException
+                    {                        
+                    }
+                });
                 asyncContext.setTimeout(100);
             }
         }

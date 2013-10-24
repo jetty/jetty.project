@@ -21,6 +21,7 @@ package org.eclipse.jetty.server;
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
+import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletResponseWrapper;
 import javax.servlet.ServletException;
 
@@ -513,7 +514,9 @@ public class AsyncContinuation implements AsyncContext, Continuation
                 }
                 catch(Exception e)
                 {
-                    LOG.warn(e);
+                    LOG.debug(e);
+                    _connection.getRequest().setAttribute(RequestDispatcher.ERROR_EXCEPTION,e);
+                    break;
                 }
             }
         }
