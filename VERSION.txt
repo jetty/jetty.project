@@ -1,3 +1,5 @@
+jetty-9.1.0-SNAPSHOT
+
 jetty-9.1.0.RC1 - 24 October 2013
  + 397049 Cannot Provide Custom Credential to JDBCLoginService
  + 403591 improve the Blocking Q implementation.
