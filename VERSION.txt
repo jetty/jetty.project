@@ -1,3 +1,56 @@
+jetty-9.1.0.RC1 - 24 October 2013
+ + 397049 Cannot Provide Custom Credential to JDBCLoginService
+ + 403591 improve the Blocking Q implementation.
+ + 407716 fixed logs
+ + 410840 Change SSLSession.getPeerCertificateChain() to
+   SSLSession.getPeerCertificates().
+ + 415118 WebAppClassLoader.getResource(name) should strip .class from name
+ + 415609 spdy replace SessionInvoker with IteratingCallback. Introduce Flusher
+   class to separate queuing/flushing logic from StandardSession
+ + 416300 Order ServletContainerInitializer callbacks
+ + 416597 Allow classes and jars on the webappcontext extraclasspath to be
+   scanned for annotations by jetty-maven-plugin
+ + 417356 Add SOCKS support to jetty client.
+ + 418212 org.eclipse.jetty.spdy.server.http.SSLExternalServerTest hangs.
+ + 418441 Use of OPTIONS= in Jetty 9.1 should display WARNING message
+ + 418596 Faults in JARs during class scanning should report the jar that
+   caused the problem
+ + 418603 cannot specify a custom ServerEndpointConfig.Configurator
+ + 418625 WebSocket / Jsr RemoteEndpoint.sendObject(java.nio.HeapByteBuffer)
+   doesn't find encoder
+ + 418632 WebSocket / Jsr annotated @OnMessage with InputStream fails to be
+   called
+ + 418636 Name anonymous filter and holders with classname-hashcode
+ + 418732 Add whiteListByPath mode to IPAccessHandler
+ + 418767 run-forked goal ingores test scope dependencies with
+   useTestScope=true
+ + 418792 Session getProtocolVersion always returns null
+ + 418892 SSL session caching so unreliable it effectively does not work.
+ + 419146 Parameterize etc/jetty-requestlog.xml values
+ + 419309 Added symlink checker to test webapp
+ + 419330 Allow access to setters on JspC in jetty-jspc-maven-plugin
+ + 419333 treat // as an alias in path
+ + 419344 NPNServerConnection does not close the EndPoint if it reads -1.
+ + 419655 AnnotationParser throws NullPointerException when scanning files from
+   jar:file urls
+ + 419687 HttpClient's query parameters must be case sensitive.
+ + 419799 Async timeout dispatches to error page
+ + 419814 Annotation properties maxMessageSize and inputBufferSize don't work
+ + 419846 JDBCSessionManager doesn't determine dirty state correctly
+ + 419899 Do not wrap SSL Exception as EoFException
+ + 419901 Client always adds extra user-agent header.
+ + 419904 Data corruption on proxy PUT requests.
+ + 419914 QueuedThreadPool uses nanoTime
+ + 419937 Request isSecure cleared on recycle
+ + 419950 Provide constructor for StringContentProvider that takes Charset.
+ + 420012 Improve ProxyServlet.Transparent configuration in case prefix="/".
+ + 420033 AsyncContext.onTimeout exceptions passed to onError
+ + 420034 Removed threads/timers from Date caching
+ + 420039 BufferingResponseListener continues processing after aborting
+   request.
+ + 420048 DefaultServlet alias checks configured resourceBase
+ + 420103 Split out jmx-remote module from existing jmx module
+
 jetty-9.1.0.RC0 - 30 September 2013
  + 412469 make module for jetty-jaspi
  + 416453 Add comments to embedded SplitFileServer example
@@ -190,53 +243,10 @@ jetty-9.1.0.M0 - 16 September 2013
    ServerEndpointConfig.Configurator.getNegotiatedExtensions() is never used
  + 417225 added Container.addEventListener method
  + 417260 Protected targets matched as true URI path segments
-
- jetty-9.0.6.v20130930 - 30 September 2013
- + 411069 better set compiler defaults to 1.7, including webdefault.xml for jsp
- + 411934 War overlay configuration assumes src/main/webapp exists
- + 413484 setAttribute in nosql session management better handles _dirty status
- + 413684 deprecated unsafe alias checkers
- + 413737 hide stacktrace in ReferrerPushStrategyTest
- + 414431 Avoid debug NPE race
- + 414898 Only upgrade v0 to v1 cookies on dquote , ; backslash space and tab
-   in the value
- + 415192 <jsp-file> maps to JspPropertyGroupServlet instead of JspServlet
- + 415194 Deployer gives management of context to context collection
- + 415302 
- + 415330 Avoid multiple callbacks at EOF
- + 415401 Add initalizeDefaults call to SpringConfigurationProcessor
- + 415548 migrate ProxyHTTPToSPDYTest to use HttpClient to avoid intermittent
-   NPE part 2
- + 415605 fix status code logging for async requests
- + 415999 Fix some of FindBugs warnings
- + 416015 Handle null Accept-Language and other headers
- + 416096 DefaultServlet leaves open file descriptors with file sizes greater
-   than response buffer
- + 416102 Clean up of async sendContent process
- + 416103 Added AllowSymLinkAliasChecker.java
- + 416251 ProxyHTTPToSPDYConnection now sends a 502 to the client if it
-   receives a rst frame from the upstream spdy server
- + 416266 HttpServletResponse.encodeURL() encodes on first request when only
-   SessionTrackingMode.COOKIE is used
- + 416314 jetty async client wrong behaviour for HEAD Method + Redirect.
- + 416321 handle failure during blocked committing write
+   jetty-9.0.6.v20130930 - 30 September 2013
  + 416453 Add comments to embedded SplitFileServer example
- + 416477 Improved consumeAll error handling
- + 416568 Simplified servlet exception logging
  + 416577 enhanced shutdown handler to send shutdown at startup
- + 416585 WebInfConfiguration examines webapp classloader first instead of its
-   parent when looking for container jars
- + 416597 Allow classes and jars on the webappcontext extraclasspath to be
-   scanned for annotations
- + 416663 Content-length set by resourcehandler
- + 416674 run all jetty-ant tests on random ports
- + 416679 Change warning to debug if no transaction manager present
- + 416787 StringIndexOutOfBounds with a pathMap of ""
  + 416940 avoid download of spring-beans.dtd
- + 416990 JMX names statically unique
- + 417110 Demo / html body end tag missing in authfail.html
- + 417225 added Container.addEventListener method
- + 417260 Protected targets matched as true URI path segments
  + 417289 SPDY replace use of direct buffers with indirect buffers or make it
    configurable
  + 417475 Do not null context Trie during dynamic deploy
@@ -246,7 +256,7 @@ jetty-9.1.0.M0 - 16 September 2013
  + 418014 Handle NTFS canonical exceptions during alias check
  + 418212 org.eclipse.jetty.spdy.server.http.SSLExternalServerTest hangs
  + 418227 Null cookie value test
- 
+
 jetty-9.0.5.v20130815 - 15 August 2013
  + 414898 Only upgrade v0 to v1 cookies on dquote , ; backslash space and tab
    in the value
