@@ -20,8 +20,8 @@
               <Set name="retainDays"><Property name="requestlog.retain" default="90"/></Set>
               <Set name="append"><Property name="requestlog.append" default="false"/></Set>
               <Set name="extended"><Property name="requestlog.extended" default="false"/></Set>
-              <Set name="logCookies">false</Set>
-              <Set name="LogTimeZone">GMT</Set>
+              <Set name="logCookies"><Property name="requestlog.cookies" default="false"/></Set>
+              <Set name="LogTimeZone"><Property name="requestlog.timezone" default="GMT"/></Set>
             </New>
           </Set>
         </New>

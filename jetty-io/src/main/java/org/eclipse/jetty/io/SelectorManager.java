@@ -59,11 +59,14 @@ import org.eclipse.jetty.util.thread.Scheduler;
 public abstract class SelectorManager extends AbstractLifeCycle implements Dumpable
 {
     protected static final Logger LOG = Log.getLogger(SelectorManager.class);
+    public static final String SUBMIT_KEY_UPDATES="org.eclipse.jetty.io.SelectorManager.submitKeyUpdates";
     /**
      * The default connect timeout, in milliseconds
      */
     public static final int DEFAULT_CONNECT_TIMEOUT = 15000;
 
+    private final static boolean __submitKeyUpdates=Boolean.valueOf(System.getProperty(SUBMIT_KEY_UPDATES,"FALSE"));
+    
     private final Executor executor;
     private final Scheduler scheduler;
     private final ManagedSelector[] _selectors;
@@ -356,6 +359,25 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             LOG.debug("Stopped {}", this);
         }
 
+        /**
+         * Submit a task to update a selector key.  If the System property {@link SelectorManager#SUBMIT_KEY_UPDATES}
+         * is set true (default is false), the task is passed to {@link #submit(Runnable)}.   Otherwise it is run immediately and the selector 
+         * woken up if need be.   
+         * @param update the update to a key
+         */
+        public void updateKey(Runnable update)
+        {
+            if (__submitKeyUpdates)
+                submit(update);
+            else
+            {
+                update.run();
+
+                if (_state.compareAndSet(State.SELECT, State.WAKEUP))
+                   wakeup();
+            }
+        }
+        
         /**
          * <p>Submits a change to be executed in the selector thread.</p>
          * <p>Changes may be submitted from any thread, and the selector thread woken up
@@ -748,14 +770,30 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 }
                 catch (ClosedSelectorException | ClosedChannelException x)
                 {
-                    LOG.debug(x);
+                    failed(x);
                 }
             }
 
             protected void failed(Throwable failure)
             {
                 if (failed.compareAndSet(false, true))
+                {
+                    timeout.cancel();
+                    close();
                     connectionFailed(channel, failure, attachment);
+                }
+            }
+
+            private void close()
+            {
+                try
+                {
+                    channel.close();
+                }
+                catch (IOException x)
+                {
+                    LOG.ignore(x);
+                }
             }
         }
 
@@ -775,19 +813,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 if (channel.isConnectionPending())
                 {
                     LOG.debug("Channel {} timed out while connecting, closing it", channel);
-                    try
-                    {
-                        // This will unregister the channel from the selector
-                        channel.close();
-                    }
-                    catch (IOException x)
-                    {
-                        LOG.ignore(x);
-                    }
-                    finally
-                    {
-                        connect.failed(new SocketTimeoutException());
-                    }
+                    connect.failed(new SocketTimeoutException());
                 }
             }
         }

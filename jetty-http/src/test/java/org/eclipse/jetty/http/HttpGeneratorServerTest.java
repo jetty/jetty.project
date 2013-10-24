@@ -372,7 +372,7 @@ public class HttpGeneratorServerTest
         assertEquals(HttpGenerator.State.START, gen.getState());
 
         ResponseInfo info = new ResponseInfo(HttpVersion.HTTP_1_1, new HttpFields(), -1, 200, null, false);
-        info.getHttpFields().add("Last-Modified", HttpFields.__01Jan1970);
+        info.getHttpFields().add("Last-Modified", DateGenerator.__01Jan1970);
 
         result = gen.generateResponse(info, null, null, null, true);
         assertEquals(HttpGenerator.Result.NEED_HEADER, result);
@@ -441,7 +441,7 @@ public class HttpGeneratorServerTest
         assertEquals(HttpGenerator.State.START, gen.getState());
 
         ResponseInfo info = new ResponseInfo(HttpVersion.HTTP_1_1, new HttpFields(), -1, 200, null, false);
-        info.getHttpFields().add("Last-Modified", HttpFields.__01Jan1970);
+        info.getHttpFields().add("Last-Modified", DateGenerator.__01Jan1970);
         result = gen.generateResponse(info, null, null, content0, false);
         assertEquals(HttpGenerator.Result.NEED_HEADER, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
@@ -503,7 +503,7 @@ public class HttpGeneratorServerTest
         assertEquals(HttpGenerator.State.START, gen.getState());
 
         ResponseInfo info = new ResponseInfo(HttpVersion.HTTP_1_1, new HttpFields(), 59, 200, null, false);
-        info.getHttpFields().add("Last-Modified", HttpFields.__01Jan1970);
+        info.getHttpFields().add("Last-Modified", DateGenerator.__01Jan1970);
         result = gen.generateResponse(info, null, null, content0, false);
         assertEquals(HttpGenerator.Result.NEED_HEADER, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
@@ -570,7 +570,7 @@ public class HttpGeneratorServerTest
         assertEquals(HttpGenerator.State.START, gen.getState());
 
         ResponseInfo info = new ResponseInfo(HttpVersion.HTTP_1_1, new HttpFields(), 59, 200, null, false);
-        info.getHttpFields().add("Last-Modified", HttpFields.__01Jan1970);
+        info.getHttpFields().add("Last-Modified", DateGenerator.__01Jan1970);
         result = gen.generateResponse(info, null, null, content0, false);
         assertEquals(HttpGenerator.Result.NEED_HEADER, result);
         assertEquals(HttpGenerator.State.START, gen.getState());

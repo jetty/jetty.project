@@ -36,7 +36,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-@ServerEndpoint(value = "/", configurator = JsrBrowserConfigurator.class)
+@ServerEndpoint(value = "/", subprotocols = { "tool" }, configurator = JsrBrowserConfigurator.class)
 public class JsrBrowserSocket
 {
     private static class WriteMany implements Runnable

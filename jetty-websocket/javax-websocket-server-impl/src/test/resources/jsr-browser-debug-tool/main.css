@@ -20,6 +20,10 @@ div#console .info {
 	color: black;
 }
 
+div#console .error {
+    color: red;
+}
+
 div#console .client {
 	color: blue;
 }

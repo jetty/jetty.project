@@ -261,7 +261,7 @@ public class JDBCLoginService extends MappedLoginService
                                     roles.add(rs2.getString(_roleTableRoleField));
                             }
                         }
-                        return putUser(username, Credential.getCredential(credentials),roles.toArray(new String[roles.size()]));
+                        return putUser(username, credentials, roles.toArray(new String[roles.size()]));
                     }
                 }
             }
@@ -273,6 +273,13 @@ public class JDBCLoginService extends MappedLoginService
         }
         return null;
     }
+    
+    /* ------------------------------------------------------------ */
+    protected UserIdentity putUser (String username, String credentials, String[] roles)
+    {
+        return putUser(username, Credential.getCredential(credentials),roles);
+    }
+    
 
     /**
      * Close an existing connection

@@ -90,7 +90,7 @@ public class ConcurrentStreamsTest extends AbstractHTTPSPDYTest
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
                 Fields replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).getValue().contains("200"));
                 slowClientLatch.countDown();
             }
         });
@@ -104,7 +104,7 @@ public class ConcurrentStreamsTest extends AbstractHTTPSPDYTest
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
                 Fields replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).getValue().contains("200"));
                 fastClientLatch.countDown();
             }
         });

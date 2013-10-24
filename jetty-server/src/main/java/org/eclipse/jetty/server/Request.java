@@ -1546,6 +1546,9 @@ public class Request implements HttpServletRequest
     /* ------------------------------------------------------------ */
     protected void recycle()
     {
+        if (_context != null)
+            throw new IllegalStateException("Request in context!");
+        
         if (_inputState == __READER)
         {
             try
@@ -1561,6 +1564,7 @@ public class Request implements HttpServletRequest
             }
         }
 
+        _dispatcherType=null;
         setAuthentication(Authentication.NOT_CHECKED);
         getHttpChannelState().recycle();
         if (_async!=null)
@@ -1568,8 +1572,6 @@ public class Request implements HttpServletRequest
         _async=null;
         _asyncSupported = true;
         _handled = false;
-        if (_context != null)
-            throw new IllegalStateException("Request in context!");
         if (_attributes != null)
             _attributes.clearAttributes();
         _characterEncoding = null;
@@ -1578,7 +1580,9 @@ public class Request implements HttpServletRequest
             _cookies.reset();
         _cookiesExtracted = false;
         _context = null;
+        _newContext=false;
         _serverName = null;
+        _httpMethod=null;
         _httpMethodString = null;
         _pathInfo = null;
         _port = 0;
@@ -1587,6 +1591,7 @@ public class Request implements HttpServletRequest
         _queryString = null;
         _requestedSessionId = null;
         _requestedSessionIdFromCookie = false;
+        _secure=false;
         _session = null;
         _sessionManager = null;
         _requestURI = null;

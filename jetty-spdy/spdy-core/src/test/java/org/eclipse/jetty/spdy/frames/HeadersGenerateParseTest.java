@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.spdy.frames;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.assertThat;
-
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.MappedByteBufferPool;
@@ -33,6 +29,10 @@ import org.eclipse.jetty.spdy.parser.Parser;
 import org.eclipse.jetty.util.Fields;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.junit.Assert.assertThat;
 
 public class HeadersGenerateParseTest
 {
@@ -85,7 +85,7 @@ public class HeadersGenerateParseTest
         parser.parse(createHeadersFrameBuffer(headers));
         HeadersFrame parsedHeadersFrame = assertExpectationsAreMet(headers);
         Fields.Field viaHeader = parsedHeadersFrame.getHeaders().get("via");
-        assertThat("Via Header name is lowercase", viaHeader.name(), is("via"));
+        assertThat("Via Header name is lowercase", viaHeader.getName(), is("via"));
     }
 
     private HeadersFrame assertExpectationsAreMet(Fields headers)

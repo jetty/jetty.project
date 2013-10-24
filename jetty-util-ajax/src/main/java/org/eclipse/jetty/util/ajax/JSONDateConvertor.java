@@ -57,8 +57,7 @@ public class JSONDateConvertor implements JSON.Convertor
 
     public JSONDateConvertor(String format,TimeZone zone,boolean fromJSON)
     {
-        _dateCache=new DateCache(format);
-        _dateCache.setTimeZone(zone);
+        _dateCache=new DateCache(format,null,zone);
         _fromJSON=fromJSON;
         _format=new SimpleDateFormat(format);
         _format.setTimeZone(zone);
@@ -66,8 +65,7 @@ public class JSONDateConvertor implements JSON.Convertor
 
     public JSONDateConvertor(String format, TimeZone zone, boolean fromJSON, Locale locale)
     {
-        _dateCache = new DateCache(format, locale);
-        _dateCache.setTimeZone(zone);
+        _dateCache = new DateCache(format, locale, zone);
         _fromJSON = fromJSON;
         _format = new SimpleDateFormat(format, new DateFormatSymbols(locale));
         _format.setTimeZone(zone);

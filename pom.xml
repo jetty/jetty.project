@@ -792,7 +792,7 @@
         </plugins>
       </build>
     </profile>
- <profile>
+    <profile>
             <id>7u9</id>
             <activation>
                 <property>
@@ -894,6 +894,18 @@
                 <property>
                     <name>java.version</name>
                     <value>1.7.0_40</value>
+                </property>
+            </activation>
+            <properties>
+                <npn.version>1.1.6.v20130911</npn.version>
+            </properties>
+        </profile>
+        <profile>
+           <id>7u45</id>
+            <activation>
+                <property>
+                    <name>java.version</name>
+                    <value>1.7.0_45</value>
                 </property>
             </activation>
             <properties>

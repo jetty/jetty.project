@@ -37,6 +37,11 @@ public class StringContentProvider extends BytesContentProvider
 
     public StringContentProvider(String content, String encoding)
     {
-        super(content.getBytes(Charset.forName(encoding)));
+        this(content, Charset.forName(encoding));
+    }
+
+    public StringContentProvider(String content, Charset charset)
+    {
+        super(content.getBytes(charset));
     }
 }

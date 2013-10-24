@@ -62,9 +62,9 @@ public class HttpReceiverOverSPDY extends HttpReceiver implements StreamFrameLis
 
             Fields fields = replyInfo.getHeaders();
             short spdy = stream.getSession().getVersion();
-            HttpVersion version = HttpVersion.fromString(fields.get(HTTPSPDYHeader.VERSION.name(spdy)).value());
+            HttpVersion version = HttpVersion.fromString(fields.get(HTTPSPDYHeader.VERSION.name(spdy)).getValue());
             response.version(version);
-            String[] status = fields.get(HTTPSPDYHeader.STATUS.name(spdy)).value().split(" ", 2);
+            String[] status = fields.get(HTTPSPDYHeader.STATUS.name(spdy)).getValue().split(" ", 2);
 
             Integer code = Integer.parseInt(status[0]);
             response.status(code);
@@ -75,11 +75,11 @@ public class HttpReceiverOverSPDY extends HttpReceiver implements StreamFrameLis
             {
                 for (Fields.Field field : fields)
                 {
-                    String name = field.name();
+                    String name = field.getName();
                     if (HTTPSPDYHeader.from(spdy, name) != null)
                         continue;
                     // TODO: handle multiple values properly
-                    HttpField httpField = new HttpField(name, field.value());
+                    HttpField httpField = new HttpField(name, field.getValue());
                     responseHeader(exchange, httpField);
                 }
 

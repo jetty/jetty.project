@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.server;
 
+import static org.eclipse.jetty.util.QuotedStringTokenizer.isQuoted;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.channels.IllegalSelectorException;
@@ -26,6 +28,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Enumeration;
+import java.util.Iterator;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -42,8 +45,10 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
+import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
+import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
@@ -53,6 +58,7 @@ import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.ByteArrayISO8859Writer;
+import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -63,7 +69,10 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class Response implements HttpServletResponse
 {
-    private static final Logger LOG = Log.getLogger(Response.class);
+    private static final Logger LOG = Log.getLogger(Response.class);    
+    private static final String __COOKIE_DELIM="\",;\\ \t";
+    private final static String __01Jan1970_COOKIE = DateGenerator.formatCookieDate(0).trim();
+
 
     /* ------------------------------------------------------------ */
     public static Response getResponse(HttpServletResponse response)
@@ -186,7 +195,16 @@ public class Response implements HttpServletResponse
 
     public void addCookie(HttpCookie cookie)
     {
-        _fields.addSetCookie(cookie);
+        addSetCookie(
+                cookie.getName(),
+                cookie.getValue(),
+                cookie.getDomain(),
+                cookie.getPath(),
+                cookie.getMaxAge(),
+                cookie.getComment(),
+                cookie.isSecure(),
+                cookie.isHttpOnly(),
+                cookie.getVersion());;
     }
 
     @Override
@@ -206,7 +224,7 @@ public class Response implements HttpServletResponse
                     comment = null;
             }
         }
-        _fields.addSetCookie(cookie.getName(),
+        addSetCookie(cookie.getName(),
                 cookie.getValue(),
                 cookie.getDomain(),
                 cookie.getPath(),
@@ -217,6 +235,175 @@ public class Response implements HttpServletResponse
                 cookie.getVersion());
     }
 
+
+    /**
+     * Format a set cookie value
+     *
+     * @param name the name
+     * @param value the value
+     * @param domain the domain
+     * @param path the path
+     * @param maxAge the maximum age
+     * @param comment the comment (only present on versions > 0)
+     * @param isSecure true if secure cookie
+     * @param isHttpOnly true if for http only
+     * @param version version of cookie logic to use (0 == default behavior)
+     */
+    public void addSetCookie(
+            final String name,
+            final String value,
+            final String domain,
+            final String path,
+            final long maxAge,
+            final String comment,
+            final boolean isSecure,
+            final boolean isHttpOnly,
+            int version)
+    {
+        // Check arguments
+        if (name == null || name.length() == 0)
+            throw new IllegalArgumentException("Bad cookie name");
+
+        // Format value and params
+        StringBuilder buf = new StringBuilder(128);
+        
+        // Name is checked for legality by servlet spec, but can also be passed directly so check again for quoting
+        boolean quote_name=isQuoteNeededForCookie(name);
+        quoteOnlyOrAppend(buf,name,quote_name);
+        
+        buf.append('=');
+        
+        // Remember name= part to look for other matching set-cookie
+        String name_equals=buf.toString();
+
+        // Append the value
+        boolean quote_value=isQuoteNeededForCookie(value);
+        quoteOnlyOrAppend(buf,value,quote_value);
+
+        // Look for domain and path fields and check if they need to be quoted
+        boolean has_domain = domain!=null && domain.length()>0;
+        boolean quote_domain = has_domain && isQuoteNeededForCookie(domain);
+        boolean has_path = path!=null && path.length()>0;
+        boolean quote_path = has_path && isQuoteNeededForCookie(path);
+        
+        // Upgrade the version if we have a comment or we need to quote value/path/domain or if they were already quoted
+        if (version==0 && ( comment!=null || quote_name || quote_value || quote_domain || quote_path || isQuoted(name) || isQuoted(value) || isQuoted(path) || isQuoted(domain)))
+            version=1;
+
+        // Append version
+        if (version==1)
+            buf.append (";Version=1");
+        else if (version>1)
+            buf.append (";Version=").append(version);
+        
+        // Append path
+        if (has_path)
+        {
+            buf.append(";Path=");
+            quoteOnlyOrAppend(buf,path,quote_path);
+        }
+        
+        // Append domain
+        if (has_domain)
+        {
+            buf.append(";Domain=");
+            quoteOnlyOrAppend(buf,domain,quote_domain);
+        }
+
+        // Handle max-age and/or expires
+        if (maxAge >= 0)
+        {
+            // Always use expires
+            // This is required as some browser (M$ this means you!) don't handle max-age even with v1 cookies
+            buf.append(";Expires=");
+            if (maxAge == 0)
+                buf.append(__01Jan1970_COOKIE);
+            else
+                DateGenerator.formatCookieDate(buf, System.currentTimeMillis() + 1000L * maxAge);
+            
+            // for v1 cookies, also send max-age
+            if (version>=1)
+            {
+                buf.append(";Max-Age=");
+                buf.append(maxAge);
+            }
+        }
+
+        // add the other fields
+        if (isSecure)
+            buf.append(";Secure");
+        if (isHttpOnly)
+            buf.append(";HttpOnly");
+        if (comment != null)
+        {
+            buf.append(";Comment=");
+            quoteOnlyOrAppend(buf,comment,isQuoteNeededForCookie(comment));
+        }
+
+        // remove any existing set-cookie fields of same name
+        Iterator<HttpField> i=_fields.iterator();
+        while (i.hasNext())
+        {
+            HttpField field=i.next();
+            if (field.getHeader()==HttpHeader.SET_COOKIE)
+            {
+                String val = field.getValue();
+                if (val!=null && val.startsWith(name_equals))
+                {
+                    //existing cookie has same name, does it also match domain and path?
+                    if (((!has_domain && !val.contains("Domain")) || (has_domain && val.contains(domain))) &&
+                        ((!has_path && !val.contains("Path")) || (has_path && val.contains(path))))
+                    {
+                        i.remove();
+                    }
+                }
+            }
+        }
+        
+        // add the set cookie
+        _fields.add(HttpHeader.SET_COOKIE.toString(), buf.toString());
+
+        // Expire responses with set-cookie headers so they do not get cached.
+        _fields.put(HttpHeader.EXPIRES.toString(), DateGenerator.__01Jan1970);
+    }
+
+
+    /* ------------------------------------------------------------ */
+    /** Does a cookie value need to be quoted?
+     * @param s value string
+     * @return true if quoted;
+     * @throws IllegalArgumentException If there a control characters in the string
+     */
+    private static boolean isQuoteNeededForCookie(String s)
+    {
+        if (s==null || s.length()==0)
+            return true;
+        
+        if (QuotedStringTokenizer.isQuoted(s))
+            return false;
+
+        for (int i=0;i<s.length();i++)
+        {
+            char c = s.charAt(i);
+            if (__COOKIE_DELIM.indexOf(c)>=0)
+                return true;
+            
+            if (c<0x20 || c>=0x7f)
+                throw new IllegalArgumentException("Illegal character in cookie value");
+        }
+
+        return false;
+    }
+    
+    
+    private static void quoteOnlyOrAppend(StringBuilder buf, String s, boolean quote)
+    {
+        if (quote)
+            QuotedStringTokenizer.quoteOnly(buf,s);
+        else
+            buf.append(s);
+    }
+    
     @Override
     public boolean containsHeader(String name)
     {
@@ -398,43 +585,45 @@ public class Response implements HttpServletResponse
             {
                 setHeader(HttpHeader.CACHE_CONTROL, "must-revalidate,no-cache,no-store");
                 setContentType(MimeTypes.Type.TEXT_HTML_8859_1.toString());
-                ByteArrayISO8859Writer writer= new ByteArrayISO8859Writer(2048);
-                if (message != null)
+                try (ByteArrayISO8859Writer writer= new ByteArrayISO8859Writer(2048);)
                 {
-                    message= StringUtil.replace(message, "&", "&amp;");
-                    message= StringUtil.replace(message, "<", "&lt;");
-                    message= StringUtil.replace(message, ">", "&gt;");
-                }
-                String uri= request.getRequestURI();
-                if (uri!=null)
-                {
-                    uri= StringUtil.replace(uri, "&", "&amp;");
-                    uri= StringUtil.replace(uri, "<", "&lt;");
-                    uri= StringUtil.replace(uri, ">", "&gt;");
-                }
+                    if (message != null)
+                    {
+                        message= StringUtil.replace(message, "&", "&amp;");
+                        message= StringUtil.replace(message, "<", "&lt;");
+                        message= StringUtil.replace(message, ">", "&gt;");
+                    }
+                    String uri= request.getRequestURI();
+                    if (uri!=null)
+                    {
+                        uri= StringUtil.replace(uri, "&", "&amp;");
+                        uri= StringUtil.replace(uri, "<", "&lt;");
+                        uri= StringUtil.replace(uri, ">", "&gt;");
+                    }
 
-                writer.write("<html>\n<head>\n<meta http-equiv=\"Content-Type\" content=\"text/html;charset=ISO-8859-1\"/>\n");
-                writer.write("<title>Error ");
-                writer.write(Integer.toString(code));
-                writer.write(' ');
-                if (message==null)
-                writer.write(message);
-                writer.write("</title>\n</head>\n<body>\n<h2>HTTP ERROR: ");
-                writer.write(Integer.toString(code));
-                writer.write("</h2>\n<p>Problem accessing ");
-                writer.write(uri);
-                writer.write(". Reason:\n<pre>    ");
-                writer.write(message);
-                writer.write("</pre>");
-                writer.write("</p>\n<hr /><i><small>Powered by Jetty://</small></i>");
-                writer.write("\n</body>\n</html>\n");
+                    writer.write("<html>\n<head>\n<meta http-equiv=\"Content-Type\" content=\"text/html;charset=ISO-8859-1\"/>\n");
+                    writer.write("<title>Error ");
+                    writer.write(Integer.toString(code));
+                    writer.write(' ');
+                    if (message==null)
+                        writer.write(message);
+                    writer.write("</title>\n</head>\n<body>\n<h2>HTTP ERROR: ");
+                    writer.write(Integer.toString(code));
+                    writer.write("</h2>\n<p>Problem accessing ");
+                    writer.write(uri);
+                    writer.write(". Reason:\n<pre>    ");
+                    writer.write(message);
+                    writer.write("</pre>");
+                    writer.write("</p>\n<hr /><i><small>Powered by Jetty://</small></i>");
+                    writer.write("\n</body>\n</html>\n");
 
-                writer.flush();
-                setContentLength(writer.size());
-                try (ServletOutputStream outputStream = getOutputStream())
-                {
-                    writer.writeTo(outputStream);
-                    writer.destroy();
+                    writer.flush();
+                    setContentLength(writer.size());
+                    try (ServletOutputStream outputStream = getOutputStream())
+                    {
+                        writer.writeTo(outputStream);
+                        writer.destroy();
+                    }
                 }
             }
         }
@@ -629,7 +818,7 @@ public class Response implements HttpServletResponse
     public Collection<String> getHeaders(String name)
     {
         final HttpFields fields = _fields;
-        Collection<String> i = fields.getValuesCollection(name);
+        Collection<String> i = fields.getValuesList(name);
         if (i == null)
             return Collections.emptyList();
         return i;
@@ -877,7 +1066,7 @@ public class Response implements HttpServletResponse
                     if (_contentType != null)
                     {
                         _contentType = MimeTypes.getContentTypeWithoutCharset(_contentType);
-                        HttpField field = HttpField.CONTENT_TYPE.get(_contentType);
+                        HttpField field = HttpParser.CONTENT_TYPE.get(_contentType);
                         if (field!=null)
                             _fields.put(field);
                         else
@@ -893,7 +1082,7 @@ public class Response implements HttpServletResponse
                 if (_contentType != null)
                 {
                     _contentType = MimeTypes.getContentTypeWithoutCharset(_contentType) + ";charset=" + _characterEncoding;
-                    HttpField field = HttpField.CONTENT_TYPE.get(_contentType);
+                    HttpField field = HttpParser.CONTENT_TYPE.get(_contentType);
                     if (field!=null)
                         _fields.put(field);
                     else
@@ -952,7 +1141,7 @@ public class Response implements HttpServletResponse
                 _explicitEncoding = true;
             }
 
-            HttpField field = HttpField.CONTENT_TYPE.get(_contentType);
+            HttpField field = HttpParser.CONTENT_TYPE.get(_contentType);
             if (field!=null)
                 _fields.put(field);
             else

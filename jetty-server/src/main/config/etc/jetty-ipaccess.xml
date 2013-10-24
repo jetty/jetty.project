@@ -25,6 +25,7 @@
 	      <Item>127.0.0.2/black.html</Item>
 	    </Array>
       </Set>
+      <Set name="whiteListByPath">false</Set>
      </New>
     </Set>
 </Configure>

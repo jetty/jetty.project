@@ -29,9 +29,9 @@ public abstract class MultiplexHttpDestination<C extends Connection> extends Htt
     private final AtomicReference<ConnectState> connect = new AtomicReference<>(ConnectState.DISCONNECTED);
     private C connection;
 
-    protected MultiplexHttpDestination(HttpClient client, String scheme, String host, int port)
+    protected MultiplexHttpDestination(HttpClient client, Origin origin)
     {
-        super(client, scheme, host, port);
+        super(client, origin);
     }
 
     @Override
@@ -94,7 +94,7 @@ public abstract class MultiplexHttpDestination<C extends Connection> extends Htt
     {
         HttpClient client = getHttpClient();
         final HttpExchange exchange = getHttpExchanges().poll();
-        LOG.debug("Processing exchange {} on connection {}", exchange, connection);
+        LOG.debug("Processing {} on {}", exchange, connection);
         if (exchange == null)
             return false;
 
@@ -124,6 +124,18 @@ public abstract class MultiplexHttpDestination<C extends Connection> extends Htt
             }
         }
         return true;
+    }
+
+    @Override
+    public void close(Connection connection)
+    {
+        super.close(connection);
+        while (true)
+        {
+            ConnectState current = connect.get();
+            if (connect.compareAndSet(current, ConnectState.DISCONNECTED))
+                break;
+        }
     }
 
     protected abstract void send(C connection, HttpExchange exchange);

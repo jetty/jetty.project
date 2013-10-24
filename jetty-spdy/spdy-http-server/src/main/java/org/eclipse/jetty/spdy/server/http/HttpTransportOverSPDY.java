@@ -121,7 +121,7 @@ public class HttpTransportOverSPDY implements HttpTransport
         // info!=null content!=null lastContent==false          reply, commit with content
         // info!=null content!=null lastContent==true           reply, commit with content and complete
 
-        boolean isHeadRequest = HttpMethod.HEAD.name().equalsIgnoreCase(requestHeaders.get(HTTPSPDYHeader.METHOD.name(version)).value());
+        boolean isHeadRequest = HttpMethod.HEAD.name().equalsIgnoreCase(requestHeaders.get(HTTPSPDYHeader.METHOD.name(version)).getValue());
         boolean hasContent = BufferUtil.hasContent(content) && !isHeadRequest;
         boolean close = !hasContent && lastContent;
 
@@ -222,7 +222,7 @@ public class HttpTransportOverSPDY implements HttpTransport
             stream.headers(new HeadersInfo(replyInfo.getHeaders(), replyInfo.isClose()), callback);
 
         Fields responseHeaders = replyInfo.getHeaders();
-        if (responseHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().startsWith("200") && !stream.isClosed())
+        if (responseHeaders.get(HTTPSPDYHeader.STATUS.name(version)).getValue().startsWith("200") && !stream.isClosed())
         {
             Set<String> pushResources = pushStrategy.apply(stream, requestHeaders, responseHeaders);
             if (pushResources.size() > 0)
@@ -353,7 +353,7 @@ public class HttpTransportOverSPDY implements HttpTransport
             newRequestHeaders.put(scheme);
             newRequestHeaders.put(host);
             newRequestHeaders.put(HTTPSPDYHeader.URI.name(version), pushResourcePath);
-            String referrer = scheme.value() + "://" + host.value() + uri.value();
+            String referrer = scheme.getValue() + "://" + host.getValue() + uri.getValue();
             newRequestHeaders.put("referer", referrer);
             newRequestHeaders.put("x-spdy-push", "true");
             return newRequestHeaders;
@@ -363,7 +363,7 @@ public class HttpTransportOverSPDY implements HttpTransport
         {
             final Fields pushHeaders = new Fields();
             if (version == SPDY.V2)
-                pushHeaders.put(HTTPSPDYHeader.URI.name(version), scheme.value() + "://" + host.value() + pushResourcePath);
+                pushHeaders.put(HTTPSPDYHeader.URI.name(version), scheme.getValue() + "://" + host.getValue() + pushResourcePath);
             else
             {
                 pushHeaders.put(HTTPSPDYHeader.URI.name(version), pushResourcePath);

@@ -133,7 +133,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
                 if (_interestOps.compareAndSet(oldInterestOps, newInterestOps))
                 {
                     LOG.debug("Local interests updated {} -> {} for {}", oldInterestOps, newInterestOps, this);
-                    _selector.submit(_updateTask);
+                    _selector.updateKey(_updateTask);
                 }
                 else
                 {
@@ -152,7 +152,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
 
     private void setKeyInterests(int oldInterestOps, int newInterestOps)
     {
-        assert _selector.isSelectorThread();
         LOG.debug("Key interests updated {} -> {}", oldInterestOps, newInterestOps);
         _key.interestOps(newInterestOps);
     }

@@ -238,6 +238,46 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
     }
     
     
+    
+    
+
+    /** 
+     * Add in the classes dirs from test/classes and target/classes
+     * @see org.eclipse.jetty.webapp.WebInfConfiguration#findClassDirs(org.eclipse.jetty.webapp.WebAppContext)
+     */
+    @Override
+    protected List<Resource> findClassDirs(WebAppContext context) throws Exception
+    {
+        List<Resource> list = new ArrayList<Resource>();
+        
+        JettyWebAppContext jwac = (JettyWebAppContext)context;
+        if (jwac.getClassPathFiles() != null)
+        {
+            for (File f: jwac.getClassPathFiles())
+            {
+                if (f.exists() && f.isDirectory())
+                {
+                    try
+                    {
+                        list.add(Resource.newResource(f.toURI()));
+                    }
+                    catch (Exception e)
+                    {
+                        LOG.warn("Bad url ", e);
+                    }
+                }
+            }
+        }
+        
+        List<Resource> classesDirs = super.findClassDirs(context);
+        if (classesDirs != null)
+            list.addAll(classesDirs);
+        return list;
+    }
+
+
+
+
 
     protected  Resource unpackOverlay (WebAppContext context, Overlay overlay)
     throws IOException

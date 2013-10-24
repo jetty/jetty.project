@@ -68,7 +68,7 @@ import org.eclipse.jetty.util.IO;
  *  </p>
  * 
  * @goal run-forked
- * @requiresDependencyResolution compile+runtime
+ * @requiresDependencyResolution test
  * @execute phase="test-compile"
  * @description Runs Jetty in forked JVM on an unassembled webapp
  *

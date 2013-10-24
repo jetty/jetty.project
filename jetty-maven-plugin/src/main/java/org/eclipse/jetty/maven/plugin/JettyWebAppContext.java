@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
+import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.plus.webapp.EnvConfiguration;
 import org.eclipse.jetty.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.servlet.FilterHolder;
@@ -111,7 +112,7 @@ public class JettyWebAppContext extends WebAppContext
                 new FragmentConfiguration(),
                 _envConfig = new EnvConfiguration(),
                 new PlusConfiguration(),
-                new MavenAnnotationConfiguration(),
+                new AnnotationConfiguration(),
                 new JettyWebXmlConfiguration()
         });
         // Turn off copyWebInf option as it is not applicable for plugin.

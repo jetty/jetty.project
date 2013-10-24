@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.http;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -39,6 +40,7 @@ import org.eclipse.jetty.util.URIUtil;
  * /foo/*             - a prefix path specification (must end '/*').
  * *.ext              - a suffix path specification.
  * /                  - the default path specification.
+ * ""                 - the / path specification
  * </PRE>
  * Matching is performed in the following order <NL>
  * <LI>Exact match.
@@ -267,20 +269,22 @@ public class PathMap<O> extends HashMap<String,O>
     /** Get all entries matched by the path.
      * Best match first.
      * @param path Path to match
-     * @return LazyList of Map.Entry instances key=pathSpec
+     * @return List of Map.Entry instances key=pathSpec
      */
-    public Object getLazyMatches(String path)
+    public List<? extends Map.Entry<String,O>> getMatches(String path)
     {
         MappedEntry<O> entry;
-        Object entries=null;
+        List<MappedEntry<O>> entries=new ArrayList<>();
 
         if (path==null)
-            return LazyList.getList(entries);
+            return entries;
+        if (path.length()==0)
+            return _defaultSingletonList;
 
         // try exact match
         entry=_exactMap.get(path);
         if (entry!=null)
-            entries=LazyList.add(entries,entry);
+            entries.add(entry);
 
         // prefix search
         int l=path.length();
@@ -293,14 +297,14 @@ public class PathMap<O> extends HashMap<String,O>
                 break;
             String key = entry.getKey();
             if (key.length()-2>=path.length() || path.charAt(key.length()-2)=='/')
-                entries=LazyList.add(entries,entry);
+                entries.add(entry);
 
             i=key.length()-3;
         }
 
         // Prefix Default
         if (_prefixDefault!=null)
-            entries=LazyList.add(entries,_prefixDefault);
+            entries.add(_prefixDefault);
 
         // Extension search
         i=0;
@@ -309,32 +313,24 @@ public class PathMap<O> extends HashMap<String,O>
         {
             entry=suffix_map.get(path,i+1,l-i-1);
             if (entry!=null)
-                entries=LazyList.add(entries,entry);
+                entries.add(entry);
         }
 
+        // root match
+        if ("/".equals(path))
+        {
+            entry=_exactMap.get("");
+            if (entry!=null)
+                entries.add(entry);
+        }
+            
         // Default
         if (_default!=null)
-        {
-            // Optimization for just the default
-            if (entries==null)
-                return _defaultSingletonList;
-
-            entries=LazyList.add(entries,_default);
-        }
+            entries.add(_default);
 
         return entries;
     }
 
-    /* --------------------------------------------------------------- */
-    /** Get all entries matched by the path.
-     * Best match first.
-     * @param path Path to match
-     * @return List of Map.Entry instances key=pathSpec
-     */
-    public List<Map.Entry<String,O>> getMatches(String path)
-    {
-        return LazyList.getList(getLazyMatches(path));
-    }
 
     /* --------------------------------------------------------------- */
     /** Return whether the path matches any entries in the PathMap,
@@ -381,6 +377,7 @@ public class PathMap<O> extends HashMap<String,O>
         _suffixMap=new ArrayTernaryTrie<>(false);
         _default=null;
         _defaultSingletonList=null;
+        _prefixDefault=null;
         super.clear();
     }
 

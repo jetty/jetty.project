@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.AbstractHttpClientServerTest;
 import org.eclipse.jetty.client.EmptyServerHandler;
+import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
@@ -52,12 +53,12 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
     @Test
     public void test_FirstAcquire_WithEmptyQueue() throws Exception
     {
-        HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, "http", "localhost", connector.getLocalPort());
+        HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", connector.getLocalPort()));
         Connection connection = destination.acquire();
         if (connection == null)
         {
             // There are no queued requests, so the newly created connection will be idle
-            connection = destination.getHttpConnectionPool().getIdleConnections().poll(5, TimeUnit.SECONDS);
+            connection = destination.getConnectionPool().getIdleConnections().poll(5, TimeUnit.SECONDS);
         }
         Assert.assertNotNull(connection);
     }
@@ -65,7 +66,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
     @Test
     public void test_SecondAcquire_AfterFirstAcquire_WithEmptyQueue_ReturnsSameConnection() throws Exception
     {
-        HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, "http", "localhost", connector.getLocalPort());
+        HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", connector.getLocalPort()));
         Connection connection1 = destination.acquire();
         if (connection1 == null)
         {
@@ -74,7 +75,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
             while (connection1 == null && TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - start) < 5)
             {
                 TimeUnit.MILLISECONDS.sleep(50);
-                connection1 = destination.getHttpConnectionPool().getIdleConnections().peek();
+                connection1 = destination.getConnectionPool().getIdleConnections().peek();
             }
             Assert.assertNotNull(connection1);
 
@@ -87,7 +88,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
     public void test_SecondAcquire_ConcurrentWithFirstAcquire_WithEmptyQueue_CreatesTwoConnections() throws Exception
     {
         final CountDownLatch latch = new CountDownLatch(1);
-        HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, "http", "localhost", connector.getLocalPort())
+        HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", connector.getLocalPort()))
         {
             @Override
             protected void process(HttpConnectionOverHTTP connection, boolean dispatch)
@@ -115,23 +116,23 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
         latch.countDown();
 
         // There must be 2 idle connections
-        Connection connection = destination.getHttpConnectionPool().getIdleConnections().poll(5, TimeUnit.SECONDS);
+        Connection connection = destination.getConnectionPool().getIdleConnections().poll(5, TimeUnit.SECONDS);
         Assert.assertNotNull(connection);
-        connection = destination.getHttpConnectionPool().getIdleConnections().poll(5, TimeUnit.SECONDS);
+        connection = destination.getConnectionPool().getIdleConnections().poll(5, TimeUnit.SECONDS);
         Assert.assertNotNull(connection);
     }
 
     @Test
     public void test_Acquire_Process_Release_Acquire_ReturnsSameConnection() throws Exception
     {
-        HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, "http", "localhost", connector.getLocalPort());
+        HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", connector.getLocalPort()));
         HttpConnectionOverHTTP connection1 = destination.acquire();
 
         long start = System.nanoTime();
         while (connection1 == null && TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - start) < 5)
         {
             TimeUnit.MILLISECONDS.sleep(50);
-            connection1 = (HttpConnectionOverHTTP)destination.getHttpConnectionPool().getIdleConnections().peek();
+            connection1 = (HttpConnectionOverHTTP)destination.getConnectionPool().getIdleConnections().peek();
         }
         Assert.assertNotNull(connection1);
 
@@ -152,7 +153,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
         long idleTimeout = 1000;
         client.setIdleTimeout(idleTimeout);
 
-        HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, "http", "localhost", connector.getLocalPort());
+        HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", connector.getLocalPort()));
         Connection connection1 = destination.acquire();
         if (connection1 == null)
         {
@@ -161,13 +162,13 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
             while (connection1 == null && TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - start) < 5)
             {
                 TimeUnit.MILLISECONDS.sleep(50);
-                connection1 = destination.getHttpConnectionPool().getIdleConnections().peek();
+                connection1 = destination.getConnectionPool().getIdleConnections().peek();
             }
             Assert.assertNotNull(connection1);
 
             TimeUnit.MILLISECONDS.sleep(2 * idleTimeout);
 
-            connection1 = destination.getHttpConnectionPool().getIdleConnections().poll();
+            connection1 = destination.getConnectionPool().getIdleConnections().poll();
             Assert.assertNull(connection1);
         }
     }

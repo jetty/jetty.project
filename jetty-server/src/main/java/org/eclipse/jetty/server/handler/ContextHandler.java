@@ -1619,27 +1619,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             path = URIUtil.canonicalPath(path);
             Resource resource = _baseResource.addPath(path);
             
-            // Is the resource aliased?
-            if (resource.getAlias() != null)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Aliased resource: " + resource + "~=" + resource.getAlias());
-
-                // alias checks
-                for (Iterator<AliasCheck> i=_aliasChecks.iterator();i.hasNext();)
-                {
-                    AliasCheck check = i.next();
-                    if (check.check(path,resource))
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("Aliased resource: " + resource + " approved by " + check);
-                        return resource;
-                    }
-                }
-                return null;
-            }
-
-            return resource;
+            if (checkAlias(path,resource))
+                return resource;
+            return null;
         }
         catch (Exception e)
         {
@@ -1649,6 +1631,31 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         return null;
     }
 
+    /* ------------------------------------------------------------ */
+    public boolean checkAlias(String path, Resource resource)
+    {
+        // Is the resource aliased?
+            if (resource.getAlias() != null)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Aliased resource: " + resource + "~=" + resource.getAlias());
+
+            // alias checks
+            for (Iterator<AliasCheck> i=_aliasChecks.iterator();i.hasNext();)
+            {
+                AliasCheck check = i.next();
+                if (check.check(path,resource))
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Aliased resource: " + resource + " approved by " + check);
+                    return true;
+                }
+            }
+            return false;
+        }
+        return true;
+    }
+    
     /* ------------------------------------------------------------ */
     /**
      * Convert URL to Resource wrapper for {@link Resource#newResource(URL)} enables extensions to provide alternate resource implementations.
@@ -1743,6 +1750,16 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     public List<AliasCheck> getAliasChecks()
     {
         return _aliasChecks;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @param checks list of AliasCheck instances
+     */
+    public void setAliasChecks(List<AliasCheck> checks)
+    {
+        _aliasChecks.clear();
+        _aliasChecks.addAll(checks);
     }
 
     /* ------------------------------------------------------------ */
@@ -2735,8 +2752,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             
             if (a.length()>r.length())
                 return a.startsWith(r) && a.length()==r.length()+1 && a.endsWith("/");
-            else
+            if (a.length()<r.length())
                 return r.startsWith(a) && r.length()==a.length()+1 && r.endsWith("/");
+            
+            return a.equals(r); 
         }
     }
 

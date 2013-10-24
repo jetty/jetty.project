@@ -50,8 +50,9 @@ public class ContainerInitializerAnnotationHandler extends AbstractHandler
 
     /**
      * Handle finding a class that is annotated with the annotation we were constructed with.
-     * @see org.eclipse.jetty.annotations.AnnotationParser.DiscoverableAnnotationHandler#handle(ClassInfo)
-     * */
+     * 
+     * @see org.eclipse.jetty.annotations.AnnotationParser.Handler#handle(ClassInfo, String)
+     */
     public void handle(ClassInfo info, String annotationName)
     {
         if (annotationName == null || !_annotation.getName().equals(annotationName))
@@ -63,7 +64,7 @@ public class ContainerInitializerAnnotationHandler extends AbstractHandler
     /**
      * Handle finding a field that is annotated with the annotation we were constructed with.
      * 
-     * @see org.eclipse.jetty.annotations.AnnotationParser.DiscoverableAnnotationHandler#handle(org.eclipse.jetty.annotations.AnnotationParser.FieldAnnotationInfo)
+     * @see org.eclipse.jetty.annotations.AnnotationParser.Handler#handle(FieldInfo, String)
      */
     public void handle(FieldInfo info, String annotationName)
     {        
@@ -75,7 +76,7 @@ public class ContainerInitializerAnnotationHandler extends AbstractHandler
     /**
      * Handle finding a method that is annotated with the annotation we were constructed with. 
      * 
-     * @see org.eclipse.jetty.annotations.AnnotationParser.DiscoverableAnnotationHandler#handle(org.eclipse.jetty.annotations.AnnotationParser.MethodAnnotationInfo)
+     * @see org.eclipse.jetty.annotations.AnnotationParser.Handler#handle(MethodInfo, String)
      */
     public void handle(MethodInfo info, String annotationName)
     {

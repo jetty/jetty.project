@@ -27,7 +27,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.ProxyConfiguration;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.BasicAuthentication;
 import org.eclipse.jetty.http.HttpHeader;
@@ -68,7 +67,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
 
         int proxyPort = connector.getLocalPort();
         int serverPort = proxyPort + 1; // Any port will do for these tests - just not the same as the proxy
-        client.setProxyConfiguration(new ProxyConfiguration("localhost", proxyPort));
+        client.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyPort));
 
         ContentResponse response = client.newRequest(serverHost, serverPort)
                 .scheme(scheme)
@@ -115,7 +114,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         String proxyHost = "localhost";
         int proxyPort = connector.getLocalPort();
         int serverPort = proxyPort + 1; // Any port will do for these tests - just not the same as the proxy
-        client.setProxyConfiguration(new ProxyConfiguration(proxyHost, proxyPort));
+        client.getProxyConfiguration().getProxies().add(new HttpProxy(proxyHost, proxyPort));
 
         ContentResponse response1 = client.newRequest(serverHost, serverPort)
                 .scheme(scheme)

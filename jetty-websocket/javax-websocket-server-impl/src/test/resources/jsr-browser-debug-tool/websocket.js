@@ -34,6 +34,7 @@ var wstool = {
             this._ws.onopen = this._onopen;
             this._ws.onmessage = this._onmessage;
             this._ws.onclose = this._onclose;
+            this._ws.onerror = this._onerror;
         } catch (exception) {
             wstool.info("Connect Error: " + exception);
         }
@@ -56,6 +57,10 @@ var wstool = {
 
     info : function(message) {
         wstool._out("info", message);
+    },
+
+    error : function(message) {
+        wstool._out("error", message);
     },
 
     infoc : function(message) {
@@ -82,6 +87,12 @@ var wstool = {
     _onopen : function() {
         wstool.setState(true);
         wstool.info("Websocket Connected");
+    },
+    
+    _onerror : function(evt) {
+        wstool.setState(false);
+        wstool.error("Websocket Error: " + evt.data);
+        wstool.error("See Javascript Console for possible detailed error message");
     },
 
     _send : function(message) {

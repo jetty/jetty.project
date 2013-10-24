@@ -36,7 +36,7 @@ public class WebListenerAnnotationHandler extends AbstractDiscoverableAnnotation
     
   
     /** 
-     * @see org.eclipse.jetty.annotations.AnnotationParser.DiscoverableAnnotationHandler#handle(ClassAnnotationInfo)
+     * @see org.eclipse.jetty.annotations.AnnotationParser.Handler#handle(ClassInfo, String)
      */
     public void handle(ClassInfo info, String annotationName)
     {

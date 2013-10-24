@@ -22,10 +22,15 @@ import static org.hamcrest.Matchers.*;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.common.CloseInfo;
+import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
@@ -78,7 +83,7 @@ public class AnnotatedMaxMessageSizeTest
     }
 
     @Test
-    public void testEcho() throws IOException, Exception
+    public void testEchoGood() throws IOException, Exception
     {
         BlockheadClient client = new BlockheadClient(serverUri);
         try
@@ -96,6 +101,35 @@ public class AnnotatedMaxMessageSizeTest
             IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
             WebSocketFrame tf = capture.getFrames().poll();
             Assert.assertThat("Text Frame.status code",tf.getPayloadAsUTF8(),is(msg));
+        }
+        finally
+        {
+            client.close();
+        }
+    }
+    
+    @Test
+    public void testEchoTooBig() throws IOException, Exception
+    {
+        BlockheadClient client = new BlockheadClient(serverUri);
+        try
+        {
+            client.setProtocols("echo");
+            client.connect();
+            client.sendStandardRequest();
+            client.expectUpgradeResponse();
+
+            // Generate text frame
+            byte buf[] = new byte[90*1024]; // buffer bigger than maxMessageSize
+            Arrays.fill(buf,(byte)'x');
+            client.write(new TextFrame().setPayload(ByteBuffer.wrap(buf)));
+
+            // Read frame (hopefully close frame saying its too large)
+            IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
+            WebSocketFrame tf = capture.getFrames().poll();
+            Assert.assertThat("Frame is close", tf.getOpCode(), is(OpCode.CLOSE));
+            CloseInfo close = new CloseInfo(tf);
+            Assert.assertThat("Close Code", close.getStatusCode(), is(StatusCode.MESSAGE_TOO_LARGE));
         }
         finally
         {

@@ -23,6 +23,7 @@ import static org.hamcrest.Matchers.*;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -64,14 +65,15 @@ public class MessageInputStreamTest
         }
     }
 
-    @Test(timeout=10000)
-    public void testBlockOnRead() throws IOException
+    @Test(timeout=2000)
+    public void testBlockOnRead() throws Exception
     {
         LocalWebSocketConnection conn = new LocalWebSocketConnection(testname);
 
         try (MessageInputStream stream = new MessageInputStream(conn))
         {
             final AtomicBoolean hadError = new AtomicBoolean(false);
+            final CountDownLatch startLatch = new CountDownLatch(1);
 
             new Thread(new Runnable()
             {
@@ -80,6 +82,7 @@ public class MessageInputStreamTest
                 {
                     try
                     {
+                        startLatch.countDown();
                         boolean fin = false;
                         TimeUnit.MILLISECONDS.sleep(200);
                         stream.appendMessage(BufferUtil.toBuffer("Saved",UTF8),fin);
@@ -97,6 +100,9 @@ public class MessageInputStreamTest
                 }
             }).start();
 
+            // wait for thread to start
+            startLatch.await();
+            
             // Read it from the stream.
             byte buf[] = new byte[32];
             int len = stream.read(buf);

@@ -103,7 +103,7 @@ public class StandardSessionTest
         threadPool = Executors.newCachedThreadPool();
         scheduler = new TimerScheduler();
         scheduler.start();
-        session = new StandardSession(VERSION, bufferPool, threadPool, scheduler, controller, endPoint, null, 1, null,
+        session = new StandardSession(VERSION, bufferPool, scheduler, controller, endPoint, null, 1, null,
                 generator, new FlowControlStrategy.None());
         when(endPoint.getIdleTimeout()).thenReturn(30000L);
         headers = new Fields();
@@ -508,7 +508,7 @@ public class StandardSessionTest
 
     private void testHeaderFramesAreSentInOrder(final byte priority0, final byte priority1, final byte priority2) throws InterruptedException, ExecutionException
     {
-        final StandardSession testLocalSession = new StandardSession(VERSION, bufferPool, threadPool, scheduler,
+        final StandardSession testLocalSession = new StandardSession(VERSION, bufferPool, scheduler,
                 new ControllerMock(), endPoint, null, 1, null, generator, new FlowControlStrategy.None());
         HashSet<Future> tasks = new HashSet<>();
 

@@ -27,6 +27,7 @@ import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureExcep
 import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
 import org.eclipse.jetty.websocket.jsr356.decoders.ByteArrayDecoder;
 import org.eclipse.jetty.websocket.jsr356.decoders.ByteBufferDecoder;
+import org.eclipse.jetty.websocket.jsr356.decoders.InputStreamDecoder;
 
 /**
  * Param handling for static Binary &#064;{@link OnMessage} parameters.
@@ -63,7 +64,7 @@ public class JsrParamIdBinary extends JsrParamIdOnMessage implements IJsrParamId
         {
             assertPartialMessageSupportDisabled(param,callable);
             param.bind(Role.MESSAGE_BINARY_STREAM);
-            // Streaming have no decoder
+            callable.setDecoderClass(InputStreamDecoder.class);
             return true;
         }
 

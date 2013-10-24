@@ -26,17 +26,16 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Destination;
-import org.eclipse.jetty.client.api.ProxyConfiguration;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpHeader;
@@ -143,7 +142,7 @@ public class ProxyTunnellingTest
         startProxy();
 
         HttpClient httpClient = new HttpClient(sslContextFactory);
-        httpClient.setProxyConfiguration(new ProxyConfiguration("localhost", proxyPort()));
+        httpClient.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyPort()));
         httpClient.start();
 
         try
@@ -172,7 +171,7 @@ public class ProxyTunnellingTest
         startProxy();
 
         HttpClient httpClient = new HttpClient(sslContextFactory);
-        httpClient.setProxyConfiguration(new ProxyConfiguration("localhost", proxyPort()));
+        httpClient.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyPort()));
         httpClient.start();
 
         try
@@ -215,7 +214,7 @@ public class ProxyTunnellingTest
         startProxy();
 
         final HttpClient httpClient = new HttpClient(sslContextFactory);
-        httpClient.setProxyConfiguration(new ProxyConfiguration("localhost", proxyPort()));
+        httpClient.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyPort()));
         httpClient.start();
 
         try
@@ -285,7 +284,7 @@ public class ProxyTunnellingTest
         stopProxy();
 
         HttpClient httpClient = new HttpClient(sslContextFactory);
-        httpClient.setProxyConfiguration(new ProxyConfiguration("localhost", proxyPort));
+        httpClient.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyPort));
         httpClient.start();
 
         try
@@ -317,7 +316,7 @@ public class ProxyTunnellingTest
         startProxy();
 
         HttpClient httpClient = new HttpClient(sslContextFactory);
-        httpClient.setProxyConfiguration(new ProxyConfiguration("localhost", proxyPort()));
+        httpClient.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyPort()));
         httpClient.start();
 
         try
@@ -354,7 +353,7 @@ public class ProxyTunnellingTest
         });
 
         HttpClient httpClient = new HttpClient(sslContextFactory);
-        httpClient.setProxyConfiguration(new ProxyConfiguration("localhost", proxyPort()));
+        httpClient.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyPort()));
         httpClient.start();
 
         try
@@ -394,7 +393,7 @@ public class ProxyTunnellingTest
         sslContextFactory.start();
 
         HttpClient httpClient = new HttpClient(sslContextFactory);
-        httpClient.setProxyConfiguration(new ProxyConfiguration(proxyHost, proxyPort));
+        httpClient.getProxyConfiguration().getProxies().add(new HttpProxy(proxyHost, proxyPort));
         httpClient.start();
 
         try

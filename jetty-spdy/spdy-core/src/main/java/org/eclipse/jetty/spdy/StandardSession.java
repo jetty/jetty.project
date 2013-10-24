@@ -22,10 +22,8 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.InterruptedByTimeoutException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -34,7 +32,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -77,7 +74,6 @@ import org.eclipse.jetty.spdy.parser.Parser;
 import org.eclipse.jetty.util.Atomics;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.ForkInvoker;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
@@ -91,13 +87,11 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
 {
     private static final Logger LOG = Log.getLogger(Session.class);
 
-    private final ForkInvoker<Callback> invoker = new SessionInvoker();
+    private final Flusher flusher;
     private final Map<String, Object> attributes = new ConcurrentHashMap<>();
     private final List<Listener> listeners = new CopyOnWriteArrayList<>();
     private final ConcurrentMap<Integer, IStream> streams = new ConcurrentHashMap<>();
-    private final LinkedList<FrameBytes> queue = new LinkedList<>();
     private final ByteBufferPool bufferPool;
-    private final Executor threadPool;
     private final Scheduler scheduler;
     private final short version;
     private final Controller controller;
@@ -113,17 +107,14 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
     private final AtomicInteger localStreamCount = new AtomicInteger(0);
     private final FlowControlStrategy flowControlStrategy;
     private volatile int maxConcurrentLocalStreams = -1;
-    private boolean flushing;
-    private Throwable failure;
 
-    public StandardSession(short version, ByteBufferPool bufferPool, Executor threadPool, Scheduler scheduler,
+    public StandardSession(short version, ByteBufferPool bufferPool, Scheduler scheduler,
                            Controller controller, EndPoint endPoint, IdleListener idleListener, int initialStreamId,
                            SessionFrameListener listener, Generator generator, FlowControlStrategy flowControlStrategy)
     {
         // TODO this should probably be an aggregate lifecycle
         this.version = version;
         this.bufferPool = bufferPool;
-        this.threadPool = threadPool;
         this.scheduler = scheduler;
         this.controller = controller;
         this.endPoint = endPoint;
@@ -133,6 +124,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         this.listener = listener;
         this.generator = generator;
         this.flowControlStrategy = flowControlStrategy;
+        this.flusher = new Flusher(controller);
     }
 
     @Override
@@ -187,7 +179,6 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
                 return;
             generateAndEnqueueControlFrame(stream, synStream, synInfo.getTimeout(), synInfo.getUnit(), stream);
         }
-        flush();
     }
 
     @Override
@@ -218,19 +209,9 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
             if (stream != null)
             {
                 stream.process(frame);
-                removeFrameBytesFromQueue(stream);
+                flusher.removeFrameBytesFromQueue(stream);
                 removeStream(stream);
             }
-        }
-    }
-
-    private void removeFrameBytesFromQueue(Stream stream)
-    {
-        synchronized (queue)
-        {
-            for (FrameBytes frameBytes : queue)
-                if (frameBytes.getStream() == stream)
-                    queue.remove(frameBytes);
         }
     }
 
@@ -777,7 +758,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         int streamId = frame.getStreamId();
         IStream stream = streams.get(streamId);
         flowControlStrategy.onWindowUpdate(this, stream, frame.getWindowDelta());
-        flush();
+        flusher.flush();
     }
 
     private void onCredential(CredentialFrame frame)
@@ -939,12 +920,10 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         }
     }
 
-
     @Override
     public void control(IStream stream, ControlFrame frame, long timeout, TimeUnit unit, Callback callback)
     {
         generateAndEnqueueControlFrame(stream, frame, timeout, unit, callback);
-        flush();
     }
 
     private void generateAndEnqueueControlFrame(IStream stream, ControlFrame frame, long timeout, TimeUnit unit, Callback callback)
@@ -964,9 +943,9 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
 
                 // Special handling for PING frames, they must be sent as soon as possible
                 if (ControlFrameType.PING == frame.getType())
-                    prepend(frameBytes);
+                    flusher.prepend(frameBytes);
                 else
-                    append(frameBytes);
+                    flusher.append(frameBytes);
             }
         }
         catch (Exception x)
@@ -989,151 +968,19 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         DataFrameBytes frameBytes = new DataFrameBytes(stream, callback, dataInfo);
         if (timeout > 0)
             frameBytes.task = scheduler.schedule(frameBytes, timeout, unit);
-        append(frameBytes);
-        flush();
+        flusher.append(frameBytes);
     }
 
     @Override
     public void shutdown()
     {
         FrameBytes frameBytes = new CloseFrameBytes();
-        append(frameBytes);
-        flush();
-    }
-
-    private void execute(Runnable task)
-    {
-        threadPool.execute(task);
-    }
-
-    @Override
-    public void flush()
-    {
-        FrameBytes frameBytes = null;
-        ByteBuffer buffer = null;
-        boolean failFrameBytes = false;
-        synchronized (queue)
-        {
-            if (flushing || queue.isEmpty())
-                return;
-
-            Set<IStream> stalledStreams = null;
-            for (int i = 0; i < queue.size(); ++i)
-            {
-                frameBytes = queue.get(i);
-
-                IStream stream = frameBytes.getStream();
-                if (stream != null && stalledStreams != null && stalledStreams.contains(stream))
-                    continue;
-
-                buffer = frameBytes.getByteBuffer();
-                if (buffer != null)
-                {
-                    queue.remove(i);
-                    if (stream != null && stream.isReset() && !(frameBytes instanceof ControlFrameBytes))
-                        failFrameBytes = true;
-                    break;
-                }
-
-                if (stalledStreams == null)
-                    stalledStreams = new HashSet<>();
-                if (stream != null)
-                    stalledStreams.add(stream);
-
-                LOG.debug("Flush stalled for {}, {} frame(s) in queue", frameBytes, queue.size());
-            }
-
-            if (buffer == null)
-                return;
-
-            if (!failFrameBytes)
-            {
-                flushing = true;
-                LOG.debug("Flushing {}, {} frame(s) in queue", frameBytes, queue.size());
-            }
-        }
-        if (failFrameBytes)
-        {
-            frameBytes.fail(new StreamException(frameBytes.getStream().getId(), StreamStatus.INVALID_STREAM,
-                    "Stream: " + frameBytes.getStream() + " is reset!"));
-        }
-        else
-        {
-            write(buffer, frameBytes);
-        }
-    }
-
-    void append(FrameBytes frameBytes)
-    {
-        Throwable failure;
-        synchronized (queue)
-        {
-            failure = this.failure;
-            if (failure == null)
-            {
-                // Frames containing headers must be send in the order the headers have been generated. We don't need
-                // to do this check in StandardSession.prepend() as no frames containing headers will be prepended.
-                if (frameBytes instanceof ControlFrameBytes)
-                    queue.addLast(frameBytes);
-                else
-                {
-                    int index = queue.size();
-                    while (index > 0)
-                    {
-                        FrameBytes element = queue.get(index - 1);
-                        if (element.compareTo(frameBytes) >= 0)
-                            break;
-                        --index;
-                    }
-                    queue.add(index, frameBytes);
-                }
-            }
-        }
-
-        if (failure != null)
-            frameBytes.fail(new SPDYException(failure));
-    }
-
-    private void prepend(FrameBytes frameBytes)
-    {
-        Throwable failure;
-        synchronized (queue)
-        {
-            failure = this.failure;
-            if (failure == null)
-            {
-                int index = 0;
-                while (index < queue.size())
-                {
-                    FrameBytes element = queue.get(index);
-                    if (element.compareTo(frameBytes) <= 0)
-                        break;
-                    ++index;
-                }
-                queue.add(index, frameBytes);
-            }
-        }
-
-        if (failure != null)
-            frameBytes.fail(new SPDYException(failure));
-    }
-
-    protected void write(ByteBuffer buffer, Callback callback)
-    {
-        if (controller != null)
-        {
-            LOG.debug("Writing {} frame bytes of {}", buffer.remaining(), buffer.limit());
-            controller.write(buffer, callback);
-        }
+        flusher.append(frameBytes);
     }
 
     private void complete(final Callback callback)
     {
-        // Applications may send and queue up a lot of frames and
-        // if we call Callback.completed() only synchronously we risk
-        // starvation (for the last frames sent) and stack overflow.
-        // Therefore every some invocation, we dispatch to a new thread
-        invoker.invoke(callback);
+        callback.succeeded();
     }
 
     private void notifyCallbackFailed(Callback callback, Throwable x)
@@ -1168,7 +1015,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
     public String toString()
     {
         return String.format("%s@%x{v%d,queueSize=%d,windowSize=%d,streams=%d}", getClass().getSimpleName(),
-                hashCode(), version, queue.size(), getWindowSize(), streams.size());
+                hashCode(), version, flusher.getQueueSize(), getWindowSize(), streams.size());
     }
 
     @Override
@@ -1184,44 +1031,11 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         ContainerLifeCycle.dump(out, indent, Collections.singletonList(controller), streams.values());
     }
 
-    private class SessionInvoker extends ForkInvoker<Callback>
-    {
-        private SessionInvoker()
-        {
-            super(4);
-        }
-
-        @Override
-        public void fork(final Callback callback)
-        {
-            execute(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    callback.succeeded();
-                    flush();
-                }
-            });
-        }
-
-        @Override
-        public void call(Callback callback)
-        {
-            callback.succeeded();
-            flush();
-        }
-    }
-
     public interface FrameBytes extends Comparable<FrameBytes>, Callback
     {
         public IStream getStream();
 
         public abstract ByteBuffer getByteBuffer();
-
-        public abstract void complete();
-
-        public abstract void fail(Throwable throwable);
     }
 
     abstract class AbstractFrameBytes implements FrameBytes, Runnable
@@ -1257,21 +1071,6 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
             return thatStream.getPriority() - thisStream.getPriority();
         }
 
-        @Override
-        public void complete()
-        {
-            cancelTask();
-            StandardSession.this.complete(callback);
-        }
-
-        @Override
-        public void fail(Throwable x)
-        {
-            cancelTask();
-            notifyCallbackFailed(callback, x);
-            StandardSession.this.flush();
-        }
-
         private void cancelTask()
         {
             Scheduler.Task task = this.task;
@@ -1283,46 +1082,25 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         public void run()
         {
             close();
-            fail(new InterruptedByTimeoutException());
+            failed(new InterruptedByTimeoutException());
         }
 
         @Override
         public void succeeded()
         {
-            synchronized (queue)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Completed write of {}, {} frame(s) in queue", this, queue.size());
-                flushing = false;
-            }
-            complete();
+            cancelTask();
+            StandardSession.this.complete(callback);
         }
 
         @Override
         public void failed(Throwable x)
         {
-            List<FrameBytes> frameBytesToFail = new ArrayList<>();
-            frameBytesToFail.add(this);
-
-            synchronized (queue)
-            {
-                failure = x;
-                if (LOG.isDebugEnabled())
-                {
-                    String logMessage = String.format("Failed write of %s, failing all %d frame(s) in queue", this, queue.size());
-                    LOG.debug(logMessage, x);
-                }
-                frameBytesToFail.addAll(queue);
-                queue.clear();
-                flushing = false;
-            }
-
-            for (FrameBytes fb : frameBytesToFail)
-                fb.fail(x);
+            cancelTask();
+            notifyCallbackFailed(callback, x);
         }
     }
 
-    private class ControlFrameBytes extends AbstractFrameBytes
+    class ControlFrameBytes extends AbstractFrameBytes
     {
         private final ControlFrame frame;
         private final ByteBuffer buffer;
@@ -1341,11 +1119,11 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         }
 
         @Override
-        public void complete()
+        public void succeeded()
         {
             bufferPool.release(buffer);
 
-            super.complete();
+            super.succeeded();
 
             if (frame.getType() == ControlFrameType.GO_AWAY)
             {
@@ -1396,13 +1174,13 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
             }
             catch (Throwable x)
             {
-                fail(x);
+                failed(x);
                 return null;
             }
         }
 
         @Override
-        public void complete()
+        public void succeeded()
         {
             bufferPool.release(buffer);
             IStream stream = getStream();
@@ -1413,12 +1191,11 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
                 // We have written a frame out of this DataInfo, but there is more to write.
                 // We need to keep the correct ordering of frames, to avoid that another
                 // DataInfo for the same stream is written before this one is finished.
-                prepend(this);
-                flush();
+                flusher.prepend(this);
             }
             else
             {
-                super.complete();
+                super.succeeded();
                 stream.updateCloseState(dataInfo.isClose(), true);
                 if (stream.isClosed())
                     removeStream(stream);
@@ -1446,9 +1223,9 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         }
 
         @Override
-        public void complete()
+        public void succeeded()
         {
-            super.complete();
+            super.succeeded();
             close();
         }
     }

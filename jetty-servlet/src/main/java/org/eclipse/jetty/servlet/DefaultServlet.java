@@ -354,6 +354,12 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             if (_resourceBase!=null)
             {
                 r = _resourceBase.addPath(pathInContext);
+                if (!_contextHandler.checkAlias(pathInContext,r))
+                    r=null;
+            }
+            else if (_servletContext instanceof ContextHandler.Context)
+            {
+                r = _contextHandler.getResource(pathInContext);
             }
             else
             {

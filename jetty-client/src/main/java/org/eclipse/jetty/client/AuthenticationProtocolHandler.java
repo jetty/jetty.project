@@ -109,16 +109,19 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
                 return;
             }
 
-            URI uri = getAuthenticationURI(request);
             Authentication authentication = null;
             Authentication.HeaderInfo headerInfo = null;
-            for (Authentication.HeaderInfo element : headerInfos)
+            URI uri = getAuthenticationURI(request);
+            if (uri != null)
             {
-                authentication = client.getAuthenticationStore().findAuthentication(element.getType(), uri, element.getRealm());
-                if (authentication != null)
+                for (Authentication.HeaderInfo element : headerInfos)
                 {
-                    headerInfo = element;
-                    break;
+                    authentication = client.getAuthenticationStore().findAuthentication(element.getType(), uri, element.getRealm());
+                    if (authentication != null)
+                    {
+                        headerInfo = element;
+                        break;
+                    }
                 }
             }
             if (authentication == null)

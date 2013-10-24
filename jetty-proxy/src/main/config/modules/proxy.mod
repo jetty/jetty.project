@@ -10,5 +10,4 @@ client
 lib/jetty-proxy-${jetty.version}.jar
 
 [xml]
-# Proxy requires configuration
 etc/jetty-proxy.xml

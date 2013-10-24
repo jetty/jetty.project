@@ -9,5 +9,6 @@ servlet
 lib/jsp/*.jar
 
 [ini-template]
+# JSP Configuration
 # To use an non-jdk compiler for JSP compilation uncomment next line
-#-Dorg.apache.jasper.compiler.disablejsr199=true
+# -Dorg.apache.jasper.compiler.disablejsr199=true

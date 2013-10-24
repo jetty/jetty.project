@@ -110,7 +110,7 @@ public class AnnotatedServerEndpointConfig implements ServerEndpointConfig
             userProperties.putAll(baseConfig.getUserProperties());
         }
 
-        if (anno.configurator() == null)
+        if (anno.configurator() == ServerEndpointConfig.Configurator.class)
         {
             if (configr != null)
             {

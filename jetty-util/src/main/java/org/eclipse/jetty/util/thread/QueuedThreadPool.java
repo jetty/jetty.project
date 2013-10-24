@@ -129,10 +129,10 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
             jobs.offer(noop);
 
         // try to jobs complete naturally for half our stop time
-        long stopby = System.currentTimeMillis() + timeout / 2;
+        long stopby = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeout) / 2;
         for (Thread thread : _threads)
         {
-            long canwait = stopby - System.currentTimeMillis();
+            long canwait = TimeUnit.NANOSECONDS.toMillis(stopby - System.nanoTime());
             if (canwait > 0)
                 thread.join(canwait);
         }
@@ -145,10 +145,10 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
                 thread.interrupt();
 
         // wait again for the other half of our stop time
-        stopby = System.currentTimeMillis() + timeout / 2;
+        stopby = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeout) / 2;
         for (Thread thread : _threads)
         {
-            long canwait = stopby - System.currentTimeMillis();
+            long canwait = TimeUnit.NANOSECONDS.toMillis(stopby - System.nanoTime());
             if (canwait > 0)
                 thread.join(canwait);
         }
@@ -242,7 +242,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     }
 
     /**
-     * @param name Name of the BoundedThreadPool to use when naming Threads.
+     * @param name Name of this thread pool to use when naming threads.
      */
     public void setName(String name)
     {
@@ -303,7 +303,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     }
 
     /**
-     * @return The name of the BoundedThreadPool.
+     * @return The name of the this thread pool
      */
     @ManagedAttribute("name of the thread pool")
     public String getName()
@@ -549,8 +549,8 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
                                 if (size > _minThreads)
                                 {
                                     long last = _lastShrink.get();
-                                    long now = System.currentTimeMillis();
-                                    if (last == 0 || (now - last) > _idleTimeout)
+                                    long now = System.nanoTime();
+                                    if (last == 0 || (now - last) > TimeUnit.MILLISECONDS.toNanos(_idleTimeout))
                                     {
                                         shrink = _lastShrink.compareAndSet(last, now) &&
                                                 _threadsStarted.compareAndSet(size, size - 1);

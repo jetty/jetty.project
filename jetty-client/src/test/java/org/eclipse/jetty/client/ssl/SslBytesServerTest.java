@@ -88,6 +88,7 @@ public class SslBytesServerTest extends SslBytesTest
     private ExecutorService threadPool;
     private Server server;
     private SslContextFactory sslContextFactory;
+    private int serverPort;
     private SSLContext sslContext;
     private SimpleProxy proxy;
     private Runnable idleHook;
@@ -215,7 +216,7 @@ public class SslBytesServerTest extends SslBytesTest
             }
         });
         server.start();
-        int serverPort = connector.getLocalPort();
+        serverPort = connector.getLocalPort();
 
         sslContext = sslContextFactory.getSslContext();
 
@@ -294,6 +295,88 @@ public class SslBytesServerTest extends SslBytesTest
         Assert.assertThat(httpParses.get(), Matchers.lessThan(20));
 
         closeClient(client);
+    }
+
+    @Test
+    public void testHandshakeWithResumedSessionThenClose() throws Exception
+    {
+        // First socket will establish the SSL session
+        SSLSocket client1 = newClient();
+        SimpleProxy.AutomaticFlow automaticProxyFlow = proxy.startAutomaticFlow();
+        client1.startHandshake();
+        client1.close();
+        Assert.assertTrue(automaticProxyFlow.stop(5, TimeUnit.SECONDS));
+        int proxyPort = proxy.getPort();
+        proxy.stop();
+
+        proxy = new SimpleProxy(threadPool, proxyPort, "localhost", serverPort);
+        proxy.start();
+        logger.info("proxy:{} <==> server:{}", proxy.getPort(), serverPort);
+
+        final SSLSocket client2 = newClient(proxy);
+
+        Future<Object> handshake = threadPool.submit(new Callable<Object>()
+        {
+            @Override
+            public Object call() throws Exception
+            {
+                client2.startHandshake();
+                return null;
+            }
+        });
+
+        // Client Hello with SessionID
+        TLSRecord record = proxy.readFromClient();
+        Assert.assertNotNull(record);
+        proxy.flushToServer(record);
+
+        // Server Hello
+        record = proxy.readFromServer();
+        Assert.assertNotNull(record);
+        proxy.flushToClient(record);
+
+        // Change Cipher Spec
+        record = proxy.readFromServer();
+        Assert.assertNotNull(record);
+        proxy.flushToClient(record);
+
+        // Server Done
+        record = proxy.readFromServer();
+        Assert.assertNotNull(record);
+        proxy.flushToClient(record);
+
+        // Client Key Exchange
+        record = proxy.readFromClient();
+        Assert.assertNotNull(record);
+        // Client Done
+        TLSRecord doneRecord = proxy.readFromClient();
+        Assert.assertNotNull(doneRecord);
+        // Close
+        client2.close();
+        TLSRecord closeRecord = proxy.readFromClient();
+        Assert.assertNotNull(closeRecord);
+        Assert.assertEquals(TLSRecord.Type.ALERT, closeRecord.getType());
+        // Flush to server Client Key Exchange + Client Done + Close in one chunk
+        byte[] recordBytes = record.getBytes();
+        byte[] doneBytes = doneRecord.getBytes();
+        byte[] closeRecordBytes = closeRecord.getBytes();
+        byte[] chunk = new byte[recordBytes.length + doneBytes.length + closeRecordBytes.length];
+        System.arraycopy(recordBytes, 0, chunk, 0, recordBytes.length);
+        System.arraycopy(doneBytes, 0, chunk, recordBytes.length, doneBytes.length);
+        System.arraycopy(closeRecordBytes, 0, chunk, recordBytes.length + doneBytes.length, closeRecordBytes.length);
+        proxy.flushToServer(0, chunk);
+        // Close the raw socket
+        proxy.flushToServer(null);
+
+        // Expect the server to send a FIN as well
+        record = proxy.readFromServer();
+        Assert.assertNull(record);
+
+        // Check that we did not spin
+        TimeUnit.MILLISECONDS.sleep(500);
+        Assert.assertThat(sslFills.get(), Matchers.lessThan(20));
+        Assert.assertThat(sslFlushes.get(), Matchers.lessThan(20));
+        Assert.assertThat(httpParses.get(), Matchers.lessThan(20));
     }
 
     @Test
@@ -1849,6 +1932,11 @@ public class SslBytesServerTest extends SslBytesTest
     }
 
     private SSLSocket newClient() throws IOException, InterruptedException
+    {
+        return newClient(proxy);
+    }
+
+    private SSLSocket newClient(SimpleProxy proxy) throws IOException, InterruptedException
     {
         SSLSocket client = (SSLSocket)sslContext.getSocketFactory().createSocket("localhost", proxy.getPort());
         client.setUseClientMode(true);

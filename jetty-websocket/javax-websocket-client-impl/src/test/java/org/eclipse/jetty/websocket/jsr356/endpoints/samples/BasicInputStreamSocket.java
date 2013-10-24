@@ -16,19 +16,32 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.client.api;
+package org.eclipse.jetty.websocket.jsr356.endpoints.samples;
 
-import org.apache.http.client.HttpClient;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.junit.Ignore;
-import org.junit.Test;
+import java.io.IOException;
+import java.io.InputStream;
 
-@Ignore
-public class ApacheUsage
+import javax.websocket.ClientEndpoint;
+import javax.websocket.OnMessage;
+
+import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.websocket.jsr356.endpoints.TrackingSocket;
+
+@ClientEndpoint
+public class BasicInputStreamSocket extends TrackingSocket
 {
-    @Test
-    public void test()
+    @OnMessage
+    public void onBinary(InputStream stream)
     {
-        HttpClient client = new DefaultHttpClient();
+        try
+        {
+            String msg = IO.toString(stream);
+            addEvent("onBinary(%s)",msg);
+        }
+        catch (IOException e)
+        {
+            super.errorQueue.add(e);
+        }
+        dataLatch.countDown();
     }
 }

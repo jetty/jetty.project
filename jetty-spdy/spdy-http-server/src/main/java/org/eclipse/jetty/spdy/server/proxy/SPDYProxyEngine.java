@@ -212,7 +212,7 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
                 if (header != null)
                 {
                     String toName = httpHeader.name(toVersion);
-                    for (String value : header.values())
+                    for (String value : header.getValues())
                         headers.add(toName, value);
                 }
             }

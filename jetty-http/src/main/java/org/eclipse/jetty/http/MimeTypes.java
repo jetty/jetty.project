@@ -136,10 +136,10 @@ public class MimeTypes
         try
         {
             ResourceBundle mime = ResourceBundle.getBundle("org/eclipse/jetty/http/mime");
-            Enumeration i = mime.getKeys();
+            Enumeration<String> i = mime.getKeys();
             while(i.hasMoreElements())
             {
-                String ext = (String)i.nextElement();
+                String ext = i.nextElement();
                 String m = mime.getString(ext);
                 __dftMimeMap.put(StringUtil.asciiToLowerCase(ext),normalizeMimeType(m));
             }

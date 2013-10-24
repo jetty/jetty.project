@@ -28,6 +28,7 @@ import javax.websocket.server.ServerEndpointConfig.Configurator;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.util.QuoteUtil;
 
 public class BasicServerEndpointConfigurator extends Configurator
 {
@@ -63,6 +64,21 @@ public class BasicServerEndpointConfigurator extends Configurator
     @Override
     public String getNegotiatedSubprotocol(List<String> supported, List<String> requested)
     {
+        if ((requested == null) || (requested.size() == 0))
+        {
+            // nothing requested, don't return anything
+            return null;
+        }
+
+        // Nothing specifically called out as being supported by the endpoint
+        if ((supported == null) || (supported.isEmpty()))
+        {
+            // Just return the first hit in this case
+            LOG.warn("Client requested Subprotocols on endpoint with none supported: {}", QuoteUtil.join(requested,","));
+            return null;
+        }
+
+        // Return the first matching hit from the list of supported protocols.
         for (String possible : requested)
         {
             if (supported.contains(possible))
@@ -70,6 +86,8 @@ public class BasicServerEndpointConfigurator extends Configurator
                 return possible;
             }
         }
+
+        LOG.warn("Client requested subprotocols {} do not match any endpoint supported subprotocols {}", QuoteUtil.join(requested,","), QuoteUtil.join(supported,","));
         return null;
     }
 

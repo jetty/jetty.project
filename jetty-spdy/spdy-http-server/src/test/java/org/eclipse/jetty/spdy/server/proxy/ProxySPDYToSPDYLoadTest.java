@@ -230,8 +230,8 @@ public class ProxySPDYToSPDYLoadTest
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
                 Fields headers = replyInfo.getHeaders();
-                assertThat("uuid matches expected uuid", headers.get(UUID_HEADER_NAME).value(), is(uuid));
-                assertThat("response comes from the given server", headers.get(SERVER_ID_HEADER).value(),
+                assertThat("uuid matches expected uuid", headers.get(UUID_HEADER_NAME).getValue(), is(uuid));
+                assertThat("response comes from the given server", headers.get(SERVER_ID_HEADER).getValue(),
                         is(serverIdentificationString));
                 replyLatch.countDown();
             }
@@ -272,7 +272,7 @@ public class ProxySPDYToSPDYLoadTest
             Assert.assertNotNull(uuidHeader);
 
             Fields responseHeaders = new Fields();
-            responseHeaders.put(UUID_HEADER_NAME, uuidHeader.value());
+            responseHeaders.put(UUID_HEADER_NAME, uuidHeader.getValue());
             responseHeaders.put(SERVER_ID_HEADER, serverId);
             stream.reply(new ReplyInfo(responseHeaders, false), new Callback.Adapter());
             return new StreamFrameListener.Adapter()

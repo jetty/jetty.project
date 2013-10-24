@@ -63,7 +63,7 @@ public abstract class AbstractProxySerializationTest
    
     
     /**
-     * @param sec mseconds to sleep
+     * @param msec milliseconds to sleep
      */
     public void pause(int msec)
     {

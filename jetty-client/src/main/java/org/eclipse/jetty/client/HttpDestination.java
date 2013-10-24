@@ -20,51 +20,45 @@ package org.eclipse.jetty.client;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.net.URI;
 import java.nio.channels.AsynchronousCloseException;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Destination;
-import org.eclipse.jetty.client.api.ProxyConfiguration;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.io.ClientConnectionFactory;
+import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public abstract class HttpDestination implements Destination, Closeable, Dumpable
 {
     protected static final Logger LOG = Log.getLogger(HttpDestination.class);
 
     private final HttpClient client;
-    private final String scheme;
-    private final String host;
-    private final Address address;
+    private final Origin origin;
     private final Queue<HttpExchange> exchanges;
     private final RequestNotifier requestNotifier;
     private final ResponseNotifier responseNotifier;
-    private final Address proxyAddress;
+    private final ProxyConfiguration.Proxy proxy;
+    private final ClientConnectionFactory connectionFactory;
     private final HttpField hostField;
 
-    public HttpDestination(HttpClient client, String scheme, String host, int port)
+    public HttpDestination(HttpClient client, Origin origin)
     {
         this.client = client;
-        this.scheme = scheme;
-        this.host = host;
-        this.address = new Address(host, port);
+        this.origin = origin;
 
         this.exchanges = new BlockingArrayQueue<>(client.getMaxRequestsQueuedPerDestination());
 
@@ -72,17 +66,38 @@ public abstract class HttpDestination implements Destination, Closeable, Dumpabl
         this.responseNotifier = new ResponseNotifier(client);
 
         ProxyConfiguration proxyConfig = client.getProxyConfiguration();
-        proxyAddress = proxyConfig != null && proxyConfig.matches(host, port) ?
-                new Address(proxyConfig.getHost(), proxyConfig.getPort()) : null;
+        proxy = proxyConfig.match(origin);
+        ClientConnectionFactory connectionFactory = client.getTransport();
+        if (proxy != null)
+        {
+            connectionFactory = proxy.newClientConnectionFactory(connectionFactory);
+        }
+        else
+        {
+            if (HttpScheme.HTTPS.is(getScheme()))
+                connectionFactory = newSslClientConnectionFactory(connectionFactory);
+        }
+        this.connectionFactory = connectionFactory;
 
-        if (!client.isDefaultPort(scheme, port))
-            host += ":" + port;
+        String host = getHost();
+        if (!client.isDefaultPort(getScheme(), getPort()))
+            host += ":" + getPort();
         hostField = new HttpField(HttpHeader.HOST, host);
+    }
+
+    protected ClientConnectionFactory newSslClientConnectionFactory(ClientConnectionFactory connectionFactory)
+    {
+        return new SslClientConnectionFactory(client.getSslContextFactory(), client.getByteBufferPool(), client.getExecutor(), connectionFactory);
     }
 
     public HttpClient getHttpClient()
     {
         return client;
+    }
+
+    public Origin getOrigin()
+    {
+        return origin;
     }
 
     public Queue<HttpExchange> getHttpExchanges()
@@ -100,10 +115,20 @@ public abstract class HttpDestination implements Destination, Closeable, Dumpabl
         return responseNotifier;
     }
 
+    public ProxyConfiguration.Proxy getProxy()
+    {
+        return proxy;
+    }
+
+    public ClientConnectionFactory getClientConnectionFactory()
+    {
+        return connectionFactory;
+    }
+
     @Override
     public String getScheme()
     {
-        return scheme;
+        return origin.getScheme();
     }
 
     @Override
@@ -111,32 +136,18 @@ public abstract class HttpDestination implements Destination, Closeable, Dumpabl
     {
         // InetSocketAddress.getHostString() transforms the host string
         // in case of IPv6 addresses, so we return the original host string
-        return host;
+        return origin.getAddress().getHost();
     }
 
     @Override
     public int getPort()
     {
-        return address.getPort();
+        return origin.getAddress().getPort();
     }
 
-    public Address getConnectAddress()
+    public Origin.Address getConnectAddress()
     {
-        return isProxied() ? proxyAddress : address;
-    }
-
-    public boolean isProxied()
-    {
-        return proxyAddress != null;
-    }
-
-    public URI getProxyURI()
-    {
-        ProxyConfiguration proxyConfiguration = client.getProxyConfiguration();
-        String uri = getScheme() + "://" + proxyConfiguration.getHost();
-        if (!client.isDefaultPort(getScheme(), proxyConfiguration.getPort()))
-            uri += ":" + proxyConfiguration.getPort();
-        return URI.create(uri);
+        return proxy == null ? origin.getAddress() : proxy.getAddress();
     }
 
     public HttpField getHostField()
@@ -146,7 +157,7 @@ public abstract class HttpDestination implements Destination, Closeable, Dumpabl
 
     protected void send(Request request, List<Response.ResponseListener> listeners)
     {
-        if (!scheme.equals(request.getScheme()))
+        if (!getScheme().equals(request.getScheme()))
             throw new IllegalArgumentException("Invalid request scheme " + request.getScheme() + " for destination " + this);
         if (!getHost().equals(request.getHost()))
             throw new IllegalArgumentException("Invalid request host " + request.getHost() + " for destination " + this);
@@ -188,7 +199,7 @@ public abstract class HttpDestination implements Destination, Closeable, Dumpabl
 
     public void newConnection(Promise<Connection> promise)
     {
-        createConnection(new ProxyPromise(promise));
+        createConnection(promise);
     }
 
     protected void createConnection(Promise<Connection> promise)
@@ -205,6 +216,10 @@ public abstract class HttpDestination implements Destination, Closeable, Dumpabl
     {
         abort(new AsynchronousCloseException());
         LOG.debug("Closed {}", this);
+    }
+
+    public void close(Connection connection)
+    {
     }
 
     /**
@@ -236,18 +251,6 @@ public abstract class HttpDestination implements Destination, Closeable, Dumpabl
         getResponseNotifier().notifyComplete(listeners, new Result(request, cause, response, cause));
     }
 
-    protected void tunnelSucceeded(Connection connection, Promise<Connection> promise)
-    {
-        // Wrap the connection with TLS
-        promise.succeeded(client.getTransport().tunnel(connection));
-    }
-
-    protected void tunnelFailed(Connection connection, Promise<Connection> promise, Throwable failure)
-    {
-        promise.failed(failure);
-        connection.close();
-    }
-
     @Override
     public String dump()
     {
@@ -262,7 +265,7 @@ public abstract class HttpDestination implements Destination, Closeable, Dumpabl
 
     public String asString()
     {
-        return client.address(getScheme(), getHost(), getPort());
+        return origin.asString();
     }
 
     @Override
@@ -271,84 +274,6 @@ public abstract class HttpDestination implements Destination, Closeable, Dumpabl
         return String.format("%s(%s)%s",
                 HttpDestination.class.getSimpleName(),
                 asString(),
-                proxyAddress == null ? "" : " via " + proxyAddress.getHost() + ":" + proxyAddress.getPort());
-    }
-
-    /**
-     * Decides whether to establish a proxy tunnel using HTTP CONNECT.
-     * It is implemented as a promise because it needs to establish the tunnel
-     * when the TCP connection is succeeded, and needs to notify another
-     * promise when the tunnel is established (or failed).
-     */
-    private class ProxyPromise implements Promise<Connection>
-    {
-        private final Promise<Connection> delegate;
-
-        private ProxyPromise(Promise<Connection> delegate)
-        {
-            this.delegate = delegate;
-        }
-
-        @Override
-        public void succeeded(Connection connection)
-        {
-            if (isProxied() && HttpScheme.HTTPS.is(getScheme()))
-            {
-                if (client.getSslContextFactory() != null)
-                {
-                    tunnel(connection);
-                }
-                else
-                {
-                    String message = String.format("Cannot perform requests over SSL, no %s in %s",
-                            SslContextFactory.class.getSimpleName(), HttpClient.class.getSimpleName());
-                    delegate.failed(new IllegalStateException(message));
-                }
-            }
-            else
-            {
-                delegate.succeeded(connection);
-            }
-        }
-
-        @Override
-        public void failed(Throwable x)
-        {
-            delegate.failed(x);
-        }
-
-        private void tunnel(final Connection connection)
-        {
-            String target = address.getHost() + ":" + address.getPort();
-            Request connect = client.newRequest(proxyAddress.getHost(), proxyAddress.getPort())
-                    .scheme(HttpScheme.HTTP.asString())
-                    .method(HttpMethod.CONNECT)
-                    .path(target)
-                    .header(HttpHeader.HOST, target)
-                    .timeout(client.getConnectTimeout(), TimeUnit.MILLISECONDS);
-            connection.send(connect, new Response.CompleteListener()
-            {
-                @Override
-                public void onComplete(Result result)
-                {
-                    if (result.isFailed())
-                    {
-                        tunnelFailed(connection, delegate, result.getFailure());
-                    }
-                    else
-                    {
-                        Response response = result.getResponse();
-                        if (response.getStatus() == 200)
-                        {
-                            tunnelSucceeded(connection, delegate);
-                        }
-                        else
-                        {
-                            tunnelFailed(connection, delegate, new HttpResponseException("Received " + response + " for " + result.getRequest(), response));
-                        }
-                    }
-                }
-            });
-        }
+                proxy == null ? "" : " via " + proxy);
     }
 }

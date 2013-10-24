@@ -367,7 +367,7 @@ public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
         @Override
         public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
         {
-            String path = synInfo.getHeaders().get(HTTPSPDYHeader.URI.name(version)).value();
+            String path = synInfo.getHeaders().get(HTTPSPDYHeader.URI.name(version)).getValue();
             addPushedResource(path);
             return new DataListener();
         }

@@ -27,10 +27,12 @@ import java.net.URI;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -44,7 +46,6 @@ import org.eclipse.jetty.client.api.AuthenticationStore;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Destination;
-import org.eclipse.jetty.client.api.ProxyConfiguration;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
@@ -57,7 +58,6 @@ import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.SocketAddressResolver;
-import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -104,12 +104,13 @@ public class HttpClient extends ContainerLifeCycle
 {
     private static final Logger LOG = Log.getLogger(HttpClient.class);
 
-    private final ConcurrentMap<String, HttpDestination> destinations = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Origin, HttpDestination> destinations = new ConcurrentHashMap<>();
     private final ConcurrentMap<Long, HttpConversation> conversations = new ConcurrentHashMap<>();
     private final List<ProtocolHandler> handlers = new ArrayList<>();
     private final List<Request.Listener> requestListeners = new ArrayList<>();
     private final AuthenticationStore authenticationStore = new HttpAuthenticationStore();
     private final Set<ContentDecoder.Factory> decoderFactories = new ContentDecoderFactorySet();
+    private final ProxyConfiguration proxyConfig = new ProxyConfiguration();
     private final HttpClientTransport transport;
     private final SslContextFactory sslContextFactory;
     private volatile CookieManager cookieManager;
@@ -132,7 +133,6 @@ public class HttpClient extends ContainerLifeCycle
     private volatile boolean tcpNoDelay = true;
     private volatile boolean dispatchIO = true;
     private volatile boolean strictEventOrdering = false;
-    private volatile ProxyConfiguration proxyConfig;
     private volatile HttpField encodingField;
 
     /**
@@ -359,7 +359,7 @@ public class HttpClient extends ContainerLifeCycle
      */
     public Request newRequest(String host, int port)
     {
-        return newRequest(address("http", host, port));
+        return newRequest(new Origin("http", host, port).asString());
     }
 
     /**
@@ -417,13 +417,6 @@ public class HttpClient extends ContainerLifeCycle
         return newRequest;
     }
 
-    public String address(String scheme, String host, int port)
-    {
-        StringBuilder result = new StringBuilder();
-        URIUtil.appendSchemeHostPort(result, scheme, host, port);
-        return result.toString();
-    }
-
     /**
      * Returns a {@link Destination} for the given scheme, host and port.
      * Applications may use {@link Destination}s to create {@link Connection}s
@@ -446,20 +439,20 @@ public class HttpClient extends ContainerLifeCycle
     {
         port = normalizePort(scheme, port);
 
-        String address = address(scheme, host, port);
-        HttpDestination destination = destinations.get(address);
+        Origin origin = new Origin(scheme, host, port);
+        HttpDestination destination = destinations.get(origin);
         if (destination == null)
         {
-            destination = transport.newHttpDestination(scheme, host, port);
+            destination = transport.newHttpDestination(origin);
             if (isRunning())
             {
-                HttpDestination existing = destinations.putIfAbsent(address, destination);
+                HttpDestination existing = destinations.putIfAbsent(origin, destination);
                 if (existing != null)
                     destination = existing;
                 else
                     LOG.debug("Created {}", destination);
                 if (!isRunning())
-                    destinations.remove(address);
+                    destinations.remove(origin);
             }
 
         }
@@ -486,13 +479,16 @@ public class HttpClient extends ContainerLifeCycle
 
     protected void newConnection(final HttpDestination destination, final Promise<Connection> promise)
     {
-        Destination.Address address = destination.getConnectAddress();
+        Origin.Address address = destination.getConnectAddress();
         resolver.resolve(address.getHost(), address.getPort(), new Promise<SocketAddress>()
         {
             @Override
             public void succeeded(SocketAddress socketAddress)
             {
-                transport.connect(destination, socketAddress, promise);
+                Map<String, Object> context = new HashMap<>();
+                context.put(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY, destination);
+                context.put(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY, promise);
+                transport.connect(socketAddress, context);
             }
 
             @Override
@@ -559,7 +555,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @return the max time a connection can take to connect to destinations
+     * @return the max time, in milliseconds, a connection can take to connect to destinations
      */
     public long getConnectTimeout()
     {
@@ -567,7 +563,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @param connectTimeout the max time a connection can take to connect to destinations
+     * @param connectTimeout the max time, in milliseconds, a connection can take to connect to destinations
      * @see java.net.Socket#connect(SocketAddress, int)
      */
     public void setConnectTimeout(long connectTimeout)
@@ -592,7 +588,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @return the max time a connection can be idle (that is, without traffic of bytes in either direction)
+     * @return the max time, in milliseconds, a connection can be idle (that is, without traffic of bytes in either direction)
      */
     public long getIdleTimeout()
     {
@@ -600,7 +596,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @param idleTimeout the max time a connection can be idle (that is, without traffic of bytes in either direction)
+     * @param idleTimeout the max time, in milliseconds, a connection can be idle (that is, without traffic of bytes in either direction)
      */
     public void setIdleTimeout(long idleTimeout)
     {
@@ -879,14 +875,6 @@ public class HttpClient extends ContainerLifeCycle
     public ProxyConfiguration getProxyConfiguration()
     {
         return proxyConfig;
-    }
-
-    /**
-     * @param proxyConfig the forward proxy configuration
-     */
-    public void setProxyConfiguration(ProxyConfiguration proxyConfig)
-    {
-        this.proxyConfig = proxyConfig;
     }
 
     protected HttpField getAcceptEncodingField()

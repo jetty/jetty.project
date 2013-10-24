@@ -31,9 +31,9 @@ import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletConfig;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.UnavailableException;
 import javax.servlet.http.HttpServlet;
@@ -62,7 +62,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
  * <p/>
  * To facilitate JMX monitoring, the {@link HttpClient} instance is set as context attribute,
  * prefixed with the servlet's name and exposed by the mechanism provided by
- * {@link ContextHandler#MANAGED_ATTRIBUTES}.
+ * {@link ServletContext#setAttribute(String, Object)}.
  * <p/>
  * The following init parameters may be used to configure the servlet:
  * <ul>
@@ -389,6 +389,7 @@ public class ProxyServlet extends HttpServlet
                 .version(HttpVersion.fromString(request.getProtocol()));
 
         // Copy headers
+        boolean hasContent = false;
         for (Enumeration<String> headerNames = request.getHeaderNames(); headerNames.hasMoreElements();)
         {
             String headerName = headerNames.nextElement();
@@ -398,8 +399,12 @@ public class ProxyServlet extends HttpServlet
             if (HOP_HEADERS.contains(lowerHeaderName))
                 continue;
 
-            if (_hostHeader!=null && lowerHeaderName.equals("host"))
+            if (_hostHeader != null && HttpHeader.HOST.is(headerName))
                 continue;
+
+            if (request.getContentLength() > 0 || request.getContentType() != null ||
+                    HttpHeader.TRANSFER_ENCODING.is(headerName))
+                hasContent = true;
 
             for (Enumeration<String> headerValues = request.getHeaders(headerName); headerValues.hasMoreElements();)
             {
@@ -420,21 +425,24 @@ public class ProxyServlet extends HttpServlet
         proxyRequest.header(HttpHeader.X_FORWARDED_HOST, request.getHeader(HttpHeader.HOST.asString()));
         proxyRequest.header(HttpHeader.X_FORWARDED_SERVER, request.getLocalName());
 
-        proxyRequest.content(new InputStreamContentProvider(request.getInputStream())
+        if (hasContent)
         {
-            @Override
-            public long getLength()
+            proxyRequest.content(new InputStreamContentProvider(request.getInputStream())
             {
-                return request.getContentLength();
-            }
+                @Override
+                public long getLength()
+                {
+                    return request.getContentLength();
+                }
 
-            @Override
-            protected ByteBuffer onRead(byte[] buffer, int offset, int length)
-            {
-                _log.debug("{} proxying content to upstream: {} bytes", requestId, length);
-                return super.onRead(buffer, offset, length);
-            }
-        });
+                @Override
+                protected ByteBuffer onRead(byte[] buffer, int offset, int length)
+                {
+                    _log.debug("{} proxying content to upstream: {} bytes", requestId, length);
+                    return super.onRead(buffer, offset, length);
+                }
+            });
+        }
 
         final AsyncContext asyncContext = request.startAsync();
         // We do not timeout the continuation, but the proxy request
@@ -629,7 +637,12 @@ public class ProxyServlet extends HttpServlet
                 return null;
 
             StringBuilder uri = new StringBuilder(_proxyTo);
-            uri.append(path.substring(_prefix.length()));
+            if (_proxyTo.endsWith("/"))
+                uri.setLength(uri.length() - 1);
+            String rest = path.substring(_prefix.length());
+            if (!rest.startsWith("/"))
+                uri.append("/");
+            uri.append(rest);
             String query = request.getQueryString();
             if (query != null)
                 uri.append("?").append(query);

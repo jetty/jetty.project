@@ -685,6 +685,11 @@ public class Dump extends HttpServlet
                 catch(Exception e) {pout.write("<td>"+"" +e+"</td>");}
 
                 pout.write("</tr><tr>\n");
+                pout.write("<th align=\"right\">getServletContext().getRealPath(...):&nbsp;</th>");
+                try{pout.write("<td>"+getServletContext().getRealPath(res)+"</td>");}
+                catch(Exception e) {pout.write("<td>"+"" +e+"</td>");}
+
+                pout.write("</tr><tr>\n");
                 pout.write("<th align=\"right\">getServletContext().getContext(...):&nbsp;</th>");
 
                 ServletContext context = getServletContext().getContext(res);
@@ -706,8 +711,12 @@ public class Dump extends HttpServlet
                     if (cp==null || "/".equals(cp))
                         cp="";
                     pout.write("</tr><tr>\n");
-                    pout.write("<th align=\"right\">getServletContext().getContext(...),getRequestDispatcher(...):&nbsp;</th>");
-                    pout.write("<td>"+getServletContext().getContext(res).getRequestDispatcher(res.substring(cp.length()))+"</td>");
+                    pout.write("<th align=\"right\">getServletContext().getContext(...).getRequestDispatcher(...):&nbsp;</th>");
+                    pout.write("<td>"+context.getRequestDispatcher(res.substring(cp.length()))+"</td>");
+                    
+                    pout.write("</tr><tr>\n");
+                    pout.write("<th align=\"right\">getServletContext().getContext(...).getRealPath(...):&nbsp;</th>");
+                    pout.write("<td>"+context.getRealPath(res.substring(cp.length()))+"</td>");
                 }
 
                 pout.write("</tr><tr>\n");

@@ -116,8 +116,8 @@ public class HostnameVerificationTest
             // Therefore this test may catch a SSLHandshakeException, or a ClosedChannelException.
             // If it is the former, we verify that its cause is a CertificateException.
 
-            // ExecutionException wraps an EofException that wraps the SSLHandshakeException
-            Throwable cause = x.getCause().getCause();
+            // ExecutionException wraps an SSLHandshakeException
+            Throwable cause = x.getCause();
             if (cause instanceof SSLHandshakeException)
                 assertThat(cause.getCause().getCause(), instanceOf(CertificateException.class));
             else

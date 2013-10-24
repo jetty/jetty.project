@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.servlet;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -27,15 +26,10 @@ import java.util.Map;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.server.Dispatcher;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /** Error Page Error Handler
@@ -44,11 +38,8 @@ import org.eclipse.jetty.util.log.Logger;
  * the internal ERROR style of dispatch.
  *
  */
-public class ErrorPageErrorHandler extends ErrorHandler
+public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.ErrorPageMapper
 {
-    private static final Logger LOG = Log.getLogger(ErrorPageErrorHandler.class);
-
-    public final static String ERROR_PAGE="org.eclipse.jetty.server.error_page";
     public final static String GLOBAL_ERROR_PAGE = "org.eclipse.jetty.server.error_page.global";
 
     protected ServletContext _servletContext;
@@ -60,108 +51,63 @@ public class ErrorPageErrorHandler extends ErrorHandler
     {}
 
     /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.server.handler.ErrorHandler#handle(String, Request, HttpServletRequest, HttpServletResponse)
-     */
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+    public String getErrorPage(HttpServletRequest request)
     {
-        
-        
-        
-        String method = request.getMethod();
-        if (!HttpMethod.GET.is(method) && !HttpMethod.POST.is(method) && !HttpMethod.HEAD.is(method))
-        {
-            baseRequest.setHandled(true);
-            return;
-        }
-        if (_errorPages!=null)
-        {
-            String error_page= null;
-            
-            
-            Throwable th= (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
+        String error_page= null;
 
-            // Walk the cause hierarchy
-            while (error_page == null && th != null )
+        Throwable th= (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
+
+        // Walk the cause hierarchy
+        while (error_page == null && th != null )
+        {
+            Class<?> exClass=th.getClass();
+            error_page= (String)_errorPages.get(exClass.getName());
+
+            // walk the inheritance hierarchy
+            while (error_page == null)
             {
-                Class<?> exClass=th.getClass();
+                exClass= exClass.getSuperclass();
+                if (exClass==null)
+                    break;
                 error_page= (String)_errorPages.get(exClass.getName());
-                
-                // walk the inheritance hierarchy
-                while (error_page == null)
-                {
-                    exClass= exClass.getSuperclass();
-                    if (exClass==null)
-                        break;
-                    error_page= (String)_errorPages.get(exClass.getName());
-                }
-                
-                th=(th instanceof ServletException)?((ServletException)th).getRootCause():null;
             }
 
-            if (error_page == null)
+            th=(th instanceof ServletException)?((ServletException)th).getRootCause():null;
+        }
+
+        if (error_page == null)
+        {
+            // look for an exact code match
+            Integer code=(Integer)request.getAttribute(Dispatcher.ERROR_STATUS_CODE);
+            if (code!=null)
             {
-                // look for an exact code match
-                Integer code=(Integer)request.getAttribute(Dispatcher.ERROR_STATUS_CODE);
-                if (code!=null)
+                error_page= (String)_errorPages.get(Integer.toString(code));
+
+                // if still not found
+                if ((error_page == null) && (_errorPageList != null))
                 {
-                    error_page= (String)_errorPages.get(Integer.toString(code));
-
-                    // if still not found
-                    if ((error_page == null) && (_errorPageList != null))
+                    // look for an error code range match.
+                    for (int i = 0; i < _errorPageList.size(); i++)
                     {
-                        // look for an error code range match.
-                        for (int i = 0; i < _errorPageList.size(); i++)
+                        ErrorCodeRange errCode = (ErrorCodeRange) _errorPageList.get(i);
+                        if (errCode.isInRange(code))
                         {
-                            ErrorCodeRange errCode = (ErrorCodeRange) _errorPageList.get(i);
-                            if (errCode.isInRange(code))
-                            {
-                                error_page = errCode.getUri();
-                                break;
-                            }
+                            error_page = errCode.getUri();
+                            break;
                         }
-                    }
-                }
-            }
-            
-            //try servlet 3.x global error page
-            if (error_page == null)
-            {
-                error_page = _errorPages.get(GLOBAL_ERROR_PAGE);
-            }
-
-            if (error_page!=null)
-            {
-                String old_error_page=(String)request.getAttribute(ERROR_PAGE);
-                if (old_error_page==null || !old_error_page.equals(error_page))
-                {
-                    request.setAttribute(ERROR_PAGE, error_page);
-
-                    Dispatcher dispatcher = (Dispatcher) _servletContext.getRequestDispatcher(error_page);
-                    try
-                    {
-                        if(dispatcher!=null)
-                        {
-                            dispatcher.error(request, response);
-                            return;
-                        }
-                        else
-                        {
-                            LOG.warn("No error page "+error_page);
-                        }
-                    }
-                    catch (ServletException e)
-                    {
-                        LOG.warn(Log.EXCEPTION, e);
-                        return;
                     }
                 }
             }
         }
 
-        super.handle(target, baseRequest, request, response);
+        //try servlet 3.x global error page
+        if (error_page == null)
+            error_page = _errorPages.get(GLOBAL_ERROR_PAGE);
+        
+        return error_page;
     }
+
 
     /* ------------------------------------------------------------ */
     /**

@@ -228,7 +228,6 @@ public class ContextHandlerGetResourceTest
         assertEquals(docroot,new File(url.toURI()).getParentFile());
     }
 
-
     @Test
     public void testTooNormal() throws Exception
     {
@@ -291,6 +290,23 @@ public class ContextHandlerGetResourceTest
         assertFalse(resource.exists());
         
         URL url=context.getServletContext().getResource(path);
+        assertNull(url);
+    }
+    
+
+    @Test
+    public void testSlashSlash() throws Exception
+    {
+        String path="//subdir/data.txt";
+        Resource resource=context.getResource(path);
+        assertNull(resource);
+        URL url=context.getServletContext().getResource(path);
+        assertNull(url);
+        
+        path="/subdir//data.txt";
+        resource=context.getResource(path);
+        assertNull(resource);
+        url=context.getServletContext().getResource(path);
         assertNull(url);
     }
 

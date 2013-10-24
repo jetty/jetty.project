@@ -18,23 +18,19 @@
 
 package org.eclipse.jetty.util;
 
-import java.nio.ByteBuffer;
-import java.text.DateFormatSymbols;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
-import java.util.Timer;
-import java.util.TimerTask;
 
 /* ------------------------------------------------------------ */
 /**  Date Format Cache.
  * Computes String representations of Dates and caches
- * the results so that subsequent requests within the same minute
+ * the results so that subsequent requests within the same second
  * will be fast.
  *
- * Only format strings that contain either "ss" or "ss.SSS" are
- * handled.
+ * Only format strings that contain either "ss".  Sub second formatting is 
+ * not handled.
  *
  * The timezone of the date may be included as an ID with the "zzz"
  * format string or as an offset with the "ZZZ" format string.
@@ -49,30 +45,15 @@ public class DateCache
     public static final String DEFAULT_FORMAT="EEE MMM dd HH:mm:ss zzz yyyy";
     
     private final String _formatString;
-    private String _tzFormatString;
-    private SimpleDateFormat _tzFormat;
+    private final String _tzFormatString;
+    private final SimpleDateFormat _tzFormat;
+    private final Locale _locale ;
     
     private volatile Tick _tick;
 
-    private Locale _locale	= null;
-    private DateFormatSymbols	_dfs	= null;
-    
-    private static Timer __timer;
-    
-
-    public static Timer getTimer()
-    {
-        synchronized (DateCache.class)
-        {
-            if (__timer==null)
-                __timer=new Timer("DateCache",true);
-            return __timer;
-        }
-    }
-    
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    private static class Tick
+    public static class Tick
     {
         final long _seconds;
         final String _string;
@@ -99,85 +80,28 @@ public class DateCache
      */
     public DateCache(String format)
     {
-        _formatString=format;
-        setTimeZone(TimeZone.getDefault());
-        
-        synchronized (DateCache.class)
-        {
-            long now=System.currentTimeMillis();
-            long tick=1000*((now/1000)+1)-now;
-            formatNow();
-            getTimer().scheduleAtFixedRate(new TimerTask()
-            {
-                @Override
-                public void run()
-                {
-                    formatNow();
-                }
-            },
-            tick,
-            1000);
-        }
+        this(format,null,TimeZone.getDefault());
     }
     
     /* ------------------------------------------------------------ */
     public DateCache(String format,Locale l)
     {
-        this(format);
+        this(format,l,TimeZone.getDefault());
+    }
+
+    /* ------------------------------------------------------------ */
+    public DateCache(String format,Locale l,String tz)
+    {
+        this(format,l,TimeZone.getTimeZone(tz));
+    }
+    
+    /* ------------------------------------------------------------ */
+    public DateCache(String format,Locale l,TimeZone tz)
+    {
+        _formatString=format;
         _locale = l;
-        setTimeZone(TimeZone.getDefault());       
-    }
-    
-    /* ------------------------------------------------------------ */
-    public DateCache(String format,DateFormatSymbols s)
-    {
-        this(format);
-        _dfs = s;
-        setTimeZone(TimeZone.getDefault());
-    }
+        
 
-    /* ------------------------------------------------------------ */
-    /** Set the timezone.
-     * @param tz TimeZone
-     */
-    public void setTimeZone(TimeZone tz)
-    {
-        setTzFormatString(tz);        
-        if( _locale != null ) 
-        {
-            _tzFormat=new SimpleDateFormat(_tzFormatString,_locale);
-        }
-        else if( _dfs != null ) 
-        {
-            _tzFormat=new SimpleDateFormat(_tzFormatString,_dfs);
-        }
-        else 
-        {
-            _tzFormat=new SimpleDateFormat(_tzFormatString);
-        }
-        _tzFormat.setTimeZone(tz);
-        _tick=null;
-    }
-
-    /* ------------------------------------------------------------ */
-    public TimeZone getTimeZone()
-    {
-        return _tzFormat.getTimeZone();
-    }
-    
-    /* ------------------------------------------------------------ */
-    /** Set the timezone.
-     * @param timeZoneId TimeZoneId the ID of the zone as used by
-     * TimeZone.getTimeZone(id)
-     */
-    public void setTimeZoneID(String timeZoneId)
-    {
-        setTimeZone(TimeZone.getTimeZone(timeZoneId));
-    }
-    
-    /* ------------------------------------------------------------ */
-    private void setTzFormatString(final  TimeZone tz )
-    {
         int zIndex = _formatString.indexOf( "ZZZ" );
         if( zIndex >= 0 )
         {
@@ -196,7 +120,7 @@ public class DateCache
                 sb.append( '-' );
             }
             
-            int raw = tzOffset / (1000*60);		// Convert to seconds
+            int raw = tzOffset / (1000*60);             // Convert to seconds
             int hr = raw / 60;
             int min = raw % 60;
             
@@ -213,7 +137,25 @@ public class DateCache
         }
         else
             _tzFormatString=_formatString;
+   
+        if( _locale != null ) 
+        {
+            _tzFormat=new SimpleDateFormat(_tzFormatString,_locale);
+        }
+        else 
+        {
+            _tzFormat=new SimpleDateFormat(_tzFormatString);
+        }
+        _tzFormat.setTimeZone(tz);
+        
         _tick=null;
+    }
+    
+
+    /* ------------------------------------------------------------ */
+    public TimeZone getTimeZone()
+    {
+        return _tzFormat.getTimeZone();
     }
 
 
@@ -243,6 +185,8 @@ public class DateCache
     
     /* ------------------------------------------------------------ */
     /** Format a date according to our stored formatter.
+     * If it happens to be in the same second as the last formatNow
+     * call, then the format is reused.
      * @param inDate 
      * @return Formatted date
      */
@@ -267,32 +211,53 @@ public class DateCache
     }
     
     /* ------------------------------------------------------------ */
-    public String now()
+    /** Format a date according to our stored formatter.
+     * The passed time is expected to be close to the current time, so it is 
+     * compared to the last value passed and if it is within the same second,
+     * the format is reused.  Otherwise a new cached format is created.
+     * @param now 
+     * @return Formatted date
+     */
+    public String formatNow(long now)
     {
-        return _tick._string;
+        long seconds = now / 1000;
+
+        Tick tick=_tick;
+        
+        // Is this the cached time
+        if (tick!=null && tick._seconds==seconds)
+            return tick._string;
+        return formatTick(now)._string;
     }
     
     /* ------------------------------------------------------------ */
-    protected void formatNow()
+    public String now()
     {
-        long now = System.currentTimeMillis();
+        return formatNow(System.currentTimeMillis());
+    }
+    
+    /* ------------------------------------------------------------ */
+    public Tick tick()
+    {
+        return formatTick(System.currentTimeMillis());
+    }
+    
+    /* ------------------------------------------------------------ */
+    protected Tick formatTick(long now)
+    {
         long seconds = now / 1000;
 
+        // Synchronize to protect _tzFormat
         synchronized (this)
         {
-            String s= _tzFormat.format(new Date(now));
-            _tick=new Tick(seconds,s);
+            // recheck the tick, to save multiple formats
+            if (_tick==null || _tick._seconds!=seconds)
+            {
+                String s= _tzFormat.format(new Date(now));
+                return _tick=new Tick(seconds,s);
+            }
+            return _tick;
         }
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Format to string buffer. 
-     * @param inDate Date the format
-     * @param buffer StringBuilder
-     */
-    public void format(long inDate, StringBuilder buffer)
-    {
-        buffer.append(format(inDate));
     }
 
     /* ------------------------------------------------------------ */
@@ -300,18 +265,4 @@ public class DateCache
     {
         return _formatString;
     }    
-
-    /* ------------------------------------------------------------ */
-    private volatile ByteBuffer _buffer;
-    private volatile Object _last;
-    public synchronized ByteBuffer formatBuffer(long date)
-    {
-        String d = format(date);
-        if (d==_last)
-            return _buffer;
-        _last=d;
-        _buffer=BufferUtil.toBuffer(d);
-        
-        return _buffer;
-    }
 }

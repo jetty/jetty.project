@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.HttpTokens.EndOfContent;
 import org.eclipse.jetty.util.ArrayTernaryTrie;
+import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Trie;
@@ -76,6 +77,21 @@ public class HttpParser
     public final static boolean __STRICT=Boolean.getBoolean("org.eclipse.jetty.http.HttpParser.STRICT"); 
     public final static int INITIAL_URI_LENGTH=256;
 
+    /**
+     * Cache of common {@link HttpField}s including: <UL>
+     * <LI>Common static combinations such as:<UL>
+     *   <li>Connection: close
+     *   <li>Accept-Encoding: gzip
+     *   <li>Content-Length: 0
+     * </ul>
+     * <li>Combinations of Content-Type header for common mime types by common charsets
+     * <li>Most common headers with null values so that a lookup will at least
+     * determine the header name even if the name:value combination is not cached
+     * </ul>
+     */
+    public final static Trie<HttpField> CACHE = new ArrayTrie<>(2048);
+    public final static Trie<HttpField> CONTENT_TYPE = new ArrayTrie<>(512);
+    
     // States
     public enum State
     {
@@ -137,6 +153,59 @@ public class HttpParser
 
     private int _length;
     private final StringBuilder _string=new StringBuilder();
+
+    static
+    {
+        CACHE.put(new HttpField(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE));
+        CACHE.put(new HttpField(HttpHeader.CONNECTION,HttpHeaderValue.KEEP_ALIVE));
+        CACHE.put(new HttpField(HttpHeader.CONNECTION,HttpHeaderValue.UPGRADE));
+        CACHE.put(new HttpField(HttpHeader.ACCEPT_ENCODING,"gzip"));
+        CACHE.put(new HttpField(HttpHeader.ACCEPT_ENCODING,"gzip, deflate"));
+        CACHE.put(new HttpField(HttpHeader.ACCEPT_ENCODING,"gzip,deflate,sdch"));
+        CACHE.put(new HttpField(HttpHeader.ACCEPT_LANGUAGE,"en-US,en;q=0.5"));
+        CACHE.put(new HttpField(HttpHeader.ACCEPT_LANGUAGE,"en-GB,en-US;q=0.8,en;q=0.6"));
+        CACHE.put(new HttpField(HttpHeader.ACCEPT_CHARSET,"ISO-8859-1,utf-8;q=0.7,*;q=0.3"));
+        CACHE.put(new HttpField(HttpHeader.ACCEPT,"*/*"));
+        CACHE.put(new HttpField(HttpHeader.ACCEPT,"image/png,image/*;q=0.8,*/*;q=0.5"));
+        CACHE.put(new HttpField(HttpHeader.ACCEPT,"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"));
+        CACHE.put(new HttpField(HttpHeader.PRAGMA,"no-cache"));
+        CACHE.put(new HttpField(HttpHeader.CACHE_CONTROL,"private, no-cache, no-cache=Set-Cookie, proxy-revalidate"));
+        CACHE.put(new HttpField(HttpHeader.CACHE_CONTROL,"no-cache"));
+        CACHE.put(new HttpField(HttpHeader.CONTENT_LENGTH,"0"));
+        CACHE.put(new HttpField(HttpHeader.CONTENT_ENCODING,"gzip"));
+        CACHE.put(new HttpField(HttpHeader.CONTENT_ENCODING,"deflate"));
+        CACHE.put(new HttpField(HttpHeader.TRANSFER_ENCODING,"chunked"));
+        CACHE.put(new HttpField(HttpHeader.EXPIRES,"Fri, 01 Jan 1990 00:00:00 GMT"));
+        
+        // Content types
+        for (String type : new String[]{"text/plain","text/html","text/xml","text/json","application/x-www-form-urlencoded"})
+        {
+            HttpField field=new HttpField(HttpHeader.CONTENT_TYPE,type);
+            CACHE.put(field);
+            CONTENT_TYPE.put(type,field);
+            
+            for (String charset : new String[]{"UTF-8","ISO-8859-1"})
+            {
+                String type_charset=type+"; charset="+charset;
+                field=new HttpField(HttpHeader.CONTENT_TYPE,type_charset);
+                CACHE.put(field);
+                CACHE.put(new HttpField(HttpHeader.CONTENT_TYPE,type+";charset="+charset));
+                CONTENT_TYPE.put(type_charset,field);
+                CONTENT_TYPE.put(type+";charset="+charset,field);
+            }
+        }
+    
+        // Add headers with null values so HttpParser can avoid looking up name again for unknown values
+        for (HttpHeader h:HttpHeader.values())
+            if (!CACHE.put(new HttpField(h,(String)null)))
+                throw new IllegalStateException("CACHE FULL");
+        // Add some more common headers
+        CACHE.put(new HttpField(HttpHeader.REFERER,(String)null));
+        CACHE.put(new HttpField(HttpHeader.IF_MODIFIED_SINCE,(String)null));
+        CACHE.put(new HttpField(HttpHeader.IF_NONE_MATCH,(String)null));
+        CACHE.put(new HttpField(HttpHeader.AUTHORIZATION,(String)null));
+        CACHE.put(new HttpField(HttpHeader.COOKIE,(String)null));
+    }
 
     /* ------------------------------------------------------------------------------- */
     public HttpParser(RequestHandler<ByteBuffer> handler)
@@ -801,7 +870,7 @@ public class HttpParser
     
         if (add_to_connection_trie && !_connectionFields.isFull() && _header!=null && _valueString!=null)
         {
-            _field=new HttpField.CachedHttpField(_header,_valueString);
+            _field=new HttpField(_header,_valueString);
             _connectionFields.put(_field);
         }
         
@@ -944,7 +1013,7 @@ public class HttpParser
                                     // Try a look ahead for the known header name and value.
                                     HttpField field=_connectionFields==null?null:_connectionFields.getBest(buffer,-1,buffer.remaining());
                                     if (field==null)
-                                        field=HttpField.CACHE.getBest(buffer,-1,buffer.remaining());
+                                        field=CACHE.getBest(buffer,-1,buffer.remaining());
                                         
                                     if (field!=null)
                                     {
@@ -1547,5 +1616,4 @@ public class HttpParser
     {
         return _connectionFields;
     }
-
 }

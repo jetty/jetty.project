@@ -79,7 +79,7 @@ public abstract class IteratingCallback implements Callback
                 // Make some progress by calling process()
                 if (process())
                 {
-                    // A true return indicates we are finished a no further callbacks 
+                    // A true return indicates we are finished and no further callbacks
                     // are scheduled. So we must still be ITERATING.
                     if (_state.compareAndSet(State.ITERATING,State.SUCCEEDED))
                         completed();
@@ -92,7 +92,7 @@ public abstract class IteratingCallback implements Callback
                 else if (_state.compareAndSet(State.ITERATING,State.WAITING))
                     // no callback yet, so break the loop and wait for it
                     break;
-                
+
                 // The callback must have happened and we are either WAITING already or FAILED
                 // the loop test will work out which
             }

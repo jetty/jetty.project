@@ -34,8 +34,6 @@
 
 package org.eclipse.jetty.util;
 
-import org.eclipse.jetty.util.log.Log;
-
 /**
  * <p>A callback abstraction that handles completed/failed events of asynchronous operations.</p>
  *
@@ -70,7 +68,6 @@ public interface Callback
         @Override
         public void failed(Throwable x)
         {
-            Log.getLogger(this.getClass()).warn(x);
         }
     }
 }

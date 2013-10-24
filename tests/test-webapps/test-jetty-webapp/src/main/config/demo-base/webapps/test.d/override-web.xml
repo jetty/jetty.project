@@ -42,7 +42,7 @@
   <filter>
     <filter-name>TestFilter</filter-name>
     <filter-class>com.acme.TestFilter</filter-class>
-    <async-support>true</async-support>
+    <async-supported>true</async-supported>
     <init-param>
       <param-name>remote</param-name>
       <param-value>true</param-value>

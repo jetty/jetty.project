@@ -16,14 +16,24 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.io;
+package org.eclipse.jetty.websocket.jsr356.endpoints.samples;
 
-import java.net.Socket;
+import java.io.IOException;
+import java.io.InputStream;
 
-/**
- * Interface for Socket based I/O
- */
-public interface SocketBased
+import javax.websocket.ClientEndpoint;
+import javax.websocket.OnMessage;
+
+import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.websocket.jsr356.endpoints.TrackingSocket;
+
+@ClientEndpoint
+public class BasicInputStreamWithThrowableSocket extends TrackingSocket
 {
-    public Socket getSocket();
+    @OnMessage
+    public void onBinary(InputStream stream) throws IOException
+    {
+        String msg = IO.toString(stream);
+        addEvent("onBinary(%s)",msg);
+    }
 }

@@ -397,8 +397,7 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
     {
         if (_logDateFormat != null)
         {
-            _logDateCache = new DateCache(_logDateFormat, _logLocale);
-            _logDateCache.setTimeZoneID(_logTimeZone);
+            _logDateCache = new DateCache(_logDateFormat, _logLocale ,_logTimeZone);
         }
 
         if (_ignorePaths != null && _ignorePaths.length > 0)

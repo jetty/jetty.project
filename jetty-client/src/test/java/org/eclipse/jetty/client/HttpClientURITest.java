@@ -82,7 +82,7 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
         Assert.assertEquals(path, request.getPath());
         Assert.assertNull(request.getQuery());
         Fields params = request.getParams();
-        Assert.assertEquals(0, params.size());
+        Assert.assertEquals(0, params.getSize());
         Assert.assertTrue(request.getURI().toString().endsWith(path));
 
         ContentResponse response = request.send();
@@ -118,8 +118,8 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
         Assert.assertEquals(query, request.getQuery());
         Assert.assertTrue(request.getURI().toString().endsWith(pathQuery));
         Fields params = request.getParams();
-        Assert.assertEquals(1, params.size());
-        Assert.assertEquals(value, params.get(name).value());
+        Assert.assertEquals(1, params.getSize());
+        Assert.assertEquals(value, params.get(name).getValue());
 
         ContentResponse response = request.send();
 
@@ -155,8 +155,8 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
         Assert.assertEquals(query, request.getQuery());
         Assert.assertTrue(request.getURI().toString().endsWith(pathQuery));
         Fields params = request.getParams();
-        Assert.assertEquals(1, params.size());
-        Assert.assertEquals(value, params.get(name).value());
+        Assert.assertEquals(1, params.getSize());
+        Assert.assertEquals(value, params.get(name).getValue());
 
         ContentResponse response = request.send();
 
@@ -194,9 +194,9 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
         Assert.assertEquals(query, request.getQuery());
         Assert.assertTrue(request.getURI().toString().endsWith(pathQuery));
         Fields params = request.getParams();
-        Assert.assertEquals(2, params.size());
-        Assert.assertEquals(value1, params.get(name1).value());
-        Assert.assertEquals(value2, params.get(name2).value());
+        Assert.assertEquals(2, params.getSize());
+        Assert.assertEquals(value1, params.get(name1).getValue());
+        Assert.assertEquals(value2, params.get(name2).getValue());
 
         ContentResponse response = request.send();
 
@@ -238,9 +238,9 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
         Assert.assertEquals(query, request.getQuery());
         Assert.assertTrue(request.getURI().toString().endsWith(pathQuery));
         Fields params = request.getParams();
-        Assert.assertEquals(2, params.size());
-        Assert.assertEquals(value1, params.get(name1).value());
-        Assert.assertEquals(value2, params.get(name2).value());
+        Assert.assertEquals(2, params.getSize());
+        Assert.assertEquals(value1, params.get(name1).getValue());
+        Assert.assertEquals(value2, params.get(name2).getValue());
 
         ContentResponse response = request.send();
 
@@ -273,7 +273,7 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
         Assert.assertEquals(query, request.getQuery());
         Assert.assertTrue(request.getURI().toString().endsWith(pathQuery));
         Fields params = request.getParams();
-        Assert.assertEquals(0, params.size());
+        Assert.assertEquals(0, params.getSize());
 
         ContentResponse response = request.send();
 
@@ -306,9 +306,35 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
         Assert.assertEquals(query, request.getQuery());
         Assert.assertTrue(request.getURI().toString().endsWith(pathQuery));
         Fields params = request.getParams();
-        Assert.assertEquals(0, params.size());
+        Assert.assertEquals(0, params.getSize());
 
         ContentResponse response = request.send();
+
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+    }
+
+    @Test
+    public void testCaseSensitiveParameterName() throws Exception
+    {
+        final String name1 = "a";
+        final String name2 = "A";
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                Assert.assertEquals(name1, request.getParameter(name1));
+                Assert.assertEquals(name2, request.getParameter(name2));
+            }
+        });
+
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .path("/path?" + name1 + "=" + name1)
+                .param(name2, name2)
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
 
         Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
     }

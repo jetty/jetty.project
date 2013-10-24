@@ -36,6 +36,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -55,10 +56,11 @@ public class HttpRequest implements Request
     private static final AtomicLong ids = new AtomicLong();
 
     private final HttpFields headers = new HttpFields();
-    private final Fields params = new Fields();
+    private final Fields params = new Fields(true);
     private final Map<String, Object> attributes = new HashMap<>();
     private final List<RequestListener> requestListeners = new ArrayList<>();
     private final List<Response.ResponseListener> responseListeners = new ArrayList<>();
+    private final AtomicReference<Throwable> aborted = new AtomicReference<>();
     private final HttpClient client;
     private final long conversation;
     private final String host;
@@ -73,7 +75,6 @@ public class HttpRequest implements Request
     private long timeout;
     private ContentProvider content;
     private boolean followRedirects;
-    private volatile Throwable aborted;
 
     public HttpRequest(HttpClient client, URI uri)
     {
@@ -95,7 +96,6 @@ public class HttpRequest implements Request
         HttpField acceptEncodingField = client.getAcceptEncodingField();
         if (acceptEncodingField != null)
             headers.put(acceptEncodingField);
-        headers.put(client.getUserAgentField());
     }
 
     @Override
@@ -505,16 +505,19 @@ public class HttpRequest implements Request
     @Override
     public boolean abort(Throwable cause)
     {
-        aborted = Objects.requireNonNull(cause);
-        // The conversation may be null if it is already completed
-        HttpConversation conversation = client.getConversation(getConversationID(), false);
-        return conversation != null && conversation.abort(cause);
+        if (aborted.compareAndSet(null, Objects.requireNonNull(cause)))
+        {
+            // The conversation may be null if it is already completed
+            HttpConversation conversation = client.getConversation(getConversationID(), false);
+            return conversation != null && conversation.abort(cause);
+        }
+        return false;
     }
 
     @Override
     public Throwable getAbortCause()
     {
-        return aborted;
+        return aborted.get();
     }
 
     private String buildQuery()
@@ -523,13 +526,13 @@ public class HttpRequest implements Request
         for (Iterator<Fields.Field> iterator = params.iterator(); iterator.hasNext();)
         {
             Fields.Field field = iterator.next();
-            String[] values = field.values();
-            for (int i = 0; i < values.length; ++i)
+            List<String> values = field.getValues();
+            for (int i = 0; i < values.size(); ++i)
             {
                 if (i > 0)
                     result.append("&");
-                result.append(field.name()).append("=");
-                result.append(urlEncode(values[i]));
+                result.append(field.getName()).append("=");
+                result.append(urlEncode(values.get(i)));
             }
             if (iterator.hasNext())
                 result.append("&");
@@ -589,7 +592,7 @@ public class HttpRequest implements Request
             path += "?" + query;
         URI result = URI.create(path);
         if (!result.isAbsolute() && !result.isOpaque())
-            result = URI.create(client.address(getScheme(), getHost(), getPort()) + path);
+            result = URI.create(new Origin(getScheme(), getHost(), getPort()).asString() + path);
         return result;
     }
 

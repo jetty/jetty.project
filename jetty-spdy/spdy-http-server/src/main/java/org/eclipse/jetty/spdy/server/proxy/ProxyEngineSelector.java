@@ -71,7 +71,7 @@ public class ProxyEngineSelector extends ServerSessionFrameListener.Adapter
             return null;
         }
 
-        String host = hostHeader.value();
+        String host = hostHeader.getValue();
         int colon = host.indexOf(':');
         if (colon >= 0)
             host = host.substring(0, colon);

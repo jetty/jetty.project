@@ -83,6 +83,7 @@ public abstract class HttpConnection implements Connection
         HttpVersion version = request.getVersion();
         HttpFields headers = request.getHeaders();
         ContentProvider content = request.getContent();
+        ProxyConfiguration.Proxy proxy = destination.getProxy();
 
         // Make sure the path is there
         String path = request.getPath();
@@ -91,7 +92,7 @@ public abstract class HttpConnection implements Connection
             path = "/";
             request.path(path);
         }
-        if (destination.isProxied() && !HttpMethod.CONNECT.is(method))
+        if (proxy != null && !HttpMethod.CONNECT.is(method))
         {
             path = request.getURI().toString();
             request.path(path);
@@ -103,6 +104,9 @@ public abstract class HttpConnection implements Connection
             if (!headers.containsKey(HttpHeader.HOST.asString()))
                 headers.put(getHttpDestination().getHostField());
         }
+
+        if (request.getAgent() == null)
+            headers.put(getHttpClient().getUserAgentField());
 
         // Add content headers
         if (content != null)
@@ -136,9 +140,18 @@ public abstract class HttpConnection implements Connection
             request.header(HttpHeader.COOKIE.asString(), cookieString.toString());
 
         // Authorization
-        URI authenticationURI = destination.isProxied() ? destination.getProxyURI() : request.getURI();
-        Authentication.Result authnResult = getHttpClient().getAuthenticationStore().findAuthenticationResult(authenticationURI);
-        if (authnResult != null)
-            authnResult.apply(request);
+        URI authenticationURI = proxy != null ? proxy.getURI() : request.getURI();
+        if (authenticationURI != null)
+        {
+            Authentication.Result authnResult = getHttpClient().getAuthenticationStore().findAuthenticationResult(authenticationURI);
+            if (authnResult != null)
+                authnResult.apply(request);
+        }
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%h", getClass().getSimpleName(), this);
     }
 }

@@ -27,6 +27,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 
+import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.UrlEncoded;
@@ -34,6 +35,7 @@ import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+import static org.junit.Assume.assumeTrue;
 
 public class FileResourceTest
 {
@@ -53,6 +55,19 @@ public class FileResourceTest
         String decoded = UrlEncoded.decodeString(raw,0,raw.length(),StringUtil.__UTF8_CHARSET);
         return new URL(decoded);
     }
+    
+    @Test
+    public void testSemicolon() throws Exception
+    {
+        assumeTrue(!OS.IS_WINDOWS);
+        createDummyFile("foo;");
+
+        try(Resource base = new FileResource(testdir.getDir());)
+        {
+            Resource res = base.addPath("foo;");
+            Assert.assertNull(res.getAlias());
+        }
+    }
 
     @Test
     public void testExist_Normal() throws Exception
@@ -60,8 +75,10 @@ public class FileResourceTest
         createDummyFile("a.jsp");
 
         URI ref = testdir.getDir().toURI().resolve("a.jsp");
-        FileResource fileres = new FileResource(decode(ref.toURL()));
-        Assert.assertThat("FileResource: " + fileres,fileres.exists(),is(true));
+        try(FileResource fileres = new FileResource(decode(ref.toURL()));)
+        {
+            Assert.assertThat("FileResource: " + fileres,fileres.exists(),is(true));
+        }
     }
 
     @Ignore("Cannot get null to be seen by FileResource")
@@ -70,12 +87,17 @@ public class FileResourceTest
     {
         createDummyFile("a.jsp");
 
-        try {
+        try 
+        {
             // request with null at end
             URI ref = testdir.getDir().toURI().resolve("a.jsp%00");
-            FileResource fileres = new FileResource(decode(ref.toURL()));
-            Assert.assertThat("FileResource: " + fileres,fileres.exists(),is(false));
-        } catch(URISyntaxException e) {
+            try(FileResource fileres = new FileResource(decode(ref.toURL()));)
+            {
+                Assert.assertThat("FileResource: " + fileres,fileres.exists(),is(false));
+            }
+        } 
+        catch(URISyntaxException e) 
+        {
             // Valid path
         }
     }
@@ -86,12 +108,17 @@ public class FileResourceTest
     {
         createDummyFile("a.jsp");
 
-        try {
+        try 
+        {
             // request with null and x at end
             URI ref = testdir.getDir().toURI().resolve("a.jsp%00x");
-            FileResource fileres = new FileResource(decode(ref.toURL()));
-            Assert.assertThat("FileResource: " + fileres,fileres.exists(),is(false));
-        } catch(URISyntaxException e) {
+            try(FileResource fileres = new FileResource(decode(ref.toURL()));)
+            {
+                Assert.assertThat("FileResource: " + fileres,fileres.exists(),is(false));
+            }
+        } 
+        catch(URISyntaxException e) 
+        {
             // Valid path
         }
     }

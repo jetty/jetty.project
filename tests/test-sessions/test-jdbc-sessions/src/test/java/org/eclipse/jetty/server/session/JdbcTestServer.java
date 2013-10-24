@@ -74,7 +74,7 @@ public class JdbcTestServer extends AbstractTestServer
     static int __workers=0;
     
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractTestServer#newSessionIdManager()
+     * @see org.eclipse.jetty.server.session.AbstractTestServer#newSessionIdManager(String)
      */
     @Override
     public  SessionIdManager newSessionIdManager(String config)
