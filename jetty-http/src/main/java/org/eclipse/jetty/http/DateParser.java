@@ -23,6 +23,10 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 
+/**
+ * ThreadLocal data parsers for HTTP style dates
+ *
+ */
 class DateParser
 {
     private static final TimeZone __GMT = TimeZone.getTimeZone("GMT");

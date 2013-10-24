@@ -24,6 +24,10 @@ import java.util.TimeZone;
 
 import org.eclipse.jetty.util.StringUtil;
 
+/**
+ * ThreadLocal Date formatters for HTTP style dates.
+ *
+ */
 public class DateGenerator
 {
     private static final TimeZone __GMT = TimeZone.getTimeZone("GMT");
