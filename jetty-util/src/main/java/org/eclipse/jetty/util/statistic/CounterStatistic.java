@@ -55,37 +55,31 @@ public class CounterStatistic
     /**
      * @param delta the amount to add to the count
      */
-    public void add(final long delta)
+    public long add(final long delta)
     {
         long value=_curr.addAndGet(delta);
         if (delta > 0)
+        {
             _total.addAndGet(delta);
-        Atomics.updateMax(_max,value);
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param delta the amount to subtract the count by.
-     */
-    public void subtract(final long delta)
-    {
-        add(-delta);
+            Atomics.updateMax(_max,value);
+        }
+        return value;
     }
 
     /* ------------------------------------------------------------ */
     /**
      */
-    public void increment()
+    public long increment()
     {
-        add(1);
+        return add(1);
     }
 
     /* ------------------------------------------------------------ */
     /**
      */
-    public void decrement()
+    public long decrement()
     {
-        add(-1);
+        return add(-1);
     }
 
     /* ------------------------------------------------------------ */

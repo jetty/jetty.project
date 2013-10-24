@@ -359,9 +359,10 @@ public class Server extends HandlerWrapper implements Attributes
             futures.add(connector.shutdown());
 
         // Then tell the contexts that we are shutting down
-        Handler[] contexts = getChildHandlersByClass(Graceful.class);
-        for (Handler context : contexts)
-            futures.add(((Graceful)context).shutdown());
+        
+        Handler[] gracefuls = getChildHandlersByClass(Graceful.class);
+        for (Handler graceful : gracefuls)
+            futures.add(((Graceful)graceful).shutdown());
 
         // Shall we gracefully wait for zero connections?
         long stopTimeout = getStopTimeout();
