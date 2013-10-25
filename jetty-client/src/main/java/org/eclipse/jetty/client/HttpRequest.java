@@ -23,6 +23,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
+import java.nio.ByteBuffer;
 import java.nio.charset.UnsupportedCharsetException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -43,6 +44,7 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.client.util.PathContentProvider;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -295,93 +297,184 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public Request onRequestQueued(QueuedListener listener)
+    public Request onRequestQueued(final QueuedListener listener)
     {
-        this.requestListeners.add(listener);
+        this.requestListeners.add(new QueuedListener()
+        {
+            @Override
+            public void onQueued(Request request)
+            {
+                listener.onQueued(request);
+            }
+        });
         return this;
     }
 
     @Override
-    public Request onRequestBegin(BeginListener listener)
+    public Request onRequestBegin(final BeginListener listener)
     {
-        this.requestListeners.add(listener);
+        this.requestListeners.add(new BeginListener()
+        {
+            @Override
+            public void onBegin(Request request)
+            {
+                listener.onBegin(request);
+            }
+        });
         return this;
     }
 
     @Override
-    public Request onRequestHeaders(HeadersListener listener)
+    public Request onRequestHeaders(final HeadersListener listener)
     {
-        this.requestListeners.add(listener);
+        this.requestListeners.add(new HeadersListener()
+        {
+            @Override
+            public void onHeaders(Request request)
+            {
+                listener.onHeaders(request);
+            }
+        });
         return this;
     }
 
     @Override
-    public Request onRequestCommit(CommitListener listener)
+    public Request onRequestCommit(final CommitListener listener)
     {
-        this.requestListeners.add(listener);
+        this.requestListeners.add(new CommitListener()
+        {
+            @Override
+            public void onCommit(Request request)
+            {
+                listener.onCommit(request);
+            }
+        });
         return this;
     }
 
     @Override
-    public Request onRequestContent(ContentListener listener)
+    public Request onRequestContent(final ContentListener listener)
     {
-        this.requestListeners.add(listener);
+        this.requestListeners.add(new ContentListener()
+        {
+            @Override
+            public void onContent(Request request, ByteBuffer content)
+            {
+                listener.onContent(request, content);
+            }
+        });
         return this;
     }
 
     @Override
-    public Request onRequestSuccess(SuccessListener listener)
+    public Request onRequestSuccess(final SuccessListener listener)
     {
-        this.requestListeners.add(listener);
+        this.requestListeners.add(new SuccessListener()
+        {
+            @Override
+            public void onSuccess(Request request)
+            {
+                listener.onSuccess(request);
+            }
+        });
         return this;
     }
 
     @Override
-    public Request onRequestFailure(FailureListener listener)
+    public Request onRequestFailure(final FailureListener listener)
     {
-        this.requestListeners.add(listener);
+        this.requestListeners.add(new FailureListener()
+        {
+            @Override
+            public void onFailure(Request request, Throwable failure)
+            {
+                listener.onFailure(request, failure);
+            }
+        });
         return this;
     }
 
     @Override
-    public Request onResponseBegin(Response.BeginListener listener)
+    public Request onResponseBegin(final Response.BeginListener listener)
     {
-        this.responseListeners.add(listener);
+        this.responseListeners.add(new Response.BeginListener()
+        {
+            @Override
+            public void onBegin(Response response)
+            {
+                listener.onBegin(response);
+            }
+        });
         return this;
     }
 
     @Override
-    public Request onResponseHeader(Response.HeaderListener listener)
+    public Request onResponseHeader(final Response.HeaderListener listener)
     {
-        this.responseListeners.add(listener);
+        this.responseListeners.add(new Response.HeaderListener()
+        {
+            @Override
+            public boolean onHeader(Response response, HttpField field)
+            {
+                return listener.onHeader(response, field);
+            }
+        });
         return this;
     }
 
     @Override
-    public Request onResponseHeaders(Response.HeadersListener listener)
+    public Request onResponseHeaders(final Response.HeadersListener listener)
     {
-        this.responseListeners.add(listener);
+        this.responseListeners.add(new Response.HeadersListener()
+        {
+            @Override
+            public void onHeaders(Response response)
+            {
+                listener.onHeaders(response);
+            }
+        });
         return this;
     }
 
     @Override
-    public Request onResponseContent(Response.ContentListener listener)
+    public Request onResponseContent(final Response.ContentListener listener)
     {
-        this.responseListeners.add(listener);
+        this.responseListeners.add(new Response.ContentListener()
+        {
+            @Override
+            public void onContent(Response response, ByteBuffer content)
+            {
+                listener.onContent(response, content);
+            }
+        });
         return this;
     }
 
     @Override
-    public Request onResponseSuccess(Response.SuccessListener listener)
+    public Request onResponseSuccess(final Response.SuccessListener listener)
     {
-        this.responseListeners.add(listener);
+        this.responseListeners.add(new Response.SuccessListener()
+        {
+            @Override
+            public void onSuccess(Response response)
+            {
+                listener.onSuccess(response);
+            }
+        });
         return this;
     }
 
     @Override
-    public Request onResponseFailure(Response.FailureListener listener)
+    public Request onResponseFailure(final Response.FailureListener listener)
     {
-        this.responseListeners.add(listener);
+        this.responseListeners.add(new Response.FailureListener()
+        {
+            @Override
+            public void onFailure(Response response, Throwable failure)
+            {
+                listener.onFailure(response, failure);
+            }
+        });
         return this;
     }
 
