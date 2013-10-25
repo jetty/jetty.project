@@ -131,8 +131,7 @@ public class HttpConversation extends AttributesMap
         // will notify a listener that may send a new request and trigger
         // another call to this method which will build different listeners
         // which may be iterated over when the iteration continues.
-        listeners = new ArrayList<>();
-
+        List<Response.ResponseListener> listeners = new ArrayList<>();
         HttpExchange firstExchange = exchanges.peekFirst();
         HttpExchange lastExchange = exchanges.peekLast();
         if (firstExchange == lastExchange)
@@ -151,6 +150,7 @@ public class HttpConversation extends AttributesMap
             else
                 listeners.addAll(firstExchange.getResponseListeners());
         }
+        this.listeners = listeners;
     }
 
     public void complete()
