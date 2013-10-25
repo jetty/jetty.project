@@ -23,6 +23,7 @@ import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.client.HttpChannel;
 import org.eclipse.jetty.client.HttpExchange;
+import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.fcgi.generator.Flusher;
 import org.eclipse.jetty.fcgi.generator.Generator;
 import org.eclipse.jetty.http.HttpField;
@@ -35,6 +36,7 @@ public class HttpChannelOverFCGI extends HttpChannel
     private final int request;
     private final HttpSenderOverFCGI sender;
     private final HttpReceiverOverFCGI receiver;
+    private final FCGIIdleTimeout idle;
     private HttpVersion version;
 
     public HttpChannelOverFCGI(final HttpConnectionOverFCGI connection, Flusher flusher, int request, long idleTimeout)
@@ -44,8 +46,7 @@ public class HttpChannelOverFCGI extends HttpChannel
         this.request = request;
         this.sender = new HttpSenderOverFCGI(this);
         this.receiver = new HttpReceiverOverFCGI(this);
-        IdleTimeout idle = new FCGIIdleTimeout(connection);
-        idle.setIdleTimeout(idleTimeout);
+        this.idle = new FCGIIdleTimeout(connection, idleTimeout);
     }
 
     protected int getRequest()
@@ -115,6 +116,13 @@ public class HttpChannelOverFCGI extends HttpChannel
             receiver.responseSuccess(exchange);
     }
 
+    @Override
+    public void exchangeTerminated(Result result)
+    {
+        super.exchangeTerminated(result);
+        idle.close();
+    }
+
     protected void flush(Generator.Result... results)
     {
         flusher.flush(results);
@@ -124,10 +132,11 @@ public class HttpChannelOverFCGI extends HttpChannel
     {
         private final HttpConnectionOverFCGI connection;
 
-        public FCGIIdleTimeout(HttpConnectionOverFCGI connection)
+        public FCGIIdleTimeout(HttpConnectionOverFCGI connection, long idleTimeout)
         {
             super(connection.getHttpDestination().getHttpClient().getScheduler());
             this.connection = connection;
+            setIdleTimeout(idleTimeout);
         }
 
         @Override
@@ -135,13 +144,19 @@ public class HttpChannelOverFCGI extends HttpChannel
         {
             LOG.debug("Idle timeout for request {}", request);
             abort(timeout);
-            close();
         }
 
         @Override
         public boolean isOpen()
         {
             return connection.getEndPoint().isOpen();
+        }
+
+        // Overridden for visibility
+        @Override
+        protected void close()
+        {
+            super.close();
         }
     }
 }
