@@ -43,8 +43,8 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-rewrite</artifactId>
+            <groupId>org.eclipse.jetty.spdy</groupId>
+            <artifactId>spdy-http-server</artifactId>
             <version>${jetty-version}</version>
             <scope>test</scope>
         </dependency>
