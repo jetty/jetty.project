@@ -91,7 +91,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
         HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", connector.getLocalPort()))
         {
             @Override
-            protected void process(HttpConnectionOverHTTP connection, boolean dispatch)
+            public void process(HttpConnectionOverHTTP connection, boolean dispatch)
             {
                 try
                 {
