@@ -20,10 +20,11 @@ package org.eclipse.jetty.fcgi.proxy;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 
-public class FastCGIProxyServer
+public class DrupalFastCGIProxyServer
 {
     public static void main(String[] args) throws Exception
     {
@@ -32,12 +33,27 @@ public class FastCGIProxyServer
         connector.setPort(8080);
         server.addConnector(connector);
 
+        // Drupal seems to only work on the root context,
+        // at least out of the box without additional plugins
+
+        String root = "/home/simon/programs/drupal-7.23";
+
         ServletContextHandler context = new ServletContextHandler(server, "/");
-        ServletHolder servletHolder = new ServletHolder(FastCGIProxyServlet.class);
-        servletHolder.setInitParameter(FastCGIProxyServlet.SCRIPT_ROOT_INIT_PARAM, "/var/www/php-fcgi");
-        servletHolder.setInitParameter("proxyTo", "http://localhost:9000/");
-        servletHolder.setInitParameter("prefix", "/");
-        context.addServlet(servletHolder, "/*");
+        context.setResourceBase(root);
+        context.setWelcomeFiles(new String[]{"index.php"});
+
+        // Serve static resources
+        ServletHolder defaultServlet = new ServletHolder(DefaultServlet.class);
+        defaultServlet.setName("default");
+        context.addServlet(defaultServlet, "/");
+
+        // FastCGI
+        ServletHolder fcgiServlet = new ServletHolder(FastCGIProxyServlet.class);
+        fcgiServlet.setInitParameter(FastCGIProxyServlet.SCRIPT_ROOT_INIT_PARAM, root);
+        fcgiServlet.setInitParameter("proxyTo", "http://localhost:9000");
+        fcgiServlet.setInitParameter("prefix", "/");
+        fcgiServlet.setInitParameter(FastCGIProxyServlet.SCRIPT_PATTERN_INIT_PARAM, "(.+\\.php)");
+        context.addServlet(fcgiServlet, "*.php");
 
         server.start();
     }

@@ -67,8 +67,6 @@ public class HttpClientTransportOverFCGI extends AbstractHttpClientTransport
 
     protected void customize(Request request, HttpFields fastCGIHeaders)
     {
-        String scriptName = fastCGIHeaders.get(FCGI.Headers.SCRIPT_NAME);
-        fastCGIHeaders.put(FCGI.Headers.SCRIPT_FILENAME, scriptRoot + scriptName);
         fastCGIHeaders.put(FCGI.Headers.DOCUMENT_ROOT, scriptRoot);
     }
 }

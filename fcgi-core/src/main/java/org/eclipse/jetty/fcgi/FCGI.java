@@ -112,6 +112,7 @@ public class FCGI
         public static final String CONTENT_LENGTH = "CONTENT_LENGTH";
         public static final String CONTENT_TYPE = "CONTENT_TYPE";
         public static final String DOCUMENT_ROOT = "DOCUMENT_ROOT";
+        public static final String DOCUMENT_URI = "DOCUMENT_URI";
         public static final String GATEWAY_INTERFACE = "GATEWAY_INTERFACE";
         public static final String PATH_INFO = "PATH_INFO";
         public static final String QUERY_STRING = "QUERY_STRING";
