@@ -31,26 +31,28 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Promise;
 
-// TODO: add parameter to tell whether use multiplex destinations or not
 public class HttpClientTransportOverFCGI extends AbstractHttpClientTransport
 {
+    private final boolean multiplexed;
     private final String scriptRoot;
 
     public HttpClientTransportOverFCGI(String scriptRoot)
     {
-        this(Runtime.getRuntime().availableProcessors() / 2 + 1, scriptRoot);
+        this(Runtime.getRuntime().availableProcessors() / 2 + 1, false, scriptRoot);
     }
 
-    public HttpClientTransportOverFCGI(int selectors, String scriptRoot)
+    public HttpClientTransportOverFCGI(int selectors, boolean multiplexed, String scriptRoot)
     {
         super(selectors);
+        this.multiplexed = multiplexed;
         this.scriptRoot = scriptRoot;
     }
 
     @Override
     public HttpDestination newHttpDestination(Origin origin)
     {
-        return new MultiplexHttpDestinationOverFCGI(getHttpClient(), origin);
+        return multiplexed ? new MultiplexHttpDestinationOverFCGI(getHttpClient(), origin)
+                : new HttpDestinationOverFCGI(getHttpClient(), origin);
     }
 
     @Override
