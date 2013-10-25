@@ -29,6 +29,7 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.fcgi.client.http.HttpClientTransportOverFCGI;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.proxy.ProxyServlet;
 
 public class FastCGIProxyServlet extends ProxyServlet.Transparent
@@ -40,6 +41,7 @@ public class FastCGIProxyServlet extends ProxyServlet.Transparent
     private static final String SERVER_NAME_ATTRIBUTE = FastCGIProxyServlet.class.getName() + ".serverName";
     private static final String SERVER_ADDR_ATTRIBUTE = FastCGIProxyServlet.class.getName() + ".serverAddr";
     private static final String SERVER_PORT_ATTRIBUTE = FastCGIProxyServlet.class.getName() + ".serverPort";
+    private static final String SCHEME_ATTRIBUTE = FastCGIProxyServlet.class.getName() + ".scheme";
 
     private Pattern scriptPattern;
 
@@ -72,6 +74,7 @@ public class FastCGIProxyServlet extends ProxyServlet.Transparent
         proxyRequest.attribute(SERVER_NAME_ATTRIBUTE, request.getServerName());
         proxyRequest.attribute(SERVER_ADDR_ATTRIBUTE, request.getLocalAddr());
         proxyRequest.attribute(SERVER_PORT_ATTRIBUTE, String.valueOf(request.getLocalPort()));
+        proxyRequest.attribute(SCHEME_ATTRIBUTE, request.getScheme());
         super.customizeProxyRequest(proxyRequest, request);
     }
 
@@ -82,6 +85,8 @@ public class FastCGIProxyServlet extends ProxyServlet.Transparent
         fastCGIHeaders.put(FCGI.Headers.SERVER_NAME, (String)proxyRequest.getAttributes().get(SERVER_NAME_ATTRIBUTE));
         fastCGIHeaders.put(FCGI.Headers.SERVER_ADDR, (String)proxyRequest.getAttributes().get(SERVER_ADDR_ATTRIBUTE));
         fastCGIHeaders.put(FCGI.Headers.SERVER_PORT, (String)proxyRequest.getAttributes().get(SERVER_PORT_ATTRIBUTE));
+        if (HttpScheme.HTTPS.is((String)proxyRequest.getAttributes().get(SCHEME_ATTRIBUTE)))
+            fastCGIHeaders.put(FCGI.Headers.HTTPS, "on");
         String root = fastCGIHeaders.get(FCGI.Headers.DOCUMENT_ROOT);
         String path = proxyRequest.getURI().getRawPath();
         Matcher matcher = scriptPattern.matcher(path);

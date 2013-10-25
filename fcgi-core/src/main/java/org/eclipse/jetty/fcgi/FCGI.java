@@ -114,6 +114,7 @@ public class FCGI
         public static final String DOCUMENT_ROOT = "DOCUMENT_ROOT";
         public static final String DOCUMENT_URI = "DOCUMENT_URI";
         public static final String GATEWAY_INTERFACE = "GATEWAY_INTERFACE";
+        public static final String HTTPS = "HTTPS";
         public static final String PATH_INFO = "PATH_INFO";
         public static final String QUERY_STRING = "QUERY_STRING";
         public static final String REMOTE_ADDR = "REMOTE_ADDR";
