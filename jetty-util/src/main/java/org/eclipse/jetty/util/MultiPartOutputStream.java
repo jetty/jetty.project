@@ -35,12 +35,12 @@ public class MultiPartOutputStream extends FilterOutputStream
     private static final byte[] __CRLF={'\r','\n'};
     private static final byte[] __DASHDASH={'-','-'};
     
-    public static String MULTIPART_MIXED="multipart/mixed";
-    public static String MULTIPART_X_MIXED_REPLACE="multipart/x-mixed-replace";
+    public static final String MULTIPART_MIXED="multipart/mixed";
+    public static final String MULTIPART_X_MIXED_REPLACE="multipart/x-mixed-replace";
     
     /* ------------------------------------------------------------ */
-    private String boundary;
-    private byte[] boundaryBytes;
+    private final String boundary;
+    private final byte[] boundaryBytes;
 
     /* ------------------------------------------------------------ */
     private boolean inPart=false;    
@@ -54,8 +54,15 @@ public class MultiPartOutputStream extends FilterOutputStream
         boundary = "jetty"+System.identityHashCode(this)+
         Long.toString(System.currentTimeMillis(),36);
         boundaryBytes=boundary.getBytes(StringUtil.__ISO_8859_1);
+    }
 
-        inPart=false;
+    public MultiPartOutputStream(OutputStream out, String boundary)
+         throws IOException
+    {
+        super(out);
+
+        this.boundary = boundary;
+        boundaryBytes=boundary.getBytes(StringUtil.__ISO_8859_1);
     }
 
     /* ------------------------------------------------------------ */
@@ -66,14 +73,20 @@ public class MultiPartOutputStream extends FilterOutputStream
     public void close()
          throws IOException
     {
-        if (inPart)
+        try
+        {
+            if (inPart)
+                out.write(__CRLF);
+            out.write(__DASHDASH);
+            out.write(boundaryBytes);
+            out.write(__DASHDASH);
             out.write(__CRLF);
-        out.write(__DASHDASH);
-        out.write(boundaryBytes);
-        out.write(__DASHDASH);
-        out.write(__CRLF);
-        inPart=false;
-        super.close();
+            inPart=false;
+        }
+        finally
+        {
+            super.close();
+        }
     }
     
     /* ------------------------------------------------------------ */
