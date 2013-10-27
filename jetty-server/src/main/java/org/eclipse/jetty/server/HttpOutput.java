@@ -441,12 +441,14 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
     /* ------------------------------------------------------------ */
     /** Blocking send of content.
-     * @param content The content to send
+     * @param content The content to send.
      * @throws IOException
      */
     public void sendContent(ByteBuffer content) throws IOException
     {
         final BlockingCallback callback =_channel.getWriteBlockingCallback();
+        if (content.hasArray()&&content.limit()<content.capacity())
+            content=content.asReadOnlyBuffer();
         _channel.write(content,true,callback);
         callback.block();
     }
@@ -488,7 +490,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         callback.block();
     }
 
-
     /* ------------------------------------------------------------ */
     /** Asynchronous send of content.
      * @param content The content to send
@@ -496,6 +497,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
      */
     public void sendContent(ByteBuffer content, final Callback callback)
     {
+        if (content.hasArray()&&content.limit()<content.capacity())
+            content=content.asReadOnlyBuffer();
         _channel.write(content,true,new Callback()
         {
             @Override
