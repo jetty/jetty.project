@@ -40,7 +40,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.hamcrest.Matchers;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -409,7 +408,6 @@ public class HttpOutputTest
         boolean _async;
         ByteBuffer _buffer;
         byte[] _bytes;
-        ByteBuffer _content;
         InputStream _contentInputStream;
         ReadableByteChannel _contentChannel;
         ByteBuffer _content;
@@ -422,16 +420,6 @@ public class HttpOutputTest
             
             final HttpOutput out = (HttpOutput) response.getOutputStream();
             
-            if (_content!=null)
-            {
-                response.setContentLength(_content.remaining());
-                if (_content.hasArray())
-                    out.write(_content.array(),_content.arrayOffset()+_content.position(),_content.remaining());
-                else
-                    out.sendContent(_content);
-                _content=null;
-                return;
-            }
             
             if (_contentInputStream!=null)
             {
@@ -545,10 +533,13 @@ public class HttpOutputTest
                 return;
             }
             
-            
             if (_content!=null)
             {
-                out.sendContent(_content);
+                response.setContentLength(_content.remaining());
+                if (_content.hasArray())
+                    out.write(_content.array(),_content.arrayOffset()+_content.position(),_content.remaining());
+                else
+                    out.sendContent(_content);
                 _content=null;
                 return;
             }
