@@ -19,6 +19,7 @@
 package org.eclipse.jetty.server;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 import java.io.FilterInputStream;
@@ -26,6 +27,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.util.Arrays;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -35,6 +37,7 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.resource.Resource;
 import org.hamcrest.Matchers;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -76,6 +79,26 @@ public class HttpOutputTest
     {
         String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response,containsString("HTTP/1.1 200 OK"));
+    }
+    
+    @Test
+    public void testSendArray() throws Exception
+    {
+        byte[] buffer=new byte[16*1024];
+        Arrays.fill(buffer,0,4*1024,(byte)0x99);
+        Arrays.fill(buffer,4*1024,12*1024,(byte)0x58);
+        Arrays.fill(buffer,12*1024,16*1024,(byte)0x66);
+        _handler._content=ByteBuffer.wrap(buffer);
+        _handler._content.limit(12*1024);
+        _handler._content.position(4*1024);
+        String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
+        assertThat(response,containsString("HTTP/1.1 200 OK"));
+        assertThat(response,containsString("\r\nXXXXXXXXXXXXXXXXXXXXXXXXXXX"));
+        
+        for (int i=0;i<4*1024;i++)
+            assertEquals("i="+i,(byte)0x99,buffer[i]);
+        for (int i=12*1024;i<16*1024;i++)
+            assertEquals("i="+i,(byte)0x66,buffer[i]);
     }
     
     @Test
@@ -195,6 +218,7 @@ public class HttpOutputTest
     {
         InputStream _contentInputStream;
         ReadableByteChannel _contentChannel;
+        ByteBuffer _content;
         
         @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -203,6 +227,17 @@ public class HttpOutputTest
             response.setContentType("text/plain");
             
             HttpOutput out = (HttpOutput) response.getOutputStream();
+            
+            if (_content!=null)
+            {
+                response.setContentLength(_content.remaining());
+                if (_content.hasArray())
+                    out.write(_content.array(),_content.arrayOffset()+_content.position(),_content.remaining());
+                else
+                    out.sendContent(_content);
+                _content=null;
+                return;
+            }
             
             if (_contentInputStream!=null)
             {
