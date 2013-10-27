@@ -302,7 +302,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
         // write any remaining content in the buffer directly
         if (len>0)
-            _channel.write(ByteBuffer.wrap(b, off, len), complete);
+            // pass as readonly to avoid space stealing optimisation in HttpConnection 
+            _channel.write(ByteBuffer.wrap(b, off, len).asReadOnlyBuffer(), complete);
         else if (complete)
             _channel.write(BufferUtil.EMPTY_BUFFER,complete);
 
