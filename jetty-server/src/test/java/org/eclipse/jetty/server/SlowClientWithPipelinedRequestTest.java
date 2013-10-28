@@ -82,9 +82,7 @@ public class SlowClientWithPipelinedRequestTest
         }
     }
 
-    // TODO merged from jetty-8 - not working???
     @Test
-    @Ignore
     public void testSlowClientWithPipelinedRequest() throws Exception
     {
         final int contentLength = 512 * 1024;
