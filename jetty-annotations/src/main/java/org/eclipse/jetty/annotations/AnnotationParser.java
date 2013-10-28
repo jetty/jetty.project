@@ -692,7 +692,6 @@ public class AnnotationParser
                 parseDir(handlers, res, resolver);
             else
             {
-System.err.println("TRYING TO SCAN "+res);
                 //we've already verified the directories, so just verify the class file name
                 File file = res.getFile();
                 if (isValidClassFileName((file==null?null:file.getName())))
