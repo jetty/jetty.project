@@ -60,7 +60,7 @@ public class HttpChannelOverFCGI extends HttpChannel<ByteBuffer>
     {
         if (FCGI.Headers.REQUEST_METHOD.equalsIgnoreCase(field.getName()))
             method = field.getValue();
-        else if (FCGI.Headers.REQUEST_URI.equalsIgnoreCase(field.getName()))
+        else if (FCGI.Headers.DOCUMENT_URI.equalsIgnoreCase(field.getName()))
             path = field.getValue();
         else if (FCGI.Headers.QUERY_STRING.equalsIgnoreCase(field.getName()))
             query = field.getValue();

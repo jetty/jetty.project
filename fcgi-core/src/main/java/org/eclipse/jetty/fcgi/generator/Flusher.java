@@ -83,8 +83,8 @@ public class Flusher
                 result = queue.poll();
             }
             active = result;
-            List<ByteBuffer> buffers = result.getByteBuffers();
-            endPoint.write(this, buffers.toArray(new ByteBuffer[buffers.size()]));
+            ByteBuffer[] buffers = result.getByteBuffers();
+            endPoint.write(this, buffers);
             return false;
         }
 
@@ -133,7 +133,7 @@ public class Flusher
     {
         private ShutdownResult()
         {
-            super(null, new Adapter());
+            super(null, null, null, false);
         }
 
         @Override

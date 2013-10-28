@@ -19,8 +19,6 @@
 package org.eclipse.jetty.fcgi.generator;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -38,18 +36,18 @@ public class Generator
         this.byteBufferPool = byteBufferPool;
     }
 
-    protected Result generateContent(int id, ByteBuffer content, boolean lastContent, Callback callback, FCGI.FrameType frameType)
+    protected Result generateContent(int id, ByteBuffer content, boolean recycle, boolean lastContent, Callback callback, FCGI.FrameType frameType)
     {
         id &= 0xFF_FF;
 
         int remaining = content == null ? 0 : content.remaining();
-        Result result = new Result(byteBufferPool, callback);
+        Result result = new Result(byteBufferPool, callback, null, false);
 
         while (remaining > 0 || lastContent)
         {
             ByteBuffer buffer = byteBufferPool.acquire(8, false);
             BufferUtil.clearToFill(buffer);
-            result.add(buffer, true);
+            result = result.append(buffer, true);
 
             // Generate the frame header
             buffer.put((byte)0x01);
@@ -67,7 +65,7 @@ public class Generator
             int limit = content.limit();
             content.limit(content.position() + length);
             ByteBuffer slice = content.slice();
-            result.add(slice, false);
+            result = result.append(slice, recycle);
             content.position(content.limit());
             content.limit(limit);
             remaining -= length;
@@ -80,60 +78,68 @@ public class Generator
     {
         private final ByteBufferPool byteBufferPool;
         private final Callback callback;
-        private final List<ByteBuffer> buffers;
-        private final List<Boolean> recycles;
+        private final ByteBuffer buffer;
+        private final boolean recycle;
+        private final Result previous;
 
-        public Result(ByteBufferPool byteBufferPool, Callback callback)
+        public Result(ByteBufferPool byteBufferPool, Callback callback, ByteBuffer buffer, boolean recycle)
         {
-            this(byteBufferPool, callback, new ArrayList<ByteBuffer>(4), new ArrayList<Boolean>(4));
+            this(byteBufferPool, callback, buffer, recycle, null);
         }
 
-        public Result(Result that)
-        {
-            this(that.byteBufferPool, that.callback, that.buffers, that.recycles);
-        }
-        
-        private Result(ByteBufferPool byteBufferPool, Callback callback, List<ByteBuffer> buffers, List<Boolean> recycles)
+        private Result(ByteBufferPool byteBufferPool, Callback callback, ByteBuffer buffer, boolean recycle, Result previous)
         {
             this.byteBufferPool = byteBufferPool;
             this.callback = callback;
-            this.buffers = buffers;
-            this.recycles = recycles;
+            this.buffer = buffer;
+            this.recycle = recycle;
+            this.previous = previous;
         }
 
-        public void add(ByteBuffer buffer, boolean recycle)
+        public Result append(ByteBuffer buffer, boolean recycle)
         {
-            buffers.add(buffer);
-            recycles.add(recycle);
+            return new Result(byteBufferPool, null, buffer, recycle, this);
         }
 
-        public List<ByteBuffer> getByteBuffers()
+        public ByteBuffer[] getByteBuffers()
         {
-            return buffers;
+            return getByteBuffers(0);
+        }
+
+        private ByteBuffer[] getByteBuffers(int length)
+        {
+            int newLength = length + (buffer == null ? 0 : 1);
+            ByteBuffer[] result;
+            result = previous != null ? previous.getByteBuffers(newLength) : new ByteBuffer[newLength];
+            if (buffer != null)
+                result[result.length - newLength] = buffer;
+            return result;
         }
 
         @Override
         public void succeeded()
         {
             recycle();
-            callback.succeeded();
+            if (previous != null)
+                previous.succeeded();
+            if (callback != null)
+                callback.succeeded();
         }
 
         @Override
         public void failed(Throwable x)
         {
             recycle();
-            callback.failed(x);
+            if (previous != null)
+                previous.failed(x);
+            if (callback != null)
+                callback.failed(x);
         }
 
         protected void recycle()
         {
-            for (int i = 0; i < buffers.size(); ++i)
-            {
-                ByteBuffer buffer = buffers.get(i);
-                if (recycles.get(i))
-                    byteBufferPool.release(buffer);
-            }
+            if (recycle)
+                byteBufferPool.release(buffer);
         }
     }
 }

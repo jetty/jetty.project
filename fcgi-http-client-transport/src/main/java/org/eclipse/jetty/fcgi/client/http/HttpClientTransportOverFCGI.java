@@ -38,7 +38,7 @@ public class HttpClientTransportOverFCGI extends AbstractHttpClientTransport
 
     public HttpClientTransportOverFCGI(String scriptRoot)
     {
-        this(Runtime.getRuntime().availableProcessors() / 2 + 1, false, scriptRoot);
+        this(Math.max(1, Runtime.getRuntime().availableProcessors() / 2), false, scriptRoot);
     }
 
     public HttpClientTransportOverFCGI(int selectors, boolean multiplexed, String scriptRoot)

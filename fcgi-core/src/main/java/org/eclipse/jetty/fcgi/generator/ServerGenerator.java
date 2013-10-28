@@ -85,20 +85,12 @@ public class ServerGenerator extends Generator
 
         buffer.flip();
 
-        return new Result(generateContent(request, buffer, false, callback, FCGI.FrameType.STDOUT))
-        {
-            @Override
-            protected void recycle()
-            {
-                super.recycle();
-                byteBufferPool.release(buffer);
-            }
-        };
+        return generateContent(request, buffer, true, false, callback, FCGI.FrameType.STDOUT);
     }
 
     public Result generateResponseContent(int request, ByteBuffer content, boolean lastContent, Callback callback)
     {
-        Result result = generateContent(request, content, lastContent, callback, FCGI.FrameType.STDOUT);
+        Result result = generateContent(request, content, false, lastContent, callback, FCGI.FrameType.STDOUT);
         if (lastContent)
         {
             // Generate the FCGI_END_REQUEST
@@ -109,7 +101,7 @@ public class ServerGenerator extends Generator
             endRequestBuffer.putInt(0x00_08_00_00);
             endRequestBuffer.putLong(0x00L);
             endRequestBuffer.flip();
-            result.add(endRequestBuffer, true);
+            result = result.append(endRequestBuffer, true);
         }
         return result;
     }

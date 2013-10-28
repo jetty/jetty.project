@@ -77,11 +77,10 @@ public class ClientGenerator extends Generator
         int maxCapacity = 4 + 4 + 2 * MAX_PARAM_LENGTH;
 
         // One FCGI_BEGIN_REQUEST + N FCGI_PARAMS + one last FCGI_PARAMS
-        Result result = new Result(byteBufferPool, callback);
 
         ByteBuffer beginRequestBuffer = byteBufferPool.acquire(16, false);
         BufferUtil.clearToFill(beginRequestBuffer);
-        result.add(beginRequestBuffer, true);
+        Result result = new Result(byteBufferPool, callback, beginRequestBuffer, true);
 
         // Generate the FCGI_BEGIN_REQUEST frame
         beginRequestBuffer.putInt(0x01_01_00_00 + request);
@@ -95,7 +94,7 @@ public class ClientGenerator extends Generator
             int capacity = 8 + Math.min(maxCapacity, fieldsLength);
             ByteBuffer buffer = byteBufferPool.acquire(capacity, true);
             BufferUtil.clearToFill(buffer);
-            result.add(buffer, true);
+            result = result.append(buffer, true);
 
             // Generate the FCGI_PARAMS frame
             buffer.putInt(0x01_04_00_00 + request);
@@ -133,7 +132,7 @@ public class ClientGenerator extends Generator
 
         ByteBuffer lastParamsBuffer = byteBufferPool.acquire(8, false);
         BufferUtil.clearToFill(lastParamsBuffer);
-        result.add(lastParamsBuffer, true);
+        result = result.append(lastParamsBuffer, true);
 
         // Generate the last FCGI_PARAMS frame
         lastParamsBuffer.putInt(0x01_04_00_00 + request);
@@ -160,6 +159,6 @@ public class ClientGenerator extends Generator
 
     public Result generateRequestContent(int request, ByteBuffer content, boolean lastContent, Callback callback)
     {
-        return generateContent(request, content, lastContent, callback, FCGI.FrameType.STDIN);
+        return generateContent(request, content, false, lastContent, callback, FCGI.FrameType.STDIN);
     }
 }
