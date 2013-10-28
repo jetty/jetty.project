@@ -207,6 +207,9 @@ public class Starter
         if (str != null)
             webApp.setTempDirectory(new File(str.trim()));
 
+        str = (String)props.getProperty("tmp.dir.persist");
+        if (str != null)
+            webApp.setPersistTempDirectory(Boolean.valueOf(str));
 
         // - the base directory
         str = (String)props.getProperty("base.dir");
@@ -219,7 +222,7 @@ public class Starter
         // - put virtual webapp base resource first on resource path or not
         str = (String)props.getProperty("base.first");
         if (str != null && !"".equals(str.trim()))
-            webApp.setBaseAppFirst(Boolean.getBoolean(str));
+            webApp.setBaseAppFirst(Boolean.valueOf(str));
         
         
         //For overlays

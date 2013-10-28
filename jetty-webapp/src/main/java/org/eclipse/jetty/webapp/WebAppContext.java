@@ -154,6 +154,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     private String[] _contextWhiteList = null;
 
     private File _tmpDir;
+    private boolean _persistTmpDir = false;
+ 
     private String _war;
     private String _extraClasspath;
     private Throwable _unavailableException;
@@ -1222,7 +1224,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             LOG.warn(e);
         }
         _tmpDir=dir;
-        setAttribute(TEMPDIR,_tmpDir);
+        setAttribute(TEMPDIR,_tmpDir);            
     }
 
     /* ------------------------------------------------------------ */
@@ -1232,6 +1234,27 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         return _tmpDir;
     }
 
+    /**
+     * If true the temp directory for this 
+     * webapp will be kept when the webapp stops. Otherwise,
+     * it will be deleted.
+     * 
+     * @param delete
+     */
+    public void setPersistTempDirectory(boolean persist)
+    {
+        _persistTmpDir = persist;
+    }
+    
+    /**
+     * @return
+     */
+    public boolean isPersistTempDirectory()
+    {
+        return _persistTmpDir;
+    }
+    
+    
     /* ------------------------------------------------------------ */
     /**
      * @param war The war to set as a file name or URL
@@ -1480,5 +1503,4 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     {
         return _metadata;
     }
-
 }

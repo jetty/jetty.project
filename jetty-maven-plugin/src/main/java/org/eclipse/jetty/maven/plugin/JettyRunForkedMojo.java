@@ -132,11 +132,20 @@ public class JettyRunForkedMojo extends AbstractMojo
      * The temporary directory to use for the webapp.
      * Defaults to target/tmp
      *
-     * @parameter expression="${project.build.directory}/tmp"
+     * @parameter alias="tmpDirectory" expression="${project.build.directory}/tmp"
      * @required
      * @readonly
      */
-    protected File tmpDirectory;
+    protected File tempDirectory;
+    
+    
+    
+    /**
+     * Whether temporary directory contents should survive webapp restarts.
+     * 
+     * @parameter default-value="false"
+     */
+    private boolean persistTempDirectory;
 
     
     /**
@@ -418,12 +427,14 @@ public class JettyRunForkedMojo extends AbstractMojo
                 props.put("context.path", contextPath);
 
             //sort out the tmp directory (make it if it doesn't exist)
-            if (tmpDirectory != null)
+            if (tempDirectory != null)
             {
-                if (!tmpDirectory.exists())
-                    tmpDirectory.mkdirs();
-                props.put("tmp.dir", tmpDirectory.getAbsolutePath());
+                if (!tempDirectory.exists())
+                    tempDirectory.mkdirs();
+                props.put("tmp.dir", tempDirectory.getAbsolutePath());
             }
+            
+            props.put("tmp.dir.persist", Boolean.toString(persistTempDirectory));
 
             //sort out base dir of webapp
             if (webAppSourceDirectory == null || !webAppSourceDirectory.exists())

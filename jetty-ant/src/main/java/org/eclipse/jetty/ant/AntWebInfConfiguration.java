@@ -40,12 +40,7 @@ public class AntWebInfConfiguration extends WebInfConfiguration
     
     @Override
     public void preConfigure(final WebAppContext context) throws Exception
-    {
-        // Look for a work directory
-        File work = findWorkDirectory(context);
-        if (work != null)
-            makeTempDirectory(work, context, false);
-        
+    {        
         //Make a temp directory for the webapp if one is not already set
         resolveTempDirectory(context);
         
