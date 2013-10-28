@@ -520,7 +520,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 }
                 selectedKeys.clear();
             }
-            catch (Exception x)
+            catch (Throwable x)
             {
                 if (isRunning())
                     LOG.warn(x);
