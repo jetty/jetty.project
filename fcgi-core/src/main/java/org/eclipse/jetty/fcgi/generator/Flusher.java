@@ -79,8 +79,14 @@ public class Flusher
                     flushing = false;
                     return false;
                 }
-                // TODO: here is where we want to gather more results to perform gathered writes
                 result = queue.poll();
+                // Attempt to gather another result.
+                // Most often there is another result in the
+                // queue so this is a real optimization because
+                // it sends both results in just one TCP packet.
+                Generator.Result other = queue.poll();
+                if (other != null)
+                    result = result.join(other);
             }
             active = result;
             ByteBuffer[] buffers = result.getByteBuffers();
@@ -133,7 +139,7 @@ public class Flusher
     {
         private ShutdownResult()
         {
-            super(null, null, null, false);
+            super(null, null);
         }
 
         @Override

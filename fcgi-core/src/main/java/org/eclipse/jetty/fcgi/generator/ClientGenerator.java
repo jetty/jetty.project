@@ -80,7 +80,8 @@ public class ClientGenerator extends Generator
 
         ByteBuffer beginRequestBuffer = byteBufferPool.acquire(16, false);
         BufferUtil.clearToFill(beginRequestBuffer);
-        Result result = new Result(byteBufferPool, callback, beginRequestBuffer, true);
+        Result result = new Result(byteBufferPool, callback);
+        result = result.append(beginRequestBuffer, true);
 
         // Generate the FCGI_BEGIN_REQUEST frame
         beginRequestBuffer.putInt(0x01_01_00_00 + request);
