@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.client.util;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
@@ -35,14 +36,18 @@ import org.eclipse.jetty.util.log.Logger;
  * Invocations to the {@link #iterator()} method after the first will return an "empty" iterator
  * because the stream has been consumed on the first invocation.
  * <p />
- * It is possible to specify, at the constructor, a buffer size used to read content from the
- * stream, by default 4096 bytes.
- * <p />
  * However, it is possible for subclasses to override {@link #onRead(byte[], int, int)} to copy
  * the content read from the stream to another location (for example a file), and be able to
  * support multiple invocations of {@link #iterator()}, returning the iterator provided by this
  * class on the first invocation, and an iterator on the bytes copied to the other location
  * for subsequent invocations.
+ * <p />
+ * It is possible to specify, at the constructor, a buffer size used to read content from the
+ * stream, by default 4096 bytes.
+ * <p />
+ * The {@link InputStream} passed to the constructor is by default closed when is it fully
+ * consumed (or when an exception is thrown while reading it), unless otherwise specified
+ * to the {@link #InputStreamContentProvider(java.io.InputStream, int, boolean) constructor}.
  */
 public class InputStreamContentProvider implements ContentProvider
 {
@@ -50,6 +55,7 @@ public class InputStreamContentProvider implements ContentProvider
 
     private final InputStream stream;
     private final int bufferSize;
+    private final boolean autoClose;
 
     public InputStreamContentProvider(InputStream stream)
     {
@@ -58,8 +64,14 @@ public class InputStreamContentProvider implements ContentProvider
 
     public InputStreamContentProvider(InputStream stream, int bufferSize)
     {
+        this(stream, bufferSize, true);
+    }
+
+    public InputStreamContentProvider(InputStream stream, int bufferSize, boolean autoClose)
+    {
         this.stream = stream;
         this.bufferSize = bufferSize;
+        this.autoClose = autoClose;
     }
 
     @Override
@@ -136,6 +148,7 @@ public class InputStreamContentProvider implements ContentProvider
                 else if (read < 0)
                 {
                     hasNext = Boolean.FALSE;
+                    close();
                     return false;
                 }
                 else
@@ -154,6 +167,7 @@ public class InputStreamContentProvider implements ContentProvider
                     // Signal we have more content to cause a call to
                     // next() which will throw NoSuchElementException.
                     hasNext = Boolean.TRUE;
+                    close();
                     return true;
                 }
                 throw new IllegalStateException();
@@ -177,6 +191,21 @@ public class InputStreamContentProvider implements ContentProvider
         public void remove()
         {
             throw new UnsupportedOperationException();
+        }
+
+        private void close()
+        {
+            if (autoClose)
+            {
+                try
+                {
+                    stream.close();
+                }
+                catch (IOException x)
+                {
+                    LOG.ignore(x);
+                }
+            }
         }
     }
 }
