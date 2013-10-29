@@ -9,7 +9,7 @@
   <name>Fragment1</name>
   
   <ordering>
-    <after>others</after>
+    <after><others/></after>
   </ordering>
 
   <resource-ref>
