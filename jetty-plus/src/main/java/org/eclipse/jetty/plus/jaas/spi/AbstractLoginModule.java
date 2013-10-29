@@ -31,6 +31,7 @@ import javax.security.auth.callback.CallbackHandler;
 import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.callback.UnsupportedCallbackException;
+import javax.security.auth.login.FailedLoginException;
 import javax.security.auth.login.LoginException;
 import javax.security.auth.spi.LoginModule;
 
@@ -201,6 +202,11 @@ public abstract class AbstractLoginModule implements LoginModule
     }
     
     
+    public boolean isIgnored ()
+    {
+        return false;
+    }
+    
     
     public abstract UserInfo getUserInfo (String username) throws Exception;
     
@@ -215,6 +221,9 @@ public abstract class AbstractLoginModule implements LoginModule
     {
         try
         {  
+            if (isIgnored())
+                return false;
+            
             if (callbackHandler == null)
                 throw new LoginException ("No callback handler");
             
@@ -231,20 +240,24 @@ public abstract class AbstractLoginModule implements LoginModule
             if ((webUserName == null) || (webCredential == null))
             {
                 setAuthenticated(false);
-                return isAuthenticated();
+                throw new FailedLoginException();
             }
-            
+
             UserInfo userInfo = getUserInfo(webUserName);
-            
+
             if (userInfo == null)
             {
                 setAuthenticated(false);
-                return isAuthenticated();
+                throw new FailedLoginException();
             }
-            
+
             currentUser = new JAASUserInfo(userInfo);
             setAuthenticated(currentUser.checkCredential(webCredential));
-            return isAuthenticated();
+          
+            if (isAuthenticated())
+                return true;
+            else
+                throw new FailedLoginException();
         }
         catch (IOException e)
         {
@@ -256,7 +269,8 @@ public abstract class AbstractLoginModule implements LoginModule
         }
         catch (Exception e)
         {
-            e.printStackTrace();
+            if (e instanceof LoginException)
+                throw (LoginException)e;
             throw new LoginException (e.toString());
         }
     }
