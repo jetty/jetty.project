@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.servlet;
 
-import org.eclipse.jetty.websocket.api.extensions.Extension;
-
 /**
  * Abstract WebSocket creator interface.
  * <p>
