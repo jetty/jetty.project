@@ -25,8 +25,6 @@ import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
 import java.nio.channels.CancelledKeyException;
-import java.nio.channels.ClosedChannelException;
-import java.nio.channels.ClosedSelectorException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -58,14 +56,10 @@ import org.eclipse.jetty.util.thread.Scheduler;
  */
 public abstract class SelectorManager extends AbstractLifeCycle implements Dumpable
 {
-    protected static final Logger LOG = Log.getLogger(SelectorManager.class);
-    public static final String SUBMIT_KEY_UPDATES="org.eclipse.jetty.io.SelectorManager.submitKeyUpdates";
-    /**
-     * The default connect timeout, in milliseconds
-     */
+    public static final String SUBMIT_KEY_UPDATES = "org.eclipse.jetty.io.SelectorManager.submitKeyUpdates";
     public static final int DEFAULT_CONNECT_TIMEOUT = 15000;
-
-    private final static boolean __submitKeyUpdates=Boolean.valueOf(System.getProperty(SUBMIT_KEY_UPDATES,"FALSE"));
+    protected static final Logger LOG = Log.getLogger(SelectorManager.class);
+    private final static boolean __submitKeyUpdates = Boolean.valueOf(System.getProperty(SUBMIT_KEY_UPDATES, "false"));
     
     private final Executor executor;
     private final Scheduler scheduler;
@@ -233,7 +227,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         {
             connection.onOpen();
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             if (isRunning())
                 LOG.warn("Exception while notifying connection " + connection, x);
@@ -253,9 +247,9 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         {
             connection.onClose();
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
-            LOG.info("Exception while notifying connection " + connection, x);
+            LOG.debug("Exception while notifying connection " + connection, x);
         }
     }
 
@@ -368,11 +362,12 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         public void updateKey(Runnable update)
         {
             if (__submitKeyUpdates)
+            {
                 submit(update);
+            }
             else
             {
-                update.run();
-
+                runChange(update);
                 if (_state.compareAndSet(State.SELECT, State.WAKEUP))
                    wakeup();
             }
@@ -435,8 +430,15 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 
         protected void runChange(Runnable change)
         {
-            LOG.debug("Running change {}", change);
-            change.run();
+            try
+            {
+                LOG.debug("Running change {}", change);
+                change.run();
+            }
+            catch (Throwable x)
+            {
+                LOG.debug("Could not run change " + change, x);
+            }
         }
 
         @Override
@@ -553,7 +555,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 if (attachment instanceof EndPoint)
                     ((EndPoint)attachment).close();
             }
-            catch (Exception x)
+            catch (Throwable x)
             {
                 LOG.warn("Could not process key for channel " + key.channel(), x);
                 if (attachment instanceof EndPoint)
@@ -563,10 +565,10 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 
         private void processConnect(SelectionKey key, Connect connect)
         {
-            key.attach(connect.attachment);
             SocketChannel channel = (SocketChannel)key.channel();
             try
             {
+                key.attach(connect.attachment);
                 boolean connected = finishConnect(channel);
                 if (connected)
                 {
@@ -580,10 +582,9 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                     throw new ConnectException();
                 }
             }
-            catch (Exception x)
+            catch (Throwable x)
             {
                 connect.failed(x);
-                closeNoExceptions(channel);
             }
         }
 
@@ -593,7 +594,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             {
                 closeable.close();
             }
-            catch (IOException x)
+            catch (Throwable x)
             {
                 LOG.ignore(x);
             }
@@ -740,8 +741,9 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                     EndPoint endpoint = createEndPoint(_channel, key);
                     key.attach(endpoint);
                 }
-                catch (IOException x)
+                catch (Throwable x)
                 {
+                    closeNoExceptions(_channel);
                     LOG.debug(x);
                 }
             }
@@ -768,7 +770,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 {
                     channel.register(_selector, SelectionKey.OP_CONNECT, this);
                 }
-                catch (ClosedSelectorException | ClosedChannelException x)
+                catch (Throwable x)
                 {
                     failed(x);
                 }
@@ -779,20 +781,8 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 if (failed.compareAndSet(false, true))
                 {
                     timeout.cancel();
-                    close();
+                    closeNoExceptions(channel);
                     connectionFailed(channel, failure, attachment);
-                }
-            }
-
-            private void close()
-            {
-                try
-                {
-                    channel.close();
-                }
-                catch (IOException x)
-                {
-                    LOG.ignore(x);
                 }
             }
         }
@@ -878,7 +868,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             {
                 try
                 {
-                    endPoint.getConnection().close();
+                    closeNoExceptions(endPoint.getConnection());
                 }
                 finally
                 {
