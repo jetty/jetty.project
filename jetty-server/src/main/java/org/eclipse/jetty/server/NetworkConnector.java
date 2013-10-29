@@ -18,12 +18,13 @@
 
 package org.eclipse.jetty.server;
 
+import java.io.Closeable;
 import java.io.IOException;
 
 /**
  * <p>A {@link Connector} for TCP/IP network connectors</p>
  */
-public interface NetworkConnector extends Connector, AutoCloseable
+public interface NetworkConnector extends Connector, Closeable
 {
     /**
      * <p>Performs the activities needed to open the network communication
