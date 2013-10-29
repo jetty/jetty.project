@@ -843,6 +843,12 @@ public class JDBCSessionManager extends AbstractSessionManager
                 }
                 finally
                 {
+                    if (statement!=null)
+                    {
+                        try { statement.close(); }
+                        catch(Exception e) { LOG.warn(e); }
+                    }
+
                     if (connection!=null)
                     {
                         try { connection.close();}
@@ -920,6 +926,12 @@ public class JDBCSessionManager extends AbstractSessionManager
         }
         finally
         {
+            if (statement!=null)
+            {
+                try { statement.close(); }
+                catch(Exception e) { LOG.warn(e); }
+            }
+
             if (connection!=null)
                 connection.close();
         }
@@ -967,6 +979,12 @@ public class JDBCSessionManager extends AbstractSessionManager
         }
         finally
         {
+            if (statement!=null)
+            {
+                try { statement.close(); }
+                catch(Exception e) { LOG.warn(e); }
+            }
+
             if (connection!=null)
                 connection.close();
         }
@@ -998,6 +1016,12 @@ public class JDBCSessionManager extends AbstractSessionManager
         }
         finally
         {
+            if (statement!=null)
+            {
+                try { statement.close(); }
+                catch(Exception e) { LOG.warn(e); }
+            }
+
             if (connection!=null)
                 connection.close();
         }
@@ -1033,6 +1057,12 @@ public class JDBCSessionManager extends AbstractSessionManager
         }
         finally
         {
+            if (statement!=null)
+            {
+                try { statement.close(); }
+                catch(Exception e) { LOG.warn(e); }
+            }
+
             if (connection!=null)
                 connection.close();
         }
@@ -1064,6 +1094,12 @@ public class JDBCSessionManager extends AbstractSessionManager
         }
         finally
         {
+            if (statement!=null)
+            {
+                try { statement.close(); }
+                catch(Exception e) { LOG.warn(e); }
+            }
+
             if (connection!=null)
                 connection.close();
         }
