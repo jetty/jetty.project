@@ -4,3 +4,7 @@
 
 [lib]
 resources
+
+[files]
+resources/
+
