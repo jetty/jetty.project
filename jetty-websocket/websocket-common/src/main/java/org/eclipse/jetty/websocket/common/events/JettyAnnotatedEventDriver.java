@@ -54,7 +54,7 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
         }
         if (anno.maxBinaryMessageSize() > 0)
         {
-            this.policy.setMaxTextMessageSize(anno.maxBinaryMessageSize());
+            this.policy.setMaxBinaryMessageSize(anno.maxBinaryMessageSize());
         }
         if (anno.inputBufferSize() > 0)
         {
