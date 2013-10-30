@@ -9,8 +9,8 @@
 
     <Arg name="threadpool">
       <New class="org.eclipse.jetty.util.thread.QueuedThreadPool">
-        <Set name="minThreads">16</Set>
-        <Set name="maxThreads">256</Set>
+        <Set name="minThreads"><Property name="java.proxy.threadpool.min" default="16"/></Set>
+        <Set name="maxThreads"><Property name="java.proxy.threadpool.max" default="256"/></Set>
       </New>
     </Arg>
 
@@ -20,7 +20,7 @@
             <Arg name="server"><Ref refid="Proxy" /></Arg>
             <Set name="host"><Property name="jetty.host" /></Set>
             <Set name="port"><Property name="jetty.port" default="8888"/></Set>
-            <Set name="idleTimeout">300000</Set>
+            <Set name="idleTimeout"><Property name="java.proxy.idleTimeout" default="300000"/></Set>
           </New>
       </Arg>
     </Call>
@@ -34,7 +34,7 @@
                   <Arg>/</Arg>
                     <Call name="setInitParameter">
                         <Arg>maxThreads</Arg>
-                        <Arg>128</Arg>
+                        <Arg><Property name="java.proxy.threads.max" default="128"/></Arg>
                     </Call>
                 </Call>
               </New>
@@ -42,7 +42,7 @@
         </New>
     </Set>
 
-    <Set name="stopAtShutdown">true</Set>
-    <Set name="stopTimeout">1000</Set>
+    <Set name="stopAtShutdown"><Property name="java.proxy.stopAtShutdown" default="true"/></Set>
+    <Set name="stopTimeout"><Property name="java.proxy.stopTimeout" default="1000"/></Set>
 
 </Configure>
