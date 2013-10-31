@@ -21,9 +21,12 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
+
 import javax.servlet.DispatcherType;
+import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.continuation.ContinuationThrowable;
@@ -43,6 +46,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersions;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.Parser;
+import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.BufferCache.CachedBuffer;
@@ -52,6 +56,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.UncheckedPrintWriter;
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.nio.NIOConnector;
 import org.eclipse.jetty.server.ssl.SslConnector;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
@@ -492,10 +497,22 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
                     {
                         if (_request._async.isExpired()&&!was_continuation)
                         {
-                            _response.setStatus(500,"Async Timeout");
-                            _request.setAttribute(Dispatcher.ERROR_STATUS_CODE,new Integer(500));
-                            _request.setAttribute(Dispatcher.ERROR_MESSAGE, "Async Timeout");
+                            async_exception = (Throwable)_request.getAttribute(RequestDispatcher.ERROR_EXCEPTION);
+                            _response.setStatus(500,async_exception==null?"Async Timeout":"Async Exception");
+                            _request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE,new Integer(500));
+                            _request.setAttribute(RequestDispatcher.ERROR_MESSAGE, _response.getReason());
                             _request.setDispatcherType(DispatcherType.ERROR);
+                            
+                            ErrorHandler eh = _request._async.getContextHandler().getErrorHandler();
+                            if (eh instanceof ErrorHandler.ErrorPageMapper)
+                            {
+                                String error_page=((ErrorHandler.ErrorPageMapper)eh).getErrorPage((HttpServletRequest)_request._async.getRequest());
+                                if (error_page!=null)
+                                { 
+                                    AsyncContinuation.AsyncEventState state = _request._async.getAsyncEventState();
+                                    state.setPath(error_page);
+                                }
+                            }
                         }
                         else
                             _request.setDispatcherType(DispatcherType.ASYNC);
@@ -536,9 +553,14 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
                     error=true;
                     _request.setHandled(true);
                     _generator.sendError(info==null?400:500, null, null, true);
+                    
                 }
                 finally
                 {
+                    // Complete async requests 
+                    if (error && _request.isAsyncStarted())
+                        _request.getAsyncContext().complete();
+                    
                     was_continuation=_request._async.isContinuation();
                     handling = !_request._async.unhandle() && server.isRunning() && _server!=null;
                 }

@@ -100,21 +100,27 @@ public class WebSocketLoadD08Test
             for (int i = 0; i < clients.length; ++i)
             {
                 clients[i] = new WebSocketClient("localhost", _connector.getLocalPort(), 1000, latch, iterations);
-                clients[i].open();
             }
-
-            //long start = System.nanoTime();
-            for (WebSocketClient client : clients)
-                threadPool.execute(client);
-
-            int parallelism = ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors();
-            long maxTimePerIteration = 5;
-            assertTrue(latch.await(iterations * (count / parallelism + 1) * maxTimePerIteration, TimeUnit.MILLISECONDS));
-            //long end = System.nanoTime();
-            // System.err.println("Elapsed: " + TimeUnit.NANOSECONDS.toMillis(end - start) + " ms");
-
-            for (WebSocketClient client : clients)
-                client.close();
+            
+            try {
+                for(WebSocketClient client: clients) {
+                    client.open();
+                }
+    
+                //long start = System.nanoTime();
+                for (WebSocketClient client : clients)
+                    threadPool.execute(client);
+    
+                int parallelism = ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors();
+                long maxTimePerIteration = 5;
+                assertTrue(latch.await(iterations * (count / parallelism + 1) * maxTimePerIteration, TimeUnit.MILLISECONDS));
+                //long end = System.nanoTime();
+                // System.err.println("Elapsed: " + TimeUnit.NANOSECONDS.toMillis(end - start) + " ms");
+            } finally {
+                for (WebSocketClient client : clients) {
+                    client.close();
+                }
+            }
         }
         finally
         {
@@ -224,7 +230,7 @@ public class WebSocketLoadD08Test
                     //System.err.println("-> "+message);
                     
                     _response=null;
-                    while(_response==null)
+                    while(_response==null) 
                         _parser.parseNext();
                     //System.err.println("<- "+_response);
                     Assert.assertEquals(message,_response.toString());

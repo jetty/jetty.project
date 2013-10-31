@@ -38,8 +38,10 @@ import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
 import org.junit.Assume;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore("Not functional anymore")
 public class SSLExternalServerTest extends AbstractHTTPSPDYTest
 {
     @Override

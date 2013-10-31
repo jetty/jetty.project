@@ -21,6 +21,7 @@ package org.eclipse.jetty.server;
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
+import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletResponseWrapper;
 import javax.servlet.ServletException;
 
@@ -513,7 +514,9 @@ public class AsyncContinuation implements AsyncContext, Continuation
                 }
                 catch(Exception e)
                 {
-                    LOG.warn(e);
+                    LOG.debug(e);
+                    _connection.getRequest().setAttribute(RequestDispatcher.ERROR_EXCEPTION,e);
+                    break;
                 }
             }
         }
@@ -839,14 +842,14 @@ public class AsyncContinuation implements AsyncContext, Continuation
     public void dispatch(ServletContext context, String path)
     {
         _event._dispatchContext=context;
-        _event._pathInContext=path;
+        _event.setPath(path);
         dispatch();
     }
 
     /* ------------------------------------------------------------ */
     public void dispatch(String path)
     {
-        _event._pathInContext=path;
+        _event.setPath(path);
         dispatch();
     }
 
@@ -1115,6 +1118,11 @@ public class AsyncContinuation implements AsyncContext, Continuation
         public ServletContext getServletContext()
         {
             return _dispatchContext==null?_suspendedContext:_dispatchContext;
+        }
+        
+        public void setPath(String path)
+        {
+            _pathInContext=path;
         }
         
         /* ------------------------------------------------------------ */

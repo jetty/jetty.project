@@ -160,7 +160,6 @@ public class HttpClient extends AggregateLifeCycle implements HttpBuffers, Attri
     public void send(HttpExchange exchange) throws IOException
     {
         boolean ssl = HttpSchemes.HTTPS_BUFFER.equalsIgnoreCase(exchange.getScheme());
-        exchange.setStatus(HttpExchange.STATUS_WAITING_FOR_CONNECTION);
         HttpDestination destination = getDestination(exchange.getAddress(), ssl);
         destination.send(exchange);
     }
@@ -238,13 +237,19 @@ public class HttpClient extends AggregateLifeCycle implements HttpBuffers, Attri
     /* ------------------------------------------------------------------------------- */
     public HttpDestination getDestination(Address remote, boolean ssl) throws IOException
     {
+        return getDestination(remote, ssl, getSslContextFactory());
+    }
+
+    /* ------------------------------------------------------------------------------- */
+    public HttpDestination getDestination(Address remote, boolean ssl, SslContextFactory sslContextFactory) throws IOException
+    {
         if (remote == null)
             throw new UnknownHostException("Remote socket address cannot be null.");
 
         HttpDestination destination = _destinations.get(remote);
         if (destination == null)
         {
-            destination = new HttpDestination(this, remote, ssl);
+            destination = new HttpDestination(this, remote, ssl, sslContextFactory);
             if (_proxy != null && (_noProxy == null || !_noProxy.contains(remote.getHost())))
             {
                 destination.setProxy(_proxy);

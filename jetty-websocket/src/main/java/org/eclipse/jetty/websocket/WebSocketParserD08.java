@@ -39,7 +39,7 @@ public class WebSocketParserD08 implements WebSocketParser
 
     public enum State {
 
-        START(0), OPCODE(1), LENGTH_7(1), LENGTH_16(2), LENGTH_63(8), MASK(4), PAYLOAD(0), DATA(0), SKIP(1);
+        START(0), OPCODE(1), LENGTH_7(1), LENGTH_16(2), LENGTH_63(8), MASK(4), PAYLOAD(0), DATA(0), SKIP(1), SEEK_EOF(1);
 
         int _needs;
 
@@ -68,7 +68,7 @@ public class WebSocketParserD08 implements WebSocketParser
     private final byte[] _mask = new byte[4];
     private int _m;
     private boolean _skip;
-    private boolean _fakeFragments=true;
+    private boolean _fragmentFrames=true;
 
     /* ------------------------------------------------------------ */
     /**
@@ -94,7 +94,7 @@ public class WebSocketParserD08 implements WebSocketParser
      */
     public boolean isFakeFragments()
     {
-        return _fakeFragments;
+        return _fragmentFrames;
     }
 
     /* ------------------------------------------------------------ */
@@ -103,7 +103,7 @@ public class WebSocketParserD08 implements WebSocketParser
      */
     public void setFakeFragments(boolean fakeFragments)
     {
-        _fakeFragments = fakeFragments;
+        _fragmentFrames = fakeFragments;
     }
 
     /* ------------------------------------------------------------ */
@@ -130,11 +130,12 @@ public class WebSocketParserD08 implements WebSocketParser
     {
         if (_buffer==null)
             _buffer=_buffers.getBuffer();
-        int total_filled=0;
-        int events=0;
+
+        boolean progress=false;
+        int filled=-1;
 
         // Loop until a datagram call back or can't fill anymore
-        while(true)
+        while(!progress && (!_endp.isInputShutdown()||_buffer.length()>0))
         {
             int available=_buffer.length();
 
@@ -148,7 +149,7 @@ public class WebSocketParserD08 implements WebSocketParser
                 if (_buffer.space() == 0)
                 {
                     // Can we send a fake frame?
-                    if (_fakeFragments && _state==State.DATA)
+                    if (_fragmentFrames && _state==State.DATA)
                     {
                         Buffer data =_buffer.get(4*(available/4));
                         _buffer.compact();
@@ -163,35 +164,38 @@ public class WebSocketParserD08 implements WebSocketParser
                         }
 
                         // System.err.printf("%s %s %s >>\n",TypeUtil.toHexString(_flags),TypeUtil.toHexString(_opcode),data.length());
-                        events++;
                         _bytesNeeded-=data.length();
+                        progress=true;
                         _handler.onFrame((byte)(_flags&(0xff^WebSocketConnectionD08.FLAG_FIN)), _opcode, data);
 
                         _opcode=WebSocketConnectionD08.OP_CONTINUATION;
                     }
 
                     if (_buffer.space() == 0)
-                    throw new IllegalStateException("FULL: "+_state+" "+_bytesNeeded+">"+_buffer.capacity());
+                        throw new IllegalStateException("FULL: "+_state+" "+_bytesNeeded+">"+_buffer.capacity());
                 }
 
                 // catch IOExceptions (probably EOF) and try to parse what we have
                 try
                 {
-                    int filled=_endp.isOpen()?_endp.fill(_buffer):-1;
-                    if (filled<=0)
-                        return (total_filled+events)>0?(total_filled+events):filled;
-                    total_filled+=filled;
+                    filled=_endp.isInputShutdown()?-1:_endp.fill(_buffer);
                     available=_buffer.length();
+                    // System.err.printf(">> filled %d/%d%n",filled,available);
+                    if (filled<=0)
+                        break;
                 }
                 catch(IOException e)
                 {
                     LOG.debug(e);
-                    return (total_filled+events)>0?(total_filled+events):-1;
+                    filled=-1;
+                    break;
                 }
             }
+            // Did we get enough?
+            if (available<(_state==State.SKIP?1:_bytesNeeded))
+                break;
 
             // if we are here, then we have sufficient bytes to process the current state.
-
             // Parse the buffer byte by byte (unless it is STATE_DATA)
             byte b;
             while (_state!=State.DATA && available>=(_state==State.SKIP?1:_bytesNeeded))
@@ -200,7 +204,7 @@ public class WebSocketParserD08 implements WebSocketParser
                 {
                     case START:
                         _skip=false;
-                        _state=State.OPCODE;
+                        _state=_opcode==WebSocketConnectionD08.OP_CLOSE?State.SEEK_EOF:State.OPCODE;
                         _bytesNeeded=_state.getNeeds();
                         continue;
 
@@ -212,9 +216,9 @@ public class WebSocketParserD08 implements WebSocketParser
 
                         if (WebSocketConnectionD08.isControlFrame(_opcode)&&!WebSocketConnectionD08.isLastFrame(_flags))
                         {
-                            events++;
                             LOG.warn("Fragmented Control from "+_endp);
                             _handler.close(WebSocketConnectionD08.CLOSE_PROTOCOL,"Fragmented control");
+                            progress=true;
                             _skip=true;
                         }
 
@@ -252,9 +256,9 @@ public class WebSocketParserD08 implements WebSocketParser
                         _length = _length*0x100 + (0xff&b);
                         if (--_bytesNeeded==0)
                         {
-                            if (_length>_buffer.capacity() && !_fakeFragments)
+                            if (_length>_buffer.capacity() && !_fragmentFrames)
                             {
-                                events++;
+                                progress=true;
                                 _handler.close(WebSocketConnectionD08.CLOSE_BADDATA,"frame size "+_length+">"+_buffer.capacity());
                                 _skip=true;
                             }
@@ -271,9 +275,9 @@ public class WebSocketParserD08 implements WebSocketParser
                         if (--_bytesNeeded==0)
                         {
                             _bytesNeeded=(int)_length;
-                            if (_length>=_buffer.capacity() && !_fakeFragments)
+                            if (_length>=_buffer.capacity() && !_fragmentFrames)
                             {
-                                events++;
+                                progress=true;
                                 _handler.close(WebSocketConnectionD08.CLOSE_BADDATA,"frame size "+_length+">"+_buffer.capacity());
                                 _skip=true;
                             }
@@ -301,12 +305,19 @@ public class WebSocketParserD08 implements WebSocketParser
 
                     case SKIP:
                         int skip=Math.min(available,_bytesNeeded);
+                        progress=true;
                         _buffer.skip(skip);
                         available-=skip;
                         _bytesNeeded-=skip;
                         if (_bytesNeeded==0)
                             _state=State.START;
+                        break;
 
+                    case SEEK_EOF:
+                        progress=true;
+                        _buffer.skip(available);
+                        available=0;
+                        break;
                 }
             }
 
@@ -316,7 +327,7 @@ public class WebSocketParserD08 implements WebSocketParser
                 {
                     _buffer.skip(_bytesNeeded);
                     _state=State.START;
-                    events++;
+                    progress=true;
                     _handler.close(WebSocketConnectionD08.CLOSE_PROTOCOL,"bad mask");
                 }
                 else
@@ -333,15 +344,18 @@ public class WebSocketParserD08 implements WebSocketParser
                     }
 
                     // System.err.printf("%s %s %s >>\n",TypeUtil.toHexString(_flags),TypeUtil.toHexString(_opcode),data.length());
-                    events++;
+
+                    progress=true;
                     _handler.onFrame(_flags, _opcode, data);
                     _bytesNeeded=0;
                     _state=State.START;
                 }
 
-                return total_filled+events;
+                break;
             }
         }
+
+        return progress?1:filled;
     }
 
     /* ------------------------------------------------------------ */
@@ -371,8 +385,10 @@ public class WebSocketParserD08 implements WebSocketParser
     @Override
     public String toString()
     {
-        Buffer buffer=_buffer;
-        return WebSocketParserD08.class.getSimpleName()+"@"+ Integer.toHexString(hashCode())+"|"+_state+"|"+(buffer==null?"<>":buffer.toDetailString());
+        return String.format("%s@%x state=%s buffer=%s",
+                getClass().getSimpleName(),
+                hashCode(),
+                _state,
+                _buffer);
     }
-
 }

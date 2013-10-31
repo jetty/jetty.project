@@ -44,6 +44,7 @@ import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 /**
  * @version $Revision: 879 $ $Date: 2009-09-11 16:13:28 +0200 (Fri, 11 Sep 2009) $
@@ -59,6 +60,7 @@ public class HttpDestination implements Dumpable
     private final HttpClient _client;
     private final Address _address;
     private final boolean _ssl;
+    private final SslContextFactory _sslContextFactory;
     private final ByteArrayBuffer _hostHeader;
     private volatile int _maxConnections;
     private volatile int _maxQueueSize;
@@ -69,11 +71,12 @@ public class HttpDestination implements Dumpable
     private PathMap _authorizations;
     private List<HttpCookie> _cookies;
 
-    HttpDestination(HttpClient client, Address address, boolean ssl)
+    HttpDestination(HttpClient client, Address address, boolean ssl, SslContextFactory sslContextFactory)
     {
         _client = client;
         _address = address;
         _ssl = ssl;
+        _sslContextFactory = sslContextFactory;
         _maxConnections = _client.getMaxConnectionsPerAddress();
         _maxQueueSize = _client.getMaxQueueSizePerAddress();
         String addressString = address.getHost();
@@ -95,6 +98,11 @@ public class HttpDestination implements Dumpable
     public boolean isSecure()
     {
         return _ssl;
+    }
+
+    public SslContextFactory getSslContextFactory()
+    {
+        return _sslContextFactory;
     }
 
     public Buffer getHostHeader()
@@ -468,8 +476,9 @@ public class HttpDestination implements Dumpable
 
     public void send(HttpExchange ex) throws IOException
     {
-        LinkedList<String> listeners = _client.getRegisteredListeners();
+        ex.setStatus(HttpExchange.STATUS_WAITING_FOR_CONNECTION);
 
+        LinkedList<String> listeners = _client.getRegisteredListeners();
         if (listeners != null)
         {
             // Add registered listeners, fail if we can't load them

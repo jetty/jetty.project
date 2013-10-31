@@ -21,7 +21,6 @@ package org.eclipse.jetty.client;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.net.Socket;
-
 import javax.net.SocketFactory;
 
 import org.eclipse.jetty.io.Connection;
@@ -51,8 +50,8 @@ class SocketConnector extends AbstractLifeCycle implements HttpClient.Connector
     public void startConnection(final HttpDestination destination) throws IOException
     {
         Socket socket= destination.isSecure()
-            ?_httpClient.getSslContextFactory().newSslSocket()
-            :SocketFactory.getDefault().createSocket();
+            ? destination.getSslContextFactory().newSslSocket()
+            : SocketFactory.getDefault().createSocket();
 
         socket.setSoTimeout(0);
         socket.setTcpNoDelay(true);
