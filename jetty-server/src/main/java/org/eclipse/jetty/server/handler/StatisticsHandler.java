@@ -19,8 +19,11 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -32,14 +35,16 @@ import org.eclipse.jetty.server.AsyncContextEvent;
 import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
+import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
 
 @ManagedObject("Request Statistics Gathering")
-public class StatisticsHandler extends HandlerWrapper
+public class StatisticsHandler extends HandlerWrapper implements Graceful
 {
     private final AtomicLong _statsStartedAt = new AtomicLong();
 
@@ -59,6 +64,8 @@ public class StatisticsHandler extends HandlerWrapper
     private final AtomicInteger _responses5xx = new AtomicInteger();
     private final AtomicLong _responsesTotalBytes = new AtomicLong();
 
+    private final AtomicReference<FutureCallback> _shutdown=new AtomicReference<>();
+    
     private final AsyncListener _onCompletion = new AsyncListener()
     {
         @Override
@@ -86,14 +93,21 @@ public class StatisticsHandler extends HandlerWrapper
             Request request = state.getBaseRequest();
             final long elapsed = System.currentTimeMillis()-request.getTimeStamp();
 
-            _requestStats.decrement();
+            long d=_requestStats.decrement();
             _requestTimeStats.set(elapsed);
 
             updateResponse(request);
 
             _asyncWaitStats.decrement();
+            
+            // If we have no more dispatches, should we signal shutdown?
+            if (d==0)
+            {
+                FutureCallback shutdown = _shutdown.get();
+                if (shutdown!=null)
+                    shutdown.succeeded();
+            }   
         }
-
     };
 
     /**
@@ -162,9 +176,18 @@ public class StatisticsHandler extends HandlerWrapper
             }
             else if (state.isInitial())
             {
-                _requestStats.decrement();
+                long d=_requestStats.decrement();
                 _requestTimeStats.set(dispatched);
                 updateResponse(request);
+                
+                // If we have no more dispatches, should we signal shutdown?
+                FutureCallback shutdown = _shutdown.get();
+                if (shutdown!=null)
+                {
+                    httpResponse.flushBuffer();
+                    if (d==0)
+                        shutdown.succeeded();
+                }   
             }
             // else onCompletion will handle it.
         }
@@ -205,8 +228,19 @@ public class StatisticsHandler extends HandlerWrapper
     @Override
     protected void doStart() throws Exception
     {
+        _shutdown.set(null);
         super.doStart();
         statsReset();
+    }
+    
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        super.doStop();
+        FutureCallback shutdown = _shutdown.get();
+        if (shutdown!=null && !shutdown.isDone())
+            shutdown.failed(new TimeoutException());
     }
 
     /**
@@ -522,5 +556,16 @@ public class StatisticsHandler extends HandlerWrapper
 
         return sb.toString();
 
+    }
+
+    @Override
+    public Future<Void> shutdown()
+    {
+        FutureCallback shutdown=new FutureCallback(false);
+        _shutdown.compareAndSet(null,shutdown);
+        shutdown=_shutdown.get();
+        if (_dispatchedStats.getCurrent()==0)
+            shutdown.succeeded();
+        return shutdown;
     }
 }

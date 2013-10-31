@@ -137,6 +137,11 @@ public class ProxyServlet extends HttpServlet
         }
     }
 
+    public String getViaHost()
+    {
+        return _viaHost;
+    }
+
     public long getTimeout()
     {
         return _timeout;
@@ -419,11 +424,8 @@ public class ProxyServlet extends HttpServlet
             proxyRequest.header(HttpHeader.HOST, _hostHeader);
 
         // Add proxy headers
-        proxyRequest.header(HttpHeader.VIA, "http/1.1 " + _viaHost);
-        proxyRequest.header(HttpHeader.X_FORWARDED_FOR, request.getRemoteAddr());
-        proxyRequest.header(HttpHeader.X_FORWARDED_PROTO, request.getScheme());
-        proxyRequest.header(HttpHeader.X_FORWARDED_HOST, request.getHeader(HttpHeader.HOST.asString()));
-        proxyRequest.header(HttpHeader.X_FORWARDED_SERVER, request.getLocalName());
+        addViaHeader(proxyRequest);
+        addXForwardedHeaders(proxyRequest, request);
 
         if (hasContent)
         {
@@ -486,6 +488,19 @@ public class ProxyServlet extends HttpServlet
 
         proxyRequest.timeout(getTimeout(), TimeUnit.MILLISECONDS);
         proxyRequest.send(new ProxyResponseListener(request, response));
+    }
+
+    protected Request addViaHeader(Request proxyRequest)
+    {
+        return proxyRequest.header(HttpHeader.VIA, "http/1.1 " + getViaHost());
+    }
+
+    protected void addXForwardedHeaders(Request proxyRequest, HttpServletRequest request)
+    {
+        proxyRequest.header(HttpHeader.X_FORWARDED_FOR, request.getRemoteAddr());
+        proxyRequest.header(HttpHeader.X_FORWARDED_PROTO, request.getScheme());
+        proxyRequest.header(HttpHeader.X_FORWARDED_HOST, request.getHeader(HttpHeader.HOST.asString()));
+        proxyRequest.header(HttpHeader.X_FORWARDED_SERVER, request.getLocalName());
     }
 
     protected void onResponseHeaders(HttpServletRequest request, HttpServletResponse response, Response proxyResponse)

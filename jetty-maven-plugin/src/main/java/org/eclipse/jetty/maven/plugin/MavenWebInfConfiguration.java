@@ -284,9 +284,6 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
     {
         LOG.debug("Unpacking overlay: " + overlay);
         
-        //resolve if not already resolved
-        resolveTempDirectory(context);
-        
         if (overlay.getResource() == null)
             return null; //nothing to unpack
    

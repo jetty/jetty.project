@@ -288,6 +288,9 @@ public class JspcMojo extends AbstractMojo
 
         Thread.currentThread().setContextClassLoader(webAppClassLoader);
   
+        if (jspc == null)
+            jspc = new JspC();
+        
         jspc.setWebXmlFragment(webXmlFragment);
         jspc.setUriroot(webAppSourceDirectory);     
         jspc.setOutputDir(generatedClasses);

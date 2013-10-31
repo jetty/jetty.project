@@ -569,10 +569,10 @@ public class ServletHandler extends ScopedHandler
                     LOG.debug(request.toString());
             }
 
+            request.setAttribute(RequestDispatcher.ERROR_EXCEPTION_TYPE,th.getClass());
+            request.setAttribute(RequestDispatcher.ERROR_EXCEPTION,th);
             if (!response.isCommitted())
             {
-                request.setAttribute(RequestDispatcher.ERROR_EXCEPTION_TYPE,th.getClass());
-                request.setAttribute(RequestDispatcher.ERROR_EXCEPTION,th);
                 if (th instanceof UnavailableException)
                 {
                     UnavailableException ue = (UnavailableException)th;
@@ -586,6 +586,10 @@ public class ServletHandler extends ScopedHandler
             }
             else
                 LOG.debug("Response already committed",th);
+            
+            // Complete async requests 
+            if (request.isAsyncStarted())
+                request.getAsyncContext().complete();
         }
         catch(Error e)
         {
@@ -596,15 +600,16 @@ public class ServletHandler extends ScopedHandler
             LOG.warn("Error for "+request.getRequestURI(),e);
             if(LOG.isDebugEnabled())LOG.debug(request.toString());
 
-            // TODO httpResponse.getHttpConnection().forceClose();
+            request.setAttribute(RequestDispatcher.ERROR_EXCEPTION_TYPE,e.getClass());
+            request.setAttribute(RequestDispatcher.ERROR_EXCEPTION,e);
             if (!response.isCommitted())
-            {
-                request.setAttribute(RequestDispatcher.ERROR_EXCEPTION_TYPE,e.getClass());
-                request.setAttribute(RequestDispatcher.ERROR_EXCEPTION,e);
                 response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            }
             else
                 LOG.debug("Response already committed for handling ",e);
+            
+            // Complete async requests 
+            if (request.isAsyncStarted())
+                request.getAsyncContext().complete();
         }
         finally
         {
