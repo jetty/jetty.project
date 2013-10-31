@@ -360,7 +360,7 @@ public class HttpSender implements AsyncContentProvider.Listener
         if (!commit(request))
             return false;
 
-        if (content != null)
+        if (content != null && content.hasRemaining())
         {
             RequestNotifier notifier = connection.getDestination().getRequestNotifier();
             notifier.notifyContent(request, content);

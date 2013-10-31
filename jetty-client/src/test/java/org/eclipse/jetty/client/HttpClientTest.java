@@ -28,7 +28,9 @@ import java.nio.channels.UnresolvedAddressException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -52,6 +54,7 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -823,5 +826,182 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                     }
                 });
         Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testCustomUserAgent() throws Exception
+    {
+        final String userAgent = "Test/1.0";
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                ArrayList<String> userAgents = Collections.list(request.getHeaders("User-Agent"));
+                Assert.assertEquals(1, userAgents.size());
+                Assert.assertEquals(userAgent, userAgents.get(0));
+            }
+        });
+
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .agent(userAgent)
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+
+        Assert.assertEquals(200, response.getStatus());
+
+        response = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .header(HttpHeader.USER_AGENT, userAgent)
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+
+        Assert.assertEquals(200, response.getStatus());
+    }
+
+    @Test
+    public void testRequestListenerForMultipleEventsIsInvokedOncePerEvent() throws Exception
+    {
+        start(new EmptyServerHandler());
+
+        final AtomicInteger counter = new AtomicInteger();
+        Request.Listener listener = new Request.Listener()
+        {
+            @Override
+            public void onQueued(Request request)
+            {
+                counter.incrementAndGet();
+            }
+
+            @Override
+            public void onBegin(Request request)
+            {
+                counter.incrementAndGet();
+            }
+
+            @Override
+            public void onHeaders(Request request)
+            {
+                counter.incrementAndGet();
+            }
+
+            @Override
+            public void onCommit(Request request)
+            {
+                counter.incrementAndGet();
+            }
+
+            @Override
+            public void onContent(Request request, ByteBuffer content)
+            {
+                // Should not be invoked
+                counter.incrementAndGet();
+            }
+
+            @Override
+            public void onFailure(Request request, Throwable failure)
+            {
+                // Should not be invoked
+                counter.incrementAndGet();
+            }
+
+            @Override
+            public void onSuccess(Request request)
+            {
+                counter.incrementAndGet();
+            }
+        };
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .onRequestQueued(listener)
+                .onRequestBegin(listener)
+                .onRequestHeaders(listener)
+                .onRequestCommit(listener)
+                .onRequestContent(listener)
+                .onRequestSuccess(listener)
+                .onRequestFailure(listener)
+                .listener(listener)
+                .send();
+
+        Assert.assertEquals(200, response.getStatus());
+        int expectedEventsTriggeredByOnRequestXXXListeners = 5;
+        int expectedEventsTriggeredByListener = 5;
+        int expected = expectedEventsTriggeredByOnRequestXXXListeners + expectedEventsTriggeredByListener;
+        Assert.assertEquals(expected, counter.get());
+    }
+
+    @Test
+    public void testResponseListenerForMultipleEventsIsInvokedOncePerEvent() throws Exception
+    {
+        start(new EmptyServerHandler());
+
+        final AtomicInteger counter = new AtomicInteger();
+        final CountDownLatch latch = new CountDownLatch(1);
+        Response.Listener listener = new Response.Listener()
+        {
+            @Override
+            public void onBegin(Response response)
+            {
+                counter.incrementAndGet();
+            }
+
+            @Override
+            public boolean onHeader(Response response, HttpField field)
+            {
+                // Number of header may vary, so don't count
+                return true;
+            }
+
+            @Override
+            public void onHeaders(Response response)
+            {
+                counter.incrementAndGet();
+            }
+
+            @Override
+            public void onContent(Response response, ByteBuffer content)
+            {
+                // Should not be invoked
+                counter.incrementAndGet();
+            }
+
+            @Override
+            public void onSuccess(Response response)
+            {
+                counter.incrementAndGet();
+            }
+
+            @Override
+            public void onFailure(Response response, Throwable failure)
+            {
+                // Should not be invoked
+                counter.incrementAndGet();
+            }
+
+            @Override
+            public void onComplete(Result result)
+            {
+                Assert.assertEquals(200, result.getResponse().getStatus());
+                counter.incrementAndGet();
+                latch.countDown();
+            }
+        };
+        client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .onResponseBegin(listener)
+                .onResponseHeader(listener)
+                .onResponseHeaders(listener)
+                .onResponseContent(listener)
+                .onResponseSuccess(listener)
+                .onResponseFailure(listener)
+                .send(listener);
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        int expectedEventsTriggeredByOnResponseXXXListeners = 3;
+        int expectedEventsTriggeredByCompletionListener = 4;
+        int expected = expectedEventsTriggeredByOnResponseXXXListeners + expectedEventsTriggeredByCompletionListener;
+        Assert.assertEquals(expected, counter.get());
     }
 }

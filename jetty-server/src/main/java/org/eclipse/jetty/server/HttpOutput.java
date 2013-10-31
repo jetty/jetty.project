@@ -207,7 +207,8 @@ public class HttpOutput extends ServletOutputStream
 
         // write any remaining content in the buffer directly
         if (len>0)
-            _channel.write(ByteBuffer.wrap(b, off, len), complete);
+            // pass as readonly to avoid space stealing optimisation in HttpConnection 
+            _channel.write(ByteBuffer.wrap(b, off, len).asReadOnlyBuffer(), complete);
         else if (complete)
             _channel.write(BufferUtil.EMPTY_BUFFER,complete);
 
@@ -299,12 +300,14 @@ public class HttpOutput extends ServletOutputStream
 
     /* ------------------------------------------------------------ */
     /** Blocking send of content.
-     * @param content The content to send
+     * @param content The content to send.
      * @throws IOException
      */
     public void sendContent(ByteBuffer content) throws IOException
     {
         final BlockingCallback callback =_channel.getWriteBlockingCallback();
+        if (content.hasArray()&&content.limit()<content.capacity())
+            content=content.asReadOnlyBuffer();
         _channel.write(content,true,callback);
         callback.block();
     }
@@ -346,7 +349,6 @@ public class HttpOutput extends ServletOutputStream
         callback.block();
     }
    
-
     /* ------------------------------------------------------------ */
     /** Asynchronous send of content.
      * @param content The content to send
@@ -354,6 +356,8 @@ public class HttpOutput extends ServletOutputStream
      */
     public void sendContent(ByteBuffer content, final Callback callback)
     {
+        if (content.hasArray()&&content.limit()<content.capacity())
+            content=content.asReadOnlyBuffer();
         _channel.write(content,true,new Callback()
         {
             @Override

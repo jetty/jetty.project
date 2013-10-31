@@ -361,8 +361,6 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
 
     /**
      * Open/Activate the session
-     * 
-     * @throws IOException
      */
     public void open()
     {
@@ -423,6 +421,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
     public void setUpgradeRequest(UpgradeRequest request)
     {
         this.upgradeRequest = request;
+        this.protocolVersion = request.getProtocolVersion();
     }
 
     public void setUpgradeResponse(UpgradeResponse response)

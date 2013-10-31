@@ -27,6 +27,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.ProtocolException;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
@@ -45,9 +46,9 @@ public class WebSocketClientConnection extends AbstractWebSocketConnection
     private final Masker masker;
     private final AtomicBoolean opened = new AtomicBoolean(false);
 
-    public WebSocketClientConnection(EndPoint endp, Executor executor, ConnectPromise connectPromise)
+    public WebSocketClientConnection(EndPoint endp, Executor executor, ConnectPromise connectPromise, WebSocketPolicy policy)
     {
-        super(endp,executor,connectPromise.getClient().getScheduler(),connectPromise.getClient().getPolicy(),connectPromise.getClient().getBufferPool());
+        super(endp,executor,connectPromise.getClient().getScheduler(),policy,connectPromise.getClient().getBufferPool());
         this.connectPromise = connectPromise;
         this.masker = connectPromise.getMasker();
         assert (this.masker != null);

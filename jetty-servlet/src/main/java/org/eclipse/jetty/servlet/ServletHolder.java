@@ -199,8 +199,6 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         int c=(_className!=null && sh._className!=null)?_className.compareTo(sh._className):0;
         if (c==0)
             c=_name.compareTo(sh._name);
-        if (c==0)
-            c=this.hashCode()>sh.hashCode()?1:-1;
             return c;
     }
 

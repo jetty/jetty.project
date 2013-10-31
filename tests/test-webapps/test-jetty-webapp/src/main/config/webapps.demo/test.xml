@@ -29,6 +29,11 @@ detected.
   <Set name="defaultsDescriptor"><Property name="jetty.home" default="."/>/etc/webdefault.xml</Set>
   <Set name="overrideDescriptor"><Property name="jetty.webapps" default="."/>/test.d/override-web.xml</Set>
   
+  <!-- Enable symlinks 
+  <Call name="addAliasCheck">
+    <Arg><New class="org.eclipse.jetty.server.handler.AllowSymLinkAliasChecker"/></Arg>
+  </Call>
+  -->
 
   <!-- virtual hosts
   <Set name="virtualHosts">

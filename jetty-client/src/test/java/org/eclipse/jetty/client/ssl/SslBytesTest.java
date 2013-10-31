@@ -105,6 +105,7 @@ public abstract class SslBytesTest
     {
         private final CountDownLatch latch = new CountDownLatch(1);
         private final ExecutorService threadPool;
+        private final int proxyPort;
         private final String serverHost;
         private final int serverPort;
         private volatile ServerSocket serverSocket;
@@ -113,14 +114,20 @@ public abstract class SslBytesTest
 
         public SimpleProxy(ExecutorService threadPool, String serverHost, int serverPort)
         {
+            this(threadPool, 0, serverHost, serverPort);
+        }
+
+        public SimpleProxy(ExecutorService threadPool, int proxyPort, String serverHost, int serverPort)
+        {
             this.threadPool = threadPool;
+            this.proxyPort = proxyPort;
             this.serverHost = serverHost;
             this.serverPort = serverPort;
         }
 
         public void start() throws Exception
         {
-            serverSocket = new ServerSocket(0);
+            serverSocket = new ServerSocket(proxyPort);
             Thread acceptor = new Thread(this);
             acceptor.start();
             server = new Socket(serverHost, serverPort);

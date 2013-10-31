@@ -348,7 +348,7 @@ public class HttpChannelState
     protected void expired()
     {
         final List<AsyncListener> aListeners;
-        AsyncEvent event;
+        AsyncContextEvent event;
         synchronized (this)
         {
             switch(_state)
@@ -374,7 +374,10 @@ public class HttpChannelState
                 }
                 catch(Exception e)
                 {
-                    LOG.warn(e);
+                    LOG.debug(e);
+                    event.setThrowable(e);
+                    _channel.getRequest().setAttribute(RequestDispatcher.ERROR_EXCEPTION,e);
+                    break;
                 }
             }
         }

@@ -108,8 +108,28 @@ public class FileResource extends Resource
     {
         File file=new File(uri);
         _file=file;
+        URI file_uri=_file.toURI();
         _uri=normalizeURI(_file,uri);
-        _alias=checkAlias(_file);
+
+        if (!_uri.equals(file_uri) && !_uri.toString().equals(file_uri.toString()))
+        {
+            // URI and File URI are different.  Is it just an encoding difference?
+            if (!file_uri.toString().equals(URIUtil.decodePath(uri.toString())))
+            {
+                try
+                {
+                    _alias=_file.toURI().toURL();
+                }
+                catch (MalformedURLException e)
+                {
+                    throw new IllegalArgumentException(e);
+                }
+            }
+            else
+                _alias=checkAlias(_file);
+        }
+        else
+            _alias=checkAlias(_file);
     }
 
     /* -------------------------------------------------------- */
@@ -394,7 +414,7 @@ public class FileResource extends Resource
     {
         try
         {
-            return _file.toURI().toURL();
+            return new URL(_uri);
         }
         catch (MalformedURLException e)
         {

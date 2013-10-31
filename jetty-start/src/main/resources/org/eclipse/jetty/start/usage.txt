@@ -31,7 +31,7 @@ Command Line Options:
 		   property set and the stop command must have the same property.
   
   --daemon         Start in daemon mode with stderr and stdout 
-                   redirected to ${jetty.log}/start.log
+                   redirected to ${jetty.logs}/start.log
   
   --config=<file>  Specify an alternate start.config file.  
                    The default is the start.config file inside

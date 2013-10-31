@@ -64,21 +64,25 @@ public abstract class BufferingResponseListener extends Response.Listener.Empty
         HttpFields headers = response.getHeaders();
         long length = headers.getLongField(HttpHeader.CONTENT_LENGTH.asString());
         if (length > maxLength)
-            response.abort(new IllegalArgumentException("Buffering capacity exceeded"));
-
-        String contentType = headers.get(HttpHeader.CONTENT_TYPE);
-        if (contentType != null)
         {
-            String charset = "charset=";
-            int index = contentType.toLowerCase(Locale.ENGLISH).indexOf(charset);
-            if (index > 0)
+            response.abort(new IllegalArgumentException("Buffering capacity exceeded"));
+        }
+        else
+        {
+            String contentType = headers.get(HttpHeader.CONTENT_TYPE);
+            if (contentType != null)
             {
-                String encoding = contentType.substring(index + charset.length());
-                // Sometimes charsets arrive with an ending semicolon
-                index = encoding.indexOf(';');
+                String charset = "charset=";
+                int index = contentType.toLowerCase(Locale.ENGLISH).indexOf(charset);
                 if (index > 0)
-                    encoding = encoding.substring(0, index);
-                this.encoding = encoding;
+                {
+                    String encoding = contentType.substring(index + charset.length());
+                    // Sometimes charsets arrive with an ending semicolon
+                    index = encoding.indexOf(';');
+                    if (index > 0)
+                        encoding = encoding.substring(0, index);
+                    this.encoding = encoding;
+                }
             }
         }
     }
@@ -88,12 +92,16 @@ public abstract class BufferingResponseListener extends Response.Listener.Empty
     {
         long newLength = buffer.length + content.remaining();
         if (newLength > maxLength)
+        {
             response.abort(new IllegalArgumentException("Buffering capacity exceeded"));
-
-        byte[] newBuffer = new byte[(int)newLength];
-        System.arraycopy(buffer, 0, newBuffer, 0, buffer.length);
-        content.get(newBuffer, buffer.length, content.remaining());
-        buffer = newBuffer;
+        }
+        else
+        {
+            byte[] newBuffer = new byte[(int)newLength];
+            System.arraycopy(buffer, 0, newBuffer, 0, buffer.length);
+            content.get(newBuffer, buffer.length, content.remaining());
+            buffer = newBuffer;
+        }
     }
 
     @Override

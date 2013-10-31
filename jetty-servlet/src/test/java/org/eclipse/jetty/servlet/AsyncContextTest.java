@@ -28,7 +28,10 @@ import java.io.IOException;
 import java.io.StringReader;
 
 import javax.servlet.AsyncContext;
+import javax.servlet.AsyncEvent;
+import javax.servlet.AsyncListener;
 import javax.servlet.DispatcherType;
+import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -38,6 +41,7 @@ import javax.servlet.http.HttpServletResponseWrapper;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.QuietServletException;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
@@ -65,16 +69,25 @@ public class AsyncContextTest
         _server = new Server();
         _contextHandler = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
         _connector = new LocalConnector(_server);
-        _connector.setIdleTimeout(30000);
+        _connector.setIdleTimeout(5000);
         _server.setConnectors(new Connector[]
         { _connector });
 
-        _contextHandler.setContextPath("/");
+        _contextHandler.setContextPath("/ctx");
         _contextHandler.addServlet(new ServletHolder(new TestServlet()),"/servletPath");
         _contextHandler.addServlet(new ServletHolder(new TestServlet()),"/path with spaces/servletPath");
         _contextHandler.addServlet(new ServletHolder(new TestServlet2()),"/servletPath2");
+        _contextHandler.addServlet(new ServletHolder(new TestStartThrowServlet()),"/startthrow/*");
         _contextHandler.addServlet(new ServletHolder(new ForwardingServlet()),"/forward");
         _contextHandler.addServlet(new ServletHolder(new AsyncDispatchingServlet()),"/dispatchingServlet");
+        _contextHandler.addServlet(new ServletHolder(new ExpireServlet()),"/expire/*");
+        _contextHandler.addServlet(new ServletHolder(new BadExpireServlet()),"/badexpire/*");
+        _contextHandler.addServlet(new ServletHolder(new ErrorServlet()),"/error/*");
+        
+        ErrorPageErrorHandler error_handler = new ErrorPageErrorHandler();
+        _contextHandler.setErrorHandler(error_handler);
+        error_handler.addErrorPage(500,"/error/500");
+        error_handler.addErrorPage(IOException.class.getName(),"/error/IOE");
 
         HandlerList handlers = new HandlerList();
         handlers.setHandlers(new Handler[]
@@ -93,7 +106,7 @@ public class AsyncContextTest
     @Test
     public void testSimpleAsyncContext() throws Exception
     {
-        String request = "GET /servletPath HTTP/1.1\r\n" + "Host: localhost\r\n" + "Content-Type: application/x-www-form-urlencoded\r\n"
+        String request = "GET /ctx/servletPath HTTP/1.1\r\n" + "Host: localhost\r\n" + "Content-Type: application/x-www-form-urlencoded\r\n"
                 + "Connection: close\r\n" + "\r\n";
         String responseString = _connector.getResponses(request);
 
@@ -107,9 +120,28 @@ public class AsyncContextTest
     }
 
     @Test
+    public void testStartThrow() throws Exception
+    {
+        String request = "GET /ctx/startthrow HTTP/1.1\r\n" + "Host: localhost\r\n" + "Content-Type: application/x-www-form-urlencoded\r\n"
+                + "Connection: close\r\n" + "\r\n";
+        String responseString = _connector.getResponses(request);
+
+        BufferedReader br = new BufferedReader(new StringReader(responseString));
+
+        assertEquals("HTTP/1.1 500 Server Error",br.readLine());
+        br.readLine();// connection close
+        br.readLine();// server
+        br.readLine();// empty
+
+        Assert.assertEquals("error servlet","ERROR: /error",br.readLine());
+        Assert.assertEquals("error servlet","PathInfo= /IOE",br.readLine());
+        Assert.assertEquals("error servlet","EXCEPTION: java.io.IOException: Test",br.readLine());
+    }
+    
+    @Test
     public void testDispatchAsyncContext() throws Exception
     {
-        String request = "GET /servletPath?dispatch=true HTTP/1.1\r\n" + "Host: localhost\r\n" + "Content-Type: application/x-www-form-urlencoded\r\n"
+        String request = "GET /ctx/servletPath?dispatch=true HTTP/1.1\r\n" + "Host: localhost\r\n" + "Content-Type: application/x-www-form-urlencoded\r\n"
                 + "Connection: close\r\n" + "\r\n";
         String responseString = _connector.getResponses(request);
 
@@ -120,8 +152,8 @@ public class AsyncContextTest
         Assert.assertEquals("servlet path attr is original","async:run:attr:servletPath:/servletPath",br.readLine());
         Assert.assertEquals("path info attr is correct","async:run:attr:pathInfo:null",br.readLine());
         Assert.assertEquals("query string attr is correct","async:run:attr:queryString:dispatch=true",br.readLine());
-        Assert.assertEquals("context path attr is correct","async:run:attr:contextPath:",br.readLine());
-        Assert.assertEquals("request uri attr is correct","async:run:attr:requestURI:/servletPath",br.readLine());
+        Assert.assertEquals("context path attr is correct","async:run:attr:contextPath:/ctx",br.readLine());
+        Assert.assertEquals("request uri attr is correct","async:run:attr:requestURI:/ctx/servletPath",br.readLine());
 
         try
         {
@@ -137,7 +169,7 @@ public class AsyncContextTest
     @Test
     public void testDispatchAsyncContextEncodedPathAndQueryString() throws Exception
     {
-        String request = "GET /path%20with%20spaces/servletPath?dispatch=true&queryStringWithEncoding=space%20space HTTP/1.1\r\n" + "Host: localhost\r\n" + "Content-Type: application/x-www-form-urlencoded\r\n"
+        String request = "GET /ctx/path%20with%20spaces/servletPath?dispatch=true&queryStringWithEncoding=space%20space HTTP/1.1\r\n" + "Host: localhost\r\n" + "Content-Type: application/x-www-form-urlencoded\r\n"
                 + "Connection: close\r\n" + "\r\n";
         String responseString = _connector.getResponses(request);
 
@@ -148,16 +180,14 @@ public class AsyncContextTest
         assertThat("servlet path attr is original",br.readLine(),equalTo("async:run:attr:servletPath:/path with spaces/servletPath"));
         assertThat("path info attr is correct",br.readLine(),equalTo("async:run:attr:pathInfo:null"));
         assertThat("query string attr is correct",br.readLine(),equalTo("async:run:attr:queryString:dispatch=true&queryStringWithEncoding=space%20space"));
-        assertThat("context path attr is correct",br.readLine(),equalTo("async:run:attr:contextPath:"));
-        assertThat("request uri attr is correct",br.readLine(),equalTo("async:run:attr:requestURI:/path%20with%20spaces/servletPath"));
+        assertThat("context path attr is correct",br.readLine(),equalTo("async:run:attr:contextPath:/ctx"));
+        assertThat("request uri attr is correct",br.readLine(),equalTo("async:run:attr:requestURI:/ctx/path%20with%20spaces/servletPath"));
     }
 
     @Test
     public void testSimpleWithContextAsyncContext() throws Exception
     {
-        _contextHandler.setContextPath("/foo");
-
-        String request = "GET /foo/servletPath HTTP/1.1\r\n" + "Host: localhost\r\n" + "Content-Type: application/x-www-form-urlencoded\r\n"
+        String request = "GET /ctx/servletPath HTTP/1.1\r\n" + "Host: localhost\r\n" + "Content-Type: application/x-www-form-urlencoded\r\n"
                 + "Connection: close\r\n" + "\r\n";
 
         String responseString = _connector.getResponses(request);
@@ -172,9 +202,7 @@ public class AsyncContextTest
     @Test
     public void testDispatchWithContextAsyncContext() throws Exception
     {
-        _contextHandler.setContextPath("/foo");
-
-        String request = "GET /foo/servletPath?dispatch=true HTTP/1.1\r\n" + "Host: localhost\r\n" + "Content-Type: application/x-www-form-urlencoded\r\n"
+        String request = "GET /ctx/servletPath?dispatch=true HTTP/1.1\r\n" + "Host: localhost\r\n" + "Content-Type: application/x-www-form-urlencoded\r\n"
                 + "Connection: close\r\n" + "\r\n";
 
         String responseString = _connector.getResponses(request);
@@ -186,14 +214,14 @@ public class AsyncContextTest
         Assert.assertEquals("servlet path attr is original","async:run:attr:servletPath:/servletPath",br.readLine());
         Assert.assertEquals("path info attr is correct","async:run:attr:pathInfo:null",br.readLine());
         Assert.assertEquals("query string attr is correct","async:run:attr:queryString:dispatch=true",br.readLine());
-        Assert.assertEquals("context path attr is correct","async:run:attr:contextPath:/foo",br.readLine());
-        Assert.assertEquals("request uri attr is correct","async:run:attr:requestURI:/foo/servletPath",br.readLine());
+        Assert.assertEquals("context path attr is correct","async:run:attr:contextPath:/ctx",br.readLine());
+        Assert.assertEquals("request uri attr is correct","async:run:attr:requestURI:/ctx/servletPath",br.readLine());
     }
 
     @Test
     public void testDispatch() throws Exception
     {
-        String request = "GET /forward HTTP/1.1\r\n" + "Host: localhost\r\n" + "Content-Type: application/x-www-form-urlencoded\r\n" + "Connection: close\r\n"
+        String request = "GET /ctx/forward HTTP/1.1\r\n" + "Host: localhost\r\n" + "Content-Type: application/x-www-form-urlencoded\r\n" + "Connection: close\r\n"
                 + "\r\n";
 
         String responseString = _connector.getResponses(request);
@@ -204,7 +232,7 @@ public class AsyncContextTest
     @Test
     public void testDispatchRequestResponse() throws Exception
     {
-        String request = "GET /forward?dispatchRequestResponse=true HTTP/1.1\r\n" + 
+        String request = "GET /ctx/forward?dispatchRequestResponse=true HTTP/1.1\r\n" + 
            "Host: localhost\r\n" + 
            "Content-Type: application/x-www-form-urlencoded\r\n" + 
            "Connection: close\r\n" + 
@@ -282,6 +310,49 @@ public class AsyncContextTest
         }
     }
 
+    @Test
+    public void testExpire() throws Exception
+    {
+        String request = "GET /ctx/expire HTTP/1.1\r\n" + 
+                "Host: localhost\r\n" + 
+                "Content-Type: application/x-www-form-urlencoded\r\n" +
+                "Connection: close\r\n" + 
+                "\r\n";
+        String responseString = _connector.getResponses(request);
+               
+        BufferedReader br = new BufferedReader(new StringReader(responseString));
+
+        assertEquals("HTTP/1.1 500 Async Timeout",br.readLine());
+
+        br.readLine();// connection close
+        br.readLine();// server
+        br.readLine();// empty
+
+        Assert.assertEquals("error servlet","ERROR: /error",br.readLine());
+    }
+
+    @Test
+    public void testBadExpire() throws Exception
+    {
+        String request = "GET /ctx/badexpire HTTP/1.1\r\n" + 
+          "Host: localhost\r\n" + 
+          "Content-Type: application/x-www-form-urlencoded\r\n" +
+          "Connection: close\r\n" + 
+          "\r\n";
+        String responseString = _connector.getResponses(request);
+        
+        BufferedReader br = new BufferedReader(new StringReader(responseString));
+
+        assertEquals("HTTP/1.1 500 Async Exception",br.readLine());
+        br.readLine();// connection close
+        br.readLine();// server
+        br.readLine();// empty
+
+        Assert.assertEquals("error servlet","ERROR: /error",br.readLine());
+        Assert.assertEquals("error servlet","PathInfo= /500",br.readLine());
+        Assert.assertEquals("error servlet","EXCEPTION: java.io.IOException: TEST",br.readLine());
+    }
+
     private class DispatchingRunnable implements Runnable
     {
         private AsyncContext asyncContext;
@@ -308,6 +379,74 @@ public class AsyncContextTest
         _server.join();
     }
 
+
+    private class ErrorServlet extends HttpServlet
+    {
+        private static final long serialVersionUID = 1L;
+
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            response.getOutputStream().print("ERROR: " + request.getServletPath() + "\n");
+            response.getOutputStream().print("PathInfo= " + request.getPathInfo() + "\n");
+            if (request.getAttribute(RequestDispatcher.ERROR_EXCEPTION)!=null)
+                response.getOutputStream().print("EXCEPTION: " + request.getAttribute(RequestDispatcher.ERROR_EXCEPTION) + "\n");
+        }
+    }
+    
+    private class ExpireServlet extends HttpServlet
+    {
+        private static final long serialVersionUID = 1L;
+
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            if (request.getDispatcherType()==DispatcherType.REQUEST)
+            {
+                AsyncContext asyncContext = request.startAsync();
+                asyncContext.setTimeout(100);
+            }
+        }
+    }
+    
+    private class BadExpireServlet extends HttpServlet
+    {
+        private static final long serialVersionUID = 1L;
+
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            if (request.getDispatcherType()==DispatcherType.REQUEST)
+            {
+                AsyncContext asyncContext = request.startAsync();
+                asyncContext.addListener(new AsyncListener()
+                {
+                    @Override
+                    public void onTimeout(AsyncEvent event) throws IOException
+                    {
+                        throw new IOException("TEST");
+                    }
+                    
+                    @Override
+                    public void onStartAsync(AsyncEvent event) throws IOException
+                    {                      
+                    }
+                    
+                    @Override
+                    public void onError(AsyncEvent event) throws IOException
+                    {                        
+                    }
+                    
+                    @Override
+                    public void onComplete(AsyncEvent event) throws IOException
+                    {                        
+                    }
+                });
+                asyncContext.setTimeout(100);
+            }
+        }
+    }
+    
     private class TestServlet extends HttpServlet
     {
         private static final long serialVersionUID = 1L;
@@ -345,6 +484,21 @@ public class AsyncContextTest
             __asyncContext=asyncContext;
             response.getOutputStream().print("doGet:async:getServletPath:" + ((HttpServletRequest)asyncContext.getRequest()).getServletPath() + "\n");
             asyncContext.start(new AsyncRunnable(asyncContext));
+        }
+    }
+    
+    private class TestStartThrowServlet extends HttpServlet
+    {
+        private static final long serialVersionUID = 1L;
+
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            if (request.getDispatcherType()==DispatcherType.REQUEST)
+            {
+                request.startAsync(request, response);
+                throw new QuietServletException(new IOException("Test"));
+            }
         }
     }
 
