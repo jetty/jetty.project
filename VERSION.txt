@@ -1,3 +1,37 @@
+jetty-9.0.7.v20131031 - 31 October 2013
+ + 407716 fixed logs
+ + 416597 Allow classes and jars on the webappcontext extraclasspath to be
+   scanned for annotations by jetty-maven-plugin
+ + 418636 Name anonymous filter and holders with classname-hashcode
+ + 418732 Add whiteListByPath mode to IPAccessHandler
+ + 418767 run-forked goal ingores test scope dependencies with
+   useTestScope=true
+ + 418792 Session getProtocolVersion always returns null
+ + 418892 SSL session caching so unreliable it effectively does not work.
+ + 419309 Added symlink checker to test webapp
+ + 419333 treat // as an alias in path
+ + 419344 NPNServerConnection does not close the EndPoint if it reads -1.
+ + 419350 Do not borrow space from passed arrays
+ + 419655 AnnotationParser throws NullPointerException when scanning files from
+   jar:file urls
+ + 419687 HttpClient's query parameters must be case sensitive.
+ + 419799 Async timeout dispatches to error page
+ + 419814 Annotation properties maxMessageSize and inputBufferSize don't work
+ + 419846 JDBCSessionManager doesn't determine dirty state correctly
+ + 419901 Client always adds extra user-agent header.
+ + 419937 Request isSecure cleared on recycle
+ + 419950 Provide constructor for StringContentProvider that takes Charset.
+ + 419964 InputStreamContentProvider does not close provided InputStream.
+ + 420033 AsyncContext.onTimeout exceptions passed to onError
+ + 420039 BufferingResponseListener continues processing after aborting
+   request.
+ + 420048 DefaultServlet alias checks configured resourceBase
+ + 420142 reimplemented graceful shutdown
+ + 420362 Response/request listeners called too many times.
+ + 420374 Call super.close() in a finally block
+ + 420530 AbstractLoginModule never fails a login
+ + 420776 complete error pages after startAsync
+
 jetty-9.0.6.v20130930 - 30 September 2013
  + 411069 better set compiler defaults to 1.7, including webdefault.xml for jsp
  + 411934 War overlay configuration assumes src/main/webapp exists
