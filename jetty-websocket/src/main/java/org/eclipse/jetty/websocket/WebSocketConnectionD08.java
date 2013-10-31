@@ -80,7 +80,6 @@ public class WebSocketConnectionD08 extends AbstractConnection implements WebSoc
     private final static byte[] MAGIC;
     private final List<Extension> _extensions;
     private final WebSocketParserD08 _parser;
-    private final WebSocketParser.FrameHandler _inbound;
     private final WebSocketGeneratorD08 _generator;
     private final WebSocketGenerator _outbound;
     private final WebSocket _webSocket;
@@ -110,7 +109,6 @@ public class WebSocketConnectionD08 extends AbstractConnection implements WebSoc
         }
     }
 
-    private final WebSocketParser.FrameHandler _frameHandler= new WSFrameHandler();
     private final WebSocket.FrameConnection _connection = new WSFrameConnection();
 
 
@@ -140,6 +138,7 @@ public class WebSocketConnectionD08 extends AbstractConnection implements WebSoc
         _generator = new WebSocketGeneratorD08(buffers, _endp,maskgen);
 
         _extensions=extensions;
+        WebSocketParser.FrameHandler _frameHandler= new WSFrameHandler();
         if (_extensions!=null)
         {
             int e=0;
@@ -154,7 +153,7 @@ public class WebSocketConnectionD08 extends AbstractConnection implements WebSoc
         }
 
         _outbound=(_extensions==null||_extensions.size()==0)?_generator:extensions.get(extensions.size()-1);
-        _inbound=(_extensions==null||_extensions.size()==0)?_frameHandler:extensions.get(0);
+        WebSocketParser.FrameHandler _inbound=(_extensions==null||_extensions.size()==0)?_frameHandler:extensions.get(0);
 
         _parser = new WebSocketParserD08(buffers, endpoint,_inbound,maskgen==null);
 
@@ -194,19 +193,18 @@ public class WebSocketConnectionD08 extends AbstractConnection implements WebSoc
                 int filled=_parser.parseNext();
 
                 progress = flushed>0 || filled>0;
+                _endp.flush();
 
-                if (filled<0 || flushed<0)
-                {
-                    _endp.close();
-                    break;
-                }
+                if (_endp instanceof AsyncEndPoint && ((AsyncEndPoint)_endp).hasProgressed())
+                    progress=true;
             }
         }
         catch(IOException e)
         {
             try
             {
-                _endp.close();
+                if (_endp.isOpen())
+                    _endp.close();
             }
             catch(IOException e2)
             {
@@ -235,7 +233,8 @@ public class WebSocketConnectionD08 extends AbstractConnection implements WebSoc
     /* ------------------------------------------------------------ */
     public void onInputShutdown() throws IOException
     {
-        // TODO
+        if (!_closedIn)
+            _endp.close();
     }
 
     /* ------------------------------------------------------------ */
@@ -274,16 +273,16 @@ public class WebSocketConnectionD08 extends AbstractConnection implements WebSoc
     /* ------------------------------------------------------------ */
     public void closeIn(int code,String message)
     {
-        LOG.debug("ClosedIn {} {}",this,message);
+        LOG.debug("ClosedIn {} {} {}",this,code,message);
 
-        final boolean closedOut;
-        final boolean closed;
+        final boolean closed_out;
+        final boolean tell_app;
         synchronized (this)
         {
-            closedOut=_closedOut;
+            closed_out=_closedOut;
             _closedIn=true;
-            closed=_closeCode==0;
-            if (closed)
+            tell_app=_closeCode==0;
+            if (tell_app)
             {
                 _closeCode=code;
                 _closeMessage=message;
@@ -292,38 +291,29 @@ public class WebSocketConnectionD08 extends AbstractConnection implements WebSoc
 
         try
         {
-            if (closed)
-                _webSocket.onClose(code,message);
+            if (!closed_out)
+                closeOut(code,message);
         }
         finally
         {
-            try
-            {
-                if (closedOut)
-                    _endp.close();
-                else
-                    closeOut(code,message);
-            }
-            catch(IOException e)
-            {
-                LOG.ignore(e);
-            }
+            if  (tell_app)
+                _webSocket.onClose(code,message);
         }
     }
 
     /* ------------------------------------------------------------ */
     public void closeOut(int code,String message)
     {
-        LOG.debug("ClosedOut {} {}",this,message);
+        LOG.debug("ClosedOut {} {} {}",this,code,message);
 
-        final boolean close;
-        final boolean closed;
+        final boolean closed_out;
+        final boolean tell_app;
         synchronized (this)
         {
-            close=_closedIn || _closedOut;
+            closed_out=_closedOut;
             _closedOut=true;
-            closed=_closeCode==0;
-            if (closed)
+            tell_app=_closeCode==0;
+            if (tell_app)
             {
                 _closeCode=code;
                 _closeMessage=message;
@@ -331,17 +321,15 @@ public class WebSocketConnectionD08 extends AbstractConnection implements WebSoc
         }
 
         try
-        {
-            if (closed)
+        {                    
+            if (tell_app)
                 _webSocket.onClose(code,message);
         }
         finally
         {
             try
             {
-                if (close)
-                    _endp.close();
-                else
+                if (!closed_out)
                 {
                     if (code<=0)
                         code=WebSocketConnectionD08.CLOSE_NORMAL;
@@ -398,7 +386,7 @@ public class WebSocketConnectionD08 extends AbstractConnection implements WebSoc
     /* ------------------------------------------------------------ */
     private class WSFrameConnection implements WebSocket.FrameConnection
     {
-        volatile boolean _disconnecting;
+        private volatile boolean _disconnecting;
 
         /* ------------------------------------------------------------ */
         public void sendMessage(String content) throws IOException
@@ -576,7 +564,7 @@ public class WebSocketConnectionD08 extends AbstractConnection implements WebSoc
         /* ------------------------------------------------------------ */
         public void disconnect()
         {
-            close();
+            close(CLOSE_NORMAL,null);
         }
 
         /* ------------------------------------------------------------ */
@@ -601,7 +589,13 @@ public class WebSocketConnectionD08 extends AbstractConnection implements WebSoc
         @Override
         public String toString()
         {
-            return this.getClass().getSimpleName()+"D08@"+_endp.getLocalAddr()+":"+_endp.getLocalPort()+"<->"+_endp.getRemoteAddr()+":"+_endp.getRemotePort();
+            return String.format("%s[D08]@%x l(%s:%d)<->r(%s:%d)",
+                    getClass().getSimpleName(),
+                    hashCode(),
+                    _endp.getLocalAddr(),
+                    _endp.getLocalPort(),
+                    _endp.getRemoteAddr(),
+                    _endp.getRemotePort());
         }
     }
 
@@ -773,9 +767,27 @@ public class WebSocketConnectionD08 extends AbstractConnection implements WebSoc
                     }
                 }
             }
-            catch(Throwable th)
+            catch(Throwable e)
             {
-                LOG.warn(th);
+                LOG.warn("{} for {}",e,_endp, e);
+                LOG.debug(e);
+                errorClose(WebSocketConnectionRFC6455.CLOSE_SERVER_ERROR,"Internal Server Error: "+e);
+            }
+        }
+
+        private void errorClose(int code, String message)
+        {
+            _connection.close(code,message);
+
+            // Brutally drop the connection
+            try
+            {
+                _endp.close();
+            }
+            catch (IOException e)
+            {
+                LOG.warn(e.toString());
+                LOG.debug(e);
             }
         }
 

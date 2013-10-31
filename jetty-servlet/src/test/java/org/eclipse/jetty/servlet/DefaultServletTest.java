@@ -418,6 +418,42 @@ public class DefaultServletTest
     }
 
     @Test
+    public void testResourceBase() throws Exception
+    {
+        testdir.ensureEmpty();
+        File resBase = testdir.getFile("docroot");
+        FS.ensureDirExists(resBase);
+        File foobar = new File(resBase, "foobar.txt");
+        File link = new File(resBase, "link.txt");
+        createFile(foobar, "Foo Bar");
+
+        String resBasePath = resBase.getAbsolutePath();
+
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        defholder.setInitParameter("resourceBase", resBasePath);
+        defholder.setInitParameter("gzip", "false");
+
+        String response;
+
+        response = connector.getResponses("GET /context/foobar.txt HTTP/1.0\r\n\r\n");
+        assertResponseContains("Foo Bar", response);
+
+        /* Test needs java 1.7
+        if (!OS.IS_WINDOWS)
+        {
+            Files.createSymbolicLink(link.toPath(),foobar.toPath());
+            response = connector.getResponses("GET /context/link.txt HTTP/1.0\r\n\r\n");
+            assertResponseContains("404", response);
+            
+            context.setAliases(true);
+            
+            response = connector.getResponses("GET /context/link.txt HTTP/1.0\r\n\r\n");
+            assertResponseContains("Foo Bar", response);
+        }
+        */
+    }
+
+    @Test
     public void testWelcomeExactServlet() throws Exception
     {
         testdir.ensureEmpty();

@@ -38,16 +38,16 @@ import org.eclipse.jetty.util.log.Logger;
  * which is also the max frame byte size (default 8192).
  * <p/>
  * The initParameter "maxIdleTime" can be used to set the time in ms
- * that a websocket may be idle before closing.
+ * that a websocket may be idle before closing. (default is 300000)
  * <p/>
- * The initParameter "maxTextMessagesSize" can be used to set the size in characters
- * that a websocket may be accept before closing.
+ * The initParameter "maxTextMessageSize" can be used to set the size in characters
+ * that a websocket may be accept before closing. (Default is 16768)
  * <p/>
- * The initParameter "maxBinaryMessagesSize" can be used to set the size in bytes
- * that a websocket may be accept before closing.
+ * The initParameter "maxBinaryMessageSize" can be used to set the size in bytes
+ * that a websocket may be accept before closing. (Default is -1 - or unlimited)
  * <p/>
  * The initParameter "minVersion" can be used to set the minimum protocol version
- * accepted. Default is the RFC6455 version (13)
+ * accepted. (Default 13 - the RFC6455 version)
  */
 @SuppressWarnings("serial")
 public abstract class WebSocketServlet extends HttpServlet implements WebSocketFactory.Acceptor
