@@ -65,7 +65,7 @@ public class AsyncContextTest
     @Before
     public void setUp() throws Exception
     {
-        _connector.setMaxIdleTime(30000);
+        _connector.setMaxIdleTime(5000);
         _server.setConnectors(new Connector[]
         { _connector });
 
@@ -73,6 +73,7 @@ public class AsyncContextTest
         _contextHandler.addServlet(new ServletHolder(new TestServlet()),"/servletPath");
         _contextHandler.addServlet(new ServletHolder(new TestServlet()),"/path with spaces/servletPath");
         _contextHandler.addServlet(new ServletHolder(new TestServlet2()),"/servletPath2");
+        _contextHandler.addServlet(new ServletHolder(new TestStartThrowServlet()),"/startthrow/*");
         _contextHandler.addServlet(new ServletHolder(new ForwardingServlet()),"/forward");
         _contextHandler.addServlet(new ServletHolder(new AsyncDispatchingServlet()),"/dispatchingServlet");
         _contextHandler.addServlet(new ServletHolder(new ExpireServlet()),"/expire/*");
@@ -81,7 +82,8 @@ public class AsyncContextTest
         
         ErrorPageErrorHandler error_handler = new ErrorPageErrorHandler();
         _contextHandler.setErrorHandler(error_handler);
-        error_handler.addErrorPage(500,"/error");
+        error_handler.addErrorPage(500,"/error/500");
+        error_handler.addErrorPage(IOException.class.getName(),"/error/IOE");
 
         HandlerList handlers = new HandlerList();
         handlers.setHandlers(new Handler[]
@@ -106,6 +108,25 @@ public class AsyncContextTest
         Assert.assertEquals("async context gets right path in async","async:run:attr:servletPath:/servletPath",br.readLine());
     }
 
+    @Test
+    public void testStartThrow() throws Exception
+    {
+        String request = "GET /ctx/startthrow HTTP/1.1\r\n" + "Host: localhost\r\n" + "Content-Type: application/x-www-form-urlencoded\r\n"
+                + "Connection: close\r\n" + "\r\n";
+        String responseString = _connector.getResponses(request);
+
+        BufferedReader br = new BufferedReader(new StringReader(responseString));
+
+        assertEquals("HTTP/1.1 500 Server Error",br.readLine());
+        br.readLine();// connection close
+        br.readLine();// server
+        br.readLine();// empty
+
+        Assert.assertEquals("error servlet","ERROR: /error",br.readLine());
+        Assert.assertEquals("error servlet","PathInfo= /IOE",br.readLine());
+        Assert.assertEquals("error servlet","EXCEPTION: java.io.IOException: Test",br.readLine());
+    }
+    
     @Test
     public void testDispatchAsyncContext() throws Exception
     {
@@ -303,6 +324,7 @@ public class AsyncContextTest
         br.readLine();// empty
 
         Assert.assertEquals("error servlet","ERROR: /error",br.readLine());
+        Assert.assertEquals("error servlet","PathInfo= /500",br.readLine());
         Assert.assertEquals("error servlet","EXCEPTION: java.io.IOException: TEST",br.readLine());
     }
 
@@ -341,6 +363,7 @@ public class AsyncContextTest
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             response.getOutputStream().print("ERROR: " + request.getServletPath() + "\n");
+            response.getOutputStream().print("PathInfo= " + request.getPathInfo() + "\n");
             if (request.getAttribute(RequestDispatcher.ERROR_EXCEPTION)!=null)
                 response.getOutputStream().print("EXCEPTION: " + request.getAttribute(RequestDispatcher.ERROR_EXCEPTION) + "\n");
         }
@@ -436,6 +459,21 @@ public class AsyncContextTest
             response.getOutputStream().print("doGet:async:getServletPath:" + ((HttpServletRequest)asyncContext.getRequest()).getServletPath() + "\n");         
             asyncContext.start(new AsyncRunnable(asyncContext));
             return;
+        }
+    }
+    
+    private class TestStartThrowServlet extends HttpServlet
+    {
+        private static final long serialVersionUID = 1L;
+
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            if (request.getDispatcherType()==DispatcherType.REQUEST)
+            {
+                request.startAsync(request, response);
+                throw new IOException("Test");
+            }
         }
     }
 
