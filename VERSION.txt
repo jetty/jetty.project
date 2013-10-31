@@ -1,6 +1,6 @@
-jetty-9.1.0-SNAPSHOT
-
-jetty-9.1.0.RC1 - 24 October 2013
+jetty-9.1.0.RC1 - 31 October 2013
+ + 294531 Unpacking webapp twice to the same directory name causes problems
+   with updated jars in WEB-INF/lib
  + 397049 Cannot Provide Custom Credential to JDBCLoginService
  + 403591 improve the Blocking Q implementation.
  + 407716 fixed logs
@@ -13,6 +13,8 @@ jetty-9.1.0.RC1 - 24 October 2013
  + 416597 Allow classes and jars on the webappcontext extraclasspath to be
    scanned for annotations by jetty-maven-plugin
  + 417356 Add SOCKS support to jetty client.
+ + 417932 resources.mod should make ${jetty.base}/resources/ directory
+ + 417933 logging.mod ini template should include commented log.class settings
  + 418212 org.eclipse.jetty.spdy.server.http.SSLExternalServerTest hangs.
  + 418441 Use of OPTIONS= in Jetty 9.1 should display WARNING message
  + 418596 Faults in JARs during class scanning should report the jar that
@@ -28,11 +30,14 @@ jetty-9.1.0.RC1 - 24 October 2013
    useTestScope=true
  + 418792 Session getProtocolVersion always returns null
  + 418892 SSL session caching so unreliable it effectively does not work.
+ + 418922 Missing parameterization of etc/jetty-xinetd.xml
+ + 418923 Missing parameterization of etc/jetty-proxy.xml
  + 419146 Parameterize etc/jetty-requestlog.xml values
  + 419309 Added symlink checker to test webapp
- + 419330 Allow access to setters on JspC in jetty-jspc-maven-plugin
+ + 419330 Allow access to setters on jetty-jspc-maven-plugin
  + 419333 treat // as an alias in path
  + 419344 NPNServerConnection does not close the EndPoint if it reads -1.
+ + 419350 Do not borrow space from passed arrays
  + 419655 AnnotationParser throws NullPointerException when scanning files from
    jar:file urls
  + 419687 HttpClient's query parameters must be case sensitive.
@@ -45,6 +50,7 @@ jetty-9.1.0.RC1 - 24 October 2013
  + 419914 QueuedThreadPool uses nanoTime
  + 419937 Request isSecure cleared on recycle
  + 419950 Provide constructor for StringContentProvider that takes Charset.
+ + 419964 InputStreamContentProvider does not close provided InputStream.
  + 420012 Improve ProxyServlet.Transparent configuration in case prefix="/".
  + 420033 AsyncContext.onTimeout exceptions passed to onError
  + 420034 Removed threads/timers from Date caching
@@ -52,6 +58,13 @@ jetty-9.1.0.RC1 - 24 October 2013
    request.
  + 420048 DefaultServlet alias checks configured resourceBase
  + 420103 Split out jmx-remote module from existing jmx module
+ + 420142 reimplemented graceful shutdown
+ + 420362 Response/request listeners called too many times.
+ + 420364 Bad synchronization in HttpConversation.
+ + 420374 Call super.close() in a finally block
+ + 420530 AbstractLoginModule never fails a login
+ + 420687 XML errors in jetty-plus/src/test/resources/web-fragment-*.xml
+ + 420776 complete error pages after startAsync
 
 jetty-9.1.0.RC0 - 30 September 2013
  + 412469 make module for jetty-jaspi
