@@ -380,6 +380,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
                 boolean committed = sendResponse(info, null, true);
                 if (!committed)
                     LOG.warn("Could not send response error 500: "+x);
+                _request.getAsyncContext().complete();
             }
             else if (isCommitted())
             {
