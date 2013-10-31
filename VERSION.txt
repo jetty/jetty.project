@@ -1,3 +1,5 @@
+jetty-8.1.15-SNAPSHOT
+
 jetty-8.1.14.v20131031 - 31 October 2013
  + 227244 Remove import of backport-util-concurrent Arrays class
  + 362854 Continuation implementations may deadlock.
