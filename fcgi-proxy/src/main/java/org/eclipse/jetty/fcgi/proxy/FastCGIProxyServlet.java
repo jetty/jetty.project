@@ -20,6 +20,7 @@ package org.eclipse.jetty.fcgi.proxy;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -42,6 +43,7 @@ public class FastCGIProxyServlet extends ProxyServlet.Transparent
     private static final String SERVER_ADDR_ATTRIBUTE = FastCGIProxyServlet.class.getName() + ".serverAddr";
     private static final String SERVER_PORT_ATTRIBUTE = FastCGIProxyServlet.class.getName() + ".serverPort";
     private static final String SCHEME_ATTRIBUTE = FastCGIProxyServlet.class.getName() + ".scheme";
+    private static final String REQUEST_URI_ATTRIBUTE = FastCGIProxyServlet.class.getName() + ".requestURI";
 
     private Pattern scriptPattern;
 
@@ -52,7 +54,7 @@ public class FastCGIProxyServlet extends ProxyServlet.Transparent
 
         String value = getInitParameter(SCRIPT_PATTERN_INIT_PARAM);
         if (value == null)
-            value = "(.+\\.php)";
+            value = "(.+?\\.php)";
         scriptPattern = Pattern.compile(value);
     }
 
@@ -74,7 +76,12 @@ public class FastCGIProxyServlet extends ProxyServlet.Transparent
         proxyRequest.attribute(SERVER_NAME_ATTRIBUTE, request.getServerName());
         proxyRequest.attribute(SERVER_ADDR_ATTRIBUTE, request.getLocalAddr());
         proxyRequest.attribute(SERVER_PORT_ATTRIBUTE, String.valueOf(request.getLocalPort()));
+
         proxyRequest.attribute(SCHEME_ATTRIBUTE, request.getScheme());
+
+        // If we are forwarded, retain the original request URI.
+        proxyRequest.attribute(REQUEST_URI_ATTRIBUTE, request.getAttribute(RequestDispatcher.FORWARD_REQUEST_URI));
+
         super.customizeProxyRequest(proxyRequest, request);
     }
 
@@ -85,13 +92,30 @@ public class FastCGIProxyServlet extends ProxyServlet.Transparent
         fastCGIHeaders.put(FCGI.Headers.SERVER_NAME, (String)proxyRequest.getAttributes().get(SERVER_NAME_ATTRIBUTE));
         fastCGIHeaders.put(FCGI.Headers.SERVER_ADDR, (String)proxyRequest.getAttributes().get(SERVER_ADDR_ATTRIBUTE));
         fastCGIHeaders.put(FCGI.Headers.SERVER_PORT, (String)proxyRequest.getAttributes().get(SERVER_PORT_ATTRIBUTE));
+
         if (HttpScheme.HTTPS.is((String)proxyRequest.getAttributes().get(SCHEME_ATTRIBUTE)))
             fastCGIHeaders.put(FCGI.Headers.HTTPS, "on");
-        String root = fastCGIHeaders.get(FCGI.Headers.DOCUMENT_ROOT);
-        String path = proxyRequest.getURI().getRawPath();
-        Matcher matcher = scriptPattern.matcher(path);
-        String scriptName = matcher.matches() ? matcher.group(1) : path;
+
+        String rawPath = proxyRequest.getURI().getRawPath();
+        String requestPath = (String)proxyRequest.getAttributes().get(REQUEST_URI_ATTRIBUTE);
+        if (requestPath == null)
+            requestPath = rawPath;
+        fastCGIHeaders.put(FCGI.Headers.REQUEST_URI, requestPath);
+
+        String scriptName = rawPath;
+        Matcher matcher = scriptPattern.matcher(rawPath);
+        if (matcher.matches())
+        {
+            // Expect at least one group in the regular expression.
+            scriptName = matcher.group(1);
+
+            // If there is a second group, map it to PATH_INFO.
+            if (matcher.groupCount() > 1)
+                fastCGIHeaders.put(FCGI.Headers.PATH_INFO, matcher.group(2));
+        }
         fastCGIHeaders.put(FCGI.Headers.SCRIPT_NAME, scriptName);
+
+        String root = fastCGIHeaders.get(FCGI.Headers.DOCUMENT_ROOT);
         fastCGIHeaders.put(FCGI.Headers.SCRIPT_FILENAME, root + scriptName);
     }
 

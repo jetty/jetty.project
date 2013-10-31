@@ -49,7 +49,6 @@ public class HttpSenderOverFCGI extends HttpSender
         fcgiHeaders.put(FCGI.Headers.DOCUMENT_URI, path);
         String query = uri.getRawQuery();
         fcgiHeaders.put(FCGI.Headers.QUERY_STRING, query == null ? "" : query);
-        fcgiHeaders.put(FCGI.Headers.REQUEST_URI, query == null ? path : path + "?" + query);
 
         // FastCGI headers based on HTTP headers
         HttpField httpField = headers.remove(HttpHeader.AUTHORIZATION);
