@@ -37,6 +37,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.Ignore;
 
 import static junit.framework.Assert.fail;
 import static org.hamcrest.Matchers.instanceOf;
@@ -99,6 +100,7 @@ public class HostnameVerificationTest
      * @throws Exception
      */
     @Test
+    @Ignore
     public void simpleGetWithHostnameVerificationEnabledTest() throws Exception
     {
         clientSslContextFactory.setEndpointIdentificationAlgorithm("HTTPS");
@@ -132,6 +134,7 @@ public class HostnameVerificationTest
      * @throws Exception
      */
     @Test
+    @Ignore
     public void simpleGetWithHostnameVerificationDisabledTest() throws Exception
     {
         clientSslContextFactory.setEndpointIdentificationAlgorithm(null);
@@ -153,6 +156,7 @@ public class HostnameVerificationTest
      * @throws Exception
      */
     @Test
+    @Ignore
     public void trustAllDisablesHostnameVerificationTest() throws Exception
     {
         clientSslContextFactory.setTrustAll(true);
