@@ -126,6 +126,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
+            client.setSoTimeout(10000);
             ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(true);
             ((StdErrLog)Log.getLogger(HttpConnection.class)).info("expect request is too large, then ISE extra data ...");
             OutputStream os = client.getOutputStream();
