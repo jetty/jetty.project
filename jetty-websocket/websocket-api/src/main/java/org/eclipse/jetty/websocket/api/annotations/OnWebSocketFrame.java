@@ -24,9 +24,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.extensions.Frame;
-
 /**
  * (ADVANCED) Annotation for tagging methods to receive frame events.
  * <p>

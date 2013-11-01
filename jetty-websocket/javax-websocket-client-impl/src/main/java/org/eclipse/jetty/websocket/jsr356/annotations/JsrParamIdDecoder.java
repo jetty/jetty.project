@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.annotations;
 
-import javax.websocket.Decoder;
-import javax.websocket.OnMessage;
-
 import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
 import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
 import org.eclipse.jetty.websocket.jsr356.metadata.DecoderMetadata;

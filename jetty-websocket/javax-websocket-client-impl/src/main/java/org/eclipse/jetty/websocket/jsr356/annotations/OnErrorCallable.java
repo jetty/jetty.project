@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.jsr356.annotations;
 import java.lang.reflect.Method;
 
 import javax.websocket.Decoder;
-import javax.websocket.OnError;
 
 import org.eclipse.jetty.websocket.jsr356.JsrSession;
 

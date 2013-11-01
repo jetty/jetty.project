@@ -18,11 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import javax.websocket.Decoder.BinaryStream;
-import javax.websocket.Decoder.TextStream;
 import javax.websocket.MessageHandler;
-import javax.websocket.MessageHandler.Partial;
-import javax.websocket.MessageHandler.Whole;
 
 import org.eclipse.jetty.websocket.jsr356.metadata.MessageHandlerMetadata;
 

@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.common.frames;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;

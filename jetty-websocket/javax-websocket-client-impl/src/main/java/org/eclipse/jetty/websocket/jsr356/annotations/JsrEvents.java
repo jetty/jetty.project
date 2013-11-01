@@ -28,10 +28,6 @@ import java.util.Map;
 import javax.websocket.CloseReason;
 import javax.websocket.DecodeException;
 import javax.websocket.EndpointConfig;
-import javax.websocket.OnClose;
-import javax.websocket.OnError;
-import javax.websocket.OnMessage;
-import javax.websocket.OnOpen;
 import javax.websocket.RemoteEndpoint;
 
 import org.eclipse.jetty.util.log.Log;
