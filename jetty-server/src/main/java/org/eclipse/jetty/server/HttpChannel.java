@@ -413,9 +413,12 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     {
         try
         {
+            _request.setAttribute(RequestDispatcher.ERROR_EXCEPTION,x);
+            _request.setAttribute(RequestDispatcher.ERROR_EXCEPTION_TYPE,x.getClass());
             if (_state.isSuspended())
             {
                 HttpFields fields = new HttpFields();
+                fields.add(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE);
                 ResponseInfo info = new ResponseInfo(_request.getHttpVersion(), fields, 0, HttpStatus.INTERNAL_SERVER_ERROR_500, null, _request.isHead());
                 boolean committed = sendResponse(info, null, true);
                 if (!committed)
@@ -429,8 +432,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
             }
             else
             {
-                _request.setAttribute(RequestDispatcher.ERROR_EXCEPTION,x);
-                _request.setAttribute(RequestDispatcher.ERROR_EXCEPTION_TYPE,x.getClass());
+                _response.setHeader(HttpHeader.CONNECTION.asString(),HttpHeaderValue.CLOSE.asString());
                 _response.sendError(500, x.getMessage());
             }
         }
