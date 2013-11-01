@@ -448,7 +448,7 @@ public class HttpConnectionTest
 
         offset=0;
         requests=
-        "GET /R1?read=1&error=500 HTTP/1.1\n"+
+        "GET /R1?read=1&error=499 HTTP/1.1\n"+
         "Host: localhost\n"+
         "Transfer-Encoding: chunked\n"+
         "Content-Type: text/plain; charset=utf-8\n"+
@@ -468,7 +468,7 @@ public class HttpConnectionTest
 
         response=connector.getResponses(requests);
 
-        offset = checkContains(response,offset,"HTTP/1.1 500");
+        offset = checkContains(response,offset,"HTTP/1.1 499");
         offset = checkContains(response,offset,"HTTP/1.1 200");
         offset = checkContains(response,offset,"/R2");
         offset = checkContains(response,offset,"encoding=UTF-8");

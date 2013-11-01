@@ -23,7 +23,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
@@ -194,6 +194,7 @@ public class ContinuationTest extends ContinuationBase
     
     class Log extends AbstractLifeCycle implements RequestLog
     {
+        @Override
         public void log(Request request, Response response)
         {
             _log.add(response.getStatus()+" "+response.getContentCount()+" "+request.getRequestURI());
