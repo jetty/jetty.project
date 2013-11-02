@@ -29,6 +29,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 
 /* ------------------------------------------------------------------------------- */
@@ -454,7 +455,7 @@ public class BufferUtil
      */
     public static String toString(ByteBuffer buffer)
     {
-        return toString(buffer, StringUtil.__ISO_8859_1_CHARSET);
+        return toString(buffer, StandardCharsets.ISO_8859_1);
     }
 
     /* ------------------------------------------------------------ */
@@ -464,7 +465,7 @@ public class BufferUtil
      */
     public static String toUTF8String(ByteBuffer buffer)
     {
-        return toString(buffer, StringUtil.__UTF8_CHARSET);
+        return toString(buffer, StandardCharsets.UTF_8);
     }
 
     /* ------------------------------------------------------------ */
@@ -733,12 +734,12 @@ public class BufferUtil
 
     public static ByteBuffer toBuffer(String s)
     {
-        return ByteBuffer.wrap(s.getBytes(StringUtil.__ISO_8859_1_CHARSET));
+        return ByteBuffer.wrap(s.getBytes(StandardCharsets.ISO_8859_1));
     }
 
     public static ByteBuffer toDirectBuffer(String s)
     {
-        byte[] bytes = s.getBytes(StringUtil.__ISO_8859_1_CHARSET);
+        byte[] bytes = s.getBytes(StandardCharsets.ISO_8859_1);
         ByteBuffer buf = ByteBuffer.allocateDirect(bytes.length);
         buf.put(bytes);
         buf.flip();

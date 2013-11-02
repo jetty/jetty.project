@@ -26,6 +26,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.toolchain.test.TestingDir;
@@ -52,7 +53,7 @@ public class FileResourceTest
     private URL decode(URL url) throws MalformedURLException
     {
         String raw = url.toExternalForm();
-        String decoded = UrlEncoded.decodeString(raw,0,raw.length(),StringUtil.__UTF8_CHARSET);
+        String decoded = UrlEncoded.decodeString(raw,0,raw.length(), StandardCharsets.UTF_8);
         return new URL(decoded);
     }
     

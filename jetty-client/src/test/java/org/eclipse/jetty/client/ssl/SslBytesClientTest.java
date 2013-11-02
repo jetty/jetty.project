@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.SocketTimeoutException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -151,7 +152,7 @@ public class SslBytesClientTest extends SslBytesTest
 
         SimpleProxy.AutomaticFlow automaticProxyFlow = proxy.startAutomaticFlow();
         // Read request
-        BufferedReader reader = new BufferedReader(new InputStreamReader(server.getInputStream(), "UTF-8"));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(server.getInputStream(), StandardCharsets.UTF_8));
         String line = reader.readLine();
         Assert.assertTrue(line.startsWith("GET"));
         while (line.length() > 0)
@@ -161,7 +162,7 @@ public class SslBytesClientTest extends SslBytesTest
         OutputStream output = server.getOutputStream();
         output.write(("HTTP/1.1 200 OK\r\n" +
                 "Content-Length: 0\r\n" +
-                "\r\n").getBytes("UTF-8"));
+                "\r\n").getBytes(StandardCharsets.UTF_8));
         output.flush();
         Assert.assertTrue(automaticProxyFlow.stop(5, TimeUnit.SECONDS));
 
@@ -197,7 +198,7 @@ public class SslBytesClientTest extends SslBytesTest
 
         // Read request
         InputStream serverInput = server.getInputStream();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(serverInput, "UTF-8"));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(serverInput, StandardCharsets.UTF_8));
         String line = reader.readLine();
         Assert.assertTrue(line.startsWith("GET"));
         while (line.length() > 0)
@@ -206,16 +207,16 @@ public class SslBytesClientTest extends SslBytesTest
         OutputStream serverOutput = server.getOutputStream();
         byte[] data1 = new byte[1024];
         Arrays.fill(data1, (byte)'X');
-        String content1 = new String(data1, "UTF-8");
+        String content1 = new String(data1, StandardCharsets.UTF_8);
         byte[] data2 = new byte[1024];
         Arrays.fill(data2, (byte)'Y');
-        final String content2 = new String(data2, "UTF-8");
+        final String content2 = new String(data2, StandardCharsets.UTF_8);
         // Write first part of the response
         serverOutput.write(("HTTP/1.1 200 OK\r\n" +
                 "Content-Type: text/plain\r\n" +
                 "Content-Length: " + (content1.length() + content2.length()) + "\r\n" +
                 "\r\n" +
-                content1).getBytes("UTF-8"));
+                content1).getBytes(StandardCharsets.UTF_8));
         serverOutput.flush();
         Assert.assertTrue(automaticProxyFlow.stop(5, TimeUnit.SECONDS));
 
@@ -319,7 +320,7 @@ public class SslBytesClientTest extends SslBytesTest
 
         // Read request
         InputStream serverInput = server.getInputStream();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(serverInput, "UTF-8"));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(serverInput, StandardCharsets.UTF_8));
         String line = reader.readLine();
         Assert.assertTrue(line.startsWith("GET"));
         while (line.length() > 0)
@@ -328,16 +329,16 @@ public class SslBytesClientTest extends SslBytesTest
         OutputStream serverOutput = server.getOutputStream();
         byte[] data1 = new byte[1024];
         Arrays.fill(data1, (byte)'X');
-        String content1 = new String(data1, "UTF-8");
+        String content1 = new String(data1, StandardCharsets.UTF_8);
         byte[] data2 = new byte[1024];
         Arrays.fill(data2, (byte)'Y');
-        final String content2 = new String(data2, "UTF-8");
+        final String content2 = new String(data2, StandardCharsets.UTF_8);
         // Write first part of the response
         serverOutput.write(("HTTP/1.1 200 OK\r\n" +
                 "Content-Type: text/plain\r\n" +
                 "Content-Length: " + (content1.length() + content2.length()) + "\r\n" +
                 "\r\n" +
-                content1).getBytes("UTF-8"));
+                content1).getBytes(StandardCharsets.UTF_8));
         serverOutput.flush();
         Assert.assertTrue(automaticProxyFlow.stop(5, TimeUnit.SECONDS));
 

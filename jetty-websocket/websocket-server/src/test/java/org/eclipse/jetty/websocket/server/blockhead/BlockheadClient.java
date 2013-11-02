@@ -33,6 +33,7 @@ import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -718,7 +719,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames, Connecti
     public void writeRaw(String str) throws IOException
     {
         LOG.debug("write((String)[{}]){}{})",str.length(),'\n',str);
-        out.write(StringUtil.getBytes(str,StringUtil.__ISO_8859_1));
+        out.write(str.getBytes(StandardCharsets.ISO_8859_1));
     }
 
     public void writeRawSlowly(ByteBuffer buf, int segmentSize) throws IOException

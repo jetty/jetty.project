@@ -22,6 +22,7 @@ import static org.hamcrest.Matchers.*;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -84,7 +85,7 @@ public class MessageCompressionExtensionTest
         Assert.assertThat(prefix + ".rsv2",actual.isRsv2(),is(false));
         Assert.assertThat(prefix + ".rsv3",actual.isRsv3(),is(false));
 
-        ByteBuffer expected = BufferUtil.toBuffer(expectedStr,StringUtil.__UTF8_CHARSET);
+        ByteBuffer expected = BufferUtil.toBuffer(expectedStr, StandardCharsets.UTF_8);
         Assert.assertThat(prefix + ".payloadLength",actual.getPayloadLength(),is(expected.remaining()));
         ByteBufferAssert.assertEquals(prefix + ".payload",expected,actual.getPayload().slice());
     }
@@ -188,7 +189,7 @@ public class MessageCompressionExtensionTest
         Assert.assertThat("Frame.rsv2",actual.isRsv2(),is(false));
         Assert.assertThat("Frame.rsv3",actual.isRsv3(),is(false));
 
-        ByteBuffer expected = BufferUtil.toBuffer(payload,StringUtil.__UTF8_CHARSET);
+        ByteBuffer expected = BufferUtil.toBuffer(payload,StandardCharsets.UTF_8);
         Assert.assertThat("Frame.payloadLength",actual.getPayloadLength(),is(expected.remaining()));
         ByteBufferAssert.assertEquals("Frame.payload",expected,actual.getPayload().slice());
     }
@@ -243,7 +244,7 @@ public class MessageCompressionExtensionTest
             Assert.assertThat(prefix + ".rsv2",actual.isRsv2(),is(false));
             Assert.assertThat(prefix + ".rsv3",actual.isRsv3(),is(false));
 
-            ByteBuffer expected = BufferUtil.toBuffer(quote.get(i),StringUtil.__UTF8_CHARSET);
+            ByteBuffer expected = BufferUtil.toBuffer(quote.get(i),StandardCharsets.UTF_8);
             Assert.assertThat(prefix + ".payloadLength",actual.getPayloadLength(),is(expected.remaining()));
             ByteBufferAssert.assertEquals(prefix + ".payload",expected,actual.getPayload().slice());
         }
@@ -279,7 +280,7 @@ public class MessageCompressionExtensionTest
         for(String part: quote) {
             Process process = method.compress();
             process.begin();
-            process.input(BufferUtil.toBuffer(part,StringUtil.__UTF8_CHARSET));
+            process.input(BufferUtil.toBuffer(part,StandardCharsets.UTF_8));
             expectedBuffers.add(process.process());
             process.end();
         }
@@ -353,7 +354,7 @@ public class MessageCompressionExtensionTest
         Assert.assertThat("Frame.rsv2",actual.isRsv2(),is(false));
         Assert.assertThat("Frame.rsv3",actual.isRsv3(),is(false));
 
-        ByteBuffer expected = BufferUtil.toBuffer(payload,StringUtil.__UTF8_CHARSET);
+        ByteBuffer expected = BufferUtil.toBuffer(payload,StandardCharsets.UTF_8);
         Assert.assertThat("Frame.payloadLength",actual.getPayloadLength(),is(expected.remaining()));
         ByteBufferAssert.assertEquals("Frame.payload",expected,actual.getPayload().slice());
     }

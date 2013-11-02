@@ -36,6 +36,7 @@ import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -444,7 +445,7 @@ public class IOTest
         ByteBuffer read = ByteBuffer.allocate(1024);
         Future<Integer> reading = server.read(read);
 
-        byte[] data = "Testing 1 2 3".getBytes("UTF-8");
+        byte[] data = "Testing 1 2 3".getBytes(StandardCharsets.UTF_8);
         ByteBuffer write = BufferUtil.toBuffer(data);
         Future<Integer> writing = client.write(write);
 

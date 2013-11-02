@@ -30,6 +30,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Exchanger;
@@ -96,7 +97,7 @@ public class AsyncRequestReadTest
                     "Content-Length: "+content.length+"\r\n"+
                     "Content-Type: bytes\r\n"+
                     "\r\n";
-            byte[] h=header.getBytes(StringUtil.__ISO_8859_1);
+            byte[] h=header.getBytes(StandardCharsets.ISO_8859_1);
             out.write(h);
             out.write(content);
             
@@ -108,7 +109,7 @@ public class AsyncRequestReadTest
                     "Content-Type: bytes\r\n"+
                     "Connection: close\r\n"+
                     "\r\n";
-            h=header.getBytes(StringUtil.__ISO_8859_1);
+            h=header.getBytes(StandardCharsets.ISO_8859_1);
             out.write(h);
             out.write(content);
             out.flush();
@@ -244,7 +245,7 @@ public class AsyncRequestReadTest
                     "Content-Length: "+content.length+"\r\n"+
                     "Content-Type: bytes\r\n"+
                     "\r\n";
-            byte[] h=header.getBytes(StringUtil.__ISO_8859_1);
+            byte[] h=header.getBytes(StandardCharsets.ISO_8859_1);
             out.write(h);
             out.write(content);
             
@@ -254,7 +255,7 @@ public class AsyncRequestReadTest
                     "Content-Type: bytes\r\n"+
                     "Connection: close\r\n"+
                     "\r\n";
-            h=header.getBytes(StringUtil.__ISO_8859_1);
+            h=header.getBytes(StandardCharsets.ISO_8859_1);
             out.write(h);
             out.write(content);
             out.flush();
@@ -294,7 +295,7 @@ public class AsyncRequestReadTest
                     "Content-Length: "+content.length+"\r\n"+
                     "Content-Type: bytes\r\n"+
                     "\r\n";
-            byte[] h=header.getBytes(StringUtil.__ISO_8859_1);
+            byte[] h=header.getBytes(StandardCharsets.ISO_8859_1);
             out.write(h);
             out.write(content,0,4096);
             out.flush();
@@ -329,7 +330,7 @@ public class AsyncRequestReadTest
                     "Content-Length: "+content.length+"\r\n"+
                     "Content-Type: bytes\r\n"+
                     "\r\n";
-            byte[] h=header.getBytes(StringUtil.__ISO_8859_1);
+            byte[] h=header.getBytes(StandardCharsets.ISO_8859_1);
             out.write(h);
             out.write(content,0,4096);
             out.flush();

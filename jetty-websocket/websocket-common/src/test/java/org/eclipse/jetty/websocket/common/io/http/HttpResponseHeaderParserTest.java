@@ -22,6 +22,7 @@ import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,7 +40,7 @@ public class HttpResponseHeaderParserTest
 
     private void appendUtf8(ByteBuffer buf, String line)
     {
-        buf.put(ByteBuffer.wrap(StringUtil.getBytes(line,StringUtil.__UTF8)));
+        buf.put(ByteBuffer.wrap(StringUtil.getUtf8Bytes(line)));
     }
 
     @Test
@@ -56,7 +57,7 @@ public class HttpResponseHeaderParserTest
         // and some body content
         resp.append("What you are looking for is not here\r\n");
 
-        ByteBuffer buf = BufferUtil.toBuffer(resp.toString(),StringUtil.__UTF8_CHARSET);
+        ByteBuffer buf = BufferUtil.toBuffer(resp.toString(),StandardCharsets.UTF_8);
 
         HttpResponseParseCapture capture = new HttpResponseParseCapture();
         HttpResponseHeaderParser parser = new HttpResponseHeaderParser(capture);
@@ -178,7 +179,7 @@ public class HttpResponseHeaderParserTest
         resp.append("Sec-WebSocket-Protocol: chat\r\n");
         resp.append("\r\n");
 
-        ByteBuffer buf = BufferUtil.toBuffer(resp.toString(),StringUtil.__UTF8_CHARSET);
+        ByteBuffer buf = BufferUtil.toBuffer(resp.toString(),StandardCharsets.UTF_8);
 
         HttpResponseParseCapture capture = new HttpResponseParseCapture();
         HttpResponseHeaderParser parser = new HttpResponseHeaderParser(capture);

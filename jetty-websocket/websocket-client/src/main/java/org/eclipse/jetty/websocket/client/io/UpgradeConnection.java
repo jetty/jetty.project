@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.client.io;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
@@ -62,7 +63,7 @@ public class UpgradeConnection extends AbstractConnection
             request.setRequestURI(uri);
             String rawRequest = request.generate();
 
-            ByteBuffer buf = BufferUtil.toBuffer(rawRequest,StringUtil.__UTF8_CHARSET);
+            ByteBuffer buf = BufferUtil.toBuffer(rawRequest, StandardCharsets.UTF_8);
             getEndPoint().write(this,buf);
         }
 

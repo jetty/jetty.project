@@ -19,6 +19,7 @@
 package org.eclipse.jetty.security.authentication;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.BitSet;
@@ -367,18 +368,18 @@ public class DigestAuthenticator extends LoginAuthenticator
                 else
                 {
                     // calc A1 digest
-                    md.update(username.getBytes(StringUtil.__ISO_8859_1));
+                    md.update(username.getBytes(StandardCharsets.ISO_8859_1));
                     md.update((byte) ':');
-                    md.update(realm.getBytes(StringUtil.__ISO_8859_1));
+                    md.update(realm.getBytes(StandardCharsets.ISO_8859_1));
                     md.update((byte) ':');
-                    md.update(password.getBytes(StringUtil.__ISO_8859_1));
+                    md.update(password.getBytes(StandardCharsets.ISO_8859_1));
                     ha1 = md.digest();
                 }
                 // calc A2 digest
                 md.reset();
-                md.update(method.getBytes(StringUtil.__ISO_8859_1));
+                md.update(method.getBytes(StandardCharsets.ISO_8859_1));
                 md.update((byte) ':');
-                md.update(uri.getBytes(StringUtil.__ISO_8859_1));
+                md.update(uri.getBytes(StandardCharsets.ISO_8859_1));
                 byte[] ha2 = md.digest();
 
                 // calc digest
@@ -388,17 +389,17 @@ public class DigestAuthenticator extends LoginAuthenticator
                 // request-digest = <"> < KD ( H(A1), unq(nonce-value) ":" H(A2)
                 // ) > <">
 
-                md.update(TypeUtil.toString(ha1, 16).getBytes(StringUtil.__ISO_8859_1));
+                md.update(TypeUtil.toString(ha1, 16).getBytes(StandardCharsets.ISO_8859_1));
                 md.update((byte) ':');
-                md.update(nonce.getBytes(StringUtil.__ISO_8859_1));
+                md.update(nonce.getBytes(StandardCharsets.ISO_8859_1));
                 md.update((byte) ':');
-                md.update(nc.getBytes(StringUtil.__ISO_8859_1));
+                md.update(nc.getBytes(StandardCharsets.ISO_8859_1));
                 md.update((byte) ':');
-                md.update(cnonce.getBytes(StringUtil.__ISO_8859_1));
+                md.update(cnonce.getBytes(StandardCharsets.ISO_8859_1));
                 md.update((byte) ':');
-                md.update(qop.getBytes(StringUtil.__ISO_8859_1));
+                md.update(qop.getBytes(StandardCharsets.ISO_8859_1));
                 md.update((byte) ':');
-                md.update(TypeUtil.toString(ha2, 16).getBytes(StringUtil.__ISO_8859_1));
+                md.update(TypeUtil.toString(ha2, 16).getBytes(StandardCharsets.ISO_8859_1));
                 byte[] digest = md.digest();
 
                 // check digest

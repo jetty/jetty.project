@@ -19,7 +19,7 @@
 package org.eclipse.jetty.spdy.parser;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.zip.ZipException;
 
 import org.eclipse.jetty.spdy.CompressionDictionary;
@@ -57,8 +57,6 @@ public abstract class HeadersBlockParser
         data = null;
         ByteBuffer decompressedHeaders = decompress(version, compressedHeaders);
 
-        Charset iso1 = Charset.forName("ISO-8859-1");
-
         // We know the decoded bytes contain the full headers,
         // so optimize instead of looping byte by byte
         int count = readCount(version, decompressedHeaders);
@@ -69,14 +67,14 @@ public abstract class HeadersBlockParser
                 throw new StreamException(streamId, StreamStatus.PROTOCOL_ERROR, "Invalid header name length");
             byte[] nameBytes = new byte[nameLength];
             decompressedHeaders.get(nameBytes);
-            String name = new String(nameBytes, iso1);
+            String name = new String(nameBytes, StandardCharsets.ISO_8859_1);
 
             int valueLength = readValueLength(version, decompressedHeaders);
             if (valueLength == 0)
                 throw new StreamException(streamId, StreamStatus.PROTOCOL_ERROR, "Invalid header value length");
             byte[] valueBytes = new byte[valueLength];
             decompressedHeaders.get(valueBytes);
-            String value = new String(valueBytes, iso1);
+            String value = new String(valueBytes, StandardCharsets.ISO_8859_1);
             // Multi valued headers are separate by NUL
             String[] values = value.split("\u0000");
             // Check if there are multiple NULs (section 2.6.9)

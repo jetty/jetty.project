@@ -19,6 +19,7 @@
 package org.eclipse.jetty.spdy.server.proxy;
 
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
@@ -251,7 +252,7 @@ public class ProxyHTTPToSPDYTest
     @Test
     public void testGETThenSmallResponseContent() throws Exception
     {
-        final byte[] data = "0123456789ABCDEF".getBytes("UTF-8");
+        final byte[] data = "0123456789ABCDEF".getBytes(StandardCharsets.UTF_8);
         InetSocketAddress proxyAddress = startProxy(startServer(new ServerSessionFrameListener.Adapter()
         {
             @Override
@@ -328,7 +329,7 @@ public class ProxyHTTPToSPDYTest
     public void testPOSTWithSmallRequestContentThenSmallResponseContent() throws Exception
     {
         String dataString = "0123456789ABCDEF";
-        final byte[] data = dataString.getBytes("UTF-8");
+        final byte[] data = dataString.getBytes(StandardCharsets.UTF_8);
         InetSocketAddress proxyAddress = startProxy(startServer(new ServerSessionFrameListener.Adapter()
         {
             @Override
@@ -370,7 +371,7 @@ public class ProxyHTTPToSPDYTest
     @Test
     public void testGETThenSPDYPushIsIgnored() throws Exception
     {
-        final byte[] data = "0123456789ABCDEF".getBytes("UTF-8");
+        final byte[] data = "0123456789ABCDEF".getBytes(StandardCharsets.UTF_8);
         InetSocketAddress proxyAddress = startProxy(startServer(new ServerSessionFrameListener.Adapter()
         {
             @Override

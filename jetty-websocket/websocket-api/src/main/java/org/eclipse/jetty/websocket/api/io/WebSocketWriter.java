@@ -20,13 +20,11 @@ package org.eclipse.jetty.websocket.api.io;
 
 import java.io.IOException;
 import java.io.Writer;
-import java.nio.charset.Charset;
 
 import org.eclipse.jetty.websocket.api.Session;
 
 public class WebSocketWriter extends Writer
 {
-    private final Charset charset = Charset.forName("UTF-8");
     private final Session session;
 
     public WebSocketWriter(Session session)

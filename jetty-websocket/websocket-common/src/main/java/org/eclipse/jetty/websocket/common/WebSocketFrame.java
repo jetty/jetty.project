@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.common;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import org.eclipse.jetty.util.BufferUtil;
@@ -661,7 +662,7 @@ public class WebSocketFrame implements Frame
 
     public WebSocketFrame setPayload(String str)
     {
-        setPayload(BufferUtil.toBuffer(str,StringUtil.__UTF8_CHARSET));
+        setPayload(BufferUtil.toBuffer(str, StandardCharsets.UTF_8));
         return this;
     }
 

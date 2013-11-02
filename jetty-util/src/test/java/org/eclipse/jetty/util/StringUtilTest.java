@@ -25,6 +25,8 @@ import static org.junit.Assert.assertTrue;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.nio.charset.StandardCharsets;
+
 public class StringUtilTest
 {
     @Test
@@ -160,7 +162,7 @@ public class StringUtilTest
     {
         String string = "Now \u0690xxxxxxxx";
         System.err.println(string);
-        byte[] bytes=string.getBytes("UTF-8");
+        byte[] bytes=string.getBytes(StandardCharsets.UTF_8);
         System.err.println(new String(bytes));
         System.err.println(bytes.length);
         long calc=0;
@@ -170,7 +172,7 @@ public class StringUtilTest
             long s1=System.currentTimeMillis();
             for (int j=1000000; j-->0;)
             {
-                calc+=new String(bytes,0,bytes.length,"UTF-8").hashCode();
+                calc+=new String(bytes,0,bytes.length,StandardCharsets.UTF_8).hashCode();
             }
             long s2=System.currentTimeMillis();
             for (int j=1000000; j-->0;)

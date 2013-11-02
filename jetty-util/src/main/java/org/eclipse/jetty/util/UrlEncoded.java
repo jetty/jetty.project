@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
@@ -59,15 +60,16 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
     public static final Charset ENCODING;
     static
     {
-        Charset encoding=null;
+        Charset encoding;
         try
         {
-            encoding=Charset.forName(System.getProperty("org.eclipse.jetty.util.UrlEncoding.charset",StringUtil.__UTF8));
+            String charset = System.getProperty("org.eclipse.jetty.util.UrlEncoding.charset");
+            encoding = charset == null ? StandardCharsets.UTF_8 : Charset.forName(charset);
         }
         catch(Exception e)
         {
             LOG.warn(e);
-            encoding=StringUtil.__UTF8_CHARSET;
+            encoding=StandardCharsets.UTF_8;
         }
         ENCODING=encoding;
     }
@@ -269,7 +271,6 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
      * @param offset the offset within raw to decode from
      * @param length the length of the section to decode
      * @param map the {@link MultiMap} to populate
-     * @param buffer the buffer to decode into
      */
     public static void decodeUtf8To(byte[] raw,int offset, int length, MultiMap<String> map)
     {
@@ -594,11 +595,11 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
     /* -------------------------------------------------------------- */
     public static void decodeUtf16To(InputStream in, MultiMap<String> map, int maxLength, int maxKeys) throws IOException
     {
-        InputStreamReader input = new InputStreamReader(in,StringUtil.__UTF16);
+        InputStreamReader input = new InputStreamReader(in,StandardCharsets.UTF_16);
         StringWriter buf = new StringWriter(8192);
         IO.copy(input,buf,maxLength);
         
-        decodeTo(buf.getBuffer().toString(),map,StringUtil.__UTF16,maxKeys);
+        decodeTo(buf.getBuffer().toString(),map,StandardCharsets.UTF_16,maxKeys);
     }
 
     /* -------------------------------------------------------------- */
@@ -610,7 +611,7 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
     {
         if (charset==null)
         {
-            if (ENCODING==StringUtil.__UTF8_CHARSET)
+            if (ENCODING.equals(StandardCharsets.UTF_8))
                 decodeUtf8To(in,map,maxLength,maxKeys);
             else
                 decodeTo(in,map,ENCODING,maxLength,maxKeys);
@@ -636,19 +637,19 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
         if (charset==null) 
            charset=ENCODING;
             
-        if (StringUtil.__UTF8_CHARSET.equals(charset))
+        if (StandardCharsets.UTF_8.equals(charset))
         {
             decodeUtf8To(in,map,maxLength,maxKeys);
             return;
         }
         
-        if (StringUtil.__ISO_8859_1_CHARSET.equals(charset))
+        if (StandardCharsets.ISO_8859_1.equals(charset))
         {
             decode88591To(in,map,maxLength,maxKeys);
             return;
         }
 
-        if (StringUtil.__UTF16_CHARSET.equals(charset)) // Should be all 2 byte encodings
+        if (StandardCharsets.UTF_16.equals(charset)) // Should be all 2 byte encodings
         {
             decodeUtf16To(in,map,maxLength,maxKeys);
             return;
@@ -753,7 +754,7 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
      */
     public static String decodeString(String encoded,int offset,int length,Charset charset)
     {
-        if (charset==null || StringUtil.__UTF8_CHARSET.equals(charset))
+        if (charset==null || StandardCharsets.UTF_8.equals(charset))
         {
             Utf8StringBuffer buffer=null;
 

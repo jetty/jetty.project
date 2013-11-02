@@ -21,6 +21,7 @@ package org.eclipse.jetty.util;
 import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 
 
 /* ================================================================ */
@@ -53,7 +54,7 @@ public class MultiPartOutputStream extends FilterOutputStream
 
         boundary = "jetty"+System.identityHashCode(this)+
         Long.toString(System.currentTimeMillis(),36);
-        boundaryBytes=boundary.getBytes(StringUtil.__ISO_8859_1);
+        boundaryBytes=boundary.getBytes(StandardCharsets.ISO_8859_1);
     }
 
     public MultiPartOutputStream(OutputStream out, String boundary)
@@ -62,7 +63,7 @@ public class MultiPartOutputStream extends FilterOutputStream
         super(out);
 
         this.boundary = boundary;
-        boundaryBytes=boundary.getBytes(StringUtil.__ISO_8859_1);
+        boundaryBytes=boundary.getBytes(StandardCharsets.ISO_8859_1);
     }
 
     /* ------------------------------------------------------------ */
@@ -110,7 +111,7 @@ public class MultiPartOutputStream extends FilterOutputStream
         out.write(boundaryBytes);
         out.write(__CRLF);
         if (contentType != null)
-            out.write(("Content-Type: "+contentType).getBytes(StringUtil.__ISO_8859_1));
+            out.write(("Content-Type: "+contentType).getBytes(StandardCharsets.ISO_8859_1));
         out.write(__CRLF);
         out.write(__CRLF);
     }
@@ -128,11 +129,11 @@ public class MultiPartOutputStream extends FilterOutputStream
         out.write(boundaryBytes);
         out.write(__CRLF);
         if (contentType != null)
-            out.write(("Content-Type: "+contentType).getBytes(StringUtil.__ISO_8859_1));
+            out.write(("Content-Type: "+contentType).getBytes(StandardCharsets.ISO_8859_1));
         out.write(__CRLF);
         for (int i=0;headers!=null && i<headers.length;i++)
         {
-            out.write(headers[i].getBytes(StringUtil.__ISO_8859_1));
+            out.write(headers[i].getBytes(StandardCharsets.ISO_8859_1));
             out.write(__CRLF);
         }
         out.write(__CRLF);

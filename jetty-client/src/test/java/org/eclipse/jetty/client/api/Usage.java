@@ -24,6 +24,7 @@ import java.io.OutputStream;
 import java.net.HttpCookie;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -269,7 +270,7 @@ public class Usage
         HttpClient client = new HttpClient();
         client.start();
 
-        InputStream input = new ByteArrayInputStream("content".getBytes("UTF-8"));
+        InputStream input = new ByteArrayInputStream("content".getBytes(StandardCharsets.UTF_8));
 
         ContentResponse response = client.newRequest("localhost", 8080)
                 // Provide the content as InputStream

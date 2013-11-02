@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -71,10 +72,10 @@ public class HostHeaderCustomizerTest
                 String request = "" +
                         "GET / HTTP/1.0\r\n" +
                         "\r\n";
-                output.write(request.getBytes("UTF-8"));
+                output.write(request.getBytes(StandardCharsets.UTF_8));
                 output.flush();
 
-                BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));
+                BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
                 SimpleHttpParser parser = new SimpleHttpParser();
                 SimpleHttpResponse response = parser.readResponse(input);
 

@@ -20,6 +20,8 @@ package org.eclipse.jetty.client.util;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
 import java.util.Locale;
 
@@ -130,7 +132,7 @@ public abstract class BufferingResponseListener extends Response.Listener.Empty
     {
         String encoding = this.encoding;
         if (encoding == null)
-            encoding = "UTF-8";
+            return getContentAsString(StandardCharsets.UTF_8);
         return getContentAsString(encoding);
     }
 
@@ -149,5 +151,15 @@ public abstract class BufferingResponseListener extends Response.Listener.Empty
         {
             throw new UnsupportedCharsetException(encoding);
         }
+    }
+
+    /**
+     * @param encoding the encoding of the content bytes
+     * @return the content as a string, with the specified encoding
+     * @see #getContentAsString()
+     */
+    public String getContentAsString(Charset encoding)
+    {
+        return new String(getContent(), encoding);
     }
 }

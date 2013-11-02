@@ -25,6 +25,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.EnumSet;
 
 import javax.servlet.DispatcherType;
@@ -117,14 +118,14 @@ public abstract class AbstractDoSFilterTest
 
         for (int i=loops;i-->0;)
         {
-            socket.getOutputStream().write(loopRequests.getBytes("UTF-8"));
+            socket.getOutputStream().write(loopRequests.getBytes(StandardCharsets.UTF_8));
             socket.getOutputStream().flush();
             if (i>0 && pauseBetweenLoops>0)
                 Thread.sleep(pauseBetweenLoops);
         }
         if (pauseBeforeLast>0)
             Thread.sleep(pauseBeforeLast);
-        socket.getOutputStream().write(lastRequest.getBytes("UTF-8"));
+        socket.getOutputStream().write(lastRequest.getBytes(StandardCharsets.UTF_8));
         socket.getOutputStream().flush();
 
 
@@ -133,11 +134,11 @@ public abstract class AbstractDoSFilterTest
         {
             // don't read in anything, forcing the request to time out
             Thread.sleep(_requestMaxTime * 2);
-            response = IO.toString(socket.getInputStream(),"UTF-8");
+            response = IO.toString(socket.getInputStream(),StandardCharsets.UTF_8);
         }
         else
         {
-            response = IO.toString(socket.getInputStream(),"UTF-8");
+            response = IO.toString(socket.getInputStream(),StandardCharsets.UTF_8);
         }
         socket.close();
         return response;

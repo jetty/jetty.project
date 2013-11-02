@@ -25,6 +25,7 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.ByteBuffer;
 import java.nio.channels.UnresolvedAddressException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -171,10 +172,10 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 response.setCharacterEncoding("UTF-8");
                 ServletOutputStream output = response.getOutputStream();
                 String paramValue1 = request.getParameter(paramName1);
-                output.write(paramValue1.getBytes("UTF-8"));
+                output.write(paramValue1.getBytes(StandardCharsets.UTF_8));
                 String paramValue2 = request.getParameter(paramName2);
                 Assert.assertEquals("", paramValue2);
-                output.write("empty".getBytes("UTF-8"));
+                output.write("empty".getBytes(StandardCharsets.UTF_8));
                 baseRequest.setHandled(true);
             }
         });
@@ -186,7 +187,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.getStatus());
-        String content = new String(response.getContent(), "UTF-8");
+        String content = new String(response.getContent(), StandardCharsets.UTF_8);
         Assert.assertEquals(value1 + "empty", content);
     }
 
@@ -204,9 +205,9 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 ServletOutputStream output = response.getOutputStream();
                 String[] paramValues1 = request.getParameterValues(paramName1);
                 for (String paramValue : paramValues1)
-                    output.write(paramValue.getBytes("UTF-8"));
+                    output.write(paramValue.getBytes(StandardCharsets.UTF_8));
                 String paramValue2 = request.getParameter(paramName2);
-                output.write(paramValue2.getBytes("UTF-8"));
+                output.write(paramValue2.getBytes(StandardCharsets.UTF_8));
                 baseRequest.setHandled(true);
             }
         });
@@ -222,7 +223,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.getStatus());
-        String content = new String(response.getContent(), "UTF-8");
+        String content = new String(response.getContent(), StandardCharsets.UTF_8);
         Assert.assertEquals(value11 + value12 + value2, content);
     }
 
@@ -254,7 +255,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.getStatus());
-        Assert.assertEquals(paramValue, new String(response.getContent(), "UTF-8"));
+        Assert.assertEquals(paramValue, new String(response.getContent(), StandardCharsets.UTF_8));
     }
 
     @Test
@@ -286,7 +287,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.getStatus());
-        Assert.assertEquals(paramValue, new String(response.getContent(), "UTF-8"));
+        Assert.assertEquals(paramValue, new String(response.getContent(), StandardCharsets.UTF_8));
     }
 
     @Test

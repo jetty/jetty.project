@@ -32,7 +32,7 @@ public class Utf8LineParserTest
 {
     private void appendUtf8(ByteBuffer buf, String line)
     {
-        buf.put(ByteBuffer.wrap(StringUtil.getBytes(line,StringUtil.__UTF8)));
+        buf.put(ByteBuffer.wrap(StringUtil.getUtf8Bytes(line)));
     }
 
     private void assertEquals(List<String> expected, List<String> actual)
