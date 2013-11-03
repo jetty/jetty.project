@@ -38,6 +38,7 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.net.URI;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
@@ -969,12 +970,12 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 }
             }
 
-            String in = new String(b, 0, i, "utf-8");
+            String in = new String(b, 0, i, StandardCharsets.UTF_8);
             assertTrue(in.contains("123456789"));
             assertTrue(in.contains("abcdefghZ"));
             assertFalse(in.contains("Wibble"));
 
-            in = new String(b, i, b.length - i, "utf-16");
+            in = new String(b, i, b.length - i, StandardCharsets.UTF_16);
             assertEquals("Wibble\n", in);
         }
     }
@@ -1414,11 +1415,11 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 {
                     for (int i = 0; i < REQS; i++)
                     {
-                        out.write("GET / HTTP/1.1\r\nHost: localhost\r\n".getBytes(StringUtil.__ISO_8859_1));
-                        out.write(("Content-Length: " + bytes.length + "\r\n" + "\r\n").getBytes(StringUtil.__ISO_8859_1));
+                        out.write("GET / HTTP/1.1\r\nHost: localhost\r\n".getBytes(StandardCharsets.ISO_8859_1));
+                        out.write(("Content-Length: " + bytes.length + "\r\n" + "\r\n").getBytes(StandardCharsets.ISO_8859_1));
                         out.write(bytes, 0, bytes.length);
                     }
-                    out.write("GET / HTTP/1.1\r\nHost: last\r\nConnection: close\r\n\r\n".getBytes(StringUtil.__ISO_8859_1));
+                    out.write("GET / HTTP/1.1\r\nHost: last\r\nConnection: close\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1));
                     out.flush();
                 }
                 catch (Exception e)

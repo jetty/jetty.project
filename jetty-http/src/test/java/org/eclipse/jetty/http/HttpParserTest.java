@@ -24,6 +24,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -112,7 +113,7 @@ public class HttpParserTest
     @Test
     public void testLineParse3() throws Exception
     {
-        ByteBuffer buffer= BufferUtil.toBuffer("POST /fo\u0690 HTTP/1.0\015\012" + "\015\012",StringUtil.__UTF8_CHARSET);
+        ByteBuffer buffer= BufferUtil.toBuffer("POST /fo\u0690 HTTP/1.0\015\012" + "\015\012",StandardCharsets.UTF_8);
 
         HttpParser.RequestHandler<ByteBuffer> handler  = new Handler();
         HttpParser parser= new HttpParser(handler);
@@ -126,7 +127,7 @@ public class HttpParserTest
     @Test
     public void testLineParse4() throws Exception
     {
-        ByteBuffer buffer= BufferUtil.toBuffer("POST /foo?param=\u0690 HTTP/1.0\015\012" + "\015\012",StringUtil.__UTF8_CHARSET);
+        ByteBuffer buffer= BufferUtil.toBuffer("POST /foo?param=\u0690 HTTP/1.0\015\012" + "\015\012",StandardCharsets.UTF_8);
 
         HttpParser.RequestHandler<ByteBuffer> handler  = new Handler();
         HttpParser parser= new HttpParser(handler);
@@ -346,10 +347,10 @@ public class HttpParserTest
         ByteBuffer buffer=BufferUtil.allocate(4096);
         BufferUtil.flipToFill(buffer); 
         BufferUtil.put(BufferUtil.toBuffer("GET "),buffer);
-        buffer.put("/foo/\u0690/".getBytes(StringUtil.__UTF8_CHARSET));
+        buffer.put("/foo/\u0690/".getBytes(StandardCharsets.UTF_8));
         BufferUtil.put(BufferUtil.toBuffer(" HTTP/1.0\r\n"),buffer);
         BufferUtil.put(BufferUtil.toBuffer("Header1: "),buffer);
-        buffer.put("\u00e6 \u00e6".getBytes(StringUtil.__ISO_8859_1_CHARSET));
+        buffer.put("\u00e6 \u00e6".getBytes(StandardCharsets.ISO_8859_1));
         BufferUtil.put(BufferUtil.toBuffer("  \r\n\r\n"),buffer);
         BufferUtil.flipToFlush(buffer,0);
                     
@@ -1348,7 +1349,7 @@ public class HttpParserTest
         {
             if (_content==null)
                 _content="";
-            String c = BufferUtil.toString(ref,StringUtil.__UTF8_CHARSET);
+            String c = BufferUtil.toString(ref,StandardCharsets.UTF_8);
             //System.err.println("content '"+c+"'");
             _content= _content + c;
             ref.position(ref.limit());

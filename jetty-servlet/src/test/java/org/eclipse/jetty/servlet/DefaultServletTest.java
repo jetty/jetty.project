@@ -23,6 +23,7 @@ import static org.junit.Assert.assertTrue;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.EnumSet;
 import java.util.regex.Matcher;
@@ -883,7 +884,7 @@ public class DefaultServletTest
         try
         {
             out = new FileOutputStream(file);
-            out.write(str.getBytes(StringUtil.__UTF8));
+            out.write(str.getBytes(StandardCharsets.UTF_8));
             out.flush();
         }
         finally

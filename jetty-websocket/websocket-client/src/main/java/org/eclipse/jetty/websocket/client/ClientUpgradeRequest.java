@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.client;
 import java.net.CookieStore;
 import java.net.HttpCookie;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -223,7 +224,7 @@ public class ClientUpgradeRequest extends UpgradeRequest
         if (StringUtil.isNotBlank(query))
         {
             MultiMap<String> params = new MultiMap<String>();
-            UrlEncoded.decodeTo(uri.getQuery(),params,"UTF-8",MAX_KEYS);
+            UrlEncoded.decodeTo(uri.getQuery(),params,StandardCharsets.UTF_8,MAX_KEYS);
 
             for (String key : params.keySet())
             {

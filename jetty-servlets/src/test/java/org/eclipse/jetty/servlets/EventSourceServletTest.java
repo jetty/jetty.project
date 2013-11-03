@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -326,7 +327,7 @@ public class EventSourceServletTest
         handshake += "Host: localhost:" + serverPort + "\r\n";
         handshake += "Accept: text/event-stream\r\n";
         handshake += "\r\n";
-        output.write(handshake.getBytes("UTF-8"));
+        output.write(handshake.getBytes(StandardCharsets.UTF_8));
         output.flush();
     }
 
@@ -334,7 +335,7 @@ public class EventSourceServletTest
     {
         // Read and discard the HTTP response
         InputStream input = socket.getInputStream();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(input, "UTF-8"));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8));
         String line = reader.readLine();
         while (line != null)
         {

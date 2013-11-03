@@ -27,6 +27,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.matchers.JUnitMatchers.containsString;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -569,17 +570,17 @@ public class ConstraintTest
         MessageDigest md = MessageDigest.getInstance("MD5");
         byte[] ha1;
         // calc A1 digest
-        md.update(username.getBytes(StringUtil.__ISO_8859_1));
+        md.update(username.getBytes(StandardCharsets.ISO_8859_1));
         md.update((byte) ':');
-        md.update("TestRealm".getBytes(StringUtil.__ISO_8859_1));
+        md.update("TestRealm".getBytes(StandardCharsets.ISO_8859_1));
         md.update((byte) ':');
-        md.update(password.getBytes(StringUtil.__ISO_8859_1));
+        md.update(password.getBytes(StandardCharsets.ISO_8859_1));
         ha1 = md.digest();
         // calc A2 digest
         md.reset();
-        md.update("GET".getBytes(StringUtil.__ISO_8859_1));
+        md.update("GET".getBytes(StandardCharsets.ISO_8859_1));
         md.update((byte) ':');
-        md.update(uri.getBytes(StringUtil.__ISO_8859_1));
+        md.update(uri.getBytes(StandardCharsets.ISO_8859_1));
         byte[] ha2 = md.digest();
 
         // calc digest
@@ -589,17 +590,17 @@ public class ConstraintTest
         // request-digest = <"> < KD ( H(A1), unq(nonce-value) ":" H(A2)
         // ) > <">
 
-        md.update(TypeUtil.toString(ha1, 16).getBytes(StringUtil.__ISO_8859_1));
+        md.update(TypeUtil.toString(ha1, 16).getBytes(StandardCharsets.ISO_8859_1));
         md.update((byte) ':');
-        md.update(nonce.getBytes(StringUtil.__ISO_8859_1));
+        md.update(nonce.getBytes(StandardCharsets.ISO_8859_1));
         md.update((byte) ':');
-        md.update(nc.getBytes(StringUtil.__ISO_8859_1));
+        md.update(nc.getBytes(StandardCharsets.ISO_8859_1));
         md.update((byte) ':');
-        md.update(CNONCE.getBytes(StringUtil.__ISO_8859_1));
+        md.update(CNONCE.getBytes(StandardCharsets.ISO_8859_1));
         md.update((byte) ':');
-        md.update("auth".getBytes(StringUtil.__ISO_8859_1));
+        md.update("auth".getBytes(StandardCharsets.ISO_8859_1));
         md.update((byte) ':');
-        md.update(TypeUtil.toString(ha2, 16).getBytes(StringUtil.__ISO_8859_1));
+        md.update(TypeUtil.toString(ha2, 16).getBytes(StandardCharsets.ISO_8859_1));
         byte[] digest = md.digest();
 
         // check digest

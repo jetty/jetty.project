@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.http;
 
+import java.nio.charset.StandardCharsets;
 
 /* ------------------------------------------------------------ */
 /** A HTTP Field

@@ -20,6 +20,7 @@ package org.eclipse.jetty.client;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.ServletException;
@@ -82,7 +83,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
     {
         final String user = "foo";
         final String password = "bar";
-        final String credentials = B64Code.encode(user + ":" + password, "ISO-8859-1");
+        final String credentials = B64Code.encode(user + ":" + password, StandardCharsets.ISO_8859_1);
         final String serverHost = "server";
         final String realm = "test_realm";
         final int status = HttpStatus.NO_CONTENT_204;

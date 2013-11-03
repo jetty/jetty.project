@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 
 import org.eclipse.jetty.server.session.SessionHandler;
@@ -101,7 +102,7 @@ public class SelectChannelTimeoutTest extends ConnectorTimeoutTest
         ServerConnector connector = (ServerConnector)_connector;
         Socket socket = new Socket((String)null,connector.getLocalPort());
         socket.setSoTimeout(10 * MAX_IDLE_TIME);
-        socket.getOutputStream().write(request.getBytes("UTF-8"));
+        socket.getOutputStream().write(request.getBytes(StandardCharsets.UTF_8));
         InputStream inputStream = socket.getInputStream();
         long start = System.currentTimeMillis();
         String response = IO.toString(inputStream);

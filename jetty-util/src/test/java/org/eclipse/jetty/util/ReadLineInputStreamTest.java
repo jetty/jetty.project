@@ -21,6 +21,7 @@ package org.eclipse.jetty.util;
 import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.After;
@@ -60,7 +61,7 @@ public class ReadLineInputStreamTest
                                 _pout.close();
                             else
                             {
-                                _pout.write(s.getBytes(StringUtil.__UTF8_CHARSET));
+                                _pout.write(s.getBytes(StandardCharsets.UTF_8));
                                 Thread.sleep(50);
                             }
                         }
@@ -196,7 +197,7 @@ public class ReadLineInputStreamTest
 
         byte[] body = new byte[6];
         _in.read(body);
-        Assert.assertEquals("\nBody\n",new String(body,0,6,StringUtil.__UTF8));
+        Assert.assertEquals("\nBody\n",new String(body,0,6,StandardCharsets.UTF_8));
         
         Assert.assertEquals("",_in.readLine());
         Assert.assertEquals(null,_in.readLine());
@@ -216,7 +217,7 @@ public class ReadLineInputStreamTest
 
         byte[] body = new byte[6];
         _in.read(body);
-        Assert.assertEquals("\nBody\n",new String(body,0,6,StringUtil.__UTF8));
+        Assert.assertEquals("\nBody\n",new String(body,0,6,StandardCharsets.UTF_8));
         
         Assert.assertEquals("",_in.readLine());
         Assert.assertEquals(null,_in.readLine());
@@ -236,7 +237,7 @@ public class ReadLineInputStreamTest
 
         byte[] body = new byte[6];
         _in.read(body);
-        Assert.assertEquals("\nBody\n",new String(body,0,6,StringUtil.__UTF8));
+        Assert.assertEquals("\nBody\n",new String(body,0,6,StandardCharsets.UTF_8));
         
         Assert.assertEquals("",_in.readLine());
         Assert.assertEquals(null,_in.readLine());

@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -129,14 +130,14 @@ public class NetworkTrafficListenerTest
             @Override
             public void incoming(Socket socket, ByteBuffer bytes)
             {
-                incomingData.set(BufferUtil.toString(bytes,StringUtil.__UTF8_CHARSET));
+                incomingData.set(BufferUtil.toString(bytes,StandardCharsets.UTF_8));
                 incomingLatch.countDown();
             }
 
             @Override
             public void outgoing(Socket socket, ByteBuffer bytes)
             {
-                outgoingData.set(outgoingData.get() + BufferUtil.toString(bytes,StringUtil.__UTF8_CHARSET));
+                outgoingData.set(outgoingData.get() + BufferUtil.toString(bytes,StandardCharsets.UTF_8));
                 outgoingLatch.countDown();
             }
         });
@@ -154,7 +155,7 @@ public class NetworkTrafficListenerTest
 
         Socket socket = new Socket("localhost", port);
         OutputStream output = socket.getOutputStream();
-        output.write(request.getBytes("UTF-8"));
+        output.write(request.getBytes(StandardCharsets.UTF_8));
         output.flush();
 
         assertTrue(incomingLatch.await(1, TimeUnit.SECONDS));
@@ -164,7 +165,7 @@ public class NetworkTrafficListenerTest
         assertEquals(expectedResponse, outgoingData.get());
 
         byte[] responseBytes = readResponse(socket);
-        String response = new String(responseBytes, "UTF-8");
+        String response = new String(responseBytes, StandardCharsets.UTF_8);
         assertEquals(expectedResponse, response);
 
         socket.close();
@@ -180,7 +181,7 @@ public class NetworkTrafficListenerTest
             {
                 request.setHandled(true);
                 ServletOutputStream output = servletResponse.getOutputStream();
-                output.write(responseContent.getBytes("UTF-8"));
+                output.write(responseContent.getBytes(StandardCharsets.UTF_8));
                 output.write(END_OF_CONTENT);
             }
         });
@@ -193,13 +194,13 @@ public class NetworkTrafficListenerTest
         {
             public void incoming(Socket socket, ByteBuffer bytes)
             {
-                incomingData.set(BufferUtil.toString(bytes,StringUtil.__UTF8_CHARSET));
+                incomingData.set(BufferUtil.toString(bytes,StandardCharsets.UTF_8));
                 incomingLatch.countDown();
             }
 
             public void outgoing(Socket socket, ByteBuffer bytes)
             {
-                outgoingData.set(outgoingData.get() + BufferUtil.toString(bytes,StringUtil.__UTF8_CHARSET));
+                outgoingData.set(outgoingData.get() + BufferUtil.toString(bytes,StandardCharsets.UTF_8));
                 outgoingLatch.countDown();
             }
         });
@@ -217,7 +218,7 @@ public class NetworkTrafficListenerTest
 
         Socket socket = new Socket("localhost", port);
         OutputStream output = socket.getOutputStream();
-        output.write(request.getBytes("UTF-8"));
+        output.write(request.getBytes(StandardCharsets.UTF_8));
         output.flush();
 
         assertTrue(incomingLatch.await(1, TimeUnit.SECONDS));
@@ -227,7 +228,7 @@ public class NetworkTrafficListenerTest
         assertEquals(expectedResponse, outgoingData.get());
 
         byte[] responseBytes = readResponse(socket);
-        String response = new String(responseBytes, "UTF-8");
+        String response = new String(responseBytes, StandardCharsets.UTF_8);
         assertEquals(expectedResponse, response);
 
         socket.close();
@@ -245,9 +246,9 @@ public class NetworkTrafficListenerTest
             {
                 request.setHandled(true);
                 ServletOutputStream output = servletResponse.getOutputStream();
-                output.write(responseChunk1.getBytes("UTF-8"));
+                output.write(responseChunk1.getBytes(StandardCharsets.UTF_8));
                 output.flush();
-                output.write(responseChunk2.getBytes("UTF-8"));
+                output.write(responseChunk2.getBytes(StandardCharsets.UTF_8));
                 output.flush();
             }
         });
@@ -260,13 +261,13 @@ public class NetworkTrafficListenerTest
         {
             public void incoming(Socket socket, ByteBuffer bytes)
             {
-                incomingData.set(BufferUtil.toString(bytes,StringUtil.__UTF8_CHARSET));
+                incomingData.set(BufferUtil.toString(bytes,StandardCharsets.UTF_8));
                 incomingLatch.countDown();
             }
 
             public void outgoing(Socket socket, ByteBuffer bytes)
             {
-                outgoingData.set(outgoingData.get() + BufferUtil.toString(bytes,StringUtil.__UTF8_CHARSET));
+                outgoingData.set(outgoingData.get() + BufferUtil.toString(bytes,StandardCharsets.UTF_8));
                 outgoingLatch.countDown();
             }
         });
@@ -289,7 +290,7 @@ public class NetworkTrafficListenerTest
 
         Socket socket = new Socket("localhost", port);
         OutputStream output = socket.getOutputStream();
-        output.write(request.getBytes("UTF-8"));
+        output.write(request.getBytes(StandardCharsets.UTF_8));
         output.flush();
 
         assertTrue(incomingLatch.await(1, TimeUnit.SECONDS));
@@ -299,7 +300,7 @@ public class NetworkTrafficListenerTest
         assertEquals(expectedResponse, outgoingData.get());
 
         byte[] responseBytes = readResponse(socket);
-        String response = new String(responseBytes, "UTF-8");
+        String response = new String(responseBytes, StandardCharsets.UTF_8);
         assertEquals(expectedResponse, response);
 
         socket.close();
@@ -326,13 +327,13 @@ public class NetworkTrafficListenerTest
         {
             public void incoming(Socket socket, ByteBuffer bytes)
             {
-                incomingData.set(BufferUtil.toString(bytes,StringUtil.__UTF8_CHARSET));
+                incomingData.set(BufferUtil.toString(bytes,StandardCharsets.UTF_8));
                 incomingLatch.countDown();
             }
 
             public void outgoing(Socket socket, ByteBuffer bytes)
             {
-                outgoingData.set(outgoingData.get() + BufferUtil.toString(bytes,StringUtil.__UTF8_CHARSET));
+                outgoingData.set(outgoingData.get() + BufferUtil.toString(bytes,StandardCharsets.UTF_8));
                 outgoingLatch.countDown();
             }
         });
@@ -354,7 +355,7 @@ public class NetworkTrafficListenerTest
 
         Socket socket = new Socket("localhost", port);
         OutputStream output = socket.getOutputStream();
-        output.write(request.getBytes("UTF-8"));
+        output.write(request.getBytes(StandardCharsets.UTF_8));
         output.flush();
 
         assertTrue(incomingLatch.await(1, TimeUnit.SECONDS));
@@ -364,7 +365,7 @@ public class NetworkTrafficListenerTest
         assertEquals(expectedResponse, outgoingData.get());
 
         byte[] responseBytes = readResponse(socket);
-        String response = new String(responseBytes, "UTF-8");
+        String response = new String(responseBytes, StandardCharsets.UTF_8);
         assertEquals(expectedResponse, response);
 
         socket.close();
@@ -399,12 +400,12 @@ public class NetworkTrafficListenerTest
         {
             public void incoming(Socket socket, ByteBuffer bytes)
             {
-                incomingData.set(incomingData.get() + BufferUtil.toString(bytes,StringUtil.__UTF8_CHARSET));
+                incomingData.set(incomingData.get() + BufferUtil.toString(bytes,StandardCharsets.UTF_8));
             }
 
             public void outgoing(Socket socket, ByteBuffer bytes)
             {
-                outgoingData.set(outgoingData.get() + BufferUtil.toString(bytes,StringUtil.__UTF8_CHARSET));
+                outgoingData.set(outgoingData.get() + BufferUtil.toString(bytes,StandardCharsets.UTF_8));
                 outgoingLatch.countDown();
             }
         });
@@ -428,14 +429,14 @@ public class NetworkTrafficListenerTest
 
         Socket socket = new Socket("localhost", port);
         OutputStream output = socket.getOutputStream();
-        output.write(request.getBytes("UTF-8"));
+        output.write(request.getBytes(StandardCharsets.UTF_8));
         output.flush();
 
         assertTrue(outgoingLatch.await(1, TimeUnit.SECONDS));
         assertEquals(expectedResponse, outgoingData.get());
 
         byte[] responseBytes = readResponse(socket);
-        String response = new String(responseBytes, "UTF-8");
+        String response = new String(responseBytes, StandardCharsets.UTF_8);
         assertEquals(expectedResponse, response);
 
         assertEquals(request, incomingData.get());

@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import javax.net.ssl.SSLContext;
@@ -129,11 +130,11 @@ public class ProtocolNegotiationTest
                 "GET / HTTP/1.1\r\n" +
                 "Host: localhost:" + address.getPort() + "\r\n" +
                 "\r\n" +
-                "").getBytes("UTF-8"));
+                "").getBytes(StandardCharsets.UTF_8));
         output.flush();
 
         InputStream input = client.getInputStream();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(input, "UTF-8"));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8));
         String line = reader.readLine();
         Assert.assertTrue(line.contains(" 404 "));
 
@@ -188,11 +189,11 @@ public class ProtocolNegotiationTest
                 "GET / HTTP/1.1\r\n" +
                 "Host: localhost:" + address.getPort() + "\r\n" +
                 "\r\n" +
-                "").getBytes("UTF-8"));
+                "").getBytes(StandardCharsets.UTF_8));
         output.flush();
 
         InputStream input = client.getInputStream();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(input, "UTF-8"));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8));
         String line = reader.readLine();
         Assert.assertTrue(line.contains(" 404 "));
 
@@ -241,11 +242,11 @@ public class ProtocolNegotiationTest
                 "GET / HTTP/1.1\r\n" +
                 "Host: localhost:" + address.getPort() + "\r\n" +
                 "\r\n" +
-                "").getBytes("UTF-8"));
+                "").getBytes(StandardCharsets.UTF_8));
         output.flush();
 
         InputStream input = client.getInputStream();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(input, "UTF-8"));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8));
         String line = reader.readLine();
         Assert.assertTrue(line.contains(" 404 "));
 

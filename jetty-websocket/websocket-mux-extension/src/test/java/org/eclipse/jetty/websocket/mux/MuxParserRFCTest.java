@@ -23,6 +23,7 @@ import static org.hamcrest.Matchers.*;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -236,7 +237,7 @@ public class MuxParserRFCTest
             }
             else
             {
-                out.write(part.getBytes(StringUtil.__UTF8_CHARSET));
+                out.write(part.getBytes(StandardCharsets.UTF_8));
             }
         }
         return out.toByteArray();

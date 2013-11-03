@@ -24,6 +24,7 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 
@@ -161,7 +162,7 @@ public class LowResourcesMonitorTest
         for (int i=0;i<socket.length;i++)
             Assert.assertEquals(-1,socket[i].getInputStream().read());
         
-        newSocket.getOutputStream().write("GET / HTTP/1.0\r\n\r\n".getBytes(StringUtil.__UTF8_CHARSET));
+        newSocket.getOutputStream().write("GET / HTTP/1.0\r\n\r\n".getBytes(StandardCharsets.UTF_8));
         Assert.assertEquals('H',newSocket.getInputStream().read());
         
     }
@@ -183,11 +184,11 @@ public class LowResourcesMonitorTest
         Thread.sleep(1200);
         Assert.assertTrue(_lowResourcesMonitor.isLowOnResources());
         Assert.assertEquals(-1,socket0.getInputStream().read());
-        socket1.getOutputStream().write("G".getBytes(StringUtil.__UTF8_CHARSET));
+        socket1.getOutputStream().write("G".getBytes(StandardCharsets.UTF_8));
 
         Thread.sleep(1200);
         Assert.assertTrue(_lowResourcesMonitor.isLowOnResources());
-        socket1.getOutputStream().write("E".getBytes(StringUtil.__UTF8_CHARSET));
+        socket1.getOutputStream().write("E".getBytes(StandardCharsets.UTF_8));
 
         Thread.sleep(1200);
         Assert.assertTrue(_lowResourcesMonitor.isLowOnResources());

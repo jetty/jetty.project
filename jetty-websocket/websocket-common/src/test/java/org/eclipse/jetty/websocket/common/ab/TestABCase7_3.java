@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.common.ab;
 import static org.hamcrest.Matchers.*;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import org.eclipse.jetty.util.BufferUtil;
@@ -224,7 +225,7 @@ public class TestABCase7_3
         ByteBuffer actual = UnitGenerator.generate(close.asFrame());
         ByteBuffer expected = ByteBuffer.allocate(132);
 
-        byte messageBytes[] = message.toString().getBytes(StringUtil.__UTF8_CHARSET);
+        byte messageBytes[] = message.toString().getBytes(StandardCharsets.UTF_8);
 
         expected.put(new byte[]
                 { (byte)0x88 });
@@ -250,7 +251,7 @@ public class TestABCase7_3
             message.append("*");
         }
 
-        byte[] messageBytes = message.toString().getBytes(StringUtil.__UTF8_CHARSET);
+        byte[] messageBytes = message.toString().getBytes(StandardCharsets.UTF_8);
 
         ByteBuffer expected = ByteBuffer.allocate(132);
 

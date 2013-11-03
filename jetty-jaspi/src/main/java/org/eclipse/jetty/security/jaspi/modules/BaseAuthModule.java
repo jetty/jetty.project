@@ -19,6 +19,7 @@
 package org.eclipse.jetty.security.jaspi.modules;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Set;
 
@@ -119,7 +120,7 @@ public class BaseAuthModule implements ServerAuthModule, ServerAuthContext
     throws IOException, UnsupportedCallbackException
     {
         credentials = credentials.substring(credentials.indexOf(' ')+1);
-        credentials = B64Code.decode(credentials,StringUtil.__ISO_8859_1);
+        credentials = B64Code.decode(credentials, StandardCharsets.ISO_8859_1);
         int i = credentials.indexOf(':');
         String userName = credentials.substring(0,i);
         String password = credentials.substring(i+1);

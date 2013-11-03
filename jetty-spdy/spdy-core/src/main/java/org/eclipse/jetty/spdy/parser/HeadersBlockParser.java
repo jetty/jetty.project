@@ -19,7 +19,7 @@
 package org.eclipse.jetty.spdy.parser;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.charset.StandardCharsets;
 import java.util.zip.ZipException;
 
@@ -59,7 +59,6 @@ public abstract class HeadersBlockParser
         ByteBuffer decompressedHeaders = decompress(version, compressedHeaders);
 
         Charset iso1 = StandardCharsets.ISO_8859_1;
-
         // We know the decoded bytes contain the full headers,
         // so optimize instead of looping byte by byte
         int count = readCount(version, decompressedHeaders);

@@ -21,13 +21,14 @@ package org.eclipse.jetty.util;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /** Fast String Utilities.
  *
- * These string utilities provide both conveniance methods and
+ * These string utilities provide both convenience methods and
  * performance improvements over most standard library versions. The
  * main aim of the optimizations is to avoid object creation unless
  * absolutely required.
@@ -49,19 +50,30 @@ public class StringUtil
     public static final String __ISO_8859_1="ISO-8859-1";
     public final static String __UTF8="UTF-8";
     public final static String __UTF16="UTF-16";
-    
-    public final static Charset __UTF8_CHARSET;
-    public final static Charset __ISO_8859_1_CHARSET;
-    public final static Charset __UTF16_CHARSET;
-    public final static Charset __US_ASCII_CHARSET;
+
+    /**
+     * @deprecated Use {@link StandardCharsets#UTF_8}
+     */
+    @Deprecated
+    public final static Charset __UTF8_CHARSET=StandardCharsets.UTF_8;
+    /**
+     * @deprecated Use {@link StandardCharsets#ISO_8859_1}
+     */
+    @Deprecated
+    public final static Charset __ISO_8859_1_CHARSET=StandardCharsets.ISO_8859_1;
+    /**
+     * @deprecated Use {@link StandardCharsets#UTF_16}
+     */
+    @Deprecated
+    public final static Charset __UTF16_CHARSET=StandardCharsets.UTF_16;
+    /**
+     * @deprecated Use {@link StandardCharsets#US_ASCII}
+     */
+    @Deprecated
+    public final static Charset __US_ASCII_CHARSET=StandardCharsets.US_ASCII;
     
     static
     {
-        __UTF8_CHARSET=Charset.forName(__UTF8);
-        __ISO_8859_1_CHARSET=Charset.forName(__ISO_8859_1);
-        __UTF16_CHARSET=Charset.forName(__UTF16);
-        __US_ASCII_CHARSET=Charset.forName("US-ASCII");
-        
         CHARSETS.put("UTF-8",__UTF8);
         CHARSETS.put("UTF8",__UTF8);
         CHARSETS.put("UTF-16",__UTF16);
@@ -343,7 +355,7 @@ public class StringUtil
     /* ------------------------------------------------------------ */
     public static String toUTF8String(byte[] b,int offset,int length)
     {
-        return new String(b,offset,length,__UTF8_CHARSET);
+        return new String(b,offset,length,StandardCharsets.UTF_8);
     }
 
     /* ------------------------------------------------------------ */
@@ -481,12 +493,12 @@ public class StringUtil
     
     public static byte[] getBytes(String s)
     {
-        return s.getBytes(__ISO_8859_1_CHARSET);
+        return s.getBytes(StandardCharsets.ISO_8859_1);
     }
     
     public static byte[] getUtf8Bytes(String s)
     {
-        return s.getBytes(__UTF8_CHARSET);
+        return s.getBytes(StandardCharsets.UTF_8);
     }
     
     public static byte[] getBytes(String s,String charset)

@@ -27,6 +27,7 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.concurrent.ConcurrentMap;
 
@@ -71,7 +72,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             OutputStream output = socket.getOutputStream();
             BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-            output.write(request.getBytes("UTF-8"));
+            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             // Expect 200 OK from the CONNECT request
@@ -93,7 +94,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             OutputStream output = socket.getOutputStream();
             BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-            output.write(request.getBytes("UTF-8"));
+            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             // Expect 200 OK from the CONNECT request
@@ -104,7 +105,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
                     "GET /echo" + " HTTP/1.1\r\n" +
                     "Host: " + hostPort + "\r\n" +
                     "\r\n";
-            output.write(request.getBytes("UTF-8"));
+            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             response = readResponse(input);
@@ -130,7 +131,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             OutputStream output = socket.getOutputStream();
             BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-            output.write(request.getBytes("UTF-8"));
+            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             // Expect 403 from the CONNECT request
@@ -151,7 +152,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             OutputStream output = socket.getOutputStream();
             BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-            output.write(request.getBytes("UTF-8"));
+            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             // Expect 200 from the CONNECT request
@@ -162,7 +163,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
                     "GET /echo" + " HTTP/1.1\r\n" +
                     "Host: " + hostPort + "\r\n" +
                     "\r\n";
-            output.write(request.getBytes("UTF-8"));
+            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             response = readResponse(input);
@@ -188,7 +189,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             OutputStream output = socket.getOutputStream();
             BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-            output.write(request.getBytes("UTF-8"));
+            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             // Expect 403 from the CONNECT request
@@ -209,7 +210,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             OutputStream output = socket.getOutputStream();
             BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-            output.write(request.getBytes("UTF-8"));
+            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             // Expect 200 from the CONNECT request
@@ -220,7 +221,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
                     "GET /echo" + " HTTP/1.1\r\n" +
                     "Host: 127.0.0.1:" + port + "\r\n" +
                     "\r\n";
-            output.write(request.getBytes("UTF-8"));
+            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             response = readResponse(input);
@@ -245,7 +246,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
                     return false;
                 }
                 String b64 = proxyAuthorization.substring("Basic ".length());
-                String credentials = B64Code.decode(b64, "UTF-8");
+                String credentials = B64Code.decode(b64, StandardCharsets.UTF_8);
                 return "test:test".equals(credentials);
             }
         };
@@ -265,7 +266,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             OutputStream output = socket.getOutputStream();
             BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-            output.write(request.getBytes("UTF-8"));
+            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             // Expect 407 from the CONNECT request
@@ -289,7 +290,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             OutputStream output = socket.getOutputStream();
             BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-            output.write(request.getBytes("UTF-8"));
+            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             // Expect 200 from the CONNECT request
@@ -300,7 +301,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
                     "GET /echo" + " HTTP/1.1\r\n" +
                     "Host: " + hostPort + "\r\n" +
                     "\r\n";
-            output.write(request.getBytes("UTF-8"));
+            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             response = readResponse(input);
@@ -342,7 +343,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             OutputStream output = socket.getOutputStream();
             BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-            output.write(request.getBytes("UTF-8"));
+            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             // Expect 500 OK from the CONNECT request
@@ -368,7 +369,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             OutputStream output = socket.getOutputStream();
             BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-            output.write(request.getBytes("UTF-8"));
+            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             // Expect 200 OK from the CONNECT request
@@ -379,7 +380,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
                     "GET /echo" + " HTTP/1.1\r\n" +
                     "Host: " + hostPort + "\r\n" +
                     "\r\n";
-            output.write(request.getBytes("UTF-8"));
+            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             response = readResponse(input);
@@ -404,7 +405,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             OutputStream output = socket.getOutputStream();
             BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-            output.write(request.getBytes("UTF-8"));
+            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             // Expect 200 OK from the CONNECT request
@@ -431,7 +432,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             OutputStream output = socket.getOutputStream();
             BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-            output.write(request.getBytes("UTF-8"));
+            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             // Expect 200 OK from the CONNECT request
@@ -444,7 +445,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
                         "GET /echo" + " HTTP/1.1\r\n" +
                         "Host: " + hostPort + "\r\n" +
                         "\r\n";
-                output.write(request.getBytes("UTF-8"));
+                output.write(request.getBytes(StandardCharsets.UTF_8));
                 output.flush();
 
                 response = readResponse(input);
@@ -467,7 +468,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             OutputStream output = socket.getOutputStream();
             BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-            output.write(request.getBytes("UTF-8"));
+            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             // Expect 200 OK from the CONNECT request
@@ -478,7 +479,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
                     "GET /echo HTTP/1.1\r\n" +
                     "Host: " + hostPort + "\r\n" +
                     "\r\n";
-            output.write(request.getBytes("UTF-8"));
+            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             response = readResponse(input);
@@ -506,7 +507,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             OutputStream output = socket.getOutputStream();
             BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-            output.write(request.getBytes("UTF-8"));
+            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             // Expect 200 OK from the CONNECT request
@@ -517,7 +518,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
                     "GET /close HTTP/1.1\r\n" +
                     "Host: " + hostPort + "\r\n" +
                     "\r\n";
-            output.write(request.getBytes("UTF-8"));
+            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             int read = input.read();
@@ -538,7 +539,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             OutputStream output = socket.getOutputStream();
             BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-            output.write(request.getBytes("UTF-8"));
+            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             // Expect 200 OK from the CONNECT request
@@ -551,7 +552,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
                     "Content-Length: 5\r\n" +
                     "\r\n" +
                     "HELLO";
-            output.write(request.getBytes("UTF-8"));
+            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             response = readResponse(input);
@@ -562,7 +563,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
                     "GET /echo" + " HTTP/1.1\r\n" +
                     "Host: " + hostPort + "\r\n" +
                     "\r\n";
-            output.write(request.getBytes("UTF-8"));
+            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             response = readResponse(input);
@@ -585,7 +586,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             OutputStream output = socket.getOutputStream();
             BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-            output.write(request.getBytes("UTF-8"));
+            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             // Expect 200 OK from the CONNECT request
@@ -603,7 +604,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
                     "Content-Length: " + body.length() + "\r\n" +
                     "\r\n" +
                     body;
-            output.write(request.getBytes("UTF-8"));
+            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             response = readResponse(input);
@@ -649,7 +650,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             OutputStream output = socket.getOutputStream();
             BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-            output.write(request.getBytes("UTF-8"));
+            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             // Expect 200 OK from the CONNECT request
@@ -663,7 +664,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
                     "Content-Length: " + body.length() + "\r\n" +
                     "\r\n" +
                     body;
-            output.write(request.getBytes("UTF-8"));
+            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             response = readResponse(input);
@@ -688,7 +689,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             OutputStream output = socket.getOutputStream();
             BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-            output.write(request.getBytes("UTF-8"));
+            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
             socket.shutdownOutput();
 
@@ -716,7 +717,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             OutputStream output = socket.getOutputStream();
             BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-            output.write(request.getBytes("UTF-8"));
+            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             // Expect 200 OK from the CONNECT request
@@ -727,7 +728,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
                     "GET /echo" + " HTTP/1.1\r\n" +
                     "Host: " + hostPort + "\r\n" +
                     "\r\n";
-            output.write(request.getBytes("UTF-8"));
+            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
             socket.shutdownOutput();
 

@@ -19,6 +19,7 @@
 package org.eclipse.jetty.server;
 
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.util.IO;
 
@@ -35,7 +36,7 @@ public class SelectChannelAsyncContextTest extends LocalAsyncContextTest
     {
         ServerConnector connector = (ServerConnector)_connector;
         Socket socket = new Socket((String)null,connector.getLocalPort());
-        socket.getOutputStream().write(request.getBytes("UTF-8"));
+        socket.getOutputStream().write(request.getBytes(StandardCharsets.UTF_8));
         return IO.toString(socket.getInputStream());
     }
 }

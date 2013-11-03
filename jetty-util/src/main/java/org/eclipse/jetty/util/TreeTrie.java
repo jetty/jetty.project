@@ -20,6 +20,7 @@ package org.eclipse.jetty.util;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -215,7 +216,7 @@ public class TreeTrie<V> extends AbstractTrie<V>
     public V getBest(String s, int offset, int len)
     {
         // TODO inefficient
-        byte[] b=s.substring(offset,offset+len).getBytes(StringUtil.__ISO_8859_1_CHARSET);
+        byte[] b=s.substring(offset,offset+len).getBytes(StandardCharsets.ISO_8859_1);
         return getBest(b,0,b.length);
     }
     

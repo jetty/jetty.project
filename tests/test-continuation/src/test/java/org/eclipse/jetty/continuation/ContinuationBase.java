@@ -27,6 +27,7 @@ import static org.junit.Assert.assertThat;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -242,7 +243,7 @@ public abstract class ContinuationBase
         try (Socket socket = new Socket("localhost",port);)
         {
             socket.setSoTimeout(10000);
-            socket.getOutputStream().write(request.getBytes("UTF-8"));
+            socket.getOutputStream().write(request.getBytes(StandardCharsets.UTF_8));
             socket.getOutputStream().flush();
 
             response = toString(socket.getInputStream());

@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -109,7 +110,7 @@ public class RequestHeadersTest
             
             try (InputStream in = http.getInputStream())
             {
-                String resp = IO.toString(in, "UTF-8");
+                String resp = IO.toString(in, StandardCharsets.UTF_8);
                 Assert.assertThat("Response", resp, is("X-Camel-Type = bactrian"));
             }
         }

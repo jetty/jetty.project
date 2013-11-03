@@ -20,6 +20,7 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletException;
@@ -76,7 +77,7 @@ public class GracefulStopTest
 
         try(Socket socket = new Socket("localhost",server.getBean(NetworkConnector.class).getLocalPort());)
         {
-            socket.getOutputStream().write("GET / HTTP/1.0\r\n\r\n".getBytes(StringUtil.__ISO_8859_1_CHARSET));
+            socket.getOutputStream().write("GET / HTTP/1.0\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1));
             String out = IO.toString(socket.getInputStream());
             Assert.assertThat(out,Matchers.containsString("200 OK"));
         }

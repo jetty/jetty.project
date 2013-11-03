@@ -22,6 +22,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
@@ -129,14 +130,14 @@ public class DigestPostTest
     public void testServerDirectlyHTTP10() throws Exception
     {
         Socket socket = new Socket("127.0.0.1",((NetworkConnector)_server.getConnectors()[0]).getLocalPort());
-        byte[] bytes = __message.getBytes("UTF-8");
+        byte[] bytes = __message.getBytes(StandardCharsets.UTF_8);
 
         _received=null;
         socket.getOutputStream().write(
                 ("POST /test/ HTTP/1.0\r\n"+
                 "Host: 127.0.0.1:"+((NetworkConnector)_server.getConnectors()[0]).getLocalPort()+"\r\n"+
                 "Content-Length: "+bytes.length+"\r\n"+
-                "\r\n").getBytes("UTF-8"));
+                "\r\n").getBytes(StandardCharsets.UTF_8));
         socket.getOutputStream().write(bytes);
         socket.getOutputStream().flush();
 
@@ -163,7 +164,7 @@ public class DigestPostTest
                 "Host: 127.0.0.1:"+((NetworkConnector)_server.getConnectors()[0]).getLocalPort()+"\r\n"+
                 "Content-Length: "+bytes.length+"\r\n"+
                 "Authorization: "+digest+"\r\n"+
-                "\r\n").getBytes("UTF-8"));
+                "\r\n").getBytes(StandardCharsets.UTF_8));
         socket.getOutputStream().write(bytes);
         socket.getOutputStream().flush();
 
@@ -177,7 +178,7 @@ public class DigestPostTest
     public void testServerDirectlyHTTP11() throws Exception
     {
         Socket socket = new Socket("127.0.0.1",((NetworkConnector)_server.getConnectors()[0]).getLocalPort());
-        byte[] bytes = __message.getBytes("UTF-8");
+        byte[] bytes = __message.getBytes(StandardCharsets.UTF_8);
 
         _received=null;
         socket.getOutputStream().write(
@@ -192,7 +193,7 @@ public class DigestPostTest
         
         byte[] buf=new byte[4096];
         int len=socket.getInputStream().read(buf);
-        String result=new String(buf,0,len,"UTF-8");
+        String result=new String(buf,0,len,StandardCharsets.UTF_8);
 
         Assert.assertTrue(result.startsWith("HTTP/1.1 401 Unauthorized"));
         Assert.assertEquals(null,_received);

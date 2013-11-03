@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
@@ -563,7 +564,7 @@ public class RequestTest
             {
                 baseRequest.setHandled(true);
                 Reader reader=request.getReader();
-                byte[] b=("read="+reader.read()+"\n").getBytes(StringUtil.__UTF8);
+                byte[] b=("read="+reader.read()+"\n").getBytes(StandardCharsets.UTF_8);
                 response.setContentLength(b.length);
                 response.getOutputStream().write(b);
                 response.flushBuffer();
@@ -612,7 +613,7 @@ public class RequestTest
                 String in = IO.toString(reader);
                 String param = request.getParameter("param");
 
-                byte[] b=("read='"+in+"' param="+param+"\n").getBytes(StringUtil.__UTF8);
+                byte[] b=("read='"+in+"' param="+param+"\n").getBytes(StandardCharsets.UTF_8);
                 response.setContentLength(b.length);
                 response.getOutputStream().write(b);
                 response.flushBuffer();
@@ -647,7 +648,7 @@ public class RequestTest
             {
                 baseRequest.setHandled(true);
                 InputStream in=request.getInputStream();
-                byte[] b=("read="+in.read()+"\n").getBytes(StringUtil.__UTF8);
+                byte[] b=("read="+in.read()+"\n").getBytes(StandardCharsets.UTF_8);
                 response.setContentLength(b.length);
                 response.getOutputStream().write(b);
                 response.flushBuffer();

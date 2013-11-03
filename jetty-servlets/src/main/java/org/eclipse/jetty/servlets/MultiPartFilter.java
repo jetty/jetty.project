@@ -24,6 +24,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.charset.UnsupportedCharsetException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -223,7 +226,7 @@ public class MultiPartFilter implements Filter
     /* ------------------------------------------------------------------------------- */
     private static class Wrapper extends HttpServletRequestWrapper
     {
-        String _encoding=StringUtil.__UTF8;
+        Charset _encoding=StandardCharsets.UTF_8;
         MultiMap<Object> _params;
 
         /* ------------------------------------------------------------------------------- */
@@ -339,7 +342,14 @@ public class MultiPartFilter implements Filter
         public void setCharacterEncoding(String enc)
             throws UnsupportedEncodingException
         {
-            _encoding=enc;
+            try
+            {
+                _encoding=Charset.forName(enc);
+            }
+            catch (UnsupportedCharsetException e)
+            {
+                throw new UnsupportedEncodingException(e.getMessage());
+            }
         }
         
         
@@ -350,11 +360,18 @@ public class MultiPartFilter implements Filter
             //check if there is a specific encoding for the parameter
             Object ct = _params.getValue(name+CONTENT_TYPE_SUFFIX,0);
             //use default if not
-            String contentType = _encoding;
+            Charset contentType = _encoding;
             if (ct != null)
             {
                 String tmp = MimeTypes.getCharsetFromContentType((String)ct);
-                contentType = (tmp == null?_encoding:tmp);
+                try
+                {
+                    contentType = (tmp == null?_encoding:Charset.forName(tmp));
+                }
+                catch (UnsupportedCharsetException e)
+                {
+                    throw new UnsupportedEncodingException(e.getMessage());
+                }
             }
             
             return new String(bytes,contentType);
