@@ -49,15 +49,13 @@ import org.junit.Test;
 public class IOTest
 {
     @Test
-    public void testIO() throws InterruptedException
+    public void testIO() throws Exception
     {
         // Only a little test
         ByteArrayInputStream in = new ByteArrayInputStream("The quick brown fox jumped over the lazy dog".getBytes());
         ByteArrayOutputStream out = new ByteArrayOutputStream();
 
-        IO.copyThread(in, out);
-        Thread.sleep(1500);
-        // System.err.println(out);
+        IO.copy(in, out);
 
         assertEquals("copyThread", out.toString(), "The quick brown fox jumped over the lazy dog");
     }

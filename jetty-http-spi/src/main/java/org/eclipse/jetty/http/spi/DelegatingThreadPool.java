@@ -64,27 +64,6 @@ public class DelegatingThreadPool extends ContainerLifeCycle implements ThreadPo
         _executor.execute(job);
     }
 
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public boolean dispatch(Runnable job)
-    {
-        final Executor executor=_executor;
-        if (executor instanceof ThreadPool)
-            return ((ThreadPool)executor).dispatch(job);
-
-        try
-        {
-            _executor.execute(job);
-            return true;
-        }
-        catch(RejectedExecutionException e)
-        {
-            LOG.warn(e);
-            return false;
-        }
-    }
-
     /* ------------------------------------------------------------ */
     @Override
     public int getIdleThreads()

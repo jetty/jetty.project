@@ -89,7 +89,7 @@ public class LowResourcesMonitorTest
         
         for (int i=0;i<100;i++)
         {
-            _threadPool.dispatch(new Runnable()
+            _threadPool.execute(new Runnable()
             {
                 @Override
                 public void run()

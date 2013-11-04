@@ -62,12 +62,11 @@ public class SslConnectionTest
     final AtomicInteger _dispatches = new AtomicInteger();
     protected QueuedThreadPool _threadPool = new QueuedThreadPool()
     {
-
         @Override
-        public boolean dispatch(Runnable job)
+        public void execute(Runnable job)
         {
             _dispatches.incrementAndGet();
-            return super.dispatch(job);
+            super.execute(job);
         }
 
     };

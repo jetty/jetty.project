@@ -54,17 +54,6 @@ public class IO
 
     /* ------------------------------------------------------------------- */
     public static final int bufferSize = 64*1024;
-    
-    /* ------------------------------------------------------------------- */
-    // TODO get rid of this singleton!
-    private static class Singleton {
-        static final QueuedThreadPool __pool=new QueuedThreadPool();
-        static
-        {
-            try{__pool.start();}
-            catch(Exception e){LOG.warn(e); System.exit(1);}
-        }
-    }
 
     /* ------------------------------------------------------------------- */
     static class Job implements Runnable
@@ -120,46 +109,11 @@ public class IO
     
     /* ------------------------------------------------------------------- */
     /** Copy Stream in to Stream out until EOF or exception.
-     * in own thread
-     */
-    public static void copyThread(InputStream in, OutputStream out)
-    {
-        try{
-            Job job=new Job(in,out);
-            if (!Singleton.__pool.dispatch(job))
-                job.run();
-        }
-        catch(Exception e)
-        {
-            LOG.warn(e);
-        }
-    }
-    
-    /* ------------------------------------------------------------------- */
-    /** Copy Stream in to Stream out until EOF or exception.
      */
     public static void copy(InputStream in, OutputStream out)
          throws IOException
     {
         copy(in,out,-1);
-    }
-    
-    /* ------------------------------------------------------------------- */
-    /** Copy Stream in to Stream out until EOF or exception
-     * in own thread
-     */
-    public static void copyThread(Reader in, Writer out)
-    {
-        try
-        {
-            Job job=new Job(in,out);
-            if (!Singleton.__pool.dispatch(job))
-                job.run();
-        }
-        catch(Exception e)
-        {
-            LOG.warn(e);
-        }
     }
     
     /* ------------------------------------------------------------------- */
