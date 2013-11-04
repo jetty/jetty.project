@@ -165,9 +165,12 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     }
     
     /**
-     * <p>Registers a channel to select accept operations</p>
-     *
-     * @param channel the channel to register
+     * <p>Registers a channel to select accept operations.
+     * When a {@link SocketChannel} is accepted from this {@link ServerSocketChannel}
+     * then the {@link #accepted(SocketChannel)} method is called, which must be
+     * overridden by a derivation of this class to handle the accepted channel
+     * 
+     * @param channel the server channel to register
      */
     public void acceptor(final ServerSocketChannel server)
     {
@@ -175,6 +178,14 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         selector.submit(selector.new Acceptor(server));
     }
     
+    /**
+     * Callback method when a channel is accepted from the {@link ServerSocketChannel}
+     * passed in {@link #acceptor(ServerSocketChannel)}.
+     * The default impl throws an {@link UnsupportedOperationException}, so it must
+     * be overridden if selected acceptor is to be used.
+     * @param channel
+     * @throws IOException
+     */
     protected void accepted(SocketChannel channel) throws IOException
     {
         throw new UnsupportedOperationException();
