@@ -96,7 +96,7 @@ public class ServerConnector extends AbstractNetworkConnector
     public ServerConnector(
         @Name("server") Server server)
     {
-        this(server,null,null,null,0,0,new HttpConnectionFactory());
+        this(server,null,null,null,-1,-1,new HttpConnectionFactory());
     }
     
     /* ------------------------------------------------------------ */
@@ -104,9 +104,10 @@ public class ServerConnector extends AbstractNetworkConnector
      * <p>Construct a ServerConnector with a private instance of {@link HttpConnectionFactory} as the only factory.</p>
      * @param server The {@link Server} this connector will accept connection for. 
      * @param acceptors 
-     *          the number of acceptor threads to use, or 0 for a default value. Acceptors accept new TCP/IP connections.
+     *          the number of acceptor threads to use, or -1 for a default value. Acceptors accept new TCP/IP connections.  If 0, then 
+     *          the selector threads are used to accept connections.
      * @param selectors
-     *          the number of selector threads, or 0 for a default value. Selectors notice and schedule established connection that can make IO progress.
+     *          the number of selector threads, or -1 for a default value. Selectors notice and schedule established connection that can make IO progress.
      */
     public ServerConnector(
         @Name("server") Server server,
@@ -126,7 +127,7 @@ public class ServerConnector extends AbstractNetworkConnector
         @Name("server") Server server,
         @Name("factories") ConnectionFactory... factories)
     {
-        this(server,null,null,null,0,0,factories);
+        this(server,null,null,null,-1,-1,factories);
     }
 
     /* ------------------------------------------------------------ */
@@ -140,7 +141,7 @@ public class ServerConnector extends AbstractNetworkConnector
         @Name("server") Server server,
         @Name("sslContextFactory") SslContextFactory sslContextFactory)
     {
-        this(server,null,null,null,0,0,AbstractConnectionFactory.getFactories(sslContextFactory,new HttpConnectionFactory()));
+        this(server,null,null,null,-1,-1,AbstractConnectionFactory.getFactories(sslContextFactory,new HttpConnectionFactory()));
     }
 
     /* ------------------------------------------------------------ */
@@ -150,9 +151,10 @@ public class ServerConnector extends AbstractNetworkConnector
      * @param sslContextFactory If non null, then a {@link SslConnectionFactory} is instantiated and prepended to the 
      * list of HTTP Connection Factory.
      * @param acceptors 
-     *          the number of acceptor threads to use, or 0 for a default value. Acceptors accept new TCP/IP connections.
+     *          the number of acceptor threads to use, or -1 for a default value. Acceptors accept new TCP/IP connections.  If 0, then 
+     *          the selector threads are used to accept connections.
      * @param selectors
-     *          the number of selector threads, or 0 for a default value. Selectors notice and schedule established connection that can make IO progress.
+     *          the number of selector threads, or -1 for a default value. Selectors notice and schedule established connection that can make IO progress.
      */
     public ServerConnector(
         @Name("server") Server server,
@@ -175,7 +177,7 @@ public class ServerConnector extends AbstractNetworkConnector
         @Name("sslContextFactory") SslContextFactory sslContextFactory,
         @Name("factories") ConnectionFactory... factories)
     {
-        this(server,null,null,null,0,0,AbstractConnectionFactory.getFactories(sslContextFactory,factories));
+        this(server,null,null,null,-1,-1,AbstractConnectionFactory.getFactories(sslContextFactory,factories));
     }
 
     /** Generic Server Connection.
@@ -189,9 +191,10 @@ public class ServerConnector extends AbstractNetworkConnector
      * @param bufferPool
      *          A ByteBuffer pool used to allocate buffers.  If null then create a private pool with default configuration.
      * @param acceptors 
-     *          the number of acceptor threads to use, or 0 for a default value. Acceptors accept new TCP/IP connections.
+     *          the number of acceptor threads to use, or -1 for a default value. Acceptors accept new TCP/IP connections.  If 0, then 
+     *          the selector threads are used to accept connections.
      * @param selectors
-     *          the number of selector threads, or 0 for a default value. Selectors notice and schedule established connection that can make IO progress.
+     *          the number of selector threads, or -1 for a default value. Selectors notice and schedule established connection that can make IO progress.
      * @param factories 
      *          Zero or more {@link ConnectionFactory} instances used to create and configure connections.
      */
@@ -205,8 +208,20 @@ public class ServerConnector extends AbstractNetworkConnector
         @Name("factories") ConnectionFactory... factories)
     {
         super(server,executor,scheduler,bufferPool,acceptors,factories);
-        _manager = new ServerConnectorManager(getExecutor(), getScheduler(), selectors > 0 ? selectors : Runtime.getRuntime().availableProcessors());
+        _manager = new ServerConnectorManager(getExecutor(), getScheduler(), selectors >= 0 ? selectors : Runtime.getRuntime().availableProcessors());
         addBean(_manager, true);
+    }
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        super.doStart();
+
+        if (getAcceptors()==0)
+        {
+            _acceptChannel.configureBlocking(false);
+            _manager.acceptor(_acceptChannel);
+        }
     }
 
     @Override
@@ -319,11 +334,16 @@ public class ServerConnector extends AbstractNetworkConnector
         if (serverChannel != null && serverChannel.isOpen())
         {
             SocketChannel channel = serverChannel.accept();
-            channel.configureBlocking(false);
-            Socket socket = channel.socket();
-            configure(socket);
-            _manager.accept(channel);
+            accepted(channel);
         }
+    }
+    
+    private void accepted(SocketChannel channel) throws IOException
+    {
+        channel.configureBlocking(false);
+        Socket socket = channel.socket();
+        configure(socket);
+        _manager.accept(channel);
     }
 
     protected void configure(Socket socket)
@@ -424,6 +444,12 @@ public class ServerConnector extends AbstractNetworkConnector
         private ServerConnectorManager(Executor executor, Scheduler scheduler, int selectors)
         {
             super(executor, scheduler, selectors);
+        }
+
+        @Override
+        protected void accepted(SocketChannel channel) throws IOException
+        {
+            ServerConnector.this.accepted(channel);
         }
 
         @Override

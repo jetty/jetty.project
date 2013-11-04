@@ -47,22 +47,22 @@ public class LocalConnector extends AbstractConnector
 
     public LocalConnector(Server server)
     {
-        this(server, null, null, null, 0, new HttpConnectionFactory());
+        this(server, null, null, null, -1, new HttpConnectionFactory());
     }
 
     public LocalConnector(Server server, SslContextFactory sslContextFactory)
     {
-        this(server, null, null, null, 0,AbstractConnectionFactory.getFactories(sslContextFactory,new HttpConnectionFactory()));
+        this(server, null, null, null, -1,AbstractConnectionFactory.getFactories(sslContextFactory,new HttpConnectionFactory()));
     }
 
     public LocalConnector(Server server, ConnectionFactory connectionFactory)
     {
-        this(server, null, null, null, 0, connectionFactory);
+        this(server, null, null, null, -1, connectionFactory);
     }
 
     public LocalConnector(Server server, ConnectionFactory connectionFactory, SslContextFactory sslContextFactory)
     {
-        this(server, null, null, null, 0, AbstractConnectionFactory.getFactories(sslContextFactory,connectionFactory));
+        this(server, null, null, null, -1, AbstractConnectionFactory.getFactories(sslContextFactory,connectionFactory));
     }
 
     @Override

@@ -25,6 +25,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 public class ExampleServer
 {
@@ -43,7 +44,6 @@ public class ExampleServer
         HandlerCollection handlers = new HandlerCollection();
         handlers.setHandlers(new Handler[]{context,new DefaultHandler()});
         server.setHandler(handlers);
-
 
         server.start();
         server.join();

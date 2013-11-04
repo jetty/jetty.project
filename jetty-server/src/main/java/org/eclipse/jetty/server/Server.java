@@ -61,6 +61,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.util.thread.ThreadPool;
+import org.eclipse.jetty.util.thread.ThreadPool.SizedThreadPool;
 
 /* ------------------------------------------------------------ */
 /** Jetty HTTP Servlet Server.
@@ -300,6 +301,24 @@ public class Server extends HandlerWrapper implements Attributes
         HttpGenerator.setJettyVersion(HttpConfiguration.SERVER_VERSION);
         MultiException mex=new MultiException();
 
+        // check size of thread pool
+        SizedThreadPool pool = getBean(SizedThreadPool.class);
+        int max=pool==null?-1:pool.getMaxThreads();
+        int needed=1;
+        if (mex.size()==0)
+        {
+            for (Connector connector : _connectors)
+            {
+                if (connector instanceof AbstractConnector)
+                    needed+=((AbstractConnector)connector).getAcceptors();
+                if (connector instanceof ServerConnector)
+                    needed+=((ServerConnector)connector).getSelectorManager().getSelectorCount();
+            }
+        }
+
+        if (max>0 && needed>=max)
+            throw new IllegalStateException("Insufficient max threads in ThreadPool: max="+max+" < needed="+needed);
+        
         try
         {
             super.doStart();
@@ -309,21 +328,19 @@ public class Server extends HandlerWrapper implements Attributes
             mex.add(e);
         }
 
-        if (mex.size()==0)
+        // start connectors last
+        for (Connector connector : _connectors)
         {
-            for (Connector _connector : _connectors)
+            try
+            {   
+                connector.start();
+            }
+            catch(Throwable e)
             {
-                try
-                {
-                    _connector.start();
-                }
-                catch (Throwable e)
-                {
-                    mex.add(e);
-                }
+                mex.add(e);
             }
         }
-
+        
         if (isDumpAfterStart())
             dumpStdErr();
 
