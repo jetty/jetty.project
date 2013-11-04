@@ -71,6 +71,15 @@ public class Response implements HttpServletResponse
     private static final String __COOKIE_DELIM="\",;\\ \t";
     private final static String __01Jan1970_COOKIE = DateGenerator.formatCookieDate(0).trim();
 
+    // Cookie building buffer. Reduce garbage for cookie using applications
+    private static final ThreadLocal<StringBuilder> __cookieBuilder = new ThreadLocal<StringBuilder>()
+    {
+       @Override
+       protected StringBuilder initialValue()
+       {
+          return new StringBuilder(128);
+       }
+    };
 
     /* ------------------------------------------------------------ */
     public static Response getResponse(HttpServletResponse response)
@@ -263,7 +272,8 @@ public class Response implements HttpServletResponse
             throw new IllegalArgumentException("Bad cookie name");
 
         // Format value and params
-        StringBuilder buf = new StringBuilder(128);
+        StringBuilder buf = __cookieBuilder.get();
+        buf.setLength(0);
         
         // Name is checked for legality by servlet spec, but can also be passed directly so check again for quoting
         boolean quote_name=isQuoteNeededForCookie(name);
