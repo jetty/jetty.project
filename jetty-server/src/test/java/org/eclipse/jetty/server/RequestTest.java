@@ -213,11 +213,12 @@ public class RequestTest
 
     @Test
     public void testMultiPart() throws Exception
-    {
-        final File tmpDir = new File (System.getProperty("java.io.tmpdir"));
-        final File testTmpDir = new File (tmpDir, "reqtest");
+    {        
+        final File testTmpDir = File.createTempFile("reqtest", null);
+        if (testTmpDir.exists())
+            testTmpDir.delete();
+        testTmpDir.mkdir();
         testTmpDir.deleteOnExit();
-        assertTrue(testTmpDir.mkdirs());
         assertTrue(testTmpDir.list().length == 0);
 
         ContextHandler contextHandler = new ContextHandler();
