@@ -25,6 +25,7 @@ import static org.hamcrest.Matchers.notNullValue;
 
 import java.io.IOException;
 import java.net.ConnectException;
+import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -32,6 +33,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeException;
@@ -62,7 +64,11 @@ public class ClientConnectTest
     {
         // Validate thrown cause
         Throwable cause = e.getCause();
-        Assert.assertThat("ExecutionException.cause",cause,instanceOf(errorClass));
+        if(!errorClass.isInstance(cause)) 
+        {
+        	cause.printStackTrace(System.err);
+        	Assert.assertThat("ExecutionException.cause",cause,instanceOf(errorClass));
+        }
 
         // Validate websocket captured cause
         Assert.assertThat("Error Queue Length",wsocket.errorQueue.size(),greaterThanOrEqualTo(1));
@@ -354,8 +360,15 @@ public class ClientConnectTest
         }
         catch (ExecutionException e)
         {
-            // Expected path - java.net.ConnectException
-            assertExpectedError(e,wsocket,ConnectException.class);
+        	if(OS.IS_WINDOWS) 
+        	{
+        		// On windows, this is a SocketTimeoutException
+        		assertExpectedError(e, wsocket, SocketTimeoutException.class);
+        	} else
+        	{
+	            // Expected path - java.net.ConnectException
+	            assertExpectedError(e,wsocket,ConnectException.class);
+        	}
         }
     }
 

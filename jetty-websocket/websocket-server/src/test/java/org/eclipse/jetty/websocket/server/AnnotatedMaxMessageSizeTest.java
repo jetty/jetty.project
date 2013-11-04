@@ -108,7 +108,7 @@ public class AnnotatedMaxMessageSizeTest
         }
     }
     
-    @Test
+    @Test(timeout=4000)
     public void testEchoTooBig() throws IOException, Exception
     {
         BlockheadClient client = new BlockheadClient(serverUri);

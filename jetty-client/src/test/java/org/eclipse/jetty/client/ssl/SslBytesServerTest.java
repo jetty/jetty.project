@@ -1109,7 +1109,10 @@ public class SslBytesServerTest extends SslBytesTest
     @Test
     public void testRequestWithBigContentReadBlockedThenReset() throws Exception
     {
-        final SSLSocket client = newClient();
+    	// Don't run on Windows (buggy JVM)
+    	Assume.assumeTrue(!OS.IS_WINDOWS);
+    	
+    	final SSLSocket client = newClient();
 
         SimpleProxy.AutomaticFlow automaticProxyFlow = proxy.startAutomaticFlow();
         client.startHandshake();

@@ -20,6 +20,7 @@ package org.eclipse.jetty.client;
 
 import static java.nio.file.StandardOpenOption.CREATE;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.HttpCookie;
@@ -63,15 +64,21 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class HttpClientTest extends AbstractHttpClientServerTest
 {
+	@Rule
+	public TestingDir testdir = new TestingDir();
+	
     public HttpClientTest(SslContextFactory sslContextFactory)
     {
         super(sslContextFactory);
@@ -508,7 +515,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(new EmptyServerHandler());
 
         // Prepare a big file to upload
-        Path targetTestsDir = MavenTestingUtils.getTargetTestingDir().toPath();
+        Path targetTestsDir = testdir.getEmptyDir().toPath();
         Files.createDirectories(targetTestsDir);
         Path file = Paths.get(targetTestsDir.toString(), "http_client_conversation.big");
         try (OutputStream output = Files.newOutputStream(file, CREATE))
