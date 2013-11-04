@@ -19,9 +19,9 @@
 package org.eclipse.jetty.server.session;
 
 import java.sql.DriverManager;
-import org.eclipse.jetty.util.resource.Resource;
 import java.sql.SQLException;
 
+import org.eclipse.jetty.util.resource.Resource;
 import org.junit.After;
 import org.junit.Test;
 

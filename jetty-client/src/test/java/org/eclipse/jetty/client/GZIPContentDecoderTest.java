@@ -25,7 +25,7 @@ import static org.junit.Assert.assertTrue;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -59,7 +59,7 @@ public class GZIPContentDecoderTest
             data += data;
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         GZIPOutputStream output = new GZIPOutputStream(baos);
-        output.write(data.getBytes("UTF-8"));
+        output.write(data.getBytes(StandardCharsets.UTF_8));
         output.close();
         byte[] bytes = baos.toByteArray();
 
@@ -68,7 +68,7 @@ public class GZIPContentDecoderTest
         int read;
         while ((read = input.read()) >= 0)
             baos.write(read);
-        assertEquals(data, new String(baos.toByteArray(), "UTF-8"));
+        assertEquals(data, new String(baos.toByteArray(), StandardCharsets.UTF_8));
     }
 
     @Test
@@ -91,13 +91,13 @@ public class GZIPContentDecoderTest
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         GZIPOutputStream output = new GZIPOutputStream(baos);
-        output.write(data.getBytes("UTF-8"));
+        output.write(data.getBytes(StandardCharsets.UTF_8));
         output.close();
         byte[] bytes = baos.toByteArray();
 
         GZIPContentDecoder decoder = new GZIPContentDecoder();
         ByteBuffer decoded = decoder.decode(ByteBuffer.wrap(bytes));
-        assertEquals(data, Charset.forName("UTF-8").decode(decoded).toString());
+        assertEquals(data, StandardCharsets.UTF_8.decode(decoded).toString());
     }
 
     @Test
@@ -107,7 +107,7 @@ public class GZIPContentDecoderTest
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         GZIPOutputStream output = new GZIPOutputStream(baos);
-        output.write(data.getBytes("UTF-8"));
+        output.write(data.getBytes(StandardCharsets.UTF_8));
         output.close();
         byte[] bytes = baos.toByteArray();
 
@@ -121,7 +121,7 @@ public class GZIPContentDecoderTest
         ByteBuffer decoded = decoder.decode(ByteBuffer.wrap(bytes1));
         assertEquals(0, decoded.capacity());
         decoded = decoder.decode(ByteBuffer.wrap(bytes2));
-        assertEquals(data, Charset.forName("UTF-8").decode(decoded).toString());
+        assertEquals(data, StandardCharsets.UTF_8.decode(decoded).toString());
     }
 
     @Test
@@ -131,7 +131,7 @@ public class GZIPContentDecoderTest
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         GZIPOutputStream output = new GZIPOutputStream(baos);
-        output.write(data.getBytes("UTF-8"));
+        output.write(data.getBytes(StandardCharsets.UTF_8));
         output.close();
         byte[] bytes = baos.toByteArray();
 
@@ -143,7 +143,7 @@ public class GZIPContentDecoderTest
 
         GZIPContentDecoder decoder = new GZIPContentDecoder();
         ByteBuffer decoded = decoder.decode(ByteBuffer.wrap(bytes1));
-        assertEquals(data, Charset.forName("UTF-8").decode(decoded).toString());
+        assertEquals(data, StandardCharsets.UTF_8.decode(decoded).toString());
         assertFalse(decoder.isFinished());
         decoded = decoder.decode(ByteBuffer.wrap(bytes2));
         assertEquals(0, decoded.remaining());
@@ -157,7 +157,7 @@ public class GZIPContentDecoderTest
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         GZIPOutputStream output = new GZIPOutputStream(baos);
-        output.write(data.getBytes("UTF-8"));
+        output.write(data.getBytes(StandardCharsets.UTF_8));
         output.close();
         byte[] bytes = baos.toByteArray();
 
@@ -171,7 +171,7 @@ public class GZIPContentDecoderTest
         ByteBuffer decoded = decoder.decode(ByteBuffer.wrap(bytes1));
         assertEquals(0, decoded.capacity());
         decoded = decoder.decode(ByteBuffer.wrap(bytes2));
-        assertEquals(data, Charset.forName("UTF-8").decode(decoded).toString());
+        assertEquals(data, StandardCharsets.UTF_8.decode(decoded).toString());
     }
 
     @Test
@@ -180,14 +180,14 @@ public class GZIPContentDecoderTest
         String data1 = "0";
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         GZIPOutputStream output = new GZIPOutputStream(baos);
-        output.write(data1.getBytes("UTF-8"));
+        output.write(data1.getBytes(StandardCharsets.UTF_8));
         output.close();
         byte[] bytes1 = baos.toByteArray();
 
         String data2 = "1";
         baos = new ByteArrayOutputStream();
         output = new GZIPOutputStream(baos);
-        output.write(data2.getBytes("UTF-8"));
+        output.write(data2.getBytes(StandardCharsets.UTF_8));
         output.close();
         byte[] bytes2 = baos.toByteArray();
 
@@ -198,11 +198,11 @@ public class GZIPContentDecoderTest
         GZIPContentDecoder decoder = new GZIPContentDecoder();
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
         ByteBuffer decoded = decoder.decode(buffer);
-        assertEquals(data1, Charset.forName("UTF-8").decode(decoded).toString());
+        assertEquals(data1, StandardCharsets.UTF_8.decode(decoded).toString());
         assertTrue(decoder.isFinished());
         assertTrue(buffer.hasRemaining());
         decoded = decoder.decode(buffer);
-        assertEquals(data2, Charset.forName("UTF-8").decode(decoded).toString());
+        assertEquals(data2, StandardCharsets.UTF_8.decode(decoded).toString());
         assertTrue(decoder.isFinished());
         assertFalse(buffer.hasRemaining());
     }
@@ -215,7 +215,7 @@ public class GZIPContentDecoderTest
             data += data;
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         GZIPOutputStream output = new GZIPOutputStream(baos);
-        output.write(data.getBytes("UTF-8"));
+        output.write(data.getBytes(StandardCharsets.UTF_8));
         output.close();
         byte[] bytes = baos.toByteArray();
 
@@ -225,7 +225,7 @@ public class GZIPContentDecoderTest
         while (buffer.hasRemaining())
         {
             ByteBuffer decoded = decoder.decode(buffer);
-            result += Charset.forName("UTF-8").decode(decoded).toString();
+            result += StandardCharsets.UTF_8.decode(decoded).toString();
         }
         assertEquals(data, result);
     }
@@ -238,7 +238,7 @@ public class GZIPContentDecoderTest
             data += data;
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         GZIPOutputStream output = new GZIPOutputStream(baos);
-        output.write(data.getBytes("UTF-8"));
+        output.write(data.getBytes(StandardCharsets.UTF_8));
         output.close();
         byte[] bytes = baos.toByteArray();
 
@@ -249,7 +249,7 @@ public class GZIPContentDecoderTest
         {
             ByteBuffer decoded = decoder.decode(ByteBuffer.wrap(new byte[]{buffer.get()}));
             if (decoded.hasRemaining())
-                result += Charset.forName("UTF-8").decode(decoded).toString();
+                result += StandardCharsets.UTF_8.decode(decoded).toString();
         }
         assertEquals(data, result);
         assertTrue(decoder.isFinished());
@@ -263,12 +263,12 @@ public class GZIPContentDecoderTest
             data1 += data1;
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         GZIPOutputStream output = new GZIPOutputStream(baos);
-        output.write(data1.getBytes("UTF-8"));
+        output.write(data1.getBytes(StandardCharsets.UTF_8));
         output.close();
         byte[] bytes1 = baos.toByteArray();
 
         String data2 = "HELLO";
-        byte[] bytes2 = data2.getBytes("UTF-8");
+        byte[] bytes2 = data2.getBytes(StandardCharsets.UTF_8);
 
         byte[] bytes = new byte[bytes1.length + bytes2.length];
         System.arraycopy(bytes1, 0, bytes, 0, bytes1.length);
@@ -281,12 +281,12 @@ public class GZIPContentDecoderTest
         {
             ByteBuffer decoded = decoder.decode(buffer);
             if (decoded.hasRemaining())
-                result += Charset.forName("UTF-8").decode(decoded).toString();
+                result += StandardCharsets.UTF_8.decode(decoded).toString();
             if (decoder.isFinished())
                 break;
         }
         assertEquals(data1, result);
         assertTrue(buffer.hasRemaining());
-        assertEquals(data2, Charset.forName("UTF-8").decode(buffer).toString());
+        assertEquals(data2, StandardCharsets.UTF_8.decode(buffer).toString());
     }
 }

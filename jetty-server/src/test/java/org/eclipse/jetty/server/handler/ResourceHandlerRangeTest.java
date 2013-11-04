@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.server.handler;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
 
 import java.io.File;
 import java.io.FileWriter;

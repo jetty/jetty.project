@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.mux;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -28,7 +28,6 @@ import java.util.Locale;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.websocket.mux.MuxGenerator;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;

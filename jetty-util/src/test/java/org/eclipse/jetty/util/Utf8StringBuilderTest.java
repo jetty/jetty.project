@@ -21,6 +21,8 @@ package org.eclipse.jetty.util;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.nio.charset.StandardCharsets;
+
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -76,7 +78,7 @@ public class Utf8StringBuilderTest
     public void testUtfStringBuilder() throws Exception
     {
         String source = "abcd012345\n\r\u0000\u00a4\u10fb\ufffdjetty";
-        byte[] bytes = source.getBytes(StringUtil.__UTF8);
+        byte[] bytes = source.getBytes(StandardCharsets.UTF_8);
         Utf8StringBuilder buffer = new Utf8StringBuilder();
         for (byte aByte : bytes)
             buffer.append(aByte);
@@ -88,7 +90,7 @@ public class Utf8StringBuilderTest
     public void testShort() throws Exception
     {
         String source = "abc\u10fb";
-        byte[] bytes = source.getBytes(StringUtil.__UTF8);
+        byte[] bytes = source.getBytes(StandardCharsets.UTF_8);
         Utf8StringBuilder buffer = new Utf8StringBuilder();
         for (int i = 0; i < bytes.length - 1; i++)
             buffer.append(bytes[i]);
@@ -99,7 +101,7 @@ public class Utf8StringBuilderTest
     public void testLong() throws Exception
     {
         String source = "abcXX";
-        byte[] bytes = source.getBytes(StringUtil.__UTF8);
+        byte[] bytes = source.getBytes(StandardCharsets.UTF_8);
         bytes[3] = (byte)0xc0;
         bytes[4] = (byte)0x00;
 
@@ -122,9 +124,9 @@ public class Utf8StringBuilderTest
     public void testUTF32codes() throws Exception
     {
         String source = "\uD842\uDF9F";
-        byte[] bytes = source.getBytes("UTF-8");
+        byte[] bytes = source.getBytes(StandardCharsets.UTF_8);
 
-        String jvmcheck = new String(bytes,0,bytes.length,"UTF-8");
+        String jvmcheck = new String(bytes,0,bytes.length,StandardCharsets.UTF_8);
         assertEquals(source,jvmcheck);
 
         Utf8StringBuilder buffer = new Utf8StringBuilder();

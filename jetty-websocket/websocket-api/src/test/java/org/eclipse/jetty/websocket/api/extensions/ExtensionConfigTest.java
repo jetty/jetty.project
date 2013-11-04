@@ -18,7 +18,8 @@
 
 package org.eclipse.jetty.websocket.api.extensions;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 import java.util.HashMap;
 import java.util.Map;

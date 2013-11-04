@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.spdy.api;
 
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -242,7 +242,7 @@ public class ClientUsageTest
                     public void onData(Stream stream, DataInfo dataInfo)
                     {
                         StringBuilder builder = (StringBuilder)stream.getAttribute("builder");
-                        builder.append(dataInfo.asString("UTF-8", true));
+                        builder.append(dataInfo.asString(StandardCharsets.UTF_8, true));
 
                     }
                 }, new Promise.Adapter<Stream>()
@@ -250,9 +250,9 @@ public class ClientUsageTest
                     @Override
                     public void succeeded(Stream stream)
                     {
-                        stream.data(new BytesDataInfo("wee".getBytes(Charset.forName("UTF-8")), false), new Callback.Adapter());
+                        stream.data(new BytesDataInfo("wee".getBytes(StandardCharsets.UTF_8), false), new Callback.Adapter());
                         stream.data(new StringDataInfo("foo", false), new Callback.Adapter());
-                        stream.data(new ByteBufferDataInfo(Charset.forName("UTF-8").encode("bar"), true), new Callback.Adapter());
+                        stream.data(new ByteBufferDataInfo(StandardCharsets.UTF_8.encode("bar"), true), new Callback.Adapter());
                     }
                 }
         );

@@ -20,6 +20,7 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
@@ -30,7 +31,6 @@ import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
 
@@ -47,22 +47,22 @@ public class LocalConnector extends AbstractConnector
 
     public LocalConnector(Server server)
     {
-        this(server, null, null, null, 0, new HttpConnectionFactory());
+        this(server, null, null, null, -1, new HttpConnectionFactory());
     }
 
     public LocalConnector(Server server, SslContextFactory sslContextFactory)
     {
-        this(server, null, null, null, 0,AbstractConnectionFactory.getFactories(sslContextFactory,new HttpConnectionFactory()));
+        this(server, null, null, null, -1,AbstractConnectionFactory.getFactories(sslContextFactory,new HttpConnectionFactory()));
     }
 
     public LocalConnector(Server server, ConnectionFactory connectionFactory)
     {
-        this(server, null, null, null, 0, connectionFactory);
+        this(server, null, null, null, -1, connectionFactory);
     }
 
     public LocalConnector(Server server, ConnectionFactory connectionFactory, SslContextFactory sslContextFactory)
     {
-        this(server, null, null, null, 0, AbstractConnectionFactory.getFactories(sslContextFactory,connectionFactory));
+        this(server, null, null, null, -1, AbstractConnectionFactory.getFactories(sslContextFactory,connectionFactory));
     }
 
     @Override
@@ -100,8 +100,8 @@ public class LocalConnector extends AbstractConnector
      */
     public String getResponses(String requests,long idleFor,TimeUnit units) throws Exception
     {
-        ByteBuffer result = getResponses(BufferUtil.toBuffer(requests,StringUtil.__UTF8_CHARSET),idleFor,units);
-        return result==null?null:BufferUtil.toString(result,StringUtil.__UTF8_CHARSET);
+        ByteBuffer result = getResponses(BufferUtil.toBuffer(requests,StandardCharsets.UTF_8),idleFor,units);
+        return result==null?null:BufferUtil.toString(result,StandardCharsets.UTF_8);
     }
 
     /** Sends requests and get's responses based on thread activity.
@@ -150,7 +150,7 @@ public class LocalConnector extends AbstractConnector
      */
     public LocalEndPoint executeRequest(String rawRequest)
     {
-        return executeRequest(BufferUtil.toBuffer(rawRequest,StringUtil.__UTF8_CHARSET));
+        return executeRequest(BufferUtil.toBuffer(rawRequest, StandardCharsets.UTF_8));
     }
 
     private LocalEndPoint executeRequest(ByteBuffer rawRequest)
@@ -190,7 +190,7 @@ public class LocalConnector extends AbstractConnector
             // TODO this is a busy wait
             while(getIn()==null || BufferUtil.hasContent(getIn()))
                 Thread.yield();
-            setInput(BufferUtil.toBuffer(s, StringUtil.__UTF8_CHARSET));
+            setInput(BufferUtil.toBuffer(s, StandardCharsets.UTF_8));
         }
 
         @Override

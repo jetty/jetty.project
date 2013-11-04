@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -50,7 +51,6 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.BlockingCallback;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -491,7 +491,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
         {
             LOG.warn("Failed UTF-8 decode for request path, trying ISO-8859-1");
             LOG.ignore(e);
-            path = _uri.getDecodedPath(StringUtil.__ISO_8859_1);
+            path = _uri.getDecodedPath(StandardCharsets.ISO_8859_1);
         }
         
         String info = URIUtil.canonicalPath(path);

@@ -22,7 +22,6 @@
 package com.acme;
 
 import java.io.IOException;
-import java.lang.reflect.Method;
 
 import javax.mail.Session;
 import javax.naming.InitialContext;

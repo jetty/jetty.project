@@ -18,12 +18,15 @@
 
 package org.eclipse.jetty.websocket.common;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.MessageTooLargeException;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
@@ -77,7 +80,7 @@ public class TextPayloadParserTest
         sb.append(". The end.");
 
         String expectedText = sb.toString();
-        byte utf[] = expectedText.getBytes(StringUtil.__UTF8);
+        byte utf[] = expectedText.getBytes(StandardCharsets.UTF_8);
 
         Assert.assertThat("Must be a long length payload",utf.length,greaterThan(0xFFFF));
 
@@ -113,7 +116,7 @@ public class TextPayloadParserTest
         sb.append(". The end.");
 
         String expectedText = sb.toString();
-        byte utf[] = expectedText.getBytes(StringUtil.__UTF8);
+        byte utf[] = expectedText.getBytes(StandardCharsets.UTF_8);
 
         Assert.assertThat("Must be a medium length payload",utf.length,allOf(greaterThan(0x7E),lessThan(0xFFFF)));
 
@@ -143,8 +146,8 @@ public class TextPayloadParserTest
         String part1 = "Hello ";
         String part2 = "World";
 
-        byte b1[] = part1.getBytes(StringUtil.__UTF8_CHARSET);
-        byte b2[] = part2.getBytes(StringUtil.__UTF8_CHARSET);
+        byte b1[] = part1.getBytes(StandardCharsets.UTF_8);
+        byte b2[] = part2.getBytes(StandardCharsets.UTF_8);
 
         ByteBuffer buf = ByteBuffer.allocate(32);
 
@@ -181,7 +184,7 @@ public class TextPayloadParserTest
     public void testShortMaskedText() throws Exception
     {
         String expectedText = "Hello World";
-        byte utf[] = expectedText.getBytes(StringUtil.__UTF8_CHARSET);
+        byte utf[] = expectedText.getBytes(StandardCharsets.UTF_8);
 
         ByteBuffer buf = ByteBuffer.allocate(24);
         buf.put((byte)0x81);
@@ -207,7 +210,7 @@ public class TextPayloadParserTest
     {
         String expectedText = "Hell\uFF4f W\uFF4Frld";
 
-        byte utf[] = expectedText.getBytes(StringUtil.__UTF8);
+        byte utf[] = expectedText.getBytes(StandardCharsets.UTF_8);
 
         ByteBuffer buf = ByteBuffer.allocate(24);
         buf.put((byte)0x81);

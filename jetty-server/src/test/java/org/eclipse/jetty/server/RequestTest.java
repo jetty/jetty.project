@@ -18,6 +18,15 @@
 
 package org.eclipse.jetty.server;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -25,11 +34,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
@@ -44,25 +55,14 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiPartInputStreamParser;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.hamcrest.Matchers;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 public class RequestTest
 {
@@ -213,11 +213,12 @@ public class RequestTest
 
     @Test
     public void testMultiPart() throws Exception
-    {
-        final File tmpDir = new File (System.getProperty("java.io.tmpdir"));
-        final File testTmpDir = new File (tmpDir, "reqtest");
+    {        
+        final File testTmpDir = File.createTempFile("reqtest", null);
+        if (testTmpDir.exists())
+            testTmpDir.delete();
+        testTmpDir.mkdir();
         testTmpDir.deleteOnExit();
-        assertTrue(testTmpDir.mkdirs());
         assertTrue(testTmpDir.list().length == 0);
 
         ContextHandler contextHandler = new ContextHandler();
@@ -563,7 +564,7 @@ public class RequestTest
             {
                 baseRequest.setHandled(true);
                 Reader reader=request.getReader();
-                byte[] b=("read="+reader.read()+"\n").getBytes(StringUtil.__UTF8);
+                byte[] b=("read="+reader.read()+"\n").getBytes(StandardCharsets.UTF_8);
                 response.setContentLength(b.length);
                 response.getOutputStream().write(b);
                 response.flushBuffer();
@@ -612,7 +613,7 @@ public class RequestTest
                 String in = IO.toString(reader);
                 String param = request.getParameter("param");
 
-                byte[] b=("read='"+in+"' param="+param+"\n").getBytes(StringUtil.__UTF8);
+                byte[] b=("read='"+in+"' param="+param+"\n").getBytes(StandardCharsets.UTF_8);
                 response.setContentLength(b.length);
                 response.getOutputStream().write(b);
                 response.flushBuffer();
@@ -647,7 +648,7 @@ public class RequestTest
             {
                 baseRequest.setHandled(true);
                 InputStream in=request.getInputStream();
-                byte[] b=("read="+in.read()+"\n").getBytes(StringUtil.__UTF8);
+                byte[] b=("read="+in.read()+"\n").getBytes(StandardCharsets.UTF_8);
                 response.setContentLength(b.length);
                 response.getOutputStream().write(b);
                 response.flushBuffer();

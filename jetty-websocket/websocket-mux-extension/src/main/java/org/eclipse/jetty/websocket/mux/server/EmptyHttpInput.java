@@ -21,9 +21,6 @@ package org.eclipse.jetty.websocket.mux.server;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.server.ByteBufferQueuedHttpInput;
-import org.eclipse.jetty.server.HttpChannel;
-import org.eclipse.jetty.server.HttpInput;
-import org.eclipse.jetty.server.QueuedHttpInput;
 
 /**
  * HttpInput for Empty Http body sections.

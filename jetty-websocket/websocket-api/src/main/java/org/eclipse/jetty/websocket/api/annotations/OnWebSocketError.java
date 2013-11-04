@@ -24,6 +24,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import org.eclipse.jetty.websocket.api.Session;
+
 /**
  * Annotation for receiving websocket errors (exceptions) that have occurred internally in the websocket implementation.
  * <p>

@@ -18,13 +18,16 @@
 
 package org.eclipse.jetty.websocket.server.blockhead;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 import java.io.Closeable;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -33,12 +36,15 @@ import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.net.ssl.HttpsURLConnection;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
@@ -728,7 +734,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames, Connecti
     public void writeRaw(String str) throws IOException
     {
         LOG.debug("write((String)[{}]){}{})",str.length(),'\n',str);
-        out.write(StringUtil.getBytes(str,StringUtil.__ISO_8859_1));
+        out.write(str.getBytes(StandardCharsets.ISO_8859_1));
     }
 
     public void writeRawSlowly(ByteBuffer buf, int segmentSize) throws IOException

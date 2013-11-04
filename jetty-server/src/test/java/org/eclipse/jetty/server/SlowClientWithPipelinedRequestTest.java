@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -37,7 +38,6 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.After;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class SlowClientWithPipelinedRequestTest
@@ -116,7 +116,7 @@ public class SlowClientWithPipelinedRequestTest
                 "GET /content HTTP/1.1\r\n" +
                 "Host: localhost:" + connector.getLocalPort() + "\r\n" +
                 "\r\n" +
-                "").getBytes("UTF-8"));
+                "").getBytes(StandardCharsets.UTF_8));
         output.flush();
 
         InputStream input = client.getInputStream();
@@ -129,7 +129,7 @@ public class SlowClientWithPipelinedRequestTest
                 "GET /pipelined HTTP/1.1\r\n" +
                 "Host: localhost:" + connector.getLocalPort() + "\r\n" +
                 "\r\n" +
-                "").getBytes("UTF-8"));
+                "").getBytes(StandardCharsets.UTF_8));
         output.flush();
 
         // Simulate a slow reader

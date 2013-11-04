@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.server.pathmap;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.notNullValue;
 
 import org.eclipse.jetty.websocket.server.pathmap.PathMappings.MappedResource;
 import org.junit.Assert;

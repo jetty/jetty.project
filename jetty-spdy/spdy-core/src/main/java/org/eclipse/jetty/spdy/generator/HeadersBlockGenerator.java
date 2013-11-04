@@ -43,7 +43,7 @@ public class HeadersBlockGenerator
     public ByteBuffer generate(short version, Fields headers)
     {
         // TODO: ByteArrayOutputStream is quite inefficient, but grows on demand; optimize using ByteBuffer ?
-        Charset iso1 = StandardCharsets.ISO_8859_1;
+        final Charset iso1 = StandardCharsets.ISO_8859_1;
         ByteArrayOutputStream buffer = new ByteArrayOutputStream(headers.getSize() * 64);
         writeCount(version, buffer, headers.getSize());
         for (Fields.Field header : headers)

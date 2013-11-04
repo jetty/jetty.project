@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.client.internal;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
 
 import java.net.InetSocketAddress;
 import java.net.URI;

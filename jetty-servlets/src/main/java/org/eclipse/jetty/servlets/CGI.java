@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
+import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -304,7 +305,7 @@ public class CGI extends HttpServlet
         LOG.debug("Environment: " + env.getExportString());
         LOG.debug("Command: " + execCmd);
 
-        Process p;
+        final Process p;
         if (dir == null)
             p = Runtime.getRuntime().exec(execCmd, env.getEnvArray());
         else
@@ -316,13 +317,28 @@ public class CGI extends HttpServlet
         else if (len > 0)
             writeProcessInput(p, req.getInputStream(), len);
 
-        IO.copyThread(p.getErrorStream(), System.err);
-
         // hook processes output to browser's input (sync)
         // if browser closes stream, we should detect it and kill process...
         OutputStream os = null;
+        AsyncContext async=req.startAsync();
         try
         {
+            async.start(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    try
+                    {
+                        IO.copy(p.getErrorStream(), System.err);
+                    }
+                    catch (IOException e)
+                    {
+                        LOG.warn(e);
+                    }
+                }     
+            });
+            
             // read any headers off the top of our input stream
             // NOTE: Multiline header items not supported!
             String line = null;
@@ -398,6 +414,7 @@ public class CGI extends HttpServlet
             }
             p.destroy();
             // LOG.debug("CGI: terminated!");
+            async.complete();
         }
     }
 

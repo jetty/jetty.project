@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356.server.blockhead;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
 
 import java.net.URI;
 import java.net.URISyntaxException;

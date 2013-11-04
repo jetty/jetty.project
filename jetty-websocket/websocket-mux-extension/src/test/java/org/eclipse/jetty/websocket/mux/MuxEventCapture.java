@@ -18,17 +18,13 @@
 
 package org.eclipse.jetty.websocket.mux;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
 
 import java.util.LinkedList;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.OpCode;
-import org.eclipse.jetty.websocket.mux.MuxControlBlock;
-import org.eclipse.jetty.websocket.mux.MuxException;
-import org.eclipse.jetty.websocket.mux.MuxParser;
-import org.eclipse.jetty.websocket.mux.MuxedFrame;
 import org.eclipse.jetty.websocket.mux.op.MuxAddChannelRequest;
 import org.eclipse.jetty.websocket.mux.op.MuxAddChannelResponse;
 import org.eclipse.jetty.websocket.mux.op.MuxDropChannel;

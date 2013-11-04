@@ -18,18 +18,21 @@
 
 package org.eclipse.jetty.websocket.server.helper;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
@@ -90,7 +93,7 @@ public class SafariD00
 
         // System.out.printf("--- Request ---%n%s",req);
 
-        byte reqBytes[] = req.toString().getBytes("UTF-8");
+        byte reqBytes[] = req.toString().getBytes(StandardCharsets.UTF_8);
         byte hixieBytes[] = TypeUtil.fromHexString("e739617916c9daf3");
         byte buf[] = new byte[reqBytes.length + hixieBytes.length];
         System.arraycopy(reqBytes,0,buf,0,reqBytes.length);
@@ -140,7 +143,7 @@ public class SafariD00
         for (String msg : msgs)
         {
             buf.put((byte)0x00);
-            buf.put(msg.getBytes("UTF-8"));
+            buf.put(msg.getBytes(StandardCharsets.UTF_8));
             buf.put((byte)0xFF);
         }
 

@@ -23,9 +23,9 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -153,7 +153,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     /* ------------------------------------------------------------ */
     public void setInput(String s)
     {
-        setInput(BufferUtil.toBuffer(s,StringUtil.__UTF8_CHARSET));
+        setInput(BufferUtil.toBuffer(s,StandardCharsets.UTF_8));
     }
 
     /* ------------------------------------------------------------ */
@@ -177,7 +177,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
      */
     public String getOutputString()
     {
-        return getOutputString(StringUtil.__UTF8_CHARSET);
+        return getOutputString(StandardCharsets.UTF_8);
     }
 
     /* ------------------------------------------------------------ */
@@ -207,7 +207,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
      */
     public String takeOutputString()
     {
-        return takeOutputString(StringUtil.__UTF8_CHARSET);
+        return takeOutputString(StandardCharsets.UTF_8);
     }
 
     /* ------------------------------------------------------------ */

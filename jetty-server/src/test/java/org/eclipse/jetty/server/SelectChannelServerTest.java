@@ -28,6 +28,7 @@ public class SelectChannelServerTest extends HttpServerTestBase
     @Before
     public void init() throws Exception
     {
-        startServer(new ServerConnector(_server,1,1));
+        // Run this test with 0 acceptors. Other tests already check the acceptors >0
+        startServer(new ServerConnector(_server,0,1));
     }
 }

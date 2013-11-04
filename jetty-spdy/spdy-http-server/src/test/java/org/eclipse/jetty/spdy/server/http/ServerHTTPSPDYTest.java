@@ -18,18 +18,29 @@
 
 package org.eclipse.jetty.spdy.server.http;
 
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.core.IsInstanceOf.instanceOf;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
@@ -57,16 +68,6 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.Assert;
 import org.junit.Test;
-
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.core.IsInstanceOf.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
 {
@@ -438,7 +439,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 request.setHandled(true);
                 httpResponse.setStatus(HttpServletResponse.SC_OK);
                 ServletOutputStream output = httpResponse.getOutputStream();
-                output.write(data.getBytes("UTF-8"));
+                output.write(data.getBytes(StandardCharsets.UTF_8));
                 handlerLatch.countDown();
             }
         }, 30000), null);
@@ -461,7 +462,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             public void onData(Stream stream, DataInfo dataInfo)
             {
                 assertTrue(dataInfo.isClose());
-                assertEquals(data, dataInfo.asString("UTF-8", true));
+                assertEquals(data, dataInfo.asString(StandardCharsets.UTF_8, true));
                 dataLatch.countDown();
             }
         });
@@ -533,9 +534,9 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 request.setHandled(true);
                 httpResponse.setStatus(HttpServletResponse.SC_OK);
                 ServletOutputStream output = httpResponse.getOutputStream();
-                output.write(data1.getBytes("UTF-8"));
+                output.write(data1.getBytes(StandardCharsets.UTF_8));
                 output.flush();
-                output.write(data2.getBytes("UTF-8"));
+                output.write(data2.getBytes(StandardCharsets.UTF_8));
                 handlerLatch.countDown();
             }
         }, 30000), null);
@@ -564,9 +565,9 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 int data = dataFrames.incrementAndGet();
                 assertTrue(data >= 1 && data <= 2);
                 if (data == 1)
-                    assertEquals(data1, dataInfo.asString("UTF8", true));
+                    assertEquals(data1, dataInfo.asString(StandardCharsets.UTF_8, true));
                 else
-                    assertEquals(data2, dataInfo.asString("UTF8", true));
+                    assertEquals(data2, dataInfo.asString(StandardCharsets.UTF_8, true));
                 dataLatch.countDown();
             }
         });
@@ -750,7 +751,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 request.setHandled(true);
                 httpResponse.setStatus(HttpServletResponse.SC_OK);
                 ServletOutputStream output = httpResponse.getOutputStream();
-                output.write(data.getBytes("UTF-8"));
+                output.write(data.getBytes(StandardCharsets.UTF_8));
                 output.flush();
                 output.close();
                 handlerLatch.countDown();
@@ -781,7 +782,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                     buffer.write(byteBuffer.get());
                 if (dataInfo.isClose())
                 {
-                    assertEquals(data, new String(buffer.toByteArray(), Charset.forName("UTF-8")));
+                    assertEquals(data, new String(buffer.toByteArray(), StandardCharsets.UTF_8));
                     dataLatch.countDown();
                 }
             }
@@ -807,10 +808,10 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 httpResponse.setStatus(HttpServletResponse.SC_OK);
                 ServletOutputStream output = httpResponse.getOutputStream();
                 // Write some
-                output.write(data1.getBytes("UTF-8"));
+                output.write(data1.getBytes(StandardCharsets.UTF_8));
                 // But then change your mind and reset the buffer
                 httpResponse.resetBuffer();
-                output.write(data2.getBytes("UTF-8"));
+                output.write(data2.getBytes(StandardCharsets.UTF_8));
                 handlerLatch.countDown();
             }
         }, 30000), null);
@@ -839,7 +840,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                     buffer.write(byteBuffer.get());
                 if (dataInfo.isClose())
                 {
-                    assertEquals(data2, new String(buffer.toByteArray(), Charset.forName("UTF-8")));
+                    assertEquals(data2, new String(buffer.toByteArray(), StandardCharsets.UTF_8));
                     dataLatch.countDown();
                 }
             }
@@ -996,10 +997,10 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 request.setHandled(true);
                 httpResponse.setHeader("Transfer-Encoding", "chunked");
                 ServletOutputStream output = httpResponse.getOutputStream();
-                output.write(pangram1.getBytes("UTF-8"));
+                output.write(pangram1.getBytes(StandardCharsets.UTF_8));
                 httpResponse.setHeader("EXTRA", "X");
                 output.flush();
-                output.write(pangram2.getBytes("UTF-8"));
+                output.write(pangram2.getBytes(StandardCharsets.UTF_8));
                 handlerLatch.countDown();
             }
         }, 30000), null);
@@ -1030,12 +1031,12 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 if (count == 1)
                 {
                     Assert.assertFalse(dataInfo.isClose());
-                    assertEquals(pangram1, dataInfo.asString("UTF-8", true));
+                    assertEquals(pangram1, dataInfo.asString(StandardCharsets.UTF_8, true));
                 }
                 else if (count == 2)
                 {
                     assertTrue(dataInfo.isClose());
-                    assertEquals(pangram2, dataInfo.asString("UTF-8", true));
+                    assertEquals(pangram2, dataInfo.asString(StandardCharsets.UTF_8, true));
                 }
                 dataLatch.countDown();
             }

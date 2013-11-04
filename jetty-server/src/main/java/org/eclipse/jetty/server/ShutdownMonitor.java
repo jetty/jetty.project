@@ -25,9 +25,9 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 
 /**
@@ -112,7 +112,7 @@ public class ShutdownMonitor
 
                         // Reply to client
                         debug("Informing client that we are stopped.");
-                        out.write("Stopped\r\n".getBytes(StringUtil.__UTF8));
+                        out.write("Stopped\r\n".getBytes(StandardCharsets.UTF_8));
                         out.flush();
 
                         // Shutdown Monitor
@@ -131,7 +131,7 @@ public class ShutdownMonitor
                     else if ("status".equals(cmd))
                     {
                         // Reply to client
-                        out.write("OK\r\n".getBytes(StringUtil.__UTF8));
+                        out.write("OK\r\n".getBytes(StandardCharsets.UTF_8));
                         out.flush();
                     }
                 }

@@ -29,13 +29,13 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketAddress;
 import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -49,15 +49,13 @@ import org.junit.Test;
 public class IOTest
 {
     @Test
-    public void testIO() throws InterruptedException
+    public void testIO() throws Exception
     {
         // Only a little test
         ByteArrayInputStream in = new ByteArrayInputStream("The quick brown fox jumped over the lazy dog".getBytes());
         ByteArrayOutputStream out = new ByteArrayOutputStream();
 
-        IO.copyThread(in, out);
-        Thread.sleep(1500);
-        // System.err.println(out);
+        IO.copy(in, out);
 
         assertEquals("copyThread", out.toString(), "The quick brown fox jumped over the lazy dog");
     }
@@ -444,7 +442,7 @@ public class IOTest
         ByteBuffer read = ByteBuffer.allocate(1024);
         Future<Integer> reading = server.read(read);
 
-        byte[] data = "Testing 1 2 3".getBytes("UTF-8");
+        byte[] data = "Testing 1 2 3".getBytes(StandardCharsets.UTF_8);
         ByteBuffer write = BufferUtil.toBuffer(data);
         Future<Integer> writing = client.write(write);
 

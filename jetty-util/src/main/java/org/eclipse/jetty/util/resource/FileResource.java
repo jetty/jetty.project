@@ -32,8 +32,6 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.file.StandardOpenOption;
 import java.security.Permission;
 
-import javax.management.RuntimeErrorException;
-
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;

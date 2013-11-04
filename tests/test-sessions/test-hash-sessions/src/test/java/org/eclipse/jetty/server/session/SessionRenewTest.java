@@ -21,7 +21,6 @@ package org.eclipse.jetty.server.session;
 import java.io.File;
 
 import org.eclipse.jetty.server.SessionManager;
-import org.junit.Assert;
 import org.junit.Test;
 
 public class SessionRenewTest extends AbstractSessionRenewTest

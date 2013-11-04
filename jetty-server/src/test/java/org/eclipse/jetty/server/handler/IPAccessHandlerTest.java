@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -124,7 +125,7 @@ public class IPAccessHandlerTest
             OutputStream output = socket.getOutputStream();
             BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-            output.write(request.getBytes("UTF-8"));
+            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             Response response = readResponse(input);

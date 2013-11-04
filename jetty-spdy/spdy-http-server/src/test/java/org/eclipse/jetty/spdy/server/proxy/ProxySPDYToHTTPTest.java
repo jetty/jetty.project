@@ -18,14 +18,21 @@
 
 package org.eclipse.jetty.spdy.server.proxy;
 
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertThat;
+
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -68,11 +75,6 @@ import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertThat;
 
 @RunWith(value = Parameterized.class)
 public class ProxySPDYToHTTPTest
@@ -197,7 +199,7 @@ public class ProxySPDYToHTTPTest
     @Test
     public void testSYNThenREPLYAndDATA() throws Exception
     {
-        final byte[] data = "0123456789ABCDEF".getBytes("UTF-8");
+        final byte[] data = "0123456789ABCDEF".getBytes(StandardCharsets.UTF_8);
         final String header = "foo";
 
         InetSocketAddress proxyAddress = startProxy(startServer(new TestServerHandler(header, data)), 30000, 30000);

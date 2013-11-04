@@ -20,6 +20,7 @@ package org.eclipse.jetty.spdy.server;
 
 import java.io.IOException;
 import java.util.List;
+
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 

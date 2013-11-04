@@ -18,8 +18,12 @@
 
 package org.eclipse.jetty.spdy.server.proxy;
 
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
+
 import java.io.ByteArrayOutputStream;
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
@@ -61,9 +65,6 @@ import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
 
 @RunWith(value = Parameterized.class)
 public class ProxySPDYToSPDYTest
@@ -227,7 +228,7 @@ public class ProxySPDYToSPDYTest
     @Test
     public void testSYNThenREPLYAndDATA() throws Exception
     {
-        final byte[] data = "0123456789ABCDEF".getBytes("UTF-8");
+        final byte[] data = "0123456789ABCDEF".getBytes(StandardCharsets.UTF_8);
         final String header = "foo";
         InetSocketAddress proxyAddress = startProxy(startServer(new ServerSessionFrameListener.Adapter()
         {
@@ -287,7 +288,7 @@ public class ProxySPDYToSPDYTest
     @Test
     public void testSYNThenSPDYPushIsReceived() throws Exception
     {
-        final byte[] data = "0123456789ABCDEF".getBytes("UTF-8");
+        final byte[] data = "0123456789ABCDEF".getBytes(StandardCharsets.UTF_8);
         InetSocketAddress proxyAddress = startProxy(startServer(new ServerSessionFrameListener.Adapter()
         {
             @Override
@@ -368,7 +369,7 @@ public class ProxySPDYToSPDYTest
     @Test
     public void testSYNThenSPDYNestedPushIsReceived() throws Exception
     {
-        final byte[] data = "0123456789ABCDEF".getBytes("UTF-8");
+        final byte[] data = "0123456789ABCDEF".getBytes(StandardCharsets.UTF_8);
         InetSocketAddress proxyAddress = startProxy(startServer(new ServerSessionFrameListener.Adapter()
         {
             @Override

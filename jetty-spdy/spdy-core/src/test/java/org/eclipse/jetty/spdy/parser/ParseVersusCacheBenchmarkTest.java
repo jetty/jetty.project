@@ -19,7 +19,7 @@
 package org.eclipse.jetty.spdy.parser;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -43,8 +43,7 @@ public class ParseVersusCacheBenchmarkTest
 
         String name = "Content-Type";
         String value = "application/octect-stream";
-        Charset charset = Charset.forName("ISO-8859-1");
-        ByteBuffer buffer = ByteBuffer.wrap((name + value).getBytes(charset));
+        ByteBuffer buffer = ByteBuffer.wrap((name + value).getBytes(StandardCharsets.ISO_8859_1));
         int iterations = 100_000_000;
 
         long begin = System.nanoTime();
@@ -52,12 +51,12 @@ public class ParseVersusCacheBenchmarkTest
         {
             byte[] nameBytes = new byte[name.length()];
             buffer.get(nameBytes);
-            String name2 = new String(nameBytes, charset);
+            String name2 = new String(nameBytes, StandardCharsets.ISO_8859_1);
             Assert.assertEquals(name2, name);
 
             byte[] valueBytes = new byte[value.length()];
             buffer.get(valueBytes);
-            String value2 = new String(valueBytes, charset);
+            String value2 = new String(valueBytes, StandardCharsets.ISO_8859_1);
             Assert.assertEquals(value2, value);
 
             buffer.flip();
@@ -66,8 +65,8 @@ public class ParseVersusCacheBenchmarkTest
         System.err.printf("parse time: %d%n", TimeUnit.NANOSECONDS.toMillis(end - begin));
 
         Map<ByteBuffer, String> map = new HashMap<>();
-        map.put(ByteBuffer.wrap(name.getBytes(charset)), name);
-        map.put(ByteBuffer.wrap(value.getBytes(charset)), value);
+        map.put(ByteBuffer.wrap(name.getBytes(StandardCharsets.ISO_8859_1)), name);
+        map.put(ByteBuffer.wrap(value.getBytes(StandardCharsets.ISO_8859_1)), value);
         final Map<ByteBuffer, String> cache = Collections.unmodifiableMap(map);
 
         begin = System.nanoTime();

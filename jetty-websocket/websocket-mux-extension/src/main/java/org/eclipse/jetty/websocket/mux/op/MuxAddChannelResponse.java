@@ -19,9 +19,9 @@
 package org.eclipse.jetty.websocket.mux.op;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.mux.MuxControlBlock;
 import org.eclipse.jetty.websocket.mux.MuxOp;
 
@@ -115,7 +115,7 @@ public class MuxAddChannelResponse implements MuxControlBlock
 
     public void setHandshake(String responseHandshake)
     {
-        setHandshake(BufferUtil.toBuffer(responseHandshake,StringUtil.__UTF8_CHARSET));
+        setHandshake(BufferUtil.toBuffer(responseHandshake, StandardCharsets.UTF_8));
     }
 
     public void setRsv(byte rsv)

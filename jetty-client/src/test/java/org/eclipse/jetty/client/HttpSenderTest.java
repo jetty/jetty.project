@@ -172,7 +172,7 @@ public class HttpSenderTest
 //        HttpConnection connection = new HttpConnection(client, endPoint, destination);
 //        Request request = client.newRequest(URI.create("http://localhost/"));
 //        String content = "abcdef";
-//        request.content(new ByteBufferContentProvider(ByteBuffer.wrap(content.getBytes("UTF-8"))));
+//        request.content(new ByteBufferContentProvider(ByteBuffer.wrap(content.getBytes(StandardCharsets.UTF_8))));
 //        final CountDownLatch headersLatch = new CountDownLatch(1);
 //        final CountDownLatch successLatch = new CountDownLatch(1);
 //        request.listener(new Request.Listener.Adapter()
@@ -207,7 +207,7 @@ public class HttpSenderTest
 //        Request request = client.newRequest(URI.create("http://localhost/"));
 //        String content1 = "0123456789";
 //        String content2 = "abcdef";
-//        request.content(new ByteBufferContentProvider(ByteBuffer.wrap(content1.getBytes("UTF-8")), ByteBuffer.wrap(content2.getBytes("UTF-8"))));
+//        request.content(new ByteBufferContentProvider(ByteBuffer.wrap(content1.getBytes(StandardCharsets.UTF_8)), ByteBuffer.wrap(content2.getBytes(StandardCharsets.UTF_8))));
 //        final CountDownLatch headersLatch = new CountDownLatch(1);
 //        final CountDownLatch successLatch = new CountDownLatch(1);
 //        request.listener(new Request.Listener.Adapter()
@@ -242,7 +242,7 @@ public class HttpSenderTest
 //        Request request = client.newRequest(URI.create("http://localhost/"));
 //        String content1 = "0123456789";
 //        String content2 = "ABCDEF";
-//        request.content(new ByteBufferContentProvider(ByteBuffer.wrap(content1.getBytes("UTF-8")), ByteBuffer.wrap(content2.getBytes("UTF-8")))
+//        request.content(new ByteBufferContentProvider(ByteBuffer.wrap(content1.getBytes(StandardCharsets.UTF_8)), ByteBuffer.wrap(content2.getBytes(StandardCharsets.UTF_8)))
 //        {
 //            @Override
 //            public long getLength()

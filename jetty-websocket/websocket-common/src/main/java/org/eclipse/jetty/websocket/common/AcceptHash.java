@@ -18,11 +18,10 @@
 
 package org.eclipse.jetty.websocket.common;
 
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 
 import org.eclipse.jetty.util.B64Code;
-import org.eclipse.jetty.util.StringUtil;
 
 /**
  * Logic for working with the <code>Sec-WebSocket-Key</code> and <code>Sec-WebSocket-Accept</code> headers.
@@ -36,19 +35,7 @@ public class AcceptHash
      * <p>
      * See <a href="https://tools.ietf.org/html/rfc6455#section-1.3">Opening Handshake (Section 1.3)</a>
      */
-    private final static byte[] MAGIC;
-
-    static
-    {
-        try
-        {
-            MAGIC = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11".getBytes(StringUtil.__ISO_8859_1);
-        }
-        catch (UnsupportedEncodingException e)
-        {
-            throw new RuntimeException(e);
-        }
-    }
+    private final static byte[] MAGIC = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11".getBytes(StandardCharsets.ISO_8859_1);
 
     /**
      * Concatenate the provided key with the Magic GUID and return the Base64 encoded form.
@@ -62,7 +49,7 @@ public class AcceptHash
         try
         {
             MessageDigest md = MessageDigest.getInstance("SHA1");
-            md.update(key.getBytes("UTF-8"));
+            md.update(key.getBytes(StandardCharsets.UTF_8));
             md.update(MAGIC);
             return new String(B64Code.encode(md.digest()));
         }

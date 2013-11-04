@@ -29,6 +29,7 @@ import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -480,7 +481,7 @@ public class MultiPartInputStreamParser
         }
         
         String boundary="--"+contentTypeBoundary;
-        byte[] byteBoundary=(boundary+"--").getBytes(StringUtil.__ISO_8859_1);
+        byte[] byteBoundary=(boundary+"--").getBytes(StandardCharsets.ISO_8859_1);
 
         // Get first boundary
         String line = null;

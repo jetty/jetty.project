@@ -34,7 +34,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.io.UncheckedPrintWriter;
-import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.servlets.gzip.AbstractCompressedStream;
 import org.eclipse.jetty.servlets.gzip.CompressedResponseWrapper;
 

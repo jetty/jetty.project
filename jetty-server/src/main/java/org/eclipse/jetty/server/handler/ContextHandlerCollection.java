@@ -19,7 +19,6 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;

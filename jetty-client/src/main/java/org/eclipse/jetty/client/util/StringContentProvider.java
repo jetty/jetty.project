@@ -19,6 +19,7 @@
 package org.eclipse.jetty.client.util;
 
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.client.api.ContentProvider;
 
@@ -32,7 +33,7 @@ public class StringContentProvider extends BytesContentProvider
 {
     public StringContentProvider(String content)
     {
-        this(content, "UTF-8");
+        this(content, StandardCharsets.UTF_8);
     }
 
     public StringContentProvider(String content, String encoding)
