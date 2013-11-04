@@ -48,6 +48,7 @@ import org.junit.Test;
  */
 public class ResourceHandlerTest
 {
+	private static final String LN = System.getProperty("line.separator");
     private static Server _server;
     private static HttpConfiguration _config;
     private static ServerConnector _connector;
@@ -124,7 +125,7 @@ public class ResourceHandlerTest
         SimpleRequest sr = new SimpleRequest(new URI("http://localhost:" + _connector.getLocalPort()));
         String response=sr.getString("/resource/big.txt");
         Assert.assertThat(response,Matchers.startsWith("     1\tThis is a big file"));
-        Assert.assertThat(response,Matchers.endsWith("   400\tThis is a big file\n"));
+        Assert.assertThat(response,Matchers.endsWith("   400\tThis is a big file"+LN));
     }
     
     @Test
@@ -134,7 +135,7 @@ public class ResourceHandlerTest
         SimpleRequest sr = new SimpleRequest(new URI("http://localhost:" + _connector.getLocalPort()));
         String response=sr.getString("/resource/big.txt");
         Assert.assertThat(response,Matchers.startsWith("     1\tThis is a big file"));
-        Assert.assertThat(response,Matchers.endsWith("   400\tThis is a big file\n"));
+        Assert.assertThat(response,Matchers.endsWith("   400\tThis is a big file"+LN));
     }
     
     @Test
@@ -144,7 +145,7 @@ public class ResourceHandlerTest
         SimpleRequest sr = new SimpleRequest(new URI("http://localhost:" + _connector.getLocalPort()));
         String response=sr.getString("/resource/big.txt");
         Assert.assertThat(response,Matchers.startsWith("     1\tThis is a big file"));
-        Assert.assertThat(response,Matchers.endsWith("   400\tThis is a big file\n"));
+        Assert.assertThat(response,Matchers.endsWith("   400\tThis is a big file"+LN));
     }
 
     @Test
@@ -156,8 +157,8 @@ public class ResourceHandlerTest
             Thread.sleep(1000);
             String response = IO.toString(socket.getInputStream());
             Assert.assertThat(response,Matchers.startsWith("HTTP/1.1 200 OK"));
-            Assert.assertThat(response,Matchers.containsString("   400\tThis is a big file\n     1\tThis is a big file"));
-            Assert.assertThat(response,Matchers.endsWith("   400\tThis is a big file\n"));
+            Assert.assertThat(response,Matchers.containsString("   400\tThis is a big file"+LN+"     1\tThis is a big file"));
+            Assert.assertThat(response,Matchers.endsWith("   400\tThis is a big file"+LN));
         }
     }
 }

@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.client.ssl;
 
-import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 
 import java.io.BufferedReader;
@@ -42,6 +41,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSocket;
@@ -1047,6 +1047,9 @@ public class SslBytesServerTest extends SslBytesTest
     @Test
     public void testRequestWithBigContentWriteBlockedThenReset() throws Exception
     {
+    	// Don't run on Windows (buggy JVM)
+    	Assume.assumeTrue(!OS.IS_WINDOWS);
+    	
         final SSLSocket client = newClient();
 
         SimpleProxy.AutomaticFlow automaticProxyFlow = proxy.startAutomaticFlow();
