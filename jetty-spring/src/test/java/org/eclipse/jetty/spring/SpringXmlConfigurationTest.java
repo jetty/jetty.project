@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.spring;
 
+import static junit.framework.Assert.assertEquals;
+import static org.junit.Assume.assumeTrue;
+
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
@@ -29,9 +32,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.junit.Before;
 import org.junit.Test;
-
-import static junit.framework.Assert.assertEquals;
-import static org.junit.Assume.assumeTrue;
 
 public class SpringXmlConfigurationTest
 {

@@ -18,11 +18,9 @@
 
 package org.eclipse.jetty.websocket.mux.server;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
-import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.HttpTransport;
 import org.eclipse.jetty.util.BlockingCallback;
 import org.eclipse.jetty.util.Callback;

@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.start;
 
-import static org.eclipse.jetty.start.UsageException.*;
+import static org.eclipse.jetty.start.UsageException.ERR_BAD_ARG;
 
 import java.io.File;
 import java.io.FileFilter;

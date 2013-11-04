@@ -22,6 +22,8 @@ import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 
 import javax.websocket.DecodeException;
+import javax.websocket.OnMessage;
+import javax.websocket.PongMessage;
 
 import org.eclipse.jetty.websocket.jsr356.JsrPongMessage;
 import org.eclipse.jetty.websocket.jsr356.JsrSession;

@@ -25,13 +25,9 @@ import static junit.framework.Assert.assertTrue;
 
 import java.io.File;
 import java.net.MalformedURLException;
-import java.net.URISyntaxException;
-
-import junit.framework.Assert;
 
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;

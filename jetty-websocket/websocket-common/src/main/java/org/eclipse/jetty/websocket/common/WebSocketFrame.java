@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.common;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import org.eclipse.jetty.util.BufferUtil;

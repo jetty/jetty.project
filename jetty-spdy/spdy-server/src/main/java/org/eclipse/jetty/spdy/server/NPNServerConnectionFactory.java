@@ -22,6 +22,7 @@ package org.eclipse.jetty.spdy.server;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.Connection;

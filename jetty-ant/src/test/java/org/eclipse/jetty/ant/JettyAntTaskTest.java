@@ -18,14 +18,14 @@
 
 package org.eclipse.jetty.ant;
 
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+
 import java.net.HttpURLConnection;
 import java.net.URI;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
 public class JettyAntTaskTest
 {

@@ -18,7 +18,9 @@
 
 package org.eclipse.jetty.websocket.jsr356.metadata;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 import java.util.List;
 

@@ -34,7 +34,6 @@ import java.util.List;
 
 import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
 import org.eclipse.jetty.util.BufferUtil;
-import org.hamcrest.Matchers;
 import org.junit.Test;
 
 public class HttpGeneratorServerTest

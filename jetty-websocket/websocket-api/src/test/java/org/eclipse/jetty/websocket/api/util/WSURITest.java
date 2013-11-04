@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.api.util;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
 
 import java.net.URI;
 import java.net.URISyntaxException;

@@ -20,7 +20,6 @@ package org.eclipse.jetty.util;
 
 import static org.junit.Assert.assertEquals;
 
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 import org.junit.Test;

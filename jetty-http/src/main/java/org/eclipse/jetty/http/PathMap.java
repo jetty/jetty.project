@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.StringTokenizer;
 
 import org.eclipse.jetty.util.ArrayTernaryTrie;
-import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.util.URIUtil;
 

@@ -19,11 +19,11 @@
 package org.eclipse.jetty.util;
 
 
+import java.nio.charset.StandardCharsets;
+
 import junit.framework.Assert;
 
 import org.junit.Test;
-
-import java.nio.charset.StandardCharsets;
 
 public class B64CodeTest
 {

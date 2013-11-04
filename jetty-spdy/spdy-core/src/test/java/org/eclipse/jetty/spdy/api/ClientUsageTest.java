@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.spdy.api;
 
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;

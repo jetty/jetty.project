@@ -18,7 +18,8 @@
 
 package org.eclipse.jetty.websocket.client.blockhead;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 import java.io.BufferedReader;
 import java.io.IOException;

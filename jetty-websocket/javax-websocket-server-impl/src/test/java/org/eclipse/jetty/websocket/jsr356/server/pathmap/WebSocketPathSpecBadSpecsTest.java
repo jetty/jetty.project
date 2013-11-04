@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356.server.pathmap;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
 import java.util.Collection;

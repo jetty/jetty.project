@@ -28,7 +28,6 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 
 /**

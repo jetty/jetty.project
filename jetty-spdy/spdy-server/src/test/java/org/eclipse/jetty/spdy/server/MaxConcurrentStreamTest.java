@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.spdy.server;
 
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -39,9 +42,6 @@ import org.eclipse.jetty.util.Fields;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
 @RunWith(JUnit4.class)
 public class MaxConcurrentStreamTest extends AbstractTest

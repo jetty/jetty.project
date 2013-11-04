@@ -37,7 +37,6 @@ import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.ControlFrame;
 import org.eclipse.jetty.websocket.mux.add.MuxAddClient;
 import org.eclipse.jetty.websocket.mux.add.MuxAddServer;

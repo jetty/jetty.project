@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356.utils;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.nullValue;
 
 import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 import org.junit.Assert;

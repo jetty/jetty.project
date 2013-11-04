@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import java.nio.charset.StandardCharsets;
 public class HttpSenderTest
 {
 //    @Rule

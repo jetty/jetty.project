@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356.endpoints;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.notNullValue;
 
 import java.io.InputStream;
 import java.lang.reflect.Field;
