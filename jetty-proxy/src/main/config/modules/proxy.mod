@@ -3,7 +3,7 @@
 #
 
 [depend]
-server
+servlet
 client
 
 [lib]
@@ -14,9 +14,9 @@ etc/jetty-proxy.xml
 
 [ini-template]
 ## Proxy Configuration
-jetty.proxy.threadpool.min=16
-jetty.proxy.threadpool.max=256
-jetty.proxy.idleTimeout=300000
-jetty.proxy.threads.max=128
-jetty.proxy.stopAtShutdown=true
-jetty.proxy.stopTimeout=1000
+#jetty.proxy.servletClass=org.eclipse.jetty.proxy.ProxyServlet
+#jetty.proxy.servletMapping=/*
+#jetty.proxy.maxThreads=128
+#jetty.proxy.maxConnections=256
+#jetty.proxy.idleTimeout=30000
+#jetty.proxy.timeout=60000

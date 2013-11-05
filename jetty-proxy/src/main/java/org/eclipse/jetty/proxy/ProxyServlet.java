@@ -31,7 +31,6 @@ import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
@@ -282,7 +281,7 @@ public class ProxyServlet extends HttpServlet
 
         value = config.getInitParameter("maxConnections");
         if (value == null)
-            value = "32768";
+            value = "256";
         client.setMaxConnectionsPerDestination(Integer.parseInt(value));
 
         value = config.getInitParameter("idleTimeout");
