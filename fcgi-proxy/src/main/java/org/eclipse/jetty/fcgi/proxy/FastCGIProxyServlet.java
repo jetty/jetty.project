@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.fcgi.proxy;
 
+import java.net.URI;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.servlet.RequestDispatcher;
@@ -79,8 +80,21 @@ public class FastCGIProxyServlet extends ProxyServlet.Transparent
 
         proxyRequest.attribute(SCHEME_ATTRIBUTE, request.getScheme());
 
-        // If we are forwarded, retain the original request URI.
-        proxyRequest.attribute(REQUEST_URI_ATTRIBUTE, request.getAttribute(RequestDispatcher.FORWARD_REQUEST_URI));
+        // If we are forwarded or included, retain the original request URI.
+        String originalPath = (String)request.getAttribute(RequestDispatcher.FORWARD_REQUEST_URI);
+        String originalQuery = (String)request.getAttribute(RequestDispatcher.FORWARD_QUERY_STRING);
+        if (originalPath == null)
+        {
+            originalPath = (String)request.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI);
+            originalQuery = (String)request.getAttribute(RequestDispatcher.INCLUDE_QUERY_STRING);
+        }
+        if (originalPath != null)
+        {
+            String originalURI = originalPath;
+            if (originalQuery != null)
+                originalURI += "?" + originalQuery;
+            proxyRequest.attribute(REQUEST_URI_ATTRIBUTE, originalURI);
+        }
 
         super.customizeProxyRequest(proxyRequest, request);
     }
@@ -96,11 +110,18 @@ public class FastCGIProxyServlet extends ProxyServlet.Transparent
         if (HttpScheme.HTTPS.is((String)proxyRequest.getAttributes().get(SCHEME_ATTRIBUTE)))
             fastCGIHeaders.put(FCGI.Headers.HTTPS, "on");
 
-        String rawPath = proxyRequest.getURI().getRawPath();
-        String requestPath = (String)proxyRequest.getAttributes().get(REQUEST_URI_ATTRIBUTE);
-        if (requestPath == null)
-            requestPath = rawPath;
-        fastCGIHeaders.put(FCGI.Headers.REQUEST_URI, requestPath);
+        URI proxyRequestURI = proxyRequest.getURI();
+        String rawPath = proxyRequestURI.getRawPath();
+        String rawQuery = proxyRequestURI.getRawQuery();
+
+        String requestURI = (String)proxyRequest.getAttributes().get(REQUEST_URI_ATTRIBUTE);
+        if (requestURI == null)
+        {
+            requestURI = rawPath;
+            if (rawQuery != null)
+                requestURI += "?" + rawQuery;
+        }
+        fastCGIHeaders.put(FCGI.Headers.REQUEST_URI, requestURI);
 
         String scriptName = rawPath;
         Matcher matcher = scriptPattern.matcher(rawPath);
