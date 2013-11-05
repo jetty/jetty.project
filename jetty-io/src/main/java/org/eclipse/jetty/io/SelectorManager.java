@@ -165,12 +165,12 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     }
     
     /**
-     * <p>Registers a channel to select accept operations.
-     * When a {@link SocketChannel} is accepted from this {@link ServerSocketChannel}
+     * <p>Registers a server channel for accept operations.
+     * When a {@link SocketChannel} is accepted from the given {@link ServerSocketChannel}
      * then the {@link #accepted(SocketChannel)} method is called, which must be
      * overridden by a derivation of this class to handle the accepted channel
      * 
-     * @param channel the server channel to register
+     * @param server the server channel to register
      */
     public void acceptor(final ServerSocketChannel server)
     {
@@ -180,10 +180,11 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     
     /**
      * Callback method when a channel is accepted from the {@link ServerSocketChannel}
-     * passed in {@link #acceptor(ServerSocketChannel)}.
+     * passed to {@link #acceptor(ServerSocketChannel)}.
      * The default impl throws an {@link UnsupportedOperationException}, so it must
-     * be overridden if selected acceptor is to be used.
-     * @param channel
+     * be overridden by subclasses if a server channel is provided.
+     *
+     * @param channel the
      * @throws IOException
      */
     protected void accepted(SocketChannel channel) throws IOException
@@ -584,13 +585,13 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             {
                 LOG.debug("Ignoring cancelled key for channel {}", key.channel());
                 if (attachment instanceof EndPoint)
-                    ((EndPoint)attachment).close();
+                    closeNoExceptions((EndPoint)attachment);
             }
             catch (Throwable x)
             {
                 LOG.warn("Could not process key for channel " + key.channel(), x);
                 if (attachment instanceof EndPoint)
-                    ((EndPoint)attachment).close();
+                    closeNoExceptions((EndPoint)attachment);
             }
         }
 
@@ -622,17 +623,18 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         private void processAccept(SelectionKey key)
         {
             ServerSocketChannel server = (ServerSocketChannel)key.channel();
+            SocketChannel channel = null;
             try
             {
-                SocketChannel channel;
-                while ((channel=server.accept())!=null)
+                while ((channel = server.accept()) != null)
                 {
                     accepted(channel);
                 }
             }
             catch (Throwable x)
             {
-                LOG.warn("Accept failed",x);
+                closeNoExceptions(channel);
+                LOG.warn("Accept failed for channel " + channel, x);
             }
         }
 
@@ -640,7 +642,8 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         {
             try
             {
-                closeable.close();
+                if (closeable != null)
+                    closeable.close();
             }
             catch (Throwable x)
             {
@@ -786,7 +789,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 try
                 {
                     SelectionKey key = _channel.register(_selector, SelectionKey.OP_ACCEPT, null);
-                    LOG.debug("{} acceptor={}",this,key);
+                    LOG.debug("{} acceptor={}", this, key);
                 }
                 catch (Throwable x)
                 {
