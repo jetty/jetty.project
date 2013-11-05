@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.io;
 
+import java.io.Closeable;
+
 import org.eclipse.jetty.util.Callback;
 
 /**
@@ -28,7 +30,7 @@ import org.eclipse.jetty.util.Callback;
  * and when the {@link EndPoint} signals read readyness, this {@link Connection} can
  * read bytes from the network and interpret them.</p>
  */
-public interface Connection extends AutoCloseable
+public interface Connection extends Closeable
 {
     public void addListener(Listener listener);
 
