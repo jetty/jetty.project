@@ -70,8 +70,8 @@ public class WordPressSPDYFastCGIProxyServer
 
         FilterHolder tryFileFilter = context.addFilter(TryFilesFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
         tryFileFilter.setInitParameter(TryFilesFilter.ROOT_INIT_PARAM, root);
-//        tryFileFilter.setInitParameter(TryFilesFilter.FILES_INIT_PARAM, "$path $path/index.php?$query"); // Permalink /?p=123
-        tryFileFilter.setInitParameter(TryFilesFilter.FILES_INIT_PARAM, "$path /index.php?p=$path&$query"); // Permalink /%year%/%monthnum%/%postname%
+//        tryFileFilter.setInitParameter(TryFilesFilter.FILES_INIT_PARAM, "$path $path/index.php"); // Permalink /?p=123
+        tryFileFilter.setInitParameter(TryFilesFilter.FILES_INIT_PARAM, "$path /index.php?p=$path"); // Permalink /%year%/%monthnum%/%postname%
 
         // FastCGI
         ServletHolder fcgiServlet = new ServletHolder(FastCGIProxyServlet.class);

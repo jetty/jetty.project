@@ -19,6 +19,8 @@
 package org.eclipse.jetty.fcgi.proxy;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -39,24 +41,15 @@ public class TryFilesFilter implements Filter
     public static final String ROOT_INIT_PARAM = "root";
     public static final String FILES_INIT_PARAM = "files";
 
-    private String root;
     private String[] files;
 
     @Override
     public void init(FilterConfig config) throws ServletException
     {
-        root = config.getInitParameter(ROOT_INIT_PARAM);
-        if (root == null)
-            throw new ServletException(String.format("Missing mandatory parameter '%s'", ROOT_INIT_PARAM));
         String param = config.getInitParameter(FILES_INIT_PARAM);
         if (param == null)
             throw new ServletException(String.format("Missing mandatory parameter '%s'", FILES_INIT_PARAM));
         files = param.split(" ");
-    }
-
-    public String getRoot()
-    {
-        return root;
     }
 
     @Override
@@ -69,8 +62,12 @@ public class TryFilesFilter implements Filter
         {
             String file = files[i];
             String resolved = resolve(httpRequest, file);
-            Path path = Paths.get(getRoot(), resolved);
-            if (Files.exists(path) && Files.isReadable(path))
+
+            URL url = request.getServletContext().getResource(resolved);
+            if (url == null)
+                continue;
+
+            if (Files.isReadable(toPath(url)))
             {
                 chain.doFilter(httpRequest, httpResponse);
                 return;
@@ -81,25 +78,33 @@ public class TryFilesFilter implements Filter
         fallback(httpRequest, httpResponse, chain, files[files.length - 1]);
     }
 
+    private Path toPath(URL url) throws IOException
+    {
+        try
+        {
+            return Paths.get(url.toURI());
+        }
+        catch (URISyntaxException x)
+        {
+            throw new IOException(x);
+        }
+    }
+
     protected void fallback(HttpServletRequest request, HttpServletResponse response, FilterChain chain, String fallback) throws IOException, ServletException
     {
         String resolved = resolve(request, fallback);
-        request.getRequestDispatcher(resolved).forward(request, response);
+        request.getServletContext().getRequestDispatcher(resolved).forward(request, response);
     }
 
     private String resolve(HttpServletRequest request, String value)
     {
-        String path = request.getRequestURI();
-        String query = request.getQueryString();
-
-        String result = value.replaceAll("\\$path", path);
-        result = result.replaceAll("\\$query", query == null ? "" : query);
-
-        // Remove the "?" or "&" at the end if there is no query
-        if (query == null && (result.endsWith("?") || result.endsWith("&")))
-            result = result.substring(0, result.length() - 1);
-
-        return result;
+        String path = request.getServletPath();
+        String info = request.getPathInfo();
+        if (info != null)
+            path += info;
+        if (!path.startsWith("/"))
+            path = "/" + path;
+        return value.replaceAll("\\$path", path);
     }
 
     @Override
