@@ -1,0 +1,68 @@
+<?xml version="1.0"  encoding="ISO-8859-1"?>
+<!DOCTYPE Configure PUBLIC "-//Mort Bay Consulting//DTD Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
+<Configure class="org.eclipse.jetty.servlet.ServletContextHandler">
+
+    <New id="root" class="java.lang.String">
+        <Arg>/var/www/wordpress-3.7.1</Arg>
+    </New>
+
+    <Set name="contextPath">/wp</Set>
+    <Set name="resourceBase"><Ref refid="root" /></Set>
+    <Set name="welcomeFiles">
+        <Array type="String"><Item>index.php</Item></Array>
+    </Set>
+
+    <Call name="addFilter">
+        <Arg>org.eclipse.jetty.fcgi.proxy.TryFilesFilter</Arg>
+        <Arg>/*</Arg>
+        <Arg>
+            <Call name="of" class="java.util.EnumSet">
+                <Arg><Get name="REQUEST" class="javax.servlet.DispatcherType" /></Arg>
+            </Call>
+        </Arg>
+        <Call name="setInitParameter">
+            <Arg>files</Arg>
+            <Arg>$path /index.php?p=$path</Arg>
+        </Call>
+    </Call>
+
+    <Call name="addServlet">
+        <Arg>
+            <New class="org.eclipse.jetty.servlet.ServletHolder">
+                <Arg>default</Arg>
+                <Arg>
+                    <Call name="forName" class="java.lang.Class">
+                        <Arg>org.eclipse.jetty.servlet.DefaultServlet</Arg>
+                    </Call>
+                </Arg>
+                <Call name="setInitParameter">
+                    <Arg>dirAllowed</Arg>
+                    <Arg>false</Arg>
+                </Call>
+            </New>
+        </Arg>
+        <Arg>/</Arg>
+    </Call>
+
+    <Call name="addServlet">
+        <Arg>org.eclipse.jetty.fcgi.proxy.FastCGIProxyServlet</Arg>
+        <Arg>*.php</Arg>
+        <Call name="setInitParameter">
+            <Arg>proxyTo</Arg>
+            <Arg>http://localhost:9000</Arg>
+        </Call>
+        <Call name="setInitParameter">
+            <Arg>prefix</Arg>
+            <Arg>/</Arg>
+        </Call>
+        <Call name="setInitParameter">
+            <Arg>scriptRoot</Arg>
+            <Arg><Ref refid="root" /></Arg>
+        </Call>
+        <Call name="setInitParameter">
+            <Arg>scriptPattern</Arg>
+            <Arg>(.+?\\.php)</Arg>
+        </Call>
+    </Call>
+
+</Configure>
