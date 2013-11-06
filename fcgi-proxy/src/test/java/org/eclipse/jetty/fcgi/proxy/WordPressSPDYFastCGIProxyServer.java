@@ -38,10 +38,9 @@ public class WordPressSPDYFastCGIProxyServer
 {
     public static void main(String[] args) throws Exception
     {
-//        int port = 8080;
-        int port = 8443;
+        int port = 8080;
+        int tlsPort = 8443;
 
-//        SslContextFactory sslContextFactory = null;
         SslContextFactory sslContextFactory = new SslContextFactory();
         sslContextFactory.setEndpointIdentificationAlgorithm("");
         sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
@@ -53,33 +52,33 @@ public class WordPressSPDYFastCGIProxyServer
 
         Map<Short, PushStrategy> pushStrategies = new HashMap<>();
         pushStrategies.put(SPDY.V3, new ReferrerPushStrategy());
-        HTTPSPDYServerConnector connector = new HTTPSPDYServerConnector(server, sslContextFactory, pushStrategies);
+        HTTPSPDYServerConnector tlsConnector = new HTTPSPDYServerConnector(server, sslContextFactory, pushStrategies);
+        tlsConnector.setPort(tlsPort);
+        server.addConnector(tlsConnector);
+        HTTPSPDYServerConnector connector = new HTTPSPDYServerConnector(server, null, pushStrategies);
         connector.setPort(port);
         server.addConnector(connector);
 
         String root = "/home/simon/programs/wordpress-3.7.1";
 
-        ServletContextHandler context = new ServletContextHandler(server, "/");
+        ServletContextHandler context = new ServletContextHandler(server, "/wp");
         context.setResourceBase(root);
         context.setWelcomeFiles(new String[]{"index.php"});
 
         // Serve static resources
-        ServletHolder defaultServlet = new ServletHolder(DefaultServlet.class);
-        defaultServlet.setName("default");
+        ServletHolder defaultServlet = new ServletHolder("default", DefaultServlet.class);
         context.addServlet(defaultServlet, "/");
 
-        FilterHolder tryFileFilter = context.addFilter(TryFilesFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
-        tryFileFilter.setInitParameter(TryFilesFilter.ROOT_INIT_PARAM, root);
-//        tryFileFilter.setInitParameter(TryFilesFilter.FILES_INIT_PARAM, "$path $path/index.php"); // Permalink /?p=123
-        tryFileFilter.setInitParameter(TryFilesFilter.FILES_INIT_PARAM, "$path /index.php?p=$path"); // Permalink /%year%/%monthnum%/%postname%
+        FilterHolder tryFilesFilter = context.addFilter(TryFilesFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
+//        tryFilesFilter.setInitParameter(TryFilesFilter.FILES_INIT_PARAM, "$path $path/index.php"); // Permalink /?p=123
+        tryFilesFilter.setInitParameter(TryFilesFilter.FILES_INIT_PARAM, "$path /index.php?p=$path"); // Permalink /%year%/%monthnum%/%postname%
 
         // FastCGI
-        ServletHolder fcgiServlet = new ServletHolder(FastCGIProxyServlet.class);
+        ServletHolder fcgiServlet = context.addServlet(FastCGIProxyServlet.class, "*.php");
         fcgiServlet.setInitParameter(FastCGIProxyServlet.SCRIPT_ROOT_INIT_PARAM, root);
         fcgiServlet.setInitParameter("proxyTo", "http://localhost:9000");
         fcgiServlet.setInitParameter("prefix", "/");
         fcgiServlet.setInitParameter(FastCGIProxyServlet.SCRIPT_PATTERN_INIT_PARAM, "(.+?\\.php)");
-        context.addServlet(fcgiServlet, "*.php");
 
         server.start();
     }
