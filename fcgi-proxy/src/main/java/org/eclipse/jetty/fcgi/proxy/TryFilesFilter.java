@@ -38,7 +38,6 @@ import javax.servlet.http.HttpServletResponse;
  */
 public class TryFilesFilter implements Filter
 {
-    public static final String ROOT_INIT_PARAM = "root";
     public static final String FILES_INIT_PARAM = "files";
 
     private String[] files;
