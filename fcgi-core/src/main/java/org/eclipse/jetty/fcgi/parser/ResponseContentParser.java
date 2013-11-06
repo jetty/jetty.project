@@ -186,6 +186,7 @@ public class ResponseContentParser extends StreamContentParser
             }
             return false;
         }
+
         private void notifyBegin(int code, String reason)
         {
             try
