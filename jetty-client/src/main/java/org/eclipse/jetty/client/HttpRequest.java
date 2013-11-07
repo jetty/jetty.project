@@ -43,6 +43,7 @@ import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.client.util.PathContentProvider;
 import org.eclipse.jetty.http.HttpField;
@@ -473,6 +474,20 @@ public class HttpRequest implements Request
             public void onFailure(Response response, Throwable failure)
             {
                 listener.onFailure(response, failure);
+            }
+        });
+        return this;
+    }
+
+    @Override
+    public Request onComplete(final Response.CompleteListener listener)
+    {
+        this.responseListeners.add(new Response.CompleteListener()
+        {
+            @Override
+            public void onComplete(Result result)
+            {
+                listener.onComplete(result);
             }
         });
         return this;

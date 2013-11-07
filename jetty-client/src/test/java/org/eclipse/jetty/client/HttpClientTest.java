@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import static java.nio.file.StandardOpenOption.CREATE;
-
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.HttpCookie;
@@ -38,6 +35,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -45,7 +43,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.zip.GZIPOutputStream;
-
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -59,13 +56,12 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
 import org.eclipse.jetty.client.http.HttpDestinationOverHTTP;
+import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.toolchain.test.FS;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.IO;
@@ -74,11 +70,13 @@ import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 
+import static java.nio.file.StandardOpenOption.CREATE;
+
 public class HttpClientTest extends AbstractHttpClientServerTest
 {
-	@Rule
-	public TestingDir testdir = new TestingDir();
-	
+    @Rule
+    public TestingDir testdir = new TestingDir();
+
     public HttpClientTest(SslContextFactory sslContextFactory)
     {
         super(sslContextFactory);
@@ -1015,5 +1013,42 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         int expectedEventsTriggeredByCompletionListener = 4;
         int expected = expectedEventsTriggeredByOnResponseXXXListeners + expectedEventsTriggeredByCompletionListener;
         Assert.assertEquals(expected, counter.get());
+    }
+
+    @Test
+    public void setOnCompleteCallbackWithBlockingSend() throws Exception
+    {
+        final byte[] content = new byte[512];
+        new Random().nextBytes(content);
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                response.getOutputStream().write(content);
+            }
+        });
+
+        final AtomicInteger complete = new AtomicInteger();
+        BufferingResponseListener listener = new BufferingResponseListener()
+        {
+            @Override
+            public void onComplete(Result result)
+            {
+                complete.incrementAndGet();
+            }
+        };
+
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .onResponseContent(listener)
+                .onComplete(listener)
+                .send();
+
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertEquals(1, complete.get());
+        Assert.assertArrayEquals(content, listener.getContent());
+        Assert.assertArrayEquals(content, response.getContent());
     }
 }

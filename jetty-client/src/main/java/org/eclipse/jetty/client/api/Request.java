@@ -354,6 +354,12 @@ public interface Request
     Request onResponseFailure(Response.FailureListener listener);
 
     /**
+     * @param listener a listener for complete event
+     * @return this request object
+     */
+    Request onComplete(Response.CompleteListener listener);
+
+    /**
      * Sends this request and returns the response.
      * <p />
      * This method should be used when a simple blocking semantic is needed, and when it is known
