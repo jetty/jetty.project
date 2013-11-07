@@ -18,13 +18,13 @@
 
 package org.eclipse.jetty.websocket.common.extensions;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.extensions.Extension;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.ByteBufferAssert;
@@ -63,7 +63,7 @@ public class IdentityExtensionTest
         Assert.assertThat("Frame.rsv2",actual.isRsv2(),is(false));
         Assert.assertThat("Frame.rsv3",actual.isRsv3(),is(false));
 
-        ByteBuffer expected = BufferUtil.toBuffer("hello",StringUtil.__UTF8_CHARSET);
+        ByteBuffer expected = BufferUtil.toBuffer("hello",StandardCharsets.UTF_8);
         Assert.assertThat("Frame.payloadLength",actual.getPayloadLength(),is(expected.remaining()));
         ByteBufferAssert.assertEquals("Frame.payload",expected,actual.getPayload().slice());
     }
@@ -93,7 +93,7 @@ public class IdentityExtensionTest
         Assert.assertThat("Frame.rsv2",actual.isRsv2(),is(false));
         Assert.assertThat("Frame.rsv3",actual.isRsv3(),is(false));
 
-        ByteBuffer expected = BufferUtil.toBuffer("hello",StringUtil.__UTF8_CHARSET);
+        ByteBuffer expected = BufferUtil.toBuffer("hello",StandardCharsets.UTF_8);
         Assert.assertThat("Frame.payloadLength",actual.getPayloadLength(),is(expected.remaining()));
         ByteBufferAssert.assertEquals("Frame.payload",expected,actual.getPayload().slice());
     }

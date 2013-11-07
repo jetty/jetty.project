@@ -18,7 +18,10 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -34,7 +37,6 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer;
 import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer.ServerConnection;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.io.FutureWriteCallback;
 import org.junit.After;

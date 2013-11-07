@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.jsr356.server.samples.echo;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.websocket.DeploymentException;
-import javax.websocket.Endpoint;
 import javax.websocket.server.ServerContainer;
 
 /**

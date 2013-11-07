@@ -18,7 +18,9 @@
 
 package org.eclipse.jetty.websocket.jsr356.server.blockhead;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 import java.io.Closeable;
 import java.io.EOFException;

@@ -20,6 +20,7 @@ package org.eclipse.jetty.spdy.client;
 
 import java.io.IOException;
 import java.util.Map;
+
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.ClientConnectionFactory;

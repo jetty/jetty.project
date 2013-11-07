@@ -18,8 +18,9 @@
 
 package org.eclipse.jetty.websocket.server.pathmap;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 import org.junit.Test;
 

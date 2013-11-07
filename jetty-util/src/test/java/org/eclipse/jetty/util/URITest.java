@@ -20,7 +20,7 @@ package org.eclipse.jetty.util;
 
 import static org.junit.Assert.assertEquals;
 
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 import org.junit.Test;
 
@@ -65,7 +65,7 @@ public class URITest
         
         // Test for null character (real world ugly test case)
         byte oddBytes[] = { '/', 0x00, '/' };
-        String odd = new String(oddBytes, Charset.forName("ISO-8859-1"));
+        String odd = new String(oddBytes, StandardCharsets.ISO_8859_1);
         assertEquals(odd,URIUtil.decodePath("/%00/"));
     }
 

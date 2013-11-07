@@ -18,7 +18,8 @@
 
 package org.eclipse.jetty.websocket.common.io;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;

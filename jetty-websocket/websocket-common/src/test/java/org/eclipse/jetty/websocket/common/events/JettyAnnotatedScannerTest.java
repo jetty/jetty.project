@@ -18,7 +18,9 @@
 
 package org.eclipse.jetty.websocket.common.events;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.common.annotations.BadBinarySignatureSocket;

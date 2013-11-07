@@ -36,12 +36,10 @@ import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.net.URI;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.servlet.ServletException;
@@ -55,13 +53,11 @@ import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.matchers.JUnitMatchers;
 /**
  *
  */
@@ -115,6 +111,26 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                     "\n" +
                     RESPONSE2_CONTENT;
 
+    @Test
+    public void testSimple() throws Exception
+    {
+        configureServer(new HelloWorldHandler());
+
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
+        {
+            OutputStream os = client.getOutputStream();
+
+            os.write("GET / HTTP/1.0\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1));
+            os.flush();
+
+            // Read the response.
+            String response = readResponse(client);
+
+            Assert.assertThat(response, Matchers.containsString("HTTP/1.1 200 OK"));
+            Assert.assertThat(response, Matchers.containsString("Hello world"));
+        }
+    }
+
 
     /*
     * Feed a full header method
@@ -126,6 +142,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
+            client.setSoTimeout(10000);
             ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(true);
             ((StdErrLog)Log.getLogger(HttpConnection.class)).info("expect request is too large, then ISE extra data ...");
             OutputStream os = client.getOutputStream();
@@ -484,7 +501,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 // Check the response
                 assertEquals("response for " + i + " " + message.toString(), RESPONSE2, response);
                 
-                Thread.sleep(100);
+                Thread.sleep(10);
             }
         }
     }
@@ -516,7 +533,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 // Check the response
                 assertEquals("response for " + i + " " + message.toString(), RESPONSE2, response);
                 
-                Thread.sleep(100);
+                Thread.sleep(10);
             }
         }
     }
@@ -968,12 +985,12 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 }
             }
 
-            String in = new String(b, 0, i, "utf-8");
+            String in = new String(b, 0, i, StandardCharsets.UTF_8);
             assertTrue(in.contains("123456789"));
             assertTrue(in.contains("abcdefghZ"));
             assertFalse(in.contains("Wibble"));
 
-            in = new String(b, i, b.length - i, "utf-16");
+            in = new String(b, i, b.length - i, StandardCharsets.UTF_16);
             assertEquals("Wibble\n", in);
         }
     }
@@ -1413,11 +1430,11 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 {
                     for (int i = 0; i < REQS; i++)
                     {
-                        out.write("GET / HTTP/1.1\r\nHost: localhost\r\n".getBytes(StringUtil.__ISO_8859_1));
-                        out.write(("Content-Length: " + bytes.length + "\r\n" + "\r\n").getBytes(StringUtil.__ISO_8859_1));
+                        out.write("GET / HTTP/1.1\r\nHost: localhost\r\n".getBytes(StandardCharsets.ISO_8859_1));
+                        out.write(("Content-Length: " + bytes.length + "\r\n" + "\r\n").getBytes(StandardCharsets.ISO_8859_1));
                         out.write(bytes, 0, bytes.length);
                     }
-                    out.write("GET / HTTP/1.1\r\nHost: last\r\nConnection: close\r\n\r\n".getBytes(StringUtil.__ISO_8859_1));
+                    out.write("GET / HTTP/1.1\r\nHost: last\r\nConnection: close\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1));
                     out.flush();
                 }
                 catch (Exception e)

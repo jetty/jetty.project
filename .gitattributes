@@ -1,0 +1,4 @@
+*.sh	eol=lf
+*.bat	eol=crlf
+*.txt	eol=lf
+*.js    eol=lf

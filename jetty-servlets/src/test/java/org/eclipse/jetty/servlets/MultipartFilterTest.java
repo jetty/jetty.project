@@ -31,6 +31,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.EnumSet;
 import java.util.Map;
 
@@ -40,12 +41,10 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletTester;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.StringUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -867,7 +866,7 @@ public class MultipartFilterTest
         baos.write(("--" + boundary + "\r\n"+
                 "Content-Disposition: form-data; name=\"ttt\"\r\n"+
                 "Content-Type: application/octet-stream; charset=UTF-8\r\n\r\n").getBytes());
-        baos.write("ttt\u01FCzzz".getBytes(StringUtil.__UTF8));
+        baos.write("ttt\u01FCzzz".getBytes(StandardCharsets.UTF_8));
         baos.write(("\r\n--" + boundary + "--\r\n\r\n").getBytes());
   
         

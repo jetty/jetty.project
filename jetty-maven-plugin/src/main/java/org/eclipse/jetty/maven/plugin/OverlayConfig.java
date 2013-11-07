@@ -20,13 +20,11 @@
 package org.eclipse.jetty.maven.plugin;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
 import org.codehaus.plexus.util.xml.Xpp3Dom;
-import org.apache.maven.artifact.Artifact;
-
-import java.util.Arrays;
 
 /**
  * OverlayConfig

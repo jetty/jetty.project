@@ -18,18 +18,18 @@
 
 package org.eclipse.jetty.websocket.mux;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
@@ -236,7 +236,7 @@ public class MuxParserRFCTest
             }
             else
             {
-                out.write(part.getBytes(StringUtil.__UTF8_CHARSET));
+                out.write(part.getBytes(StandardCharsets.UTF_8));
             }
         }
         return out.toByteArray();

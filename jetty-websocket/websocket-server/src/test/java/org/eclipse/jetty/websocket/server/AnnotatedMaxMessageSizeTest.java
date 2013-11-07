@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
 
 import java.io.IOException;
 import java.net.URI;
@@ -108,7 +108,7 @@ public class AnnotatedMaxMessageSizeTest
         }
     }
     
-    @Test
+    @Test(timeout=4000)
     public void testEchoTooBig() throws IOException, Exception
     {
         BlockheadClient client = new BlockheadClient(serverUri);

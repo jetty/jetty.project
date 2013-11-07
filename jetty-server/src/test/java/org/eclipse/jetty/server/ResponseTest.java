@@ -18,6 +18,13 @@
 
 package org.eclipse.jetty.server;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
@@ -29,7 +36,6 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Locale;
-import java.util.concurrent.TimeoutException;
 
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
@@ -37,9 +43,8 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpGenerator;
-import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.AbstractEndPoint;
@@ -49,7 +54,6 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.session.HashSessionIdManager;
 import org.eclipse.jetty.server.session.HashSessionManager;
 import org.eclipse.jetty.server.session.HashedSession;
-import org.eclipse.jetty.util.BlockingCallback;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.TimerScheduler;
@@ -58,13 +62,6 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 public class ResponseTest
 {

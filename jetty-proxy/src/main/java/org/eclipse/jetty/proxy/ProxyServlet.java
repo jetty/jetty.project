@@ -281,7 +281,7 @@ public class ProxyServlet extends HttpServlet
 
         value = config.getInitParameter("maxConnections");
         if (value == null)
-            value = "32768";
+            value = "256";
         client.setMaxConnectionsPerDestination(Integer.parseInt(value));
 
         value = config.getInitParameter("idleTimeout");

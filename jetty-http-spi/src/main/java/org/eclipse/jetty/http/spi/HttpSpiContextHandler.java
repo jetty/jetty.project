@@ -32,7 +32,6 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 
 import com.sun.net.httpserver.Authenticator;
 import com.sun.net.httpserver.Authenticator.Result;
-import com.sun.net.httpserver.BasicAuthenticator;
 import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;

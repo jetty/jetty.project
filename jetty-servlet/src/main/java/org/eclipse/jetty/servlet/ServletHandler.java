@@ -21,7 +21,6 @@ package org.eclipse.jetty.servlet;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -51,12 +50,13 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.SecurityHandler;
-import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.QuietServletException;
 import org.eclipse.jetty.server.Request;
@@ -499,7 +499,7 @@ public class ServletHandler extends ScopedHandler
         }
 
         LOG.debug("chain={}",chain);
-
+        Throwable th=null;
         try
         {
             if (servlet_holder==null)
@@ -547,7 +547,7 @@ public class ServletHandler extends ScopedHandler
             }
 
             // unwrap cause
-            Throwable th=e;
+            th=e;
             if (th instanceof ServletException)
             {
                 if (th instanceof QuietServletException)
@@ -573,6 +573,7 @@ public class ServletHandler extends ScopedHandler
             request.setAttribute(RequestDispatcher.ERROR_EXCEPTION,th);
             if (!response.isCommitted())
             {
+                baseRequest.getResponse().getHttpFields().put(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE);
                 if (th instanceof UnavailableException)
                 {
                     UnavailableException ue = (UnavailableException)th;
@@ -586,33 +587,34 @@ public class ServletHandler extends ScopedHandler
             }
             else
                 LOG.debug("Response already committed",th);
-            
-            // Complete async requests 
-            if (request.isAsyncStarted())
-                request.getAsyncContext().complete();
         }
         catch(Error e)
         {
             if ("ContinuationThrowable".equals(e.getClass().getSimpleName()))
                 throw e;
+            th=e;
             if (!(DispatcherType.REQUEST.equals(type) || DispatcherType.ASYNC.equals(type)))
                 throw e;
             LOG.warn("Error for "+request.getRequestURI(),e);
-            if(LOG.isDebugEnabled())LOG.debug(request.toString());
+            if(LOG.isDebugEnabled())
+                LOG.debug(request.toString());
 
             request.setAttribute(RequestDispatcher.ERROR_EXCEPTION_TYPE,e.getClass());
             request.setAttribute(RequestDispatcher.ERROR_EXCEPTION,e);
             if (!response.isCommitted())
+            {
+                baseRequest.getResponse().getHttpFields().put(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE);
                 response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            }
             else
                 LOG.debug("Response already committed for handling ",e);
-            
-            // Complete async requests 
-            if (request.isAsyncStarted())
-                request.getAsyncContext().complete();
         }
         finally
         {
+            // Complete async errored requests 
+            if (th!=null && request.isAsyncStarted())
+                request.getAsyncContext().complete();
+            
             if (servlet_holder!=null)
                 baseRequest.setHandled(true);
         }

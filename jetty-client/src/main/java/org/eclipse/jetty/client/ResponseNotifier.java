@@ -40,6 +40,7 @@ public class ResponseNotifier
         this.client = client;
     }
 
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     public void notifyBegin(List<Response.ResponseListener> listeners, Response response)
     {
         // Optimized to avoid allocations of iterator instances
@@ -63,6 +64,7 @@ public class ResponseNotifier
         }
     }
 
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     public boolean notifyHeader(List<Response.ResponseListener> listeners, Response response, HttpField field)
     {
         boolean result = true;
@@ -89,6 +91,7 @@ public class ResponseNotifier
         }
     }
 
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     public void notifyHeaders(List<Response.ResponseListener> listeners, Response response)
     {
         // Optimized to avoid allocations of iterator instances
@@ -112,14 +115,22 @@ public class ResponseNotifier
         }
     }
 
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     public void notifyContent(List<Response.ResponseListener> listeners, Response response, ByteBuffer buffer)
     {
+        // Slice the buffer to avoid that listeners peek into data they should not look at.
+        buffer = buffer.slice();
         // Optimized to avoid allocations of iterator instances
         for (int i = 0; i < listeners.size(); ++i)
         {
             Response.ResponseListener listener = listeners.get(i);
             if (listener instanceof Response.ContentListener)
+            {
+                // The buffer was sliced, so we always clear it (position=0, limit=capacity)
+                // before passing it to the listener that may consume it.
+                buffer.clear();
                 notifyContent((Response.ContentListener)listener, response, buffer);
+            }
         }
     }
 
@@ -135,6 +146,7 @@ public class ResponseNotifier
         }
     }
 
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     public void notifySuccess(List<Response.ResponseListener> listeners, Response response)
     {
         // Optimized to avoid allocations of iterator instances
@@ -158,6 +170,7 @@ public class ResponseNotifier
         }
     }
 
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     public void notifyFailure(List<Response.ResponseListener> listeners, Response response, Throwable failure)
     {
         // Optimized to avoid allocations of iterator instances
@@ -181,6 +194,7 @@ public class ResponseNotifier
         }
     }
 
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     public void notifyComplete(List<Response.ResponseListener> listeners, Result result)
     {
         // Optimized to avoid allocations of iterator instances

@@ -26,7 +26,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.util.ArrayTernaryTrie;
-import org.eclipse.jetty.util.StringMap;
 import org.eclipse.jetty.util.Trie;
 
 /**

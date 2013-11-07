@@ -27,7 +27,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-class HttpInputOverHTTP extends HttpInput<ByteBuffer> implements Callback
+public class HttpInputOverHTTP extends HttpInput<ByteBuffer> implements Callback
 {
     private static final Logger LOG = Log.getLogger(HttpInputOverHTTP.class);
     private final BlockingCallback _readBlocker = new BlockingCallback();
@@ -37,7 +37,7 @@ class HttpInputOverHTTP extends HttpInput<ByteBuffer> implements Callback
     /**
      * @param httpConnection
      */
-    HttpInputOverHTTP(HttpConnection httpConnection)
+    public HttpInputOverHTTP(HttpConnection httpConnection)
     {
         _httpConnection = httpConnection;
     }

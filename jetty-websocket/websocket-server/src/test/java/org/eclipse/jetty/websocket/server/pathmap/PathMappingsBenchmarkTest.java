@@ -26,8 +26,6 @@ import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.toolchain.test.annotation.Stress;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.server.pathmap.PathMappings;
-import org.eclipse.jetty.websocket.server.pathmap.ServletPathSpec;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 

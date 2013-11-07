@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356.annotations;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
 
 import java.lang.reflect.Method;
 import java.util.Date;

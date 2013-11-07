@@ -21,6 +21,7 @@ package org.eclipse.jetty.util;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 /**
  * ReadLineInputStream
@@ -58,7 +59,7 @@ public class ReadLineInputStream extends BufferedInputStream
                 int m=markpos;
                 markpos=-1;
                 if (pos>m)
-                    return new String(buf,m,pos-m,StringUtil.__UTF8_CHARSET);
+                    return new String(buf,m,pos-m, StandardCharsets.UTF_8);
 
                 return null;
             }
@@ -77,7 +78,7 @@ public class ReadLineInputStream extends BufferedInputStream
                     _skipLF=true;
                 int m=markpos;
                 markpos=-1;
-                return new String(buf,m,p-m-1,StringUtil.__UTF8_CHARSET);
+                return new String(buf,m,p-m-1,StandardCharsets.UTF_8);
             }
             
             if (b=='\n')
@@ -91,7 +92,7 @@ public class ReadLineInputStream extends BufferedInputStream
                 }
                 int m=markpos;
                 markpos=-1;
-                return new String(buf,m,pos-m-1,StringUtil.__UTF8_CHARSET);
+                return new String(buf,m,pos-m-1,StandardCharsets.UTF_8);
             }
         }
     }

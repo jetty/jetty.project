@@ -18,9 +18,12 @@
 
 package org.eclipse.jetty.servlet;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
@@ -51,8 +54,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import static org.junit.Assert.assertEquals;
 
 
 @RunWith(AdvancedRunner.class)
@@ -420,7 +421,7 @@ public class AsyncServletTest
         try (Socket socket = new Socket("localhost",port))
         {
             socket.setSoTimeout(1000000);
-            socket.getOutputStream().write(request.getBytes("UTF-8"));
+            socket.getOutputStream().write(request.getBytes(StandardCharsets.UTF_8));
             return IO.toString(socket.getInputStream());
         }
         catch(Exception e)

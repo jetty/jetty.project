@@ -23,6 +23,7 @@ import static org.junit.Assert.assertTrue;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.EnumSet;
 import java.util.regex.Matcher;
@@ -37,7 +38,6 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 
 import org.eclipse.jetty.http.DateGenerator;
-import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
@@ -47,7 +47,6 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.StringUtil;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
@@ -883,7 +882,7 @@ public class DefaultServletTest
         try
         {
             out = new FileOutputStream(file);
-            out.write(str.getBytes(StringUtil.__UTF8));
+            out.write(str.getBytes(StandardCharsets.UTF_8));
             out.flush();
         }
         finally

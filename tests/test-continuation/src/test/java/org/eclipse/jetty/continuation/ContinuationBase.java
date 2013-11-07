@@ -27,6 +27,7 @@ import static org.junit.Assert.assertThat;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -239,11 +240,10 @@ public abstract class ContinuationBase
 
         int port=_port;
         String response=null;
-        try
+        try (Socket socket = new Socket("localhost",port);)
         {
-            Socket socket = new Socket("localhost",port);
             socket.setSoTimeout(10000);
-            socket.getOutputStream().write(request.getBytes("UTF-8"));
+            socket.getOutputStream().write(request.getBytes(StandardCharsets.UTF_8));
             socket.getOutputStream().flush();
 
             response = toString(socket.getInputStream());
@@ -269,6 +269,7 @@ public abstract class ContinuationBase
         {}
 
         /* ------------------------------------------------------------ */
+        @Override
         protected void doGet(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
         {
             final Continuation continuation = ContinuationSupport.getContinuation(request);
@@ -306,7 +307,7 @@ public abstract class ContinuationBase
 
             if (continuation.isInitial())
             {
-                ((HttpServletResponse)response).addHeader("history","initial");
+                response.addHeader("history","initial");
                 if (read_before>0)
                 {
                     byte[] buf=new byte[read_before];
@@ -325,7 +326,7 @@ public abstract class ContinuationBase
                     if (suspend_for>0)
                         continuation.setTimeout(suspend_for);
                     continuation.addContinuationListener(__listener);
-                    ((HttpServletResponse)response).addHeader("history","suspend");
+                    response.addHeader("history","suspend");
                     continuation.suspend(response);
 
                     if (complete_after>0)
@@ -404,7 +405,7 @@ public abstract class ContinuationBase
             }
             else
             {
-                ((HttpServletResponse)response).addHeader("history","!initial");
+                response.addHeader("history","!initial");
                 if (suspend2_for>=0 && request.getAttribute("2nd")==null)
                 {
                     request.setAttribute("2nd","cycle");
@@ -412,7 +413,7 @@ public abstract class ContinuationBase
                     if (suspend2_for>0)
                         continuation.setTimeout(suspend2_for);
                     // continuation.addContinuationListener(__listener);
-                    ((HttpServletResponse)response).addHeader("history","suspend");
+                    response.addHeader("history","suspend");
                     continuation.suspend(response);
 
                     if (complete2_after>0)
@@ -452,7 +453,7 @@ public abstract class ContinuationBase
                             @Override
                             public void run()
                             {
-                                ((HttpServletResponse)response).addHeader("history","resume");
+                                response.addHeader("history","resume");
                                 continuation.resume();
                             }
                         };
@@ -463,7 +464,7 @@ public abstract class ContinuationBase
                     }
                     else if (resume2_after==0)
                     {
-                        ((HttpServletResponse)response).addHeader("history","resume");
+                        response.addHeader("history","resume");
                         continuation.resume();
                     }
                     if (undispatch)

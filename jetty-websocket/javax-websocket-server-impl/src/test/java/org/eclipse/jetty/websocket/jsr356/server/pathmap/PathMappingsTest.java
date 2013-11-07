@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356.server.pathmap;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.notNullValue;
 
 import org.eclipse.jetty.websocket.server.pathmap.PathMappings;
 import org.eclipse.jetty.websocket.server.pathmap.PathMappings.MappedResource;

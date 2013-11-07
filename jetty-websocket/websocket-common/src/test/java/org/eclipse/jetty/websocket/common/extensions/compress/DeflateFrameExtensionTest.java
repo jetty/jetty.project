@@ -18,10 +18,13 @@
 
 package org.eclipse.jetty.websocket.common.extensions.compress;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.zip.Deflater;
@@ -92,7 +95,7 @@ public class DeflateFrameExtensionTest
             Assert.assertThat(prefix + ".rsv2",actual.isRsv2(),is(false));
             Assert.assertThat(prefix + ".rsv3",actual.isRsv3(),is(false));
 
-            ByteBuffer expected = BufferUtil.toBuffer(expectedTextDatas[i],StringUtil.__UTF8_CHARSET);
+            ByteBuffer expected = BufferUtil.toBuffer(expectedTextDatas[i],StandardCharsets.UTF_8);
             Assert.assertThat(prefix + ".payloadLength",actual.getPayloadLength(),is(expected.remaining()));
             ByteBufferAssert.assertEquals(prefix + ".payload",expected,actual.getPayload().slice());
         }

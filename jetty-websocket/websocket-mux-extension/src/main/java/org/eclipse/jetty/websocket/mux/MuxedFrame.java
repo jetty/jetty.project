@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.mux;
 
 import org.eclipse.jetty.websocket.common.OpCode;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.DataFrame;
 
 public class MuxedFrame extends DataFrame

@@ -25,6 +25,7 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.ByteBuffer;
 import java.nio.channels.UnresolvedAddressException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -34,6 +35,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -54,22 +56,27 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
 import org.eclipse.jetty.client.http.HttpDestinationOverHTTP;
+import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
 
 import static java.nio.file.StandardOpenOption.CREATE;
 
 public class HttpClientTest extends AbstractHttpClientServerTest
 {
+    @Rule
+    public TestingDir testdir = new TestingDir();
+
     public HttpClientTest(SslContextFactory sslContextFactory)
     {
         super(sslContextFactory);
@@ -174,10 +181,10 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 response.setCharacterEncoding("UTF-8");
                 ServletOutputStream output = response.getOutputStream();
                 String paramValue1 = request.getParameter(paramName1);
-                output.write(paramValue1.getBytes("UTF-8"));
+                output.write(paramValue1.getBytes(StandardCharsets.UTF_8));
                 String paramValue2 = request.getParameter(paramName2);
                 Assert.assertEquals("", paramValue2);
-                output.write("empty".getBytes("UTF-8"));
+                output.write("empty".getBytes(StandardCharsets.UTF_8));
                 baseRequest.setHandled(true);
             }
         });
@@ -189,7 +196,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.getStatus());
-        String content = new String(response.getContent(), "UTF-8");
+        String content = new String(response.getContent(), StandardCharsets.UTF_8);
         Assert.assertEquals(value1 + "empty", content);
     }
 
@@ -207,9 +214,9 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 ServletOutputStream output = response.getOutputStream();
                 String[] paramValues1 = request.getParameterValues(paramName1);
                 for (String paramValue : paramValues1)
-                    output.write(paramValue.getBytes("UTF-8"));
+                    output.write(paramValue.getBytes(StandardCharsets.UTF_8));
                 String paramValue2 = request.getParameter(paramName2);
-                output.write(paramValue2.getBytes("UTF-8"));
+                output.write(paramValue2.getBytes(StandardCharsets.UTF_8));
                 baseRequest.setHandled(true);
             }
         });
@@ -225,7 +232,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.getStatus());
-        String content = new String(response.getContent(), "UTF-8");
+        String content = new String(response.getContent(), StandardCharsets.UTF_8);
         Assert.assertEquals(value11 + value12 + value2, content);
     }
 
@@ -257,7 +264,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.getStatus());
-        Assert.assertEquals(paramValue, new String(response.getContent(), "UTF-8"));
+        Assert.assertEquals(paramValue, new String(response.getContent(), StandardCharsets.UTF_8));
     }
 
     @Test
@@ -289,7 +296,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.getStatus());
-        Assert.assertEquals(paramValue, new String(response.getContent(), "UTF-8"));
+        Assert.assertEquals(paramValue, new String(response.getContent(), StandardCharsets.UTF_8));
     }
 
     @Test
@@ -506,7 +513,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(new EmptyServerHandler());
 
         // Prepare a big file to upload
-        Path targetTestsDir = MavenTestingUtils.getTargetTestingDir().toPath();
+        Path targetTestsDir = testdir.getEmptyDir().toPath();
         Files.createDirectories(targetTestsDir);
         Path file = Paths.get(targetTestsDir.toString(), "http_client_conversation.big");
         try (OutputStream output = Files.newOutputStream(file, CREATE))
@@ -1006,5 +1013,42 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         int expectedEventsTriggeredByCompletionListener = 4;
         int expected = expectedEventsTriggeredByOnResponseXXXListeners + expectedEventsTriggeredByCompletionListener;
         Assert.assertEquals(expected, counter.get());
+    }
+
+    @Test
+    public void setOnCompleteCallbackWithBlockingSend() throws Exception
+    {
+        final byte[] content = new byte[512];
+        new Random().nextBytes(content);
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                response.getOutputStream().write(content);
+            }
+        });
+
+        final AtomicInteger complete = new AtomicInteger();
+        BufferingResponseListener listener = new BufferingResponseListener()
+        {
+            @Override
+            public void onComplete(Result result)
+            {
+                complete.incrementAndGet();
+            }
+        };
+
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .onResponseContent(listener)
+                .onComplete(listener)
+                .send();
+
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertEquals(1, complete.get());
+        Assert.assertArrayEquals(content, listener.getContent());
+        Assert.assertArrayEquals(content, response.getContent());
     }
 }

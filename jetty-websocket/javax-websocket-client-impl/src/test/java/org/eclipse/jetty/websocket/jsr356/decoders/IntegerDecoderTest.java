@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356.decoders;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
 
 import javax.websocket.DecodeException;
 

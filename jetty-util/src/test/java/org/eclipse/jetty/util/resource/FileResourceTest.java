@@ -19,6 +19,7 @@
 package org.eclipse.jetty.util.resource;
 
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assume.assumeTrue;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,16 +27,15 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.toolchain.test.TestingDir;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-import static org.junit.Assume.assumeTrue;
 
 public class FileResourceTest
 {
@@ -52,7 +52,7 @@ public class FileResourceTest
     private URL decode(URL url) throws MalformedURLException
     {
         String raw = url.toExternalForm();
-        String decoded = UrlEncoded.decodeString(raw,0,raw.length(),StringUtil.__UTF8_CHARSET);
+        String decoded = UrlEncoded.decodeString(raw,0,raw.length(), StandardCharsets.UTF_8);
         return new URL(decoded);
     }
     

@@ -31,7 +31,6 @@ import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
 import org.eclipse.jetty.websocket.mux.MuxChannel;
 import org.eclipse.jetty.websocket.mux.MuxException;
 import org.eclipse.jetty.websocket.mux.Muxer;
-import org.eclipse.jetty.websocket.mux.add.MuxAddServer;
 import org.eclipse.jetty.websocket.mux.op.MuxAddChannelResponse;
 
 import examples.echo.AdapterEchoSocket;

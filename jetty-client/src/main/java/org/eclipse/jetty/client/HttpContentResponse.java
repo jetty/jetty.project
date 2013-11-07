@@ -19,6 +19,7 @@
 package org.eclipse.jetty.client;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
 import java.util.List;
 
@@ -92,13 +93,20 @@ public class HttpContentResponse implements ContentResponse
     public String getContentAsString()
     {
         String encoding = this.encoding;
-        try
+        if (encoding == null)
         {
-            return new String(getContent(), encoding == null ? "UTF-8" : encoding);
+            return new String(getContent(), StandardCharsets.UTF_8);
         }
-        catch (UnsupportedEncodingException e)
+        else
         {
-            throw new UnsupportedCharsetException(encoding);
+            try
+            {
+                return new String(getContent(), encoding);
+            }
+            catch (UnsupportedEncodingException e)
+            {
+                throw new UnsupportedCharsetException(encoding);
+            }
         }
     }
 

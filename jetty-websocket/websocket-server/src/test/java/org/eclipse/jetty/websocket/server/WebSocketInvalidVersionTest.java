@@ -18,7 +18,8 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
 import org.eclipse.jetty.websocket.server.blockhead.HttpResponse;

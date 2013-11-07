@@ -435,8 +435,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
     @Override
     public SuspendToken suspend()
     {
-        // TODO Auto-generated method stub
-        return null;
+        return connection;
     }
 
     @Override

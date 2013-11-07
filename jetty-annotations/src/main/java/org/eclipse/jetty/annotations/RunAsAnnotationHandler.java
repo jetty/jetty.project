@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.annotations;
 
-import java.util.List;
-
 import javax.servlet.Servlet;
 
 import org.eclipse.jetty.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;

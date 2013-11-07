@@ -34,7 +34,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpContent.ResourceAsHttpContent;
-import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;

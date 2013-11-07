@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.jsr356.metadata;
 
 import javax.websocket.Decoder;
-import javax.websocket.Encoder;
 
 import org.eclipse.jetty.websocket.jsr356.MessageType;
 

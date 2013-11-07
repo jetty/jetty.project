@@ -19,9 +19,9 @@
 package org.eclipse.jetty.util.security;
 
 import java.io.Serializable;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -156,7 +156,7 @@ public abstract class Credential implements Serializable
                     {
                         if (__md == null) __md = MessageDigest.getInstance("MD5");
                         __md.reset();
-                        __md.update(credentials.toString().getBytes(StringUtil.__ISO_8859_1));
+                        __md.update(credentials.toString().getBytes(StandardCharsets.ISO_8859_1));
                         digest = __md.digest();
                     }
                     if (digest == null || digest.length != _digest.length) return false;
@@ -213,7 +213,7 @@ public abstract class Credential implements Serializable
                     }
 
                     __md.reset();
-                    __md.update(password.getBytes(StringUtil.__ISO_8859_1));
+                    __md.update(password.getBytes(StandardCharsets.ISO_8859_1));
                     digest = __md.digest();
                 }
 

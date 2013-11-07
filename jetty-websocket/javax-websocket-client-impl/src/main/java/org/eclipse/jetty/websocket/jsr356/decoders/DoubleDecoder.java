@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.jsr356.decoders;
 
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
-import javax.websocket.Decoder.Text;
 
 
 /**

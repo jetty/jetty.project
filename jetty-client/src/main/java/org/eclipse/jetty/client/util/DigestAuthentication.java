@@ -19,7 +19,6 @@
 package org.eclipse.jetty.client.util;
 
 import java.net.URI;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -218,14 +217,13 @@ public class DigestAuthentication implements Authentication
             if (digester == null)
                 return;
 
-            Charset charset = StandardCharsets.ISO_8859_1;
             String A1 = user + ":" + realm + ":" + password;
-            String hashA1 = toHexString(digester.digest(A1.getBytes(charset)));
+            String hashA1 = toHexString(digester.digest(A1.getBytes(StandardCharsets.ISO_8859_1)));
 
             String A2 = request.getMethod() + ":" + request.getURI();
             if ("auth-int".equals(qop))
                 A2 += ":" + toHexString(digester.digest(content));
-            String hashA2 = toHexString(digester.digest(A2.getBytes(charset)));
+            String hashA2 = toHexString(digester.digest(A2.getBytes(StandardCharsets.ISO_8859_1)));
 
             String nonceCount;
             String clientNonce;
@@ -242,7 +240,7 @@ public class DigestAuthentication implements Authentication
                 clientNonce = null;
                 A3 = hashA1 + ":" + nonce + ":" + hashA2;
             }
-            String hashA3 = toHexString(digester.digest(A3.getBytes(charset)));
+            String hashA3 = toHexString(digester.digest(A3.getBytes(StandardCharsets.ISO_8859_1)));
 
             StringBuilder value = new StringBuilder("Digest");
             value.append(" username=\"").append(user).append("\"");

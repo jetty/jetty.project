@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.websocket.Decoder;
-import javax.websocket.Encoder;
 
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 

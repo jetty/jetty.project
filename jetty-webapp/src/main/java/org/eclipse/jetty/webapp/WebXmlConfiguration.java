@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 
 import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
-import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;

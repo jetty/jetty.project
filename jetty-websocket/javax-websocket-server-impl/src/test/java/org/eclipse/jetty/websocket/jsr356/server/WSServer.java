@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.notNullValue;
 
 import java.io.File;
 import java.io.IOException;

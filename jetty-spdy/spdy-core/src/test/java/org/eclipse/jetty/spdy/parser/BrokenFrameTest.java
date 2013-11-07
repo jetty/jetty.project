@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.spdy.parser;
 
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -36,9 +39,6 @@ import org.eclipse.jetty.spdy.generator.Generator;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Fields;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
 public class BrokenFrameTest
 {

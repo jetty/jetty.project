@@ -18,12 +18,12 @@
 
 package org.eclipse.jetty.websocket.common;
 
+import static org.hamcrest.Matchers.is;
+
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.junit.Assert;
-
-import static org.hamcrest.Matchers.is;
 
 public class ByteBufferAssert
 {

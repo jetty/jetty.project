@@ -18,7 +18,8 @@
 
 package org.eclipse.jetty.start;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 
 import java.io.File;
 import java.io.FileNotFoundException;

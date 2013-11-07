@@ -24,9 +24,11 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -141,7 +143,7 @@ public class ConnectionOpenCloseTest extends AbstractHttpTest
                 "GET / HTTP/1.1\r\n" +
                 "Host: localhost:" + connector.getLocalPort() + "\r\n" +
                 "Connection: close\r\n" +
-                "\r\n").getBytes("UTF-8"));
+                "\r\n").getBytes(StandardCharsets.UTF_8));
         output.flush();
 
         BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -212,7 +214,7 @@ public class ConnectionOpenCloseTest extends AbstractHttpTest
                 "GET / HTTP/1.1\r\n" +
                 "Host: localhost:" + connector.getLocalPort() + "\r\n" +
                 "Connection: close\r\n" +
-                "\r\n").getBytes("UTF-8"));
+                "\r\n").getBytes(StandardCharsets.UTF_8));
         output.flush();
 
         BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));

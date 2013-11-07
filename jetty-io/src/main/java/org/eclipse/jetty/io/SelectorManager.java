@@ -74,6 +74,8 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 
     protected SelectorManager(Executor executor, Scheduler scheduler, int selectors)
     {
+        if (selectors<=0)
+            throw new IllegalArgumentException("No selectors");
         this.executor = executor;
         this.scheduler = scheduler;
         _selectors = new ManagedSelector[selectors];
@@ -162,6 +164,34 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     {
         final ManagedSelector selector = chooseSelector();
         selector.submit(selector.new Accept(channel));
+    }
+    
+    /**
+     * <p>Registers a server channel for accept operations.
+     * When a {@link SocketChannel} is accepted from the given {@link ServerSocketChannel}
+     * then the {@link #accepted(SocketChannel)} method is called, which must be
+     * overridden by a derivation of this class to handle the accepted channel
+     * 
+     * @param server the server channel to register
+     */
+    public void acceptor(final ServerSocketChannel server)
+    {
+        final ManagedSelector selector = chooseSelector();
+        selector.submit(selector.new Acceptor(server));
+    }
+    
+    /**
+     * Callback method when a channel is accepted from the {@link ServerSocketChannel}
+     * passed to {@link #acceptor(ServerSocketChannel)}.
+     * The default impl throws an {@link UnsupportedOperationException}, so it must
+     * be overridden by subclasses if a server channel is provided.
+     *
+     * @param channel the
+     * @throws IOException
+     */
+    protected void accepted(SocketChannel channel) throws IOException
+    {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -544,6 +574,10 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 {
                     processConnect(key, (Connect)attachment);
                 }
+                else if (key.isAcceptable())
+                {
+                    processAccept(key);
+                }
                 else
                 {
                     throw new IllegalStateException();
@@ -553,13 +587,13 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             {
                 LOG.debug("Ignoring cancelled key for channel {}", key.channel());
                 if (attachment instanceof EndPoint)
-                    ((EndPoint)attachment).close();
+                    closeNoExceptions((EndPoint)attachment);
             }
             catch (Throwable x)
             {
                 LOG.warn("Could not process key for channel " + key.channel(), x);
                 if (attachment instanceof EndPoint)
-                    ((EndPoint)attachment).close();
+                    closeNoExceptions((EndPoint)attachment);
             }
         }
 
@@ -587,12 +621,31 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 connect.failed(x);
             }
         }
+        
+        private void processAccept(SelectionKey key)
+        {
+            ServerSocketChannel server = (ServerSocketChannel)key.channel();
+            SocketChannel channel = null;
+            try
+            {
+                while ((channel = server.accept()) != null)
+                {
+                    accepted(channel);
+                }
+            }
+            catch (Throwable x)
+            {
+                closeNoExceptions(channel);
+                LOG.warn("Accept failed for channel " + channel, x);
+            }
+        }
 
         private void closeNoExceptions(Closeable closeable)
         {
             try
             {
-                closeable.close();
+                if (closeable != null)
+                    closeable.close();
             }
             catch (Throwable x)
             {
@@ -719,6 +772,31 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 catch (InterruptedException x)
                 {
                     return false;
+                }
+            }
+        }
+
+        private class Acceptor implements Runnable
+        {
+            private final ServerSocketChannel _channel;
+
+            public Acceptor(ServerSocketChannel channel)
+            {
+                this._channel = channel;
+            }
+
+            @Override
+            public void run()
+            {
+                try
+                {
+                    SelectionKey key = _channel.register(_selector, SelectionKey.OP_ACCEPT, null);
+                    LOG.debug("{} acceptor={}", this, key);
+                }
+                catch (Throwable x)
+                {
+                    closeNoExceptions(_channel);
+                    LOG.warn(x);
                 }
             }
         }

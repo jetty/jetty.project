@@ -26,6 +26,7 @@ import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
 import org.junit.Assert;
@@ -647,7 +648,7 @@ public class StdErrLogTest
 
         log.debug("Show me the source!");
 
-        String output = new String(test.toByteArray(),"UTF-8");
+        String output = new String(test.toByteArray(), StandardCharsets.UTF_8);
         // System.err.print(output);
 
         Assert.assertThat(output, containsString(".StdErrLogTest#testPrintSource(StdErrLogTest.java:"));

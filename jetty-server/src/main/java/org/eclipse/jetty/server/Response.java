@@ -26,7 +26,6 @@ import java.nio.channels.IllegalSelectorException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Locale;
@@ -34,18 +33,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
-import javax.servlet.SessionTrackingMode;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
-import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpParser;
@@ -73,6 +71,15 @@ public class Response implements HttpServletResponse
     private static final String __COOKIE_DELIM="\",;\\ \t";
     private final static String __01Jan1970_COOKIE = DateGenerator.formatCookieDate(0).trim();
 
+    // Cookie building buffer. Reduce garbage for cookie using applications
+    private static final ThreadLocal<StringBuilder> __cookieBuilder = new ThreadLocal<StringBuilder>()
+    {
+       @Override
+       protected StringBuilder initialValue()
+       {
+          return new StringBuilder(128);
+       }
+    };
 
     /* ------------------------------------------------------------ */
     public static Response getResponse(HttpServletResponse response)
@@ -265,7 +272,8 @@ public class Response implements HttpServletResponse
             throw new IllegalArgumentException("Bad cookie name");
 
         // Format value and params
-        StringBuilder buf = new StringBuilder(128);
+        StringBuilder buf = __cookieBuilder.get();
+        buf.setLength(0);
         
         // Name is checked for legality by servlet spec, but can also be passed directly so check again for quoting
         boolean quote_name=isQuoteNeededForCookie(name);

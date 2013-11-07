@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.common.message;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
 
 import java.util.Arrays;
 

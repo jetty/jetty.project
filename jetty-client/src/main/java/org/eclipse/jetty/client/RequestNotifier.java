@@ -36,6 +36,7 @@ public class RequestNotifier
         this.client = client;
     }
 
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     public void notifyQueued(Request request)
     {
         // Optimized to avoid allocations of iterator instances
@@ -66,6 +67,7 @@ public class RequestNotifier
         }
     }
 
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     public void notifyBegin(Request request)
     {
         // Optimized to avoid allocations of iterator instances
@@ -96,6 +98,7 @@ public class RequestNotifier
         }
     }
 
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     public void notifyHeaders(Request request)
     {
         // Optimized to avoid allocations of iterator instances
@@ -126,6 +129,7 @@ public class RequestNotifier
         }
     }
 
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     public void notifyCommit(Request request)
     {
         // Optimized to avoid allocations of iterator instances
@@ -156,20 +160,31 @@ public class RequestNotifier
         }
     }
 
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     public void notifyContent(Request request, ByteBuffer content)
     {
-        // Optimized to avoid allocations of iterator instances
+        // Slice the buffer to avoid that listeners peek into data they should not look at.
+        content = content.slice();
+        // Optimized to avoid allocations of iterator instances.
         List<Request.RequestListener> requestListeners = request.getRequestListeners(null);
         for (int i = 0; i < requestListeners.size(); ++i)
         {
             Request.RequestListener listener = requestListeners.get(i);
             if (listener instanceof Request.ContentListener)
+            {
+                // The buffer was sliced, so we always clear it (position=0, limit=capacity)
+                // before passing it to the listener that may consume it.
+                content.clear();
                 notifyContent((Request.ContentListener)listener, request, content);
+            }
         }
         List<Request.Listener> listeners = client.getRequestListeners();
         for (int i = 0; i < listeners.size(); ++i)
         {
             Request.Listener listener = listeners.get(i);
+            // The buffer was sliced, so we always clear it (position=0, limit=capacity)
+            // before passing it to the listener that may consume it.
+            content.clear();
             notifyContent(listener, request, content);
         }
     }
@@ -186,6 +201,7 @@ public class RequestNotifier
         }
     }
 
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     public void notifySuccess(Request request)
     {
         // Optimized to avoid allocations of iterator instances
@@ -216,6 +232,7 @@ public class RequestNotifier
         }
     }
 
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     public void notifyFailure(Request request, Throwable failure)
     {
         // Optimized to avoid allocations of iterator instances

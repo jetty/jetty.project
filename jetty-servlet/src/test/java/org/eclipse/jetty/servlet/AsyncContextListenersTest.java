@@ -23,7 +23,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -109,10 +111,10 @@ public class AsyncContextListenersTest
                     "GET " + path + " HTTP/1.1\r\n" +
                     "Host: localhost\r\n" +
                     "\r\n";
-            output.write(request.getBytes("UTF-8"));
+            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
-            BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));
+            BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
             SimpleHttpParser parser = new SimpleHttpParser();
             SimpleHttpResponse response = parser.readResponse(reader);
             Assert.assertEquals("200", response.getCode());
@@ -120,7 +122,7 @@ public class AsyncContextListenersTest
 
             // Send a second request
             completes.set(0);
-            output.write(request.getBytes("UTF-8"));
+            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             response = parser.readResponse(reader);
@@ -180,10 +182,10 @@ public class AsyncContextListenersTest
                     "GET " + path + " HTTP/1.1\r\n" +
                     "Host: localhost\r\n" +
                     "\r\n";
-            output.write(request.getBytes("UTF-8"));
+            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
-            BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));
+            BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
             SimpleHttpParser parser = new SimpleHttpParser();
             SimpleHttpResponse response = parser.readResponse(reader);
             Assert.assertEquals("200", response.getCode());
@@ -191,7 +193,7 @@ public class AsyncContextListenersTest
 
             // Send a second request
             completes.set(0);
-            output.write(request.getBytes("UTF-8"));
+            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             response = parser.readResponse(reader);
@@ -258,10 +260,10 @@ public class AsyncContextListenersTest
                     "GET " + path + "/one HTTP/1.1\r\n" +
                     "Host: localhost\r\n" +
                     "\r\n";
-            output.write(request.getBytes("UTF-8"));
+            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
-            BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));
+            BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
             SimpleHttpParser parser = new SimpleHttpParser();
             SimpleHttpResponse response = parser.readResponse(reader);
             Assert.assertEquals("200", response.getCode());
@@ -269,7 +271,7 @@ public class AsyncContextListenersTest
 
             // Send a second request
             completes.set(0);
-            output.write(request.getBytes("UTF-8"));
+            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             response = parser.readResponse(reader);
