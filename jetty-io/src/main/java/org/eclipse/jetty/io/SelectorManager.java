@@ -74,6 +74,8 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 
     protected SelectorManager(Executor executor, Scheduler scheduler, int selectors)
     {
+        if (selectors<=0)
+            throw new IllegalArgumentException("No selectors");
         this.executor = executor;
         this.scheduler = scheduler;
         _selectors = new ManagedSelector[selectors];

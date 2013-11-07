@@ -316,7 +316,7 @@ public class Server extends HandlerWrapper implements Attributes
             }
         }
 
-        if (max>0 && needed>=max)
+        if (max>0 && needed>max)
             throw new IllegalStateException("Insufficient max threads in ThreadPool: max="+max+" < needed="+needed);
         
         try

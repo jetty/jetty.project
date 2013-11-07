@@ -501,7 +501,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 // Check the response
                 assertEquals("response for " + i + " " + message.toString(), RESPONSE2, response);
                 
-                Thread.sleep(100);
+                Thread.sleep(10);
             }
         }
     }
@@ -533,7 +533,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 // Check the response
                 assertEquals("response for " + i + " " + message.toString(), RESPONSE2, response);
                 
-                Thread.sleep(100);
+                Thread.sleep(10);
             }
         }
     }
