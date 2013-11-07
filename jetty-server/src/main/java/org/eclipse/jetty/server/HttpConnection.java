@@ -19,6 +19,7 @@
 package org.eclipse.jetty.server;
 
 import java.nio.ByteBuffer;
+import java.nio.channels.ByteChannel;
 import java.util.concurrent.RejectedExecutionException;
 
 import org.eclipse.jetty.http.HttpGenerator;
@@ -86,12 +87,28 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         _config = config;
         _connector = connector;
         _bufferPool = _connector.getByteBufferPool();
-        _generator = new HttpGenerator(_config.getSendServerVersion(),_config.getSendXPoweredBy());
-        _channel = new HttpChannelOverHttp(connector, config, endPoint, this, new HttpInputOverHTTP(this));
+        _generator = newHttpGenerator();
+        HttpInput<ByteBuffer> input = newHttpInput();
+        _channel = newHttpChannel(input);
         _parser = newHttpParser();
         LOG.debug("New HTTP Connection {}", this);
     }
 
+    protected HttpGenerator newHttpGenerator()
+    {
+        return new HttpGenerator(_config.getSendServerVersion(),_config.getSendXPoweredBy());
+    }
+    
+    protected HttpInput<ByteBuffer> newHttpInput()
+    {
+        return new HttpInputOverHTTP(this);
+    }
+    
+    protected HttpChannelOverHttp newHttpChannel(HttpInput<ByteBuffer> httpInput)
+    {
+        return new HttpChannelOverHttp(_connector, _config, getEndPoint(), this, httpInput);
+    }
+    
     protected HttpParser newHttpParser()
     {
         return new HttpParser(newRequestHandler(), getHttpConfiguration().getRequestHeaderSize());
@@ -361,7 +378,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         }
     }
 
-    private class HttpChannelOverHttp extends HttpChannel<ByteBuffer>
+    protected class HttpChannelOverHttp extends HttpChannel<ByteBuffer>
     {
         public HttpChannelOverHttp(Connector connector, HttpConfiguration config, EndPoint endPoint, HttpTransport transport, HttpInput<ByteBuffer> input)
         {
