@@ -54,7 +54,7 @@ public class ByteAccumulator
 
     public void addBuffer(byte buf[], int offset, int length)
     {
-        if (buf.length + length > maxSize)
+        if (this.length + length > maxSize)
         {
             throw new MessageTooLargeException("Frame is too large");
         }
