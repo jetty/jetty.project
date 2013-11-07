@@ -5,6 +5,9 @@
 [xml]
 etc/jetty-logging.xml
 
+[files]
+logs/
+
 [ini-template]
 ## Logging Configuration
 # Configure jetty logging for default internal behavior STDERR output
@@ -19,3 +22,6 @@ etc/jetty-logging.xml
 # STDERR / STDOUT Logging
 # Number of days to retain logs
 # jetty.log.retain=90
+# Directory for logging output
+# Either a path relative to ${jetty.base} or an absolute path
+# jetty.logs=logs
