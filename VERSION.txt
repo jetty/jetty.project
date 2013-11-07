@@ -1,6 +1,4 @@
-jetty-9.0.8-SNAPSHOT
-
-jetty-9.0.7.v20131031 - 31 October 2013
+jetty-9.0.7.v20131107 - 07 November 2013
  + 407716 fixed logs
  + 416597 Allow classes and jars on the webappcontext extraclasspath to be
    scanned for annotations by jetty-maven-plugin
@@ -32,7 +30,11 @@ jetty-9.0.7.v20131031 - 31 October 2013
  + 420362 Response/request listeners called too many times.
  + 420374 Call super.close() in a finally block
  + 420530 AbstractLoginModule never fails a login
+ + 420572 IOTest explicitly uses 127.0.0.1
  + 420776 complete error pages after startAsync
+ + 420844 Connection:close on exceptional errors
+ + 420930 Use Charset to specify character encoding
+ + 421197 synchronize gzip output finish
 
 jetty-9.0.6.v20130930 - 30 September 2013
  + 411069 better set compiler defaults to 1.7, including webdefault.xml for jsp
