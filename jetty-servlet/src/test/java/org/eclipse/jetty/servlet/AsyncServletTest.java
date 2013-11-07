@@ -21,6 +21,7 @@ package org.eclipse.jetty.servlet;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
@@ -416,7 +417,7 @@ public class AsyncServletTest
         try (Socket socket = new Socket("localhost",port))
         {
             socket.setSoTimeout(1000000);
-            socket.getOutputStream().write(request.getBytes("UTF-8"));
+            socket.getOutputStream().write(request.getBytes(StandardCharsets.UTF_8));
             return IO.toString(socket.getInputStream());
         }
         catch(Exception e)

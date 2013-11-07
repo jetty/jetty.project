@@ -29,6 +29,7 @@ import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.nio.charset.Charset;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -311,7 +312,7 @@ public class IO
     public static String toString(InputStream in)
         throws IOException
     {
-        return toString(in,null);
+        return toString(in,(Charset)null);
     }
     
     /* ------------------------------------------------------------ */
@@ -320,13 +321,21 @@ public class IO
     public static String toString(InputStream in,String encoding)
         throws IOException
     {
+        return toString(in, encoding==null?null:Charset.forName(encoding));
+    }
+
+    /** Read input stream to string.
+     */
+    public static String toString(InputStream in, Charset encoding)
+            throws IOException
+    {
         StringWriter writer=new StringWriter();
         InputStreamReader reader = encoding==null?new InputStreamReader(in):new InputStreamReader(in,encoding);
-        
+
         copy(reader,writer);
         return writer.toString();
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Read input stream to string.
      */

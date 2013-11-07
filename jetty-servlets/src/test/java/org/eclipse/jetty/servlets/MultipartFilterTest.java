@@ -31,6 +31,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.EnumSet;
 import java.util.Map;
 
@@ -867,7 +868,7 @@ public class MultipartFilterTest
         baos.write(("--" + boundary + "\r\n"+
                 "Content-Disposition: form-data; name=\"ttt\"\r\n"+
                 "Content-Type: application/octet-stream; charset=UTF-8\r\n\r\n").getBytes());
-        baos.write("ttt\u01FCzzz".getBytes(StringUtil.__UTF8));
+        baos.write("ttt\u01FCzzz".getBytes(StandardCharsets.UTF_8));
         baos.write(("\r\n--" + boundary + "--\r\n\r\n").getBytes());
   
         

@@ -24,6 +24,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.util.Enumeration;
 
 import javax.servlet.ServletException;
@@ -97,7 +98,7 @@ public class DumpHandler extends AbstractHandler
 
         OutputStream out = response.getOutputStream();
         ByteArrayOutputStream buf = new ByteArrayOutputStream(2048);
-        Writer writer = new OutputStreamWriter(buf,StringUtil.__ISO_8859_1);
+        Writer writer = new OutputStreamWriter(buf,StandardCharsets.ISO_8859_1);
         writer.write("<html><h1>"+label+"</h1>");
         writer.write("<pre>\npathInfo="+request.getPathInfo()+"\n</pre>\n");
         writer.write("<pre>\ncontentType="+request.getContentType()+"\n</pre>\n");

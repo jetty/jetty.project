@@ -22,6 +22,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -126,7 +127,7 @@ public class HttpReceiverTest
         Assert.assertNotNull(headers);
         Assert.assertEquals(1, headers.size());
         Assert.assertEquals(String.valueOf(content.length()), headers.get(HttpHeader.CONTENT_LENGTH));
-        String received = listener.getContentAsString("UTF-8");
+        String received = listener.getContentAsString(StandardCharsets.UTF_8);
         Assert.assertEquals(content, received);
     }
 

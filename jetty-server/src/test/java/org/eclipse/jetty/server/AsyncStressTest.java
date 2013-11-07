@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -140,7 +141,7 @@ public class AsyncStressTest
                                 "result: "+__paths[p][1]+"\r\n"+
                                 ((l+1<loops)?"":"Connection: close\r\n")+
                                 "\r\n";
-                socket[i].getOutputStream().write(request.getBytes("UTF-8"));
+                socket[i].getOutputStream().write(request.getBytes(StandardCharsets.UTF_8));
                 socket[i].getOutputStream().flush();
             }
             if (l%80==0)
@@ -155,7 +156,7 @@ public class AsyncStressTest
         String[] results=new String[connections];
         for (int i=0;i<connections;i++)
         {
-            results[i]=IO.toString(socket[i].getInputStream(),"UTF-8");
+            results[i]=IO.toString(socket[i].getInputStream(),StandardCharsets.UTF_8);
             if (i%80==0)
                 System.err.println();
             System.err.print('-');

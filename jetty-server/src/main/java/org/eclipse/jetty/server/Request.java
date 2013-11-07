@@ -28,6 +28,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
 import java.security.Principal;
 import java.util.ArrayList;
@@ -1853,7 +1854,7 @@ public class Request implements HttpServletRequest
     /* ------------------------------------------------------------ */
     /**
      * Set the character encoding used for the query string. This call will effect the return of getQueryString and getParamaters. It must be called before any
-     * geParameter methods.
+     * getParameter methods.
      *
      * The request attribute "org.eclipse.jetty.server.server.Request.queryEncoding" may be set as an alternate method of calling setQueryEncoding.
      *
@@ -2080,6 +2081,7 @@ public class Request implements HttpServletRequest
             setAttribute(__MULTIPART_INPUT_STREAM, _multiPartInputStream);
             setAttribute(__MULTIPART_CONTEXT, _context);
             Collection<Part> parts = _multiPartInputStream.getParts(); //causes parsing
+            ByteArrayOutputStream os = null;
             for (Part p:parts)
             {
                 MultiPartInputStreamParser.MultiPart mp = (MultiPartInputStreamParser.MultiPart)p;
@@ -2090,21 +2092,17 @@ public class Request implements HttpServletRequest
                     if (mp.getContentType() != null)
                         charset = MimeTypes.getCharsetFromContentType(mp.getContentType());
 
-                    ByteArrayOutputStream os = null;
-                    InputStream is = mp.getInputStream(); //get the bytes regardless of being in memory or in temp file
-                    try
+                    //get the bytes regardless of being in memory or in temp file
+                    try (InputStream is = mp.getInputStream())
                     {
-                        os = new ByteArrayOutputStream();
+                        if (os == null)
+                            os = new ByteArrayOutputStream();
                         IO.copy(is, os);
-                        String content=new String(os.toByteArray(),charset==null?StringUtil.__UTF8:charset);   
+                        String content=new String(os.toByteArray(),charset==null?StandardCharsets.UTF_8:Charset.forName(charset));
                         getParameter(""); //cause params to be evaluated
                         getParameters().add(mp.getName(), content);
                     }
-                    finally
-                    {
-                        IO.close(os);
-                        IO.close(is);
-                    }
+                    os.reset();
                 }
             }
         }
@@ -2149,7 +2147,7 @@ public class Request implements HttpServletRequest
     {
         // extract parameters from dispatch query
         MultiMap<String> parameters = new MultiMap<>();
-        UrlEncoded.decodeTo(query,parameters, StringUtil.__UTF8_CHARSET,-1); //have to assume UTF-8 because we can't know otherwise
+        UrlEncoded.decodeTo(query,parameters, StandardCharsets.UTF_8,-1); //have to assume UTF-8 because we can't know otherwise
 
         boolean merge_old_query = false;
 
@@ -2174,7 +2172,7 @@ public class Request implements HttpServletRequest
                 
                 
                 MultiMap<String> overridden_new_query = new MultiMap<>();
-                UrlEncoded.decodeTo(query,overridden_new_query,StringUtil.__UTF8_CHARSET,-1); //have to assume utf8 as we cannot know otherwise
+                UrlEncoded.decodeTo(query,overridden_new_query,StandardCharsets.UTF_8,-1); //have to assume utf8 as we cannot know otherwise
 
                 for(String name: overridden_old_query.keySet())
                 {

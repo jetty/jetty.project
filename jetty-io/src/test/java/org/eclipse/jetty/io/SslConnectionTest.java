@@ -27,6 +27,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -234,14 +235,14 @@ public class SslConnectionTest
         server.configureBlocking(false);
         _manager.accept(server);
 
-        client.getOutputStream().write("Hello".getBytes("UTF-8"));
+        client.getOutputStream().write("Hello".getBytes(StandardCharsets.UTF_8));
         byte[] buffer = new byte[1024];
         int len=client.getInputStream().read(buffer);
         Assert.assertEquals(5, len);
-        Assert.assertEquals("Hello",new String(buffer,0,len,StringUtil.__UTF8_CHARSET));
+        Assert.assertEquals("Hello",new String(buffer,0,len,StandardCharsets.UTF_8));
 
         _dispatches.set(0);
-        client.getOutputStream().write("World".getBytes("UTF-8"));
+        client.getOutputStream().write("World".getBytes(StandardCharsets.UTF_8));
         len=5;
         while(len>0)
             len-=client.getInputStream().read(buffer);
@@ -266,7 +267,7 @@ public class SslConnectionTest
 
         byte[] buffer = new byte[1024];
         int len=client.getInputStream().read(buffer);
-        Assert.assertEquals("Hello Client",new String(buffer,0,len,StringUtil.__UTF8_CHARSET));
+        Assert.assertEquals("Hello Client",new String(buffer,0,len,StandardCharsets.UTF_8));
         Assert.assertEquals(null,_writeCallback.get(100,TimeUnit.MILLISECONDS));
         client.close();
     }
@@ -292,7 +293,7 @@ public class SslConnectionTest
             {
                 try
                 {
-                    BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream(),StringUtil.__UTF8_CHARSET));
+                    BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream(),StandardCharsets.UTF_8));
                     while(count.getCount()>0)
                     {
                         String line=in.readLine();
@@ -311,7 +312,7 @@ public class SslConnectionTest
 
         for (int i=0;i<LINES;i++)
         {
-            client.getOutputStream().write(("HelloWorld "+i+"\n").getBytes("UTF-8"));
+            client.getOutputStream().write(("HelloWorld "+i+"\n").getBytes(StandardCharsets.UTF_8));
             // System.err.println("wrote");
             if (i%1000==0)
             {

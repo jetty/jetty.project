@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -373,9 +374,12 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     {
         try
         {
+            _request.setAttribute(RequestDispatcher.ERROR_EXCEPTION,x);
+            _request.setAttribute(RequestDispatcher.ERROR_EXCEPTION_TYPE,x.getClass());
             if (_state.isSuspended())
             {
                 HttpFields fields = new HttpFields();
+                fields.add(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE);
                 ResponseInfo info = new ResponseInfo(_request.getHttpVersion(), fields, 0, HttpStatus.INTERNAL_SERVER_ERROR_500, null, _request.isHead());
                 boolean committed = sendResponse(info, null, true);
                 if (!committed)
@@ -389,8 +393,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
             }
             else
             {
-                _request.setAttribute(RequestDispatcher.ERROR_EXCEPTION,x);
-                _request.setAttribute(RequestDispatcher.ERROR_EXCEPTION_TYPE,x.getClass());
+                _response.setHeader(HttpHeader.CONNECTION.asString(),HttpHeaderValue.CLOSE.asString());
                 _response.sendError(500, x.getMessage());
             }
         }
@@ -449,7 +452,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
         {
             LOG.warn("Failed UTF-8 decode for request path, trying ISO-8859-1");
             LOG.ignore(e);
-            path = _uri.getDecodedPath(StringUtil.__ISO_8859_1);
+            path = _uri.getDecodedPath(StandardCharsets.ISO_8859_1);
         }
         
         String info = URIUtil.canonicalPath(path);

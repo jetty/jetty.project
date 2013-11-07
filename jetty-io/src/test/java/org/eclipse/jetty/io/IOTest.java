@@ -26,14 +26,17 @@ import static org.junit.Assert.fail;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketAddress;
 import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -389,42 +392,40 @@ public class IOTest
     @Test
     public void testReset() throws Exception
     {
-        ServerSocket connector;
-        Socket client;
-        Socket server;
+        try (ServerSocket connector = new ServerSocket(0);
+            Socket client = new Socket("127.0.0.1", connector.getLocalPort());
+            Socket server = connector.accept();)
+        {
+            client.setTcpNoDelay(true);
+            client.setSoLinger(true, 0);
+            server.setTcpNoDelay(true);
+            server.setSoLinger(true, 0);
 
-        connector = new ServerSocket(0);
-        client = new Socket("127.0.0.1", connector.getLocalPort());
-        server = connector.accept();
-        client.setTcpNoDelay(true);
-        client.setSoLinger(true, 0);
-        server.setTcpNoDelay(true);
-        server.setSoLinger(true, 0);
+            client.getOutputStream().write(1);
+            assertEquals(1, server.getInputStream().read());
+            server.getOutputStream().write(1);
+            assertEquals(1, client.getInputStream().read());
 
-        client.getOutputStream().write(1);
-        assertEquals(1, server.getInputStream().read());
-        server.getOutputStream().write(1);
-        assertEquals(1, client.getInputStream().read());
+            // Server generator shutdowns output after non persistent sending response.
+            server.shutdownOutput();
 
-        // Server generator shutdowns output after non persistent sending response.
-        server.shutdownOutput();
+            // client endpoint reads EOF and shutdown input as result
+            assertEquals(-1, client.getInputStream().read());
+            client.shutdownInput();
 
-        // client endpoint reads EOF and shutdown input as result
-        assertEquals(-1, client.getInputStream().read());
-        client.shutdownInput();
+            // client connection see's EOF and shutsdown output as no more requests to be sent.
+            client.shutdownOutput();
 
-        // client connection see's EOF and shutsdown output as no more requests to be sent.
-        client.shutdownOutput();
+            // Since input already shutdown, client also closes socket.
+            client.close();
 
-        // Since input already shutdown, client also closes socket.
-        client.close();
+            // Server reads the EOF from client oshut and shut's down it's input
+            assertEquals(-1, server.getInputStream().read());
+            server.shutdownInput();
 
-        // Server reads the EOF from client oshut and shut's down it's input
-        assertEquals(-1, server.getInputStream().read());
-        server.shutdownInput();
-
-        // Since output was already shutdown, server closes
-        server.close();
+            // Since output was already shutdown, server closes
+            server.close();
+        }
     }
 
     @Test
@@ -432,17 +433,19 @@ public class IOTest
     {
         AsynchronousServerSocketChannel connector = AsynchronousServerSocketChannel.open();
         connector.bind(null);
+        InetSocketAddress addr=(InetSocketAddress)connector.getLocalAddress();
         Future<AsynchronousSocketChannel> acceptor = connector.accept();
-
+        
         AsynchronousSocketChannel client = AsynchronousSocketChannel.open();
-        client.connect(connector.getLocalAddress()).get(5, TimeUnit.SECONDS);
+        
+        client.connect(new InetSocketAddress("127.0.0.1",addr.getPort())).get(5, TimeUnit.SECONDS);
 
         AsynchronousSocketChannel server = acceptor.get(5, TimeUnit.SECONDS);
 
         ByteBuffer read = ByteBuffer.allocate(1024);
         Future<Integer> reading = server.read(read);
 
-        byte[] data = "Testing 1 2 3".getBytes("UTF-8");
+        byte[] data = "Testing 1 2 3".getBytes(StandardCharsets.UTF_8);
         ByteBuffer write = BufferUtil.toBuffer(data);
         Future<Integer> writing = client.write(write);
 

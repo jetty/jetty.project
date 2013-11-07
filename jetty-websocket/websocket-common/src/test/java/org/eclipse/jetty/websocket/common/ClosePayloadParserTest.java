@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.common;
 import static org.hamcrest.Matchers.*;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.StatusCode;
@@ -36,7 +37,7 @@ public class ClosePayloadParserTest
     {
         String expectedReason = "Game Over";
 
-        byte utf[] = expectedReason.getBytes(StringUtil.__UTF8_CHARSET);
+        byte utf[] = expectedReason.getBytes(StandardCharsets.UTF_8);
         ByteBuffer payload = ByteBuffer.allocate(utf.length + 2);
         payload.putChar((char)StatusCode.NORMAL);
         payload.put(utf,0,utf.length);

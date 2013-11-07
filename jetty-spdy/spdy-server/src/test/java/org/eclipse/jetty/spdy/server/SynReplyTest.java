@@ -21,6 +21,7 @@ package org.eclipse.jetty.spdy.server;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -118,7 +119,7 @@ public class SynReplyTest extends AbstractTest
     @Test
     public void testSynDataReply() throws Exception
     {
-        final byte[] dataBytes = "foo".getBytes(Charset.forName("UTF-8"));
+        final byte[] dataBytes = "foo".getBytes(StandardCharsets.UTF_8);
 
         final CountDownLatch synLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
@@ -235,13 +236,13 @@ public class SynReplyTest extends AbstractTest
                 int dataCount = this.dataCount.incrementAndGet();
                 if (dataCount == 1)
                 {
-                    String chunk1 = dataInfo.asString("UTF-8", true);
+                    String chunk1 = dataInfo.asString(StandardCharsets.UTF_8, true);
                     Assert.assertEquals(data1, chunk1);
                     dataLatch1.countDown();
                 }
                 else if (dataCount == 2)
                 {
-                    String chunk2 = dataInfo.asString("UTF-8", true);
+                    String chunk2 = dataInfo.asString(StandardCharsets.UTF_8, true);
                     Assert.assertEquals(data2, chunk2);
                     dataLatch2.countDown();
                 }
@@ -277,7 +278,7 @@ public class SynReplyTest extends AbstractTest
                     @Override
                     public void onData(Stream stream, DataInfo dataInfo)
                     {
-                        String data = dataInfo.asString("UTF-8", true);
+                        String data = dataInfo.asString(StandardCharsets.UTF_8, true);
                         Assert.assertEquals(clientData, data);
                         clientDataLatch.countDown();
                     }
@@ -311,7 +312,7 @@ public class SynReplyTest extends AbstractTest
                     public void onData(Stream stream, DataInfo dataInfo)
                     {
                         ByteBuffer buffer = dataInfo.asByteBuffer(false);
-                        String data = Charset.forName("UTF-8").decode(buffer).toString();
+                        String data = StandardCharsets.UTF_8.decode(buffer).toString();
                         Assert.assertEquals(serverData, data);
                         serverDataLatch.countDown();
                     }
@@ -361,7 +362,7 @@ public class SynReplyTest extends AbstractTest
             @Override
             public void onData(Stream stream, DataInfo dataInfo)
             {
-                String chunk = dataInfo.asString("UTF-8", true);
+                String chunk = dataInfo.asString(StandardCharsets.UTF_8, true);
                 Assert.assertEquals(data, chunk);
                 dataLatch.countDown();
             }

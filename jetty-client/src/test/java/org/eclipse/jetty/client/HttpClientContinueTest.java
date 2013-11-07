@@ -21,6 +21,7 @@ package org.eclipse.jetty.client;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -60,13 +61,13 @@ public class HttpClientContinueTest extends AbstractHttpClientServerTest
     @Test
     public void test_Expect100Continue_WithOneContent_Respond100Continue() throws Exception
     {
-        test_Expect100Continue_Respond100Continue("data1".getBytes("UTF-8"));
+        test_Expect100Continue_Respond100Continue("data1".getBytes(StandardCharsets.UTF_8));
     }
 
     @Test
     public void test_Expect100Continue_WithMultipleContents_Respond100Continue() throws Exception
     {
-        test_Expect100Continue_Respond100Continue("data1".getBytes("UTF-8"), "data2".getBytes("UTF-8"), "data3".getBytes("UTF-8"));
+        test_Expect100Continue_Respond100Continue("data1".getBytes(StandardCharsets.UTF_8), "data2".getBytes(StandardCharsets.UTF_8), "data3".getBytes(StandardCharsets.UTF_8));
     }
 
     private void test_Expect100Continue_Respond100Continue(byte[]... contents) throws Exception

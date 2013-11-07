@@ -18,12 +18,13 @@
 
 package org.eclipse.jetty.server;
 
+import java.io.Closeable;
 import java.io.IOException;
 
 /**
  * <p>A {@link Connector} for TCP/IP network connectors</p>
  */
-public interface NetworkConnector extends Connector, AutoCloseable
+public interface NetworkConnector extends Connector, Closeable
 {
     /**
      * <p>Performs the activities needed to open the network communication
@@ -39,7 +40,6 @@ public interface NetworkConnector extends Connector, AutoCloseable
      * (for example, to stop accepting network connections).</p>
      * Once a connector has been closed, it cannot be opened again without first
      * calling {@link #stop()} and it will not be active again until a subsequent call to {@link #start()}
-     * @throws IOException if this connector cannot be closed
      */
     @Override
     void close();

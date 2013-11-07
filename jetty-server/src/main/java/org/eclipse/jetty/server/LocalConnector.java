@@ -20,6 +20,7 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
@@ -100,8 +101,8 @@ public class LocalConnector extends AbstractConnector
      */
     public String getResponses(String requests,long idleFor,TimeUnit units) throws Exception
     {
-        ByteBuffer result = getResponses(BufferUtil.toBuffer(requests,StringUtil.__UTF8_CHARSET),idleFor,units);
-        return result==null?null:BufferUtil.toString(result,StringUtil.__UTF8_CHARSET);
+        ByteBuffer result = getResponses(BufferUtil.toBuffer(requests,StandardCharsets.UTF_8),idleFor,units);
+        return result==null?null:BufferUtil.toString(result,StandardCharsets.UTF_8);
     }
 
     /** Sends requests and get's responses based on thread activity.
@@ -150,7 +151,7 @@ public class LocalConnector extends AbstractConnector
      */
     public LocalEndPoint executeRequest(String rawRequest)
     {
-        return executeRequest(BufferUtil.toBuffer(rawRequest,StringUtil.__UTF8_CHARSET));
+        return executeRequest(BufferUtil.toBuffer(rawRequest, StandardCharsets.UTF_8));
     }
 
     private LocalEndPoint executeRequest(ByteBuffer rawRequest)
@@ -191,7 +192,7 @@ public class LocalConnector extends AbstractConnector
             // TODO this is a busy wait
             while(getIn()==null || BufferUtil.hasContent(getIn()))
                 Thread.yield();
-            setInput(BufferUtil.toBuffer(s, StringUtil.__UTF8_CHARSET));
+            setInput(BufferUtil.toBuffer(s, StandardCharsets.UTF_8));
         }
 
         @Override

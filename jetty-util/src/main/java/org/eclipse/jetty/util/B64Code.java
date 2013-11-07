@@ -21,6 +21,7 @@ package org.eclipse.jetty.util;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
 
 
@@ -65,7 +66,7 @@ public class B64Code
      */
     public static String encode(String s)
     {
-        return encode(s,null);
+        return encode(s, (Charset)null);
     }
 
     /**
@@ -80,9 +81,22 @@ public class B64Code
     {
         byte[] bytes;
         if (charEncoding==null)
-            bytes=s.getBytes(Charset.forName(StringUtil.__ISO_8859_1));
+            bytes=s.getBytes(StandardCharsets.ISO_8859_1);
         else
             bytes=s.getBytes(Charset.forName(charEncoding));
+        return new String(encode(bytes));
+    }
+
+    /**
+     * Base 64 encode as described in RFC 1421.
+     * <p>Does not insert whitespace as described in RFC 1521.
+     * @param s String to encode.
+     * @param charEncoding The character encoding of the provided input String.
+     * @return String containing the encoded form of the input.
+     */
+    public static String encode(String s, Charset charEncoding)
+    {
+        byte[] bytes=s.getBytes(charEncoding==null ? StandardCharsets.ISO_8859_1 : charEncoding);
         return new String(encode(bytes));
     }
 
@@ -234,6 +248,24 @@ public class B64Code
         if (charEncoding==null)
             return new String(decoded);
         return new String(decoded,Charset.forName(charEncoding));
+    }
+
+    /**
+     * Base 64 decode as described in RFC 2045.
+     * <p>Unlike {@link #decode(char[])}, extra whitespace is ignored.
+     * @param encoded String to decode.
+     * @param charEncoding Character encoding
+     *        used to map the decoded bytes into a String.
+     * @return String decoded byte array.
+     * @throws IllegalArgumentException if the input is not a valid
+     *         B64 encoding.
+     */
+    public static String decode(String encoded, Charset charEncoding)
+    {
+        byte[] decoded=decode(encoded);
+        if (charEncoding==null)
+            return new String(decoded);
+        return new String(decoded, charEncoding);
     }
 
     /**

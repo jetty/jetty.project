@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.common.extensions.compress;
 import static org.hamcrest.Matchers.*;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,7 +44,7 @@ public class DeflateCompressionMethodTest
     {
         String expected = msg.toString();
 
-        ByteBuffer orig = BufferUtil.toBuffer(expected,StringUtil.__UTF8_CHARSET);
+        ByteBuffer orig = BufferUtil.toBuffer(expected,StandardCharsets.UTF_8);
 
         LOG.debug("orig: {}",BufferUtil.toDetailString(orig));
 

@@ -21,6 +21,7 @@ package org.eclipse.jetty.http;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
@@ -100,15 +101,7 @@ public class HttpURI
     public HttpURI(String raw)
     {
         _rawString=raw;
-        byte[] b;
-        try
-        {
-            b = raw.getBytes(StringUtil.__UTF8);
-        }
-        catch (UnsupportedEncodingException e)
-        {
-           throw new RuntimeException(e.getMessage());
-        }
+        byte[] b = raw.getBytes(StandardCharsets.UTF_8);
         parse(b,0,b.length);
         _charset = URIUtil.__CHARSET;
     }
@@ -617,8 +610,13 @@ public class HttpURI
             return StringUtil.toUTF8String(_raw, _path, _param-_path);
         return utf8b.toString();
     }
-    
+
     public String getDecodedPath(String encoding)
+    {
+        return getDecodedPath(Charset.forName(encoding));
+    }
+
+    public String getDecodedPath(Charset encoding)
     {
         if (_path==_param)
             return null;
@@ -678,9 +676,9 @@ public class HttpURI
 
 
         if (bytes==null)
-            return StringUtil.toString(_raw,_path,_param-_path,encoding);
+            return new String(_raw,_path,_param-_path,encoding);
 
-        return StringUtil.toString(bytes,0,n,encoding);
+        return new String(bytes,0,n,encoding);
     }
 
     public String getPathAndParam()
@@ -734,10 +732,10 @@ public class HttpURI
     {
         if (_query==_fragment)
             return;
-        if (_charset==StringUtil.__UTF8_CHARSET)
+        if (_charset.equals(StandardCharsets.UTF_8))
             UrlEncoded.decodeUtf8To(_raw,_query+1,_fragment-_query-1,parameters);
         else
-            UrlEncoded.decodeTo(StringUtil.toString(_raw,_query+1,_fragment-_query-1,_charset.toString()),parameters,_charset.toString(),-1);
+            UrlEncoded.decodeTo(new String(_raw,_query+1,_fragment-_query-1,_charset),parameters,_charset,-1);
     }
 
     public void decodeQueryTo(MultiMap<String> parameters, String encoding) throws UnsupportedEncodingException
@@ -749,6 +747,17 @@ public class HttpURI
             UrlEncoded.decodeUtf8To(_raw,_query+1,_fragment-_query-1,parameters);
         else
             UrlEncoded.decodeTo(StringUtil.toString(_raw,_query+1,_fragment-_query-1,encoding),parameters,encoding,-1);
+    }
+
+    public void decodeQueryTo(MultiMap<String> parameters, Charset encoding) throws UnsupportedEncodingException
+    {
+        if (_query==_fragment)
+            return;
+
+        if (encoding==null || StandardCharsets.UTF_8.equals(encoding))
+            UrlEncoded.decodeUtf8To(_raw,_query+1,_fragment-_query-1,parameters);
+        else
+            UrlEncoded.decodeTo(new String(_raw,_query+1,_fragment-_query-1,encoding),parameters,encoding,-1);
     }
 
     public void clear()

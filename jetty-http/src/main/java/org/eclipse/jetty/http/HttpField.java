@@ -19,6 +19,7 @@
 package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -176,7 +177,7 @@ public class HttpField
     
     private static byte[] toSanitisedName(String s)
     {
-        byte[] bytes = s.getBytes(StringUtil.__ISO_8859_1_CHARSET);
+        byte[] bytes = s.getBytes(StandardCharsets.ISO_8859_1);
         for (int i=bytes.length;i-->0;)
         {
             switch(bytes[i])
@@ -192,7 +193,7 @@ public class HttpField
 
     private static byte[] toSanitisedValue(String s)
     {
-        byte[] bytes = s.getBytes(StringUtil.__ISO_8859_1_CHARSET);
+        byte[] bytes = s.getBytes(StandardCharsets.ISO_8859_1);
         for (int i=bytes.length;i-->0;)
         {
             switch(bytes[i])

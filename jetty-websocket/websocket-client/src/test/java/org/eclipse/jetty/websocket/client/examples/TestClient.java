@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.client.examples;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.BlockingQueue;
@@ -208,7 +209,7 @@ public class TestClient
                         {
                             b.append('A' + __random.nextInt(26));
                         }
-                        data = b.toString().getBytes(StringUtil.__UTF8_CHARSET);
+                        data = b.toString().getBytes(StandardCharsets.UTF_8);
                         break;
                     }
                     case OpCode.BINARY:

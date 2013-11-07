@@ -20,7 +20,7 @@ package org.eclipse.jetty.spdy.generator;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 
 import org.eclipse.jetty.spdy.CompressionDictionary;
@@ -41,25 +41,24 @@ public class HeadersBlockGenerator
     public ByteBuffer generate(short version, Fields headers)
     {
         // TODO: ByteArrayOutputStream is quite inefficient, but grows on demand; optimize using ByteBuffer ?
-        Charset iso1 = Charset.forName("ISO-8859-1");
         ByteArrayOutputStream buffer = new ByteArrayOutputStream(headers.size() * 64);
         writeCount(version, buffer, headers.size());
         for (Fields.Field header : headers)
         {
             String name = header.name().toLowerCase(Locale.ENGLISH);
-            byte[] nameBytes = name.getBytes(iso1);
+            byte[] nameBytes = name.getBytes(StandardCharsets.ISO_8859_1);
             writeNameLength(version, buffer, nameBytes.length);
             buffer.write(nameBytes, 0, nameBytes.length);
 
             // Most common path first
             String value = header.value();
-            byte[] valueBytes = value.getBytes(iso1);
+            byte[] valueBytes = value.getBytes(StandardCharsets.ISO_8859_1);
             if (header.hasMultipleValues())
             {
                 String[] values = header.values();
                 for (int i = 1; i < values.length; ++i)
                 {
-                    byte[] moreValueBytes = values[i].getBytes(iso1);
+                    byte[] moreValueBytes = values[i].getBytes(StandardCharsets.ISO_8859_1);
                     byte[] newValueBytes = new byte[valueBytes.length + 1 + moreValueBytes.length];
                     System.arraycopy(valueBytes, 0, newValueBytes, 0, valueBytes.length);
                     newValueBytes[valueBytes.length] = 0;

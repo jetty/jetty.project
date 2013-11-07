@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.common;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -89,7 +90,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
         String query = requestURI.getQuery();
         if (StringUtil.isNotBlank(query))
         {
-            UrlEncoded.decodeTo(query,params,StringUtil.__UTF8_CHARSET,-1);
+            UrlEncoded.decodeTo(query,params, StandardCharsets.UTF_8,-1);
         }
 
         for (String name : params.keySet())

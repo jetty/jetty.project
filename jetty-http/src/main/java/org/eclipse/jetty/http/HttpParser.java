@@ -19,6 +19,7 @@
 package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.http.HttpTokens.EndOfContent;
 import org.eclipse.jetty.util.ArrayTernaryTrie;
@@ -969,12 +970,12 @@ public class HttpParser
                                             // Have to get the fields exactly from the buffer to match case
                                             String fn=field.getName();
                                             String fv=field.getValue();
-                                            n=BufferUtil.toString(buffer,buffer.position()-1,fn.length(),StringUtil.__US_ASCII_CHARSET);
+                                            n=BufferUtil.toString(buffer,buffer.position()-1,fn.length(),StandardCharsets.US_ASCII);
                                             if (fv==null)
                                                 v=null;
                                             else
                                             {
-                                                v=BufferUtil.toString(buffer,buffer.position()+fn.length()+1,fv.length(),StringUtil.__ISO_8859_1_CHARSET);
+                                                v=BufferUtil.toString(buffer,buffer.position()+fn.length()+1,fv.length(),StandardCharsets.ISO_8859_1);
                                                 field=new HttpField(field.getHeader(),n,v);
                                             }
                                         }

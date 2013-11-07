@@ -19,6 +19,7 @@
 package org.eclipse.jetty.client.util;
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Authentication;
@@ -73,8 +74,7 @@ public class BasicAuthentication implements Authentication
     @Override
     public Result authenticate(Request request, ContentResponse response, HeaderInfo headerInfo, Attributes context)
     {
-        String encoding = StringUtil.__ISO_8859_1;
-        String value = "Basic " + B64Code.encode(user + ":" + password, encoding);
+        String value = "Basic " + B64Code.encode(user + ":" + password, StandardCharsets.ISO_8859_1);
         return new BasicResult(headerInfo.getHeader(), uri, value);
     }
 
