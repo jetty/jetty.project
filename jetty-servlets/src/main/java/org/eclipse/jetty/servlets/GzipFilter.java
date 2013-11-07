@@ -449,10 +449,10 @@ public class GzipFilter extends UserAgentFilter
                                 /**
                                  * Work around a bug in the jvm GzipOutputStream whereby it is not
                                  * thread safe when thread A calls close(), but thread B is writing
-                                 * @see java.util.zip.GZIPOutputStream#finish()
+                                 * @see java.util.zip.GZIPOutputStream#close()
                                  */
                                 @Override
-                                public void close() throws IOException
+                                public synchronized void close() throws IOException
                                 {
                                     super.close();
                                 }           
