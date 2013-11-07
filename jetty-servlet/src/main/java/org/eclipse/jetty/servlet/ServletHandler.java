@@ -474,7 +474,8 @@ public class ServletHandler extends ScopedHandler
         }
 
         LOG.debug("chain={}",chain);
-        
+
+        Throwable th=null;
         try
         {
             if (servlet_holder==null)
@@ -526,7 +527,7 @@ public class ServletHandler extends ScopedHandler
             }
 
             // unwrap cause
-            Throwable th=e;
+            th=e;
             if (th instanceof UnavailableException)
             {
                 LOG.debug(th); 
@@ -579,14 +580,12 @@ public class ServletHandler extends ScopedHandler
             else
                 LOG.debug("Response already committed for handling "+th);
             
-            // Complete async requests 
-            if (request.isAsyncStarted())
-                request.getAsyncContext().complete();
         }
         catch(Error e)
         {   
             if (!(DispatcherType.REQUEST.equals(type) || DispatcherType.ASYNC.equals(type)))
                 throw e;
+            th=e;
             LOG.warn("Error for "+request.getRequestURI(),e);
             if(LOG.isDebugEnabled())LOG.debug(request.toString());
 
@@ -596,15 +595,15 @@ public class ServletHandler extends ScopedHandler
                 response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             else
                 LOG.debug("Response already committed for handling ",e);
-            
-            // Complete async requests 
-            if (request.isAsyncStarted())
-                request.getAsyncContext().complete();
         }
         finally
         {
             if (servlet_holder!=null)
                 baseRequest.setHandled(true);
+
+            // Complete async requests 
+            if (th!=null && request.isAsyncStarted())
+                request.getAsyncContext().complete();
         }
     }
 
