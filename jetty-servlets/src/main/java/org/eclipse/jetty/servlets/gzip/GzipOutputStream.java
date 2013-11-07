@@ -41,13 +41,15 @@ public class GzipOutputStream extends DeflaterOutputStream
         out.write(GZIP_HEADER);
     }
 
+    @Override
     public synchronized void write(byte[] buf, int off, int len) throws IOException
     {
         super.write(buf,off,len);
         _crc.update(buf,off,len);
     }
 
-    public void finish() throws IOException
+    @Override
+    public synchronized void finish() throws IOException
     {
         if (!def.finished())
         {
@@ -58,6 +60,14 @@ public class GzipOutputStream extends DeflaterOutputStream
             out.write(trailer);
         }
     }
+    
+    @Override 
+    public synchronized void close() throws IOException
+    {
+        super.close();
+    }
+    
+    
 
     private void writeInt(int i, byte[] buf, int offset)
     {
