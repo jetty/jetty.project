@@ -2023,7 +2023,8 @@ public class Request implements HttpServletRequest
         if (_async==null)
             _async=new AsyncContextState(state);
         AsyncContextEvent event = new AsyncContextEvent(_context,_async,state,this,servletRequest,servletResponse);
-        event.setDispatchTarget(getServletContext(),URIUtil.addPaths(getServletPath(),getPathInfo()));
+        event.setDispatchContext(getServletContext());
+        event.setDispatchPath(URIUtil.addPaths(getServletPath(),getPathInfo()));
         state.startAsync(event);
         return _async;
     }

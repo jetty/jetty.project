@@ -206,7 +206,6 @@ public class HttpChannelState
 
             _responseWrapped=false;
             return Next.CONTINUE;
-
         }
     }
 
@@ -314,20 +313,24 @@ public class HttpChannelState
             {
                 case ASYNCSTARTED:
                     _state=State.REDISPATCHING;
-                    _event.setDispatchTarget(context,path);
                     _dispatched=true;
-                    return;
+                    dispatch=false;
+                    break;
 
                 case ASYNCWAIT:
                     dispatch=!_expired;
                     _state=State.REDISPATCH;
-                    _event.setDispatchTarget(context,path);
                     _dispatched=true;
                     break;
 
                 default:
                     throw new IllegalStateException(this.getStatusString());
             }
+
+            if (context!=null)
+                _event.setDispatchContext(context);
+            if (path!=null)
+                _event.setDispatchPath(path);
         }
 
         if (dispatch)
@@ -434,6 +437,30 @@ public class HttpChannelState
                 handler.handle(_channel);
             else
                 _channel.handle();
+        }
+    }
+
+    public void errorComplete()
+    {
+        synchronized (this)
+        {
+            switch(_state)
+            {
+                case ASYNCSTARTED:
+                case REDISPATCHING:
+                    _state=State.COMPLETECALLED;
+                    break;
+
+                case COMPLETECALLED:
+                    break;
+
+                default:
+                    throw new IllegalStateException(this.getStatusString());
+            }
+
+            _dispatched=false;
+            _event.setDispatchContext(null);
+            _event.setDispatchPath(null);
         }
     }
 
