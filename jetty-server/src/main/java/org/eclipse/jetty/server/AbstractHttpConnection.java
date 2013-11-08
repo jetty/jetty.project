@@ -559,8 +559,8 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
                 {
                     // Complete async requests 
                     if (error && _request.isAsyncStarted())
-                        _request.getAsyncContext().complete();
-                    
+                        _request.getAsyncContinuation().errorComplete();
+                        
                     was_continuation=_request._async.isContinuation();
                     handling = !_request._async.unhandle() && server.isRunning() && _server!=null;
                 }

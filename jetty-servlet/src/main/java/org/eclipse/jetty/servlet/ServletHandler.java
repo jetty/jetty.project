@@ -58,6 +58,7 @@ import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.AbstractHttpConnection;
+import org.eclipse.jetty.server.AsyncContinuation;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.Request;
@@ -603,7 +604,7 @@ public class ServletHandler extends ScopedHandler
 
             // Complete async requests 
             if (th!=null && request.isAsyncStarted())
-                request.getAsyncContext().complete();
+                ((AsyncContinuation)request.getAsyncContext()).errorComplete();
         }
     }
 
