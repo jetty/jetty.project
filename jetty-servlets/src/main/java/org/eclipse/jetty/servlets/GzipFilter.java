@@ -433,7 +433,30 @@ public class GzipFilter extends UserAgentFilter
                         @Override
                         protected DeflaterOutputStream createStream() throws IOException
                         {
-                            return new GZIPOutputStream(_response.getOutputStream(),_bufferSize);
+                            return new GZIPOutputStream(_response.getOutputStream(),_bufferSize)
+                            {
+                                /**
+                                 * Work around a bug in the jvm GzipOutputStream whereby it is not
+                                 * thread safe when thread A calls finish, but thread B is writing
+                                 * @see java.util.zip.GZIPOutputStream#finish()
+                                 */
+                                @Override
+                                public synchronized void finish() throws IOException
+                                {
+                                    super.finish();
+                                }
+                                
+                                /**
+                                 * Work around a bug in the jvm GzipOutputStream whereby it is not
+                                 * thread safe when thread A calls close(), but thread B is writing
+                                 * @see java.util.zip.GZIPOutputStream#close()
+                                 */
+                                @Override
+                                public synchronized void close() throws IOException
+                                {
+                                    super.close();
+                                }           
+                            };
                         }
                     };
                 }
