@@ -2,6 +2,12 @@
 #
 # Startup script for jetty under *nix systems (it works under NT/cygwin too).
 
+##################################################
+# Set the name which is used by other variables.
+# Defaults to the file name without extension.
+##################################################
+NAME=$(echo $(basename $0) | sed -e 's/^[SK][0-9]+//' -e 's/\.sh$//')
+
 # To get the service to restart correctly on reboot, uncomment below (3 lines):
 # ========================
 # chkconfig: 3 99 99
@@ -11,15 +17,15 @@
 
 # Configuration files
 #
-# /etc/default/jetty
+# /etc/default/$NAME
 #   If it exists, this is read at the start of script. It may perform any 
 #   sequence of shell commands, like setting relevant environment variables.
 #
-# $HOME/.jettyrc
+# $HOME/.$NAMErc (e.g. $HOME/.jettyrc)
 #   If it exists, this is read at the start of script. It may perform any 
 #   sequence of shell commands, like setting relevant environment variables.
 #
-# /etc/jetty.conf
+# /etc/$NAME.conf
 #   If found, and no configurations were given on the command line,
 #   the file will be used as this script's configuration. 
 #   Each line in the file may contain:
@@ -31,10 +37,6 @@
 #
 #   The files will be checked for existence before being passed to jetty.
 #
-# $JETTY_HOME/etc/jetty.xml
-#   If found, used as this script's configuration file, but only if
-#   /etc/jetty.conf was not present. See above.
-#   
 # Configuration variables
 #
 # JAVA
@@ -67,12 +69,12 @@
 #    <Set name="Port">8080</Set>
 #
 # JETTY_RUN
-#   Where the jetty.pid file should be stored. It defaults to the
-#   first available of /var/run, /usr/var/run, JETTY_HOME and /tmp 
+#   Where the $NAME.pid file should be stored. It defaults to the
+#   first available of /var/run, /usr/var/run, JETTY_BASE and /tmp
 #   if not set.
 #  
 # JETTY_PID
-#   The Jetty PID file, defaults to $JETTY_RUN/jetty.pid
+#   The Jetty PID file, defaults to $JETTY_RUN/$NAME.pid
 #   
 # JETTY_ARGS
 #   The default arguments to pass to jetty.
@@ -81,7 +83,6 @@
 #
 # JETTY_USER
 #   if set, then used as a username to run the server as
-#
 
 usage()
 {
@@ -90,12 +91,6 @@ usage()
 }
 
 [ $# -gt 0 ] || usage
-
-
-##################################################
-# Set the name
-##################################################
-JETTY=jetty
 
 
 ##################################################
@@ -169,7 +164,7 @@ then
   ETC=$HOME/etc
 fi
 
-for CONFIG in $ETC/default/${JETTY}{,9} $HOME/.${JETTY}rc; do
+for CONFIG in $ETC/default/${NAME}{,9} $HOME/.${NAME}rc; do
   if [ -f "$CONFIG" ] ; then 
     readConfig "$CONFIG"
   fi
@@ -249,9 +244,9 @@ fi
 ##################################################
 if [ -z "$JETTY_CONF" ] 
 then
-  if [ -f $ETC/${JETTY}.conf ]
+  if [ -f $ETC/${NAME}.conf ]
   then
-    JETTY_CONF=$ETC/${JETTY}.conf
+    JETTY_CONF=$ETC/${NAME}.conf
   elif [ -f "$JETTY_BASE/etc/jetty.conf" ]
   then
     JETTY_CONF=$JETTY_BASE/etc/jetty.conf
@@ -298,7 +293,7 @@ fi
 #####################################################
 if [ -z "$JETTY_RUN" ] 
 then
-  JETTY_RUN=$(findDirectory -w /var/run /usr/var/run $JETTY_HOME /tmp)
+  JETTY_RUN=$(findDirectory -w /var/run /usr/var/run $JETTY_BASE /tmp)
 fi
 
 #####################################################
@@ -306,12 +301,12 @@ fi
 #####################################################
 if [ -z "$JETTY_PID" ] 
 then
-  JETTY_PID="$JETTY_RUN/${JETTY}.pid"
+  JETTY_PID="$JETTY_RUN/${NAME}.pid"
 fi
 
 if [ -z "$JETTY_STATE" ] 
 then
-  JETTY_STATE=$JETTY_HOME/${JETTY}.state
+  JETTY_STATE=$JETTY_BASE/${NAME}.state
 fi
 JAVA_OPTIONS+=("-Djetty.state=$JETTY_STATE")
 rm -f $JETTY_STATE
@@ -409,7 +404,7 @@ case "$ACTION" in
     echo -n "Starting Jetty: "
 
     if (( NO_START )); then 
-      echo "Not starting ${JETTY} - NO_START=1";
+      echo "Not starting ${NAME} - NO_START=1";
       exit
     fi
 
