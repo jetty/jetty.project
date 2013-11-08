@@ -122,8 +122,11 @@ public class AsyncContextTest
     @Test
     public void testStartThrow() throws Exception
     {
-        String request = "GET /ctx/startthrow HTTP/1.1\r\n" + "Host: localhost\r\n" + "Content-Type: application/x-www-form-urlencoded\r\n"
-                + "Connection: close\r\n" + "\r\n";
+        String request = 
+          "GET /ctx/startthrow HTTP/1.1\r\n" + 
+          "Host: localhost\r\n" + 
+          "Connection: close\r\n" + 
+          "\r\n";
         String responseString = _connector.getResponses(request);
 
         BufferedReader br = new BufferedReader(new StringReader(responseString));
@@ -136,6 +139,68 @@ public class AsyncContextTest
         Assert.assertEquals("error servlet","ERROR: /error",br.readLine());
         Assert.assertEquals("error servlet","PathInfo= /IOE",br.readLine());
         Assert.assertEquals("error servlet","EXCEPTION: org.eclipse.jetty.server.QuietServletException: java.io.IOException: Test",br.readLine());
+    }
+
+    @Test
+    public void testStartDispatchThrow() throws Exception
+    {
+        String request = "GET /ctx/startthrow?dispatch=true HTTP/1.1\r\n" + 
+           "Host: localhost\r\n" + 
+           "Content-Type: application/x-www-form-urlencoded\r\n" + 
+           "Connection: close\r\n" + 
+           "\r\n";
+        String responseString = _connector.getResponses(request);
+
+        BufferedReader br = new BufferedReader(new StringReader(responseString));
+
+        assertEquals("HTTP/1.1 500 Server Error",br.readLine());
+        br.readLine();// connection close
+        br.readLine();// server
+        br.readLine();// empty
+        Assert.assertEquals("error servlet","ERROR: /error",br.readLine());
+        Assert.assertEquals("error servlet","PathInfo= /IOE",br.readLine());
+        Assert.assertEquals("error servlet","EXCEPTION: org.eclipse.jetty.server.QuietServletException: java.io.IOException: Test",br.readLine());
+    }
+    
+    @Test
+    public void testStartCompleteThrow() throws Exception
+    {
+        String request = "GET /ctx/startthrow?complete=true HTTP/1.1\r\n" + 
+           "Host: localhost\r\n" + 
+           "Content-Type: application/x-www-form-urlencoded\r\n" + 
+           "Connection: close\r\n" + 
+           "\r\n";
+        String responseString = _connector.getResponses(request);
+
+        BufferedReader br = new BufferedReader(new StringReader(responseString));
+
+        assertEquals("HTTP/1.1 500 Server Error",br.readLine());
+        br.readLine();// connection close
+        br.readLine();// server
+        br.readLine();// empty
+        Assert.assertEquals("error servlet","ERROR: /error",br.readLine());
+        Assert.assertEquals("error servlet","PathInfo= /IOE",br.readLine());
+        Assert.assertEquals("error servlet","EXCEPTION: org.eclipse.jetty.server.QuietServletException: java.io.IOException: Test",br.readLine());
+    }
+    
+    @Test
+    public void testStartFlushCompleteThrow() throws Exception
+    {
+        String request = "GET /ctx/startthrow?flush=true&complete=true HTTP/1.1\r\n" + 
+           "Host: localhost\r\n" + 
+           "Content-Type: application/x-www-form-urlencoded\r\n" + 
+           "Connection: close\r\n" + 
+           "\r\n";
+        String responseString = _connector.getResponses(request);
+
+        BufferedReader br = new BufferedReader(new StringReader(responseString));
+
+        assertEquals("HTTP/1.1 200 OK",br.readLine());
+        br.readLine();// connection close
+        br.readLine();// server
+        br.readLine();// empty
+
+        Assert.assertEquals("error servlet","completeBeforeThrow",br.readLine());
     }
     
     @Test
@@ -497,6 +562,20 @@ public class AsyncContextTest
             if (request.getDispatcherType()==DispatcherType.REQUEST)
             {
                 request.startAsync(request, response);
+                
+                if (Boolean.valueOf(request.getParameter("dispatch")))
+                {
+                    request.getAsyncContext().dispatch();
+                }
+
+                if (Boolean.valueOf(request.getParameter("complete")))
+                {
+                    response.getOutputStream().write("completeBeforeThrow".getBytes());
+                    if (Boolean.valueOf(request.getParameter("flush")))
+                        response.flushBuffer();
+                    request.getAsyncContext().complete();
+                }
+                    
                 throw new QuietServletException(new IOException("Test"));
             }
         }

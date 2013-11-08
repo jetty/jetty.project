@@ -35,7 +35,7 @@ public class AsyncContextEvent extends AsyncEvent
     final private AsyncContextState _asyncContext;
     volatile HttpChannelState _state;
     private ServletContext _dispatchContext;
-    private String _pathInContext;
+    private String _dispatchPath;
     private Scheduler.Task _timeoutTask;
     private Throwable _throwable;
 
@@ -98,7 +98,7 @@ public class AsyncContextEvent extends AsyncEvent
      */
     public String getPath()
     {
-        return _pathInContext;
+        return _dispatchPath;
     }
     
     public void setTimeoutTask(Scheduler.Task task)
@@ -131,14 +131,15 @@ public class AsyncContextEvent extends AsyncEvent
         _throwable=throwable;
     }
 
-    public void setDispatchTarget(ServletContext context, String path)
+    public void setDispatchContext(ServletContext context)
     {
-        if (context!=null)
-            _dispatchContext=context;
-        if (path!=null)
-            _pathInContext=path;
+        _dispatchContext=context;
     }
-
+    
+    public void setDispatchPath(String path)
+    {
+        _dispatchPath=path;
+    }
     
     public void completed()
     {

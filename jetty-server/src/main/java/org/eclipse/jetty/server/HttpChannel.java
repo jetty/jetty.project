@@ -262,6 +262,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
         HttpChannelState.Action action = _state.handling();
         loop: while (action.ordinal()<HttpChannelState.Action.WAIT.ordinal() && getServer().isRunning())
         {
+            boolean error=false;
             try
             {
                 LOG.debug("{} action {}",this,action);
@@ -309,7 +310,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
                         {
                             String error_page=((ErrorHandler.ErrorPageMapper)eh).getErrorPage((HttpServletRequest)_state.getAsyncContextEvent().getSuppliedRequest());
                             if (error_page!=null)
-                                _state.getAsyncContextEvent().setDispatchTarget(_state.getContextHandler().getServletContext(),error_page);
+                                _state.getAsyncContextEvent().setDispatchPath(error_page);
                         }
 
                         getServer().handleAsync(this);
@@ -346,10 +347,14 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
                 if ("ContinuationThrowable".equals(e.getClass().getSimpleName()))
                     LOG.ignore(e);
                 else
+                {
+                    error=true;
                     throw e;
+                }
             }
             catch (Exception e)
             {
+                error=true;
                 if (e instanceof EofException)
                     LOG.debug(e);
                 else
@@ -360,6 +365,8 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
             }
             finally
             {
+                if (error && _state.isAsyncStarted())
+                    _state.errorComplete();
                 action = _state.unhandle();
             }
         }

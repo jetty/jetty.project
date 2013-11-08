@@ -35,7 +35,7 @@ import org.eclipse.jetty.server.Request;
  * Can be applied in jetty.xml with
  * <pre>
  *   &lt;Get id='handler' name='Handler'/>
- *   &lt;Set name='Handler>
+ *   &lt;Set name='Handler'>
  *     &lt;New id='idleTimeoutHandler' class='org.eclipse.jetty.server.handler.IdleTimeoutHandler'>
  *       &lt;Set name='Handler'>&lt;Ref id='handler'/>&lt;/Set>
  *       &lt;Set name='IdleTimeoutMs'>5000&lt;/Set>
