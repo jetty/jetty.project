@@ -18,42 +18,68 @@
 
 package org.eclipse.jetty.spdy.client.http;
 
+import java.util.Arrays;
+import java.util.Collection;
+
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.server.AbstractConnectionFactory;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.client.SPDYClient;
 import org.eclipse.jetty.spdy.server.http.HTTPSPDYServerConnectionFactory;
-import org.eclipse.jetty.spdy.server.http.PushStrategy;
 import org.eclipse.jetty.toolchain.test.TestTracker;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
 import org.junit.Rule;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+@RunWith(Parameterized.class)
 public abstract class AbstractHttpClientServerTest
 {
+    @Parameterized.Parameters
+    public static Collection<SslContextFactory[]> parameters()
+    {
+        return Arrays.asList(new SslContextFactory[]{null}, new SslContextFactory[]{new SslContextFactory()});
+    }
+
     @Rule
     public final TestTracker tracker = new TestTracker();
 
+    protected SslContextFactory sslContextFactory;
+    protected String scheme;
     protected Server server;
-    protected NetworkConnector connector;
+    protected ServerConnector connector;
     protected SPDYClient.Factory factory;
     protected HttpClient client;
-    protected String scheme = HttpScheme.HTTP.asString();
+
+    public AbstractHttpClientServerTest(SslContextFactory sslContextFactory)
+    {
+        this.sslContextFactory = sslContextFactory;
+        this.scheme = (sslContextFactory == null ? HttpScheme.HTTP : HttpScheme.HTTPS).asString();
+    }
 
     public void start(Handler handler) throws Exception
     {
-        server = new Server();
-
         short version = SPDY.V3;
 
-        HTTPSPDYServerConnectionFactory spdyConnectionFactory = new HTTPSPDYServerConnectionFactory(version, new HttpConfiguration(), new PushStrategy.None());
-        connector = new ServerConnector(server, spdyConnectionFactory);
+        HTTPSPDYServerConnectionFactory httpSPDY = new HTTPSPDYServerConnectionFactory(version, new HttpConfiguration());
+        if (sslContextFactory != null)
+        {
+            sslContextFactory.setEndpointIdentificationAlgorithm("");
+            sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
+            sslContextFactory.setKeyStorePassword("storepwd");
+            sslContextFactory.setTrustStorePath("src/test/resources/truststore.jks");
+            sslContextFactory.setTrustStorePassword("storepwd");
+        }
 
+        server = new Server();
+        connector = new ServerConnector(server, AbstractConnectionFactory.getFactories(sslContextFactory, httpSPDY));
         server.addConnector(connector);
         server.setHandler(handler);
         server.start();
@@ -63,8 +89,7 @@ public abstract class AbstractHttpClientServerTest
 
         factory = new SPDYClient.Factory(executor);
         factory.start();
-
-        client = new HttpClient(new HttpClientTransportOverSPDY(factory.newSPDYClient(version)), null);
+        client = new HttpClient(new HttpClientTransportOverSPDY(factory.newSPDYClient(version)), sslContextFactory);
         client.setExecutor(executor);
         client.start();
     }

@@ -28,7 +28,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPOutputStream;
-
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -41,11 +40,17 @@ import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
 import org.junit.Test;
 
 public class HttpClientTest extends AbstractHttpClientServerTest
 {
+    public HttpClientTest(SslContextFactory sslContextFactory)
+    {
+        super(sslContextFactory);
+    }
+
     @Test
     public void test_GET_ResponseWithoutContent() throws Exception
     {
