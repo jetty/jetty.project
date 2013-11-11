@@ -39,6 +39,7 @@
   </servlet>
   
   <!-- Allow remote access to test webapp -->
+  <!--
   <filter>
     <filter-name>TestFilter</filter-name>
     <filter-class>com.acme.TestFilter</filter-class>
@@ -48,6 +49,7 @@
       <param-value>true</param-value>
     </init-param>
   </filter>
+  -->
   
 </web-app>
 
