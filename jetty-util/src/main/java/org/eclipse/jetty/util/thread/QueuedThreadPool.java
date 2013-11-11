@@ -528,12 +528,14 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
                     startThreads(1);
                 }
 
-                while (isRunning())
+                loop: while (isRunning())
                 {
                     // Job loop
                     while (job != null && isRunning())
                     {
                         runJob(job);
+                        if (Thread.interrupted())
+                            break loop;
                         job = _jobs.poll();
                     }
 
