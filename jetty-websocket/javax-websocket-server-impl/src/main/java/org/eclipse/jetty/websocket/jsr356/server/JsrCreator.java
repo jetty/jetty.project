@@ -25,6 +25,7 @@ import java.util.List;
 import javax.websocket.Extension;
 import javax.websocket.Extension.Parameter;
 import javax.websocket.server.ServerEndpointConfig;
+import javax.websocket.server.ServerEndpointConfig.Configurator;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -58,7 +59,7 @@ public class JsrCreator implements WebSocketCreator
 
         ServerEndpointConfig config = metadata.getConfig();
 
-        ServerEndpointConfig.Configurator configurator = config.getConfigurator();
+        Configurator configurator = config.getConfigurator();
 
         // modify handshake
         configurator.modifyHandshake(config,hsreq,hsresp);
