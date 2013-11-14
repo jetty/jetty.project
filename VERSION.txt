@@ -1,3 +1,5 @@
+jetty-9.0.8-SNAPSHOT
+
 jetty-9.0.7.v20131107 - 07 November 2013
  + 407716 fixed logs
  + 416597 Allow classes and jars on the webappcontext extraclasspath to be
