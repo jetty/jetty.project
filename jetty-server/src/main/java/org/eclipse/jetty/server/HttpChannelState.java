@@ -351,7 +351,11 @@ public class HttpChannelState
             if (_async!=Async.STARTED && _async!=Async.EXPIRING)
                 throw new IllegalStateException("AsyncContext#dispath "+this.getStatusString());
             _async=Async.DISPATCH;
-            _event.setDispatchTarget(context,path);
+            
+            if (context!=null)
+                _event.setDispatchContext(context);
+            if (path!=null)
+                _event.setDispatchPath(path);
            
             switch(_state)
             {
@@ -437,6 +441,18 @@ public class HttpChannelState
             else
                 _channel.handle();
         }
+    }
+
+    public void errorComplete()
+    {
+        synchronized (this)
+        {
+            _async=Async.COMPLETE;
+            _event.setDispatchContext(null);
+            _event.setDispatchPath(null);
+        }
+
+        cancelTimeout();
     }
 
     protected void completed()

@@ -31,9 +31,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.eclipse.jetty.client.ContentExchange;
+
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.Test;
 
@@ -90,18 +91,13 @@ public class PurgeValidSessionTest
         try
         {
             HttpClient client = new HttpClient();
-            client.setConnectorType(HttpClient.CONNECTOR_SOCKET);
             client.start();
             try
             {
                 //Create a session
-                ContentExchange exchange = new ContentExchange(true);
-                exchange.setMethod(HttpMethods.GET);
-                exchange.setURL("http://localhost:" + port + contextPath + servletMapping + "?action=create");
-                client.send(exchange);
-                exchange.waitForDone();
-                assertEquals(HttpServletResponse.SC_OK,exchange.getResponseStatus());
-                String sessionCookie = exchange.getResponseFields().getStringField("Set-Cookie");
+                ContentResponse response = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=create");
+                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+                String sessionCookie = response.getHeaders().getStringField("Set-Cookie");
                 assertTrue(sessionCookie != null);
                 // Mangle the cookie, replacing Path with $Path, etc.
                 sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
@@ -110,13 +106,10 @@ public class PurgeValidSessionTest
                 Thread.currentThread().sleep(3*purgeDelay); //sleep long enough for purger to have run
 
                 //make a request using previous session to test if its still there               
-                exchange = new ContentExchange(true);
-                exchange.setMethod(HttpMethods.GET);
-                exchange.setURL("http://localhost:" + port + contextPath + servletMapping + "?action=test");
-                exchange.getRequestFields().add("Cookie", sessionCookie);
-                client.send(exchange);
-                exchange.waitForDone();
-                assertEquals(HttpServletResponse.SC_OK,exchange.getResponseStatus());
+                Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=test");
+                request.header("Cookie", sessionCookie);
+                ContentResponse response2 = request.send();
+                assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
             }
             finally
             {

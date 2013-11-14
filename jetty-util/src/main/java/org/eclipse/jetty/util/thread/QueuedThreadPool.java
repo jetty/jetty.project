@@ -321,6 +321,17 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     {
         return _priority;
     }
+    
+    /**
+     * Get the size of the job queue.
+     * 
+     * @return Number of jobs queued waiting for a thread
+     */
+    @ManagedAttribute("Size of the job queue")
+    public int getQueueSize()
+    {
+        return _jobs.size();
+    }
 
     /**
      * Delegated to the named or anonymous Pool.
@@ -517,12 +528,14 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
                     startThreads(1);
                 }
 
-                while (isRunning())
+                loop: while (isRunning())
                 {
                     // Job loop
                     while (job != null && isRunning())
                     {
                         runJob(job);
+                        if (Thread.interrupted())
+                            break loop;
                         job = _jobs.poll();
                     }
 

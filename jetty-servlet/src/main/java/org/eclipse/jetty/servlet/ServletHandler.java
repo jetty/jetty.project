@@ -613,7 +613,7 @@ public class ServletHandler extends ScopedHandler
         {
             // Complete async errored requests 
             if (th!=null && request.isAsyncStarted())
-                request.getAsyncContext().complete();
+                baseRequest.getHttpChannelState().errorComplete();
             
             if (servlet_holder!=null)
                 baseRequest.setHandled(true);

@@ -108,9 +108,8 @@ public class SessionSavingValueTest extends AbstractSessionValueSavingTest
                 { "0", "null" };
 
                 // Perform one request to server1 to create a session
-                Request request = client.newRequest("http://localhost:" + port1 + contextPath + servletMapping + "?action=init");
-                Future<ContentResponse> future = request.send();
-                ContentResponse response = future.get();
+                ContentResponse response = client.GET("http://localhost:" + port1 + contextPath + servletMapping + "?action=init");
+      
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
 
                 String[] sessionTestResponse = response.getContentAsString().split("/");
@@ -134,8 +133,7 @@ public class SessionSavingValueTest extends AbstractSessionValueSavingTest
                 {
                     Request request2 = client.newRequest("http://localhost:" + port1 + contextPath + servletMapping);
                     request2.header("Cookie",sessionCookie);
-                    Future<ContentResponse> future2 = request2.send();
-                    ContentResponse response2 = future2.get();
+                    ContentResponse response2 = request2.send();
          
                     assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
 
