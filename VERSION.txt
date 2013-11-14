@@ -1,3 +1,5 @@
+jetty-9.1.0-SNAPSHOT
+
 jetty-9.1.0.RC1 - 31 October 2013
  + 294531 Unpacking webapp twice to the same directory name causes problems
    with updated jars in WEB-INF/lib
