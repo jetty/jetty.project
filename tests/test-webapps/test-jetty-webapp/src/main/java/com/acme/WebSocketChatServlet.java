@@ -73,7 +73,12 @@ public class WebSocketChatServlet extends WebSocketServlet implements WebSocketC
     @Override
     public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp)
     {
-        return new ChatWebSocket();
+        if (req.hasSubProtocol("chat"))
+        {
+            resp.setAcceptedSubProtocol("chat");
+            return new ChatWebSocket();
+        }
+        return null;
     }
 
     @Override

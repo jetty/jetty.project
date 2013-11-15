@@ -31,7 +31,7 @@ import javax.websocket.RemoteEndpoint;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 
-@ServerEndpoint(value="/javax.websocket/")
+@ServerEndpoint(value="/javax.websocket/", subprotocols={"chat"})
 public class JavaxWebSocketChat
 {
     private static final List<JavaxWebSocketChat> members = new CopyOnWriteArrayList<>();
