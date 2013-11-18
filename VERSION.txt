@@ -1,4 +1,23 @@
-jetty-9.1.0-SNAPSHOT
+jetty-9.1.1-SNAPSHOT
+
+jetty-9.1.0.v20131115 - 15 November 2013
+ + 397167 Remote Access documentation is wrong
+ + 416477 QueuedThreadPool does not reuse interrupted threads
+ + 420776 complete error pages after startAsync
+ + 421362 When using the jetty.osgi.boot ContextHandler service feature the
+   wrong ContextHandler can be undeployed
+
+jetty-9.1.0.RC2 - 7 November 2013
+ + 410656 WebSocketSession.suspend() hardcoded to return null
+ + 417223 removed deprecated ThreadPool.dispatch
+ + 418741 Threadlocal cookie buffer in response
+ + 420359 fixed thread warnings
+ + 420572 IOTest explicitly uses 127.0.0.1
+ + 420692 set soTimeout to try to avoid hang
+ + 420844 Connection:close on exceptional errors
+ + 420930 Use Charset to specify character encoding
+ + 421197 synchronize gzip output finish
+ + 421198 onComplete never call onComplete in BufferingResponseListener in 9.1.
 
 jetty-9.1.0.RC1 - 31 October 2013
  + 294531 Unpacking webapp twice to the same directory name causes problems
