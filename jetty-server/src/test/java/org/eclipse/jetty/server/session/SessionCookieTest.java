@@ -122,10 +122,10 @@ public class SessionCookieTest
         }
 
         /**
-         * @see org.eclipse.jetty.server.session.AbstractSessionManager#invalidateSessions()
+         * @see org.eclipse.jetty.server.session.AbstractSessionManager#shutdownSessions()
          */
         @Override
-        protected void invalidateSessions() throws Exception
+        protected void shutdownSessions() throws Exception
         {
 
         }

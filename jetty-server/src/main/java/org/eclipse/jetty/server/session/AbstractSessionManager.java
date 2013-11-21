@@ -276,7 +276,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     {
         super.doStop();
 
-        invalidateSessions();
+        shutdownSessions();
 
         _loader=null;
     }
@@ -735,7 +735,12 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
      */
     public abstract AbstractSession getSession(String idInCluster);
 
-    protected abstract void invalidateSessions() throws Exception;
+    /**
+     * Prepare sessions for session manager shutdown
+     * 
+     * @throws Exception
+     */
+    protected abstract void shutdownSessions() throws Exception;
 
 
     /* ------------------------------------------------------------ */
@@ -783,7 +788,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
      * @param invalidate True if {@link HttpSessionListener#sessionDestroyed(HttpSessionEvent)} and
      * {@link SessionIdManager#invalidateAll(String)} should be called.
      */
-    public void removeSession(AbstractSession session, boolean invalidate)
+    public boolean removeSession(AbstractSession session, boolean invalidate)
     {
         // Remove session from context and global maps
         boolean removed = removeSession(session.getClusterId());
@@ -807,6 +812,8 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
                 }
             }
         }
+        
+        return removed;
     }
 
     /* ------------------------------------------------------------ */

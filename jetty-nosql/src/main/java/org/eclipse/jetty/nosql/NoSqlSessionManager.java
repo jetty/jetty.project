@@ -21,6 +21,7 @@ package org.eclipse.jetty.nosql;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -30,6 +31,12 @@ import org.eclipse.jetty.server.session.AbstractSessionManager;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+/**
+ * NoSqlSessionManager
+ *
+ * Base class for SessionManager implementations using nosql frameworks
+ * 
+ */
 public abstract class NoSqlSessionManager extends AbstractSessionManager implements SessionManager
 {
     private final static Logger __log = Log.getLogger("org.eclipse.jetty.server.session");
@@ -40,11 +47,11 @@ public abstract class NoSqlSessionManager extends AbstractSessionManager impleme
     private int _savePeriod=0;
     private int _idlePeriod=-1;
     private boolean _invalidateOnStop;
-    private boolean _preserveOnStop;
+    private boolean _preserveOnStop = true;
     private boolean _saveAllAttributes;
     
     /* ------------------------------------------------------------ */
-    /* (non-Javadoc)
+    /**
      * @see org.eclipse.jetty.server.session.AbstractSessionManager#doStart()
      */
     @Override
@@ -59,7 +66,12 @@ public abstract class NoSqlSessionManager extends AbstractSessionManager impleme
     protected void addSession(AbstractSession session)
     {
         if (isRunning())
+        {
+            //add into memory
             _sessions.put(session.getClusterId(),(NoSqlSession)session);
+            //add into db
+            ((NoSqlSession)session).save(true);
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -67,15 +79,16 @@ public abstract class NoSqlSessionManager extends AbstractSessionManager impleme
     public AbstractSession getSession(String idInCluster)
     {
         NoSqlSession session = _sessions.get(idInCluster);
-        
-        __log.debug("getSession: " + session );
+        __log.debug("getSession {} ", session );
         
         if (session==null)
         {
+            //session not in this node's memory, load it
             session=loadSession(idInCluster);
             
             if (session!=null)
             {
+                //session exists, check another request thread hasn't loaded it too
                 NoSqlSession race=_sessions.putIfAbsent(idInCluster,session);
                 if (race!=null)
                 {
@@ -83,54 +96,83 @@ public abstract class NoSqlSessionManager extends AbstractSessionManager impleme
                     session.clearAttributes();
                     session=race;
                 }
+                else
+                    __log.debug("session loaded ", idInCluster);
+                
+                //check if the session we just loaded has actually expired, maybe while we weren't running
+                if (getMaxInactiveInterval() > 0 && session.getAccessed() > 0 && ((getMaxInactiveInterval()*1000)+session.getAccessed()) < System.currentTimeMillis())
+                {
+                    __log.debug("session expired ", idInCluster);
+                    expire(idInCluster);
+                    session = null;
+                }
             }
+            else
+                __log.debug("session does not exist {}", idInCluster);
         }
-        
+
         return session;
     }
     
     /* ------------------------------------------------------------ */
     @Override
-    protected void invalidateSessions() throws Exception
+    protected void shutdownSessions() throws Exception
     {
-        // Invalidate all sessions to cause unbind events
+        //If we are stopping, and we're preserving sessions, then we want to
+        //save all of the sessions (including those that have been added during this method call)
+        //and then just remove them from memory.
+        
+        //If we don't wish to preserve sessions and we're stopping, then we should invalidate
+        //the session (which may remove it).
+        long gracefulStopMs = getContextHandler().getServer().getStopTimeout();
+        long stopTime = 0;
+        if (gracefulStopMs > 0)
+            stopTime = System.nanoTime() + (TimeUnit.NANOSECONDS.convert(gracefulStopMs, TimeUnit.MILLISECONDS));        
+        
         ArrayList<NoSqlSession> sessions=new ArrayList<NoSqlSession>(_sessions.values());
-        int loop=100;
-        while (sessions.size()>0 && loop-->0)
-        {
-            // If we are called from doStop
-            if (isStopping())
-            {
-                // Then we only save and remove the session - it is not invalidated.
-                for (NoSqlSession session : sessions)
-                {
-                    session.save(false);
 
-                    if (!_preserveOnStop) {
-                        removeSession(session,false);
-                    }
+        // loop while there are sessions, and while there is stop time remaining, or if no stop time, just 1 loop
+        while (sessions.size() > 0 && ((stopTime > 0 && (System.nanoTime() < stopTime)) || (stopTime == 0)))
+        {
+            for (NoSqlSession session : sessions)
+            {
+                if (isPreserveOnStop())
+                {
+                    //we don't want to delete the session, so save the session
+                    //and remove from memory
+                    session.save(false);
+                    _sessions.remove(session.getClusterId());
+                }
+                else
+                {
+                  //invalidate the session so listeners will be called and also removes the session
+                  session.invalidate();
                 }
             }
-            else
-            {
-                for (NoSqlSession session : sessions)
-                    session.invalidate();
-            }
             
-            // check that no new sessions were created while we were iterating
+            //check if we should terminate our loop if we're not using the stop timer
+            if (stopTime == 0)
+            {
+                break;
+            }
+            // Get any sessions that were added by other requests during processing and go around the loop again
             sessions=new ArrayList<NoSqlSession>(_sessions.values());
         }
     }
     
+
     /* ------------------------------------------------------------ */
     @Override
     protected AbstractSession newSession(HttpServletRequest request)
     {
-        long created=System.currentTimeMillis();
         return new NoSqlSession(this,request);
     }
 
     /* ------------------------------------------------------------ */
+    /** Remove the session from the in-memory list for this context.
+     * Also remove the context sub-document for this session id from the db.
+     * @see org.eclipse.jetty.server.session.AbstractSessionManager#removeSession(java.lang.String)
+     */
     @Override
     protected boolean removeSession(String idInCluster)
     {
@@ -147,7 +189,7 @@ public abstract class NoSqlSessionManager extends AbstractSessionManager impleme
             }
             catch (Exception e)
             {
-                __log.warn("Problem deleting session id=" + idInCluster,e);
+                __log.warn("Problem deleting session {}", idInCluster,e);
             }
 
             return session != null;
@@ -155,31 +197,52 @@ public abstract class NoSqlSessionManager extends AbstractSessionManager impleme
     }
 
     /* ------------------------------------------------------------ */
-    protected void invalidateSession( String idInCluster )
+    protected void expire( String idInCluster )
     {
         synchronized (this)
         {
-            NoSqlSession session = _sessions.remove(idInCluster);
+            //get the session from memory
+            NoSqlSession session = _sessions.get(idInCluster);
 
             try
             {
+                if (session == null)
+                {
+                    //we need to expire the session with its listeners, so load it
+                    session = loadSession(idInCluster);
+                }
+               
+                if (session != null)
+                    session.timeout();
+            }
+            catch (Exception e)
+            {
+                __log.warn("Problem expiring session {}", idInCluster,e);
+            }
+        }
+    }
+    
+    
+    public void invalidateSession (String idInCluster)
+    {
+        synchronized (this)
+        {
+            NoSqlSession session = _sessions.get(idInCluster);
+            try
+            {
+                __log.debug("invalidating session {}", idInCluster);
                 if (session != null)
                 {
-                    remove(session);
+                    session.invalidate();
                 }
             }
             catch (Exception e)
             {
-                __log.warn("Problem deleting session id=" + idInCluster,e);
+                __log.warn("Problem invalidating session {}", idInCluster,e); 
             }
         }
-        
-        /*
-         * ought we not go to cluster and mark it invalid?
-         */
-        
     }
-    
+
     
     /* ------------------------------------------------------------ */
     /**
