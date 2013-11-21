@@ -44,7 +44,7 @@ import org.eclipse.jetty.websocket.common.frames.DataFrame;
  */
 public class FrameFlusher 
 {
-
+    private static final int MAX_GATHER = Integer.getInteger("org.eclipse.jetty.websocket.common.io.FrameFlusher.MAX_GATHER",8);
     private static final Logger LOG = Log.getLogger(FrameFlusher.class);
 
     /** The endpoint to flush to */
@@ -61,8 +61,7 @@ public class FrameFlusher
     
     /** the buffer input size */
     private int bufferSize = 2048;
-    /** the gathered write bytebuffer array limit */
-    private int gatheredBufferLimit = 10;
+
     /** Tracking for failure */
     private Throwable failure;
     /** Is WriteBytesProvider closed to more WriteBytes being enqueued? */
@@ -209,8 +208,8 @@ public class FrameFlusher
     private class FlusherCB extends IteratingCallback
     {
         private final ArrayQueue<FrameEntry> active = new ArrayQueue<>(lock);
-        private final List<ByteBuffer> buffers = new ArrayList<>(gatheredBufferLimit*2);
-        private final List<FrameEntry> succeeded = new ArrayList<>(gatheredBufferLimit+1);
+        private final List<ByteBuffer> buffers = new ArrayList<>(MAX_GATHER*2);
+        private final List<FrameEntry> succeeded = new ArrayList<>(MAX_GATHER+1);
         
         @Override
         protected void completed()
@@ -228,7 +227,7 @@ public class FrameFlusher
                 
                 // If we exited the loop above without hitting the gatheredBufferLimit
                 // then all the active frames are done, so we can add some more.
-                while (buffers.size()<gatheredBufferLimit && !queue.isEmpty())
+                while (buffers.size()<MAX_GATHER && !queue.isEmpty())
                 {
                     FrameEntry frame = queue.remove(0);
                     active.add(frame);

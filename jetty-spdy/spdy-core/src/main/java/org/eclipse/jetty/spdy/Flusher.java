@@ -36,7 +36,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class Flusher
 {
     private static final Logger LOG = Log.getLogger(Flusher.class);
-    private static final int MAX_GATHER = 10;
+    private static final int MAX_GATHER = Integer.getInteger("org.eclipse.jetty.spdy.Flusher.MAX_GATHER",8);
 
     private final FlusherCB flusherCB = new FlusherCB();
     private final Controller controller;
