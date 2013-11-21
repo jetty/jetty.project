@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.common.message;
 import java.io.IOException;
 import java.io.Writer;
 import java.nio.ByteBuffer;
-import java.util.concurrent.ExecutionException;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
@@ -29,9 +28,9 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
+import org.eclipse.jetty.websocket.common.BlockingWriteCallback;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
-import org.eclipse.jetty.websocket.common.io.FutureWriteCallback;
 
 /**
  * Support for writing a single WebSocket TEXT message via a {@link Writer}
@@ -43,11 +42,11 @@ public class MessageWriter extends Writer
     private static final Logger LOG = Log.getLogger(MessageWriter.class);
     private final OutgoingFrames outgoing;
     private final ByteBufferPool bufferPool;
+    private final BlockingWriteCallback blocker;
     private long frameCount = 0;
     private TextFrame frame;
     private ByteBuffer buffer;
     private Utf8CharBuffer utf;
-    private FutureWriteCallback blocker;
     private WriteCallback callback;
     private boolean closed = false;
 
@@ -55,6 +54,7 @@ public class MessageWriter extends Writer
     {
         this.outgoing = outgoing;
         this.bufferPool = bufferPool;
+        this.blocker = new BlockingWriteCallback();
         this.buffer = bufferPool.acquire(bufferSize,true);
         BufferUtil.flipToFill(buffer);
         this.utf = Utf8CharBuffer.wrap(buffer);
@@ -118,38 +118,14 @@ public class MessageWriter extends Writer
 
         try
         {
-            blocker = new FutureWriteCallback();
             outgoing.outgoingFrame(frame,blocker);
-            try
-            {
-                // block on write
-                blocker.get();
-                // write success
-                // clear utf buffer
-                utf.clear();
-                frameCount++;
-                frame.setIsContinuation();
-            }
-            catch (ExecutionException e)
-            {
-                Throwable cause = e.getCause();
-                if (cause != null)
-                {
-                    if (cause instanceof IOException)
-                    {
-                        throw (IOException)cause;
-                    }
-                    else
-                    {
-                        throw new IOException(cause);
-                    }
-                }
-                throw new IOException("Failed to flush",e);
-            }
-            catch (InterruptedException e)
-            {
-                throw new IOException("Failed to flush",e);
-            }
+            // block on write
+            blocker.block();
+            // write success
+            // clear utf buffer
+            utf.clear();
+            frameCount++;
+            frame.setIsContinuation();
         }
         catch (IOException e)
         {

@@ -29,6 +29,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
+import org.eclipse.jetty.websocket.common.BlockingWriteCallback;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.common.io.FutureWriteCallback;
@@ -41,10 +42,10 @@ public class MessageOutputStream extends OutputStream
     private static final Logger LOG = Log.getLogger(MessageOutputStream.class);
     private final OutgoingFrames outgoing;
     private final ByteBufferPool bufferPool;
+    private final BlockingWriteCallback blocker;
     private long frameCount = 0;
     private BinaryFrame frame;
     private ByteBuffer buffer;
-    private FutureWriteCallback blocker;
     private WriteCallback callback;
     private boolean closed = false;
 
@@ -52,6 +53,7 @@ public class MessageOutputStream extends OutputStream
     {
         this.outgoing = outgoing;
         this.bufferPool = bufferPool;
+        this.blocker = new BlockingWriteCallback();
         this.buffer = bufferPool.acquire(bufferSize,true);
         BufferUtil.flipToFill(buffer);
         this.frame = new BinaryFrame();
@@ -137,36 +139,12 @@ public class MessageOutputStream extends OutputStream
 
         try
         {
-            blocker = new FutureWriteCallback();
             outgoing.outgoingFrame(frame,blocker);
-            try
-            {
-                // block on write
-                blocker.get();
-                // block success
-                frameCount++;
-                frame.setIsContinuation();
-            }
-            catch (ExecutionException e)
-            {
-                Throwable cause = e.getCause();
-                if (cause != null)
-                {
-                    if (cause instanceof IOException)
-                    {
-                        throw (IOException)cause;
-                    }
-                    else
-                    {
-                        throw new IOException(cause);
-                    }
-                }
-                throw new IOException("Failed to flush",e);
-            }
-            catch (InterruptedException e)
-            {
-                throw new IOException("Failed to flush",e);
-            }
+            // block on write
+            blocker.block();
+            // block success
+            frameCount++;
+            frame.setIsContinuation();
         }
         catch (IOException e)
         {

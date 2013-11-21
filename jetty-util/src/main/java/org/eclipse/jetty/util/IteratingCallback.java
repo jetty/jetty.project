@@ -23,12 +23,15 @@ import java.util.concurrent.atomic.AtomicReference;
 
 /* ------------------------------------------------------------ */
 /** Iterating Callback.
- * <p>This specialized callback is used when breaking up an
- * asynchronous task into smaller asynchronous tasks.  A typical pattern
- * is that a successful callback is used to schedule the next sub task, but 
- * if that task completes quickly and uses the calling thread to callback
- * the success notification, this can result in a growing stack depth.
- * </p>
+ * <p>This specialized callback implements a pattern that allows a 
+ * large job to be broken into smaller tasks using iteration rather than
+ * recursion.
+ * <p>
+ * A typical pattern used with asynchronous callbacks, is the next IO is 
+ * done from within the scope of the success callback.  The problem with this
+ * is that if the callback thread is the same one that calls to IO instruction,
+ * then recursion results and eventually a dispatch has to be done to 
+ * avoid stack overflow (see {@link ForkInvoker}).
  * <p>To avoid this issue, this callback uses an AtomicReference to note 
  * if the success callback has been called during the processing of a 
  * sub task, and if so then the processing iterates rather than recurses.
@@ -51,11 +54,12 @@ public abstract class IteratingCallback implements Callback
     abstract protected void completed();
     
     /**
+     * TODO - FIX
      * Method called by iterate to process the task. 
      * @return Then next state:
      * <dl>
-     * <dt>SUCCEEDED</dt><dd>if process returns true</dd>
-     * <dt>SCHEDULED</dt><dd>This callback has been scheduled and {@link #succeeded()} or {@link #failed(Throwable)} will evenutally be called (if they have not been called already!)</dd>
+     * <dt>SUCCEEDED</dt><dd>Return if the total task has completed</dd>
+     * <dt>SCHEDULED</dt><dd>This callback has been scheduled and {@link #succeeded()} or {@link #failed(Throwable)} will eventually be called (if they have not been called already!)</dd>
      * <dt>IDLE</dt><dd>no progress can be made and another call to {@link #iterate()} is required in order to progress the task</dd>
      * <dt>FAILED</dt><dd>processing has failed</dd>
      * </dl>

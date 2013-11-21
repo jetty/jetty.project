@@ -28,7 +28,7 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
  */
 public class DataFrame extends WebSocketFrame
 {
-    private boolean isPooledBuffer = false;
+    private ByteBufferPool pool;
 
     protected DataFrame(byte opcode)
     {
@@ -78,12 +78,13 @@ public class DataFrame extends WebSocketFrame
         return true;
     }
 
-    /**
-     * @return true if payload buffer is from a {@link ByteBufferPool} and can be released when appropriate to do so
-     */
-    public boolean isPooledBuffer()
+    public void releaseBuffer()
     {
-        return isPooledBuffer;
+        if (pool!=null)
+        {
+            pool.release(this.data);
+            this.data=null;
+        }
     }
 
     /**
@@ -95,10 +96,10 @@ public class DataFrame extends WebSocketFrame
     }
 
     /**
-     * Sets a flag indicating that the underlying payload is from a {@link ByteBufferPool} and can be released when appropriate to do so
+     * Sets the buffer pool used for the payload
      */
-    public void setPooledBuffer(boolean isPooledBuffer)
+    public void setBufferPool(ByteBufferPool pool)
     {
-        this.isPooledBuffer = isPooledBuffer;
+        this.pool = pool;
     }
 }

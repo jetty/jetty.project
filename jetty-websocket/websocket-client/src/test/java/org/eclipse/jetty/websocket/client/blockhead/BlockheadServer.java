@@ -241,7 +241,8 @@ public class BlockheadServer
             try
             {
                 BufferUtil.writeTo(headerBuf,out);
-                BufferUtil.writeTo(generator.getPayloadWindow(frame.getPayloadLength(),frame),out);
+                if (frame.hasPayload())
+                    BufferUtil.writeTo(frame.getPayload(),out);
                 out.flush();
                 if (callback != null)
                 {

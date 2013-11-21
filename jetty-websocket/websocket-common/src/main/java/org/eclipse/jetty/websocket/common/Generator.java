@@ -328,7 +328,7 @@ public class Generator
         buf.put(generateHeaderBytes(frame));
         if (frame.hasPayload())
         {
-            buf.put(getPayloadWindow(frame.getPayloadLength(),frame));
+            buf.put(frame.getPayload());
         }
     }
 
@@ -337,36 +337,6 @@ public class Generator
         return bufferPool;
     }
 
-    public ByteBuffer getPayloadWindow(int windowSize, Frame frame)
-    {
-        if (!frame.hasPayload())
-        {
-            return BufferUtil.EMPTY_BUFFER;
-        }
-
-        ByteBuffer buffer;
-
-        // We will create a slice representing the windowSize of this payload
-        if (frame.getPayload().remaining() <= windowSize)
-        {
-            // remaining will fit within window
-            buffer = frame.getPayload().slice();
-            // adjust the frame payload position (mark as read)
-            frame.getPayload().position(frame.getPayload().limit());
-        }
-        else
-        {
-            // remaining is over the window size limit, slice it
-            buffer = frame.getPayload().slice();
-            buffer.limit(windowSize);
-            int offset = frame.getPayload().position(); // offset within frame payload
-            // adjust the frame payload position
-            int newpos = Math.min(offset + windowSize,frame.getPayload().limit());
-            frame.getPayload().position(newpos);
-        }
-
-        return buffer;
-    }
 
     public void setRsv1InUse(boolean rsv1InUse)
     {

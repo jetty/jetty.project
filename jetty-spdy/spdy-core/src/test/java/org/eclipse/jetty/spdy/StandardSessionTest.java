@@ -124,7 +124,7 @@ public class StandardSessionTest
             public Object answer(InvocationOnMock invocation)
             {
                 Object[] args = invocation.getArguments();
-                Callback callback = (Callback)args[1];
+                Callback callback = (Callback)args[0];
                 if (fail)
                     callback.failed(new ClosedChannelException());
                 else

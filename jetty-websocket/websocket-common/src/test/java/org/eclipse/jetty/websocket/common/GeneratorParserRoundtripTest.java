@@ -52,7 +52,7 @@ public class GeneratorParserRoundtripTest
             BufferUtil.flipToFill(out);
             WebSocketFrame frame = new TextFrame().setPayload(message);
             ByteBuffer header = gen.generateHeaderBytes(frame);
-            ByteBuffer payload = gen.getPayloadWindow(frame.getPayloadLength(),frame);
+            ByteBuffer payload = frame.getPayload();
             out.put(header);
             out.put(payload);
 
@@ -99,7 +99,7 @@ public class GeneratorParserRoundtripTest
 
             // Generate Buffer
             ByteBuffer header = gen.generateHeaderBytes(frame);
-            ByteBuffer payload = gen.getPayloadWindow(8192,frame);
+            ByteBuffer payload = frame.getPayload();
             out.put(header);
             out.put(payload);
 

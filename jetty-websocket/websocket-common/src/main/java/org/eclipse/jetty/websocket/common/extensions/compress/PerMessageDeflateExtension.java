@@ -197,7 +197,7 @@ public class PerMessageDeflateExtension extends AbstractExtension
 
                 DataFrame out = new DataFrame(frame);
                 out.setRsv1(true);
-                out.setPooledBuffer(true);
+                out.setBufferPool(getBufferPool());
                 out.setPayload(outbuf);
 
                 if (!compressor.needsInput())

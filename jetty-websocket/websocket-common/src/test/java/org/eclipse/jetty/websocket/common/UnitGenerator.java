@@ -103,7 +103,7 @@ public class UnitGenerator extends Generator
         {
             f.setMask(MASK); // make sure we have the test mask set
             BufferUtil.put(generator.generateHeaderBytes(f),completeBuf);
-            ByteBuffer window = generator.getPayloadWindow(f.getPayloadLength(),f);
+            ByteBuffer window = f.getPayload();
             if (BufferUtil.hasContent(window))
             {
                 BufferUtil.put(window,completeBuf);
