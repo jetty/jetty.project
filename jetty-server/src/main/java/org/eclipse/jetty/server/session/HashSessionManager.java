@@ -388,7 +388,7 @@ public class HashSessionManager extends AbstractSessionManager
 
     /* ------------------------------------------------------------ */
     @Override
-    protected void invalidateSessions() throws Exception
+    protected void shutdownSessions() throws Exception
     {
         // Invalidate all sessions to cause unbind events
         ArrayList<HashedSession> sessions=new ArrayList<HashedSession>(_sessions.values());
@@ -398,11 +398,11 @@ public class HashSessionManager extends AbstractSessionManager
             // If we are called from doStop
             if (isStopping() && _storeDir != null && _storeDir.exists() && _storeDir.canWrite())
             {
-                // Then we only save and remove the session - it is not invalidated.
+                // Then we only save and remove the session from memory- it is not invalidated.
                 for (HashedSession session : sessions)
                 {
                     session.save(false);
-                    removeSession(session,false);
+                    _sessions.remove(session.getClusterId());
                 }
             }
             else

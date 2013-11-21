@@ -44,6 +44,55 @@ import com.mongodb.DBObject;
 import com.mongodb.MongoException;
 
 
+/**
+ * MongoSessionManager
+ *
+ * Clustered session manager using MongoDB as the shared DB instance.
+ * The document model is an outer object that contains the elements:
+ * <ul>
+ *  <li>"id"      : session_id </li>
+ *  <li>"created" : create_time </li>
+ *  <li>"accessed": last_access_time </li>
+ *  <li>"maxIdle" : max_idle_time setting as session was created </li>
+ *  <li>"expiry"  : time at which session should expire </li>
+ *  <li>"valid"   : session_valid </li>
+ *  <li>"context" : a nested object containing 1 nested object per context for which the session id is in use
+ * </ul>
+ * Each of the nested objects inside the "context" element contains:
+ * <ul>
+ *  <li>unique_context_name : nested object containing name:value pairs of the session attributes for that context</li>
+ * </ul>
+ * <p>
+ * One of the name:value attribute pairs will always be the special attribute "__metadata__". The value 
+ * is an object representing a version counter which is incremented every time the attributes change.
+ * </p>
+ * <p>
+ * For example:
+ * <code>
+ * { "_id"       : ObjectId("52845534a40b66410f228f23"), 
+ *    "accessed" :  NumberLong("1384818548903"), 
+ *    "maxIdle"  : 1,
+ *    "context"  : { "::/contextA" : { "A"            : "A", 
+ *                                     "__metadata__" : { "version" : NumberLong(2) } 
+ *                                   },
+ *                   "::/contextB" : { "B"            : "B", 
+ *                                     "__metadata__" : { "version" : NumberLong(1) } 
+ *                                   } 
+ *                 }, 
+ *    "created"  : NumberLong("1384818548903"),
+ *    "expiry"   : NumberLong("1384818549903"),
+ *    "id"       : "w01ijx2vnalgv1sqrpjwuirprp7", 
+ *    "valid"    : true 
+ * }
+ * </code>
+ * </p>
+ * <p>
+ * In MongoDB, the nesting level is indicated by "." separators for the key name. Thus to
+ * interact with a session attribute, the key is composed of:
+ * "context".unique_context_name.attribute_name
+ *  Eg  "context"."::/contextA"."A"
+ *  </p>
+ */
 @ManagedObject("Mongo Session Manager")
 public class MongoSessionManager extends NoSqlSessionManager
 {
@@ -54,14 +103,56 @@ public class MongoSessionManager extends NoSqlSessionManager
     /*
      * strings used as keys or parts of keys in mongo
      */
+    /**
+     * Special attribute for a session that is context-specific
+     */
     private final static String __METADATA = "__metadata__";
 
+    
+    /**
+     * Session id
+     */
     public final static String __ID = "id";
+    
+    /**
+     * Time of session creation
+     */
     private final static String __CREATED = "created";
+    
+    /**
+     * Whether or not session is valid
+     */
     public final static String __VALID = "valid";
+    
+    /**
+     * Time at which session was invalidated
+     */
     public final static String __INVALIDATED = "invalidated";
+    
+    /**
+     * Last access time of session
+     */
     public final static String __ACCESSED = "accessed";
+    
+    /**
+     * Time this session will expire, based on last access time and maxIdle
+     */
+    public final static String __EXPIRY = "expiry";
+    
+    /**
+     * The max idle time of a session (smallest value across all contexts which has a session with the same id)
+     */
+    public final static String __MAX_IDLE = "maxIdle";
+    
+    /**
+     * Name of nested document field containing 1 sub document per context for which the session id is in use
+     */
     private final static String __CONTEXT = "context";   
+    
+    
+    /**
+     * Special attribute per session per context, incremented each time attributes are modified
+     */
     public final static String __VERSION = __METADATA + ".version";
 
     /**
@@ -70,8 +161,16 @@ public class MongoSessionManager extends NoSqlSessionManager
     private String _contextId = null;
 
     
-    private DBCollection _sessions;
-    private DBObject __version_1;
+    /**
+     * Access to MongoDB
+     */
+    private DBCollection _dbSessions;
+    
+    
+    /**
+     * Utility value of 1 for a session version for this context
+     */
+    private DBObject _version_1;
 
 
     /* ------------------------------------------------------------ */
@@ -88,9 +187,7 @@ public class MongoSessionManager extends NoSqlSessionManager
     {
         super.doStart();
         String[] hosts = getContextHandler().getVirtualHosts();
-        //TODO: can this be replaced?
-        /*if (hosts == null || hosts.length == 0)
-            hosts = getContextHandler().getConnectorNames();*/
+
         if (hosts == null || hosts.length == 0)
             hosts = new String[]
             { "::" }; // IPv6 equiv of 0.0.0.0
@@ -102,19 +199,18 @@ public class MongoSessionManager extends NoSqlSessionManager
         }
 
         _contextId = createContextId(hosts,contextPath);
-
-        __version_1 = new BasicDBObject(getContextKey(__VERSION),1);
+        _version_1 = new BasicDBObject(getContextAttributeKey(__VERSION),1);
     }
 
     /* ------------------------------------------------------------ */
-    /* (non-Javadoc)
+    /**
      * @see org.eclipse.jetty.server.session.AbstractSessionManager#setSessionIdManager(org.eclipse.jetty.server.SessionIdManager)
      */
     @Override
     public void setSessionIdManager(SessionIdManager metaManager)
     {
         MongoSessionIdManager msim = (MongoSessionIdManager)metaManager;
-        _sessions=msim.getSessions();
+        _dbSessions=msim.getSessions();
         super.setSessionIdManager(metaManager);
         
     }
@@ -125,7 +221,7 @@ public class MongoSessionManager extends NoSqlSessionManager
     {
         try
         {
-            __log.debug("MongoSessionManager:save:" + session);
+            __log.debug("MongoSessionManager:save session {}", session.getClusterId());
             session.willPassivate();
 
             // Form query for upsert
@@ -137,9 +233,13 @@ public class MongoSessionManager extends NoSqlSessionManager
             BasicDBObject sets = new BasicDBObject();
             BasicDBObject unsets = new BasicDBObject();
 
+            
             // handle valid or invalid
             if (session.isValid())
             {
+                long expiry = (session.getMaxInactiveInterval() > 0?(session.getAccessed()+(1000*getMaxInactiveInterval())):0);
+                __log.debug("MongoSessionManager: calculated expiry {} for session {}", expiry, session.getId());
+                
                 // handle new or existing
                 if (version == null)
                 {
@@ -148,12 +248,26 @@ public class MongoSessionManager extends NoSqlSessionManager
                     version = new Long(1);
                     sets.put(__CREATED,session.getCreationTime());
                     sets.put(__VALID,true);
-                    sets.put(getContextKey(__VERSION),version);
+                   
+                    sets.put(getContextAttributeKey(__VERSION),version);
+                    sets.put(__MAX_IDLE, getMaxInactiveInterval());
+                    sets.put(__EXPIRY, expiry);
                 }
                 else
                 {
                     version = new Long(((Number)version).longValue() + 1);
-                    update.put("$inc",__version_1); 
+                    update.put("$inc",_version_1); 
+                    //if max idle time and/or expiry is smaller for this context, then choose that for the whole session doc
+                    BasicDBObject fields = new BasicDBObject();
+                    fields.append(__MAX_IDLE, true);
+                    fields.append(__EXPIRY, true);
+                    DBObject o = _dbSessions.findOne(new BasicDBObject("id",session.getClusterId()), fields);
+                    Integer currentMaxIdle = (Integer)o.get(__MAX_IDLE);
+                    Long currentExpiry = (Long)o.get(__EXPIRY);
+                    if (currentMaxIdle != null && getMaxInactiveInterval() > 0 && getMaxInactiveInterval() < currentMaxIdle)
+                        sets.put(__MAX_IDLE, getMaxInactiveInterval());
+                    if (currentExpiry != null && expiry > 0 && expiry < currentExpiry)
+                        sets.put(__EXPIRY, currentExpiry);
                 }
                 
                 sets.put(__ACCESSED,session.getAccessed());
@@ -185,8 +299,8 @@ public class MongoSessionManager extends NoSqlSessionManager
             if (!unsets.isEmpty())
                 update.put("$unset",unsets);
 
-            _sessions.update(key,update,upsert,false);
-            __log.debug("MongoSessionManager:save:db.sessions.update(" + key + "," + update + ",true)");
+            _dbSessions.update(key,update,upsert,false);
+            __log.debug("MongoSessionManager:save:db.sessions.update( {}, {}, true) ", key, update);
 
             if (activateAfterSave)
                 session.didActivate();
@@ -204,20 +318,20 @@ public class MongoSessionManager extends NoSqlSessionManager
     @Override
     protected Object refresh(NoSqlSession session, Object version)
     {
-        __log.debug("MongoSessionManager:refresh " + session);
+        __log.debug("MongoSessionManager:refresh session {}", session.getId());
 
         // check if our in memory version is the same as what is on the disk
         if (version != null)
         {
-            DBObject o = _sessions.findOne(new BasicDBObject(__ID,session.getClusterId()),__version_1);
+            DBObject o = _dbSessions.findOne(new BasicDBObject(__ID,session.getClusterId()),_version_1);
 
             if (o != null)
             {
-                Object saved = getNestedValue(o, getContextKey(__VERSION));
+                Object saved = getNestedValue(o, getContextAttributeKey(__VERSION));
                 
                 if (saved != null && saved.equals(version))
                 {
-                    __log.debug("MongoSessionManager:refresh not needed");
+                    __log.debug("MongoSessionManager:refresh not needed session {}", session.getId());
                     return version;
                 }
                 version = saved;
@@ -225,12 +339,12 @@ public class MongoSessionManager extends NoSqlSessionManager
         }
 
         // If we are here, we have to load the object
-        DBObject o = _sessions.findOne(new BasicDBObject(__ID,session.getClusterId()));
+        DBObject o = _dbSessions.findOne(new BasicDBObject(__ID,session.getClusterId()));
 
         // If it doesn't exist, invalidate
         if (o == null)
         {
-            __log.debug("MongoSessionManager:refresh:marking invalid, no object");
+            __log.debug("MongoSessionManager:refresh:marking session {} invalid, no object", session.getClusterId());
             session.invalidate();
             return null;
         }
@@ -239,7 +353,7 @@ public class MongoSessionManager extends NoSqlSessionManager
         Boolean valid = (Boolean)o.get(__VALID);
         if (valid == null || !valid)
         {
-            __log.debug("MongoSessionManager:refresh:marking invalid, valid flag " + valid);
+            __log.debug("MongoSessionManager:refresh:marking session {} invalid, valid flag {}", session.getClusterId(), valid);
             session.invalidate();
             return null;
         }
@@ -251,17 +365,15 @@ public class MongoSessionManager extends NoSqlSessionManager
         {
             session.clearAttributes();
             
-            DBObject attrs = (DBObject)getNestedValue(o,getContextKey());
-            
+            DBObject attrs = (DBObject)getNestedValue(o,getContextKey());         
             
             if (attrs != null)
             {
                 for (String name : attrs.keySet())
                 {
+                    //skip special metadata field which is not one of the session attributes
                     if (__METADATA.equals(name))
-                    {
                         continue;
-                    }
 
                     String attr = decodeName(name);
                     Object value = decodeValue(attrs.get(name));
@@ -301,7 +413,7 @@ public class MongoSessionManager extends NoSqlSessionManager
                 update.put("$set",sets);
             }            
             
-            _sessions.update(key,update,false,false);
+            _dbSessions.update(key,update,false,false);
             
             session.didActivate();
 
@@ -319,51 +431,51 @@ public class MongoSessionManager extends NoSqlSessionManager
     @Override
     protected synchronized NoSqlSession loadSession(String clusterId)
     {
-        DBObject o = _sessions.findOne(new BasicDBObject(__ID,clusterId));
+        DBObject o = _dbSessions.findOne(new BasicDBObject(__ID,clusterId));
         
-        __log.debug("MongoSessionManager:loaded " + o);
-        
+        __log.debug("MongoSessionManager:id={} loaded={}", clusterId, o);
         if (o == null)
-        {
             return null;
-        }
         
         Boolean valid = (Boolean)o.get(__VALID);
+        __log.debug("MongoSessionManager:id={} valid={}", clusterId, valid);
         if (valid == null || !valid)
-        {
             return null;
-        }
         
         try
         {
-            Object version = o.get(getContextKey(__VERSION));
+            Object version = o.get(getContextAttributeKey(__VERSION));
             Long created = (Long)o.get(__CREATED);
             Long accessed = (Long)o.get(__ACCESSED);
           
-            NoSqlSession session = new NoSqlSession(this,created,accessed,clusterId,version);
+            NoSqlSession session = null;
 
-            // get the attributes for the context
+            // get the session for the context
             DBObject attrs = (DBObject)getNestedValue(o,getContextKey());
 
-            __log.debug("MongoSessionManager:attrs: " + attrs);
+            __log.debug("MongoSessionManager:attrs {}", attrs);
             if (attrs != null)
             {
+                __log.debug("MongoSessionManager: session {} present for context {}", clusterId, getContextKey());
+                //only load a session if it exists for this context
+                session = new NoSqlSession(this,created,accessed,clusterId,version);
+                
                 for (String name : attrs.keySet())
                 {
+                    //skip special metadata attribute which is not one of the actual session attributes
                     if ( __METADATA.equals(name) )
-                    {
                         continue;
-                    }
                     
                     String attr = decodeName(name);
                     Object value = decodeValue(attrs.get(name));
 
                     session.doPutOrRemove(attr,value);
                     session.bindValue(attr,value);
-                    
                 }
+                session.didActivate();
             }
-            session.didActivate();
+            else
+                __log.debug("MongoSessionManager: session  {} not present for context {}",clusterId, getContextKey());        
 
             return session;
         }
@@ -374,11 +486,17 @@ public class MongoSessionManager extends NoSqlSessionManager
         return null;
     }
 
+    
+    
     /*------------------------------------------------------------ */
+    /** 
+     * Remove the per-context sub document for this session id.
+     * @see org.eclipse.jetty.nosql.NoSqlSessionManager#remove(org.eclipse.jetty.nosql.NoSqlSession)
+     */
     @Override
     protected boolean remove(NoSqlSession session)
     {
-        __log.debug("MongoSessionManager:remove:session " + session.getClusterId());
+        __log.debug("MongoSessionManager:remove:session {} for context {}",session.getClusterId(), getContextKey());
 
         /*
          * Check if the session exists and if it does remove the context
@@ -386,7 +504,7 @@ public class MongoSessionManager extends NoSqlSessionManager
          */
         BasicDBObject key = new BasicDBObject(__ID,session.getClusterId());
         
-        DBObject o = _sessions.findOne(key,__version_1);
+        DBObject o = _dbSessions.findOne(key,_version_1);
 
         if (o != null)
         {
@@ -394,7 +512,7 @@ public class MongoSessionManager extends NoSqlSessionManager
             BasicDBObject unsets = new BasicDBObject();
             unsets.put(getContextKey(),1);
             remove.put("$unset",unsets);
-            _sessions.update(key,remove);
+            _dbSessions.update(key,remove);
 
             return true;
         }
@@ -404,20 +522,22 @@ public class MongoSessionManager extends NoSqlSessionManager
         }
     }
 
-    /*------------------------------------------------------------ */
+    
+    
+    /** 
+     * @see org.eclipse.jetty.nosql.NoSqlSessionManager#expire(java.lang.String)
+     */
     @Override
-    protected void invalidateSession(String idInCluster)
+    protected void expire (String idInCluster)
     {
-        __log.debug("MongoSessionManager:invalidateSession:invalidating " + idInCluster);
+        __log.debug("MongoSessionManager:expire session {} ", idInCluster);
+
+        //Expire the session for this context
+        super.expire(idInCluster);
         
-        super.invalidateSession(idInCluster);
-        
-        /*
-         * pull back the 'valid' value, we can check if its false, if is we don't need to
-         * reset it to false
-         */
+        //If the outer session document has not already been marked invalid, do so.
         DBObject validKey = new BasicDBObject(__VALID, true);       
-        DBObject o = _sessions.findOne(new BasicDBObject(__ID,idInCluster), validKey);
+        DBObject o = _dbSessions.findOne(new BasicDBObject(__ID,idInCluster), validKey);
         
         if (o != null && (Boolean)o.get(__VALID))
         {
@@ -428,21 +548,24 @@ public class MongoSessionManager extends NoSqlSessionManager
             update.put("$set",sets);
                         
             BasicDBObject key = new BasicDBObject(__ID,idInCluster);
-
-            _sessions.update(key,update);
+            _dbSessions.update(key,update);
         }       
     }
     
+    
     /*------------------------------------------------------------ */
+    /** 
+     * Change the session id. Note that this will change the session id for all contexts for which the session id is in use.
+     * @see org.eclipse.jetty.nosql.NoSqlSessionManager#update(org.eclipse.jetty.nosql.NoSqlSession, java.lang.String, java.lang.String)
+     */
     @Override
     protected void update(NoSqlSession session, String newClusterId, String newNodeId) throws Exception
     {
-        // Form query for update - use object's existing session id
         BasicDBObject key = new BasicDBObject(__ID, session.getClusterId());
         BasicDBObject sets = new BasicDBObject();
         BasicDBObject update = new BasicDBObject(__ID, newClusterId);
         sets.put("$set", update);
-        _sessions.update(key, sets, false, false);
+        _dbSessions.update(key, sets, false, false);
     }
 
     /*------------------------------------------------------------ */
@@ -527,9 +650,13 @@ public class MongoSessionManager extends NoSqlSessionManager
     }
     
     /*------------------------------------------------------------ */
-    private String getContextKey(String keybit)
+    /** Get a dot separated key for 
+     * @param key
+     * @return
+     */
+    private String getContextAttributeKey(String attr)
     {
-    	return __CONTEXT + "." + _contextId + "." + keybit;
+    	return getContextKey()+ "." + attr;
     }
     
     @ManagedOperation(value="purge invalid sessions in the session store based on normal criteria", impact="ACTION")
@@ -567,7 +694,7 @@ public class MongoSessionManager extends NoSqlSessionManager
     @ManagedAttribute("total number of known sessions in the store")
     public long getSessionStoreCount()
     {
-        return _sessions.find().count();      
+        return _dbSessions.find().count();      
     }
     
     /*------------------------------------------------------------ */

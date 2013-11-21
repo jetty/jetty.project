@@ -84,7 +84,6 @@ public class JdbcTestServer extends AbstractTestServer
             idManager.setScavengeInterval(_scavengePeriod);
             idManager.setWorkerName("w"+(__workers++));
             idManager.setDriverInfo(DRIVER_CLASS, (config==null?DEFAULT_CONNECTION_URL:config));
-            //System.err.println("new jdbcidmgr inst="+idManager);
             return idManager;
         }
     }
@@ -102,7 +101,7 @@ public class JdbcTestServer extends AbstractTestServer
     }
 
     
-    public boolean existsInSessionTable(String id)
+    public boolean existsInSessionIdTable(String id)
     throws Exception
     {
         Class.forName(DRIVER_CLASS);
@@ -121,6 +120,39 @@ public class JdbcTestServer extends AbstractTestServer
                 con.close();
         }
     }
+    
+    
+    public boolean existsInSessionTable(String id, boolean verbose)
+    throws Exception
+    {
+        Class.forName(DRIVER_CLASS);
+        Connection con = null;
+        try
+        {
+            con = DriverManager.getConnection(DEFAULT_CONNECTION_URL);
+            PreparedStatement statement = con.prepareStatement("select * from "+((JDBCSessionIdManager)_sessionIdManager)._sessionTable+" where sessionId = ?");
+            statement.setString(1, id);
+            ResultSet result = statement.executeQuery();
+            if (verbose)
+            {
+                boolean results = false;
+                while (result.next())
+                {
+                    results = true;
+                }
+                return results;
+            }
+            else
+                return result.next();
+        }
+        finally
+        {
+            if (con != null)
+                con.close();
+        }
+    }
+    
+    
     
     public Set<String> getSessionIds ()
     throws Exception

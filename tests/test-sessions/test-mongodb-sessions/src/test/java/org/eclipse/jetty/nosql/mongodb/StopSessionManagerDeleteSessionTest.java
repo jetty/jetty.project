@@ -19,8 +19,8 @@
 package org.eclipse.jetty.nosql.mongodb;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.net.UnknownHostException;
@@ -33,8 +33,8 @@ import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.Test;
 
 import com.mongodb.BasicDBObject;
@@ -43,13 +43,7 @@ import com.mongodb.DBObject;
 import com.mongodb.Mongo;
 import com.mongodb.MongoException;
 
-/**
- * PurgeInvalidSessionTest
- *
- *
- *
- */
-public class PurgeInvalidSessionTest
+public class StopSessionManagerDeleteSessionTest
 {
     public MongoTestServer createServer(int port, int max, int scavenge)
     {
@@ -58,30 +52,28 @@ public class PurgeInvalidSessionTest
         return server;
     }
     
-    
-    
+    /**
+     * @throws Exception
+     */
     @Test
-    public void testPurgeInvalidSession() throws Exception
+    public void testStopSessionManagerDeleteSession() throws Exception
     {
         String contextPath = "";
         String servletMapping = "/server";
-        long purgeDelay = 1000; //1 sec
-        long purgeInvalidAge = 1000; //1 sec
-        long purgeValidAge = 1000;
-
-        //ensure scavenging is turned off so the purger gets a chance to find the session
+        
         MongoTestServer server = createServer(0, 1, 0);
         ServletContextHandler context = server.addContext(contextPath);
-        context.addServlet(TestServlet.class, servletMapping);
+        ServletHolder holder = new ServletHolder();
+        TestServlet servlet = new TestServlet();
+        holder.setServlet(servlet);
+        
+        context.addServlet(holder, servletMapping);
         
         MongoSessionManager sessionManager = (MongoSessionManager)context.getSessionHandler().getSessionManager();
+        sessionManager.setPreserveOnStop(false);
         MongoSessionIdManager idManager = (MongoSessionIdManager)server.getServer().getSessionIdManager();
         idManager.setPurge(true);
-        idManager.setPurgeDelay(purgeDelay); 
-        idManager.setPurgeInvalidAge(purgeInvalidAge); //purge invalid sessions older than 
-        idManager.setPurgeValidAge(purgeValidAge); //purge valid sessions older than
-        
-        
+
         
         server.start();
         int port=server.getPort();
@@ -99,19 +91,12 @@ public class PurgeInvalidSessionTest
                 // Mangle the cookie, replacing Path with $Path, etc.
                 sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
-                //make a request to invalidate the session
-                Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=invalidate");
-                request.header("Cookie", sessionCookie);
-                response = request.send();
-                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+                //stop the session manager
+                sessionManager.stop();
                 
-                Thread.currentThread().sleep(3*purgeDelay); //sleep long enough for purger to have run
+                //check the database to see that the session has been marked invalid
+                servlet.checkSessionInDB(false);
                 
-                //make a request using previous session to test if its still there
-                request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=test");
-                request.header("Cookie", sessionCookie);
-                response = request.send();
-                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
             }
             finally
             {
@@ -122,14 +107,13 @@ public class PurgeInvalidSessionTest
         {
             server.stop();
         }
-
     }
     
     
     public static class TestServlet extends HttpServlet
     {
         DBCollection _sessions;
-
+        String _id;
 
         public TestServlet() throws UnknownHostException, MongoException
         {
@@ -137,6 +121,19 @@ public class PurgeInvalidSessionTest
             _sessions = new Mongo().getDB("HttpSessions").getCollection("sessions");
         }
 
+        public void checkSessionInDB (boolean expectedValid)
+        {
+            DBObject dbSession = _sessions.findOne(new BasicDBObject("id", _id));
+            assertTrue(dbSession != null);
+            assertEquals(expectedValid, dbSession.get("valid"));
+            if (!expectedValid)
+                assertNotNull(dbSession.get(MongoSessionManager.__INVALIDATED));
+        }
+
+        public String getId()
+        {
+            return _id;
+        }
         
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
@@ -147,29 +144,13 @@ public class PurgeInvalidSessionTest
                 HttpSession session = request.getSession(true);
                 session.setAttribute("foo", "bar");
                 assertTrue(session.isNew());
-            }
-            else if ("invalidate".equals(action))
-            {  
-                HttpSession existingSession = request.getSession(false);
-                assertNotNull(existingSession);
-                String id = existingSession.getId();
-                id = (id.indexOf(".") > 0?id.substring(0, id.indexOf(".")):id);
-                DBObject dbSession = _sessions.findOne(new BasicDBObject("id",id)); 
-                assertNotNull(dbSession);
-                
-                existingSession.invalidate();
-                
-                //still in db, just marked as invalid
-                dbSession = _sessions.findOne(new BasicDBObject("id", id));       
-                assertNotNull(dbSession);
-                assertTrue(dbSession.containsField(MongoSessionManager.__INVALIDATED));
+                _id = session.getId();
             }
             else if ("test".equals(action))
             {
                 String id = request.getRequestedSessionId();
                 assertNotNull(id);
-       
-                id = (id.indexOf(".") > 0?id.substring(0, id.indexOf(".")):id);
+                id = id.substring(0, id.indexOf("."));
   
                 HttpSession existingSession = request.getSession(false);
                 assertTrue(existingSession == null);

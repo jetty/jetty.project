@@ -20,8 +20,10 @@ package org.eclipse.jetty.server.session;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,6 +42,7 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.junit.Assert;
 import org.junit.Test;
 
 /**
@@ -78,7 +81,7 @@ public abstract class AbstractSessionInvalidateAndCreateTest
     {
         try
         {
-            Thread.sleep(scavengePeriod * 2500L);
+            Thread.sleep(scavengePeriod * 3000L);
         }
         catch (InterruptedException e)
         {
@@ -128,7 +131,7 @@ public abstract class AbstractSessionInvalidateAndCreateTest
                 ContentResponse response2 = request2.send();
                 assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
 
-                // Wait for the scavenger to run, waiting 2.5 times the scavenger period
+                // Wait for the scavenger to run, waiting 3 times the scavenger period
                 pause(scavengePeriod);
 
                 //test that the session created in the last test is scavenged:
@@ -152,6 +155,20 @@ public abstract class AbstractSessionInvalidateAndCreateTest
     public static class TestServlet extends HttpServlet
     {
         private boolean unbound = false;
+        
+        public class MySessionBindingListener implements HttpSessionBindingListener, Serializable
+        {
+
+            public void valueUnbound(HttpSessionBindingEvent event)
+            {
+                unbound = true;
+            }
+
+            public void valueBound(HttpSessionBindingEvent event)
+            {
+
+            }
+        }
 
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse) throws ServletException, IOException
@@ -167,25 +184,16 @@ public abstract class AbstractSessionInvalidateAndCreateTest
                 HttpSession session = request.getSession(false);
                 if (session != null)
                 {
+                    //invalidate existing session
                     session.invalidate();
 
                     //now make a new session
                     session = request.getSession(true);
                     session.setAttribute("identity", "session2");
-                    session.setAttribute("listener", new HttpSessionBindingListener()
-                    {
-
-                        public void valueUnbound(HttpSessionBindingEvent event)
-                        {
-                            unbound = true;
-                        }
-
-                        public void valueBound(HttpSessionBindingEvent event)
-                        {
-
-                        }
-                    });
+                    session.setAttribute("listener", new MySessionBindingListener());
                 }
+                else
+                    fail("Session already missing");
             }
         }
     }

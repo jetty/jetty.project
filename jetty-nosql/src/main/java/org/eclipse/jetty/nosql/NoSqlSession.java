@@ -45,7 +45,6 @@ public class NoSqlSession extends AbstractSession
     {
         super(manager, request);
         _manager=manager;
-        save(true);
         _active.incrementAndGet();
     }
     
@@ -88,6 +87,14 @@ public class NoSqlSession extends AbstractSession
             _dirty.add(name);
         }
     }
+    
+    
+
+    @Override
+    protected void timeout() throws IllegalStateException
+    {
+        super.timeout();
+    }
 
     /*
      * a boolean version of the setAttribute method that lets us manage the _dirty set
@@ -125,7 +132,7 @@ public class NoSqlSession extends AbstractSession
     @Override
     protected boolean access(long time)
     {
-        __log.debug("NoSqlSession:access:active "+_active);
+        __log.debug("NoSqlSession:access:active {} time {}", _active, time);
         if (_active.incrementAndGet()==1)
         {
             long period=_manager.getStalePeriod()*1000L;
@@ -169,6 +176,7 @@ public class NoSqlSession extends AbstractSession
     protected void doInvalidate() throws IllegalStateException
     {
         super.doInvalidate();
+        //jb why save here? if the session is invalidated it should be removed
         save(false);
     }
     
@@ -232,7 +240,4 @@ public class NoSqlSession extends AbstractSession
     {
         super.setNodeId(nodeId);
     }
-    
-    
-    
 }
