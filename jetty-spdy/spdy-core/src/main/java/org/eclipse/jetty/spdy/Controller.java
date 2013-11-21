@@ -24,7 +24,7 @@ import org.eclipse.jetty.util.Callback;
 
 public interface Controller
 {
-    public void write(ByteBuffer buffer, Callback callback);
+    public void write(Callback callback, ByteBuffer... buffers);
 
     public void close(boolean onlyOutput);
 }

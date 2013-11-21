@@ -41,31 +41,37 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public abstract class IteratingCallback implements Callback
 {
-    private enum State { WAITING, ITERATING, SUCCEEDED, FAILED };
-    private final AtomicReference<State> _state = new AtomicReference<>(State.WAITING);
+    protected enum State { IDLE, SCHEDULED, ITERATING, SUCCEEDED, FAILED };
+    private final AtomicReference<State> _state = new AtomicReference<>(State.IDLE);
     
     public IteratingCallback()
     {
     }
     
-    /* ------------------------------------------------------------ */
+    abstract protected void completed();
+    
     /**
-     * Process a subtask.
-     * <p>Called by {@link #iterate()} to process a sub task of the overall task
-     * <p>
-     * @return True if the total task is complete. If false is returned
-     * then this Callback must be scheduled to receive either a call to 
-     * {@link #succeeded()} or {@link #failed(Throwable)}.
+     * Method called by iterate to process the task. 
+     * @return Then next state:
+     * <dl>
+     * <dt>SUCCEEDED</dt><dd>if process returns true</dd>
+     * <dt>SCHEDULED</dt><dd>This callback has been scheduled and {@link #succeeded()} or {@link #failed(Throwable)} will evenutally be called (if they have not been called already!)</dd>
+     * <dt>IDLE</dt><dd>no progress can be made and another call to {@link #iterate()} is required in order to progress the task</dd>
+     * <dt>FAILED</dt><dd>processing has failed</dd>
+     * </dl>
+     * 
      * @throws Exception
      */
-    abstract protected boolean process() throws Exception;
-    
-    abstract protected void completed();
+    abstract protected State process() throws Exception;
+     
     
     /* ------------------------------------------------------------ */
     /** This method is called initially to start processing and 
      * is then called by subsequent sub task success to continue
-     * processing.
+     * processing.  If {@link #process()} returns IDLE, then iterate should be called 
+     * again to restart processing.
+     * It is safe to call iterate multiple times as only the first thread to move 
+     * the state out of IDLE will actually do any iteration and processing.
      */
     public void iterate()
     {
@@ -74,27 +80,40 @@ public abstract class IteratingCallback implements Callback
             // Keep iterating as long as succeeded() is called during process()
             // If we are in WAITING state, either this is the first iteration or
             // succeeded()/failed() were called already.
-            while(_state.compareAndSet(State.WAITING,State.ITERATING))
+            while(_state.compareAndSet(State.IDLE,State.ITERATING))
             {
-                // Make some progress by calling process()
-                if (process())
+                State next = process();
+                switch (next)
                 {
-                    // A true return indicates we are finished and no further callbacks
-                    // are scheduled. So we must still be ITERATING.
-                    if (_state.compareAndSet(State.ITERATING,State.SUCCEEDED))
+                    case SUCCEEDED:
+                        // The task has complete, there should have been no callbacks
+                        if (!_state.compareAndSet(State.ITERATING,State.SUCCEEDED))
+                            throw new IllegalStateException("state="+_state.get());
                         completed();
-                    else
-                        throw new IllegalStateException("Already "+_state.get());
-                    return;
+                        return;
+                        
+                    case SCHEDULED:
+                        // This callback has been scheduled, so it may or may not have 
+                        // already been called back.  Let's find out
+                        if (_state.compareAndSet(State.ITERATING,State.SCHEDULED))
+                            // not called back yet, so lets wait for it
+                            return;
+                        // call back must have happened, so lets iterate
+                        continue;
+                        
+                    case IDLE:
+                        // No more progress can be made.  Wait for another call to iterate
+                        if (!_state.compareAndSet(State.ITERATING,State.IDLE))
+                            throw new IllegalStateException("state="+_state.get());
+                        return;
+                        
+                    case FAILED:
+                        _state.set(State.FAILED);
+                        return;
+                        
+                    default:
+                        throw new IllegalStateException("state="+_state.get()+" next="+next);
                 }
-                // else a callback has been scheduled.  If it has not happened yet,
-                // we will still be ITERATING
-                else if (_state.compareAndSet(State.ITERATING,State.WAITING))
-                    // no callback yet, so break the loop and wait for it
-                    break;
-
-                // The callback must have happened and we are either WAITING already or FAILED
-                // the loop test will work out which
             }
         }
         catch(Exception e)
@@ -108,7 +127,7 @@ public abstract class IteratingCallback implements Callback
     public void succeeded()
     {
         // Try a short cut for the fast method.  If we are still iterating
-        if (_state.compareAndSet(State.ITERATING,State.WAITING))
+        if (_state.compareAndSet(State.ITERATING,State.IDLE))
             // then next loop will continue processing, so nothing to do here
             return;
 
@@ -118,17 +137,22 @@ public abstract class IteratingCallback implements Callback
             switch(_state.get())
             {
                 case ITERATING:
-                    if (_state.compareAndSet(State.ITERATING,State.WAITING))
+                    if (_state.compareAndSet(State.ITERATING,State.IDLE))
                         break loop;
                     continue;
                     
-                case WAITING:
-                    // we are really waiting, so use this callback thread to iterate some more 
+                case SCHEDULED:
+                    if (_state.compareAndSet(State.SCHEDULED,State.IDLE))
+                        iterate();
+                    break loop;
+                    
+                case IDLE:
+                    // TODO - remove this once old ICB usages updated
                     iterate();
                     break loop;
                     
                 default:
-                    throw new IllegalStateException("Already "+_state.get());
+                    throw new IllegalStateException(this+" state="+_state.get());
             }
         }
     }
@@ -151,14 +175,35 @@ public abstract class IteratingCallback implements Callback
                         break loop;
                     continue;
                     
-                case WAITING:
-                    if (_state.compareAndSet(State.WAITING,State.FAILED))
+                case SCHEDULED:
+                    if (_state.compareAndSet(State.SCHEDULED,State.FAILED))
                         break loop;
                     continue;
                     
+                case IDLE:
+                    // TODO - remove this once old ICB usages updated
+                    if (_state.compareAndSet(State.IDLE,State.FAILED))
+                        break loop;
+                    continue;
+
                 default:
-                    throw new IllegalStateException("Already "+_state.get(),x);
+                    throw new IllegalStateException("state="+_state.get(),x);
             }
         }
+    }
+
+    public boolean isIdle()
+    {
+        return _state.get()==State.IDLE;
+    }
+    
+    public boolean isFailed()
+    {
+        return _state.get()==State.FAILED;
+    }
+    
+    public boolean isSucceeded()
+    {
+        return _state.get()==State.SUCCEEDED;
     }
 }

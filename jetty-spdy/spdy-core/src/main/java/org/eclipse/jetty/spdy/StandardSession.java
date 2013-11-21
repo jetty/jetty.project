@@ -1162,8 +1162,6 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
             {
                 IStream stream = getStream();
                 int windowSize = stream.getWindowSize();
-                if (windowSize <= 0)
-                    return null;
 
                 size = dataInfo.available();
                 if (size > windowSize)

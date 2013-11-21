@@ -32,6 +32,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.OpCode;
@@ -42,15 +43,15 @@ import org.eclipse.jetty.websocket.common.frames.DataFrame;
  */
 public class WriteBytesProvider implements Callback
 {
-    private class FrameEntry
+    private class FrameEntry 
     {
         protected final AtomicBoolean failed = new AtomicBoolean(false);
         protected final Frame frame;
-        protected final Callback callback;
+        protected final WriteCallback callback;
         /** holds reference to header ByteBuffer, as it needs to be released on success/failure */
         private ByteBuffer headerBuffer;
 
-        public FrameEntry(Frame frame, Callback callback)
+        public FrameEntry(Frame frame, WriteCallback callback)
         {
             this.frame = frame;
             this.callback = callback;
@@ -69,7 +70,7 @@ public class WriteBytesProvider implements Callback
             return generator.getPayloadWindow(bufferSize,frame);
         }
 
-        public void notifyFailure(Throwable t)
+        public void notifyFailed(Throwable t)
         {
             freeBuffers();
             if (failed.getAndSet(true) == false)
@@ -87,7 +88,7 @@ public class WriteBytesProvider implements Callback
             }
             try
             {
-                callback.succeeded();
+                callback.writeSuccess();
             }
             catch (Throwable t)
             {
@@ -166,7 +167,7 @@ public class WriteBytesProvider implements Callback
         failAll(new EOFException("Connection has been disconnected"));
     }
 
-    public void enqueue(Frame frame, Callback callback)
+    public void enqueue(Frame frame, WriteCallback callback)
     {
         Objects.requireNonNull(frame);
         LOG.debug("enqueue({}, {})",frame,callback);
@@ -178,7 +179,7 @@ public class WriteBytesProvider implements Callback
                 LOG.debug("Write is closed: {} {}",frame,callback);
                 if (callback != null)
                 {
-                    callback.failed(new IOException("Write is closed"));
+                    callback.writeFailed(new IOException("Write is closed"));
                 }
                 return;
             }
@@ -240,7 +241,7 @@ public class WriteBytesProvider implements Callback
             // notify entry callbacks
             for (FrameEntry entry : callbacks)
             {
-                entry.notifyFailure(t);
+                entry.notifyFailed(t);
             }
         }
     }
@@ -328,7 +329,7 @@ public class WriteBytesProvider implements Callback
         }
     }
 
-    private void notifySafeFailure(Callback callback, Throwable t)
+    private void notifySafeFailure(WriteCallback callback, Throwable t)
     {
         if (callback == null)
         {
@@ -336,7 +337,7 @@ public class WriteBytesProvider implements Callback
         }
         try
         {
-            callback.failed(t);
+            callback.writeFailed(t);
         }
         catch (Throwable e)
         {

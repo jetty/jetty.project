@@ -21,11 +21,12 @@ package org.eclipse.jetty.websocket.common.io;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.websocket.api.WriteCallback;
 
 /**
  * Tracking Callback for testing how the callbacks are used.
  */
-public class TrackingCallback implements Callback
+public class TrackingCallback implements Callback, WriteCallback
 {
     private AtomicInteger called = new AtomicInteger();
     private boolean success = false;
@@ -64,5 +65,17 @@ public class TrackingCallback implements Callback
     public int getCallCount()
     {
         return called.get();
+    }
+
+    @Override
+    public void writeFailed(Throwable x)
+    {
+        failed(x);
+    }
+
+    @Override
+    public void writeSuccess()
+    {
+        succeeded();
     }
 }

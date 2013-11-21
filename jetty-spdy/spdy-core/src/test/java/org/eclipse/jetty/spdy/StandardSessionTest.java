@@ -132,7 +132,7 @@ public class StandardSessionTest
                 return null;
             }
         })
-                .when(controller).write(any(ByteBuffer.class), any(Callback.class));
+                .when(controller).write(any(Callback.class), any(ByteBuffer.class));
     }
 
     @Test
@@ -451,7 +451,7 @@ public class StandardSessionTest
         // second data frame should fail without controller.write() as the connection is expected to be broken after first controller.write() call failed.
         stream.data(new StringDataInfo(5, TimeUnit.SECONDS, "data", false), callback);
 
-        verify(controller, times(1)).write(any(ByteBuffer.class), any(Callback.class));
+        verify(controller, times(1)).write(any(Callback.class), any(ByteBuffer.class));
         assertThat("Callback.failed has been called twice", failedCalledLatch.await(5, TimeUnit.SECONDS), is(true));
     }
 
@@ -465,7 +465,7 @@ public class StandardSessionTest
         session.rst(new RstInfo(stream.getId(), StreamStatus.INVALID_STREAM));
         stream.headers(new HeadersInfo(headers, true));
 
-        verify(controller, times(3)).write(any(ByteBuffer.class), any(Callback.class));
+        verify(controller, times(3)).write(any(Callback.class), any(ByteBuffer.class));
     }
 
     @Test
@@ -548,7 +548,7 @@ public class StandardSessionTest
         long lastStreamId = 0;
 
         @Override
-        public void write(ByteBuffer buffer, Callback callback)
+        public void write(Callback callback, ByteBuffer... buffers)
         {
             StandardSession.FrameBytes frameBytes = (StandardSession.FrameBytes)callback;
 

@@ -564,7 +564,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             LOG.debug("outgoingFrame({}, {})",frame,callback);
         }
 
-        writeBytes.enqueue(frame,WriteCallbackWrapper.wrap(callback));
+        writeBytes.enqueue(frame,callback);
 
         flush();
     }
