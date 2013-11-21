@@ -45,6 +45,8 @@ import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugin.descriptor.PluginDescriptor;
 import org.apache.maven.project.MavenProject;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceCollection;
 
 
 /**
@@ -173,9 +175,16 @@ public class JettyRunForkedMojo extends AbstractMojo
      * @parameter expression="${basedir}/src/main/webapp"
      *
      */
-    private File webAppSourceDirectory;   
+    private File webAppSourceDirectory;
 
-    
+    /**
+     * Resource Bases
+     *
+     * @parameter
+     *
+     */
+     private String[] resourceBases;
+
     /**
      * If true, the webAppSourceDirectory will be first on the list of 
      * resources that form the resource base for the webapp. If false, 
@@ -436,20 +445,30 @@ public class JettyRunForkedMojo extends AbstractMojo
             
             props.put("tmp.dir.persist", Boolean.toString(persistTempDirectory));
 
-            //sort out base dir of webapp
-            if (webAppSourceDirectory == null || !webAppSourceDirectory.exists())
+            if (resourceBases == null)
             {
-                webAppSourceDirectory = new File (project.getBasedir(), DEFAULT_WEBAPP_SRC);       
-                if (!webAppSourceDirectory.exists())
+                //sort out base dir of webapp
+                if (webAppSourceDirectory == null || !webAppSourceDirectory.exists())
                 {
-                    //try last resort of making a fake empty dir
-                    File target = new File(project.getBuild().getDirectory());
-                    webAppSourceDirectory = new File(target, FAKE_WEBAPP);
+                    webAppSourceDirectory = new File (project.getBasedir(), DEFAULT_WEBAPP_SRC);
                     if (!webAppSourceDirectory.exists())
-                        webAppSourceDirectory.mkdirs();  
+                    {
+                        //try last resort of making a fake empty dir
+                        File target = new File(project.getBuild().getDirectory());
+                        webAppSourceDirectory = new File(target, FAKE_WEBAPP);
+                        if (!webAppSourceDirectory.exists())
+                            webAppSourceDirectory.mkdirs();
+                    }
                 }
+                resourceBases = new String[] { webAppSourceDirectory.getAbsolutePath() };
             }
-            props.put("base.dir", webAppSourceDirectory.getAbsolutePath());
+            StringBuffer rb = new StringBuffer(resourceBases[0]);
+            for (int i=1; i<resourceBases.length; i++) 
+            {
+                rb.append(File.pathSeparator);
+                rb.append(resourceBases[i]);
+            }
+            props.put("base.dirs", rb.toString());
 
             //sort out the resource base directories of the webapp
             StringBuilder builder = new StringBuilder();
@@ -581,17 +600,17 @@ public class JettyRunForkedMojo extends AbstractMojo
     private List<File> getDependencyFiles ()
     {
         List<File> dependencyFiles = new ArrayList<File>();
-    
+
         for ( Iterator<Artifact> iter = project.getArtifacts().iterator(); iter.hasNext(); )
         {
             Artifact artifact = (Artifact) iter.next();
-            
-            if (((!Artifact.SCOPE_PROVIDED.equals(artifact.getScope())) && (!Artifact.SCOPE_TEST.equals( artifact.getScope()))) 
+            // Test never appears here !
+            if (((!Artifact.SCOPE_PROVIDED.equals(artifact.getScope())) && (!Artifact.SCOPE_TEST.equals( artifact.getScope())))
                     ||
                 (useTestScope && Artifact.SCOPE_TEST.equals( artifact.getScope())))
             {
                 dependencyFiles.add(artifact.getFile());
-                getLog().debug( "Adding artifact " + artifact.getFile().getName() + " for WEB-INF/lib " );   
+                getLog().debug( "Adding artifact " + artifact.getFile().getName() + " for WEB-INF/lib " );
             }
         }
         
@@ -829,7 +848,7 @@ public class JettyRunForkedMojo extends AbstractMojo
                 if (getLog().isDebugEnabled()) getLog().debug("Adding provided jar: "+jar);
             }
         }
-        
+
         return classPath.toString();
     }
 
