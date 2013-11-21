@@ -64,12 +64,17 @@ public class Generator
     private final ByteBufferPool bufferPool;
     private final boolean validating;
 
-    /** Is there an extension using RSV1 */
-    private boolean rsv1InUse = false;
-    /** Is there an extension using RSV2 */
-    private boolean rsv2InUse = false;
-    /** Is there an extension using RSV3 */
-    private boolean rsv3InUse = false;
+    /** 
+     * Are any flags in use
+     * <p>
+     * 
+     * <pre>
+     *   0100_0000 (0x40) = rsv1
+     *   0010_0000 (0x20) = rsv2
+     *   0001_0000 (0x10) = rsv3
+     * </pre>
+     */
+    private byte flagsInUse=0x00;
 
     /**
      * Construct Generator with provided policy and bufferPool
@@ -114,17 +119,17 @@ public class Generator
          * MUST be 0 unless an extension is negotiated that defines meanings for non-zero values. If a nonzero value is received and none of the negotiated
          * extensions defines the meaning of such a nonzero value, the receiving endpoint MUST _Fail the WebSocket Connection_.
          */
-        if (!rsv1InUse && frame.isRsv1())
+        if (frame.isRsv1() && !isRsv1InUse())
         {
             throw new ProtocolException("RSV1 not allowed to be set");
         }
 
-        if (!rsv2InUse && frame.isRsv2())
+        if (frame.isRsv2() && !isRsv2InUse())
         {
             throw new ProtocolException("RSV2 not allowed to be set");
         }
 
-        if (!rsv3InUse && frame.isRsv3())
+        if (frame.isRsv3() && !isRsv3InUse())
         {
             throw new ProtocolException("RSV3 not allowed to be set");
         }
@@ -161,30 +166,27 @@ public class Generator
                 }
             }
         }
-
     }
 
     public void configureFromExtensions(List<? extends Extension> exts)
     {
         // default
-        this.rsv1InUse = false;
-        this.rsv2InUse = false;
-        this.rsv3InUse = false;
+        flagsInUse = 0x00;
 
         // configure from list of extensions in use
         for (Extension ext : exts)
         {
             if (ext.isRsv1User())
             {
-                this.rsv1InUse = true;
+                flagsInUse = (byte)(flagsInUse | 0x40);
             }
             if (ext.isRsv2User())
             {
-                this.rsv2InUse = true;
+                flagsInUse = (byte)(flagsInUse | 0x20);
             }
             if (ext.isRsv3User())
             {
-                this.rsv3InUse = true;
+                flagsInUse = (byte)(flagsInUse | 0x10);
             }
         }
     }
@@ -200,14 +202,15 @@ public class Generator
         /*
          * start the generation process
          */
-        byte b;
-
+        byte b = 0x00;
+        
         // Setup fin thru opcode
-        b = 0x00;
         if (frame.isFin())
         {
             b |= 0x80; // 1000_0000
         }
+        
+        // Set the flags
         if (frame.isRsv1())
         {
             b |= 0x40; // 0100_0000
@@ -220,7 +223,7 @@ public class Generator
         {
             b |= 0x10; // 0001_0000
         }
-
+        
         // NOTE: using .getOpCode() here, not .getType().getOpCode() for testing reasons
         byte opcode = frame.getOpCode();
 
@@ -235,8 +238,7 @@ public class Generator
         buffer.put(b);
 
         // is masked
-        b = 0x00;
-        b |= (frame.isMasked()?0x80:0x00);
+        b = (frame.isMasked()?(byte)0x80:(byte)0x00);
 
         // payload lengths
         int payloadLength = frame.getPayloadLength();
@@ -252,16 +254,16 @@ public class Generator
             buffer.put((byte)0); //
             buffer.put((byte)0); // anything over an
             buffer.put((byte)0); // int is just
-            buffer.put((byte)0); // intsane!
+            buffer.put((byte)0); // insane!
             buffer.put((byte)((payloadLength >> 24) & 0xFF));
             buffer.put((byte)((payloadLength >> 16) & 0xFF));
             buffer.put((byte)((payloadLength >> 8) & 0xFF));
             buffer.put((byte)(payloadLength & 0xFF));
         }
         /*
-         * if payload is greater 126 we have a 7 + 16 bit length
+         * if payload is greater that 126 we have a 7 + 16 bit length
          */
-        else if (payloadLength >= 0x7E)
+        else if (payloadLength >= 0x7E )
         {
             b |= 0x7E;
             buffer.put(b); // indicate 2 byte length
@@ -366,19 +368,34 @@ public class Generator
         return buffer;
     }
 
+    public void setRsv1InUse(boolean rsv1InUse)
+    {
+        flagsInUse = (byte)((flagsInUse & 0xBF) | (rsv1InUse?0x40:0x00));
+    }
+
+    public void setRsv2InUse(boolean rsv2InUse)
+    {
+        flagsInUse = (byte)((flagsInUse & 0xDF) | (rsv2InUse?0x20:0x00));
+    }
+
+    public void setRsv3InUse(boolean rsv3InUse)
+    {
+        flagsInUse = (byte)((flagsInUse & 0xEF) | (rsv3InUse?0x10:0x00));
+    }
+
     public boolean isRsv1InUse()
     {
-        return rsv1InUse;
+        return (flagsInUse & 0x40) != 0;
     }
 
     public boolean isRsv2InUse()
     {
-        return rsv2InUse;
+        return (flagsInUse & 0x20) != 0;
     }
 
     public boolean isRsv3InUse()
     {
-        return rsv3InUse;
+        return (flagsInUse & 0x10) != 0;
     }
 
     @Override
@@ -391,15 +408,15 @@ public class Generator
         {
             builder.append(",validating");
         }
-        if (rsv1InUse)
+        if (isRsv1InUse())
         {
             builder.append(",+rsv1");
         }
-        if (rsv2InUse)
+        if (isRsv2InUse())
         {
             builder.append(",+rsv2");
         }
-        if (rsv3InUse)
+        if (isRsv3InUse())
         {
             builder.append(",+rsv3");
         }

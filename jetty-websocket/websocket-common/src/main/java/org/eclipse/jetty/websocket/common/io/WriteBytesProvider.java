@@ -121,19 +121,19 @@ public class WriteBytesProvider implements Callback
     /** Flush callback, for notifying when a flush should be performed */
     private final Callback flushCallback;
     /** Backlog of frames */
-    private LinkedList<FrameEntry> queue;
+    private final LinkedList<FrameEntry> queue;
     /** the buffer input size */
     private int bufferSize = 2048;
     /** the gathered write bytebuffer array limit */
     private int gatheredBufferLimit = 10;
     /** Past Frames, not yet notified (from gathered generation/write) */
-    private LinkedList<FrameEntry> past;
+    private final LinkedList<FrameEntry> past;
     /** Currently active frame */
     private FrameEntry active;
     /** Tracking for failure */
     private Throwable failure;
     /** Is WriteBytesProvider closed to more WriteBytes being enqueued? */
-    private AtomicBoolean closed;
+    private final AtomicBoolean closed;
 
     /**
      * Create a WriteBytesProvider with specified Generator and "flush" Callback.

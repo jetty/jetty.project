@@ -105,6 +105,7 @@ public class WebSocketFrameTest
         TextFrame frame = new TextFrame();
         frame.setPayload("Hi");
         frame.setRsv1(true);
+        laxGenerator.setRsv1InUse(true);
         ByteBuffer actual = generateWholeFrame(laxGenerator,frame);
         String expected = "C1024869";
         assertFrameHex("Lax Text Frame with RSV1",expected,actual);
@@ -116,6 +117,7 @@ public class WebSocketFrameTest
         TextFrame frame = new TextFrame();
         frame.setPayload("Hi");
         frame.setRsv2(true);
+        laxGenerator.setRsv2InUse(true);
         ByteBuffer actual = generateWholeFrame(laxGenerator,frame);
         String expected = "A1024869";
         assertFrameHex("Lax Text Frame with RSV2",expected,actual);
@@ -127,6 +129,7 @@ public class WebSocketFrameTest
         TextFrame frame = new TextFrame();
         frame.setPayload("Hi");
         frame.setRsv3(true);
+        laxGenerator.setRsv3InUse(true);
         ByteBuffer actual = generateWholeFrame(laxGenerator,frame);
         String expected = "91024869";
         assertFrameHex("Lax Text Frame with RSV3",expected,actual);
