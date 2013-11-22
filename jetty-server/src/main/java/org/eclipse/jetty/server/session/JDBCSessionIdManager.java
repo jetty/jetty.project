@@ -35,6 +35,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.TimeUnit;
 
 import javax.naming.InitialContext;
 import javax.servlet.http.HttpServletRequest;
@@ -46,6 +47,8 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
+import org.eclipse.jetty.util.thread.Scheduler;
 
 
 
@@ -73,8 +76,10 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
     protected String _sessionTableRowId = "rowId";
     protected int _deleteBlockSize = 10; //number of ids to include in where 'in' clause
 
-    protected Timer _timer; //scavenge timer
-    protected TimerTask _task; //scavenge task
+    protected Scheduler.Task _task; //scavenge task
+    protected Scheduler _scheduler;
+    protected Scavenger _scavenger;
+    protected boolean _ownScheduler;
     protected long _lastScavengeTime;
     protected long _scavengeIntervalMs = 1000L * 60 * 10; //10mins
     protected String _blobType; //if not set, is deduced from the type of the database at runtime
@@ -98,6 +103,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
     protected DatabaseAdaptor _dbAdaptor;
 
     private String _selectExpiredSessions;
+  
 
 
     /**
@@ -232,6 +238,28 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         }
     }
 
+    
+    /**
+     * Scavenger
+     *
+     */
+    protected class Scavenger implements Runnable
+    {
+
+        @Override
+        public void run()
+        {
+           try
+           {
+               scavenge();
+           }
+           finally
+           {
+               if (_scheduler != null && _scheduler.isRunning())
+                   _scheduler.schedule(this, _scavengeIntervalMs, TimeUnit.MILLISECONDS);
+           }
+        }
+    }
 
 
     public JDBCSessionIdManager(Server server)
@@ -351,21 +379,17 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
 
         if (LOG.isDebugEnabled())
             LOG.debug("Scavenging every "+_scavengeIntervalMs+" ms");
-        if (_timer!=null && (period!=old_period || _task==null))
+        
+        //if (_timer!=null && (period!=old_period || _task==null))
+        if (_scheduler != null && (period!=old_period || _task==null))
         {
             synchronized (this)
             {
                 if (_task!=null)
                     _task.cancel();
-                _task = new TimerTask()
-                {
-                    @Override
-                    public void run()
-                    {
-                        scavenge();
-                    }
-                };
-                _timer.schedule(_task,_scavengeIntervalMs,_scavengeIntervalMs);
+                if (_scavenger == null)
+                    _scavenger = new Scavenger();
+                _task = _scheduler.schedule(_scavenger,_scavengeIntervalMs,TimeUnit.MILLISECONDS);
             }
         }
     }
@@ -561,7 +585,16 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         super.doStart();
         if (LOG.isDebugEnabled()) 
             LOG.debug("Scavenging interval = "+getScavengeInterval()+" sec");
-        _timer=new Timer("JDBCSessionScavenger", true);
+        
+         //try and use a common scheduler, fallback to own
+         _scheduler =_server.getBean(Scheduler.class);
+         if (_scheduler == null)
+         {
+             _scheduler = new ScheduledExecutorScheduler();
+             _ownScheduler = true;
+             _scheduler.start();
+         }
+  
         setScavengeInterval(getScavengeInterval());
     }
 
@@ -577,9 +610,9 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
             if (_task!=null)
                 _task.cancel();
             _task=null;
-            if (_timer!=null)
-                _timer.cancel();
-            _timer=null;
+            if (_ownScheduler && _scheduler !=null)
+                _scheduler.stop();
+            _scheduler=null;
         }
         _sessionIds.clear();
         super.doStop();

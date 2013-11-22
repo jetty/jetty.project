@@ -38,6 +38,8 @@ import org.eclipse.jetty.server.session.AbstractSessionIdManager;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
+import org.eclipse.jetty.util.thread.Scheduler;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.BasicDBObjectBuilder;
@@ -69,20 +71,18 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
     final static DBObject __valid_false = new BasicDBObject(MongoSessionManager.__VALID,false);
     final static DBObject __valid_true = new BasicDBObject(MongoSessionManager.__VALID,true);
 
-    final static long __defaultScavengeDelay =  10 * 6 * 1000; // wait at least 10 minutes
     final static long __defaultScavengePeriod = 30 * 60 * 1000; // every 30 minutes
    
     
     final DBCollection _sessions;
     protected Server _server;
-    private Timer _scavengeTimer;
-    private Timer _purgeTimer;
-    private TimerTask _scavengerTask;
-    private TimerTask _purgeTask;
+    private Scheduler _scheduler;
+    private boolean _ownScheduler;
+    private Scheduler.Task _scavengerTask;
+    private Scheduler.Task _purgerTask;
+ 
 
     
-    
-    private long _scavengeDelay = __defaultScavengeDelay;
     private long _scavengePeriod = __defaultScavengePeriod;
     
 
@@ -115,6 +115,52 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
      * TODO consider if this ought to be concurrent or not
      */
     protected final Set<String> _sessionsIds = new HashSet<String>();
+    
+    
+    /**
+     * Scavenger
+     *
+     */
+    protected class Scavenger implements Runnable
+    {
+        @Override
+        public void run()
+        {
+            try
+            {
+                scavenge();
+            }
+            finally
+            {
+                if (_scheduler != null && _scheduler.isRunning())
+                    _scavengerTask = _scheduler.schedule(this, _scavengePeriod, TimeUnit.MILLISECONDS);
+            }
+        } 
+    }
+    
+    
+    /**
+     * Purger
+     *
+     */
+    protected class Purger implements Runnable
+    {
+        @Override
+        public void run()
+        {
+            try
+            {
+                purge();
+            }
+            finally
+            {
+                if (_scheduler != null && _scheduler.isRunning())
+                    _purgerTask = _scheduler.schedule(this, _purgeDelay, TimeUnit.MILLISECONDS);
+            }
+        }
+    }
+    
+    
     
 
     /* ------------------------------------------------------------ */
@@ -172,8 +218,7 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
                 __log.debug("SessionIdManager:scavenge: expiring session {}", (String)session.get(MongoSessionManager.__ID));
                 expireAll((String)session.get(MongoSessionManager.__ID));
             }
-        } 
-        
+        }      
     }
     
     /* ------------------------------------------------------------ */
@@ -297,20 +342,6 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
         this._purge = purge;
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * The delay before the first scavenge operation is performed.
-     * 
-     * sets the scavengeDelay
-     */
-    public void setScavengeDelay(long scavengeDelay)
-    {
-        if (scavengeDelay <= 0)
-            this._scavengeDelay = __defaultScavengeDelay;
-        else
-            this._scavengeDelay = TimeUnit.SECONDS.toMillis(scavengeDelay);  
-    }
-
 
     /* ------------------------------------------------------------ */
     /** 
@@ -376,77 +407,69 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
     protected void doStart() throws Exception
     {
         __log.debug("MongoSessionIdManager:starting");
-     
-        /*
-         * setup the scavenger thread
-         */
-        if (_scavengeDelay > 0)
-        {
-            _scavengeTimer = new Timer("MongoSessionIdScavenger",true);
 
-            synchronized (this)
+
+        synchronized (this)
+        {
+            //try and use a common scheduler, fallback to own
+            _scheduler =_server.getBean(Scheduler.class);
+            if (_scheduler == null)
+            {
+                _scheduler = new ScheduledExecutorScheduler();
+                _ownScheduler = true;
+                _scheduler.start();
+            }
+
+            //setup the scavenger thread
+            if (_scavengePeriod > 0)
             {
                 if (_scavengerTask != null)
                 {
                     _scavengerTask.cancel();
+                    _scavengerTask = null;
                 }
-                
-                _scavengerTask = new TimerTask()
-                {
-                    @Override
-                    public void run()
-                    {
-                        scavenge();
-                    }
-                };
-                
-                _scavengeTimer.schedule(_scavengerTask,_scavengeDelay,_scavengePeriod);
+
+                _scavengerTask = _scheduler.schedule(new Scavenger(), _scavengePeriod, TimeUnit.MILLISECONDS);
             }
-        }
-        
-        /*
-         * if purging is enabled, setup the purge thread
-         */
-        if ( _purge )
-        {
-            _purgeTimer = new Timer("MongoSessionPurger", true);
-            
-            synchronized (this)
-            {
-                if (_purgeTask != null)
+
+
+            //if purging is enabled, setup the purge thread
+            if ( _purge )
+            { 
+                if (_purgerTask != null)
                 {
-                    _purgeTask.cancel();
+                    _purgerTask.cancel();
+                    _purgerTask = null;
                 }
-                _purgeTask = new TimerTask()
-                {
-                    @Override
-                    public void run()
-                    {
-                        purge();
-                    }
-                };
-               
-                _purgeTimer.schedule(_purgeTask,0,_purgeDelay);
+                _purgerTask = _scheduler.schedule(new Purger(), _purgeDelay, TimeUnit.MILLISECONDS);
             }
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     protected void doStop() throws Exception
     {
-        if (_scavengeTimer != null)
+        synchronized (this)
         {
-            _scavengeTimer.cancel();
-            _scavengeTimer = null;
+            if (_scavengerTask != null)
+            {
+                _scavengerTask.cancel();
+                _scavengerTask = null;
+            }
+ 
+            if (_purgerTask != null)
+            {
+                _purgerTask.cancel();
+                _purgerTask = null;
+            }
+            
+            if (_ownScheduler && _scheduler != null)
+            {
+                _scheduler.stop();
+                _scheduler = null;
+            }
         }
-        
-        if (_purgeTimer != null)
-        {
-            _purgeTimer.cancel();
-            _purgeTimer = null;
-        }
-        
         super.doStop();
     }
 
