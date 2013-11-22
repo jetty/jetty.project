@@ -70,6 +70,12 @@ public enum HttpHeaderValue
     }
 
     /* ------------------------------------------------------------ */
+    public boolean is(String s)
+    {
+        return _string.equalsIgnoreCase(s);
+    }
+    
+    /* ------------------------------------------------------------ */
     public String asString()
     {
         return _string;

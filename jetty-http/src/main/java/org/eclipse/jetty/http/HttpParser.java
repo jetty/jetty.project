@@ -91,7 +91,6 @@ public class HttpParser
      * </ul>
      */
     public final static Trie<HttpField> CACHE = new ArrayTrie<>(2048);
-    public final static Trie<HttpField> CONTENT_TYPE = new ArrayTrie<>(512);
     
     // States
     public enum State
@@ -178,21 +177,16 @@ public class HttpParser
         CACHE.put(new HttpField(HttpHeader.TRANSFER_ENCODING,"chunked"));
         CACHE.put(new HttpField(HttpHeader.EXPIRES,"Fri, 01 Jan 1990 00:00:00 GMT"));
         
-        // Content types
-        for (String type : new String[]{"text/plain","text/html","text/xml","text/json","application/x-www-form-urlencoded"})
+        // Add common Content types as fields
+        for (String type : new String[]{"text/plain","text/html","text/xml","text/json","application/json","application/x-www-form-urlencoded"})
         {
-            HttpField field=new HttpField(HttpHeader.CONTENT_TYPE,type);
+            HttpField field=new HttpGenerator.CachedHttpField(HttpHeader.CONTENT_TYPE,type);
             CACHE.put(field);
-            CONTENT_TYPE.put(type,field);
             
             for (String charset : new String[]{"UTF-8","ISO-8859-1"})
             {
-                String type_charset=type+"; charset="+charset;
-                field=new HttpField(HttpHeader.CONTENT_TYPE,type_charset);
-                CACHE.put(field);
-                CACHE.put(new HttpField(HttpHeader.CONTENT_TYPE,type+";charset="+charset));
-                CONTENT_TYPE.put(type_charset,field);
-                CONTENT_TYPE.put(type+";charset="+charset,field);
+                CACHE.put(field=new HttpGenerator.CachedHttpField(HttpHeader.CONTENT_TYPE,type+";charset="+charset));
+                CACHE.put(new HttpGenerator.CachedHttpField(HttpHeader.CONTENT_TYPE,type+"; charset="+charset));
             }
         }
     
