@@ -218,14 +218,14 @@ public class GzipFilter extends UserAgentFilter
             {
                 StringTokenizer tok = new StringTokenizer(tmp,",",false);
                 while (tok.hasMoreTokens())
-                    _mimeTypes.add(tok.nextToken());
+                    _mimeTypes.add(tok.nextToken().trim());
             }
         }
         else
         {
             StringTokenizer tok = new StringTokenizer(tmp,",",false);
             while (tok.hasMoreTokens())
-                _mimeTypes.add(tok.nextToken());
+                _mimeTypes.add(tok.nextToken().trim());
         }
         tmp=filterConfig.getInitParameter("excludedAgents");
         if (tmp!=null)
@@ -233,7 +233,7 @@ public class GzipFilter extends UserAgentFilter
             _excludedAgents=new HashSet<String>();
             StringTokenizer tok = new StringTokenizer(tmp,",",false);
             while (tok.hasMoreTokens())
-               _excludedAgents.add(tok.nextToken());
+               _excludedAgents.add(tok.nextToken().trim());
         }
 
         tmp=filterConfig.getInitParameter("excludeAgentPatterns");
@@ -242,7 +242,7 @@ public class GzipFilter extends UserAgentFilter
             _excludedAgentPatterns=new HashSet<Pattern>();
             StringTokenizer tok = new StringTokenizer(tmp,",",false);
             while (tok.hasMoreTokens())
-                _excludedAgentPatterns.add(Pattern.compile(tok.nextToken()));
+                _excludedAgentPatterns.add(Pattern.compile(tok.nextToken().trim()));
         }
 
         tmp=filterConfig.getInitParameter("excludePaths");
@@ -251,7 +251,7 @@ public class GzipFilter extends UserAgentFilter
             _excludedPaths=new HashSet<String>();
             StringTokenizer tok = new StringTokenizer(tmp,",",false);
             while (tok.hasMoreTokens())
-                _excludedPaths.add(tok.nextToken());
+                _excludedPaths.add(tok.nextToken().trim());
         }
 
         tmp=filterConfig.getInitParameter("excludePathPatterns");
@@ -260,7 +260,7 @@ public class GzipFilter extends UserAgentFilter
             _excludedPathPatterns=new HashSet<Pattern>();
             StringTokenizer tok = new StringTokenizer(tmp,",",false);
             while (tok.hasMoreTokens())
-                _excludedPathPatterns.add(Pattern.compile(tok.nextToken()));
+                _excludedPathPatterns.add(Pattern.compile(tok.nextToken().trim()));
         }
         
         tmp=filterConfig.getInitParameter("vary");
