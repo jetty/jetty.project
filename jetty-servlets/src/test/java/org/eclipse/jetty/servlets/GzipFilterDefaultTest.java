@@ -117,7 +117,7 @@ public class GzipFilterDefaultTest
         
         FilterHolder holder = tester.setContentServlet(GetServlet.class);
         holder.setInitParameter("mimeTypes","text/plain");
-        holder.setInitParameter("methods","POST,WIBBLE");
+        holder.setInitParameter("methods","POST, WIBBLE");
                 
         try
         {
@@ -441,7 +441,7 @@ public class GzipFilterDefaultTest
         GzipTester tester = new GzipTester(testingdir,compressionType);
 
         FilterHolder holder = tester.setContentServlet(DefaultServlet.class);
-        holder.setInitParameter("excludedAgents","foo");
+        holder.setInitParameter("excludedAgents","bar, foo");
         tester.setUserAgent("foo");
 
         int filesize = CompressedResponseWrapper.DEFAULT_BUFFER_SIZE * 4;
@@ -488,7 +488,7 @@ public class GzipFilterDefaultTest
         GzipTester tester = new GzipTester(testingdir,compressionType);
 
         FilterHolder holder = tester.setContentServlet(DefaultServlet.class);
-        holder.setInitParameter("excludePaths","/context/");
+        holder.setInitParameter("excludePaths","/bar/, /context/");
 
         int filesize = CompressedResponseWrapper.DEFAULT_BUFFER_SIZE * 4;
         tester.prepareServerFile("file.txt",filesize);
