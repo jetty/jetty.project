@@ -31,6 +31,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
@@ -39,6 +40,8 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
+import org.eclipse.jetty.util.thread.Scheduler;
 
 
 /* ------------------------------------------------------------ */
@@ -60,19 +63,64 @@ public class HashSessionManager extends AbstractSessionManager
 
     protected final ConcurrentMap<String,HashedSession> _sessions=new ConcurrentHashMap<String,HashedSession>();
     private static int __id;
-    private Timer _timer;
+    private Scheduler _timer;
     private boolean _timerStop=false;
-    private TimerTask _task;
+    private Scheduler.Task _task;
     long _scavengePeriodMs=30000;
     long _savePeriodMs=0; //don't do period saves by default
     long _idleSavePeriodMs = 0; // don't idle save sessions by default.
-    private TimerTask _saveTask;
+    private Scheduler.Task _saveTask;
     File _storeDir;
     private boolean _lazyLoad=false;
     private volatile boolean _sessionsLoaded=false;
     private boolean _deleteUnrestorableSessions=false;
 
 
+    /**
+     * Scavenger
+     *
+     */
+    protected class Scavenger implements Runnable
+    {
+        @Override
+        public void run()
+        {
+            try
+            {
+                scavenge();
+            }
+            finally
+            {
+                if (_timer != null && _timer.isRunning())
+                    _timer.schedule(this, _scavengePeriodMs, TimeUnit.MILLISECONDS);
+            }
+        }
+    }
+
+    /**
+     * Saver
+     *
+     */
+    protected class Saver implements Runnable
+    {
+        @Override
+        public void run()
+        {
+            try
+            {
+                saveSessions(true);
+            }
+            catch (Exception e)
+            {       
+                LOG.warn(e);
+            }
+            finally
+            {
+                if (_timer != null && _timer.isRunning())
+                    _timer.schedule(this, _savePeriodMs, TimeUnit.MILLISECONDS);
+            }
+        }        
+    }
 
 
     /* ------------------------------------------------------------ */
@@ -91,14 +139,24 @@ public class HashSessionManager extends AbstractSessionManager
         super.doStart();
 
         _timerStop=false;
-        ServletContext context = ContextHandler.getCurrentContext();
-        if (context!=null)
-            _timer=(Timer)context.getAttribute("org.eclipse.jetty.server.session.timer");
-        if (_timer==null)
+        //try shared scheduler from Server first
+        _timer = getSessionHandler().getServer().getBean(Scheduler.class);
+        if (_timer == null)
         {
+            //try one passwed into the context
+            ServletContext context = ContextHandler.getCurrentContext();
+            if (context!=null)
+                _timer = (Scheduler)context.getAttribute("org.eclipse.jetty.server.session.timer");   
+        }         
+      
+        if (_timer == null)
+        {
+          //make a scheduler if none useable
             _timerStop=true;
-            _timer=new Timer("HashSessionScavenger-"+__id++, true);
+            _timer=new ScheduledExecutorScheduler();
+            _timer.start();
         }
+     
 
         setScavengePeriod(getScavengePeriod());
 
@@ -131,7 +189,7 @@ public class HashSessionManager extends AbstractSessionManager
                 _task.cancel();
             _task=null;
             if (_timer!=null && _timerStop)
-                _timer.cancel();
+                _timer.stop();
             _timer=null;
         }
 
@@ -217,24 +275,10 @@ public class HashSessionManager extends AbstractSessionManager
             {
                 if (_saveTask!=null)
                     _saveTask.cancel();
+                _saveTask = null;
                 if (_savePeriodMs > 0 && _storeDir!=null) //only save if we have a directory configured
                 {
-                    _saveTask = new TimerTask()
-                    {
-                        @Override
-                        public void run()
-                        {
-                            try
-                            {
-                                saveSessions(true);
-                            }
-                            catch (Exception e)
-                            {
-                                LOG.warn(e);
-                            }
-                        }
-                    };
-                    _timer.schedule(_saveTask,_savePeriodMs,_savePeriodMs);
+                    _saveTask = _timer.schedule(new Saver(),_savePeriodMs,TimeUnit.MILLISECONDS);
                 }
             }
         }
@@ -275,16 +319,11 @@ public class HashSessionManager extends AbstractSessionManager
             synchronized (this)
             {
                 if (_task!=null)
-                    _task.cancel();
-                _task = new TimerTask()
                 {
-                    @Override
-                    public void run()
-                    {
-                        scavenge();
-                    }
-                };
-                _timer.schedule(_task,_scavengePeriodMs,_scavengePeriodMs);
+                    _task.cancel();
+                    _task = null;
+                }
+                _task = _timer.schedule(new Scavenger(),_scavengePeriodMs, TimeUnit.MILLISECONDS);
             }
         }
     }
@@ -303,13 +342,14 @@ public class HashSessionManager extends AbstractSessionManager
         Thread thread=Thread.currentThread();
         ClassLoader old_loader=thread.getContextClassLoader();
         try
-        {
+        {      
             if (_loader!=null)
                 thread.setContextClassLoader(_loader);
 
             // For each session
             long now=System.currentTimeMillis();
-          
+            __log.debug("Scavenging sessions at {}", now); 
+            
             for (Iterator<HashedSession> i=_sessions.values().iterator(); i.hasNext();)
             {
                 HashedSession session=i.next();

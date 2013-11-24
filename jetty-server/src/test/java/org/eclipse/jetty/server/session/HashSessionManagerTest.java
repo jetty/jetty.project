@@ -23,6 +23,7 @@ import java.io.File;
 import junit.framework.Assert;
 
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
@@ -96,11 +97,16 @@ public class HashSessionManagerTest
     {
         File testDir = MavenTestingUtils.getTargetTestingDir("saved");
         testDir.mkdirs();
+        
+        Server server = new Server();
+        SessionHandler handler = new SessionHandler();
+        handler.setServer(server);
         HashSessionManager manager = new HashSessionManager();
         manager.setStoreDirectory(testDir);
         manager.setMaxInactiveInterval(5);
         Assert.assertTrue(testDir.exists());
         Assert.assertTrue(testDir.canWrite());
+        handler.setSessionManager(manager);
         
         AbstractSessionIdManager idManager = new HashSessionIdManager();
         idManager.setWorkerName("foo");
