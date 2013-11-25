@@ -42,6 +42,7 @@ import javax.servlet.http.HttpSessionListener;
 
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.session.JDBCSessionIdManager.SessionTableSchema;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -77,6 +78,7 @@ public class JDBCSessionManager extends AbstractSessionManager
     private ConcurrentHashMap<String, Session> _sessions;
     protected JDBCSessionIdManager _jdbcSessionIdMgr = null;
     protected long _saveIntervalSec = 60; //only persist changes to session access times every 60 secs
+    protected SessionTableSchema _sessionTableSchema;
 
    
 
@@ -600,6 +602,7 @@ public class JDBCSessionManager extends AbstractSessionManager
             throw new IllegalStateException("No session id manager defined");
 
         _jdbcSessionIdMgr = (JDBCSessionIdManager)_sessionIdManager;
+        _sessionTableSchema = _jdbcSessionIdMgr.getSessionTableSchema();
 
         _sessions = new ConcurrentHashMap<String, Session>();
 
@@ -878,30 +881,30 @@ public class JDBCSessionManager extends AbstractSessionManager
             public void run()
             {
                 try (Connection connection = getConnection();
-                        PreparedStatement statement = _jdbcSessionIdMgr._dbAdaptor.getLoadStatement(connection, id, canonicalContextPath, vhost);
+                        PreparedStatement statement = _sessionTableSchema.getLoadStatement(connection, id, canonicalContextPath, vhost);
                         ResultSet result = statement.executeQuery())
                 {
                     Session session = null;
                     if (result.next())
                     {                    
-                        long maxInterval = result.getLong("maxInterval");
+                        long maxInterval = result.getLong(_sessionTableSchema.getMaxIntervalColumn());
                         if (maxInterval == JDBCSessionIdManager.MAX_INTERVAL_NOT_SET)
                         {
                             maxInterval = getMaxInactiveInterval(); //if value not saved for maxInactiveInterval, use current value from sessionmanager
                         }
-                        session = new Session(id, result.getString(_jdbcSessionIdMgr._sessionTableRowId), 
-                                                  result.getLong("createTime"), 
-                                                  result.getLong("accessTime"), 
+                        session = new Session(id, result.getString(_sessionTableSchema.getRowIdColumn()), 
+                                                  result.getLong(_sessionTableSchema.getCreateTimeColumn()), 
+                                                  result.getLong(_sessionTableSchema.getAccessTimeColumn()), 
                                                   maxInterval);
-                        session.setCookieSet(result.getLong("cookieTime"));
-                        session.setLastAccessedTime(result.getLong("lastAccessTime"));
-                        session.setLastNode(result.getString("lastNode"));
-                        session.setLastSaved(result.getLong("lastSavedTime"));
-                        session.setExpiryTime(result.getLong("expiryTime"));
-                        session.setCanonicalContext(result.getString("contextPath"));
-                        session.setVirtualHost(result.getString("virtualHost"));
+                        session.setCookieSet(result.getLong(_sessionTableSchema.getCookieTimeColumn()));
+                        session.setLastAccessedTime(result.getLong(_sessionTableSchema.getLastAccessTimeColumn()));
+                        session.setLastNode(result.getString(_sessionTableSchema.getLastNodeColumn()));
+                        session.setLastSaved(result.getLong(_sessionTableSchema.getLastSavedTimeColumn()));
+                        session.setExpiryTime(result.getLong(_sessionTableSchema.getExpiryTimeColumn()));
+                        session.setCanonicalContext(result.getString(_sessionTableSchema.getContextPathColumn()));
+                        session.setVirtualHost(result.getString(_sessionTableSchema.getVirtualHostColumn()));
                                            
-                        try (InputStream is = ((JDBCSessionIdManager)getSessionIdManager())._dbAdaptor.getBlobInputStream(result, "map");
+                        try (InputStream is = ((JDBCSessionIdManager)getSessionIdManager())._dbAdaptor.getBlobInputStream(result, _sessionTableSchema.getMapColumn());
                                 ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(is))
                         {
                             Object o = ois.readObject();
