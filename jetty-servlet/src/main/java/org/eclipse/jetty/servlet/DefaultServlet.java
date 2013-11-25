@@ -144,7 +144,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
     private boolean _welcomeServlets=false;
     private boolean _welcomeExactServlets=false;
     private boolean _redirectWelcome=false;
-    private boolean _gzip=true;
+    private boolean _gzip=false;
     private boolean _pathInfoOnly=false;
     private boolean _etags=false;
 
