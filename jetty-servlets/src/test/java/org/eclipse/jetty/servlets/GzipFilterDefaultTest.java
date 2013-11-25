@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -99,6 +100,23 @@ public class GzipFilterDefaultTest
             resp.getOutputStream().write("error message".getBytes());
             resp.setStatus(_status);
         }
+    }
+    
+
+    public static class HttpContentTypeWithEncoding extends HttpServlet
+    {
+        public static final String COMPRESSED_CONTENT = "<html><head></head><body><h1>COMPRESSED</h1></body></html>";
+        
+        @Override
+        protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+        throws ServletException, IOException
+        {
+            resp.setContentType("text/plain;charset=UTF8");
+            resp.setStatus(200);
+            ServletOutputStream out = resp.getOutputStream();
+            out.print(COMPRESSED_CONTENT);
+        }
+
     }
 
     @Rule
@@ -369,7 +387,28 @@ public class GzipFilterDefaultTest
             tester.stop();
         }
     }
-
+    
+    @Test
+    public void testGzipCompressedByContentTypeWithEncoding() throws Exception
+    { 
+        GzipTester tester = new GzipTester(testingdir, compressionType);
+        FilterHolder holder = tester.setContentServlet(HttpContentTypeWithEncoding.class);
+        holder.setInitParameter("mimeTypes","text/plain");
+        try
+        {
+            tester.start();
+            HttpTester.Response http = tester.assertNonStaticContentIsResponseGzipCompressed("GET","xxx", HttpContentTypeWithEncoding.COMPRESSED_CONTENT);
+            Assert.assertEquals("Accept-Encoding",http.get("Vary"));
+            System.err.println(http.get("Content-Type"));
+            System.err.println(http.get("Content-Encoding"));
+        }
+        finally
+        {
+            tester.stop();
+        }
+    }
+    
+    
     @Test
     public void testIsNotGzipCompressedByDeferredContentType() throws Exception
     {

@@ -92,6 +92,63 @@ public class GzipTester
         return assertIsResponseGzipCompressed(method,requestedFilename,serverFilename,-1);
     }
     
+
+    public HttpTester.Response assertNonStaticContentIsResponseGzipCompressed(String method, String path, String expected) throws Exception
+    {
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
+
+        request.setMethod(method);
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host","tester");
+        request.setHeader("Accept-Encoding",compressionType);
+       
+        if (this.userAgent != null)
+            request.setHeader("User-Agent", this.userAgent);
+        request.setURI("/context/" + path);
+
+        // Issue the request
+        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
+        
+        int qindex = compressionType.indexOf(";");
+        if (qindex < 0)
+            Assert.assertThat("Response.header[Content-Encoding]",response.get("Content-Encoding"),containsString(compressionType));
+        else
+            Assert.assertThat("Response.header[Content-Encoding]", response.get("Content-Encoding"),containsString(compressionType.substring(0,qindex)));
+
+       ByteArrayInputStream bais = null;
+       InputStream in = null;
+       ByteArrayOutputStream out = null;
+       String actual = null;
+       
+        try
+        {
+            bais = new ByteArrayInputStream(response.getContentBytes());
+            if (compressionType.startsWith(GzipFilter.GZIP))
+            {
+                in = new GZIPInputStream(bais);
+            }
+            else if (compressionType.startsWith(GzipFilter.DEFLATE))
+            {
+                in = new InflaterInputStream(bais, new Inflater(true));
+            }
+            out = new ByteArrayOutputStream();
+            IO.copy(in,out);
+
+            actual = out.toString(encoding);
+            assertThat("Uncompressed contents",actual,equalTo(expected));
+        }
+        finally
+        {
+            IO.close(out);
+            IO.close(in);
+            IO.close(bais);
+        }
+        
+        
+        return response;
+    }
+    
     public HttpTester.Response assertIsResponseGzipCompressed(String method, String requestedFilename, String serverFilename, long ifmodifiedsince) throws Exception
     {
         // System.err.printf("[GzipTester] requesting /context/%s%n",requestedFilename);
