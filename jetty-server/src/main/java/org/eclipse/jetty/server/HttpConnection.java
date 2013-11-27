@@ -37,6 +37,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -466,19 +467,20 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         }
     }
 
-    private class CommitCallback extends IteratingNestedCallback
+    private class CommitCallback extends IteratingCallback
     {
         final ByteBuffer _content;
         final boolean _lastContent;
         final ResponseInfo _info;
+        final Callback _callback;
         ByteBuffer _header;
 
         CommitCallback(ResponseInfo info, ByteBuffer content, boolean last, Callback callback)
         {
-            super(callback);
             _info=info;
             _content=content;
             _lastContent=last;
+            _callback=callback;
         }
 
         @Override
@@ -586,18 +588,39 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 }
             }
         }
+
+        @Override
+        protected void completed()
+        {
+            _callback.succeeded();
+        }
+
+        @Override
+        public void failed(final Throwable x)
+        {
+            super.failed(x);
+            getExecutor().execute(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    _callback.failed(x);
+                }
+            });
+        }
     }
 
-    private class ContentCallback extends IteratingNestedCallback
+    private class ContentCallback extends IteratingCallback
     {
         final ByteBuffer _content;
         final boolean _lastContent;
+        final Callback _callback;
 
         ContentCallback(ByteBuffer content, boolean last, Callback callback)
         {
-            super(callback);
             _content=content;
             _lastContent=last;
+            _callback=callback;
         }
 
         @Override
@@ -667,6 +690,26 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     }
                 }
             }
+        }
+
+        @Override
+        protected void completed()
+        {
+            _callback.succeeded();
+        }
+
+        @Override
+        public void failed(final Throwable x)
+        {
+            super.failed(x);
+            getExecutor().execute(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    _callback.failed(x);
+                }
+            });
         }
     }
 
