@@ -65,7 +65,7 @@ public class MessageInputStreamTest
         }
     }
 
-    @Test(timeout=2000)
+    @Test(timeout=5000)
     public void testBlockOnRead() throws Exception
     {
         LocalWebSocketConnection conn = new LocalWebSocketConnection(testname);
