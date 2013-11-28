@@ -69,9 +69,14 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         return __currentConnection.get();
     }
 
-    protected static void setCurrentConnection(HttpConnection connection)
+    protected static HttpConnection setCurrentConnection(HttpConnection connection)
     {
-        __currentConnection.set(connection);
+        HttpConnection last=__currentConnection.get();
+        if (connection==null)
+            __currentConnection.remove();
+        else 
+            __currentConnection.set(connection);
+        return last;
     }
 
     public HttpConfiguration getHttpConfiguration()
@@ -182,7 +187,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     {
         LOG.debug("{} onFillable {}", this, _channel.getState());
 
-        setCurrentConnection(this);
+        final HttpConnection last=setCurrentConnection(this);
         int filled=Integer.MAX_VALUE;
         boolean suspended=false;
         try
@@ -246,7 +251,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         }
         finally
         {                        
-            setCurrentConnection(null);
+            setCurrentConnection(last);
             if (!suspended && getEndPoint().isOpen() && getEndPoint().getConnection()==this)
             {
                 fillInterested();
