@@ -18,15 +18,20 @@
 
 package org.eclipse.jetty.embedded;
 
+import java.lang.management.ManagementFactory;
+
+import org.eclipse.jetty.jmx.MBeanContainer;
+import org.eclipse.jetty.server.ConnectorStatistics;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 
-public class OneServletContext
+public class OneServletContextJmxStats
 {
     public static void main(String[] args) throws Exception
     {
         Server server = new Server(8080);        
+        server.addBean(new MBeanContainer(ManagementFactory.getPlatformMBeanServer()));
 
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/");
@@ -34,6 +39,8 @@ public class OneServletContext
 
         context.addServlet(org.eclipse.jetty.servlet.DefaultServlet.class,"/");
         context.addServlet(new ServletHolder(new DumpServlet()),"/dump/*");
+
+        ConnectorStatistics.addToAllConnectors(server);
         
         server.start();
         server.join();
