@@ -415,6 +415,31 @@ public class RequestTest
         assertEquals("0.0.0.0",results.get(i++));
         assertEquals("myhost",results.get(i++));
         assertEquals("8888",results.get(i++));
+        
+
+        results.clear();
+        response=_connector.getResponses(
+                "GET http://myhost:8888/ HTTP/1.0\n"+
+                "\n");
+        i=0;
+        assertThat(response,Matchers.containsString("200 OK"));
+        assertEquals("http://myhost:8888/",results.get(i++));
+        assertEquals("0.0.0.0",results.get(i++));
+        assertEquals("myhost",results.get(i++));
+        assertEquals("8888",results.get(i++));
+        
+        results.clear();
+        response=_connector.getResponses(
+                "GET http://myhost:8888/ HTTP/1.1\n"+
+                "Host: wrong:666\n"+
+                "Connection: close\n"+
+                "\n");
+        i=0;
+        assertThat(response,Matchers.containsString("200 OK"));
+        assertEquals("http://myhost:8888/",results.get(i++));
+        assertEquals("0.0.0.0",results.get(i++));
+        assertEquals("myhost",results.get(i++));
+        assertEquals("8888",results.get(i++));
 
 
         results.clear();

@@ -603,8 +603,11 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     @Override
     public boolean parsedHostHeader(String host, int port)
     {
-        _request.setServerName(host);
-        _request.setServerPort(port);
+        if (_uri.getHost()==null)
+        {
+            _request.setServerName(host);
+            _request.setServerPort(port);
+        }
         return false;
     }
 

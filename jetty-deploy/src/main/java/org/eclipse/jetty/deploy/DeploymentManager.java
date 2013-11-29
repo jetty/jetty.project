@@ -217,6 +217,9 @@ public class DeploymentManager extends ContainerLifeCycle
     @Override
     protected void doStart() throws Exception
     {
+        if (getContexts()==null)
+            throw new IllegalStateException("No Contexts");
+        
         if (_useStandardBindings)
         {
             LOG.debug("DeploymentManager using standard bindings");

@@ -31,6 +31,7 @@ import java.util.List;
 import org.eclipse.jetty.http.HttpParser.State;
 import org.eclipse.jetty.util.BufferUtil;
 import org.hamcrest.Matchers;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -1174,6 +1175,51 @@ public class HttpParserTest
         parser.parseNext(buffer);
         assertEquals("host",_host);
         assertEquals(0,_port);
+    }
+    
+    @Test
+    public void testUriHost11() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer(
+                "GET http://host/ HTTP/1.1\015\012"
+                        + "Connection: close\015\012"
+                        + "\015\012");
+
+        HttpParser.RequestHandler<ByteBuffer> handler  = new Handler();
+        HttpParser parser= new HttpParser(handler);
+        parser.parseNext(buffer);
+        assertEquals("No Host",_bad);
+        assertEquals("http://host/",_uriOrStatus);
+        assertEquals(0,_port);
+    }
+    
+    @Test
+    public void testUriHost10() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer(
+                "GET http://host/ HTTP/1.0\015\012"
+                        + "\015\012");
+
+        HttpParser.RequestHandler<ByteBuffer> handler  = new Handler();
+        HttpParser parser= new HttpParser(handler);
+        parser.parseNext(buffer);
+        Assert.assertNull(_bad);
+        assertEquals("http://host/",_uriOrStatus);
+        assertEquals(0,_port);
+    }
+    
+    @Test
+    public void testNoHost() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer(
+                "GET / HTTP/1.1\015\012"
+                        + "Connection: close\015\012"
+                        + "\015\012");
+
+        HttpParser.RequestHandler<ByteBuffer> handler  = new Handler();
+        HttpParser parser= new HttpParser(handler);
+        parser.parseNext(buffer);
+        assertEquals("No Host",_bad);
     }
     
     @Test

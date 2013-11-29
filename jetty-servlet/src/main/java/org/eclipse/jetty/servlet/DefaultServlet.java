@@ -918,6 +918,8 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 long singleLength = singleSatisfiableRange.getSize(content_length);
                 writeHeaders(response,content,singleLength                     );
                 response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
+                if (!response.containsHeader(HttpHeader.DATE.asString()))
+                    response.addDateHeader(HttpHeader.DATE.asString(),System.currentTimeMillis());
                 response.setHeader(HttpHeader.CONTENT_RANGE.asString(),
                         singleSatisfiableRange.toHeaderRangeString(content_length));
                 resource.writeTo(out,singleSatisfiableRange.getFirst(content_length),singleLength);
@@ -934,6 +936,8 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 LOG.warn("Unknown mimetype for "+request.getRequestURI());
             MultiPartOutputStream multi = new MultiPartOutputStream(out);
             response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
+            if (!response.containsHeader(HttpHeader.DATE.asString()))
+                response.addDateHeader(HttpHeader.DATE.asString(),System.currentTimeMillis());
 
             // If the request has a "Request-Range" header then we need to
             // send an old style multipart/x-byteranges Content-Type. This

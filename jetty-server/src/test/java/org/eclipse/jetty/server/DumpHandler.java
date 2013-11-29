@@ -102,6 +102,7 @@ public class DumpHandler extends AbstractHandler
         writer.write("<pre>\npathInfo="+request.getPathInfo()+"\n</pre>\n");
         writer.write("<pre>\ncontentType="+request.getContentType()+"\n</pre>\n");
         writer.write("<pre>\nencoding="+request.getCharacterEncoding()+"\n</pre>\n");
+        writer.write("<pre>\nservername="+request.getServerName()+"\n</pre>\n");
         writer.write("<h3>Header:</h3><pre>");
         writer.write(request.getMethod()+" "+request.getRequestURI()+" "+request.getProtocol()+"\n");
         Enumeration<String> headers = request.getHeaderNames();

@@ -36,6 +36,7 @@ public class DeploymentManagerLifeCyclePathTest
     public void testStateTransition_NewToDeployed() throws Exception
     {
         DeploymentManager depman = new DeploymentManager();
+        depman.setContexts(new ContextHandlerCollection());
         depman.setDefaultLifeCycleGoal(null); // no default
         AppLifeCyclePathCollector pathtracker = new AppLifeCyclePathCollector();
         MockAppProvider mockProvider = new MockAppProvider();
@@ -68,6 +69,7 @@ public class DeploymentManagerLifeCyclePathTest
     public void testStateTransition_Receive() throws Exception
     {
         DeploymentManager depman = new DeploymentManager();
+        depman.setContexts(new ContextHandlerCollection());
         depman.setDefaultLifeCycleGoal(null); // no default
         AppLifeCyclePathCollector pathtracker = new AppLifeCyclePathCollector();
         MockAppProvider mockProvider = new MockAppProvider();
