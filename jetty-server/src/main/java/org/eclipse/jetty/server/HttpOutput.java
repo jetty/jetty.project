@@ -839,7 +839,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 _buffer.position(pl);
                 _slice.position(p);
                 _completed=!_buffer.hasRemaining();
-                _channel.write(_buffer, _complete && _completed, this);
+                _channel.write(_slice, _complete && _completed, this);
                 return State.SCHEDULED;
             }
             

@@ -128,8 +128,6 @@ public class AsyncServletIOTest
         Assert.assertThat(_owp.get(),Matchers.greaterThan(1));
     }
 
-
-
     @Test
     public void testRead() throws Exception
     {
@@ -234,6 +232,7 @@ public class AsyncServletIOTest
                     break;
                 //System.err.println("line:  "+line.length()+"\t"+(line.length()>40?(line.substring(0,40)+"..."):line));
                 list.add(line);
+                Thread.sleep(50);
             }
         }
         
