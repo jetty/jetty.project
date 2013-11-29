@@ -381,7 +381,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
         }
         finally
         {
-            setCurrentHttpChannel(null);
+            setCurrentHttpChannel(last);
             if (threadName != null && LOG.isDebugEnabled())
                 Thread.currentThread().setName(threadName);
         }
