@@ -240,7 +240,7 @@ public class AsyncServletIOTest
         int w=0;
         for (String line : list)
         {
-            System.err.println(line);
+            // System.err.println(line);
             if ("-".equals(line))
                 continue;
             assertEquals(writes[w],line.length());
