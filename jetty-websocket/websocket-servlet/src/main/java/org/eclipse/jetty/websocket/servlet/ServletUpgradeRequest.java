@@ -165,7 +165,19 @@ public class ServletUpgradeRequest extends UpgradeRequest
         return new InetSocketAddress(req.getLocalAddr(),req.getLocalPort());
     }
 
+    /**
+     * @deprecated use {@link #getUserPrincipal()} instead
+     */
+    @Deprecated
     public Principal getPrincipal()
+    {
+        return req.getUserPrincipal();
+    }
+    
+    /**
+     * Equivalent to {@link HttpServletRequest#getUserPrincipal()}
+     */
+    public Principal getUserPrincipal()
     {
         return req.getUserPrincipal();
     }
