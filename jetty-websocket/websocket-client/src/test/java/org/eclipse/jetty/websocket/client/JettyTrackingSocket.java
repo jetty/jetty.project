@@ -169,4 +169,9 @@ public class JettyTrackingSocket extends WebSocketAdapter
         LOG.debug("Waiting for message");
         Assert.assertThat("Message Received",dataLatch.await(timeoutDuration,timeoutUnit),is(true));
     }
+
+    public void close()
+    {
+        getSession().close();
+    }
 }

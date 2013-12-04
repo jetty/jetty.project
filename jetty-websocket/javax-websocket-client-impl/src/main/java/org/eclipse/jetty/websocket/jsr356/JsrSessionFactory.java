@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.common.SessionFactory;
+import org.eclipse.jetty.websocket.common.SessionListener;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.jsr356.endpoints.AbstractJsrEventDriver;
@@ -31,16 +32,18 @@ public class JsrSessionFactory implements SessionFactory
 {
     private AtomicLong idgen = new AtomicLong(0);
     private final ClientContainer container;
+    private final SessionListener[] listeners;
 
-    public JsrSessionFactory(ClientContainer container)
+    public JsrSessionFactory(ClientContainer container, SessionListener... sessionListeners)
     {
         this.container = container;
+        this.listeners = sessionListeners;
     }
 
     @Override
     public WebSocketSession createSession(URI requestURI, EventDriver websocket, LogicalConnection connection)
     {
-        return new JsrSession(requestURI,websocket,connection,container,getNextId());
+        return new JsrSession(requestURI,websocket,connection,container,getNextId(),listeners);
     }
 
     public String getNextId()

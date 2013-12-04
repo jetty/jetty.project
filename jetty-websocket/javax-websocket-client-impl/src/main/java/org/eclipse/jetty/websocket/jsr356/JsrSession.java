@@ -43,6 +43,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
+import org.eclipse.jetty.websocket.common.SessionListener;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.jsr356.endpoints.AbstractJsrEventDriver;
@@ -72,9 +73,9 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
     private JsrAsyncRemote asyncRemote;
     private JsrBasicRemote basicRemote;
 
-    public JsrSession(URI requestURI, EventDriver websocket, LogicalConnection connection, ClientContainer container, String id)
+    public JsrSession(URI requestURI, EventDriver websocket, LogicalConnection connection, ClientContainer container, String id, SessionListener[] sessionListeners)
     {
-        super(requestURI,websocket,connection);
+        super(requestURI,websocket,connection,sessionListeners);
         if (!(websocket instanceof AbstractJsrEventDriver))
         {
             throw new IllegalArgumentException("Cannot use, not a JSR WebSocket: " + websocket);

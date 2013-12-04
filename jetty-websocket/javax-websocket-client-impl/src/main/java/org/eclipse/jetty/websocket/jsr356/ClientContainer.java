@@ -20,11 +20,13 @@ package org.eclipse.jetty.websocket.jsr356;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
@@ -38,12 +40,16 @@ import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.client.io.UpgradeListener;
+import org.eclipse.jetty.websocket.common.SessionListener;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
 import org.eclipse.jetty.websocket.jsr356.client.AnnotatedClientEndpointMetadata;
 import org.eclipse.jetty.websocket.jsr356.client.EmptyClientEndpointConfig;
@@ -59,8 +65,10 @@ import org.eclipse.jetty.websocket.jsr356.metadata.EndpointMetadata;
  * <p>
  * This should be specific to a JVM if run in a standalone mode. or specific to a WebAppContext if running on the Jetty server.
  */
-public class ClientContainer extends ContainerLifeCycle implements WebSocketContainer
+public class ClientContainer extends ContainerLifeCycle implements WebSocketContainer, SessionListener
 {
+    private static final Logger LOG = Log.getLogger(ClientContainer.class);
+    
     /** Tracking all primitive decoders for the container */
     private final DecoderFactory decoderFactory;
     /** Tracking all primitive encoders for the container */
@@ -68,6 +76,8 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
 
     /** Tracking for all declared Client endpoints */
     private final Map<Class<?>, EndpointMetadata> endpointClientMetadataCache;
+    /** Tracking for all open Sessions */
+    private Set<Session> openSessions = new CopyOnWriteArraySet<>();
     /** The jetty websocket client in use for this container */
     private WebSocketClient client;
 
@@ -88,7 +98,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
 
         client = new WebSocketClient(executor);
         client.setEventDriverFactory(new JsrEventDriverFactory(client.getPolicy()));
-        client.setSessionFactory(new JsrSessionFactory(this));
+        client.setSessionFactory(new JsrSessionFactory(this,this));
         addBean(client);
     }
 
@@ -287,8 +297,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
      */
     public Set<Session> getOpenSessions()
     {
-        // TODO Auto-generated method stub
-        return null;
+        return Collections.unmodifiableSet(this.openSessions);
     }
 
     private EndpointInstance newClientEndpointInstance(Class<?> endpointClass, ClientEndpointConfig config)
@@ -319,6 +328,34 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
             }
         }
         return new EndpointInstance(endpoint,cec,metadata);
+    }
+
+    @Override
+    public void onSessionClosed(WebSocketSession session)
+    {
+        if (session instanceof Session)
+        {
+            this.openSessions.remove((Session)session);
+        }
+        else
+        {
+            LOG.warn("JSR356 Implementation should not be mixed with native implementation: Expected {} to implement {}",session.getClass().getName(),
+                    Session.class.getName());
+        }
+    }
+
+    @Override
+    public void onSessionOpened(WebSocketSession session)
+    {
+        if (session instanceof Session)
+        {
+            this.openSessions.add((Session)session);
+        }
+        else
+        {
+            LOG.warn("JSR356 Implementation should not be mixed with native implementation: Expected {} to implement {}",session.getClass().getName(),
+                    Session.class.getName());
+        }
     }
 
     @Override

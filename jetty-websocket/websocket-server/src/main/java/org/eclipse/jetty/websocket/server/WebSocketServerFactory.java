@@ -28,7 +28,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.Executor;
 
 import javax.servlet.http.HttpServletRequest;
@@ -51,6 +53,7 @@ import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.api.util.QuoteUtil;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.common.SessionFactory;
+import org.eclipse.jetty.websocket.common.SessionListener;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.WebSocketSessionFactory;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
@@ -65,7 +68,7 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 /**
  * Factory to create WebSocket connections
  */
-public class WebSocketServerFactory extends ContainerLifeCycle implements WebSocketCreator, WebSocketServletFactory
+public class WebSocketServerFactory extends ContainerLifeCycle implements WebSocketCreator, WebSocketServletFactory, SessionListener
 {
     private static final Logger LOG = Log.getLogger(WebSocketServerFactory.class);
     private static final ThreadLocal<UpgradeContext> ACTIVE_CONTEXT = new ThreadLocal<>();
@@ -95,6 +98,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     private final EventDriverFactory eventDriverFactory;
     private final WebSocketExtensionFactory extensionFactory;
     private List<SessionFactory> sessionFactories;
+    private Set<WebSocketSession> openSessions = new CopyOnWriteArraySet<>();
     private WebSocketCreator creator;
     private List<Class<?>> registeredSocketClasses;
 
@@ -119,7 +123,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         this.eventDriverFactory = new EventDriverFactory(defaultPolicy);
         this.extensionFactory = new WebSocketExtensionFactory(defaultPolicy,bufferPool);
         this.sessionFactories = new ArrayList<>();
-        this.sessionFactories.add(new WebSocketSessionFactory());
+        this.sessionFactories.add(new WebSocketSessionFactory(this));
         this.creator = this;
 
         // Create supportedVersions
@@ -303,6 +307,11 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         return extensionFactory;
     }
 
+    public Set<WebSocketSession> getOpenSessions()
+    {
+        return Collections.unmodifiableSet(this.openSessions);
+    }
+
     @Override
     public WebSocketPolicy getPolicy()
     {
@@ -369,6 +378,18 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         }
 
         return true;
+    }
+
+    @Override
+    public void onSessionClosed(WebSocketSession session)
+    {
+        this.openSessions.remove(session);
+    }
+
+    @Override
+    public void onSessionOpened(WebSocketSession session)
+    {
+        this.openSessions.add(session);
     }
 
     protected String[] parseProtocols(String protocol)
