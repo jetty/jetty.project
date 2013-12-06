@@ -526,7 +526,7 @@
     <web-resource-collection>
       <web-resource-name>Enable everything but TRACE</web-resource-name>
       <url-pattern>/</url-pattern>
-      <http-method-ommission>TRACE</http-method-ommission>
+      <http-method-omission>TRACE</http-method-omission>
     </web-resource-collection>
   </security-constraint>
 
