@@ -17,9 +17,7 @@
 //
 
 package com.acme;
-import java.util.EventListener;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import javax.servlet.ServletContextAttributeEvent;
 import javax.servlet.ServletContextAttributeListener;
@@ -37,35 +35,13 @@ import javax.servlet.http.HttpSessionEvent;
 import javax.servlet.http.HttpSessionListener;
 
 
-@Foo(1)
+
 @WebListener
-public class TestListener implements HttpSessionListener,  HttpSessionAttributeListener, HttpSessionActivationListener, ServletContextListener, ServletContextAttributeListener, ServletRequestListener, ServletRequestAttributeListener
+public class AnnotatedListener implements HttpSessionListener,  HttpSessionAttributeListener, HttpSessionActivationListener, ServletContextListener, ServletContextAttributeListener, ServletRequestListener, ServletRequestAttributeListener
 {
-    public class NaughtyServletContextListener implements ServletContextListener
-    {
-
-        @Override
-        public void contextInitialized(ServletContextEvent sce)
-        {
-            throw new IllegalStateException("Should not call NaughtServletContextListener.contextInitialized");
-        }
-
-        @Override
-        public void contextDestroyed(ServletContextEvent sce)
-        {
-            throw new IllegalStateException("Should not call NaughtServletContextListener.contextDestroyed");
-        }
-    }
-    
-    public class InvalidListener implements EventListener
-    {
-        
-    }
 
     @Resource(mappedName="maxAmount")
     private Double maxAmount;
-    
-
 
     public void attributeAdded(HttpSessionBindingEvent se)
     {
@@ -94,38 +70,7 @@ public class TestListener implements HttpSessionListener,  HttpSessionAttributeL
 
     public void contextInitialized(ServletContextEvent sce)
     {
-        sce.getServletContext().setAttribute("com.acme.AnnotationTest.sclInjectTest", Boolean.valueOf(maxAmount != null));
-        
-        //Can't add a ServletContextListener from a ServletContextListener even if it is declared in web.xml
-        try
-        {
-            sce.getServletContext().addListener(new NaughtyServletContextListener());
-            sce.getServletContext().setAttribute("com.acme.AnnotationTest.sclFromSclRegoTest", Boolean.FALSE);
-        }
-        catch (IllegalArgumentException e)
-        {
-            sce.getServletContext().setAttribute("com.acme.AnnotationTest.sclFromSclRegoTest", Boolean.TRUE);
-        }
-        catch (Exception e)
-        {
-            sce.getServletContext().setAttribute("com.acme.AnnotationTest.sclFromSclRegoTest", Boolean.FALSE);
-        }
-        
-        
-        //Can't add an EventListener not part of the specified list for addListener()
-        try
-        {
-            sce.getServletContext().addListener(new InvalidListener());
-            sce.getServletContext().setAttribute("com.acme.AnnotationTest.invalidListenerRegoTest", Boolean.FALSE);
-        }
-        catch (IllegalArgumentException e)
-        {
-            sce.getServletContext().setAttribute("com.acme.AnnotationTest.invalidListenerRegoTest", Boolean.TRUE);
-        }
-        catch (Exception e)
-        {
-            sce.getServletContext().setAttribute("com.acme.AnnotationTest.invalidListenerRegoTest", Boolean.FALSE);
-        } 
+        sce.getServletContext().setAttribute("com.acme.AnnotationTest.sclInjectWebListenerTest", Boolean.valueOf(maxAmount!=null));
     }
 
     public void contextDestroyed(ServletContextEvent sce)
