@@ -21,22 +21,22 @@ package org.eclipse.jetty.servlets;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
+import javax.servlet.Filter;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import junit.framework.Assert;
-
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlets.gzip.CompressedResponseWrapper;
 import org.eclipse.jetty.servlets.gzip.GzipTester;
 import org.eclipse.jetty.toolchain.test.TestingDir;
+import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -50,20 +50,22 @@ import org.junit.runners.Parameterized.Parameters;
 public class GzipFilterDefaultTest
 {
     @Parameters
-    public static Collection<String[]> data()
+    public static List<Object[]> data()
     {
-        String[][] data = new String[][]
-        {
-        { GzipFilter.GZIP },
-        { GzipFilter.DEFLATE } };
-
-        return Arrays.asList(data);
+        return Arrays.asList(new Object[][]
+        { 
+            { AsyncGzipFilter.class, GzipFilter.GZIP },
+            { GzipFilter.class, GzipFilter.GZIP },
+            { GzipFilter.class, GzipFilter.DEFLATE },
+        });
     }
 
+    private Class<? extends Filter> testFilter;
     private String compressionType;
 
-    public GzipFilterDefaultTest(String compressionType)
+    public GzipFilterDefaultTest(Class<? extends Filter> testFilter, String compressionType)
     {
+        this.testFilter=testFilter;
         this.compressionType = compressionType;
     }
 
@@ -105,7 +107,10 @@ public class GzipFilterDefaultTest
 
     public static class HttpContentTypeWithEncoding extends HttpServlet
     {
-        public static final String COMPRESSED_CONTENT = "<html><head></head><body><h1>COMPRESSED</h1></body></html>";
+        public static final String COMPRESSED_CONTENT = "<html><head></head><body><h1>COMPRESSABLE CONTENT</h1>"+
+        "This content must be longer than the default min gzip length, which is 256 bytes. "+
+        "The moon is blue to a fish in love. How now brown cow. The quick brown fox jumped over the lazy dog. A woman needs a man like a fish needs a bicycle!"+
+        "</body></html>";
         
         @Override
         protected void doGet(HttpServletRequest req, HttpServletResponse resp)
@@ -128,9 +133,9 @@ public class GzipFilterDefaultTest
     public void testIsGzipByMethod() throws Exception
     {
         GzipTester tester = new GzipTester(testingdir, compressionType);
+        tester.setGzipFilterClass(testFilter);
 
-        // Test content that is smaller than the buffer.
-        int filesize = CompressedResponseWrapper.DEFAULT_BUFFER_SIZE * 2;
+        int filesize = tester.getOutputBufferSize() * 2;
         tester.prepareServerFile("file.txt",filesize);
         
         FilterHolder holder = tester.setContentServlet(GetServlet.class);
@@ -177,8 +182,8 @@ public class GzipFilterDefaultTest
     public void testIsGzipCompressedEmpty() throws Exception
     {
         GzipTester tester = new GzipTester(testingdir, compressionType);
+        tester.setGzipFilterClass(testFilter);
 
-        // Test content that is smaller than the buffer.
         tester.prepareServerFile("empty.txt",0);
         
         FilterHolder holder = tester.setContentServlet(org.eclipse.jetty.servlet.DefaultServlet.class);
@@ -199,59 +204,11 @@ public class GzipFilterDefaultTest
     public void testIsGzipCompressedTiny() throws Exception
     {
         GzipTester tester = new GzipTester(testingdir, compressionType);
+        tester.setGzipFilterClass(testFilter);
 
-        // Test content that is smaller than the buffer.
-        int filesize = CompressedResponseWrapper.DEFAULT_BUFFER_SIZE / 4;
+        int filesize = tester.getOutputBufferSize() / 4;
         tester.prepareServerFile("file.txt",filesize);
 
-        FilterHolder holder = tester.setContentServlet(org.eclipse.jetty.servlet.DefaultServlet.class);
-        holder.setInitParameter("mimeTypes","text/plain");
-
-        try
-        {
-            tester.start();
-            HttpTester.Response http = tester.assertIsResponseGzipCompressed("GET","file.txt");
-            Assert.assertEquals("Accept-Encoding",http.get("Vary"));
-        }
-        finally
-        {
-            tester.stop();
-        }
-    }
-
-    @Test
-    public void testIsGzipCompressedTinyWithQ() throws Exception
-    {
-        GzipTester tester = new GzipTester(testingdir, compressionType+";q=0.5");
-
-        // Test content that is smaller than the buffer.
-        int filesize = CompressedResponseWrapper.DEFAULT_BUFFER_SIZE / 4;
-        tester.prepareServerFile("file.txt",filesize);
-        
-        FilterHolder holder = tester.setContentServlet(org.eclipse.jetty.servlet.DefaultServlet.class);
-        holder.setInitParameter("mimeTypes","text/plain");
-
-        try
-        {
-            tester.start();
-            HttpTester.Response http = tester.assertIsResponseGzipCompressed("GET","file.txt");
-            Assert.assertEquals("Accept-Encoding",http.get("Vary"));
-        }
-        finally
-        {
-            tester.stop();
-        }
-    }
-    
-    @Test
-    public void testIsGzipCompressedTinyWithBadQ() throws Exception
-    {
-        GzipTester tester = new GzipTester(testingdir, compressionType+";q=");
-
-        // Test content that is smaller than the buffer.
-        int filesize = CompressedResponseWrapper.DEFAULT_BUFFER_SIZE / 4;
-        tester.prepareServerFile("file.txt",filesize);
-        
         FilterHolder holder = tester.setContentServlet(org.eclipse.jetty.servlet.DefaultServlet.class);
         holder.setInitParameter("mimeTypes","text/plain");
 
@@ -271,9 +228,9 @@ public class GzipFilterDefaultTest
     public void testIsGzipCompressedLarge() throws Exception
     {
         GzipTester tester = new GzipTester(testingdir, compressionType);
+        tester.setGzipFilterClass(testFilter);
 
-        // Test content that is smaller than the buffer.
-        int filesize = CompressedResponseWrapper.DEFAULT_BUFFER_SIZE * 4;
+        int filesize = tester.getOutputBufferSize() * 4;
         tester.prepareServerFile("file.txt",filesize);
 
         FilterHolder holder = tester.setContentServlet(org.eclipse.jetty.servlet.DefaultServlet.class);
@@ -296,9 +253,9 @@ public class GzipFilterDefaultTest
     public void testGzipedIfModified() throws Exception
     {
         GzipTester tester = new GzipTester(testingdir, compressionType);
+        tester.setGzipFilterClass(testFilter);
 
-        // Test content that is smaller than the buffer.
-        int filesize = CompressedResponseWrapper.DEFAULT_BUFFER_SIZE * 4;
+        int filesize = tester.getOutputBufferSize() * 4;
         tester.prepareServerFile("file.txt",filesize);
         
         FilterHolder holder = tester.setContentServlet(org.eclipse.jetty.servlet.DefaultServlet.class);
@@ -321,9 +278,9 @@ public class GzipFilterDefaultTest
     public void testNotGzipedIfNotModified() throws Exception
     {
         GzipTester tester = new GzipTester(testingdir, compressionType);
+        tester.setGzipFilterClass(testFilter);
 
-        // Test content that is smaller than the buffer.
-        int filesize = CompressedResponseWrapper.DEFAULT_BUFFER_SIZE * 4;
+        int filesize = tester.getOutputBufferSize() * 4;
         tester.prepareServerFile("file.txt",filesize);
         
         FilterHolder holder = tester.setContentServlet(org.eclipse.jetty.servlet.DefaultServlet.class);
@@ -343,11 +300,12 @@ public class GzipFilterDefaultTest
     
 
     @Test
-    public void testIsNotGzipCompressedWithQ() throws Exception
+    public void testIsNotGzipCompressedWithZeroQ() throws Exception
     {
-        GzipTester tester = new GzipTester(testingdir, compressionType+"; q = 0");
+        GzipTester tester = new GzipTester(testingdir, compressionType+"; q=0");
+        tester.setGzipFilterClass(testFilter);
         
-        int filesize = CompressedResponseWrapper.DEFAULT_BUFFER_SIZE / 4;
+        int filesize = tester.getOutputBufferSize() / 4;
         tester.prepareServerFile("file.txt",filesize);
         
         FilterHolder holder = tester.setContentServlet(org.eclipse.jetty.servlet.DefaultServlet.class);
@@ -364,13 +322,38 @@ public class GzipFilterDefaultTest
             tester.stop();
         }
     }
+
+    @Test
+    public void testIsGzipCompressedWithQ() throws Exception
+    {
+        GzipTester tester = new GzipTester(testingdir, compressionType,"something;q=0.1,"+compressionType+";q=0.5");
+        tester.setGzipFilterClass(testFilter);
+        
+        int filesize = tester.getOutputBufferSize() / 4;
+        tester.prepareServerFile("file.txt",filesize);
+        
+        FilterHolder holder = tester.setContentServlet(org.eclipse.jetty.servlet.DefaultServlet.class);
+        holder.setInitParameter("mimeTypes","text/plain");
+
+        try
+        {
+            tester.start();
+            HttpTester.Response http = tester.assertIsResponseGzipCompressed("GET","file.txt");
+            Assert.assertEquals("Accept-Encoding",http.get("Vary"));
+        }
+        finally
+        {
+            tester.stop();
+        }
+    }
     
     @Test
     public void testIsNotGzipCompressedByContentType() throws Exception
     {
         GzipTester tester = new GzipTester(testingdir, compressionType);
+        tester.setGzipFilterClass(testFilter);
 
-        int filesize = CompressedResponseWrapper.DEFAULT_BUFFER_SIZE * 4;
+        int filesize = tester.getOutputBufferSize() * 4;
         tester.prepareServerFile("file.mp3",filesize);
 
         FilterHolder holder = tester.setContentServlet(org.eclipse.jetty.servlet.DefaultServlet.class);
@@ -392,6 +375,7 @@ public class GzipFilterDefaultTest
     public void testGzipCompressedByContentTypeWithEncoding() throws Exception
     { 
         GzipTester tester = new GzipTester(testingdir, compressionType);
+        tester.setGzipFilterClass(testFilter);
         FilterHolder holder = tester.setContentServlet(HttpContentTypeWithEncoding.class);
         holder.setInitParameter("mimeTypes","text/plain");
         try
@@ -399,8 +383,6 @@ public class GzipFilterDefaultTest
             tester.start();
             HttpTester.Response http = tester.assertNonStaticContentIsResponseGzipCompressed("GET","xxx", HttpContentTypeWithEncoding.COMPRESSED_CONTENT);
             Assert.assertEquals("Accept-Encoding",http.get("Vary"));
-            System.err.println(http.get("Content-Type"));
-            System.err.println(http.get("Content-Encoding"));
         }
         finally
         {
@@ -413,8 +395,9 @@ public class GzipFilterDefaultTest
     public void testIsNotGzipCompressedByDeferredContentType() throws Exception
     {
         GzipTester tester = new GzipTester(testingdir, compressionType);
+        tester.setGzipFilterClass(testFilter);
 
-        int filesize = CompressedResponseWrapper.DEFAULT_BUFFER_SIZE * 4;
+        int filesize = tester.getOutputBufferSize() * 4;
         tester.prepareServerFile("file.mp3.deferred",filesize);
         
         FilterHolder holder = tester.setContentServlet(GetServlet.class);
@@ -436,6 +419,7 @@ public class GzipFilterDefaultTest
     public void testIsNotGzipCompressedHttpStatus() throws Exception
     {
         GzipTester tester = new GzipTester(testingdir, compressionType);
+        tester.setGzipFilterClass(testFilter);
 
         // Test error code 204
         FilterHolder holder = tester.setContentServlet(HttpStatusServlet.class);
@@ -457,6 +441,7 @@ public class GzipFilterDefaultTest
     public void testIsNotGzipCompressedHttpBadRequestStatus() throws Exception
     {
         GzipTester tester = new GzipTester(testingdir, compressionType);
+        tester.setGzipFilterClass(testFilter);
 
         // Test error code 400
         FilterHolder holder = tester.setContentServlet(HttpErrorServlet.class);
@@ -478,12 +463,13 @@ public class GzipFilterDefaultTest
     public void testUserAgentExclusion() throws Exception
     {
         GzipTester tester = new GzipTester(testingdir,compressionType);
+        tester.setGzipFilterClass(testFilter);
 
         FilterHolder holder = tester.setContentServlet(DefaultServlet.class);
         holder.setInitParameter("excludedAgents","bar, foo");
         tester.setUserAgent("foo");
 
-        int filesize = CompressedResponseWrapper.DEFAULT_BUFFER_SIZE * 4;
+        int filesize = tester.getOutputBufferSize() * 4;
         tester.prepareServerFile("file.txt",filesize);
 
         try
@@ -501,13 +487,14 @@ public class GzipFilterDefaultTest
     public void testUserAgentExclusionByExcludedAgentPatterns() throws Exception
     {
         GzipTester tester = new GzipTester(testingdir,compressionType);
+        tester.setGzipFilterClass(testFilter);
 
         FilterHolder holder = tester.setContentServlet(DefaultServlet.class);
         holder.setInitParameter("excludedAgents","bar");
         holder.setInitParameter("excludeAgentPatterns","fo.*");
         tester.setUserAgent("foo");
 
-        int filesize = CompressedResponseWrapper.DEFAULT_BUFFER_SIZE * 4;
+        int filesize = tester.getOutputBufferSize() * 4;
         tester.prepareServerFile("file.txt",filesize);
 
         try
@@ -525,11 +512,12 @@ public class GzipFilterDefaultTest
     public void testExcludePaths() throws Exception
     {
         GzipTester tester = new GzipTester(testingdir,compressionType);
+        tester.setGzipFilterClass(testFilter);
 
         FilterHolder holder = tester.setContentServlet(DefaultServlet.class);
         holder.setInitParameter("excludePaths","/bar/, /context/");
 
-        int filesize = CompressedResponseWrapper.DEFAULT_BUFFER_SIZE * 4;
+        int filesize = tester.getOutputBufferSize() * 4;
         tester.prepareServerFile("file.txt",filesize);
 
         try
@@ -547,11 +535,12 @@ public class GzipFilterDefaultTest
     public void testExcludePathPatterns() throws Exception
     {
         GzipTester tester = new GzipTester(testingdir,compressionType);
+        tester.setGzipFilterClass(testFilter);
 
         FilterHolder holder = tester.setContentServlet(DefaultServlet.class);
         holder.setInitParameter("excludePathPatterns","/cont.*");
 
-        int filesize = CompressedResponseWrapper.DEFAULT_BUFFER_SIZE * 4;
+        int filesize = tester.getOutputBufferSize() * 4;
         tester.prepareServerFile("file.txt",filesize);
 
         try

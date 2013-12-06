@@ -509,6 +509,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     case NEED_HEADER:
                     {
                         // Look for optimisation to avoid allocating a _header buffer
+                        /*
+                         Cannot use this optimisation unless we work out how not to overwrite data in user passed arrays.
                         if (_lastContent && _content!=null && !_content.isReadOnly() && _content.hasArray() && BufferUtil.space(_content)>_config.getResponseHeaderSize() )
                         {
                             // use spare space in content buffer for header buffer
@@ -522,7 +524,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                             _content.limit(l);
                         }
                         else
+                        */
                             _header = _bufferPool.acquire(_config.getResponseHeaderSize(), HEADER_BUFFER_DIRECT);
+                            
                         continue;
                     }
                     case NEED_CHUNK:

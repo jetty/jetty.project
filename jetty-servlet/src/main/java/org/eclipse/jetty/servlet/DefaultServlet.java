@@ -882,7 +882,10 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                         @Override
                         public void failed(Throwable x)
                         {
-                            LOG.debug(x);
+                            if (x instanceof IOException)
+                                LOG.debug(x);
+                            else
+                                LOG.warn(x);
                             context.complete();
                         }
                     });

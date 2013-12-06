@@ -41,6 +41,17 @@ public class ServletTester extends ContainerLifeCycle
     private final Server _server=new Server();
     private final LocalConnector _connector=new LocalConnector(_server);
     private final ServletContextHandler _context;
+    
+    public Server getServer()
+    {
+        return _server;
+    }
+    
+    public LocalConnector getConnector()
+    {
+        return _connector;
+    }
+    
     public void setVirtualHosts(String[] vhosts)
     {
         _context.setVirtualHosts(vhosts);

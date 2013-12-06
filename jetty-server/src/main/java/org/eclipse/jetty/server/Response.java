@@ -109,9 +109,9 @@ public class Response implements HttpServletResponse
     public final static String HTTP_ONLY_COMMENT = "__HTTP_ONLY__";
 
     private final HttpChannel<?> _channel;
-    private final HttpOutput _out;
     private final HttpFields _fields = new HttpFields();
     private final AtomicInteger _include = new AtomicInteger();
+    private HttpOutput _out;
     private int _status = HttpStatus.NOT_SET_000;
     private String _reason;
     private Locale _locale;
@@ -178,6 +178,11 @@ public class Response implements HttpServletResponse
     public HttpOutput getHttpOutput()
     {
         return _out;
+    }
+    
+    public void setHttpOutput(HttpOutput out)
+    {
+        _out=out;
     }
 
     public boolean isIncluding()
@@ -988,15 +993,14 @@ public class Response implements HttpServletResponse
         if (isCommitted() || isIncluding())
             return;
 
-        long written = _out.getWritten();
-        if (written > len)
-            throw new IllegalArgumentException("setContentLength(" + len + ") when already written " + written);
-
         _contentLength = len;
-        _fields.putLongField(HttpHeader.CONTENT_LENGTH.toString(), len);
-
         if (_contentLength > 0)
         {
+            long written = _out.getWritten();
+            if (written > len)
+                throw new IllegalArgumentException("setContentLength(" + len + ") when already written " + written);
+            
+            _fields.putLongField(HttpHeader.CONTENT_LENGTH, len);
             if (isAllContentWritten(written))
             {
                 try
@@ -1009,6 +1013,20 @@ public class Response implements HttpServletResponse
                 }
             }
         }
+        else if (_contentLength==0)
+        {
+            long written = _out.getWritten();
+            if (written > 0)
+                throw new IllegalArgumentException("setContentLength(0) when already written " + written);
+            _fields.put(HttpHeader.CONTENT_LENGTH, "0");
+        }
+        else
+            _fields.remove(HttpHeader.CONTENT_LENGTH);
+    }
+    
+    public long getContentLength()
+    {
+        return _contentLength;
     }
 
     public boolean isAllContentWritten(long written)

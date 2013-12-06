@@ -98,7 +98,6 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     private final HttpChannelState _state;
     private final Request _request;
     private final Response _response;
-    private final BlockingCallback _writeblock=new BlockingCallback();
     private HttpVersion _version = HttpVersion.HTTP_1_1;
     private boolean _expect = false;
     private boolean _expect100Continue = false;
@@ -127,12 +126,6 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     {
         return _version;
     }
-
-    BlockingCallback getWriteBlockingCallback()
-    {
-        return _writeblock;
-    }
-
     /**
      * @return the number of requests handled by this connection
      */
@@ -725,27 +718,15 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
 
     protected boolean sendResponse(ResponseInfo info, ByteBuffer content, boolean complete) throws IOException
     {
-        boolean committing=sendResponse(info,content,complete,_writeblock);
-        _writeblock.block();
+        BlockingCallback writeBlock = _response.getHttpOutput().getWriteBlockingCallback();
+        boolean committing=sendResponse(info,content,complete,writeBlock);
+        writeBlock.block();
         return committing;
     }
 
-    protected boolean isCommitted()
+    public boolean isCommitted()
     {
         return _committed.get();
-    }
-
-    /**
-     * <p>Blocking write, committing the response if needed.</p>
-     *
-     * @param content  the content buffer to write
-     * @param complete whether the content is complete for the response
-     * @throws IOException if the write fails
-     */
-    protected void write(ByteBuffer content, boolean complete) throws IOException
-    {
-        sendResponse(null,content,complete,_writeblock);
-        _writeblock.block();
     }
 
     /**
