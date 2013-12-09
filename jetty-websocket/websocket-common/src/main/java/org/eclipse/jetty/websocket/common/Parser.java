@@ -191,11 +191,26 @@ public class Parser
 
         if (policy.getBehavior() == WebSocketBehavior.SERVER)
         {
-            // Parsing on server?
-            // Then you MUST make sure all incoming frames are masked!
+            /* Parsing on server.
+             * 
+             * Then you MUST make sure all incoming frames are masked!
+             * 
+             * Technically, this test is in violation of RFC-6455, Section 5.1
+             * http://tools.ietf.org/html/rfc6455#section-5.1
+             * 
+             * But we can't trust the client at this point, so Jetty opts to close
+             * the connection as a Protocol error.
+             */
             if (f.isMasked() == false)
             {
-                throw new ProtocolException("Client frames MUST be masked (RFC-6455)");
+                throw new ProtocolException("Client MUST mask all frames (RFC-6455: Section 5.1)");
+            }
+        } else if(policy.getBehavior() == WebSocketBehavior.CLIENT)
+        {
+            // Required by RFC-6455 / Section 5.1
+            if (f.isMasked() == true)
+            {
+                throw new ProtocolException("Server MUST NOT mask any frames (RFC-6455: Section 5.1)");
             }
         }
 
