@@ -18,8 +18,7 @@
 
 package org.eclipse.jetty.websocket.client.blockhead;
 
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.*;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -158,7 +157,7 @@ public class BlockheadServer
             // now echo them back.
             for (Frame frame : cap.getFrames())
             {
-                write(frame);
+                write(WebSocketFrame.copy(frame).setMasked(false));
             }
         }
 

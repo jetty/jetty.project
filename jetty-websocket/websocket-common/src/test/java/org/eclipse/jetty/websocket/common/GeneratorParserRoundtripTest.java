@@ -76,10 +76,9 @@ public class GeneratorParserRoundtripTest
     @Test
     public void testParserAndGeneratorMasked() throws Exception
     {
-        WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
         ByteBufferPool bufferPool = new MappedByteBufferPool();
-        Generator gen = new Generator(policy,bufferPool);
-        Parser parser = new Parser(policy,bufferPool);
+        Generator gen = new Generator(WebSocketPolicy.newClientPolicy(),bufferPool);
+        Parser parser = new Parser(WebSocketPolicy.newServerPolicy(),bufferPool);
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
 

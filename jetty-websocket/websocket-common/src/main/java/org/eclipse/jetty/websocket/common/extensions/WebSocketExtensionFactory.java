@@ -64,9 +64,9 @@ public class WebSocketExtensionFactory extends ExtensionFactory
             if (ext instanceof AbstractExtension)
             {
                 AbstractExtension aext = (AbstractExtension)ext;
-                aext.setConfig(config);
                 aext.setPolicy(policy);
                 aext.setBufferPool(bufferPool);
+                aext.setConfig(config);
             }
             return ext;
         }

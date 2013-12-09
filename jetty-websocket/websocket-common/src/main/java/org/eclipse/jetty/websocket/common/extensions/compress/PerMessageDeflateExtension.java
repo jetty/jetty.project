@@ -48,9 +48,20 @@ public class PerMessageDeflateExtension extends AbstractExtension
     /** Tail Bytes per Spec */
     private static final byte[] TAIL = new byte[]
     { 0x00, 0x00, (byte)0xFF, (byte)0xFF };
-    private int bufferSize = 64 * 1024;
+    private ExtensionConfig configRequested;
+    private ExtensionConfig configNegotiated;
     private Deflater compressor;
     private Inflater decompressor;
+
+    private boolean incomingCompressed = false;
+    private boolean outgoingCompressed = false;
+    /**
+     * Context Takeover Control.
+     * <p>
+     * If true, the same LZ77 window is used between messages. Can be overridden with extension parameters.
+     */
+    private boolean incomingContextTakeover = true;
+    private boolean outgoingContextTakeover = true;
 
     @Override
     public String getName()
@@ -61,16 +72,27 @@ public class PerMessageDeflateExtension extends AbstractExtension
     @Override
     public synchronized void incomingFrame(Frame frame)
     {
-        if (OpCode.isControlFrame(frame.getOpCode()) || !frame.isRsv1())
+        switch (frame.getOpCode())
         {
-            // Cannot modify incoming control frames or ones with RSV1 set.
-            nextIncomingFrame(frame);
-            return;
+            case OpCode.BINARY: // fall-thru
+            case OpCode.TEXT:
+                incomingCompressed = frame.isRsv1();
+                break;
+            case OpCode.CONTINUATION:
+                if (!incomingCompressed)
+                {
+                    nextIncomingFrame(frame);
+                }
+                break;
+            default:
+                // All others are assumed to be control frames
+                nextIncomingFrame(frame);
+                return;
         }
 
-        if (!frame.hasPayload())
+        if (!incomingCompressed || !frame.hasPayload())
         {
-            // no payload? nothing to do.
+            // nothing to do with this frame
             nextIncomingFrame(frame);
             return;
         }
@@ -78,9 +100,21 @@ public class PerMessageDeflateExtension extends AbstractExtension
         // Prime the decompressor
         ByteBuffer payload = frame.getPayload();
         int inlen = payload.remaining();
-        byte compressed[] = new byte[inlen + TAIL.length];
-        payload.get(compressed,0,inlen);
-        System.arraycopy(TAIL,0,compressed,inlen,TAIL.length);
+        byte compressed[] = null;
+
+        if (frame.isFin())
+        {
+            compressed = new byte[inlen + TAIL.length];
+            payload.get(compressed,0,inlen);
+            System.arraycopy(TAIL,0,compressed,inlen,TAIL.length);
+            incomingCompressed = false;
+        }
+        else
+        {
+            compressed = new byte[inlen];
+            payload.get(compressed,0,inlen);
+        }
+
         decompressor.setInput(compressed,0,compressed.length);
 
         // Since we don't track text vs binary vs continuation state, just grab whatever is the greater value.
@@ -93,7 +127,7 @@ public class PerMessageDeflateExtension extends AbstractExtension
         // Perform decompression
         while (decompressor.getRemaining() > 0 && !decompressor.finished())
         {
-            byte outbuf[] = new byte[Math.min(inlen * 2,bufferSize)];
+            byte outbuf[] = new byte[inlen];
             try
             {
                 int len = decompressor.inflate(outbuf);
@@ -174,7 +208,25 @@ public class PerMessageDeflateExtension extends AbstractExtension
 
                 if (len > 0)
                 {
-                    outbuf.put(compressed,0,len - 4);
+                    if (len > 4)
+                    {
+                        // Test for the 4 tail octets (0x00 0x00 0xff 0xff)
+                        int idx = len - 4;
+                        boolean found = true;
+                        for (int n = 0; n < TAIL.length; n++)
+                        {
+                            if (compressed[idx + n] != TAIL[n])
+                            {
+                                found = false;
+                                break;
+                            }
+                        }
+                        if (found)
+                        {
+                            len = len - 4;
+                        }
+                    }
+                    outbuf.put(compressed,0,len);
                 }
 
                 BufferUtil.flipToFlush(outbuf,0);
@@ -195,7 +247,7 @@ public class PerMessageDeflateExtension extends AbstractExtension
                     }
                 }
 
-                DataFrame out = new DataFrame(frame);
+                DataFrame out = new DataFrame(frame,outgoingCompressed);
                 out.setRsv1(true);
                 out.setBufferPool(getBufferPool());
                 out.setPayload(outbuf);
@@ -211,14 +263,41 @@ public class PerMessageDeflateExtension extends AbstractExtension
                     // pass through the callback
                     nextOutgoingFrame(out,callback);
                 }
+
+                outgoingCompressed = !out.isFin();
             }
         }
     }
 
     @Override
+    protected void nextIncomingFrame(Frame frame)
+    {
+        if (frame.isFin() && !incomingContextTakeover)
+        {
+            LOG.debug("Incoming Context Reset");
+            decompressor.reset();
+        }
+
+        super.nextIncomingFrame(frame);
+    }
+
+    @Override
+    protected void nextOutgoingFrame(Frame frame, WriteCallback callback)
+    {
+        if (frame.isFin() && !outgoingContextTakeover)
+        {
+            LOG.debug("Outgoing Context Reset");
+            compressor.reset();
+        }
+
+        super.nextOutgoingFrame(frame,callback);
+    }
+
+    @Override
     public void setConfig(final ExtensionConfig config)
     {
-        ExtensionConfig negotiated = new ExtensionConfig(config.getName());
+        configRequested = new ExtensionConfig(config);
+        configNegotiated = new ExtensionConfig(config.getName());
 
         boolean nowrap = true;
         compressor = new Deflater(Deflater.BEST_COMPRESSION,nowrap);
@@ -229,25 +308,41 @@ public class PerMessageDeflateExtension extends AbstractExtension
         for (String key : config.getParameterKeys())
         {
             key = key.trim();
-            String value = config.getParameter(key,null);
             switch (key)
             {
-                case "c2s_max_window_bits":
-                    negotiated.setParameter("s2c_max_window_bits",value);
+                case "client_max_window_bits": // fallthru
+                case "server_max_window_bits":
+                    // Not supported by Jetty
+                    // Don't negotiate these parameters
                     break;
-                case "c2s_no_context_takeover":
-                    negotiated.setParameter("s2c_no_context_takeover",value);
+                case "client_no_context_takeover":
+                    configNegotiated.setParameter("client_no_context_takeover");
+                    switch (getPolicy().getBehavior())
+                    {
+                        case CLIENT:
+                            incomingContextTakeover = false;
+                            break;
+                        case SERVER:
+                            outgoingContextTakeover = false;
+                            break;
+                    }
                     break;
-                case "s2c_max_window_bits":
-                    negotiated.setParameter("c2s_max_window_bits",value);
-                    break;
-                case "s2c_no_context_takeover":
-                    negotiated.setParameter("c2s_no_context_takeover",value);
+                case "server_no_context_takeover":
+                    configNegotiated.setParameter("server_no_context_takeover");
+                    switch (getPolicy().getBehavior())
+                    {
+                        case CLIENT:
+                            outgoingContextTakeover = false;
+                            break;
+                        case SERVER:
+                            incomingContextTakeover = false;
+                            break;
+                    }
                     break;
             }
         }
 
-        super.setConfig(negotiated);
+        super.setConfig(configNegotiated);
     }
 
     @Override
@@ -255,7 +350,8 @@ public class PerMessageDeflateExtension extends AbstractExtension
     {
         StringBuilder str = new StringBuilder();
         str.append(this.getClass().getSimpleName());
-        str.append('[');
+        str.append("[requested=").append(configRequested.getParameterizedName());
+        str.append(",negotiated=").append(configNegotiated.getParameterizedName());
         str.append(']');
         return str.toString();
     }

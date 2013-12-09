@@ -20,10 +20,9 @@ package org.eclipse.jetty.websocket.common.message;
 
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Utf8Appendable;
 
 /**
@@ -31,8 +30,6 @@ import org.eclipse.jetty.util.Utf8Appendable;
  */
 public class Utf8CharBuffer extends Utf8Appendable
 {
-    private static final Charset UTF8 = StringUtil.__UTF8_CHARSET;
-
     /**
      * Convenience method to wrap a ByteBuffer with a {@link Utf8CharBuffer}
      * 
@@ -55,7 +52,7 @@ public class Utf8CharBuffer extends Utf8Appendable
 
     public void append(char[] cbuf, int offset, int size)
     {
-        append(BufferUtil.toDirectBuffer(new String(cbuf,offset,size),UTF8));
+        append(BufferUtil.toDirectBuffer(new String(cbuf,offset,size),StandardCharsets.UTF_8));
     }
 
     public void append(int c)
@@ -80,7 +77,7 @@ public class Utf8CharBuffer extends Utf8Appendable
         buffer.position(0);
 
         // get byte buffer
-        ByteBuffer bb = UTF8.encode(buffer);
+        ByteBuffer bb = StandardCharsets.UTF_8.encode(buffer);
 
         // restor settings
         buffer.limit(limit);

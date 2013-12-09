@@ -33,7 +33,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class FrameCompressionExtensionTest
+public class PerMessageDeflateExtensionTest
 {
     private static SimpleServletServer server;
 
@@ -50,12 +50,15 @@ public class FrameCompressionExtensionTest
         server.stop();
     }
 
+    /**
+     * Default configuration for permessage-deflate
+     */
     @Test
-    public void testDeflateFrameExtension() throws Exception
+    public void testPerMessgeDeflateDefault() throws Exception
     {
         BlockheadClient client = new BlockheadClient(server.getServerUri());
         client.clearExtensions();
-        client.addExtensions("x-webkit-deflate-frame");
+        client.addExtensions("permessage-deflate");
         client.setProtocols("echo");
 
         try
@@ -66,7 +69,7 @@ public class FrameCompressionExtensionTest
             client.sendStandardRequest();
             HttpResponse resp = client.expectUpgradeResponse();
 
-            Assert.assertThat("Response",resp.getExtensionsHeader(),containsString("x-webkit-deflate-frame"));
+            Assert.assertThat("Response",resp.getExtensionsHeader(),containsString("permessage-deflate"));
 
             String msg = "Hello";
 

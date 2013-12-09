@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.websocket.common;
 
-import org.eclipse.jetty.websocket.common.io.IOState;
-import org.eclipse.jetty.websocket.common.io.IOState.ConnectionStateListener;
-
-
 /**
  * Connection states as outlined in <a href="https://tools.ietf.org/html/rfc6455">RFC6455</a>.
  */

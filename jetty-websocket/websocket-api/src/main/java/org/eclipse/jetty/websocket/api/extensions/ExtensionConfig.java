@@ -63,6 +63,16 @@ public class ExtensionConfig
         this.parameters = new HashMap<>();
     }
 
+    /**
+     * Copy constructor
+     */
+    public ExtensionConfig(ExtensionConfig copy)
+    {
+        this.name = copy.name;
+        this.parameters = new HashMap<>();
+        this.parameters.putAll(copy.parameters);
+    }
+
     public String getName()
     {
         return name;
@@ -141,6 +151,11 @@ public class ExtensionConfig
     public void setParameter(String key, String value)
     {
         parameters.put(key,value);
+    }
+    
+    public void setParameter(String key)
+    {
+        parameters.put(key,null);
     }
 
     @Override
