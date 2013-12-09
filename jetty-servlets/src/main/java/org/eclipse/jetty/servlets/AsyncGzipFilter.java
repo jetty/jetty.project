@@ -295,6 +295,7 @@ public class AsyncGzipFilter extends UserAgentFilter implements GzipFactory
     public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain)
         throws IOException, ServletException
     {
+        LOG.debug("{} doFilter {}",this,req);
         HttpServletRequest request=(HttpServletRequest)req;
         HttpServletResponse response=(HttpServletResponse)res;
 
@@ -364,21 +365,20 @@ public class AsyncGzipFilter extends UserAgentFilter implements GzipFactory
         
         GzipHttpOutput cout=(GzipHttpOutput)out;
         
-        boolean exceptional=true;
         try
         {
             cout.mightCompress(this);
             super.doFilter(request,response,chain);
-            exceptional=false;
         }
-        finally
+        catch(Throwable e)
         {
-            LOG.debug("{} excepted {}",this,request);
-            if (exceptional && !response.isCommitted())
+            LOG.debug("{} excepted {}",this,request,e);
+            if (!response.isCommitted())
             {
                 cout.resetBuffer();
-                cout.noCompression();
+                cout.noCompressionIfPossible();
             }
+            throw e;
         }
     }
 
@@ -459,7 +459,6 @@ public class AsyncGzipFilter extends UserAgentFilter implements GzipFactory
     @Override
     public Deflater getDeflater(Request request, long content_length)
     {
-
         String ua = getUserAgent(request);
         if (ua!=null && isExcludedAgent(ua))
         {
@@ -514,6 +513,7 @@ public class AsyncGzipFilter extends UserAgentFilter implements GzipFactory
     @Override
     public void recycle(Deflater deflater)
     {
+        deflater.reset();
         if (_deflater.get()==null)
             _deflater.set(deflater);
         

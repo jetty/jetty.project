@@ -285,6 +285,8 @@ public class BufferUtil
      */
     public static boolean compact(ByteBuffer buffer)
     {
+        if (buffer.position()==0)
+            return false;
         boolean full = buffer.limit() == buffer.capacity();
         buffer.compact().flip();
         return full && buffer.limit() < buffer.capacity();

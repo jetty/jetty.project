@@ -115,7 +115,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         "org.eclipse.jetty.jndi.",          // webapp cannot change naming classes
         "org.eclipse.jetty.jaas.",          // webapp cannot change jaas classes
         "org.eclipse.jetty.websocket.",     // webapp cannot change / replace websocket classes
-        "org.eclipse.jetty.servlet.DefaultServlet" // webapp cannot change default servlets
+        "org.eclipse.jetty.servlet.DefaultServlet", // webapp cannot change default servlets
+        "org.eclipse.jetty.servlets.AsyncGzipFilter" // special case for AsyncGzipFilter
     } ;
 
     // Server classes are classes that are hidden from being
@@ -129,6 +130,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         "-org.eclipse.jetty.jaas.",         // don't hide jaas classes
         "-org.eclipse.jetty.servlets.",     // don't hide jetty servlets
         "-org.eclipse.jetty.servlet.DefaultServlet", // don't hide default servlet
+        "-org.eclipse.jetty.servlets.AsyncGzipFilter", // special case for AsyncGzipFilter
         "-org.eclipse.jetty.servlet.listener.", // don't hide useful listeners
         "-org.eclipse.jetty.websocket.",    // don't hide websocket classes from webapps (allow webapp to use ones from system classloader)
         "org.eclipse.jetty."                // hide other jetty classes

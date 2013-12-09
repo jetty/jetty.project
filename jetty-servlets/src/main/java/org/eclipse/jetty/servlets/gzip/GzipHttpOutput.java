@@ -35,9 +35,12 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class GzipHttpOutput extends HttpOutput
 {
+    public static Logger LOG = Log.getLogger(GzipHttpOutput.class);
     private final static HttpGenerator.CachedHttpField CONTENT_ENCODING_GZIP=new HttpGenerator.CachedHttpField(HttpHeader.CONTENT_ENCODING,"gzip");
     private final static byte[] GZIP_HEADER = new byte[] { (byte)0x1f, (byte)0x8b, Deflater.DEFLATED, 0, 0, 0, 0, 0, 0, 0 };
     
@@ -49,7 +52,6 @@ public class GzipHttpOutput extends HttpOutput
     private GzipFactory _factory;
     private ByteBuffer _buffer;
     
-    
     public GzipHttpOutput(HttpChannel<?> channel)
     {
         super(channel);
@@ -58,6 +60,7 @@ public class GzipHttpOutput extends HttpOutput
     @Override
     public void reset()
     {
+        _state.set(GZState.NOT_COMPRESSING);
         super.reset();
     }
 
@@ -152,6 +155,7 @@ public class GzipHttpOutput extends HttpOutput
         int sc = response.getStatus();
         if (sc>0 && (sc<200 || sc==204 || sc==205 || sc>=300))
         {
+            LOG.debug("{} exclude by status {}",this,sc);
             noCompression();
             super.write(content,complete,callback);
             return;
@@ -164,6 +168,7 @@ public class GzipHttpOutput extends HttpOutput
             ct=MimeTypes.getContentTypeWithoutCharset(ct);
             if (_factory.isExcludedMimeType(StringUtil.asciiToLowerCase(ct)))
             {
+                LOG.debug("{} exclude by mimeType {}",this,ct);
                 noCompression();
                 super.write(content,complete,callback);
                 return;
@@ -181,10 +186,11 @@ public class GzipHttpOutput extends HttpOutput
             if (content_length<0 && complete)
                 content_length=content.remaining();
             
-            _deflater = content.isDirect()?null:_factory.getDeflater(getHttpChannel().getRequest(),content_length);
+            _deflater = _factory.getDeflater(getHttpChannel().getRequest(),content_length);
             
             if (_deflater==null)
             {
+                LOG.debug("{} exclude no deflater",this);
                 _state.set(GZState.NOT_COMPRESSING);
                 super.write(content,complete,callback);
                 return;
@@ -201,6 +207,7 @@ public class GzipHttpOutput extends HttpOutput
             if (etag!=null)
                 fields.put(HttpHeader.ETAG,etag.substring(0,etag.length()-1)+"--gzip\"");
 
+            LOG.debug("{} compressing {}",this,_deflater);
             _state.set(GZState.COMPRESSING);
             
             gzip(content,complete,callback);
@@ -227,6 +234,28 @@ public class GzipHttpOutput extends HttpOutput
         }
     }
 
+    public void noCompressionIfPossible()
+    {
+        while (true)
+        {
+            switch (_state.get())
+            {
+                case COMPRESSING:
+                case NOT_COMPRESSING:
+                    return;
+
+                case MIGHT_COMPRESS:
+                    if (_state.compareAndSet(GZState.MIGHT_COMPRESS,GZState.NOT_COMPRESSING))
+                        return;
+                    break;
+
+                default:
+                    throw new IllegalStateException(_state.get().toString());
+            }
+        }
+    }
+
+
     public void mightCompress(GzipFactory factory)
     {
         while (true)
@@ -236,12 +265,15 @@ public class GzipHttpOutput extends HttpOutput
                 case NOT_COMPRESSING:
                     _factory=factory;
                     if (_state.compareAndSet(GZState.NOT_COMPRESSING,GZState.MIGHT_COMPRESS))
+                    {
+                        LOG.debug("{} might compress",this);
                         return;
+                    }
                     _factory=null;
                     break;
                     
                 default:
-                    throw new IllegalStateException();
+                    throw new IllegalStateException(_state.get().toString());
             }
         }
     }
@@ -275,24 +307,25 @@ public class GzipHttpOutput extends HttpOutput
                     _deflater=null;
                     getHttpChannel().getByteBufferPool().release(_buffer);
                     _buffer=null;
+                    return State.SUCCEEDED;
                 }
-                return State.SUCCEEDED;
+
+                if (!_complete)
+                    return State.SUCCEEDED;
             }
 
+            BufferUtil.compact(_buffer);
             int off=_buffer.arrayOffset()+_buffer.limit();
             int len=_buffer.capacity()-_buffer.limit()- (_complete?8:0);
             int produced=_deflater.deflate(_buffer.array(),off,len,Deflater.NO_FLUSH);
             _buffer.limit(_buffer.limit()+produced);
             boolean complete=_deflater.finished();
             if (complete)
-            {
                 addTrailer();
-                _deflater.end();  // TODO recycle
-            }
+            
             superWrite(_buffer,complete,this);
             return State.SCHEDULED;
         }
-        
     }
     
     private class GzipBufferCB extends IteratingNestedCallback
@@ -321,30 +354,40 @@ public class GzipHttpOutput extends HttpOutput
                         _deflater=null;
                         getHttpChannel().getByteBufferPool().release(_buffer);
                         _buffer=null;
+                        return State.SUCCEEDED;
                     }
-                    return State.SUCCEEDED;
+                    
+                    if (!_complete)
+                        return State.SUCCEEDED;                    
                 }
-                
-                BufferUtil.clearToFill(_input);
-                BufferUtil.put(_content,_input);
-                BufferUtil.flipToFlush(_input,0);
+                else
+                {
+                    BufferUtil.clearToFill(_input);
+                    BufferUtil.put(_content,_input);
+                    BufferUtil.flipToFlush(_input,0);
 
-                byte[] array=_input.array();
-                int off=_input.arrayOffset()+_input.position();
-                int len=_input.remaining();
-                _crc.update(array,off,len);
-                _deflater.setInput(array,off,len);                
-                if (_complete && BufferUtil.isEmpty(_content))
-                    _deflater.finish();
+                    byte[] array=_input.array();
+                    int off=_input.arrayOffset()+_input.position();
+                    int len=_input.remaining();
+
+                    _crc.update(array,off,len);
+                    _deflater.setInput(array,off,len);                
+                    if (_complete && BufferUtil.isEmpty(_content))
+                        _deflater.finish();
+                }
             }
-            
+
+            BufferUtil.compact(_buffer);
             int off=_buffer.arrayOffset()+_buffer.limit();
             int len=_buffer.capacity()-_buffer.limit() - (_complete?8:0);
             int produced=_deflater.deflate(_buffer.array(),off,len,Deflater.NO_FLUSH);
+            
             _buffer.limit(_buffer.limit()+produced);
             boolean complete=_deflater.finished();
+            
             if (complete)
                 addTrailer();
+                
             superWrite(_buffer,complete,this);
             return State.SCHEDULED;
         }

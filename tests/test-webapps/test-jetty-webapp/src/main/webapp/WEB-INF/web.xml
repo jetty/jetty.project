@@ -55,7 +55,7 @@
 
   <filter>
     <filter-name>GzipFilter</filter-name>
-    <filter-class>org.eclipse.jetty.servlets.IncludableGzipFilter</filter-class>
+    <filter-class>org.eclipse.jetty.servlets.AsyncGzipFilter</filter-class>
     <async-supported>true</async-supported>
     <init-param>
       <param-name>bufferSize</param-name>
@@ -63,7 +63,7 @@
     </init-param>
     <init-param>
       <param-name>mimeTypes</param-name>
-      <param-value>text/plain,application/xml</param-value>
+      <param-value>text/plain,application/xml,text/html</param-value>
     </init-param>
     <init-param>
       <param-name>minGzipSize</param-name>
@@ -91,7 +91,6 @@
     <url-pattern>/dump/gzip/*</url-pattern>
     <url-pattern>*.txt</url-pattern>
   </filter-mapping>
-  
   
   <servlet>
     <servlet-name>Login</servlet-name>
