@@ -262,12 +262,15 @@ public class MongoSessionManager extends NoSqlSessionManager
                     fields.append(__MAX_IDLE, true);
                     fields.append(__EXPIRY, true);
                     DBObject o = _dbSessions.findOne(new BasicDBObject("id",session.getClusterId()), fields);
-                    Integer currentMaxIdle = (Integer)o.get(__MAX_IDLE);
-                    Long currentExpiry = (Long)o.get(__EXPIRY);
-                    if (currentMaxIdle != null && getMaxInactiveInterval() > 0 && getMaxInactiveInterval() < currentMaxIdle)
-                        sets.put(__MAX_IDLE, getMaxInactiveInterval());
-                    if (currentExpiry != null && expiry > 0 && expiry < currentExpiry)
-                        sets.put(__EXPIRY, currentExpiry);
+                    if (o != null)
+                    {
+                        Integer currentMaxIdle = (Integer)o.get(__MAX_IDLE);
+                        Long currentExpiry = (Long)o.get(__EXPIRY);
+                        if (currentMaxIdle != null && getMaxInactiveInterval() > 0 && getMaxInactiveInterval() < currentMaxIdle)
+                            sets.put(__MAX_IDLE, getMaxInactiveInterval());
+                        if (currentExpiry != null && expiry > 0 && expiry < currentExpiry)
+                            sets.put(__EXPIRY, currentExpiry);
+                    }
                 }
                 
                 sets.put(__ACCESSED,session.getAccessed());
