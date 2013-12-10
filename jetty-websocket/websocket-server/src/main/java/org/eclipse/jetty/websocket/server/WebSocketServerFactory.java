@@ -479,7 +479,25 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         WebSocketHandshake handshaker = handshakes.get(version);
         if (handshaker == null)
         {
-            LOG.warn("Unsupported Websocket version: " + version);
+            StringBuilder warn = new StringBuilder();
+            warn.append("Client ").append(request.getRemoteAddress());
+            warn.append(" (:").append(request.getRemotePort());
+            warn.append(") User Agent: ");
+            String ua = request.getHeader("User-Agent");
+            if(ua == null) {
+                warn.append("[unset] ");
+            } else {
+                warn.append('"').append(ua.replaceAll("<","&lt;")).append("\" ");
+            }
+            warn.append("requested WebSocket version [").append(version);
+            warn.append("], Jetty supports version");
+            if (handshakes.size() > 1)
+            {
+                warn.append('s');
+            }
+            warn.append(": [").append(supportedVersions).append("]");
+            LOG.warn(warn.toString());
+            
             // Per RFC 6455 - 4.4 - Supporting Multiple Versions of WebSocket Protocol
             // Using the examples as outlined
             response.setHeader("Sec-WebSocket-Version",supportedVersions);
