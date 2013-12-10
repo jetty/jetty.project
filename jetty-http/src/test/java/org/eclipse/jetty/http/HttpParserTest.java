@@ -33,6 +33,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -406,6 +407,29 @@ public class HttpParserTest
         assertThat(_bad,Matchers.notNullValue());
     } 
 
+    @Test
+    @Ignore("See bug 423695")
+    public void testHeaderTab() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer(
+            "GET / HTTP/1.1\r\n" +
+            "Host: localhost\r\n" +
+            "Header: value\talternate\r\n" +
+            "\n\n");
+        
+        HttpParser.RequestHandler<ByteBuffer> handler  = new Handler();
+        HttpParser parser= new HttpParser(handler);
+        parseAll(parser,buffer);
+        
+        assertEquals("GET", _methodOrVersion);
+        assertEquals("/", _uriOrStatus);
+        assertEquals("HTTP/1.1", _versionOrReason);
+        assertEquals("Host", _hdr[0]);
+        assertEquals("localhost", _val[0]);
+        assertEquals("Header", _hdr[1]);
+        assertEquals("value alternate", _val[1]);
+    } 
+    
     @Test
     public void testNonStrict() throws Exception
     {
