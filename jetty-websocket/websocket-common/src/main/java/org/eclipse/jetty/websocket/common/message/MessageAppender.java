@@ -22,21 +22,21 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**
- * Appender for messages (used for multiple fragments with continuations, and also to allow for streaming APIs)
+ * Appender for messages (used for multiple frames with continuations, and also to allow for streaming APIs)
  */
 public interface MessageAppender
 {
     /**
-     * Append the payload to the message.
+     * Append the frame payload to the message.
      * 
-     * @param payload
-     *            the payload to append.
+     * @param framePayload
+     *            the frame payload to append.
      * @param isLast
      *            flag indicating if this is the last part of the message or not.
      * @throws IOException
-     *             if unable to append the payload
+     *             if unable to append the frame payload
      */
-    abstract void appendMessage(ByteBuffer payload, boolean isLast) throws IOException;
+    abstract void appendMessage(ByteBuffer framePayload, boolean isLast) throws IOException;
 
     /**
      * Notification that message is to be considered complete.

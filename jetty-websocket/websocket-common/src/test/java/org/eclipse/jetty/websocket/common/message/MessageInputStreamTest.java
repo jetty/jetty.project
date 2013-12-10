@@ -49,13 +49,13 @@ public class MessageInputStreamTest
 
         try (MessageInputStream stream = new MessageInputStream(conn))
         {
-            // Append a message (simple, short)
+            // Append a single message (simple, short)
             ByteBuffer payload = BufferUtil.toBuffer("Hello World",UTF8);
             System.out.printf("payload = %s%n",BufferUtil.toDetailString(payload));
             boolean fin = true;
             stream.appendMessage(payload,fin);
 
-            // Read it from the stream.
+            // Read entire message it from the stream.
             byte buf[] = new byte[32];
             int len = stream.read(buf);
             String message = new String(buf,0,len,UTF8);
@@ -75,6 +75,8 @@ public class MessageInputStreamTest
             final AtomicBoolean hadError = new AtomicBoolean(false);
             final CountDownLatch startLatch = new CountDownLatch(1);
 
+            // This thread fills the stream (from the "worker" thread)
+            // But slowly (intentionally).
             new Thread(new Runnable()
             {
                 @Override
