@@ -18,10 +18,7 @@
 
 package org.eclipse.jetty.http;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -33,7 +30,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -408,7 +404,6 @@ public class HttpParserTest
     } 
 
     @Test
-    @Ignore("See bug 423695")
     public void testHeaderTab() throws Exception
     {
         ByteBuffer buffer= BufferUtil.toBuffer(
@@ -427,7 +422,7 @@ public class HttpParserTest
         assertEquals("Host", _hdr[0]);
         assertEquals("localhost", _val[0]);
         assertEquals("Header", _hdr[1]);
-        assertEquals("value alternate", _val[1]);
+        assertEquals("value\talternate", _val[1]);
     } 
     
     @Test
