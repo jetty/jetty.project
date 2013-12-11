@@ -22,7 +22,7 @@
     </dependency>
     <dependency>
       <groupId>javax.websocket</groupId>
-      <artifactId>javax.websocket-client-api</artifactId>
+      <artifactId>javax.websocket-api</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
