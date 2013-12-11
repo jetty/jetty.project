@@ -25,8 +25,8 @@ import java.util.List;
 import javax.websocket.Extension;
 import javax.websocket.Extension.Parameter;
 import javax.websocket.server.ServerEndpointConfig;
-import javax.websocket.server.ServerEndpointConfig.Configurator;
 
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
@@ -59,7 +59,7 @@ public class JsrCreator implements WebSocketCreator
 
         ServerEndpointConfig config = metadata.getConfig();
 
-        Configurator configurator = config.getConfigurator();
+        ServerEndpointConfig.Configurator configurator = config.getConfigurator();
 
         // modify handshake
         configurator.modifyHandshake(config,hsreq,hsresp);
@@ -82,7 +82,7 @@ public class JsrCreator implements WebSocketCreator
         List<String> supported = config.getSubprotocols();
         List<String> requested = req.getSubProtocols();
         String subprotocol = configurator.getNegotiatedSubprotocol(supported,requested);
-        if (subprotocol != null)
+        if (StringUtil.isNotBlank(subprotocol))
         {
             resp.setAcceptedSubProtocol(subprotocol);
         }
