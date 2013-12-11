@@ -108,25 +108,36 @@ public class InputStreamResponseListener extends Listener.Adapter
     @Override
     public void onContent(Response response, ByteBuffer content)
     {
-        // Avoid buffering if the input stream is early closed.
-        if (closed)
-            return;
-
-        int remaining = content.remaining();
-        byte[] bytes = new byte[remaining];
-        content.get(bytes);
-        LOG.debug("Queuing {}/{} bytes", bytes, bytes.length);
-        queue.offer(bytes);
-
-        long newLength = length.addAndGet(remaining);
-        while (newLength >= maxBufferSize)
+        if (!closed)
         {
-            LOG.debug("Queued bytes limit {}/{} exceeded, waiting", newLength, maxBufferSize);
-            // Block to avoid infinite buffering
-            if (!await())
-                break;
-            newLength = length.get();
-            LOG.debug("Queued bytes limit {}/{} exceeded, woken up", newLength, maxBufferSize);
+            int remaining = content.remaining();
+            if (remaining > 0)
+            {
+
+                byte[] bytes = new byte[remaining];
+                content.get(bytes);
+                LOG.debug("Queuing {}/{} bytes", bytes, remaining);
+                queue.offer(bytes);
+
+                long newLength = length.addAndGet(remaining);
+                while (newLength >= maxBufferSize)
+                {
+                    LOG.debug("Queued bytes limit {}/{} exceeded, waiting", newLength, maxBufferSize);
+                    // Block to avoid infinite buffering
+                    if (!await())
+                        break;
+                    newLength = length.get();
+                    LOG.debug("Queued bytes limit {}/{} exceeded, woken up", newLength, maxBufferSize);
+                }
+            }
+            else
+            {
+                LOG.debug("Queuing skipped, empty content {}", content);
+            }
+        }
+        else
+        {
+            LOG.debug("Queuing skipped, stream already closed");
         }
     }
 
@@ -305,11 +316,14 @@ public class InputStreamResponseListener extends Listener.Adapter
         @Override
         public void close() throws IOException
         {
-            LOG.debug("Queuing close {}{}", CLOSED, "");
-            queue.offer(CLOSED);
-            closed = true;
-            signal();
-            super.close();
+            if (!closed)
+            {
+                super.close();
+                LOG.debug("Queuing close {}{}", CLOSED, "");
+                queue.offer(CLOSED);
+                closed = true;
+                signal();
+            }
         }
     }
 }
