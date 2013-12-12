@@ -283,12 +283,25 @@ public class WebInfConfiguration extends AbstractConfiguration
         {
             //Make a temp directory as a child of the given base dir
             makeTempDirectory(baseTemp,context);
+            return;
         }
-        else
+
+        //Look for a directory named "work" in ${jetty.base} and
+        //treat it as parent of a new temp dir (which we will persist)
+        File jettyBase = asFile(System.getProperty("jetty.base"));
+        if (jettyBase != null)
         {
-            //Make a temp directory in java.io.tmpdir
-            makeTempDirectory(new File(System.getProperty("java.io.tmpdir")),context);
+            File work = new File (jettyBase, "work");
+            if (work.exists() && work.isDirectory() && work.canWrite())
+            {
+                context.setPersistTempDirectory(true);
+                makeTempDirectory(work,context);
+                return;
+            }
         }
+
+        //Make a temp directory in java.io.tmpdir
+        makeTempDirectory(new File(System.getProperty("java.io.tmpdir")),context);
     }
 
     /**
@@ -322,12 +335,24 @@ public class WebInfConfiguration extends AbstractConfiguration
         if (parent == null || !parent.exists() || !parent.canWrite() || !parent.isDirectory())
             throw new IllegalStateException("Parent for temp dir not configured correctly: "+(parent==null?"null":"writeable="+parent.canWrite()));
 
+        //Create a name for the webapp     
         String temp = getCanonicalNameForWebAppTmpDir(context);
-        File tmpDir = File.createTempFile(temp, ".dir", parent);
-        //delete the file that was created
-        tmpDir.delete();
-        //and make a directory of the same name
-        tmpDir.mkdirs();
+        File tmpDir = null;
+        if (context.isPersistTempDirectory())
+        {
+            //if it is to be persisted, make sure it will be the same name
+            //by not using File.createTempFile, which appends random digits
+            tmpDir = new File (parent, temp);
+        }
+        else
+        {
+            //ensure file will always be unique by appending random digits
+            tmpDir = File.createTempFile(temp, ".dir", parent);
+            //delete the file that was created
+            tmpDir.delete();
+            //and make a directory of the same name
+            tmpDir.mkdirs();
+        }
         configureTempDirectory(tmpDir, context);
 
         if(LOG.isDebugEnabled())
