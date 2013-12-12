@@ -93,6 +93,12 @@ Module Management:
                    exists for the active ${jetty.base}.
                    See http://graphviz.org/ for details on how to post-process
                    this file into the output best suited for your needs.
+                   
+  --download       Download or create any missing files/directories that are 
+                   required by initialised modules.
+                   
+  --create         Download or create any missing files/directories that are 
+                   required by initialised modules.
 
 
 Startup / Shutdown Command Line:

@@ -260,9 +260,37 @@ public class Module
             {
                 String line;
                 String sectionType = "";
+                String caseTag = null;
+                boolean switched = false;
                 while ((line = buf.readLine()) != null)
                 {
                     line = line.trim();
+                    
+                    if (caseTag!=null)
+                    {
+                        if ("}".equals(line))
+                        {
+                            caseTag=null;
+                            continue;
+                        }
+                        
+                        if (switched)
+                            continue;
+                        
+                        if (!line.startsWith(caseTag) && !line.startsWith("*:"))
+                            continue;
+
+                        switched=true;
+                        line=line.substring(line.indexOf(':')+1).trim();
+                    }
+                    else if (line.startsWith("${switch "))
+                    {
+                        switched=false;
+                        caseTag=line.substring(9).trim();
+                        caseTag=System.getProperty(caseTag)+":";
+                        continue;
+                    }
+                                        
                     Matcher sectionMatcher = section.matcher(line);
 
                     if (sectionMatcher.matches())
