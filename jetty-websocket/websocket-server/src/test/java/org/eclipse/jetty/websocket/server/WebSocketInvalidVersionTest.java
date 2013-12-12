@@ -18,8 +18,7 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
 import org.eclipse.jetty.websocket.server.blockhead.HttpResponse;
@@ -52,6 +51,7 @@ public class WebSocketInvalidVersionTest
     @Test
     public void testRequestVersion29() throws Exception
     {
+        @SuppressWarnings("resource")
         BlockheadClient client = new BlockheadClient(server.getServerUri());
         client.setVersion(29); // intentionally bad version
         try

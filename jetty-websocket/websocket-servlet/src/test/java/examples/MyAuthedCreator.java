@@ -33,7 +33,7 @@ public class MyAuthedCreator implements WebSocketCreator
         try
         {
             // Is Authenticated?
-            Principal principal = req.getPrincipal();
+            Principal principal = req.getUserPrincipal();
             if (principal == null)
             {
                 resp.sendForbidden("Not authenticated yet");
