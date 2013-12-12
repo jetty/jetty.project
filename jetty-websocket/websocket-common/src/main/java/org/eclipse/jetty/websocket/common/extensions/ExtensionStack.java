@@ -28,6 +28,7 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Extension;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
@@ -245,6 +246,17 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
         this.nextOutgoing = nextOutgoing;
     }
 
+    public void setPolicy(WebSocketPolicy policy)
+    {
+        for (Extension extension : extensions)
+        {
+            if (extension instanceof AbstractExtension)
+            {
+                ((AbstractExtension)extension).setPolicy(policy);
+            }
+        }
+    }
+
     @Override
     public String toString()
     {
@@ -283,4 +295,3 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
         return s.toString();
     }
 }
-

@@ -533,6 +533,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
             WebSocketServerConnection wsConnection = new WebSocketServerConnection(endp,executor,scheduler,driver.getPolicy(),bufferPool,this);
             connection = wsConnection;
 
+            extensionStack.setPolicy(driver.getPolicy());
             extensionStack.configure(wsConnection.getParser());
             extensionStack.configure(wsConnection.getGenerator());
 
