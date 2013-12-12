@@ -18,12 +18,12 @@
 
 package org.eclipse.jetty.websocket.common.message;
 
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.StringUtil;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -36,7 +36,7 @@ public class Utf8CharBufferTest
 
     private static byte[] asUTF(String str)
     {
-        return str.getBytes(StringUtil.__UTF8_CHARSET);
+        return str.getBytes(StandardCharsets.UTF_8);
     }
 
     @Test

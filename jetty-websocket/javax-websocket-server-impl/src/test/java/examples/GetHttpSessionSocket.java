@@ -31,6 +31,7 @@ import javax.websocket.server.ServerEndpoint;
 public class GetHttpSessionSocket
 {
     private Session wsSession;
+    @SuppressWarnings("unused")
     private HttpSession httpSession;
     
     @OnOpen

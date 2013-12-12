@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.common.annotations;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
@@ -34,7 +35,7 @@ public class MyEchoBinarySocket extends MyEchoSocket
     {
         try
         {
-            getConnection().write(buf,offset,length);
+            getRemote().sendBytes(ByteBuffer.wrap(buf,offset,length));
         }
         catch (IOException e)
         {

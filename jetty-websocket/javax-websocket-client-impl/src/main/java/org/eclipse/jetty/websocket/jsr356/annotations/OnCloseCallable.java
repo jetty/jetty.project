@@ -23,7 +23,6 @@ import java.lang.reflect.Method;
 import javax.websocket.CloseReason;
 import javax.websocket.CloseReason.CloseCodes;
 import javax.websocket.Decoder;
-import javax.websocket.OnClose;
 
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.jsr356.JsrSession;

@@ -19,8 +19,6 @@
 package org.eclipse.jetty.websocket.jsr356;
 
 import javax.websocket.MessageHandler;
-import javax.websocket.MessageHandler.Partial;
-import javax.websocket.MessageHandler.Whole;
 
 import org.eclipse.jetty.websocket.jsr356.metadata.MessageHandlerMetadata;
 
