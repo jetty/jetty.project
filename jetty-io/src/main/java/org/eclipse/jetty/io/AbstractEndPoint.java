@@ -109,7 +109,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     @Override
     public void close()
     {
-        super.close();
+        onClose();
     }
 
     @Override

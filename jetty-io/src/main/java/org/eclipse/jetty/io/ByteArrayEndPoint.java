@@ -285,6 +285,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     @Override
     public void close()
     {
+        super.close();
         _closed=true;
     }
 

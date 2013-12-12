@@ -108,6 +108,7 @@ public class ChannelEndPoint extends AbstractEndPoint
     @Override
     public void close()
     {
+        super.close();
         LOG.debug("close {}", this);
         try
         {
