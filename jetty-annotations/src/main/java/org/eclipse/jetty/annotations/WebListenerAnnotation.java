@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.annotations;
 
+import java.util.EventListener;
+
 import javax.servlet.ServletContextAttributeListener;
 import javax.servlet.ServletContextListener;
 import javax.servlet.ServletRequestAttributeListener;
@@ -26,6 +28,8 @@ import javax.servlet.http.HttpSessionAttributeListener;
 import javax.servlet.http.HttpSessionIdListener;
 import javax.servlet.http.HttpSessionListener;
 
+import org.eclipse.jetty.servlet.BaseHolder.Source;
+import org.eclipse.jetty.servlet.ListenerHolder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -62,9 +66,7 @@ public class WebListenerAnnotation extends DiscoveredAnnotation
      */
     public void apply()
     {
-        // TODO check algorithm against ordering rules for descriptors v annotations
-
-        Class clazz = getTargetClass();
+        Class<? extends java.util.EventListener> clazz = (Class<? extends EventListener>)getTargetClass();
 
         if (clazz == null)
         {
@@ -82,10 +84,15 @@ public class WebListenerAnnotation extends DiscoveredAnnotation
                     HttpSessionAttributeListener.class.isAssignableFrom(clazz) ||
                     HttpSessionIdListener.class.isAssignableFrom(clazz))
             {
-                java.util.EventListener listener = (java.util.EventListener)_context.getServletContext().createListener(clazz);
+                java.util.EventListener listener = (java.util.EventListener)_context.getServletContext().createInstance(clazz);      
                 MetaData metaData = _context.getMetaData();
                 if (metaData.getOrigin(clazz.getName()+".listener") == Origin.NotSet)
+                {
+                    ListenerHolder h = _context.getServletHandler().newListenerHolder(Source.ANNOTATION);
+                    h.setListener(listener);
+                    _context.getServletHandler().addListener(h);
                     _context.addEventListener(listener);
+                }
             }
             else
                 LOG.warn(clazz.getName()+" does not implement one of the servlet listener interfaces");

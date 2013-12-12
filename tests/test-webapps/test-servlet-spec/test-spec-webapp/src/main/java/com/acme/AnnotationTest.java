@@ -267,6 +267,10 @@ public class AnnotationTest extends HttpServlet
             Boolean annotatedListenerInject = (Boolean)config.getServletContext().getAttribute("com.acme.AnnotationTest.sclInjectWebListenerTest");
             out.println("<p><b>Result: "+(annotatedListenerInject.booleanValue()?"<span class=\"pass\">PASS":"<span class=\"fail\">FAIL")+"</span></b></p>");
             
+            out.println("<h2>Programmatic Listener Injected</h2>");
+            Boolean programListenerInject = (Boolean)config.getServletContext().getAttribute("com.acme.AnnotationTest.programListenerInjectTest");
+            out.println("<p><b>Result: "+(programListenerInject.booleanValue()?"<span class=\"pass\">PASS":"<span class=\"fail\">FAIL")+"</span></b></p>");
+            
             out.println("<h2>Invalid Type for Listener Detection</h2>");         
             Boolean badListener = (Boolean)config.getServletContext().getAttribute("com.acme.AnnotationTest.invalidListenerRegoTest");
             out.println("<p><b>Result: "+(badListener.booleanValue()?"<span class=\"pass\">PASS":"<span class=\"fail\">FAIL")+"</span></b></p>");

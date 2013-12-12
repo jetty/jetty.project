@@ -521,6 +521,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                 _servlet=newInstance();
             if (_config==null)
                 _config=new Config();
+            
+          
 
             // Handle run as
             if (_identityService!=null)
