@@ -44,12 +44,13 @@ import org.eclipse.jetty.websocket.common.io.FutureWriteCallback;
  */
 public class WebSocketRemoteEndpoint implements RemoteEndpoint
 {
+    /** JSR-356 blocking send behavior message */
     private static final String PRIORMSG_ERROR = "Prior message pending, cannot start new message yet.";
     /** Type of Message */
     private static final int NONE = 0;
     private static final int TEXT = 1;
     private static final int BINARY = 2;
-    private static final int CONTROL = 3;
+    
     private static final WriteCallback NOOP_CALLBACK = new WriteCallback()
     {
         @Override
@@ -66,7 +67,9 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
     private static final Logger LOG = Log.getLogger(WebSocketRemoteEndpoint.class);
     public final LogicalConnection connection;
     public final OutgoingFrames outgoing;
+    /** JSR-356 blocking send behavior message */
     private final ReentrantLock msgLock = new ReentrantLock();
+    /** Type sanity to support partial send properly */
     private final AtomicInteger msgType = new AtomicInteger(NONE);
     private boolean partialStarted = false;
 
@@ -266,53 +269,21 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
     @Override
     public void sendPing(ByteBuffer applicationData) throws IOException
     {
-        if (msgLock.tryLock())
+        if (LOG.isDebugEnabled())
         {
-            try
-            {
-                msgType.set(CONTROL);
-                if (LOG.isDebugEnabled())
-                {
-                    LOG.debug("sendPing with {}",BufferUtil.toDetailString(applicationData));
-                }
-                blockingWrite(new PingFrame().setPayload(applicationData));
-            }
-            finally
-            {
-                msgType.set(NONE);
-                msgLock.unlock();
-            }
+            LOG.debug("sendPing with {}",BufferUtil.toDetailString(applicationData));
         }
-        else
-        {
-            throw new IllegalStateException(PRIORMSG_ERROR);
-        }
+        sendAsyncFrame(new PingFrame().setPayload(applicationData));
     }
 
     @Override
     public void sendPong(ByteBuffer applicationData) throws IOException
     {
-        if (msgLock.tryLock())
+        if (LOG.isDebugEnabled())
         {
-            try
-            {
-                msgType.set(CONTROL);
-                if (LOG.isDebugEnabled())
-                {
-                    LOG.debug("sendPong with {}",BufferUtil.toDetailString(applicationData));
-                }
-                blockingWrite(new PongFrame().setPayload(applicationData));
-            }
-            finally
-            {
-                msgType.set(NONE);
-                msgLock.unlock();
-            }
+            LOG.debug("sendPong with {}",BufferUtil.toDetailString(applicationData));
         }
-        else
-        {
-            throw new IllegalStateException(PRIORMSG_ERROR);
-        }
+        sendAsyncFrame(new PongFrame().setPayload(applicationData));
     }
 
     @Override

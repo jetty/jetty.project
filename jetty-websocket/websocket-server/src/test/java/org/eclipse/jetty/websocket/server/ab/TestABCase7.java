@@ -36,6 +36,7 @@ import org.eclipse.jetty.websocket.common.frames.CloseFrame;
 import org.eclipse.jetty.websocket.common.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.common.frames.PingFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
+import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
 import org.eclipse.jetty.websocket.server.helper.Hex;
 import org.junit.Rule;
 import org.junit.Test;
@@ -352,7 +353,7 @@ public class TestABCase7 extends AbstractABCase
         expect.add(new CloseInfo(StatusCode.NORMAL,reason).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(StacklessLogging logging = new StacklessLogging(AbstractWebSocketConnection.class))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
@@ -389,7 +390,7 @@ public class TestABCase7 extends AbstractABCase
         expect.add(new CloseInfo(StatusCode.BAD_PAYLOAD).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
-        try(StacklessLogging scope = new StacklessLogging(Parser.class))
+        try(StacklessLogging scope = new StacklessLogging(Parser.class,CloseInfo.class))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
