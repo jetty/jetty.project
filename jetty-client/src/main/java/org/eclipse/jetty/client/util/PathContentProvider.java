@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.client.util;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
@@ -72,75 +73,78 @@ public class PathContentProvider implements ContentProvider
     @Override
     public Iterator<ByteBuffer> iterator()
     {
-        return new Iterator<ByteBuffer>()
+        return new PathIterator();
+    }
+
+    private class PathIterator implements Iterator<ByteBuffer>, Closeable
+    {
+        private final ByteBuffer buffer = ByteBuffer.allocateDirect(bufferSize);
+        private SeekableByteChannel channel;
+        private long position;
+
+        @Override
+        public boolean hasNext()
         {
-            private final ByteBuffer buffer = ByteBuffer.allocateDirect(bufferSize);
-            private SeekableByteChannel channel;
-            private long position;
+            return position < getLength();
+        }
 
-            @Override
-            public boolean hasNext()
+        @Override
+        public ByteBuffer next()
+        {
+            try
             {
-                return position < getLength();
-            }
-
-            @Override
-            public ByteBuffer next()
-            {
-                try
+                if (channel == null)
                 {
-                    if (channel == null)
-                    {
-                        channel = Files.newByteChannel(filePath, StandardOpenOption.READ);
-                        LOG.debug("Opened file {}", filePath);
-                    }
-
-                    buffer.clear();
-                    int read = channel.read(buffer);
-                    if (read < 0)
-                        throw new NoSuchElementException();
-
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Read {} bytes from {}", read, filePath);
-
-                    position += read;
-
-                    if (!hasNext())
-                        close();
-
-                    buffer.flip();
-                    return buffer;
+                    channel = Files.newByteChannel(filePath, StandardOpenOption.READ);
+                    LOG.debug("Opened file {}", filePath);
                 }
-                catch (NoSuchElementException x)
-                {
+
+                buffer.clear();
+                int read = channel.read(buffer);
+                if (read < 0)
+                    throw new NoSuchElementException();
+
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Read {} bytes from {}", read, filePath);
+
+                position += read;
+
+                if (!hasNext())
                     close();
-                    throw x;
-                }
-                catch (Exception x)
-                {
-                    close();
-                    throw (NoSuchElementException)new NoSuchElementException().initCause(x);
-                }
-            }
 
-            @Override
-            public void remove()
-            {
-                throw new UnsupportedOperationException();
+                buffer.flip();
+                return buffer;
             }
+            catch (NoSuchElementException x)
+            {
+                close();
+                throw x;
+            }
+            catch (Exception x)
+            {
+                close();
+                throw (NoSuchElementException)new NoSuchElementException().initCause(x);
+            }
+        }
 
-            private void close()
+        @Override
+        public void remove()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void close()
+        {
+            try
             {
-                try
-                {
-                    if (channel != null)
-                        channel.close();
-                }
-                catch (Exception x)
-                {
-                    LOG.ignore(x);
-                }
+                if (channel != null)
+                    channel.close();
             }
-        };
+            catch (Exception x)
+            {
+                LOG.ignore(x);
+            }
+        }
     }
 }

@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.Closeable;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.Iterator;
@@ -25,6 +26,8 @@ import java.util.Iterator;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.util.DeferredContentProvider;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * {@link HttpContent} is a stateful, linear representation of the request content provided
@@ -60,8 +63,9 @@ import org.eclipse.jetty.util.BufferUtil;
  * {@link #getContent() content}. When the deferred content is available, a further call to {@link #advance()}
  * will move the cursor to a position that provides non {@code null} buffer and content.
  */
-public class HttpContent
+public class HttpContent implements Closeable
 {
+    private static final Logger LOG = Log.getLogger(HttpContent.class);
     private static final ByteBuffer AFTER = ByteBuffer.allocate(0);
 
     private final ContentProvider provider;
@@ -123,12 +127,17 @@ public class HttpContent
         if (isLast())
         {
             if (content != AFTER)
+            {
                 content = buffer = AFTER;
+                LOG.debug("Advanced content past last chunk");
+            }
             return false;
         }
         else
         {
             ByteBuffer buffer = this.buffer = iterator.next();
+            if (LOG.isDebugEnabled())
+                LOG.debug("Advanced content to {} chunk {}", isLast() ? "last" : "next", buffer);
             content = buffer == null ? null : buffer.slice();
             return buffer != null;
         }
@@ -140,6 +149,20 @@ public class HttpContent
     public boolean isConsumed()
     {
         return content == AFTER;
+    }
+
+    @Override
+    public void close()
+    {
+        try
+        {
+            if (iterator instanceof Closeable)
+                ((Closeable)iterator).close();
+        }
+        catch (Exception x)
+        {
+            LOG.ignore(x);
+        }
     }
 
     @Override

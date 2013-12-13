@@ -373,6 +373,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
 
     protected void reset()
     {
+        content.close();
         content = null;
         requestState.set(RequestState.QUEUED);
         senderState.set(SenderState.IDLE);
@@ -384,7 +385,12 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
         {
             RequestState current = requestState.get();
             if (updateRequestState(current, RequestState.FAILURE))
+            {
+                HttpContent content = this.content;
+                if (content != null)
+                    content.close();
                 return current;
+            }
         }
     }
 

@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.client.util;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -122,7 +123,7 @@ public class InputStreamContentProvider implements ContentProvider
      * Therefore we need to make sure that {@link #hasNext()} does not perform any side effect (so that
      * it can be called multiple times) until {@link #next()} is called.
      */
-    private class InputStreamIterator implements Iterator<ByteBuffer>
+    private class InputStreamIterator implements Iterator<ByteBuffer>, Closeable
     {
         private Throwable failure;
         private ByteBuffer buffer;
@@ -210,7 +211,8 @@ public class InputStreamContentProvider implements ContentProvider
             throw new UnsupportedOperationException();
         }
 
-        private void close()
+        @Override
+        public void close()
         {
             if (autoClose)
             {
