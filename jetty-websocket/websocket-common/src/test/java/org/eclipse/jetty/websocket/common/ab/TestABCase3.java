@@ -89,6 +89,4 @@ public class TestABCase3
     {
         UnitGenerator.generate(invalidFrame);
     }
-
-
 }
