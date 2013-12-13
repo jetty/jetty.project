@@ -44,7 +44,8 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public abstract class IteratingCallback implements Callback
 {
-    protected enum State { IDLE, SCHEDULED, ITERATING, SUCCEEDED, FAILED };
+    protected enum Next { IDLE, SCHEDULED, SUCCEEDED, FAILED };
+    protected enum State { IDLE, SCHEDULED, ITERATING, ITERATE_AGAIN, SUCCEEDED, FAILED };
     private final AtomicReference<State> _state = new AtomicReference<>(State.IDLE);
     
     public IteratingCallback()
@@ -66,7 +67,7 @@ public abstract class IteratingCallback implements Callback
      * 
      * @throws Exception
      */
-    abstract protected State process() throws Exception;
+    abstract protected Next process() throws Exception;
      
     
     /* ------------------------------------------------------------ */
@@ -81,42 +82,65 @@ public abstract class IteratingCallback implements Callback
     {
         try
         {
-            // Keep iterating as long as succeeded() is called during process()
-            // If we are in WAITING state, either this is the first iteration or
-            // succeeded()/failed() were called already.
-            while(_state.compareAndSet(State.IDLE,State.ITERATING))
+            while(true)
             {
-                State next = process();
-                switch (next)
+                switch (_state.get())
                 {
-                    case SUCCEEDED:
-                        // The task has complete, there should have been no callbacks
-                        if (!_state.compareAndSet(State.ITERATING,State.SUCCEEDED))
-                            throw new IllegalStateException("state="+_state.get());
-                        completed();
-                        return;
-                        
-                    case SCHEDULED:
-                        // This callback has been scheduled, so it may or may not have 
-                        // already been called back.  Let's find out
-                        if (_state.compareAndSet(State.ITERATING,State.SCHEDULED))
-                            // not called back yet, so lets wait for it
-                            return;
-                        // call back must have happened, so lets iterate
-                        continue;
-                        
                     case IDLE:
-                        // No more progress can be made.  Wait for another call to iterate
-                        if (!_state.compareAndSet(State.ITERATING,State.IDLE))
-                            throw new IllegalStateException("state="+_state.get());
-                        return;
-                        
-                    case FAILED:
-                        _state.set(State.FAILED);
-                        return;
+                        // Keep iterating as long as succeeded() is called during process()
+                        // If we are in WAITING state, either this is the first iteration or
+                        // succeeded()/failed() were called already.
+                        while(_state.compareAndSet(State.IDLE,State.ITERATING))
+                        {
+                            Next next = process();
+                            switch (next)
+                            {
+                                case SUCCEEDED:
+                                    // The task has complete, there should have been no callbacks
+                                    // Can double CaS here because state never changes directly ITERATING_AGAIN --> ITERATE
+                                    if (!_state.compareAndSet(State.ITERATING,State.SUCCEEDED)&& 
+                                        !_state.compareAndSet(State.ITERATE_AGAIN,State.SUCCEEDED))
+                                        throw new IllegalStateException("state="+_state.get());
+                                    completed();
+                                    return;
+
+                                case SCHEDULED:
+                                    // This callback has been scheduled, so it may or may not have 
+                                    // already been called back.  Let's find out
+                                    // Can double CaS here because state never changes directly ITERATING_AGAIN --> ITERATE
+                                    if (_state.compareAndSet(State.ITERATING,State.SCHEDULED) ||
+                                        _state.compareAndSet(State.ITERATE_AGAIN,State.SCHEDULED))
+                                        // not called back yet, so lets wait for it
+                                        return;
+                                    // call back must have happened, so lets iterate
+                                    continue;
+
+                                case IDLE:
+                                    // No more progress can be made by this call to iterate
+                                    if (_state.compareAndSet(State.ITERATING,State.IDLE))
+                                        return;
+                                    // was iterate called again since we already decided to go IDLE?
+                                    if (_state.compareAndSet(State.ITERATE_AGAIN,State.IDLE))
+                                        continue; // Try another iteration as more work may have been added while previous process was returning
+                                    throw new IllegalStateException("state="+_state.get());
+
+                                case FAILED:
+                                    _state.set(State.FAILED);
+                                    return;
+
+                                default:
+                                    throw new IllegalStateException("state="+_state.get()+" next="+next);
+                            }
+                        }
+                        break;
+
+                    case ITERATING:
+                        if (_state.compareAndSet(State.ITERATING,State.ITERATE_AGAIN))
+                            return;
+                        break;
                         
                     default:
-                        throw new IllegalStateException("state="+_state.get()+" next="+next);
+                        return;
                 }
             }
         }
@@ -140,6 +164,11 @@ public abstract class IteratingCallback implements Callback
         {
             switch(_state.get())
             {
+                case ITERATE_AGAIN:
+                    if (_state.compareAndSet(State.ITERATE_AGAIN,State.IDLE))
+                        break loop;
+                    continue;
+                    
                 case ITERATING:
                     if (_state.compareAndSet(State.ITERATING,State.IDLE))
                         break loop;
@@ -174,6 +203,11 @@ public abstract class IteratingCallback implements Callback
         {
             switch(_state.get())
             {
+                case ITERATE_AGAIN:
+                    if (_state.compareAndSet(State.ITERATE_AGAIN,State.FAILED))
+                        break loop;
+                    continue;
+                    
                 case ITERATING:
                     if (_state.compareAndSet(State.ITERATING,State.FAILED))
                         break loop;

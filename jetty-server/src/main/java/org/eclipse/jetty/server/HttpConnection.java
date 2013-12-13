@@ -489,7 +489,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         }
 
         @Override
-        public State process() throws Exception
+        public Next process() throws Exception
         {
             ByteBuffer chunk = _chunk;
             while (true)
@@ -569,7 +569,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                         }
                         else
                             continue;
-                        return State.SCHEDULED;
+                        return Next.SCHEDULED;
                     }
                     case SHUTDOWN_OUT:
                     {
@@ -584,7 +584,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                             if (!_lastContent || _content==null || !_content.hasArray() || !_header.hasArray() ||  _content.array()!=_header.array())
                                 _bufferPool.release(_header);
                         }
-                        return State.SUCCEEDED;
+                        return Next.SUCCEEDED;
                     }
                     case CONTINUE:
                     {
@@ -641,7 +641,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         }
 
         @Override
-        public State process() throws Exception
+        public Next process() throws Exception
         {
             ByteBuffer chunk = _chunk;
             while (true)
@@ -686,7 +686,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                         }
                         else
                             continue;
-                        return State.SCHEDULED;
+                        return Next.SCHEDULED;
                     }
                     case SHUTDOWN_OUT:
                     {
@@ -695,7 +695,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     }
                     case DONE:
                     {
-                        return State.SUCCEEDED;
+                        return Next.SUCCEEDED;
                     }
                     case CONTINUE:
                     {

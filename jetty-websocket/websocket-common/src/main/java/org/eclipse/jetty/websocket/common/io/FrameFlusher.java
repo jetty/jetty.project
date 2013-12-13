@@ -217,7 +217,7 @@ public class FrameFlusher
         }
 
         @Override
-        protected State process() throws Exception
+        protected Next process() throws Exception
         {
             synchronized (lock)
             {
@@ -241,11 +241,11 @@ public class FrameFlusher
             }
             
             if (buffers.size()==0)
-                return State.IDLE;
+                return Next.IDLE;
 
             endpoint.write(this,buffers.toArray(new ByteBuffer[buffers.size()]));
             buffers.clear();
-            return State.SCHEDULED;
+            return Next.SCHEDULED;
         }
 
         @Override
