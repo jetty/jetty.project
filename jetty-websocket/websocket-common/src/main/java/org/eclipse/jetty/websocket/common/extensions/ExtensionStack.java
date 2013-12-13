@@ -46,6 +46,7 @@ import org.eclipse.jetty.websocket.common.Parser;
 public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames, OutgoingFrames
 {
     private static final Logger LOG = Log.getLogger(ExtensionStack.class);
+
     private final ExtensionFactory factory;
     private List<Extension> extensions;
     private IncomingFrames nextIncoming;
@@ -215,6 +216,9 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
     {
         LOG.debug("Extension Configs={}",configs);
         this.extensions = new ArrayList<>();
+
+        String rsvClaims[] = new String[3];
+
         for (ExtensionConfig config : configs)
         {
             Extension ext = factory.newInstance(config);
@@ -223,8 +227,41 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
                 // Extension not present on this side
                 continue;
             }
+
+            // Check RSV
+            if (ext.isRsv1User() && (rsvClaims[0] != null))
+            {
+                LOG.debug("Not adding extension {}. Extension {} already claimed RSV1",config,rsvClaims[0]);
+                continue;
+            }
+            if (ext.isRsv2User() && (rsvClaims[1] != null))
+            {
+                LOG.debug("Not adding extension {}. Extension {} already claimed RSV2",config,rsvClaims[1]);
+                continue;
+            }
+            if (ext.isRsv3User() && (rsvClaims[2] != null))
+            {
+                LOG.debug("Not adding extension {}. Extension {} already claimed RSV3",config,rsvClaims[2]);
+                continue;
+            }
+
+            // Add Extension
             extensions.add(ext);
-            LOG.debug("Adding Extension: {}",ext);
+            LOG.debug("Adding Extension: {}",config);
+
+            // Record RSV Claims
+            if (ext.isRsv1User())
+            {
+                rsvClaims[0] = ext.getName();
+            }
+            if (ext.isRsv2User())
+            {
+                rsvClaims[1] = ext.getName();
+            }
+            if (ext.isRsv3User())
+            {
+                rsvClaims[2] = ext.getName();
+            }
         }
 
         addBean(extensions);

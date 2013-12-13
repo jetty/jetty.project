@@ -187,7 +187,7 @@ public class UpgradeRequest
     {
         return Collections.unmodifiableMap(parameters);
     }
-    
+
     public String getProtocolVersion()
     {
         String version = getHeader("Sec-WebSocket-Version");
@@ -263,6 +263,15 @@ public class UpgradeRequest
     public void setCookies(List<HttpCookie> cookies)
     {
         this.cookies = cookies;
+    }
+
+    public void setExtensions(List<ExtensionConfig> configs)
+    {
+        this.extensions.clear();
+        if (configs != null)
+        {
+            this.extensions.addAll(configs);
+        }
     }
 
     public void setHeader(String name, List<String> values)

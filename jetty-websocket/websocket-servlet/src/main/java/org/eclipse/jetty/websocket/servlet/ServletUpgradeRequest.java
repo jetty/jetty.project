@@ -28,7 +28,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -37,7 +36,6 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.api.util.QuoteUtil;
 import org.eclipse.jetty.websocket.api.util.WSURI;
 
 /**
@@ -106,16 +104,7 @@ public class ServletUpgradeRequest extends UpgradeRequest
 
         // Parse Extension Configurations
         Enumeration<String> e = request.getHeaders("Sec-WebSocket-Extensions");
-        while (e.hasMoreElements())
-        {
-            Iterator<String> extTokenIter = QuoteUtil.splitAt(e.nextElement(),",");
-            while (extTokenIter.hasNext())
-            {
-                String extToken = extTokenIter.next();
-                ExtensionConfig config = ExtensionConfig.parse(extToken);
-                addExtensions(config);
-            }
-        }
+        setExtensions(ExtensionConfig.parseEnum(e));
     }
 
     public X509Certificate[] getCertificates()
