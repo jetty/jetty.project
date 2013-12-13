@@ -18,12 +18,11 @@
 
 package org.eclipse.jetty.spdy.api;
 
-import junit.framework.Assert;
-
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Promise;
+import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -55,7 +54,7 @@ public class ServerUsageTest
                 return null;
             }
         };
-        Assert.assertTrue(ssfl!=null);
+        Assert.assertNotNull(ssfl);
     }
 
     @Test
@@ -90,7 +89,7 @@ public class ServerUsageTest
                 });
             }
         };
-        Assert.assertTrue(ssfl!=null);
+        Assert.assertNotNull(ssfl);
     }
 
     @Test
@@ -117,6 +116,6 @@ public class ServerUsageTest
                 return null;
             }
         };
-        Assert.assertTrue(ssfl!=null);
+        Assert.assertNotNull(ssfl);
     }
 }
