@@ -46,7 +46,6 @@ import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamStatus;
 import org.eclipse.jetty.spdy.http.HTTPSPDYHeader;
-import org.eclipse.jetty.util.BlockingCallback;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ConcurrentArrayQueue;
@@ -66,7 +65,6 @@ public class HttpTransportOverSPDY implements HttpTransport
     private final Stream stream;
     private final short version;
     private final Fields requestHeaders;
-    private final BlockingCallback streamBlocker = new BlockingCallback();
     private final AtomicBoolean committed = new AtomicBoolean();
 
     public HttpTransportOverSPDY(Connector connector, HttpConfiguration configuration, EndPoint endPoint, PushStrategy pushStrategy, Stream stream, Fields requestHeaders)
