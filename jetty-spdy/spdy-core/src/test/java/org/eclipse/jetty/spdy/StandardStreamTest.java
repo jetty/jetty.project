@@ -18,6 +18,39 @@
 
 package org.eclipse.jetty.spdy;
 
+import java.nio.channels.ClosedChannelException;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.eclipse.jetty.spdy.api.DataInfo;
+import org.eclipse.jetty.spdy.api.PushInfo;
+import org.eclipse.jetty.spdy.api.ReplyInfo;
+import org.eclipse.jetty.spdy.api.SPDY;
+import org.eclipse.jetty.spdy.api.Stream;
+import org.eclipse.jetty.spdy.api.StreamFrameListener;
+import org.eclipse.jetty.spdy.api.StringDataInfo;
+import org.eclipse.jetty.spdy.api.SynInfo;
+import org.eclipse.jetty.spdy.frames.ControlFrame;
+import org.eclipse.jetty.spdy.frames.SynStreamFrame;
+import org.eclipse.jetty.toolchain.test.annotation.Slow;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.ArgumentMatcher;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
+
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -28,33 +61,6 @@ import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
-import org.eclipse.jetty.spdy.api.DataInfo;
-import org.eclipse.jetty.spdy.api.PushInfo;
-import org.eclipse.jetty.spdy.api.SPDY;
-import org.eclipse.jetty.spdy.api.Stream;
-import org.eclipse.jetty.spdy.api.StreamFrameListener;
-import org.eclipse.jetty.spdy.api.StringDataInfo;
-import org.eclipse.jetty.spdy.api.SynInfo;
-import org.eclipse.jetty.spdy.frames.SynStreamFrame;
-import org.eclipse.jetty.toolchain.test.annotation.Slow;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.Fields;
-import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.ArgumentMatcher;
-import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
 public class StandardStreamTest
@@ -71,9 +77,12 @@ public class StandardStreamTest
         scheduler.start();
     }
 
-    /**
-     * Test method for {@link Stream#push(org.eclipse.jetty.spdy.api.PushInfo)}.
-     */
+    @After
+    public void tearDown() throws Exception
+    {
+        scheduler.stop();
+    }
+
     @SuppressWarnings("unchecked")
     @Test
     public void testSyn()
@@ -144,46 +153,106 @@ public class StandardStreamTest
 
     @Test
     @Slow
-    public void testIdleTimeout() throws InterruptedException, ExecutionException, TimeoutException
+    public void testIdleTimeout() throws Exception
     {
-        final CountDownLatch onFailCalledLatch = new CountDownLatch(1);
         IStream stream = new StandardStream(1, (byte)0, session, null, scheduler, null);
-        stream.setIdleTimeout(500);
+        long idleTimeout = 500;
+        stream.setIdleTimeout(idleTimeout);
+
+        final AtomicInteger failureCount = new AtomicInteger();
+        final CountDownLatch failureLatch = new CountDownLatch(1);
         stream.setStreamFrameListener(new StreamFrameListener.Adapter()
         {
             @Override
             public void onFailure(Stream stream, Throwable x)
             {
                 assertThat("exception is a TimeoutException", x, is(instanceOf(TimeoutException.class)));
-                onFailCalledLatch.countDown();
+                failureCount.incrementAndGet();
+                failureLatch.countDown();
             }
         });
         stream.process(new StringDataInfo("string", false));
-        Thread.sleep(1000);
-        assertThat("onFailure has been called", onFailCalledLatch.await(5, TimeUnit.SECONDS), is(true));
+
+        // Wait more than (2 * idleTimeout) to be sure to trigger a failureCount > 1
+        Thread.sleep(3 * idleTimeout);
+
+        assertThat("onFailure has been called", failureLatch.await(5, TimeUnit.SECONDS), is(true));
+        Assert.assertEquals(1, failureCount.get());
     }
 
     @Test
     @Slow
-    public void testIdleTimeoutIsInterruptedWhenReceiving() throws InterruptedException, ExecutionException,
-            TimeoutException
+    public void testIdleTimeoutIsInterruptedWhenReceiving() throws Exception
     {
-        final CountDownLatch onFailCalledLatch = new CountDownLatch(1);
+        final CountDownLatch failureLatch = new CountDownLatch(1);
         IStream stream = new StandardStream(1, (byte)0, session, null, scheduler, null);
+        long idleTimeout = 1000;
+        stream.setIdleTimeout(idleTimeout);
         stream.setStreamFrameListener(new StreamFrameListener.Adapter()
         {
             @Override
             public void onFailure(Stream stream, Throwable x)
             {
                 assertThat("exception is a TimeoutException", x, is(instanceOf(TimeoutException.class)));
-                onFailCalledLatch.countDown();
+                failureLatch.countDown();
             }
         });
+        stream.process(new SynStreamFrame(SPDY.V3, (byte)0, 1, 0, (byte)0, (short)0, null));
         stream.process(new StringDataInfo("string", false));
-        Thread.sleep(500);
+        Thread.sleep(idleTimeout / 2);
         stream.process(new StringDataInfo("string", false));
-        Thread.sleep(500);
-        assertThat("onFailure has been called", onFailCalledLatch.await(1, TimeUnit.SECONDS), is(false));
+        Thread.sleep(idleTimeout / 2);
+        stream.process(new StringDataInfo("string", false));
+        Thread.sleep(idleTimeout / 2);
+        stream.process(new StringDataInfo("string", true));
+        stream.reply(new ReplyInfo(true), new Callback.Adapter());
+        Thread.sleep(idleTimeout);
+        assertThat("onFailure has not been called", failureLatch.await(idleTimeout, TimeUnit.MILLISECONDS), is(false));
     }
 
+    @Test
+    @Slow
+    public void testReplyFailureClosesStream() throws Exception
+    {
+        ISession session = new StandardSession(SPDY.V3, null, null, null, null, null, 1, null, null, null)
+        {
+            @Override
+            public void control(IStream stream, ControlFrame frame, long timeout, TimeUnit unit, Callback callback)
+            {
+                callback.failed(new ClosedChannelException());
+            }
+        };
+        IStream stream = new StandardStream(1, (byte)0, session, null, scheduler, null);
+        final AtomicInteger failureCount = new AtomicInteger();
+        stream.setStreamFrameListener(new StreamFrameListener.Adapter()
+        {
+            @Override
+            public void onFailure(Stream stream, Throwable x)
+            {
+                failureCount.incrementAndGet();
+            }
+        });
+        long idleTimeout = 500;
+        stream.setIdleTimeout(idleTimeout);
+
+        stream.process(new SynStreamFrame(SPDY.V3, (byte)0, 1, 0, (byte)0, (short)0, null));
+
+        final CountDownLatch failureLatch = new CountDownLatch(1);
+        stream.reply(new ReplyInfo(false), new Callback.Adapter()
+        {
+            @Override
+            public void failed(Throwable x)
+            {
+                failureLatch.countDown();
+            }
+        });
+
+        Assert.assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
+
+        // Make sure that the idle timeout never fires, since the failure above should have closed the stream
+        Thread.sleep(3 * idleTimeout);
+
+        Assert.assertEquals(0, failureCount.get());
+        Assert.assertTrue(stream.isClosed());
+    }
 }
