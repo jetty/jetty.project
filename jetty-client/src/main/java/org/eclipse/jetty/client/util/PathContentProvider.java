@@ -30,6 +30,8 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import org.eclipse.jetty.client.api.ContentProvider;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * A {@link ContentProvider} for files using JDK 7's {@code java.nio.file} APIs.
@@ -39,6 +41,8 @@ import org.eclipse.jetty.client.api.ContentProvider;
  */
 public class PathContentProvider implements ContentProvider
 {
+    private static final Logger LOG = Log.getLogger(PathContentProvider.class);
+
     private final Path filePath;
     private final long fileSize;
     private final int bufferSize;
@@ -86,19 +90,35 @@ public class PathContentProvider implements ContentProvider
                 try
                 {
                     if (channel == null)
+                    {
                         channel = Files.newByteChannel(filePath, StandardOpenOption.READ);
+                        LOG.debug("Opened file {}", filePath);
+                    }
 
                     buffer.clear();
                     int read = channel.read(buffer);
                     if (read < 0)
                         throw new NoSuchElementException();
 
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Read {} bytes from {}", read, filePath);
+
                     position += read;
+
+                    if (!hasNext())
+                        close();
+
                     buffer.flip();
                     return buffer;
                 }
-                catch (IOException x)
+                catch (NoSuchElementException x)
                 {
+                    close();
+                    throw x;
+                }
+                catch (Exception x)
+                {
+                    close();
                     throw (NoSuchElementException)new NoSuchElementException().initCause(x);
                 }
             }
@@ -107,6 +127,19 @@ public class PathContentProvider implements ContentProvider
             public void remove()
             {
                 throw new UnsupportedOperationException();
+            }
+
+            private void close()
+            {
+                try
+                {
+                    if (channel != null)
+                        channel.close();
+                }
+                catch (Exception x)
+                {
+                    LOG.ignore(x);
+                }
             }
         };
     }
