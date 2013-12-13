@@ -203,6 +203,16 @@ public class Flusher
 
             if (controller != null)
                 controller.write(flusherCB, buffers);
+
+            // TODO: optimization
+            // If the callback completely immediately, it means that
+            // the connection is not congested, and therefore we can
+            // write more data without blocking.
+            // Therefore we should check this condition and increase
+            // the write window, which means to things: autotune the
+            // MAX_GATHER parameter, and/or autotune the buffer returned
+            // by FrameBytes.getByteBuffer() (see also comment there).
+
             return State.SCHEDULED;
         }
 

@@ -1163,6 +1163,20 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
                 IStream stream = getStream();
                 int windowSize = stream.getWindowSize();
 
+                // TODO: optimization
+                // Right now, we use the windowSize to chunk big buffers.
+                // However, if the window size is large, we may congest the
+                // connection, or favor one stream that does a big download,
+                // starving the other streams.
+                // Also, SPDY DATA frames have a maximum of 16 MiB size, which
+                // is not enforced here.
+                // We should have a configurable "preferredDataFrameSize"
+                // (or even better autotuning) that will allow to send chunks
+                // that will not starve other streams and small enough to
+                // not congest the connection, while avoiding to send too many
+                // TCP packets.
+                // See also comment in class Flusher.
+
                 size = dataInfo.available();
                 if (size > windowSize)
                     size = windowSize;
