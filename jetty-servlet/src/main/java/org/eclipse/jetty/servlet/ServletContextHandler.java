@@ -35,6 +35,7 @@ import javax.servlet.Filter;
 import javax.servlet.FilterRegistration;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.Servlet;
+import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
@@ -62,6 +63,7 @@ import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlet.BaseHolder.Source;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.LifeCycle;
 
 
 /* ------------------------------------------------------------ */
@@ -82,6 +84,8 @@ public class ServletContextHandler extends ContextHandler
     public final static int SECURITY=2;
     public final static int NO_SESSIONS=0;
     public final static int NO_SECURITY=0;
+    
+    public interface ServletContainerInitializerCaller extends LifeCycle {};
 
     protected final List<Decorator> _decorators= new ArrayList<>();
     protected Class<? extends SecurityHandler> _defaultSecurityHandlerClass=org.eclipse.jetty.security.ConstraintSecurityHandler.class;
@@ -267,6 +271,9 @@ public class ServletContextHandler extends ContextHandler
     @Override
     protected void startContext() throws Exception
     {
+        ServletContainerInitializerCaller sciBean = getBean(ServletContainerInitializerCaller.class);
+        if (sciBean!=null)
+            sciBean.start();
 
         if (_servletHandler != null)
         {

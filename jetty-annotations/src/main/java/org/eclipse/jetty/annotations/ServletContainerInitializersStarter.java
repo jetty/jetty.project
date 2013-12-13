@@ -23,6 +23,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.plus.annotation.ContainerInitializer;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
@@ -36,11 +37,10 @@ import org.eclipse.jetty.webapp.WebAppContext;
  * Call the onStartup() method on all ServletContainerInitializers, after having 
  * found all applicable classes (if any) to pass in as args.
  */
-public class ServletContainerInitializersStarter extends AbstractLifeCycle
+public class ServletContainerInitializersStarter extends AbstractLifeCycle implements ServletContextHandler.ServletContainerInitializerCaller
 {
     private static final Logger LOG = Log.getLogger(ServletContainerInitializersStarter.class);
     WebAppContext _context;
-
     
     /**
      * @param context
