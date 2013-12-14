@@ -20,228 +20,350 @@ package org.eclipse.jetty.util;
 
 import java.util.concurrent.atomic.AtomicReference;
 
-
-/* ------------------------------------------------------------ */
-/** Iterating Callback.
- * <p>This specialized callback implements a pattern that allows a 
- * large job to be broken into smaller tasks using iteration rather than
- * recursion.
- * <p>
- * A typical pattern used with asynchronous callbacks, is the next IO is 
- * done from within the scope of the success callback.  The problem with this
- * is that if the callback thread is the same one that calls to IO instruction,
- * then recursion results and eventually a dispatch has to be done to 
- * avoid stack overflow (see {@link ForkInvoker}).
- * <p>To avoid this issue, this callback uses an AtomicReference to note 
- * if the success callback has been called during the processing of a 
- * sub task, and if so then the processing iterates rather than recurses.
- * </p>
- * <p>This callback is passed to the asynchronous handling of each sub
- * task and a call the {@link #succeeded()} on this call back represents
- * completion of the subtask.  Only once all the subtasks are completed is 
- * the {#completed()} method called.</p>
- *  
+/**
+ * This specialized callback implements a pattern that allows
+ * a large job to be broken into smaller tasks using iteration
+ * rather than recursion.
+ * <p/>
+ * A typical example is the write of a large content to a socket,
+ * divided in chunks. Chunk C1 is written by thread T1, which
+ * also invokes the callback, which writes chunk C2, which invokes
+ * the callback again, which writes chunk C3, and so forth.
+ * <p/>
+ * The problem with the example is that if the callback thread
+ * is the same that performs the I/O operation, then the process
+ * is recursive and may result in a stack overflow.
+ * To avoid the stack overflow, a thread dispatch must be performed,
+ * causing context switching and cache misses, affecting performance.
+ * <p/>
+ * To avoid this issue, this callback uses an AtomicReference to
+ * record whether success callback has been called during the processing
+ * of a sub task, and if so then the processing iterates rather than
+ * recurring.
+ * <p/>
+ * Subclasses must implement method {@link #process()} where the sub
+ * task is executed and a suitable {@link IteratingCallback.Action} is
+ * returned to this callback to indicate the overall progress of the job.
+ * This callback is passed to the asynchronous execution of each sub
+ * task and a call the {@link #succeeded()} on this callback represents
+ * the completion of the sub task.
  */
 public abstract class IteratingCallback implements Callback
 {
-    protected enum Next { IDLE, SCHEDULED, SUCCEEDED, FAILED };
-    protected enum State { IDLE, SCHEDULED, ITERATING, ITERATE_AGAIN, SUCCEEDED, FAILED };
-    private final AtomicReference<State> _state = new AtomicReference<>(State.IDLE);
-    
-    public IteratingCallback()
-    {
-    }
-    
-    abstract protected void completed();
-    
     /**
-     * TODO - FIX
-     * Method called by iterate to process the task. 
-     * @return Then next state:
-     * <dl>
-     * <dt>SUCCEEDED</dt><dd>Return if the total task has completed</dd>
-     * <dt>SCHEDULED</dt><dd>This callback has been scheduled and {@link #succeeded()} or {@link #failed(Throwable)} will eventually be called (if they have not been called already!)</dd>
-     * <dt>IDLE</dt><dd>no progress can be made and another call to {@link #iterate()} is required in order to progress the task</dd>
-     * <dt>FAILED</dt><dd>processing has failed</dd>
-     * </dl>
-     * 
-     * @throws Exception
+     * The indication of the overall progress of the overall job that
+     * implementations of {@link #process()} must return.
      */
-    abstract protected Next process() throws Exception;
-     
-    
-    /* ------------------------------------------------------------ */
-    /** This method is called initially to start processing and 
-     * is then called by subsequent sub task success to continue
-     * processing.  If {@link #process()} returns IDLE, then iterate should be called 
-     * again to restart processing.
-     * It is safe to call iterate multiple times as only the first thread to move 
-     * the state out of IDLE will actually do any iteration and processing.
+    protected enum Action
+    {
+        /**
+         * Indicates that {@link #process()} has no more work to do,
+         * but the overall job is not completed yet, probably waiting
+         * for additional events to trigger more work.
+         */
+        IDLE,
+        /**
+         * Indicates that {@link #process()} is executing asynchronously
+         * a sub task, where the execution has started but the callback
+         * may have not yet been invoked.
+         */
+        EXECUTING,
+        /**
+         * Indicates that {@link #process()} has completed the overall job.
+         */
+        SUCCEEDED,
+        /**
+         * Indicates that {@link #process()} has failed the overall job.
+         */
+        FAILED
+    }
+
+    private final AtomicReference<State> _state = new AtomicReference<>(State.INACTIVE);
+
+    /**
+     * Method called by {@link #iterate()} to process the sub task.
+     * <p/>
+     * Implementations must start the asynchronous execution of the sub task
+     * (if any) and return an appropriate action:
+     * <ul>
+     * <li>{@link Action#IDLE} when no sub tasks are available for execution
+     * but the overall job is not completed yet</li>
+     * <li>{@link Action#EXECUTING} when the sub task asynchronous execution
+     * has been started</li>
+     * <li>{@link Action#SUCCEEDED} when the overall job is completed</li>
+     * <li>{@link Action#FAILED} when the overall job cannot be completed</li>
+     * </ul>
+     *
+     * @throws Exception if the sub task processing throws
+     */
+    protected abstract Action process() throws Exception;
+
+    /**
+     * Invoked when the overall task has completed successfully.
+     */
+    protected abstract void completed();
+
+    /**
+     * This method must be invoked by applications to start the processing
+     * of sub tasks.
+     * <p/>
+     * If {@link #process()} returns {@link Action#IDLE}, then this method
+     * should be called again to restart processing.
+     * It is safe to call iterate multiple times from multiple threads since only
+     * the first thread to move the state out of INACTIVE will actually do any iteration
+     * and processing.
      */
     public void iterate()
     {
         try
         {
-            while(true)
+            while (true)
             {
                 switch (_state.get())
                 {
-                    case IDLE:
-                        // Keep iterating as long as succeeded() is called during process()
-                        // If we are in WAITING state, either this is the first iteration or
-                        // succeeded()/failed() were called already.
-                        while(_state.compareAndSet(State.IDLE,State.ITERATING))
-                        {
-                            Next next = process();
-                            switch (next)
-                            {
-                                case SUCCEEDED:
-                                    // The task has complete, there should have been no callbacks
-                                    // Can double CaS here because state never changes directly ITERATING_AGAIN --> ITERATE
-                                    if (!_state.compareAndSet(State.ITERATING,State.SUCCEEDED)&& 
-                                        !_state.compareAndSet(State.ITERATE_AGAIN,State.SUCCEEDED))
-                                        throw new IllegalStateException("state="+_state.get());
-                                    completed();
-                                    return;
-
-                                case SCHEDULED:
-                                    // This callback has been scheduled, so it may or may not have 
-                                    // already been called back.  Let's find out
-                                    // Can double CaS here because state never changes directly ITERATING_AGAIN --> ITERATE
-                                    if (_state.compareAndSet(State.ITERATING,State.SCHEDULED) ||
-                                        _state.compareAndSet(State.ITERATE_AGAIN,State.SCHEDULED))
-                                        // not called back yet, so lets wait for it
-                                        return;
-                                    // call back must have happened, so lets iterate
-                                    continue;
-
-                                case IDLE:
-                                    // No more progress can be made by this call to iterate
-                                    if (_state.compareAndSet(State.ITERATING,State.IDLE))
-                                        return;
-                                    // was iterate called again since we already decided to go IDLE?
-                                    if (_state.compareAndSet(State.ITERATE_AGAIN,State.IDLE))
-                                        continue; // Try another iteration as more work may have been added while previous process was returning
-                                    throw new IllegalStateException("state="+_state.get());
-
-                                case FAILED:
-                                    _state.set(State.FAILED);
-                                    return;
-
-                                default:
-                                    throw new IllegalStateException("state="+_state.get()+" next="+next);
-                            }
-                        }
-                        break;
-
-                    case ITERATING:
-                        if (_state.compareAndSet(State.ITERATING,State.ITERATE_AGAIN))
+                    case INACTIVE:
+                    {
+                        if (perform())
                             return;
                         break;
-                        
+                    }
+                    case ITERATING:
+                    {
+                        if (_state.compareAndSet(State.ITERATING, State.ITERATE_AGAIN))
+                            return;
+                        break;
+                    }
                     default:
+                    {
                         return;
+                    }
                 }
             }
         }
-        catch(Exception e)
+        catch (Throwable x)
         {
-            failed(e);
+            failed(x);
         }
     }
 
-    /* ------------------------------------------------------------ */
+    private boolean perform() throws Exception
+    {
+        // Keeps iterating as long as succeeded() is called during process().
+        // If we are in INACTIVE state, either this is the first iteration or
+        // succeeded()/failed() were called already.
+        while (_state.compareAndSet(State.INACTIVE, State.ITERATING))
+        {
+            // Method process() can only be called by one thread at a time because
+            // it is guarded by the CaS above. However, the case blocks below may
+            // be executed concurrently in this case: T1 calls process() which
+            // executes the asynchronous sub task, which calls succeeded(), which
+            // moves the state into INACTIVE, then returns EXECUTING; T2 calls
+            // iterate(), state is now INACTIVE and process() is called again and
+            // returns another action. Now we have 2 threads that may execute the
+            // action case blocks below concurrently; therefore each case block
+            // has to be prepared to fail the CaS it's doing.
+
+            Action action = process();
+            switch (action)
+            {
+                case IDLE:
+                {
+                    // No more progress can be made.
+                    if (_state.compareAndSet(State.ITERATING, State.INACTIVE))
+                        return true;
+
+                    // Was iterate() called again since we already decided to go INACTIVE ?
+                    // If so, try another iteration as more work may have been added
+                    // while the previous call to process() was returning.
+                    if (_state.compareAndSet(State.ITERATE_AGAIN, State.INACTIVE))
+                        continue;
+
+                    // State may have changed concurrently, try again.
+                    continue;
+                }
+                case EXECUTING:
+                {
+                    // The sub task is executing, and the callback for it may or
+                    // may not have already been called yet, which we figure out below.
+                    // Can double CaS here because state never changes directly ITERATING_AGAIN --> ITERATE.
+                    if (_state.compareAndSet(State.ITERATING, State.SCHEDULED) ||
+                            _state.compareAndSet(State.ITERATE_AGAIN, State.SCHEDULED))
+                        // Not called back yet, so wait.
+                        return true;
+                    // Call back must have happened, so iterate.
+                    continue;
+                }
+                case SUCCEEDED:
+                {
+                    // The overall job has completed.
+                    success();
+                    completed();
+                    return true;
+                }
+                case FAILED:
+                {
+                    failure();
+                    return true;
+                }
+                default:
+                {
+                    throw new IllegalStateException(toString());
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Invoked when the sub task succeeds.
+     * Subclasses that override this method must always remember to call
+     * {@code super.succeeded()}.
+     */
     @Override
     public void succeeded()
     {
-        // Try a short cut for the fast method.  If we are still iterating
-        if (_state.compareAndSet(State.ITERATING,State.IDLE))
-            // then next loop will continue processing, so nothing to do here
-            return;
-
-        // OK do it properly
-        loop: while(true)
+        while (true)
         {
-            switch(_state.get())
+            State current = _state.get();
+            switch (current)
             {
                 case ITERATE_AGAIN:
-                    if (_state.compareAndSet(State.ITERATE_AGAIN,State.IDLE))
-                        break loop;
-                    continue;
-                    
                 case ITERATING:
-                    if (_state.compareAndSet(State.ITERATING,State.IDLE))
-                        break loop;
+                {
+                    if (_state.compareAndSet(current, State.INACTIVE))
+                        return;
                     continue;
-                    
+                }
                 case SCHEDULED:
-                    if (_state.compareAndSet(State.SCHEDULED,State.IDLE))
-                        iterate();
-                    break loop;
-                    
-                case IDLE:
-                    // TODO - remove this once old ICB usages updated
+                {
+                    // If we can move from SCHEDULED to INACTIVE
+                    // then we continue in order to hit the INACTIVE
+                    // case, since we need to iterate() more.
+                    if (_state.compareAndSet(current, State.INACTIVE))
+                        continue;
+                    continue;
+                }
+                case INACTIVE:
+                {
                     iterate();
-                    break loop;
-                    
+                    return;
+                }
                 default:
-                    throw new IllegalStateException(this+" state="+_state.get());
+                {
+                    throw new IllegalStateException(toString());
+                }
             }
         }
     }
-    
-    /* ------------------------------------------------------------ */
-    /** 
-     * Derivations of this method should always call super.failed(x) 
-     * to check the state before handling the failure.
-     * @see org.eclipse.jetty.util.Callback#failed(java.lang.Throwable)
+
+    /**
+     * Invoked when the sub task fails.
+     * Subclasses that override this method must always remember to call
+     * {@code super.failed(Throwable)}.
      */
     @Override
     public void failed(Throwable x)
     {
-        loop: while(true)
-        {
-            switch(_state.get())
-            {
-                case ITERATE_AGAIN:
-                    if (_state.compareAndSet(State.ITERATE_AGAIN,State.FAILED))
-                        break loop;
-                    continue;
-                    
-                case ITERATING:
-                    if (_state.compareAndSet(State.ITERATING,State.FAILED))
-                        break loop;
-                    continue;
-                    
-                case SCHEDULED:
-                    if (_state.compareAndSet(State.SCHEDULED,State.FAILED))
-                        break loop;
-                    continue;
-                    
-                case IDLE:
-                    // TODO - remove this once old ICB usages updated
-                    if (_state.compareAndSet(State.IDLE,State.FAILED))
-                        break loop;
-                    continue;
+        failure();
+    }
 
-                default:
-                    throw new IllegalStateException("state="+_state.get(),x);
+    private void success()
+    {
+        while (true)
+        {
+            State current = _state.get();
+            if (current == State.FAILED)
+            {
+                throw new IllegalStateException(toString());
+            }
+            else
+            {
+                if (_state.compareAndSet(current, State.SUCCEEDED))
+                    break;
             }
         }
     }
 
+    private void failure()
+    {
+        while (true)
+        {
+            State current = _state.get();
+            if (current == State.SUCCEEDED)
+            {
+                throw new IllegalStateException(toString());
+            }
+            else
+            {
+                if (_state.compareAndSet(current, State.FAILED))
+                    break;
+            }
+        }
+    }
+
+    /**
+     * @return whether this callback is idle and {@link #iterate()} needs to be called
+     */
     public boolean isIdle()
     {
-        return _state.get()==State.IDLE;
+        return _state.get() == State.INACTIVE;
     }
-    
+
+    /**
+     * @return whether this callback has failed
+     */
     public boolean isFailed()
     {
-        return _state.get()==State.FAILED;
+        return _state.get() == State.FAILED;
     }
-    
+
+    /**
+     * @return whether this callback has succeeded
+     */
     public boolean isSucceeded()
     {
-        return _state.get()==State.SUCCEEDED;
+        return _state.get() == State.SUCCEEDED;
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s[%s]", super.toString(), _state);
+    }
+
+    /**
+     * The internal states of this callback
+     */
+    private enum State
+    {
+        /**
+         * This callback is inactive, ready to iterate.
+         */
+        INACTIVE,
+        /**
+         * This callback is iterating and {@link #process()} has scheduled an
+         * asynchronous operation by returning {@link Action#EXECUTING}, but
+         * the operation is still undergoing.
+         */
+        SCHEDULED,
+        /**
+         * This callback is iterating and {@link #process()} has been called
+         * but not returned yet.
+         */
+        ITERATING,
+        /**
+         * While this callback was iterating, another request for iteration
+         * has been issued, so the iteration must continue even if a previous
+         * call to {@link #process()} returned {@link Action#IDLE}.
+         */
+        ITERATE_AGAIN,
+        /**
+         * The overall job has succeeded.
+         */
+        SUCCEEDED,
+        /**
+         * The overall job has failed.
+         */
+        FAILED
     }
 }

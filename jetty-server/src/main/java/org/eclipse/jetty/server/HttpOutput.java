@@ -24,7 +24,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritePendingException;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.ServletRequest;
@@ -758,23 +757,23 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
 
         @Override
-        protected Next process()
+        protected Action process()
         {
             if (BufferUtil.hasContent(_aggregate))
             {
                 _flushed=true;
                 write(_aggregate, false, this);
-                return Next.SCHEDULED;
+                return Action.EXECUTING;
             }
 
             if (!_flushed)
             {
                 _flushed=true;
                 write(BufferUtil.EMPTY_BUFFER,false,this);
-                return Next.SCHEDULED;
+                return Action.EXECUTING;
             }
 
-            return Next.SUCCEEDED;
+            return Action.SUCCEEDED;
         }
     }
 
@@ -807,21 +806,21 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
 
         @Override
-        protected Next process()
+        protected Action process()
         {
             // flush any content from the aggregate
             if (BufferUtil.hasContent(_aggregate))
             {
                 _completed=_len==0;
                 write(_aggregate, _complete && _completed, this);
-                return Next.SCHEDULED;
+                return Action.EXECUTING;
             }
 
             // Can we just aggregate the remainder?
             if (!_complete && _len<BufferUtil.space(_aggregate) && _len<_commitSize)
             {
                 BufferUtil.put(_buffer,_aggregate);
-                return Next.SUCCEEDED;
+                return Action.SUCCEEDED;
             }
             
             // Is there data left to write?
@@ -832,7 +831,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 {
                     _completed=true;
                     write(_buffer, _complete, this);
-                    return Next.SCHEDULED;
+                    return Action.EXECUTING;
                 }
                 
                 // otherwise take a slice
@@ -844,7 +843,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 _slice.position(p);
                 _completed=!_buffer.hasRemaining();
                 write(_slice, _complete && _completed, this);
-                return Next.SCHEDULED;
+                return Action.EXECUTING;
             }
             
             // all content written, but if we have not yet signal completion, we
@@ -855,12 +854,12 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 {
                     _completed=true;
                     write(BufferUtil.EMPTY_BUFFER, _complete, this);
-                    return Next.SCHEDULED;
+                    return Action.EXECUTING;
                 }
                 closed();
             }
 
-            return Next.SUCCEEDED;
+            return Action.SUCCEEDED;
         }
     }
 
@@ -887,7 +886,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
 
         @Override
-        protected Next process() throws Exception
+        protected Action process() throws Exception
         {
             // Only return if EOF has previously been read and thus
             // a write done with EOF=true
@@ -897,7 +896,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 _in.close();
                 closed();
                 _channel.getByteBufferPool().release(_buffer);
-                return Next.SUCCEEDED;
+                return Action.SUCCEEDED;
             }
             
             // Read until buffer full or EOF
@@ -915,7 +914,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             _buffer.position(0);
             _buffer.limit(len);
             write(_buffer,_eof,this);
-            return Next.SCHEDULED;
+            return Action.EXECUTING;
         }
 
         @Override
@@ -958,7 +957,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
 
         @Override
-        protected Next process() throws Exception
+        protected Action process() throws Exception
         {
             // Only return if EOF has previously been read and thus
             // a write done with EOF=true
@@ -967,7 +966,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 _in.close();
                 closed();
                 _channel.getByteBufferPool().release(_buffer);
-                return Next.SUCCEEDED;
+                return Action.SUCCEEDED;
             }
             
             // Read from stream until buffer full or EOF
@@ -979,7 +978,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             _buffer.flip();
             write(_buffer,_eof,this);
 
-            return Next.SCHEDULED;
+            return Action.EXECUTING;
         }
 
         @Override

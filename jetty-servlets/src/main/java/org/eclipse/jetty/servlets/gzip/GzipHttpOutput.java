@@ -297,7 +297,7 @@ public class GzipHttpOutput extends HttpOutput
         }
 
         @Override
-        protected Next process() throws Exception
+        protected Action process() throws Exception
         {
             if (_deflater.needsInput())
             {
@@ -307,11 +307,11 @@ public class GzipHttpOutput extends HttpOutput
                     _deflater=null;
                     getHttpChannel().getByteBufferPool().release(_buffer);
                     _buffer=null;
-                    return Next.SUCCEEDED;
+                    return Action.SUCCEEDED;
                 }
 
                 if (!_complete)
-                    return Next.SUCCEEDED;
+                    return Action.SUCCEEDED;
             }
 
             BufferUtil.compact(_buffer);
@@ -324,7 +324,7 @@ public class GzipHttpOutput extends HttpOutput
                 addTrailer();
             
             superWrite(_buffer,complete,this);
-            return Next.SCHEDULED;
+            return Action.EXECUTING;
         }
     }
     
@@ -342,7 +342,7 @@ public class GzipHttpOutput extends HttpOutput
         }
 
         @Override
-        protected Next process() throws Exception
+        protected Action process() throws Exception
         {
             if (_deflater.needsInput())
             {
@@ -354,11 +354,11 @@ public class GzipHttpOutput extends HttpOutput
                         _deflater=null;
                         getHttpChannel().getByteBufferPool().release(_buffer);
                         _buffer=null;
-                        return Next.SUCCEEDED;
+                        return Action.SUCCEEDED;
                     }
                     
                     if (!_complete)
-                        return Next.SUCCEEDED;                    
+                        return Action.SUCCEEDED;
                 }
                 else
                 {
@@ -389,7 +389,7 @@ public class GzipHttpOutput extends HttpOutput
                 addTrailer();
                 
             superWrite(_buffer,complete,this);
-            return Next.SCHEDULED;
+            return Action.EXECUTING;
         }
         
     }

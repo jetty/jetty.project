@@ -674,11 +674,11 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
     private class ContentCallback extends IteratingCallback
     {
         @Override
-        protected Next process() throws Exception
+        protected Action process() throws Exception
         {
             HttpExchange exchange = getHttpExchange();
             if (exchange == null)
-                return Next.IDLE;
+                return Action.IDLE;
 
             Request request = exchange.getRequest();
             HttpContent content = HttpSender.this.content;
@@ -687,21 +687,21 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
             if (contentBuffer != null)
             {
                 if (!someToContent(request, contentBuffer))
-                    return Next.IDLE;
+                    return Action.IDLE;
             }
 
             if (content.advance())
             {
                 // There is more content to send
                 sendContent(exchange, content, this);
-                return Next.SCHEDULED;
+                return Action.EXECUTING;
             }
             
 
             if (content.isConsumed())
             {
                 sendContent(exchange, content, lastCallback);
-                return Next.SCHEDULED;
+                return Action.EXECUTING;
             }
 
             while (true)
@@ -714,7 +714,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
                         if (updateSenderState(current, SenderState.IDLE))
                         {
                             LOG.debug("Waiting for deferred content for {}", request);
-                            return Next.IDLE;
+                            return Action.IDLE;
                         }
                         break;
                     }
@@ -725,7 +725,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
                             LOG.debug("Deferred content available for {}", request);
                             // TODO: this case is not covered by tests
                             sendContent(exchange, content, this);
-                            return Next.SCHEDULED;
+                            return Action.EXECUTING;
                         }
                         break;
                     }

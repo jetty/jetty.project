@@ -19,7 +19,6 @@
 package org.eclipse.jetty.server;
 
 import java.nio.ByteBuffer;
-import java.nio.channels.ByteChannel;
 import java.util.concurrent.RejectedExecutionException;
 
 import org.eclipse.jetty.http.HttpGenerator;
@@ -38,7 +37,6 @@ import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
-import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -489,7 +487,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         }
 
         @Override
-        public Next process() throws Exception
+        public Action process() throws Exception
         {
             ByteBuffer chunk = _chunk;
             while (true)
@@ -569,7 +567,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                         }
                         else
                             continue;
-                        return Next.SCHEDULED;
+                        return Action.EXECUTING;
                     }
                     case SHUTDOWN_OUT:
                     {
@@ -584,7 +582,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                             if (!_lastContent || _content==null || !_content.hasArray() || !_header.hasArray() ||  _content.array()!=_header.array())
                                 _bufferPool.release(_header);
                         }
-                        return Next.SUCCEEDED;
+                        return Action.SUCCEEDED;
                     }
                     case CONTINUE:
                     {
@@ -641,7 +639,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         }
 
         @Override
-        public Next process() throws Exception
+        public Action process() throws Exception
         {
             ByteBuffer chunk = _chunk;
             while (true)
@@ -686,7 +684,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                         }
                         else
                             continue;
-                        return Next.SCHEDULED;
+                        return Action.EXECUTING;
                     }
                     case SHUTDOWN_OUT:
                     {
@@ -695,7 +693,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     }
                     case DONE:
                     {
-                        return Next.SUCCEEDED;
+                        return Action.SUCCEEDED;
                     }
                     case CONTINUE:
                     {

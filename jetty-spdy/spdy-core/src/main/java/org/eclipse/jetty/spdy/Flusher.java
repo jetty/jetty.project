@@ -143,7 +143,7 @@ public class Flusher
         private final Set<IStream> stalled = new HashSet<>();
         
         @Override
-        protected Next process() throws Exception
+        protected Action process() throws Exception
         {
             synchronized (lock)
             {
@@ -194,7 +194,7 @@ public class Flusher
             }
 
             if (active.size() == 0)
-                return Next.IDLE;
+                return Action.IDLE;
 
             // Get the bytes to write
             ByteBuffer[] buffers = new ByteBuffer[active.size()];
@@ -213,13 +213,13 @@ public class Flusher
             // MAX_GATHER parameter, and/or autotune the buffer returned
             // by FrameBytes.getByteBuffer() (see also comment there).
 
-            return Next.SCHEDULED;
+            return Action.EXECUTING;
         }
 
         @Override
         protected void completed()
         {
-            // will never be called as process always returns SCHEDULED or IDLE
+            // will never be called as process always returns EXECUTING or IDLE
             throw new IllegalStateException();
         }
 
