@@ -763,14 +763,14 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             {
                 _flushed=true;
                 write(_aggregate, false, this);
-                return Action.EXECUTING;
+                return Action.SCHEDULED;
             }
 
             if (!_flushed)
             {
                 _flushed=true;
                 write(BufferUtil.EMPTY_BUFFER,false,this);
-                return Action.EXECUTING;
+                return Action.SCHEDULED;
             }
 
             return Action.SUCCEEDED;
@@ -813,7 +813,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             {
                 _completed=_len==0;
                 write(_aggregate, _complete && _completed, this);
-                return Action.EXECUTING;
+                return Action.SCHEDULED;
             }
 
             // Can we just aggregate the remainder?
@@ -831,7 +831,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 {
                     _completed=true;
                     write(_buffer, _complete, this);
-                    return Action.EXECUTING;
+                    return Action.SCHEDULED;
                 }
                 
                 // otherwise take a slice
@@ -843,7 +843,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 _slice.position(p);
                 _completed=!_buffer.hasRemaining();
                 write(_slice, _complete && _completed, this);
-                return Action.EXECUTING;
+                return Action.SCHEDULED;
             }
             
             // all content written, but if we have not yet signal completion, we
@@ -854,7 +854,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 {
                     _completed=true;
                     write(BufferUtil.EMPTY_BUFFER, _complete, this);
-                    return Action.EXECUTING;
+                    return Action.SCHEDULED;
                 }
                 closed();
             }
@@ -914,7 +914,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             _buffer.position(0);
             _buffer.limit(len);
             write(_buffer,_eof,this);
-            return Action.EXECUTING;
+            return Action.SCHEDULED;
         }
 
         @Override
@@ -978,7 +978,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             _buffer.flip();
             write(_buffer,_eof,this);
 
-            return Action.EXECUTING;
+            return Action.SCHEDULED;
         }
 
         @Override

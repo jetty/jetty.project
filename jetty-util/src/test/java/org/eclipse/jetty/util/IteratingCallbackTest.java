@@ -60,7 +60,7 @@ public class IteratingCallbackTest
                 if (i-->1)      
                 {
                     succeeded(); // fake a completed IO operation
-                    return Action.EXECUTING;
+                    return Action.SCHEDULED;
                 }
                 return Action.SUCCEEDED;
             }
@@ -87,7 +87,7 @@ public class IteratingCallbackTest
                 if (i-->1)      
                 {
                     scheduler.schedule(successTask,50,TimeUnit.MILLISECONDS);
-                    return Action.EXECUTING;
+                    return Action.SCHEDULED;
                 }
                 return Action.SUCCEEDED;
             }
@@ -114,7 +114,7 @@ public class IteratingCallbackTest
                 if (i-->1)      
                 {
                     scheduler.schedule(successTask,50,TimeUnit.MILLISECONDS);
-                    return Action.EXECUTING;
+                    return Action.SCHEDULED;
                 }
                 return Action.SUCCEEDED;
             }
@@ -154,7 +154,7 @@ public class IteratingCallbackTest
                         succeeded(); // fake a completed IO operation
                     else
                         failed(new Exception("testing"));
-                    return Action.EXECUTING;
+                    return Action.SCHEDULED;
                 }
                 return Action.SUCCEEDED;
             }
@@ -179,7 +179,7 @@ public class IteratingCallbackTest
                 if (i-->1)      
                 {
                     scheduler.schedule(i>2?successTask:failTask,50,TimeUnit.MILLISECONDS);
-                    return Action.EXECUTING;
+                    return Action.SCHEDULED;
                 }
                 return Action.SUCCEEDED;
             }
@@ -210,11 +210,11 @@ public class IteratingCallbackTest
                 {
                     case 5:
                         succeeded();
-                        return Action.EXECUTING;
+                        return Action.SCHEDULED;
                         
                     case 4:
                         scheduler.schedule(successTask,5,TimeUnit.MILLISECONDS);
-                        return Action.EXECUTING;
+                        return Action.SCHEDULED;
                         
                     case 3:
                         scheduler.schedule(new Runnable()
@@ -229,11 +229,11 @@ public class IteratingCallbackTest
 
                     case 2:
                         succeeded();
-                        return Action.EXECUTING;
+                        return Action.SCHEDULED;
                         
                     case 1:
                         scheduler.schedule(successTask,5,TimeUnit.MILLISECONDS);
-                        return Action.EXECUTING;
+                        return Action.SCHEDULED;
                         
                     case 0:
                         return Action.SUCCEEDED;

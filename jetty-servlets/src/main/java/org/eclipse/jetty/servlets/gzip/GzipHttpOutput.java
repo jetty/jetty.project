@@ -324,7 +324,7 @@ public class GzipHttpOutput extends HttpOutput
                 addTrailer();
             
             superWrite(_buffer,complete,this);
-            return Action.EXECUTING;
+            return Action.SCHEDULED;
         }
     }
     
@@ -389,7 +389,7 @@ public class GzipHttpOutput extends HttpOutput
                 addTrailer();
                 
             superWrite(_buffer,complete,this);
-            return Action.EXECUTING;
+            return Action.SCHEDULED;
         }
         
     }

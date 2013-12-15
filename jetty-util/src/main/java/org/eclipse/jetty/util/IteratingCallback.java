@@ -67,7 +67,7 @@ public abstract class IteratingCallback implements Callback
          * a sub task, where the execution has started but the callback
          * may have not yet been invoked.
          */
-        EXECUTING,
+        SCHEDULED,
         /**
          * Indicates that {@link #process()} has completed the overall job.
          */
@@ -88,7 +88,7 @@ public abstract class IteratingCallback implements Callback
      * <ul>
      * <li>{@link Action#IDLE} when no sub tasks are available for execution
      * but the overall job is not completed yet</li>
-     * <li>{@link Action#EXECUTING} when the sub task asynchronous execution
+     * <li>{@link Action#SCHEDULED} when the sub task asynchronous execution
      * has been started</li>
      * <li>{@link Action#SUCCEEDED} when the overall job is completed</li>
      * <li>{@link Action#FAILED} when the overall job cannot be completed</li>
@@ -123,7 +123,7 @@ public abstract class IteratingCallback implements Callback
                 {
                     case INACTIVE:
                     {
-                        if (perform())
+                        if (processIterations())
                             return;
                         break;
                     }
@@ -146,7 +146,7 @@ public abstract class IteratingCallback implements Callback
         }
     }
 
-    private boolean perform() throws Exception
+    private boolean processIterations() throws Exception
     {
         // Keeps iterating as long as succeeded() is called during process().
         // If we are in INACTIVE state, either this is the first iteration or
@@ -157,7 +157,7 @@ public abstract class IteratingCallback implements Callback
             // it is guarded by the CaS above. However, the case blocks below may
             // be executed concurrently in this case: T1 calls process() which
             // executes the asynchronous sub task, which calls succeeded(), which
-            // moves the state into INACTIVE, then returns EXECUTING; T2 calls
+            // moves the state into INACTIVE, then returns SCHEDULED; T2 calls
             // iterate(), state is now INACTIVE and process() is called again and
             // returns another action. Now we have 2 threads that may execute the
             // action case blocks below concurrently; therefore each case block
@@ -181,13 +181,13 @@ public abstract class IteratingCallback implements Callback
                     // State may have changed concurrently, try again.
                     continue;
                 }
-                case EXECUTING:
+                case SCHEDULED:
                 {
                     // The sub task is executing, and the callback for it may or
                     // may not have already been called yet, which we figure out below.
                     // Can double CaS here because state never changes directly ITERATING_AGAIN --> ITERATE.
-                    if (_state.compareAndSet(State.ITERATING, State.SCHEDULED) ||
-                            _state.compareAndSet(State.ITERATE_AGAIN, State.SCHEDULED))
+                    if (_state.compareAndSet(State.ITERATING, State.ACTIVE) ||
+                            _state.compareAndSet(State.ITERATE_AGAIN, State.ACTIVE))
                         // Not called back yet, so wait.
                         return true;
                     // Call back must have happened, so iterate.
@@ -196,13 +196,13 @@ public abstract class IteratingCallback implements Callback
                 case SUCCEEDED:
                 {
                     // The overall job has completed.
-                    success();
-                    completed();
+                    if (completeSuccess())
+                        completed();
                     return true;
                 }
                 case FAILED:
                 {
-                    failure();
+                    completeFailure();
                     return true;
                 }
                 default:
@@ -234,18 +234,14 @@ public abstract class IteratingCallback implements Callback
                         return;
                     continue;
                 }
-                case SCHEDULED:
+                case ACTIVE:
                 {
-                    // If we can move from SCHEDULED to INACTIVE
-                    // then we continue in order to hit the INACTIVE
-                    // case, since we need to iterate() more.
+                    // If we can move from ACTIVE to INACTIVE
+                    // then we are responsible to call iterate().
                     if (_state.compareAndSet(current, State.INACTIVE))
-                        continue;
-                    continue;
-                }
-                case INACTIVE:
-                {
-                    iterate();
+                        iterate();
+                    // If we can't CaS, then failed() must have been
+                    // called, and we just return.
                     return;
                 }
                 default:
@@ -264,34 +260,36 @@ public abstract class IteratingCallback implements Callback
     @Override
     public void failed(Throwable x)
     {
-        failure();
+        completeFailure();
     }
 
-    private void success()
+    private boolean completeSuccess()
     {
         while (true)
         {
             State current = _state.get();
             if (current == State.FAILED)
             {
-                throw new IllegalStateException(toString());
+                // Success arrived too late, sorry.
+                return false;
             }
             else
             {
                 if (_state.compareAndSet(current, State.SUCCEEDED))
-                    break;
+                    return true;
             }
         }
     }
 
-    private void failure()
+    private void completeFailure()
     {
         while (true)
         {
             State current = _state.get();
             if (current == State.SUCCEEDED)
             {
-                throw new IllegalStateException(toString());
+                // Failed arrived too late, sorry.
+                return;
             }
             else
             {
@@ -342,10 +340,10 @@ public abstract class IteratingCallback implements Callback
         INACTIVE,
         /**
          * This callback is iterating and {@link #process()} has scheduled an
-         * asynchronous operation by returning {@link Action#EXECUTING}, but
+         * asynchronous operation by returning {@link Action#SCHEDULED}, but
          * the operation is still undergoing.
          */
-        SCHEDULED,
+        ACTIVE,
         /**
          * This callback is iterating and {@link #process()} has been called
          * but not returned yet.

@@ -213,13 +213,13 @@ public class Flusher
             // MAX_GATHER parameter, and/or autotune the buffer returned
             // by FrameBytes.getByteBuffer() (see also comment there).
 
-            return Action.EXECUTING;
+            return Action.SCHEDULED;
         }
 
         @Override
         protected void completed()
         {
-            // will never be called as process always returns EXECUTING or IDLE
+            // will never be called as process always returns SCHEDULED or IDLE
             throw new IllegalStateException();
         }
 

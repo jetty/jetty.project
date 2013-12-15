@@ -212,7 +212,7 @@ public class FrameFlusher
         @Override
         protected void completed()
         {       
-            // will never be called as process always returns EXECUTING or IDLE
+            // will never be called as process always returns SCHEDULED or IDLE
             throw new IllegalStateException();     
         }
 
@@ -245,7 +245,7 @@ public class FrameFlusher
 
             endpoint.write(this,buffers.toArray(new ByteBuffer[buffers.size()]));
             buffers.clear();
-            return Action.EXECUTING;
+            return Action.SCHEDULED;
         }
 
         @Override

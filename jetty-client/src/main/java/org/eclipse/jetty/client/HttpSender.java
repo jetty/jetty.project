@@ -694,14 +694,14 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
             {
                 // There is more content to send
                 sendContent(exchange, content, this);
-                return Action.EXECUTING;
+                return Action.SCHEDULED;
             }
             
 
             if (content.isConsumed())
             {
                 sendContent(exchange, content, lastCallback);
-                return Action.EXECUTING;
+                return Action.SCHEDULED;
             }
 
             while (true)
@@ -725,7 +725,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
                             LOG.debug("Deferred content available for {}", request);
                             // TODO: this case is not covered by tests
                             sendContent(exchange, content, this);
-                            return Action.EXECUTING;
+                            return Action.SCHEDULED;
                         }
                         break;
                     }

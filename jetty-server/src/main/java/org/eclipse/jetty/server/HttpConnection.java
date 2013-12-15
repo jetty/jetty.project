@@ -567,7 +567,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                         }
                         else
                             continue;
-                        return Action.EXECUTING;
+                        return Action.SCHEDULED;
                     }
                     case SHUTDOWN_OUT:
                     {
@@ -684,7 +684,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                         }
                         else
                             continue;
-                        return Action.EXECUTING;
+                        return Action.SCHEDULED;
                     }
                     case SHUTDOWN_OUT:
                     {
