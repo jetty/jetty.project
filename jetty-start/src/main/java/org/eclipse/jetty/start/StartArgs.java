@@ -161,6 +161,9 @@ public class StartArgs
         dumpSystemProperty("java.runtime.name");
         dumpSystemProperty("java.runtime.version");
         dumpSystemProperty("java.io.tmpdir");
+        dumpSystemProperty("user.dir");
+        dumpSystemProperty("user.language");
+        dumpSystemProperty("user.country");
 
         // Jetty Environment
         System.out.println();

@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.regex.Pattern;
@@ -193,7 +194,7 @@ public class AsyncGzipFilter extends UserAgentFilter implements GzipFactory
         {
             StringTokenizer tok = new StringTokenizer(tmp,",",false);
             while (tok.hasMoreTokens())
-                _methods.add(tok.nextToken().trim().toUpperCase());
+                _methods.add(tok.nextToken().trim().toUpperCase(Locale.ENGLISH));
         }
         else
             _methods.add(HttpMethod.GET.asString());

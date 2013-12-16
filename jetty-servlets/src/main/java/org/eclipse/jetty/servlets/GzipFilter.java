@@ -194,7 +194,7 @@ public class GzipFilter extends UserAgentFilter
         {
             StringTokenizer tok = new StringTokenizer(tmp,",",false);
             while (tok.hasMoreTokens())
-                _methods.add(tok.nextToken().trim().toUpperCase());
+                _methods.add(tok.nextToken().trim().toUpperCase(Locale.ENGLISH));
         }
         else
             _methods.add(HttpMethod.GET.asString());
