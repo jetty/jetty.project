@@ -19,12 +19,9 @@
 package org.eclipse.jetty.fcgi.generator;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Queue;
 
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ConcurrentArrayQueue;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.log.Log;
@@ -35,9 +32,8 @@ public class Flusher
     private static final Logger LOG = Log.getLogger(Flusher.class);
 
     private final Queue<Generator.Result> queue = new ConcurrentArrayQueue<>();
-    private final Callback flushCallback = new FlushCallback();
+    private final IteratingCallback flushCallback = new FlushCallback();
     private final EndPoint endPoint;
-    private boolean flushing;
 
     public Flusher(EndPoint endPoint)
     {
@@ -46,15 +42,9 @@ public class Flusher
 
     public void flush(Generator.Result... results)
     {
-        synchronized (queue)
-        {
-            for (Generator.Result result : results)
-                queue.offer(result);
-            if (flushing)
-                return;
-            flushing = true;
-        }
-        endPoint.write(flushCallback);
+        for (Generator.Result result : results)
+            queue.offer(result);
+        flushCallback.iterate();
     }
 
     public void shutdown()
@@ -67,37 +57,35 @@ public class Flusher
         private Generator.Result active;
 
         @Override
-        protected boolean process() throws Exception
+        protected Action process() throws Exception
         {
             // Look if other writes are needed.
-            Generator.Result result;
-            synchronized (queue)
+            Generator.Result result = queue.poll();
+            if (result == null)
             {
-                if (queue.isEmpty())
-                {
-                    // No more writes to do, switch to non-flushing
-                    flushing = false;
-                    return false;
-                }
-                result = queue.poll();
-                // Attempt to gather another result.
-                // Most often there is another result in the
-                // queue so this is a real optimization because
-                // it sends both results in just one TCP packet.
-                Generator.Result other = queue.poll();
-                if (other != null)
-                    result = result.join(other);
+                // No more writes to do, return.
+                return Action.IDLE;
             }
+
+            // Attempt to gather another result.
+            // Most often there is another result in the
+            // queue so this is a real optimization because
+            // it sends both results in just one TCP packet.
+            Generator.Result other = queue.poll();
+            if (other != null)
+                result = result.join(other);
+
             active = result;
             ByteBuffer[] buffers = result.getByteBuffers();
             endPoint.write(this, buffers);
-            return false;
+            return Action.SCHEDULED;
         }
 
         @Override
         protected void completed()
         {
-            // Nothing to do, we always return false from process().
+            // We never return Action.SUCCEEDED, so this method is never called.
+            throw new IllegalStateException();
         }
 
         @Override
@@ -116,20 +104,13 @@ public class Flusher
                 active.failed(x);
             active = null;
 
-            List<Generator.Result> pending = new ArrayList<>();
-            synchronized (queue)
+            while (true)
             {
-                while (true)
-                {
-                    Generator.Result result = queue.poll();
-                    if (result != null)
-                        pending.add(result);
-                    else
-                        break;
-                }
-            }
-            for (Generator.Result result : pending)
+                Generator.Result result = queue.poll();
+                if (result == null)
+                    break;
                 result.failed(x);
+            }
 
             super.failed(x);
         }

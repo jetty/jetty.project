@@ -120,7 +120,7 @@ public class HttpChannelOverFCGI extends HttpChannel
     public void exchangeTerminated(Result result)
     {
         super.exchangeTerminated(result);
-        idle.close();
+        idle.onClose();
     }
 
     protected void flush(Generator.Result... results)
@@ -150,13 +150,6 @@ public class HttpChannelOverFCGI extends HttpChannel
         public boolean isOpen()
         {
             return connection.getEndPoint().isOpen();
-        }
-
-        // Overridden for visibility
-        @Override
-        protected void close()
-        {
-            super.close();
         }
     }
 }
