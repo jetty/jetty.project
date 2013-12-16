@@ -245,9 +245,12 @@ public abstract class IteratingCallback implements Callback
                     return;
                 }
                 case INACTIVE:
-                    iterate(); // TODO, remove support for the old style, where the callback is schedule externally, without a call to iterate()!
+                {
+                    // Support the case where the callback is scheduled
+                    // externally without a call to iterate().
+                    iterate();
                     return;
-                    
+                }
                 default:
                 {
                     throw new IllegalStateException(toString());
