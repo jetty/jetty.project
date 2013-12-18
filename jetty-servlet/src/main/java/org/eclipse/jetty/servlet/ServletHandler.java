@@ -1432,7 +1432,7 @@ public class ServletHandler extends ScopedHandler
                         {
                             //existing candidate isn't a default, if the one we're looking at isn't a default either, then its an error
                             if (!mapping.isDefault())
-                                throw new IllegalStateException("Multiple servlets map to path: "+pathSpec);
+                                throw new IllegalStateException("Multiple servlets map to path: "+pathSpec+": "+finalMapping.getServletName()+","+mapping.getServletName());
                         }
                     }
                 }
