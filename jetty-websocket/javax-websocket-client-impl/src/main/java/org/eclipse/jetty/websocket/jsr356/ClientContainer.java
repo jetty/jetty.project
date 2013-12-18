@@ -100,6 +100,8 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         client.setEventDriverFactory(new JsrEventDriverFactory(client.getPolicy()));
         client.setSessionFactory(new JsrSessionFactory(this,this));
         addBean(client);
+
+        ShutdownThread.register(this);
     }
 
     private Session connect(EndpointInstance instance, URI path) throws IOException
@@ -181,17 +183,9 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     }
 
     @Override
-    protected void doStart() throws Exception
-    {
-        super.doStart();
-        ShutdownThread.register(client);
-    }
-
-    @Override
     protected void doStop() throws Exception
     {
         endpointClientMetadataCache.clear();
-        ShutdownThread.deregister(client);
         super.doStop();
     }
 

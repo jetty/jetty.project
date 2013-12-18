@@ -43,6 +43,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Extension;
@@ -108,6 +109,10 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
         this.masker = new RandomMasker();
         this.eventDriverFactory = new EventDriverFactory(policy);
         this.sessionFactory = new WebSocketSessionFactory(this);
+        
+        addBean(this.executor);
+        addBean(this.sslContextFactory);
+        addBean(this.bufferPool);
     }
 
     public Future<Session> connect(Object websocket, URI toUri) throws IOException
@@ -407,6 +412,8 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
 
     private synchronized void initialiseClient() throws IOException
     {
+        ShutdownThread.register(this);
+
         if (executor == null)
         {
             QueuedThreadPool threadPool = new QueuedThreadPool();
