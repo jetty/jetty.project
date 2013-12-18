@@ -1,4 +1,3 @@
-
 JETTY
 =====
 The Jetty project is a 100% Java HTTP Server, HTTP Client
@@ -31,7 +30,7 @@ provided by the start.ini file:
 Many Jetty features can be enabled by using the --ini command to create
 template configurations in the start.d directory.  For example:
 
-  java -jar start.jar --ini=https
+  java -jar start.jar --module=https
 
 Will enable HTTPS and its dependencies in the files start.d/http.ini and start.d/ssl.ini
 To list the know modules:
@@ -45,7 +44,7 @@ JETTY BASE
 
 If the property jetty.base is defined on the command line, then the jetty start.jar 
 mechanism will look for start.ini, start.d, webapps and etc files relative to the 
-jetty.home directory
+jetty.base directory
 
   java -jar start.jar jetty.base=/opt/myjettybase/
 
