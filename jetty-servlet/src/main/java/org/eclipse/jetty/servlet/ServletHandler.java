@@ -21,6 +21,7 @@ package org.eclipse.jetty.servlet;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -798,9 +799,26 @@ public class ServletHandler extends ScopedHandler
     {
         MultiException mx = new MultiException();
 
+        //start filter holders now
+        if (_filters != null)
+        {
+            for (FilterHolder f: _filters)
+            {
+                try
+                {
+                    f.start();
+                    f.initialize();
+                }
+                catch (Exception e)
+                {
+                    mx.add(e);
+                }
+            }
+        }
+        
+        // Sort and Initialize servlets
         if (_servlets!=null)
         {
-            // Sort and Initialize servlets
             ServletHolder[] servlets = _servlets.clone();
             Arrays.sort(servlets);
             for (ServletHolder servlet : servlets)
@@ -817,6 +835,9 @@ public class ServletHandler extends ScopedHandler
                         }
                         servlet.setClassName(forced_holder.getClassName());
                     }
+                    
+                    servlet.start();
+                    servlet.initialize();
                 }
                 catch (Throwable e)
                 {
@@ -826,13 +847,16 @@ public class ServletHandler extends ScopedHandler
             }
         }
 
-        //start the servlet and filter holders now
+        //any other beans
         for (Holder<?> h: getBeans(Holder.class))
         {
             try
             {
-                h.start();
-                h.initialize();
+                if (!h.isStarted())
+                {
+                    h.start();
+                    h.initialize();
+                }
             }
             catch (Exception e)
             {
