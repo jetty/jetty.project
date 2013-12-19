@@ -47,6 +47,7 @@ import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
 import org.eclipse.jetty.webapp.FragmentDescriptor;
 import org.eclipse.jetty.webapp.MetaDataComplete;
@@ -79,7 +80,47 @@ public class AnnotationConfiguration extends AbstractConfiguration
     protected List<ParserTask> _parserTasks;
     protected WebAppClassNameResolver _webAppClassNameResolver;
     protected ContainerClassNameResolver _containerClassNameResolver;
-    
+
+    protected CounterStatistic _containerPathStats;
+    protected CounterStatistic _webInfLibStats;
+    protected CounterStatistic _webInfClassesStats;
+  
+    /**
+     * TimeStatistic
+     *
+     * Simple class to capture elapsed time of an operation.
+     * 
+     */
+    public class TimeStatistic 
+    {
+        public long _start = 0;
+        public long _end = 0;
+        
+        public void start ()
+        {
+            _start = System.nanoTime();
+        }
+        
+        public void end ()
+        {
+            _end = System.nanoTime();
+        }
+        
+        public long getStart()
+        {
+            return _start;
+        }
+        
+        public long getEnd ()
+        {
+            return _end;
+        }
+        
+        public long getElapsed ()
+        {
+            return (_end > _start?(_end-_start):0);
+        }
+    }
     
     
     /**
@@ -95,7 +136,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
         protected final Set<? extends Handler> _handlers;
         protected final ClassNameResolver _resolver;
         protected final Resource _resource;
-      
+        protected TimeStatistic _stat;
         
         public ParserTask (AnnotationParser parser, Set<? extends Handler>handlers, Resource resource, ClassNameResolver resolver)
         {
@@ -104,13 +145,33 @@ public class AnnotationConfiguration extends AbstractConfiguration
             _resolver = resolver;
             _resource = resource;
         }
+        
+        public void setStatistic(TimeStatistic stat)
+        {
+           _stat = stat; 
+        }
 
         public Void call() throws Exception
-        {
+        {            
+            if (_stat != null)
+                _stat.start();
             if (_parser != null)
                 _parser.parse(_handlers, _resource, _resolver); 
+            if (_stat != null)
+                _stat.end();
             return null;
         }
+        
+        public TimeStatistic getStatistic()
+        {
+            return _stat;
+        }
+        
+        public Resource getResource()
+        {
+            return _resource;
+        }
+        
     }
 
     /**
@@ -430,16 +491,16 @@ public class AnnotationConfiguration extends AbstractConfiguration
         _parserTasks = new ArrayList<ParserTask>();
 
         long start = 0; 
-        
-        if (LOG.isDebugEnabled()) 
-        {
-            LOG.debug("Scanning for annotations: webxml={}, metadatacomplete={}, configurationDiscovered={}, multiThreaded={}, maxScanWait={}", 
+
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Annotation scanning commencing: webxml={}, metadatacomplete={}, configurationDiscovered={}, multiThreaded={}, maxScanWait={}", 
                       context.getServletContext().getEffectiveMajorVersion(), 
                       context.getMetaData().isMetaDataComplete(),
                       context.isConfigurationDiscovered(),
                       isUseMultiThreading(context),
                       getMaxScanWait(context));
-        }
+
              
         parseContainerPath(context, parser);
         //email from Rajiv Mordani jsrs 315 7 April 2010
@@ -450,11 +511,9 @@ public class AnnotationConfiguration extends AbstractConfiguration
         parseWebInfClasses(context, parser);
         parseWebInfLib (context, parser); 
         
-
-        if (LOG.isDebugEnabled())
-            start = System.nanoTime();
+        start = System.nanoTime();
         
-        //execute scan, either effectively synchronously (1 thread only), or asychronously (limited by number of processors available) 
+        //execute scan, either effectively synchronously (1 thread only), or asynchronously (limited by number of processors available) 
         final Semaphore task_limit = (isUseMultiThreading(context)? new Semaphore(Runtime.getRuntime().availableProcessors()):new Semaphore(1));     
         final CountDownLatch latch = new CountDownLatch(_parserTasks.size());
         final MultiException me = new MultiException();
@@ -485,10 +544,18 @@ public class AnnotationConfiguration extends AbstractConfiguration
         }
        
         boolean timeout = !latch.await(getMaxScanWait(context), TimeUnit.SECONDS);
-        
+          
         if (LOG.isDebugEnabled())
-            LOG.debug("Annotation parsing millisec={}",(TimeUnit.MILLISECONDS.convert(System.nanoTime()-start, TimeUnit.NANOSECONDS)));
+        {       
+            for (ParserTask p:_parserTasks)
+                LOG.debug("Scanned {} in {}ms", p.getResource(), TimeUnit.MILLISECONDS.convert(p.getStatistic().getElapsed(), TimeUnit.NANOSECONDS));
+        }
         
+        LOG.info("Scanned {} container path jars, {} WEB-INF/lib jars, {} WEB-INF/classes dirs in {}ms for context {}",
+                 _containerPathStats.getTotal(), _webInfLibStats.getTotal(), _webInfClassesStats.getTotal(),
+                 (TimeUnit.MILLISECONDS.convert(System.nanoTime()-start, TimeUnit.NANOSECONDS)),
+                 context);
+     
         if (timeout)
             me.add(new Exception("Timeout scanning annotations"));
         me.ifExceptionThrow();   
@@ -830,9 +897,6 @@ public class AnnotationConfiguration extends AbstractConfiguration
      */
     public void parseContainerPath (final WebAppContext context, final AnnotationParser parser) throws Exception
     {
-        //if no pattern for the container path is defined, then by default scan NOTHING
-        LOG.debug("Scanning container jars");   
-        
         //always parse for discoverable annotations as well as class hierarchy and servletcontainerinitializer related annotations
         final Set<Handler> handlers = new HashSet<Handler>();
         handlers.addAll(_discoverableAnnotationHandlers);
@@ -840,11 +904,19 @@ public class AnnotationConfiguration extends AbstractConfiguration
         if (_classInheritanceHandler != null)
             handlers.add(_classInheritanceHandler);
 
+        _containerPathStats = new CounterStatistic();
+
         for (Resource r : context.getMetaData().getContainerResources())
         {
             //queue it up for scanning if using multithreaded mode
             if (_parserTasks != null)
-                _parserTasks.add(new ParserTask(parser, handlers, r, _containerClassNameResolver));  
+            {
+                ParserTask task = new ParserTask(parser, handlers, r, _containerClassNameResolver);
+                _parserTasks.add(task);  
+                _containerPathStats.increment();
+                if (LOG.isDebugEnabled())
+                    task.setStatistic(new TimeStatistic());
+            }
         } 
     }
 
@@ -858,8 +930,6 @@ public class AnnotationConfiguration extends AbstractConfiguration
      */
     public void parseWebInfLib (final WebAppContext context, final AnnotationParser parser) throws Exception
     {   
-        LOG.debug("Scanning WEB-INF/lib jars");
-        
         List<FragmentDescriptor> frags = context.getMetaData().getFragments();
 
         //email from Rajiv Mordani jsrs 315 7 April 2010
@@ -872,6 +942,8 @@ public class AnnotationConfiguration extends AbstractConfiguration
         //No ordering just use the jars in any order
         if (jars == null || jars.isEmpty())
             jars = context.getMetaData().getWebInfJars();
+
+        _webInfLibStats = new CounterStatistic();
 
         for (Resource r : jars)
         {
@@ -898,10 +970,15 @@ public class AnnotationConfiguration extends AbstractConfiguration
                     handlers.addAll(_discoverableAnnotationHandlers);
 
                 if (_parserTasks != null)
-                    _parserTasks.add (new ParserTask(parser, handlers,r, _webAppClassNameResolver));
+                {
+                    ParserTask task = new ParserTask(parser, handlers,r, _webAppClassNameResolver);
+                    _parserTasks.add (task);
+                    _webInfLibStats.increment();
+                    if (LOG.isDebugEnabled())
+                        task.setStatistic(new TimeStatistic());
+                }
             }
         }
-
     }
 
 
@@ -915,18 +992,24 @@ public class AnnotationConfiguration extends AbstractConfiguration
     public void parseWebInfClasses (final WebAppContext context, final AnnotationParser parser)
     throws Exception
     {
-        LOG.debug("Scanning WEB-INF/classes");
-       
         Set<Handler> handlers = new HashSet<Handler>();
         handlers.addAll(_discoverableAnnotationHandlers);
         if (_classInheritanceHandler != null)
             handlers.add(_classInheritanceHandler);
         handlers.addAll(_containerInitializerAnnotationHandlers);
 
+        _webInfClassesStats = new CounterStatistic();
+
         for (Resource dir : context.getMetaData().getWebInfClassesDirs())
         {
             if (_parserTasks != null)
-                _parserTasks.add(new ParserTask(parser, handlers, dir, _webAppClassNameResolver));
+            {
+                ParserTask task = new ParserTask(parser, handlers, dir, _webAppClassNameResolver);
+                _parserTasks.add(task);
+                _webInfClassesStats.increment();
+                if (LOG.isDebugEnabled())
+                    task.setStatistic(new TimeStatistic());
+            }
         }
     }
 
