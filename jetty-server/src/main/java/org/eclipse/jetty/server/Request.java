@@ -2169,7 +2169,7 @@ public class Request implements HttpServletRequest
     {
         // extract parameters from dispatch query
         MultiMap<String> parameters = new MultiMap<>();
-        UrlEncoded.decodeTo(query,parameters, StandardCharsets.UTF_8,-1); //have to assume UTF-8 because we can't know otherwise
+        UrlEncoded.decodeTo(query,parameters, UrlEncoded.ENCODING,-1); //have to assume ENCODING because we can't know otherwise
 
         boolean merge_old_query = false;
 
@@ -2194,7 +2194,7 @@ public class Request implements HttpServletRequest
                 
                 
                 MultiMap<String> overridden_new_query = new MultiMap<>();
-                UrlEncoded.decodeTo(query,overridden_new_query,StandardCharsets.UTF_8,-1); //have to assume utf8 as we cannot know otherwise
+                UrlEncoded.decodeTo(query,overridden_new_query,UrlEncoded.ENCODING,-1); //have to assume ENCODING as we cannot know otherwise
 
                 for(String name: overridden_old_query.keySet())
                 {
