@@ -50,6 +50,7 @@ import org.eclipse.jetty.server.HttpChannelState.Action;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.BlockingCallback;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -672,7 +673,16 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
         try
         {
             if (_state.handling()==Action.REQUEST_DISPATCH)
-                sendResponse(new ResponseInfo(HttpVersion.HTTP_1_1,new HttpFields(),0,status,reason,false),null,true);
+            {
+                ByteBuffer content=null;
+                HttpFields fields=new HttpFields();
+
+                ErrorHandler handler=getServer().getBean(ErrorHandler.class);
+                if (handler!=null)
+                    content=handler.badMessageError(status,reason,fields);
+
+                sendResponse(new ResponseInfo(HttpVersion.HTTP_1_1,fields,0,status,reason,false),content ,true);
+            }
         }
         catch (IOException e)
         {
