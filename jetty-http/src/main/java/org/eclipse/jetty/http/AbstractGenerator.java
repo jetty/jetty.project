@@ -478,6 +478,11 @@ public abstract class AbstractGenerator implements Generator
                 completeHeader(null, false);
                 addContent(new View(new ByteArrayBuffer(content)), Generator.LAST);
             }
+            else if (code>=400)
+            {
+                completeHeader(null, false);
+                addContent(new View(new ByteArrayBuffer("Error: "+(reason==null?(""+code):reason))), Generator.LAST);
+            }
             else
             {
                 completeHeader(null, true);

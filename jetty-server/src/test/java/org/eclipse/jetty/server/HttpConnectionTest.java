@@ -501,6 +501,7 @@ public class HttpConnectionTest
         request.append("\015\012");
         
         response = connector.getResponses(request.toString());
+        System.err.println(response);
         checkContains(response, offset, "HTTP/1.1 413");
     }
 

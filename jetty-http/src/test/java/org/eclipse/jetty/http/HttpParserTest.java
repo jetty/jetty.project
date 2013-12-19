@@ -444,7 +444,7 @@ public class HttpParserTest
             {
                 if (t+1 < tests.length)
                     throw e;
-                assertTrue(e.toString().indexOf("FULL")>=0);
+                assertTrue(e.toString().indexOf("Request Entity Too Large")>=0);
             }
         }
     }

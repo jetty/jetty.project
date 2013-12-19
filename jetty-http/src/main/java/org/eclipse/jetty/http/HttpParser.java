@@ -1036,7 +1036,7 @@ public class HttpParser implements Parser
             {
                 LOG.warn("HttpParser Full for {} ",_endp);
                 _buffer.clear();
-                throw new HttpException(HttpStatus.REQUEST_ENTITY_TOO_LARGE_413, "FULL "+(_buffer==_body?"body":"head"));
+                throw new HttpException(HttpStatus.REQUEST_ENTITY_TOO_LARGE_413, "Request Entity Too Large: "+(_buffer==_body?"body":"head"));
             }
 
             try
