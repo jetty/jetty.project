@@ -465,8 +465,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
     public boolean abort(Throwable failure)
     {
         RequestState current = requestState.get();
-        boolean abortable = isBeforeCommit(current) ||
-                isSending(current) && !content.isLast();
+        boolean abortable = isBeforeCommit(current) || isSending(current);
         return abortable && anyToFailure(failure);
     }
 
