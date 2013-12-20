@@ -40,7 +40,7 @@ public class BinaryPartialOnMessage implements MessageAppender
     }
 
     @Override
-    public void appendMessage(ByteBuffer payload, boolean isLast) throws IOException
+    public void appendFrame(ByteBuffer payload, boolean isLast) throws IOException
     {
         if (finished)
         {

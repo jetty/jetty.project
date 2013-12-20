@@ -57,7 +57,7 @@ public abstract class AbstractEventDriver implements IncomingFrames, EventDriver
 
     protected void appendMessage(ByteBuffer buffer, boolean fin) throws IOException
     {
-        activeMessage.appendMessage(buffer,fin);
+        activeMessage.appendFrame(buffer,fin);
 
         if (fin)
         {

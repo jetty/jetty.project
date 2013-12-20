@@ -64,7 +64,7 @@ public class MessageInputStream extends InputStream implements MessageAppender
     }
 
     @Override
-    public void appendMessage(ByteBuffer framePayload, boolean fin) throws IOException
+    public void appendFrame(ByteBuffer framePayload, boolean fin) throws IOException
     {
         if (LOG.isDebugEnabled())
         {

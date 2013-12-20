@@ -102,7 +102,7 @@ public class JsrEndpointEventDriver extends AbstractJsrEventDriver implements Ev
             }
         }
 
-        activeMessage.appendMessage(buffer,fin);
+        activeMessage.appendFrame(buffer,fin);
 
         if (fin)
         {
@@ -198,7 +198,7 @@ public class JsrEndpointEventDriver extends AbstractJsrEventDriver implements Ev
             }
         }
 
-        activeMessage.appendMessage(buffer,fin);
+        activeMessage.appendFrame(buffer,fin);
 
         if (fin)
         {

@@ -39,9 +39,9 @@ public class MessageReader extends InputStreamReader implements MessageAppender
     }
 
     @Override
-    public void appendMessage(ByteBuffer payload, boolean isLast) throws IOException
+    public void appendFrame(ByteBuffer payload, boolean isLast) throws IOException
     {
-        this.stream.appendMessage(payload,isLast);
+        this.stream.appendFrame(payload,isLast);
     }
 
     @Override

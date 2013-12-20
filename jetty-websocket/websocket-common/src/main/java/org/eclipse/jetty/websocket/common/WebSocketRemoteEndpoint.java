@@ -24,7 +24,6 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -45,9 +44,6 @@ import org.eclipse.jetty.websocket.common.io.FutureWriteCallback;
  */
 public class WebSocketRemoteEndpoint implements RemoteEndpoint
 {
-    /** JSR-356 blocking send behavior message */
-    private static final String PRIORMSG_ERROR = "Prior message pending, cannot start new message yet.";
-    
     /** Message Type*/
     private enum MsgType 
     {

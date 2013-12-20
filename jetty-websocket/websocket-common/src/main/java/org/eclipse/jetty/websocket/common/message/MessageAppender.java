@@ -36,7 +36,7 @@ public interface MessageAppender
      * @throws IOException
      *             if unable to append the frame payload
      */
-    abstract void appendMessage(ByteBuffer framePayload, boolean isLast) throws IOException;
+    abstract void appendFrame(ByteBuffer framePayload, boolean isLast) throws IOException;
 
     /**
      * Notification that message is to be considered complete.

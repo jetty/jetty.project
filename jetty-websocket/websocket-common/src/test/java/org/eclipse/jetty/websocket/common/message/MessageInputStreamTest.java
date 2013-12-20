@@ -50,7 +50,7 @@ public class MessageInputStreamTest
             ByteBuffer payload = BufferUtil.toBuffer("Hello World",StandardCharsets.UTF_8);
             System.out.printf("payload = %s%n",BufferUtil.toDetailString(payload));
             boolean fin = true;
-            stream.appendMessage(payload,fin);
+            stream.appendFrame(payload,fin);
 
             // Read entire message it from the stream.
             byte buf[] = new byte[32];
@@ -84,12 +84,12 @@ public class MessageInputStreamTest
                         startLatch.countDown();
                         boolean fin = false;
                         TimeUnit.MILLISECONDS.sleep(200);
-                        stream.appendMessage(BufferUtil.toBuffer("Saved",StandardCharsets.UTF_8),fin);
+                        stream.appendFrame(BufferUtil.toBuffer("Saved",StandardCharsets.UTF_8),fin);
                         TimeUnit.MILLISECONDS.sleep(200);
-                        stream.appendMessage(BufferUtil.toBuffer(" by ",StandardCharsets.UTF_8),fin);
+                        stream.appendFrame(BufferUtil.toBuffer(" by ",StandardCharsets.UTF_8),fin);
                         fin = true;
                         TimeUnit.MILLISECONDS.sleep(200);
-                        stream.appendMessage(BufferUtil.toBuffer("Zero",StandardCharsets.UTF_8),fin);
+                        stream.appendFrame(BufferUtil.toBuffer("Zero",StandardCharsets.UTF_8),fin);
                     }
                     catch (IOException | InterruptedException e)
                     {
@@ -132,7 +132,7 @@ public class MessageInputStreamTest
                         boolean fin = true;
                         // wait for a little bit before populating buffers
                         TimeUnit.MILLISECONDS.sleep(400);
-                        stream.appendMessage(BufferUtil.toBuffer("I will conquer",StandardCharsets.UTF_8),fin);
+                        stream.appendFrame(BufferUtil.toBuffer("I will conquer",StandardCharsets.UTF_8),fin);
                     }
                     catch (IOException | InterruptedException e)
                     {
