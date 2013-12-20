@@ -113,7 +113,7 @@ public class BrowserDebugTool implements WebSocketCreator
                 factory.setCreator(BrowserDebugTool.this);
 
                 // Set the timeout
-                factory.getPolicy().setIdleTimeout(5000);
+                factory.getPolicy().setIdleTimeout(30000);
             }
         };
 

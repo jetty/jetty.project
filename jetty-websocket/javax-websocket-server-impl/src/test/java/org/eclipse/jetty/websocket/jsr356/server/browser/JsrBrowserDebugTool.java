@@ -90,7 +90,6 @@ public class JsrBrowserDebugTool
         server.setHandler(context);
 
         ServerContainer container = WebSocketServerContainerInitializer.configureContext(context);
-        container.setDefaultMaxSessionIdleTimeout(5000);
         container.addEndpoint(JsrBrowserSocket.class);
 
         LOG.info("{} setup on port {}",this.getClass().getName(),port);
