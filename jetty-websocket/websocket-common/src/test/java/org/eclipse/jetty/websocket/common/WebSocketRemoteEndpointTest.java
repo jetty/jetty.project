@@ -57,7 +57,7 @@ public class WebSocketRemoteEndpointTest
         catch (IllegalStateException e)
         {
             // Expected path
-            Assert.assertThat("Exception",e.getMessage(),containsString("message pending"));
+            Assert.assertThat("Exception",e.getMessage(),containsString("Cannot send"));
         }
 
         // End text message

@@ -52,8 +52,9 @@ public class FrameFlusher
     private final Generator generator;
 
     private final Object lock = new Object();
+    
     /** Backlog of frames */
-    private final ArrayQueue<FrameEntry> queue = new ArrayQueue<>(lock);
+    private final ArrayQueue<FrameEntry> queue = new ArrayQueue<>(16,16,lock);
     
     private final FlusherCB flusherCB = new FlusherCB();
     

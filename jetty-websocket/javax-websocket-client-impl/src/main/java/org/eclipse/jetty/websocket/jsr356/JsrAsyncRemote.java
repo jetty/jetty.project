@@ -76,7 +76,7 @@ public class JsrAsyncRemote extends AbstractJsrRemote implements RemoteEndpoint.
             LOG.debug("sendBinary({},{})",BufferUtil.toDetailString(data),handler);
         }
         WebSocketFrame frame = new BinaryFrame().setPayload(data).setFin(true);
-        jettyRemote.sendFrame(frame,new SendHandlerWriteCallback(handler));
+        jettyRemote.uncheckedSendFrame(frame,new SendHandlerWriteCallback(handler));
     }
 
     @Override
@@ -186,7 +186,7 @@ public class JsrAsyncRemote extends AbstractJsrRemote implements RemoteEndpoint.
             LOG.debug("sendText({},{})",TextUtil.hint(text),handler);
         }
         WebSocketFrame frame = new TextFrame().setPayload(text).setFin(true);
-        jettyRemote.sendFrame(frame,new SendHandlerWriteCallback(handler));
+        jettyRemote.uncheckedSendFrame(frame,new SendHandlerWriteCallback(handler));
     }
 
     @Override

@@ -23,6 +23,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.BufferUtil;
@@ -46,8 +47,16 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
 {
     /** JSR-356 blocking send behavior message */
     private static final String PRIORMSG_ERROR = "Prior message pending, cannot start new message yet.";
-    /** Type of Message */
-    private enum MsgType {NONE,TEXT,BINARY,PARTIAL_TEXT,PARTIAL_BINARY};
+    
+    /** Message Type*/
+    private enum MsgType 
+    {
+        BLOCKING,
+        ASYNC,
+        STREAMING,
+        PARTIAL_TEXT,
+        PARTIAL_BINARY
+    };
     
     private static final WriteCallback NOOP_CALLBACK = new WriteCallback()
     {
@@ -66,7 +75,15 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
     public final LogicalConnection connection;
     public final OutgoingFrames outgoing;
     /** JSR-356 blocking send behaviour message and Type sanity to support partial send properly */
-    private final AtomicReference<MsgType> msgType = new AtomicReference<>(MsgType.NONE);
+
+    private final static int ASYNC_MASK =       0x0000FFFF;
+    private final static int BLOCK_MASK =       0x00010000;
+    private final static int STREAM_MASK =      0x00020000;
+    private final static int PARTIAL_TEXT_MASK= 0x00040000;
+    private final static int PARTIAL_BINARY_MASK= 0x00080000;
+    
+    private final AtomicInteger msgState = new AtomicInteger();
+    
     private final BlockingWriteCallback blocker = new BlockingWriteCallback();
 
     public WebSocketRemoteEndpoint(LogicalConnection connection, OutgoingFrames outgoing)
@@ -81,100 +98,118 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
 
     private void blockingWrite(WebSocketFrame frame) throws IOException
     {
-        sendFrame(frame,blocker);
+        uncheckedSendFrame(frame,blocker);
         blocker.block();
     }
 
-    private void lockMsg(MsgType type)
+    private boolean lockMsg(MsgType type)
     {
+        // Blocking -> BLOCKING  ; Async -> ASYNC     ; Partial -> PARTIAL_XXXX ; Stream -> STREAMING
+        // Blocking -> Pending!! ; Async -> BLOCKING  ; Partial -> Pending!!    ; Stream -> STREAMING 
+        // Blocking -> BLOCKING  ; Async -> ASYNC     ; Partial -> Pending!!    ; Stream -> STREAMING
+        // Blocking -> Pending!! ; Async -> STREAMING ; Partial -> Pending!!    ; Stream -> STREAMING
+        // Blocking -> Pending!! ; Async -> Pending!! ; Partial -> PARTIAL_TEXT ; Stream -> Pending!!
+        // Blocking -> Pending!! ; Async -> Pending!! ; Partial -> PARTIAL_BIN  ; Stream -> Pending!!
+        
         while(true)
         {
-            MsgType was=msgType.get();
-            switch (was)
+            int state = msgState.get();
+            
+            switch (type)
             {
-                case NONE:
-                    if (msgType.compareAndSet(MsgType.NONE,type))
-                        return;
+                case BLOCKING:
+                    if ((state&(PARTIAL_BINARY_MASK+PARTIAL_TEXT_MASK))!=0)
+                        throw new IllegalStateException(String.format("Partial message pending %x for %s",state,type));
+                    if ((state&BLOCK_MASK)!=0)
+                        throw new IllegalStateException(String.format("Blocking message pending %x for %s",state,type));
+                    if (msgState.compareAndSet(state,state|BLOCK_MASK))
+                        return state==0;
                     break;
                     
-                case BINARY:
-                case TEXT:
+                case ASYNC:
+                    if ((state&(PARTIAL_BINARY_MASK+PARTIAL_TEXT_MASK))!=0)
+                        throw new IllegalStateException(String.format("Partial message pending %x for %s",state,type));
+                    if ((state&ASYNC_MASK)==ASYNC_MASK)
+                        throw new IllegalStateException(String.format("Too many async sends: %x",state));
+                    if (msgState.compareAndSet(state,state+1))
+                        return state==0;
+                    break;
+                    
+                case STREAMING:
+                    if ((state&(PARTIAL_BINARY_MASK+PARTIAL_TEXT_MASK))!=0)
+                        throw new IllegalStateException(String.format("Partial message pending %x for %s",state,type));
+                    if ((state&STREAM_MASK)!=0)
+                        throw new IllegalStateException(String.format("Already streaming %x for %s",state,type));
+                    if (msgState.compareAndSet(state,state|STREAM_MASK))
+                        return state==0;
+                    break;
+                
                 case PARTIAL_BINARY:
+                    if (state==PARTIAL_BINARY_MASK)
+                        return false;
+                    if (state==0)
+                    {
+                        if (msgState.compareAndSet(0,state|PARTIAL_BINARY_MASK))
+                            return true;
+                    }
+                    throw new IllegalStateException(String.format("Cannot send %s in state %x",type,state));
+                    
                 case PARTIAL_TEXT:
-                    throw new IllegalStateException(PRIORMSG_ERROR);
+                    if (state==PARTIAL_TEXT_MASK)
+                        return false;
+                    if (state==0)
+                    {
+                        if (msgState.compareAndSet(0,state|PARTIAL_TEXT_MASK))
+                            return true;
+                    }
+                    throw new IllegalStateException(String.format("Cannot send %s in state %x",type,state));
             }
         }
     }
 
-    private boolean lockPartialMsg(MsgType type)
+    private void unlockMsg(MsgType type)
     {
         while(true)
         {
-            MsgType was=msgType.get();
-            switch (was)
+            int state = msgState.get();
+            
+            switch (type)
             {
-                case NONE:
-                    if (msgType.compareAndSet(MsgType.NONE,type))
-                        return true;
+                case BLOCKING:
+                    if ((state&BLOCK_MASK)==0)
+                        throw new IllegalStateException(String.format("Not Blocking in state %x",state));
+                    if (msgState.compareAndSet(state,state&~BLOCK_MASK))
+                        return;
                     break;
                     
-                case BINARY:
-                case TEXT:
-                    throw new IllegalStateException(PRIORMSG_ERROR);
+                case ASYNC:
+                    if ((state&ASYNC_MASK)==0)
+                        throw new IllegalStateException(String.format("Not Async in %x",state));
+                    if (msgState.compareAndSet(state,state-1))
+                        return;
+                    break;
                     
+                case STREAMING:
+                    if ((state&STREAM_MASK)==0)
+                        throw new IllegalStateException(String.format("Not Streaming in state %x",state));
+                    if (msgState.compareAndSet(state,state&~STREAM_MASK))
+                        return;
+                    break;
+                
                 case PARTIAL_BINARY:
-                    if (type==MsgType.BINARY && msgType.compareAndSet(MsgType.PARTIAL_BINARY,MsgType.BINARY))
-                        return false;
-                    throw new IllegalStateException("Prior BINARY message pending, cannot start new "+type+" message yet.");
+                    if (msgState.compareAndSet(PARTIAL_BINARY_MASK,0))
+                        return;
+                    throw new IllegalStateException(String.format("Not Partial Binary in state %x",state));
                     
                 case PARTIAL_TEXT:
-                    if (type==MsgType.TEXT && msgType.compareAndSet(MsgType.PARTIAL_TEXT,MsgType.TEXT))
-                        return false;
-                    throw new IllegalStateException("Prior TEXT message pending, cannot start new "+type+" message yet.");
+                    if (msgState.compareAndSet(PARTIAL_TEXT_MASK,0))
+                        return;
+                    throw new IllegalStateException(String.format("Not Partial Text in state %x",state));
+                    
             }
         }
     }
     
-    private void unlockMsg()
-    {
-        MsgType was=msgType.get();
-        switch (was)
-        {
-            case NONE:
-                throw new IllegalStateException("not locked");
-                
-            case PARTIAL_BINARY:
-            case PARTIAL_TEXT:
-                throw new IllegalStateException("in partial");
-                
-            default:
-                if (!msgType.compareAndSet(was,MsgType.NONE))
-                    throw new IllegalStateException("concurrent unlock");
-        }
-    }
-    
-    private void unlockPartialMsg()
-    {
-        MsgType was=msgType.get();
-        switch (was)
-        {
-            case NONE:
-                throw new IllegalStateException("not locked");
-                
-            case PARTIAL_BINARY:
-            case PARTIAL_TEXT:
-                throw new IllegalStateException("in partial");
-                
-            case BINARY:
-                if (!msgType.compareAndSet(was,MsgType.PARTIAL_BINARY))
-                    throw new IllegalStateException("concurrent unlock");
-                return;
-            case TEXT:
-                if (!msgType.compareAndSet(was,MsgType.PARTIAL_TEXT))
-                    throw new IllegalStateException("concurrent unlock");
-                return;
-        }
-    }
     
     public InetSocketAddress getInetSocketAddress()
     {
@@ -191,7 +226,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
     private Future<Void> sendAsyncFrame(WebSocketFrame frame)
     {
         FutureWriteCallback future = new FutureWriteCallback();
-        sendFrame(frame,future);
+        uncheckedSendFrame(frame,future);
         return future;
     }
 
@@ -201,7 +236,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
     @Override
     public void sendBytes(ByteBuffer data) throws IOException
     {
-        lockMsg(MsgType.BINARY);
+        lockMsg(MsgType.BLOCKING);
         try
         {
             connection.getIOState().assertOutputOpen();
@@ -213,14 +248,14 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
         }
         finally
         {
-            unlockMsg();
+            unlockMsg(MsgType.BLOCKING);
         }
     }
 
     @Override
     public Future<Void> sendBytesByFuture(ByteBuffer data)
     {
-        lockMsg(MsgType.BINARY);
+        lockMsg(MsgType.ASYNC);
         try
         {
             if (LOG.isDebugEnabled())
@@ -231,29 +266,34 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
         }
         finally
         {
-            unlockMsg();
+            unlockMsg(MsgType.ASYNC);
         }
     }
 
     @Override
     public void sendBytes(ByteBuffer data, WriteCallback callback)
     {
-        lockMsg(MsgType.BINARY);
+        lockMsg(MsgType.ASYNC);
         try
         {
             if (LOG.isDebugEnabled())
             {
                 LOG.debug("sendBytes({}, {})",BufferUtil.toDetailString(data),callback);
             }
-            sendFrame(new BinaryFrame().setPayload(data),callback==null?NOOP_CALLBACK:callback);
+            uncheckedSendFrame(new BinaryFrame().setPayload(data),callback==null?NOOP_CALLBACK:callback);
         }
         finally
         {
-            unlockMsg();
+            unlockMsg(MsgType.ASYNC);
         }
     }
 
-    public void sendFrame(WebSocketFrame frame, WriteCallback callback)
+    /* ------------------------------------------------------------ */
+    /** unchecked send
+     * @param frame
+     * @param callback
+     */
+    public void uncheckedSendFrame(WebSocketFrame frame, WriteCallback callback)
     {
         try
         {
@@ -269,7 +309,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
     @Override
     public void sendPartialBytes(ByteBuffer fragment, boolean isLast) throws IOException
     {
-        boolean first=lockPartialMsg(MsgType.TEXT);
+        boolean first=lockMsg(MsgType.PARTIAL_BINARY);
         try
         {
             if (LOG.isDebugEnabled())
@@ -284,16 +324,14 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
         finally
         {
             if (isLast)
-                unlockMsg();
-            else
-                unlockPartialMsg();
+                unlockMsg(MsgType.PARTIAL_BINARY);
         }
     }
 
     @Override
     public void sendPartialString(String fragment, boolean isLast) throws IOException
     {
-        boolean first=lockPartialMsg(MsgType.BINARY);
+        boolean first=lockMsg(MsgType.PARTIAL_TEXT);
         try
         {
             if (LOG.isDebugEnabled())
@@ -308,9 +346,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
         finally
         {
             if (isLast)
-                unlockMsg();
-            else
-                unlockPartialMsg();
+                unlockMsg(MsgType.PARTIAL_TEXT);
         }
     }
 
@@ -337,7 +373,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
     @Override
     public void sendString(String text) throws IOException
     {
-        lockMsg(MsgType.TEXT);
+        lockMsg(MsgType.BLOCKING);
         try
         {
             WebSocketFrame frame = new TextFrame().setPayload(text);
@@ -349,14 +385,14 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
         }
         finally
         {
-            unlockMsg();
+            unlockMsg(MsgType.BLOCKING);
         }
     }
 
     @Override
     public Future<Void> sendStringByFuture(String text)
     {
-        lockMsg(MsgType.TEXT);
+        lockMsg(MsgType.ASYNC);
         try
         {
             TextFrame frame = new TextFrame().setPayload(text);
@@ -368,14 +404,14 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
         }
         finally
         {
-            unlockMsg();
+            unlockMsg(MsgType.ASYNC);
         }
     }
 
     @Override
     public void sendString(String text, WriteCallback callback)
     {
-        lockMsg(MsgType.TEXT);
+        lockMsg(MsgType.ASYNC);
         try
         {
             TextFrame frame = new TextFrame().setPayload(text);
@@ -383,11 +419,11 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
             {
                 LOG.debug("sendString({},{})",BufferUtil.toDetailString(frame.getPayload()),callback);
             }
-            sendFrame(frame,callback==null?NOOP_CALLBACK:callback);
+            uncheckedSendFrame(frame,callback==null?NOOP_CALLBACK:callback);
         }
         finally
         {
-            unlockMsg();
+            unlockMsg(MsgType.ASYNC);
         }
     }
 }
