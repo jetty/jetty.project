@@ -43,6 +43,8 @@ import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
@@ -55,6 +57,21 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class GzipFilterContentLengthTest
 {
+
+    @Rule
+    public final TestWatcher testName = new TestWatcher()
+    {
+
+        @Override
+        public void starting(Description description)
+        {
+            super.starting(description);
+            System.err.printf("Running %s.%s()%n",
+                    description.getClassName(),
+                    description.getMethodName());
+        }
+    };
+    
     /**
      * These are the junit parameters for running this test.
      * <p>
