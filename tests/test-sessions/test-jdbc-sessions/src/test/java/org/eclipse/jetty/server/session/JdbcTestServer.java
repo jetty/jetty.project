@@ -84,7 +84,26 @@ public class JdbcTestServer extends AbstractTestServer
             idManager.setScavengeInterval(_scavengePeriod);
             idManager.setWorkerName("w"+(__workers++));
             idManager.setDriverInfo(DRIVER_CLASS, (config==null?DEFAULT_CONNECTION_URL:config));
-            //System.err.println("new jdbcidmgr inst="+idManager);
+            JDBCSessionIdManager.SessionIdTableSchema idTableSchema = new JDBCSessionIdManager.SessionIdTableSchema();
+            idTableSchema.setTableName("mysessionids");
+            idTableSchema.setIdColumn("myid");
+            idManager.setSessionIdTableSchema(idTableSchema);
+            
+            JDBCSessionIdManager.SessionTableSchema sessionTableSchema = new JDBCSessionIdManager.SessionTableSchema();
+            sessionTableSchema.setTableName("mysessions");
+            sessionTableSchema.setIdColumn("mysessionid");
+            sessionTableSchema.setAccessTimeColumn("atime");
+            sessionTableSchema.setContextPathColumn("cpath");
+            sessionTableSchema.setCookieTimeColumn("cooktime");
+            sessionTableSchema.setCreateTimeColumn("ctime");
+            sessionTableSchema.setExpiryTimeColumn("extime");
+            sessionTableSchema.setLastAccessTimeColumn("latime");
+            sessionTableSchema.setLastNodeColumn("lnode");
+            sessionTableSchema.setLastSavedTimeColumn("lstime");
+            sessionTableSchema.setMapColumn("mo");
+            sessionTableSchema.setMaxIntervalColumn("mi");           
+            idManager.setSessionTableSchema(sessionTableSchema);
+            
             return idManager;
         }
     }
@@ -102,7 +121,7 @@ public class JdbcTestServer extends AbstractTestServer
     }
 
     
-    public boolean existsInSessionTable(String id)
+    public boolean existsInSessionIdTable(String id)
     throws Exception
     {
         Class.forName(DRIVER_CLASS);
@@ -110,7 +129,9 @@ public class JdbcTestServer extends AbstractTestServer
         try
         {
             con = DriverManager.getConnection(DEFAULT_CONNECTION_URL);
-            PreparedStatement statement = con.prepareStatement("select * from "+((JDBCSessionIdManager)_sessionIdManager)._sessionIdTable+" where id = ?");
+            PreparedStatement statement = con.prepareStatement("select * from "+
+                    ((JDBCSessionIdManager)_sessionIdManager)._sessionIdTableSchema.getTableName()+
+                    " where "+((JDBCSessionIdManager)_sessionIdManager)._sessionIdTableSchema.getIdColumn()+" = ?");
             statement.setString(1, id);
             ResultSet result = statement.executeQuery();
             return result.next();
@@ -122,6 +143,41 @@ public class JdbcTestServer extends AbstractTestServer
         }
     }
     
+    
+    public boolean existsInSessionTable(String id, boolean verbose)
+    throws Exception
+    {
+        Class.forName(DRIVER_CLASS);
+        Connection con = null;
+        try
+        {
+            con = DriverManager.getConnection(DEFAULT_CONNECTION_URL);
+            PreparedStatement statement = con.prepareStatement("select * from "+
+                    ((JDBCSessionIdManager)_sessionIdManager)._sessionTableSchema.getTableName()+
+                    " where "+((JDBCSessionIdManager)_sessionIdManager)._sessionTableSchema.getIdColumn()+" = ?");
+            statement.setString(1, id);
+            ResultSet result = statement.executeQuery();
+            if (verbose)
+            {
+                boolean results = false;
+                while (result.next())
+                {
+                    results = true;
+                }
+                return results;
+            }
+            else
+                return result.next();
+        }
+        finally
+        {
+            if (con != null)
+                con.close();
+        }
+    }
+    
+    
+    
     public Set<String> getSessionIds ()
     throws Exception
     {
@@ -131,7 +187,7 @@ public class JdbcTestServer extends AbstractTestServer
         try
         {
             con = DriverManager.getConnection(DEFAULT_CONNECTION_URL);
-            PreparedStatement statement = con.prepareStatement("select * from "+((JDBCSessionIdManager)_sessionIdManager)._sessionIdTable);
+            PreparedStatement statement = con.prepareStatement("select * from "+((JDBCSessionIdManager)_sessionIdManager)._sessionIdTableSchema.getTableName());
           
             ResultSet result = statement.executeQuery();
             while (result.next())

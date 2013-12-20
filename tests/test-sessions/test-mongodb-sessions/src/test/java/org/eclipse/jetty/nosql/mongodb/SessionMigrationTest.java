@@ -16,37 +16,24 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.api.io;
+package org.eclipse.jetty.nosql.mongodb;
 
-import java.io.IOException;
-import java.io.Writer;
+import org.eclipse.jetty.server.session.AbstractSessionMigrationTest;
+import org.eclipse.jetty.server.session.AbstractTestServer;
+import org.junit.Test;
 
-import org.eclipse.jetty.websocket.api.Session;
-
-public class WebSocketWriter extends Writer
+public class SessionMigrationTest extends AbstractSessionMigrationTest
 {
-    private final Session session;
-
-    public WebSocketWriter(Session session)
-    {
-        this.session = session;
-    }
 
     @Override
-    public void close() throws IOException
+    public AbstractTestServer createServer(int port)
     {
-        // TODO Auto-generated method stub
+        return new MongoTestServer(port);
     }
 
-    @Override
-    public void flush() throws IOException
+    @Test
+    public void testSessionMigration() throws Exception
     {
-        // TODO Auto-generated method stub
-    }
-
-    @Override
-    public void write(char[] cbuf, int off, int len) throws IOException
-    {
-        // TODO Auto-generated method stub
+        super.testSessionMigration();
     }
 }

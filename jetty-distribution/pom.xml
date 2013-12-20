@@ -358,7 +358,7 @@
                 <artifactItem>
                   <groupId>org.eclipse.jetty.toolchain</groupId>
                   <artifactId>jetty-schemas</artifactId>
-                  <version>3.1.RC0</version>
+                  <version>3.1.M0</version>
                   <overWrite>true</overWrite>
                   <outputDirectory>${assembly-directory}/lib</outputDirectory>
                   <destFileName>jetty-schemas-3.1.jar</destFileName>
@@ -502,7 +502,7 @@
 	      <arguments>
 		<argument>jetty.home=${assembly-directory}</argument>
 		<argument>jetty.base=${assembly-directory}/demo-base</argument>
-		<argument>--add-to-start=server,continuation,deploy,jsp,ext,resources,client,annotations,jndi</argument>
+		<argument>--add-to-start=server,continuation,deploy,jsp,ext,resources,client,annotations,jndi,servlets</argument>
 		<argument>--add-to-startd-ini=http,https</argument>
 	      </arguments>
 	    </configuration>

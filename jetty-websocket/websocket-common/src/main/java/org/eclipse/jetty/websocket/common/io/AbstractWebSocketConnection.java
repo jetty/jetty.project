@@ -34,8 +34,6 @@ import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.ForkInvoker;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -44,7 +42,6 @@ import org.eclipse.jetty.websocket.api.CloseException;
 import org.eclipse.jetty.websocket.api.CloseStatus;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.SuspendToken;
-import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
@@ -62,13 +59,15 @@ import org.eclipse.jetty.websocket.common.io.IOState.ConnectionStateListener;
  */
 public abstract class AbstractWebSocketConnection extends AbstractConnection implements LogicalConnection, ConnectionStateListener
 {
-    private class FlushCallback implements Callback
+    private class Flusher extends FrameFlusher
     {
-        /**
-         * The Endpoint.write() failure path
-         */
+        private Flusher(Generator generator, EndPoint endpoint)
+        {
+            super(generator,endpoint);
+        }
+
         @Override
-        public void failed(Throwable x)
+        protected void onFailure(Throwable x)
         {
             if (ioState.wasAbnormalClose())
             {
@@ -105,45 +104,6 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             session.notifyClose(StatusCode.NO_CLOSE,reason);
 
             disconnect(); // disconnect endpoint & connection
-        }
-
-        @Override
-        public void succeeded()
-        {
-            AbstractWebSocketConnection.this.complete(writeBytes);
-        }
-    }
-
-    private class FlushInvoker extends ForkInvoker<Callback>
-    {
-        private FlushInvoker()
-        {
-            super(4);
-        }
-
-        @Override
-        public void call(Callback callback)
-        {
-            flush();
-        }
-
-        @Override
-        public void fork(final Callback callback)
-        {
-            execute(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    flush();
-                }
-            });
-        }
-
-        @Override
-        public String toString()
-        {
-            return String.format("%s@%x",FlushInvoker.class.getSimpleName(),hashCode());
         }
     }
 
@@ -191,17 +151,15 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
      */
     private static final int MIN_BUFFER_SIZE = Generator.OVERHEAD;
 
-    private final ForkInvoker<Callback> invoker = new FlushInvoker();
     private final ByteBufferPool bufferPool;
     private final Scheduler scheduler;
     private final Generator generator;
     private final Parser parser;
     private final WebSocketPolicy policy;
-    private final WriteBytesProvider writeBytes;
     private final AtomicBoolean suspendToken;
+    private final FrameFlusher flusher;
     private WebSocketSession session;
     private List<ExtensionConfig> extensions;
-    private boolean flushing;
     private boolean isFilling;
     private IOState ioState;
     private Stats stats = new Stats();
@@ -218,8 +176,9 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         this.suspendToken = new AtomicBoolean(false);
         this.ioState = new IOState();
         this.ioState.addListener(this);
-        this.writeBytes = new WriteBytesProvider(generator,new FlushCallback());
+        this.flusher = new Flusher(generator,endp);
         this.setInputBufferSize(policy.getInputBufferSize());
+        this.setMaxIdleTimeout(policy.getIdleTimeout());
     }
 
     @Override
@@ -251,6 +210,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         CloseInfo close = new CloseInfo(statusCode,reason);
         if (statusCode == StatusCode.ABNORMAL)
         {
+            flusher.close(); // TODO this makes the IdleTimeoutTest pass, but I'm dubious it is the correct way
             ioState.onAbnormalClose(close);
         }
         else
@@ -259,33 +219,12 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         }
     }
 
-    public void complete(final Callback callback)
-    {
-        LOG.debug("complete({})",callback);
-        synchronized (writeBytes)
-        {
-            flushing = false;
-        }
-
-        if (!ioState.isOpen() || (callback == null))
-        {
-            return;
-        }
-
-        invoker.invoke(callback);
-    }
 
     @Override
     public void disconnect()
     {
         LOG.debug("{} disconnect()",policy.getBehavior());
-        synchronized (writeBytes)
-        {
-            if (!writeBytes.isClosed())
-            {
-                writeBytes.close();
-            }
-        }
+        flusher.close();
         disconnect(false);
     }
 
@@ -324,39 +263,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
 
     public void flush()
     {
-        List<ByteBuffer> buffers = null;
-
-        synchronized (writeBytes)
-        {
-            if (flushing)
-            {
-                LOG.debug("Actively flushing");
-                return;
-            }
-
-            if (LOG.isDebugEnabled())
-            {
-                LOG.debug(".flush() - flushing={} - writeBytes={}",flushing,writeBytes);
-            }
-
-            if (!isOpen())
-            {
-                // No longer have an open connection, drop them all.
-                writeBytes.failAll(new WebSocketException("Connection closed"));
-                return;
-            }
-
-            buffers = writeBytes.getByteBuffers();
-
-            if ((buffers == null) || (buffers.size() <= 0))
-            {
-                return;
-            }
-
-            flushing = true;
-        }
-
-        write(buffers);
+        flusher.flush();
     }
 
     @Override
@@ -454,7 +361,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     public void onClose()
     {
         super.onClose();
-        writeBytes.close();
+        flusher.close();
     }
 
     @Override
@@ -495,7 +402,6 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         LOG.debug("{} onFillable()",policy.getBehavior());
         stats.countOnFillableEvents.incrementAndGet();
         ByteBuffer buffer = bufferPool.acquire(getInputBufferSize(),true);
-        BufferUtil.clear(buffer);
         boolean readMore = false;
         try
         {
@@ -564,9 +470,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             LOG.debug("outgoingFrame({}, {})",frame,callback);
         }
 
-        writeBytes.enqueue(frame,WriteCallbackWrapper.wrap(callback));
-
-        flush();
+        flusher.enqueue(frame,callback);
     }
 
     private int read(ByteBuffer buffer)
@@ -669,28 +573,4 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         return String.format("%s{g=%s,p=%s}",super.toString(),generator,parser);
     }
 
-    private <C> void write(List<ByteBuffer> buffer)
-    {
-        EndPoint endpoint = getEndPoint();
-
-        try
-        {
-            int bufsize = buffer.size();
-            if (bufsize == 1)
-            {
-                // simple case
-                endpoint.write(writeBytes,buffer.get(0));
-            }
-            else
-            {
-                // gathered writes case
-                ByteBuffer bbarr[] = buffer.toArray(new ByteBuffer[bufsize]);
-                endpoint.write(writeBytes,bbarr);
-            }
-        }
-        catch (Throwable t)
-        {
-            writeBytes.failed(t);
-        }
-    }
 }

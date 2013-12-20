@@ -35,6 +35,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.TimeUnit;
 
 import javax.naming.InitialContext;
 import javax.servlet.http.HttpServletRequest;
@@ -46,6 +47,8 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
+import org.eclipse.jetty.util.thread.Scheduler;
 
 
 
@@ -68,23 +71,23 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
     protected String _connectionUrl;
     protected DataSource _datasource;
     protected String _jndiName;
-    protected String _sessionIdTable = "JettySessionIds";
-    protected String _sessionTable = "JettySessions";
-    protected String _sessionTableRowId = "rowId";
+
     protected int _deleteBlockSize = 10; //number of ids to include in where 'in' clause
 
-    protected Timer _timer; //scavenge timer
-    protected TimerTask _task; //scavenge task
+    protected Scheduler.Task _task; //scavenge task
+    protected Scheduler _scheduler;
+    protected Scavenger _scavenger;
+    protected boolean _ownScheduler;
     protected long _lastScavengeTime;
     protected long _scavengeIntervalMs = 1000L * 60 * 10; //10mins
-    protected String _blobType; //if not set, is deduced from the type of the database at runtime
-    protected String _longType; //if not set, is deduced from the type of the database at runtime
+
 
     protected String _createSessionIdTable;
     protected String _createSessionTable;
 
     protected String _selectBoundedExpiredSessions;
-
+    private String _selectExpiredSessions;
+    
     protected String _insertId;
     protected String _deleteId;
     protected String _queryId;
@@ -95,9 +98,354 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
     protected  String _updateSessionNode;
     protected  String _updateSessionAccessTime;
 
-    protected DatabaseAdaptor _dbAdaptor;
+    protected DatabaseAdaptor _dbAdaptor = new DatabaseAdaptor();
+    protected SessionIdTableSchema _sessionIdTableSchema = new SessionIdTableSchema();
+    protected SessionTableSchema _sessionTableSchema = new SessionTableSchema();
+    
+  
 
-    private String _selectExpiredSessions;
+ 
+    /**
+     * SessionTableSchema
+     *
+     */
+    public static class SessionTableSchema
+    {        
+        protected DatabaseAdaptor _dbAdaptor;
+        protected String _tableName = "JettySessions";
+        protected String _rowIdColumn = "rowId";
+        protected String _idColumn = "sessionId";
+        protected String _contextPathColumn = "contextPath";
+        protected String _virtualHostColumn = "virtualHost"; 
+        protected String _lastNodeColumn = "lastNode";
+        protected String _accessTimeColumn = "accessTime"; 
+        protected String _lastAccessTimeColumn = "lastAccessTime";
+        protected String _createTimeColumn = "createTime";
+        protected String _cookieTimeColumn = "cookieTime";
+        protected String _lastSavedTimeColumn = "lastSavedTime";
+        protected String _expiryTimeColumn = "expiryTime";
+        protected String _maxIntervalColumn = "maxInterval";
+        protected String _mapColumn = "map";
+        
+        
+        protected void setDatabaseAdaptor(DatabaseAdaptor dbadaptor)
+        {
+            _dbAdaptor = dbadaptor;
+        }
+        
+        
+        public String getTableName()
+        {
+            return _tableName;
+        }
+        public void setTableName(String tableName)
+        {
+            checkNotNull(tableName);
+            _tableName = tableName;
+        }
+        public String getRowIdColumn()
+        {       
+            if ("rowId".equals(_rowIdColumn) && _dbAdaptor.isRowIdReserved())
+                _rowIdColumn = "srowId";
+            return _rowIdColumn;
+        }
+        public void setRowIdColumn(String rowIdColumn)
+        {
+            checkNotNull(rowIdColumn);
+            if (_dbAdaptor == null)
+                throw new IllegalStateException ("DbAdaptor is null");
+            
+            if (_dbAdaptor.isRowIdReserved() && "rowId".equals(rowIdColumn))
+                throw new IllegalArgumentException("rowId is reserved word for Oracle");
+            
+            _rowIdColumn = rowIdColumn;
+        }
+        public String getIdColumn()
+        {
+            return _idColumn;
+        }
+        public void setIdColumn(String idColumn)
+        {
+            checkNotNull(idColumn);
+            _idColumn = idColumn;
+        }
+        public String getContextPathColumn()
+        {
+            return _contextPathColumn;
+        }
+        public void setContextPathColumn(String contextPathColumn)
+        {
+            checkNotNull(contextPathColumn);
+            _contextPathColumn = contextPathColumn;
+        }
+        public String getVirtualHostColumn()
+        {
+            return _virtualHostColumn;
+        }
+        public void setVirtualHostColumn(String virtualHostColumn)
+        {
+            checkNotNull(virtualHostColumn);
+            _virtualHostColumn = virtualHostColumn;
+        }
+        public String getLastNodeColumn()
+        {
+            return _lastNodeColumn;
+        }
+        public void setLastNodeColumn(String lastNodeColumn)
+        {
+            checkNotNull(lastNodeColumn);
+            _lastNodeColumn = lastNodeColumn;
+        }
+        public String getAccessTimeColumn()
+        {
+            return _accessTimeColumn;
+        }
+        public void setAccessTimeColumn(String accessTimeColumn)
+        {
+            checkNotNull(accessTimeColumn);
+            _accessTimeColumn = accessTimeColumn;
+        }
+        public String getLastAccessTimeColumn()
+        {
+            return _lastAccessTimeColumn;
+        }
+        public void setLastAccessTimeColumn(String lastAccessTimeColumn)
+        {
+            checkNotNull(lastAccessTimeColumn);
+            _lastAccessTimeColumn = lastAccessTimeColumn;
+        }
+        public String getCreateTimeColumn()
+        {
+            return _createTimeColumn;
+        }
+        public void setCreateTimeColumn(String createTimeColumn)
+        {
+            checkNotNull(createTimeColumn);
+            _createTimeColumn = createTimeColumn;
+        }
+        public String getCookieTimeColumn()
+        {
+            return _cookieTimeColumn;
+        }
+        public void setCookieTimeColumn(String cookieTimeColumn)
+        {
+            checkNotNull(cookieTimeColumn);
+            _cookieTimeColumn = cookieTimeColumn;
+        }
+        public String getLastSavedTimeColumn()
+        {
+            return _lastSavedTimeColumn;
+        }
+        public void setLastSavedTimeColumn(String lastSavedTimeColumn)
+        {
+            checkNotNull(lastSavedTimeColumn);
+            _lastSavedTimeColumn = lastSavedTimeColumn;
+        }
+        public String getExpiryTimeColumn()
+        {
+            return _expiryTimeColumn;
+        }
+        public void setExpiryTimeColumn(String expiryTimeColumn)
+        {
+            checkNotNull(expiryTimeColumn);
+            _expiryTimeColumn = expiryTimeColumn;
+        }
+        public String getMaxIntervalColumn()
+        {
+            return _maxIntervalColumn;
+        }
+        public void setMaxIntervalColumn(String maxIntervalColumn)
+        {
+            checkNotNull(maxIntervalColumn);
+            _maxIntervalColumn = maxIntervalColumn;
+        }
+        public String getMapColumn()
+        {
+            return _mapColumn;
+        }
+        public void setMapColumn(String mapColumn)
+        {
+            checkNotNull(mapColumn);
+            _mapColumn = mapColumn;
+        }
+        
+        public String getCreateStatementAsString ()
+        {
+            if (_dbAdaptor == null)
+                throw new IllegalStateException ("No DBAdaptor");
+            
+            String blobType = _dbAdaptor.getBlobType();
+            String longType = _dbAdaptor.getLongType();
+            
+            return "create table "+_tableName+" ("+getRowIdColumn()+" varchar(120), "+_idColumn+" varchar(120), "+
+                    _contextPathColumn+" varchar(60), "+_virtualHostColumn+" varchar(60), "+_lastNodeColumn+" varchar(60), "+_accessTimeColumn+" "+longType+", "+
+                    _lastAccessTimeColumn+" "+longType+", "+_createTimeColumn+" "+longType+", "+_cookieTimeColumn+" "+longType+", "+
+                    _lastSavedTimeColumn+" "+longType+", "+_expiryTimeColumn+" "+longType+", "+_maxIntervalColumn+" "+longType+", "+
+                    _mapColumn+" "+blobType+", primary key("+getRowIdColumn()+"))";
+        }
+        
+        public String getCreateIndexOverExpiryStatementAsString (String indexName)
+        {
+            return "create index "+indexName+" on "+getTableName()+" ("+getExpiryTimeColumn()+")";
+        }
+        
+        public String getCreateIndexOverSessionStatementAsString (String indexName)
+        {
+            return "create index "+indexName+" on "+getTableName()+" ("+getIdColumn()+", "+getContextPathColumn()+")";
+        }
+        
+        public String getAlterTableForMaxIntervalAsString ()
+        {
+            if (_dbAdaptor == null)
+                throw new IllegalStateException ("No DBAdaptor");
+            String longType = _dbAdaptor.getLongType();
+            return "alter table "+getTableName()+" add "+longType+" not null default "+MAX_INTERVAL_NOT_SET;
+        }
+        
+        private void checkNotNull(String s)
+        {
+            if (s == null)
+                throw new IllegalArgumentException(s);
+        }
+        public String getInsertSessionStatementAsString()
+        {
+           return "insert into "+getTableName()+
+            " ("+getRowIdColumn()+", "+getIdColumn()+", "+getContextPathColumn()+", "+getVirtualHostColumn()+", "+getLastNodeColumn()+
+            ", "+getAccessTimeColumn()+", "+getLastAccessTimeColumn()+", "+getCreateTimeColumn()+", "+getCookieTimeColumn()+
+            ", "+getLastSavedTimeColumn()+", "+getExpiryTimeColumn()+", "+getMaxIntervalColumn()+", "+getMapColumn()+") "+
+            " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        }
+        public String getDeleteSessionStatementAsString()
+        {
+            return "delete from "+getTableName()+
+            " where "+getRowIdColumn()+" = ?";
+        }
+        public String getUpdateSessionStatementAsString()
+        {
+            return "update "+getTableName()+
+                    " set "+getIdColumn()+" = ?, "+getLastNodeColumn()+" = ?, "+getAccessTimeColumn()+" = ?, "+
+                    getLastAccessTimeColumn()+" = ?, "+getLastSavedTimeColumn()+" = ?, "+getExpiryTimeColumn()+" = ?, "+
+                    getMaxIntervalColumn()+" = ?, "+getMapColumn()+" = ? where "+getRowIdColumn()+" = ?";
+        }
+        public String getUpdateSessionNodeStatementAsString()
+        {
+            return "update "+getTableName()+
+                    " set "+getLastNodeColumn()+" = ? where "+getRowIdColumn()+" = ?";
+        }
+        public String getUpdateSessionAccessTimeStatementAsString()
+        {
+           return "update "+getTableName()+
+            " set "+getLastNodeColumn()+" = ?, "+getAccessTimeColumn()+" = ?, "+getLastAccessTimeColumn()+" = ?, "+
+                   getLastSavedTimeColumn()+" = ?, "+getExpiryTimeColumn()+" = ?, "+getMaxIntervalColumn()+" = ? where "+getRowIdColumn()+" = ?";
+        }
+        
+        public String getBoundedExpiredSessionsStatementAsString()
+        {
+            return "select * from "+getTableName()+" where "+getLastNodeColumn()+" = ? and "+getExpiryTimeColumn()+" >= ? and "+getExpiryTimeColumn()+" <= ?";
+        }
+        
+        public String getSelectExpiredSessionsStatementAsString()
+        {
+            return "select * from "+getTableName()+" where "+getExpiryTimeColumn()+" >0 and "+getExpiryTimeColumn()+" <= ?";
+        }
+     
+        public PreparedStatement getLoadStatement (Connection connection, String rowId, String contextPath, String virtualHosts)
+        throws SQLException
+        { 
+            if (_dbAdaptor == null)
+                throw new IllegalStateException("No DB adaptor");
+
+
+            if (contextPath == null || "".equals(contextPath))
+            {
+                if (_dbAdaptor.isEmptyStringNull())
+                {
+                    PreparedStatement statement = connection.prepareStatement("select * from "+getTableName()+
+                                                                              " where "+getIdColumn()+" = ? and "+
+                                                                              getContextPathColumn()+" is null and "+
+                                                                              getVirtualHostColumn()+" = ?");
+                    statement.setString(1, rowId);
+                    statement.setString(2, virtualHosts);
+
+                    return statement;
+                }
+            }
+
+            PreparedStatement statement = connection.prepareStatement("select * from "+getTableName()+
+                                                                      " where "+getIdColumn()+" = ? and "+getContextPathColumn()+
+                                                                      " = ? and "+getVirtualHostColumn()+" = ?");
+            statement.setString(1, rowId);
+            statement.setString(2, contextPath);
+            statement.setString(3, virtualHosts);
+
+            return statement;
+        }
+    }
+    
+    
+    
+    /**
+     * SessionIdTableSchema
+     *
+     */
+    public static class SessionIdTableSchema
+    {
+        protected DatabaseAdaptor _dbAdaptor;
+        protected String _tableName = "JettySessionIds";
+        protected String _idColumn = "id";
+
+        public void setDatabaseAdaptor(DatabaseAdaptor dbAdaptor)
+        {
+            _dbAdaptor = dbAdaptor;
+        }
+        public String getIdColumn()
+        {
+            return _idColumn;
+        }
+
+        public void setIdColumn(String idColumn)
+        {
+            checkNotNull(idColumn);
+            _idColumn = idColumn;
+        }
+
+        public String getTableName()
+        {
+            return _tableName;
+        }
+
+        public void setTableName(String tableName)
+        {
+            checkNotNull(tableName);
+            _tableName = tableName;
+        }
+
+        public String getInsertStatementAsString ()
+        {
+            return "insert into "+_tableName+" ("+_idColumn+")  values (?)";
+        }
+
+        public String getDeleteStatementAsString ()
+        {
+            return "delete from "+_tableName+" where "+_idColumn+" = ?";
+        }
+
+        public String getSelectStatementAsString ()
+        {
+            return  "select * from "+_tableName+" where "+_idColumn+" = ?";
+        }
+        
+        public String getCreateStatementAsString ()
+        {
+            return "create table "+_tableName+" ("+_idColumn+" varchar(120), primary key("+_idColumn+"))";
+        }
+        
+        private void checkNotNull(String s)
+        {
+            if (s == null)
+                throw new IllegalArgumentException(s);
+        }
+    }
 
 
     /**
@@ -112,22 +460,68 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
      * TODO if the differences become more major it would be worthwhile
      * refactoring this class.
      */
-    public class DatabaseAdaptor
+    public static class DatabaseAdaptor
     {
         String _dbName;
         boolean _isLower;
         boolean _isUpper;
-       
+        
+        protected String _blobType; //if not set, is deduced from the type of the database at runtime
+        protected String _longType; //if not set, is deduced from the type of the database at runtime
 
 
-        public DatabaseAdaptor (DatabaseMetaData dbMeta)
+        public DatabaseAdaptor ()
+        {           
+        }
+        
+        
+        public void adaptTo(DatabaseMetaData dbMeta)  
         throws SQLException
         {
             _dbName = dbMeta.getDatabaseProductName().toLowerCase(Locale.ENGLISH);
             LOG.debug ("Using database {}",_dbName);
             _isLower = dbMeta.storesLowerCaseIdentifiers();
-            _isUpper = dbMeta.storesUpperCaseIdentifiers();            
+            _isUpper = dbMeta.storesUpperCaseIdentifiers(); 
         }
+        
+       
+        public void setBlobType(String blobType)
+        {
+            _blobType = blobType;
+        }
+        
+        public String getBlobType ()
+        {
+            if (_blobType != null)
+                return _blobType;
+
+            if (_dbName.startsWith("postgres"))
+                return "bytea";
+
+            return "blob";
+        }
+        
+
+        public void setLongType(String longType)
+        {
+            _longType = longType;
+        }
+        
+
+        public String getLongType ()
+        {
+            if (_longType != null)
+                return _longType;
+
+            if (_dbName == null)
+                throw new IllegalStateException ("DbAdaptor missing metadata");
+            
+            if (_dbName.startsWith("oracle"))
+                return "number(20)";
+
+            return "bigint";
+        }
+        
 
         /**
          * Convert a camel case identifier into either upper or lower
@@ -138,6 +532,9 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
          */
         public String convertIdentifier (String identifier)
         {
+            if (_dbName == null)
+                throw new IllegalStateException ("DbAdaptor missing metadata");
+            
             if (_isLower)
                 return identifier.toLowerCase(Locale.ENGLISH);
             if (_isUpper)
@@ -151,31 +548,13 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
             return _dbName;
         }
 
-        public String getBlobType ()
-        {
-            if (_blobType != null)
-                return _blobType;
-
-            if (_dbName.startsWith("postgres"))
-                return "bytea";
-
-            return "blob";
-        }
-
-        public String getLongType ()
-        {
-            if (_longType != null)
-                return _longType;
-
-            if (_dbName.startsWith("oracle"))
-                return "number(20)";
-
-            return "bigint";
-        }
 
         public InputStream getBlobInputStream (ResultSet result, String columnName)
         throws SQLException
         {
+            if (_dbName == null)
+                throw new IllegalStateException ("DbAdaptor missing metadata");
+            
             if (_dbName.startsWith("postgres"))
             {
                 byte[] bytes = result.getBytes(columnName);
@@ -186,52 +565,50 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
             return blob.getBinaryStream();
         }
 
-        /**
-         * rowId is a reserved word for Oracle, so change the name of this column
-         * @return
-         */
-        public String getRowIdColumnName ()
-        {
-            if (_dbName != null && _dbName.startsWith("oracle"))
-                return "srowId";
-
-            return "rowId";
-        }
-
 
         public boolean isEmptyStringNull ()
         {
+            if (_dbName == null)
+                throw new IllegalStateException ("DbAdaptor missing metadata");
+            
             return (_dbName.startsWith("oracle"));
         }
-
-        public PreparedStatement getLoadStatement (Connection connection, String rowId, String contextPath, String virtualHosts)
-        throws SQLException
+        
+        /**
+         * rowId is a reserved word for Oracle, so change the name of this column
+         * @return true if db in use is oracle
+         */
+        public boolean isRowIdReserved ()
         {
-            if (contextPath == null || "".equals(contextPath))
-            {
-                if (isEmptyStringNull())
-                {
-                    PreparedStatement statement = connection.prepareStatement("select * from "+_sessionTable+
-                    " where sessionId = ? and contextPath is null and virtualHost = ?");
-                    statement.setString(1, rowId);
-                    statement.setString(2, virtualHosts);
-
-                    return statement;
-                }
-            }
-
-
-
-            PreparedStatement statement = connection.prepareStatement("select * from "+_sessionTable+
-            " where sessionId = ? and contextPath = ? and virtualHost = ?");
-            statement.setString(1, rowId);
-            statement.setString(2, contextPath);
-            statement.setString(3, virtualHosts);
-
-            return statement;
+            if (_dbName == null)
+                throw new IllegalStateException ("DbAdaptor missing metadata");
+            
+            return (_dbName != null && _dbName.startsWith("oracle"));
         }
     }
 
+    
+    /**
+     * Scavenger
+     *
+     */
+    protected class Scavenger implements Runnable
+    {
+
+        @Override
+        public void run()
+        {
+           try
+           {
+               scavenge();
+           }
+           finally
+           {
+               if (_scheduler != null && _scheduler.isRunning())
+                   _scheduler.schedule(this, _scavengeIntervalMs, TimeUnit.MILLISECONDS);
+           }
+        }
+    }
 
 
     public JDBCSessionIdManager(Server server)
@@ -301,28 +678,78 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         return _jndiName;
     }
 
+    /**
+     * @param name
+     * @deprecated see DbAdaptor.setBlobType
+     */
     public void setBlobType (String name)
     {
-        _blobType = name;
+        _dbAdaptor.setBlobType(name);
     }
 
+    public DatabaseAdaptor getDbAdaptor()
+    {
+        return _dbAdaptor;
+    }
+
+    public void setDbAdaptor(DatabaseAdaptor dbAdaptor)
+    {
+        if (dbAdaptor == null)
+            throw new IllegalStateException ("DbAdaptor cannot be null");
+        
+        _dbAdaptor = dbAdaptor;
+    }
+
+    /**
+     * @return
+     * @deprecated see DbAdaptor.getBlobType
+     */
     public String getBlobType ()
     {
-        return _blobType;
+        return _dbAdaptor.getBlobType();
     }
 
-
-
+    /**
+     * @return
+     * @deprecated see DbAdaptor.getLogType
+     */
     public String getLongType()
     {
-        return _longType;
+        return _dbAdaptor.getLongType();
     }
 
+    /**
+     * @param longType
+     * @deprecated see DbAdaptor.setLongType
+     */
     public void setLongType(String longType)
     {
-        this._longType = longType;
+       _dbAdaptor.setLongType(longType);
     }
     
+    public SessionIdTableSchema getSessionIdTableSchema()
+    {
+        return _sessionIdTableSchema;
+    }
+
+    public void setSessionIdTableSchema(SessionIdTableSchema sessionIdTableSchema)
+    {
+        if (sessionIdTableSchema == null)
+            throw new IllegalArgumentException("Null SessionIdTableSchema");
+        
+        _sessionIdTableSchema = sessionIdTableSchema;
+    }
+
+    public SessionTableSchema getSessionTableSchema()
+    {
+        return _sessionTableSchema;
+    }
+
+    public void setSessionTableSchema(SessionTableSchema sessionTableSchema)
+    {
+        _sessionTableSchema = sessionTableSchema;
+    }
+
     public void setDeleteBlockSize (int bsize)
     {
         this._deleteBlockSize = bsize;
@@ -351,21 +778,17 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
 
         if (LOG.isDebugEnabled())
             LOG.debug("Scavenging every "+_scavengeIntervalMs+" ms");
-        if (_timer!=null && (period!=old_period || _task==null))
+        
+        //if (_timer!=null && (period!=old_period || _task==null))
+        if (_scheduler != null && (period!=old_period || _task==null))
         {
             synchronized (this)
             {
                 if (_task!=null)
                     _task.cancel();
-                _task = new TimerTask()
-                {
-                    @Override
-                    public void run()
-                    {
-                        scavenge();
-                    }
-                };
-                _timer.schedule(_task,_scavengeIntervalMs,_scavengeIntervalMs);
+                if (_scavenger == null)
+                    _scavenger = new Scavenger();
+                _task = _scheduler.schedule(_scavenger,_scavengeIntervalMs,TimeUnit.MILLISECONDS);
             }
         }
     }
@@ -561,7 +984,16 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         super.doStart();
         if (LOG.isDebugEnabled()) 
             LOG.debug("Scavenging interval = "+getScavengeInterval()+" sec");
-        _timer=new Timer("JDBCSessionScavenger", true);
+        
+         //try and use a common scheduler, fallback to own
+         _scheduler =_server.getBean(Scheduler.class);
+         if (_scheduler == null)
+         {
+             _scheduler = new ScheduledExecutorScheduler();
+             _ownScheduler = true;
+             _scheduler.start();
+         }
+  
         setScavengeInterval(getScavengeInterval());
     }
 
@@ -577,9 +1009,9 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
             if (_task!=null)
                 _task.cancel();
             _task=null;
-            if (_timer!=null)
-                _timer.cancel();
-            _timer=null;
+            if (_ownScheduler && _scheduler !=null)
+                _scheduler.stop();
+            _scheduler=null;
         }
         _sessionIds.clear();
         super.doStop();
@@ -615,25 +1047,29 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
     private void prepareTables()
     throws SQLException
     {
-        _createSessionIdTable = "create table "+_sessionIdTable+" (id varchar(120), primary key(id))";
-        _selectBoundedExpiredSessions = "select * from "+_sessionTable+" where lastNode = ? and expiryTime >= ? and expiryTime <= ?";
-        _selectExpiredSessions = "select * from "+_sessionTable+" where expiryTime >0 and expiryTime <= ?";
-
-        _insertId = "insert into "+_sessionIdTable+" (id)  values (?)";
-        _deleteId = "delete from "+_sessionIdTable+" where id = ?";
-        _queryId = "select * from "+_sessionIdTable+" where id = ?";
-
+        if (_sessionIdTableSchema == null)
+            throw new IllegalStateException ("No SessionIdTableSchema");
+        
+        if (_sessionTableSchema == null)
+            throw new IllegalStateException ("No SessionTableSchema");
+        
         try (Connection connection = getConnection();
-                Statement statement = connection.createStatement())
+             Statement statement = connection.createStatement())
         {
             //make the id table
             connection.setAutoCommit(true);
             DatabaseMetaData metaData = connection.getMetaData();
-            _dbAdaptor = new DatabaseAdaptor(metaData);
-            _sessionTableRowId = _dbAdaptor.getRowIdColumnName();
-
+            _dbAdaptor.adaptTo(metaData);
+            _sessionTableSchema.setDatabaseAdaptor(_dbAdaptor);
+            _sessionIdTableSchema.setDatabaseAdaptor(_dbAdaptor);
+            
+            _createSessionIdTable = _sessionIdTableSchema.getCreateStatementAsString();
+            _insertId = _sessionIdTableSchema.getInsertStatementAsString();
+            _deleteId =  _sessionIdTableSchema.getDeleteStatementAsString();
+            _queryId = _sessionIdTableSchema.getSelectStatementAsString();
+            
             //checking for table existence is case-sensitive, but table creation is not
-            String tableName = _dbAdaptor.convertIdentifier(_sessionIdTable);
+            String tableName = _dbAdaptor.convertIdentifier(_sessionIdTableSchema.getTableName());
             try (ResultSet result = metaData.getTables(null, null, tableName, null))
             {
                 if (!result.next())
@@ -641,20 +1077,16 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
                     //table does not exist, so create it
                     statement.executeUpdate(_createSessionIdTable);
                 }
-            }
+            }         
+            
             //make the session table if necessary
-            tableName = _dbAdaptor.convertIdentifier(_sessionTable);
+            tableName = _dbAdaptor.convertIdentifier(_sessionTableSchema.getTableName());
             try (ResultSet result = metaData.getTables(null, null, tableName, null))
             {
                 if (!result.next())
                 {
                     //table does not exist, so create it
-                    String blobType = _dbAdaptor.getBlobType();
-                    String longType = _dbAdaptor.getLongType();
-                    _createSessionTable = "create table "+_sessionTable+" ("+_sessionTableRowId+" varchar(120), sessionId varchar(120), "+
-                                               " contextPath varchar(60), virtualHost varchar(60), lastNode varchar(60), accessTime "+longType+", "+
-                                               " lastAccessTime "+longType+", createTime "+longType+", cookieTime "+longType+", "+
-                                               " lastSavedTime "+longType+", expiryTime "+longType+", maxInterval "+longType+", map "+blobType+", primary key("+_sessionTableRowId+"))";
+                    _createSessionTable = _sessionTableSchema.getCreateStatementAsString();
                     statement.executeUpdate(_createSessionTable);
                 }
                 else
@@ -663,11 +1095,15 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
                     ResultSet colResult = null;
                     try
                     {
-                        colResult = metaData.getColumns(null, null,_dbAdaptor.convertIdentifier(_sessionTable), _dbAdaptor.convertIdentifier("maxInterval"));
+                        colResult = metaData.getColumns(null, null,
+                                                        _dbAdaptor.convertIdentifier(_sessionTableSchema.getTableName()), 
+                                                        _dbAdaptor.convertIdentifier(_sessionTableSchema.getMaxIntervalColumn()));
                     }
                     catch (SQLException s)
                     {
-                        LOG.warn("Problem checking if "+_sessionTable+" table contains maxInterval column. Ensure table contains column definition: \"maxInterval long not null default -999\"");
+                        LOG.warn("Problem checking if "+_sessionTableSchema.getTableName()+
+                                 " table contains "+_sessionTableSchema.getMaxIntervalColumn()+" column. Ensure table contains column definition: \""
+                                +_sessionTableSchema.getMaxIntervalColumn()+" long not null default -999\"");
                         throw s;
                     }
                     try
@@ -677,12 +1113,13 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
                             try
                             {
                                 //add the maxinterval column
-                                String longType = _dbAdaptor.getLongType();
-                                statement.executeUpdate("alter table "+_sessionTable+" add maxInterval "+longType+" not null default "+MAX_INTERVAL_NOT_SET);
+                                statement.executeUpdate(_sessionTableSchema.getAlterTableForMaxIntervalAsString());
                             }
                             catch (SQLException s)
                             {
-                                LOG.warn("Problem adding maxInterval column. Ensure table contains column definition: \"maxInterval long not null default -999\"");
+                                LOG.warn("Problem adding "+_sessionTableSchema.getMaxIntervalColumn()+
+                                         " column. Ensure table contains column definition: \""+_sessionTableSchema.getMaxIntervalColumn()+
+                                         " long not null default -999\"");
                                 throw s;
                             }
                         }
@@ -694,8 +1131,8 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
                 }
             }
             //make some indexes on the JettySessions table
-            String index1 = "idx_"+_sessionTable+"_expiry";
-            String index2 = "idx_"+_sessionTable+"_session";
+            String index1 = "idx_"+_sessionTableSchema.getTableName()+"_expiry";
+            String index2 = "idx_"+_sessionTableSchema.getTableName()+"_session";
 
             boolean index1Exists = false;
             boolean index2Exists = false;
@@ -711,28 +1148,18 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
                 }
             }
             if (!index1Exists)
-                statement.executeUpdate("create index "+index1+" on "+_sessionTable+" (expiryTime)");
+                statement.executeUpdate(_sessionTableSchema.getCreateIndexOverExpiryStatementAsString(index1));
             if (!index2Exists)
-                statement.executeUpdate("create index "+index2+" on "+_sessionTable+" (sessionId, contextPath)");
+                statement.executeUpdate(_sessionTableSchema.getCreateIndexOverSessionStatementAsString(index2));
 
             //set up some strings representing the statements for session manipulation
-            _insertSession = "insert into "+_sessionTable+
-            " ("+_sessionTableRowId+", sessionId, contextPath, virtualHost, lastNode, accessTime, lastAccessTime, createTime, cookieTime, lastSavedTime, expiryTime, maxInterval, map) "+
-            " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
-            _deleteSession = "delete from "+_sessionTable+
-            " where "+_sessionTableRowId+" = ?";
-
-            _updateSession = "update "+_sessionTable+
-            " set sessionId = ?, lastNode = ?, accessTime = ?, lastAccessTime = ?, lastSavedTime = ?, expiryTime = ?, maxInterval = ?, map = ? where "+_sessionTableRowId+" = ?";
-
-            _updateSessionNode = "update "+_sessionTable+
-            " set lastNode = ? where "+_sessionTableRowId+" = ?";
-
-            _updateSessionAccessTime = "update "+_sessionTable+
-            " set lastNode = ?, accessTime = ?, lastAccessTime = ?, lastSavedTime = ?, expiryTime = ?, maxInterval = ? where "+_sessionTableRowId+" = ?";
-
-
+            _insertSession = _sessionTableSchema.getInsertSessionStatementAsString();
+            _deleteSession = _sessionTableSchema.getDeleteSessionStatementAsString();
+            _updateSession = _sessionTableSchema.getUpdateSessionStatementAsString();
+            _updateSessionNode = _sessionTableSchema.getUpdateSessionNodeStatementAsString();
+            _updateSessionAccessTime = _sessionTableSchema.getUpdateSessionAccessTimeStatementAsString();
+            _selectBoundedExpiredSessions = _sessionTableSchema.getBoundedExpiredSessionsStatementAsString();
+            _selectExpiredSessions = _sessionTableSchema.getSelectExpiredSessionsStatementAsString();
         }
     }
 
@@ -846,7 +1273,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
                     {
                         while (result.next())
                         {
-                            String sessionId = result.getString("sessionId");
+                            String sessionId = result.getString(_sessionTableSchema.getIdColumn());
                             expiredSessionIds.add(sessionId);
                             if (LOG.isDebugEnabled()) LOG.debug ("Found expired sessionId="+sessionId);
                         }
@@ -868,8 +1295,8 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
                         {
                             while (result.next())
                             {
-                                String sessionId = result.getString("sessionId");
-                                String lastNode = result.getString("lastNode");
+                                String sessionId = result.getString(_sessionTableSchema.getIdColumn());
+                                String lastNode = result.getString(_sessionTableSchema.getLastNodeColumn());
                                 if ((getWorkerName() == null && lastNode == null) || (getWorkerName() != null && getWorkerName().equals(lastNode)))
                                     expiredSessionIds.add(sessionId);
                                 if (LOG.isDebugEnabled()) LOG.debug ("Found expired sessionId="+sessionId+" last managed by "+getWorkerName());
@@ -893,7 +1320,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
                         {
                             while (result.next())
                             {
-                                String sessionId = result.getString("sessionId");
+                                String sessionId = result.getString(_sessionTableSchema.getIdColumn());
                                 expiredSessionIds.add(sessionId);
                                 if (LOG.isDebugEnabled()) LOG.debug ("Found expired sessionId="+sessionId);
                             }
@@ -999,13 +1426,13 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
                     start = block*blocksize;
                     if ((ids.length -  start)  >= blocksize)
                         end = start + blocksize;
-                     else
+                    else
                         end = ids.length;
 
                     //take them out of the sessionIds table
-                    statement.executeUpdate(fillInClause("delete from "+_sessionIdTable+" where id in ", ids, start, end));
+                    statement.executeUpdate(fillInClause("delete from "+_sessionIdTableSchema.getTableName()+" where "+_sessionIdTableSchema.getIdColumn()+" in ", ids, start, end));
                     //take them out of the sessions table
-                    statement.executeUpdate(fillInClause("delete from "+_sessionTable+" where sessionId in ", ids, start, end));
+                    statement.executeUpdate(fillInClause("delete from "+_sessionTableSchema.getTableName()+" where "+_sessionTableSchema.getIdColumn()+" in ", ids, start, end));
                     block++;
                 }
             }

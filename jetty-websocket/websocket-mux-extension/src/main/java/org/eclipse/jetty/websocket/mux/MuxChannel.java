@@ -20,12 +20,9 @@ package org.eclipse.jetty.websocket.mux;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -35,9 +32,7 @@ import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.ConnectionState;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
-import org.eclipse.jetty.websocket.common.io.FutureWriteCallback;
 import org.eclipse.jetty.websocket.common.io.IOState;
 import org.eclipse.jetty.websocket.common.io.IOState.ConnectionStateListener;
 
@@ -46,18 +41,13 @@ import org.eclipse.jetty.websocket.common.io.IOState.ConnectionStateListener;
  */
 public class MuxChannel implements LogicalConnection, IncomingFrames, SuspendToken, ConnectionStateListener
 {
-    private static final Logger LOG = Log.getLogger(MuxChannel.class);
-
     private final long channelId;
     private final Muxer muxer;
-    private final AtomicBoolean inputClosed;
-    private final AtomicBoolean outputClosed;
     private final AtomicBoolean suspendToken;
     private IOState ioState;
     private WebSocketPolicy policy;
     private WebSocketSession session;
     private IncomingFrames incoming;
-    private String subProtocol;
 
     public MuxChannel(long channelId, Muxer muxer)
     {
@@ -68,9 +58,6 @@ public class MuxChannel implements LogicalConnection, IncomingFrames, SuspendTok
         this.suspendToken = new AtomicBoolean(false);
         this.ioState = new IOState();
         this.ioState.addListener(this);
-
-        this.inputClosed = new AtomicBoolean(false);
-        this.outputClosed = new AtomicBoolean(false);
     }
     
     @Override
@@ -210,19 +197,6 @@ public class MuxChannel implements LogicalConnection, IncomingFrames, SuspendTok
     }
 
     /**
-     * Internal
-     * 
-     * @param frame the frame to write
-     * @return the future for the network write of the frame
-     */
-    private Future<Void> outgoingAsyncFrame(WebSocketFrame frame)
-    {
-        FutureWriteCallback future = new FutureWriteCallback();
-        outgoingFrame(frame,future);
-        return future;
-    }
-
-    /**
      * Frames destined for the Muxer
      */
     @Override
@@ -262,7 +236,6 @@ public class MuxChannel implements LogicalConnection, IncomingFrames, SuspendTok
 
     public void setSubProtocol(String subProtocol)
     {
-        this.subProtocol = subProtocol;
     }
 
     @Override

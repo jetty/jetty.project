@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
+import javax.websocket.OnMessage;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
@@ -25,6 +26,7 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.events.EventDriverImpl;
 import org.eclipse.jetty.websocket.jsr356.annotations.JsrEvents;
+import org.eclipse.jetty.websocket.jsr356.annotations.OnMessageCallable;
 import org.eclipse.jetty.websocket.jsr356.endpoints.EndpointInstance;
 import org.eclipse.jetty.websocket.jsr356.endpoints.JsrAnnotatedEventDriver;
 
@@ -44,8 +46,16 @@ public class JsrServerEndpointImpl implements EventDriverImpl
         EndpointInstance ei = (EndpointInstance)websocket;
         AnnotatedServerEndpointMetadata metadata = (AnnotatedServerEndpointMetadata)ei.getMetadata();
         JsrEvents<ServerEndpoint, ServerEndpointConfig> events = new JsrEvents<>(metadata);
-        JsrAnnotatedEventDriver driver = new JsrAnnotatedEventDriver(policy,ei,events);
 
+        // Handle @OnMessage maxMessageSizes
+        int maxBinaryMessage = getMaxMessageSize(policy.getMaxBinaryMessageSize(),metadata.onBinary,metadata.onBinaryStream);
+        int maxTextMessage = getMaxMessageSize(policy.getMaxTextMessageSize(),metadata.onText,metadata.onTextStream);
+
+        policy.setMaxBinaryMessageSize(maxBinaryMessage);
+        policy.setMaxTextMessageSize(maxTextMessage);
+
+        JsrAnnotatedEventDriver driver = new JsrAnnotatedEventDriver(policy,ei,events);
+        // Handle @PathParam values
         ServerEndpointConfig config = (ServerEndpointConfig)ei.getConfig();
         if (config instanceof PathParamServerEndpointConfig)
         {
@@ -60,6 +70,27 @@ public class JsrServerEndpointImpl implements EventDriverImpl
     public String describeRule()
     {
         return "class is annotated with @" + ServerEndpoint.class.getName();
+    }
+
+    private int getMaxMessageSize(int defaultMaxMessageSize, OnMessageCallable... onMessages)
+    {
+        for (OnMessageCallable callable : onMessages)
+        {
+            if (callable == null)
+            {
+                continue;
+            }
+            OnMessage onMsg = callable.getMethod().getAnnotation(OnMessage.class);
+            if (onMsg == null)
+            {
+                continue;
+            }
+            if (onMsg.maxMessageSize() > 0)
+            {
+                return (int)onMsg.maxMessageSize();
+            }
+        }
+        return defaultMaxMessageSize;
     }
 
     @Override

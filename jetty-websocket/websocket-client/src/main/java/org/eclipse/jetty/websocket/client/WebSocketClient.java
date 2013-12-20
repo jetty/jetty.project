@@ -23,8 +23,11 @@ import java.net.CookieStore;
 import java.net.SocketAddress;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 
@@ -40,6 +43,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Extension;
@@ -51,6 +55,8 @@ import org.eclipse.jetty.websocket.client.io.UpgradeListener;
 import org.eclipse.jetty.websocket.client.masks.Masker;
 import org.eclipse.jetty.websocket.client.masks.RandomMasker;
 import org.eclipse.jetty.websocket.common.SessionFactory;
+import org.eclipse.jetty.websocket.common.SessionListener;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.WebSocketSessionFactory;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
@@ -59,7 +65,7 @@ import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionFactory;
 /**
  * WebSocketClient provides a means of establishing connections to remote websocket endpoints.
  */
-public class WebSocketClient extends ContainerLifeCycle
+public class WebSocketClient extends ContainerLifeCycle implements SessionListener
 {
     private static final Logger LOG = Log.getLogger(WebSocketClient.class);
 
@@ -68,6 +74,7 @@ public class WebSocketClient extends ContainerLifeCycle
     private final WebSocketExtensionFactory extensionRegistry;
     private EventDriverFactory eventDriverFactory;
     private SessionFactory sessionFactory;
+    private Set<WebSocketSession> openSessions = new CopyOnWriteArraySet<>();
     private ByteBufferPool bufferPool;
     private Executor executor;
     private Scheduler scheduler;
@@ -101,7 +108,11 @@ public class WebSocketClient extends ContainerLifeCycle
         this.extensionRegistry = new WebSocketExtensionFactory(policy,bufferPool);
         this.masker = new RandomMasker();
         this.eventDriverFactory = new EventDriverFactory(policy);
-        this.sessionFactory = new WebSocketSessionFactory();
+        this.sessionFactory = new WebSocketSessionFactory(this);
+        
+        addBean(this.executor);
+        addBean(this.sslContextFactory);
+        addBean(this.bufferPool);
     }
 
     public Future<Session> connect(Object websocket, URI toUri) throws IOException
@@ -194,41 +205,6 @@ public class WebSocketClient extends ContainerLifeCycle
 
         // Return the future
         return promise;
-    }
-
-    private synchronized void initialiseClient() throws IOException
-    {
-        if (executor == null)
-        {
-            QueuedThreadPool threadPool = new QueuedThreadPool();
-            String name = WebSocketClient.class.getSimpleName() + "@" + hashCode();
-            threadPool.setName(name);
-            executor = threadPool;
-            addBean(executor,true);
-        }
-        else
-        {
-            addBean(executor,false);
-        }
-
-        if (connectionManager != null)
-        {
-            return;
-        }
-        try
-        {
-            connectionManager = newConnectionManager();
-            addBean(connectionManager);
-            connectionManager.start();
-        }
-        catch (IOException e)
-        {
-            throw e;
-        }
-        catch (Exception e)
-        {
-            throw new IOException(e);
-        }
     }
 
     @Override
@@ -385,6 +361,11 @@ public class WebSocketClient extends ContainerLifeCycle
         return this.policy.getMaxTextMessageSize();
     }
 
+    public Set<WebSocketSession> getOpenSessions()
+    {
+        return Collections.unmodifiableSet(this.openSessions);
+    }
+
     public WebSocketPolicy getPolicy()
     {
         return this.policy;
@@ -429,6 +410,43 @@ public class WebSocketClient extends ContainerLifeCycle
         return extensions;
     }
 
+    private synchronized void initialiseClient() throws IOException
+    {
+        ShutdownThread.register(this);
+
+        if (executor == null)
+        {
+            QueuedThreadPool threadPool = new QueuedThreadPool();
+            String name = WebSocketClient.class.getSimpleName() + "@" + hashCode();
+            threadPool.setName(name);
+            executor = threadPool;
+            addBean(executor,true);
+        }
+        else
+        {
+            addBean(executor,false);
+        }
+
+        if (connectionManager != null)
+        {
+            return;
+        }
+        try
+        {
+            connectionManager = newConnectionManager();
+            addBean(connectionManager);
+            connectionManager.start();
+        }
+        catch (IOException e)
+        {
+            throw e;
+        }
+        catch (Exception e)
+        {
+            throw new IOException(e);
+        }
+    }
+
     /**
      * Factory method for new ConnectionManager (used by other projects like cometd)
      * 
@@ -437,6 +455,20 @@ public class WebSocketClient extends ContainerLifeCycle
     protected ConnectionManager newConnectionManager()
     {
         return new ConnectionManager(this);
+    }
+
+    @Override
+    public void onSessionClosed(WebSocketSession session)
+    {
+        LOG.info("Session Closed: {}",session);
+        this.openSessions.remove(session);
+    }
+
+    @Override
+    public void onSessionOpened(WebSocketSession session)
+    {
+        LOG.info("Session Opened: {}",session);
+        this.openSessions.add(session);
     }
 
     public void setAsyncWriteTimeout(long ms)
@@ -494,7 +526,7 @@ public class WebSocketClient extends ContainerLifeCycle
     {
         this.policy.setMaxBinaryMessageBufferSize(max);
     }
-
+    
     /**
      * Set the max idle timeout for new connections.
      * <p>

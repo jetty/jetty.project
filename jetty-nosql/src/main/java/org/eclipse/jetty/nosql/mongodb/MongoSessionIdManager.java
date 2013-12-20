@@ -38,6 +38,8 @@ import org.eclipse.jetty.server.session.AbstractSessionIdManager;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
+import org.eclipse.jetty.util.thread.Scheduler;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.BasicDBObjectBuilder;
@@ -48,16 +50,15 @@ import com.mongodb.Mongo;
 import com.mongodb.MongoException;
 
 /**
- * Based partially on the jdbc session id manager...
+ * Based partially on the JDBCSessionIdManager.
  *
  * Theory is that we really only need the session id manager for the local 
  * instance so we have something to scavenge on, namely the list of known ids
  * 
- * this class has a timer that runs at the scavenge delay that runs a query
- *  for all id's known to this node and that have and old accessed value greater
- *  then the scavengeDelay.
+ * This class has a timer that runs a periodic scavenger thread to query
+ *  for all id's known to this node whose precalculated expiry time has passed.
  *  
- * these found sessions are then run through the invalidateAll(id) method that 
+ * These found sessions are then run through the invalidateAll(id) method that 
  * is a bit hinky but is supposed to notify all handlers this id is now DOA and 
  * ought to be cleaned up.  this ought to result in a save operation on the session
  * that will change the valid field to false (this conjecture is unvalidated atm)
@@ -70,20 +71,18 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
     final static DBObject __valid_false = new BasicDBObject(MongoSessionManager.__VALID,false);
     final static DBObject __valid_true = new BasicDBObject(MongoSessionManager.__VALID,true);
 
-    final static long __defaultScavengeDelay =  10 * 6 * 1000; // wait at least 10 minutes
     final static long __defaultScavengePeriod = 30 * 60 * 1000; // every 30 minutes
    
     
     final DBCollection _sessions;
     protected Server _server;
-    private Timer _scavengeTimer;
-    private Timer _purgeTimer;
-    private TimerTask _scavengerTask;
-    private TimerTask _purgeTask;
+    private Scheduler _scheduler;
+    private boolean _ownScheduler;
+    private Scheduler.Task _scavengerTask;
+    private Scheduler.Task _purgerTask;
+ 
 
     
-    
-    private long _scavengeDelay = __defaultScavengeDelay;
     private long _scavengePeriod = __defaultScavengePeriod;
     
 
@@ -116,6 +115,52 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
      * TODO consider if this ought to be concurrent or not
      */
     protected final Set<String> _sessionsIds = new HashSet<String>();
+    
+    
+    /**
+     * Scavenger
+     *
+     */
+    protected class Scavenger implements Runnable
+    {
+        @Override
+        public void run()
+        {
+            try
+            {
+                scavenge();
+            }
+            finally
+            {
+                if (_scheduler != null && _scheduler.isRunning())
+                    _scavengerTask = _scheduler.schedule(this, _scavengePeriod, TimeUnit.MILLISECONDS);
+            }
+        } 
+    }
+    
+    
+    /**
+     * Purger
+     *
+     */
+    protected class Purger implements Runnable
+    {
+        @Override
+        public void run()
+        {
+            try
+            {
+                purge();
+            }
+            finally
+            {
+                if (_scheduler != null && _scheduler.isRunning())
+                    _purgerTask = _scheduler.schedule(this, _purgeDelay, TimeUnit.MILLISECONDS);
+            }
+        }
+    }
+    
+    
     
 
     /* ------------------------------------------------------------ */
@@ -150,40 +195,38 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
     protected void scavenge()
     {
         long now = System.currentTimeMillis();
-        __log.debug("SessionIdManager:scavenge:at  " + now);        
+        __log.debug("SessionIdManager:scavenge:at {}", now);        
         synchronized (_sessionsIds)
         {         
             /*
              * run a query returning results that:
              *  - are in the known list of sessionIds
-             *  - have an accessed time less then current time - the scavenger period
+             *  - the expiry time has passed
              *  
              *  we limit the query to return just the __ID so we are not sucking back full sessions
              */
             BasicDBObject query = new BasicDBObject();     
             query.put(MongoSessionManager.__ID,new BasicDBObject("$in", _sessionsIds ));
-         
-            query.put(MongoSessionManager.__ACCESSED, new BasicDBObject("$lt",now - _scavengePeriod));
+            query.put(MongoSessionManager.__EXPIRY, new BasicDBObject("$gt", 0));
+            query.put(MongoSessionManager.__EXPIRY, new BasicDBObject("$lt", now));
+        
             
             DBCursor checkSessions = _sessions.find(query, new BasicDBObject(MongoSessionManager.__ID, 1));
                         
             for ( DBObject session : checkSessions )
             {             
-                __log.debug("SessionIdManager:scavenge: invalidating " + (String)session.get(MongoSessionManager.__ID));
-                invalidateAll((String)session.get(MongoSessionManager.__ID));
+                __log.debug("SessionIdManager:scavenge: expiring session {}", (String)session.get(MongoSessionManager.__ID));
+                expireAll((String)session.get(MongoSessionManager.__ID));
             }
-        } 
-        
+        }      
     }
     
     /* ------------------------------------------------------------ */
     /**
-     * ScavengeFully is a process that periodically checks the tracked session
-     * ids of this given instance of the session id manager to see if they 
-     * are past the point of expiration.
+     * ScavengeFully will expire all sessions. In most circumstances
+     * you should never need to call this method.
      * 
-     * NOTE: this is potentially devastating and may lead to serious session
-     * coherence issues, not to be used in a running cluster
+     * <b>USE WITH CAUTION</b>
      */
     protected void scavengeFully()
     {        
@@ -193,7 +236,7 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
 
         for (DBObject session : checkSessions)
         {
-            invalidateAll((String)session.get(MongoSessionManager.__ID));
+            expireAll((String)session.get(MongoSessionManager.__ID));
         }
 
     }
@@ -205,7 +248,7 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
      * 
      * There are two checks being done here:
      * 
-     *  - if the accessed time is older then the current time minus the purge invalid age
+     *  - if the accessed time is older than the current time minus the purge invalid age
      *    and it is no longer valid then remove that session
      *  - if the accessed time is older then the current time minus the purge valid age
      *    then we consider this a lost record and remove it
@@ -229,7 +272,7 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
         {
             String id = (String)session.get("id");
             
-            __log.debug("MongoSessionIdManager:purging invalid " + id);
+            __log.debug("MongoSessionIdManager:purging invalid session {}", id);
             
             _sessions.remove(session);
         }
@@ -247,7 +290,7 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
             {
                 String id = (String)session.get(MongoSessionManager.__ID);
 
-                __log.debug("MongoSessionIdManager:purging valid " + id);
+                __log.debug("MongoSessionIdManager:purging valid session {}", id);
 
                 _sessions.remove(session);
             }
@@ -264,7 +307,6 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
     protected void purgeFully()
     {
         BasicDBObject invalidQuery = new BasicDBObject();
-
         invalidQuery.put(MongoSessionManager.__VALID, false);
         
         DBCursor oldSessions = _sessions.find(invalidQuery, new BasicDBObject(MongoSessionManager.__ID, 1));
@@ -273,7 +315,7 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
         {
             String id = (String)session.get(MongoSessionManager.__ID);
             
-            __log.debug("MongoSessionIdManager:purging invalid " + id);
+            __log.debug("MongoSessionIdManager:purging invalid session {}", id);
             
             _sessions.remove(session);
         }
@@ -300,20 +342,13 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
         this._purge = purge;
     }
 
+
     /* ------------------------------------------------------------ */
-    /**
-     * sets the scavengeDelay
+    /** 
+     * The period in seconds between scavenge checks.
+     * 
+     * @param scavengePeriod
      */
-    public void setScavengeDelay(long scavengeDelay)
-    {
-        if (scavengeDelay <= 0)
-            this._scavengeDelay = __defaultScavengeDelay;
-        else
-            this._scavengeDelay = TimeUnit.SECONDS.toMillis(scavengeDelay);  
-    }
-
-
-    /* ------------------------------------------------------------ */
     public void setScavengePeriod(long scavengePeriod)
     {
         if (scavengePeriod <= 0)
@@ -372,83 +407,75 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
     protected void doStart() throws Exception
     {
         __log.debug("MongoSessionIdManager:starting");
-     
-        /*
-         * setup the scavenger thread
-         */
-        if (_scavengeDelay > 0)
-        {
-            _scavengeTimer = new Timer("MongoSessionIdScavenger",true);
 
-            synchronized (this)
+
+        synchronized (this)
+        {
+            //try and use a common scheduler, fallback to own
+            _scheduler =_server.getBean(Scheduler.class);
+            if (_scheduler == null)
+            {
+                _scheduler = new ScheduledExecutorScheduler();
+                _ownScheduler = true;
+                _scheduler.start();
+            }
+
+            //setup the scavenger thread
+            if (_scavengePeriod > 0)
             {
                 if (_scavengerTask != null)
                 {
                     _scavengerTask.cancel();
+                    _scavengerTask = null;
                 }
-                
-                _scavengerTask = new TimerTask()
-                {
-                    @Override
-                    public void run()
-                    {
-                        scavenge();
-                    }
-                };
-                
-                _scavengeTimer.schedule(_scavengerTask,_scavengeDelay,_scavengePeriod);
+
+                _scavengerTask = _scheduler.schedule(new Scavenger(), _scavengePeriod, TimeUnit.MILLISECONDS);
             }
-        }
-        
-        /*
-         * if purging is enabled, setup the purge thread
-         */
-        if ( _purge )
-        {
-            _purgeTimer = new Timer("MongoSessionPurger", true);
-            
-            synchronized (this)
-            {
-                if (_purgeTask != null)
+
+
+            //if purging is enabled, setup the purge thread
+            if ( _purge )
+            { 
+                if (_purgerTask != null)
                 {
-                    _purgeTask.cancel();
+                    _purgerTask.cancel();
+                    _purgerTask = null;
                 }
-                _purgeTask = new TimerTask()
-                {
-                    @Override
-                    public void run()
-                    {
-                        purge();
-                    }
-                };
-               
-                _purgeTimer.schedule(_purgeTask,0,_purgeDelay);
+                _purgerTask = _scheduler.schedule(new Purger(), _purgeDelay, TimeUnit.MILLISECONDS);
             }
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     protected void doStop() throws Exception
     {
-        if (_scavengeTimer != null)
+        synchronized (this)
         {
-            _scavengeTimer.cancel();
-            _scavengeTimer = null;
+            if (_scavengerTask != null)
+            {
+                _scavengerTask.cancel();
+                _scavengerTask = null;
+            }
+ 
+            if (_purgerTask != null)
+            {
+                _purgerTask.cancel();
+                _purgerTask = null;
+            }
+            
+            if (_ownScheduler && _scheduler != null)
+            {
+                _scheduler.stop();
+                _scheduler = null;
+            }
         }
-        
-        if (_purgeTimer != null)
-        {
-            _purgeTimer.cancel();
-            _purgeTimer = null;
-        }
-        
         super.doStop();
     }
 
     /* ------------------------------------------------------------ */
     /**
-     * is the session id known to mongo, and is it valid
+     * Searches database to find if the session id known to mongo, and is it valid
      */
     @Override
     public boolean idInUse(String sessionId)
@@ -461,11 +488,10 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
         if ( o != null )
         {                    
             Boolean valid = (Boolean)o.get(MongoSessionManager.__VALID);
-            
             if ( valid == null )
             {
                 return false;
-            }
+            }            
             
             return valid;
         }
@@ -486,7 +512,7 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
          * already a part of the index in mongo...
          */
         
-        __log.debug("MongoSessionIdManager:addSession:" + session.getId());
+        __log.debug("MongoSessionIdManager:addSession {}", session.getId());
         
         synchronized (_sessionsIds)
         {
@@ -511,14 +537,18 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
     }
 
     /* ------------------------------------------------------------ */
+    /** Remove the session id from the list of in-use sessions.
+     * Inform all other known contexts that sessions with the same id should be
+     * invalidated.
+     * @see org.eclipse.jetty.server.SessionIdManager#invalidateAll(java.lang.String)
+     */
     @Override
     public void invalidateAll(String sessionId)
     {
         synchronized (_sessionsIds)
         {
             _sessionsIds.remove(sessionId);
-            
-            
+                
             //tell all contexts that may have a session object with this id to
             //get rid of them
             Handler[] contexts = _server.getChildHandlersByClass(ContextHandler.class);
@@ -537,6 +567,38 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
             }
         }      
     } 
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Expire this session for all contexts that are sharing the session 
+     * id.
+     * @param sessionId
+     */
+    public void expireAll (String sessionId)
+    {
+        synchronized (_sessionsIds)
+        {
+            _sessionsIds.remove(sessionId);
+            
+            
+            //tell all contexts that may have a session object with this id to
+            //get rid of them
+            Handler[] contexts = _server.getChildHandlersByClass(ContextHandler.class);
+            for (int i=0; contexts!=null && i<contexts.length; i++)
+            {
+                SessionHandler sessionHandler = ((ContextHandler)contexts[i]).getChildHandlerByClass(SessionHandler.class);
+                if (sessionHandler != null) 
+                {
+                    SessionManager manager = sessionHandler.getSessionManager();
+
+                    if (manager != null && manager instanceof MongoSessionManager)
+                    {
+                        ((MongoSessionManager)manager).expire(sessionId);
+                    }
+                }
+            }
+        }      
+    }
     
     /* ------------------------------------------------------------ */
     @Override

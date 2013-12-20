@@ -22,12 +22,11 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.zip.CRC32;
 import java.util.zip.Deflater;
-import java.util.zip.DeflaterOutputStream;
 
 /**
  * Reimplementation of {@link java.util.zip.GZIPOutputStream} that supports reusing a {@link Deflater} instance.
  */
-public class GzipOutputStream extends DeflaterOutputStream
+public class GzipOutputStream extends DeflatedOutputStream
 {
 
     private final static byte[] GZIP_HEADER = new byte[]
@@ -35,9 +34,9 @@ public class GzipOutputStream extends DeflaterOutputStream
 
     private final CRC32 _crc = new CRC32();
 
-    public GzipOutputStream(OutputStream out, Deflater deflater, int size) throws IOException
+    public GzipOutputStream(OutputStream out, Deflater deflater, byte[] buffer) throws IOException
     {
-        super(out,deflater,size);
+        super(out,deflater,buffer);
         out.write(GZIP_HEADER);
     }
 
@@ -51,23 +50,15 @@ public class GzipOutputStream extends DeflaterOutputStream
     @Override
     public synchronized void finish() throws IOException
     {
-        if (!def.finished())
+        if (!_def.finished())
         {
             super.finish();
             byte[] trailer = new byte[8];
             writeInt((int)_crc.getValue(),trailer,0);
-            writeInt(def.getTotalIn(),trailer,4);
+            writeInt(_def.getTotalIn(),trailer,4);
             out.write(trailer);
         }
     }
-    
-    @Override 
-    public synchronized void close() throws IOException
-    {
-        super.close();
-    }
-    
-    
 
     private void writeInt(int i, byte[] buf, int offset)
     {

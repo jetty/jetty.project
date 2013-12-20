@@ -21,6 +21,7 @@ package org.eclipse.jetty.servlet;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -65,7 +66,7 @@ import org.eclipse.jetty.server.ServletResponseHttpWrapper;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ScopedHandler;
-import org.eclipse.jetty.servlet.Holder.Source;
+import org.eclipse.jetty.servlet.BaseHolder.Source;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiException;
@@ -119,9 +120,12 @@ public class ServletHandler extends ScopedHandler
 
     private final Map<String,ServletHolder> _servletNameMap=new HashMap<>();
     private PathMap<ServletHolder> _servletPathMap;
+    
+    private ListenerHolder[] _listeners=new ListenerHolder[0];
 
     protected final ConcurrentMap<?, ?> _chainCache[] = new ConcurrentMap[FilterMapping.ALL];
     protected final Queue<?>[] _chainLRU = new Queue[FilterMapping.ALL];
+    
 
 
     /* ------------------------------------------------------------ */
@@ -284,6 +288,28 @@ public class ServletHandler extends ScopedHandler
         ServletMapping[] sms = (ServletMapping[])LazyList.toArray(servletMappings, ServletMapping.class); 
         updateBeans(_servletMappings, sms);
         _servletMappings = sms;
+
+        //Retain only Listeners added via jetty apis (is Source.EMBEDDED)
+        List<ListenerHolder> listenerHolders = new ArrayList<ListenerHolder>();
+        if (_listeners != null)
+        { 
+            for (int i=_listeners.length; i-->0;)
+            {
+                try
+                {
+                    _listeners[i].stop();
+                } 
+                catch(Exception e)
+                {
+                    LOG.warn(Log.EXCEPTION,e);
+                }
+                if (_listeners[i].getSource() == Source.EMBEDDED)
+                    listenerHolders.add(_listeners[i]);
+            }
+        }
+        ListenerHolder[] listeners = (ListenerHolder[])LazyList.toArray(listenerHolders, ListenerHolder.class);
+        updateBeans(_listeners, listeners);
+        _listeners = listeners;
 
         //will be regenerated on next start
         _filterPathMappings=null;
@@ -773,9 +799,26 @@ public class ServletHandler extends ScopedHandler
     {
         MultiException mx = new MultiException();
 
+        //start filter holders now
+        if (_filters != null)
+        {
+            for (FilterHolder f: _filters)
+            {
+                try
+                {
+                    f.start();
+                    f.initialize();
+                }
+                catch (Exception e)
+                {
+                    mx.add(e);
+                }
+            }
+        }
+        
+        // Sort and Initialize servlets
         if (_servlets!=null)
         {
-            // Sort and Initialize servlets
             ServletHolder[] servlets = _servlets.clone();
             Arrays.sort(servlets);
             for (ServletHolder servlet : servlets)
@@ -792,6 +835,9 @@ public class ServletHandler extends ScopedHandler
                         }
                         servlet.setClassName(forced_holder.getClassName());
                     }
+                    
+                    servlet.start();
+                    servlet.initialize();
                 }
                 catch (Throwable e)
                 {
@@ -801,13 +847,16 @@ public class ServletHandler extends ScopedHandler
             }
         }
 
-        //start the servlet and filter holders now
+        //any other beans
         for (Holder<?> h: getBeans(Holder.class))
         {
             try
             {
-                h.start();
-                h.initialize();
+                if (!h.isStarted())
+                {
+                    h.start();
+                    h.initialize();
+                }
             }
             catch (Exception e)
             {
@@ -826,6 +875,40 @@ public class ServletHandler extends ScopedHandler
     {
         return _filterChainsCached;
     }
+    
+    /* ------------------------------------------------------------ */
+    /** Add a holder for a listener
+     * @param filter
+     */
+    public void addListener (ListenerHolder listener)
+    {
+        if (listener != null)
+            setListeners(ArrayUtil.addToArray(getListeners(), listener, ListenerHolder.class));
+    }
+    
+    
+    /* ------------------------------------------------------------ */
+    public ListenerHolder[] getListeners()
+    {
+        return _listeners;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void setListeners(ListenerHolder[] listeners)
+    {
+        if (listeners!=null)
+            for (ListenerHolder holder:listeners)
+                holder.setServletHandler(this);
+
+        updateBeans(_listeners,listeners);
+        _listeners = listeners;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public ListenerHolder newListenerHolder(Holder.Source source)
+    {
+        return new ListenerHolder(source);
+    }
 
     /* ------------------------------------------------------------ */
     /**
@@ -837,19 +920,12 @@ public class ServletHandler extends ScopedHandler
     }
 
     /* ------------------------------------------------------------ */
-    /** Convenience method to add a servlet Holder.
-    public ServletHolder newServletHolder(Class<? extends Servlet> servlet)
-    {
-        return new ServletHolder(servlet);
-    }
-
-    /* ------------------------------------------------------------ */
     /** Convenience method to add a servlet.
      * @return The servlet holder.
      */
     public ServletHolder addServletWithMapping (String className,String pathSpec)
     {
-        ServletHolder holder = newServletHolder(Holder.Source.EMBEDDED);
+        ServletHolder holder = newServletHolder(Source.EMBEDDED);
         holder.setClassName(className);
         addServletWithMapping(holder,pathSpec);
         return holder;
@@ -861,7 +937,7 @@ public class ServletHandler extends ScopedHandler
      */
     public ServletHolder addServletWithMapping (Class<? extends Servlet> servlet,String pathSpec)
     {
-        ServletHolder holder = newServletHolder(Holder.Source.EMBEDDED);
+        ServletHolder holder = newServletHolder(Source.EMBEDDED);
         holder.setHeldClass(servlet);
         addServletWithMapping(holder,pathSpec);
 
@@ -948,7 +1024,7 @@ public class ServletHandler extends ScopedHandler
      */
     public FilterHolder addFilterWithMapping (Class<? extends Filter> filter,String pathSpec,EnumSet<DispatcherType> dispatches)
     {
-        FilterHolder holder = newFilterHolder(Holder.Source.EMBEDDED);
+        FilterHolder holder = newFilterHolder(Source.EMBEDDED);
         holder.setHeldClass(filter);
         addFilterWithMapping(holder,pathSpec,dispatches);
 
@@ -964,7 +1040,7 @@ public class ServletHandler extends ScopedHandler
      */
     public FilterHolder addFilterWithMapping (String className,String pathSpec,EnumSet<DispatcherType> dispatches)
     {
-        FilterHolder holder = newFilterHolder(Holder.Source.EMBEDDED);
+        FilterHolder holder = newFilterHolder(Source.EMBEDDED);
         holder.setClassName(className);
 
         addFilterWithMapping(holder,pathSpec,dispatches);
@@ -1016,7 +1092,7 @@ public class ServletHandler extends ScopedHandler
      */
     public FilterHolder addFilterWithMapping (Class<? extends Filter> filter,String pathSpec,int dispatches)
     {
-        FilterHolder holder = newFilterHolder(Holder.Source.EMBEDDED);
+        FilterHolder holder = newFilterHolder(Source.EMBEDDED);
         holder.setHeldClass(filter);
         addFilterWithMapping(holder,pathSpec,dispatches);
 
@@ -1032,7 +1108,7 @@ public class ServletHandler extends ScopedHandler
      */
     public FilterHolder addFilterWithMapping (String className,String pathSpec,int dispatches)
     {
-        FilterHolder holder = newFilterHolder(Holder.Source.EMBEDDED);
+        FilterHolder holder = newFilterHolder(Source.EMBEDDED);
         holder.setClassName(className);
 
         addFilterWithMapping(holder,pathSpec,dispatches);
@@ -1380,7 +1456,7 @@ public class ServletHandler extends ScopedHandler
                         {
                             //existing candidate isn't a default, if the one we're looking at isn't a default either, then its an error
                             if (!mapping.isDefault())
-                                throw new IllegalStateException("Multiple servlets map to path: "+pathSpec);
+                                throw new IllegalStateException("Multiple servlets map to path: "+pathSpec+": "+finalMapping.getServletName()+","+mapping.getServletName());
                         }
                     }
                 }

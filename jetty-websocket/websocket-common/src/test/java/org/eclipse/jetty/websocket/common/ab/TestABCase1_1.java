@@ -18,17 +18,16 @@
 
 package org.eclipse.jetty.websocket.common.ab;
 
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.ByteBufferAssert;
-import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.Parser;
@@ -52,7 +51,7 @@ public class TestABCase1_1
         int length = 125;
         byte buf[] = new byte[length];
         Arrays.fill(buf,(byte)'*');
-        String text = new String(buf,StringUtil.__UTF8_CHARSET);
+        String text = new String(buf,StandardCharsets.UTF_8);
 
         Frame textFrame = new TextFrame().setPayload(text);
 

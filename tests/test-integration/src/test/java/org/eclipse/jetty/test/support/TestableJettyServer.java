@@ -200,4 +200,9 @@ public class TestableJettyServer
         uri.append(":").append(this._serverPort);
         return URI.create(uri.toString());
     }
+
+    public Server getServer()
+    {
+        return _server;
+    }
 }

@@ -36,7 +36,9 @@ public class PathMappingsBenchmarkTest
     {
         private int iterations;
         private CyclicBarrier barrier;
+        @SuppressWarnings("unused")
         private long success;
+        @SuppressWarnings("unused")
         private long error;
 
         public AbstractPathMapThread(int iterations, CyclicBarrier barrier)

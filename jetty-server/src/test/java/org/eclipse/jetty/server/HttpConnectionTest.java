@@ -41,6 +41,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
@@ -71,6 +72,7 @@ public class HttpConnectionTest
         connector.setIdleTimeout(500);
         server.addConnector(connector);
         server.setHandler(new DumpHandler());
+        server.addBean(new ErrorHandler());
         server.start();
     }
 
@@ -640,7 +642,8 @@ public class HttpConnectionTest
         request.append("\015\012");
 
         response = connector.getResponses(request.toString());
-        checkContains(response, offset, "HTTP/1.1 413");
+        offset = checkContains(response, offset, "HTTP/1.1 413");
+        checkContains(response, offset, "<h1>Bad Message 413</h1><pre>reason: Request Entity Too Large</pre>");
     }
 
     @Test

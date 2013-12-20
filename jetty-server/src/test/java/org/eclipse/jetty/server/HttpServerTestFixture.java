@@ -46,7 +46,7 @@ public class HttpServerTestFixture
 
     protected Server _server;
     protected URI _serverURI;
-    protected NetworkConnector _connector;
+    protected ServerConnector _connector;
     protected String _scheme="http";
 
     protected Socket newSocket(String host,int port) throws Exception
@@ -64,7 +64,7 @@ public class HttpServerTestFixture
         _server = new Server();
     }
 
-    protected void startServer(NetworkConnector connector) throws Exception
+    protected void startServer(ServerConnector connector) throws Exception
     {
         _connector = connector;
         _server.addConnector(_connector);

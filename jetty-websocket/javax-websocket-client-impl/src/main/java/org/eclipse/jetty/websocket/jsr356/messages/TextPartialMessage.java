@@ -45,7 +45,7 @@ public class TextPartialMessage implements MessageAppender
     }
 
     @Override
-    public void appendMessage(ByteBuffer payload, boolean isLast) throws IOException
+    public void appendFrame(ByteBuffer payload, boolean isLast) throws IOException
     {
         // No decoders for Partial messages per JSR-356 (PFD1 spec)
         partialHandler.onMessage(BufferUtil.toUTF8String(payload.slice()),isLast);

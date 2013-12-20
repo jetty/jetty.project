@@ -146,7 +146,7 @@ public class AsyncTimeoutTest
     private static class TestController implements Controller
     {
         @Override
-        public void write(ByteBuffer buffer, Callback callback)
+        public void write(Callback callback, ByteBuffer... buffers)
         {
             callback.succeeded();
         }

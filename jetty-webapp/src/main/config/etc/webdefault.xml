@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <web-app 
-   xmlns="http://java.sun.com/xml/ns/javaee" 
+   xmlns="http://xmlns.jcp.org/xml/ns/javaee" 
    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-   xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_1.xsd"
+   xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
    metadata-complete="false"
    version="3.1"> 
 
@@ -526,7 +526,7 @@
     <web-resource-collection>
       <web-resource-name>Enable everything but TRACE</web-resource-name>
       <url-pattern>/</url-pattern>
-      <http-method-ommission>TRACE</http-method-ommission>
+      <http-method-omission>TRACE</http-method-omission>
     </web-resource-collection>
   </security-constraint>
 

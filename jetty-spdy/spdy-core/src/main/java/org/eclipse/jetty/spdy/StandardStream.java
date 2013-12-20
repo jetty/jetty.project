@@ -114,6 +114,15 @@ public class StandardStream extends IdleTimeout implements IStream
         StreamFrameListener listener = this.listener;
         if (listener != null)
             listener.onFailure(this, timeout);
+        // The stream is now gone, we must close it to
+        // avoid that its idle timeout is rescheduled.
+        close();
+    }
+
+    private void close()
+    {
+        closeState = CloseState.CLOSED;
+        onClose();
     }
 
     @Override
@@ -189,13 +198,13 @@ public class StandardStream extends IdleTimeout implements IStream
                     if (local)
                         throw new IllegalStateException();
                     else
-                        closeState = CloseState.CLOSED;
+                        close();
                     break;
                 }
                 case REMOTELY_CLOSED:
                 {
                     if (local)
-                        closeState = CloseState.CLOSED;
+                        close();
                     else
                         throw new IllegalStateException();
                     break;
@@ -369,12 +378,13 @@ public class StandardStream extends IdleTimeout implements IStream
         notIdle();
         if (isClosed() || isReset())
         {
+            close();
             promise.failed(new StreamException(getId(), StreamStatus.STREAM_ALREADY_CLOSED,
                     "Stream: " + this + " already closed or reset!"));
             return;
         }
         PushSynInfo pushSynInfo = new PushSynInfo(getId(), pushInfo);
-        session.syn(pushSynInfo, null, promise);
+        session.syn(pushSynInfo, null, new StreamPromise(promise));
     }
 
     @Override
@@ -393,11 +403,14 @@ public class StandardStream extends IdleTimeout implements IStream
     {
         notIdle();
         if (isUnidirectional())
+        {
+            close();
             throw new IllegalStateException("Protocol violation: cannot send SYN_REPLY frames in unidirectional streams");
+        }
         openState = OpenState.REPLY_SENT;
         updateCloseState(replyInfo.isClose(), true);
         SynReplyFrame frame = new SynReplyFrame(session.getVersion(), replyInfo.getFlags(), getId(), replyInfo.getHeaders());
-        session.control(this, frame, replyInfo.getTimeout(), replyInfo.getUnit(), callback);
+        session.control(this, frame, replyInfo.getTimeout(), replyInfo.getUnit(), new StreamCallback(callback));
     }
 
     @Override
@@ -417,18 +430,18 @@ public class StandardStream extends IdleTimeout implements IStream
         notIdle();
         if (!canSend())
         {
-            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR), new Adapter());
+            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR), new StreamCallback());
             throw new IllegalStateException("Protocol violation: cannot send a DATA frame before a SYN_REPLY frame");
         }
         if (isLocallyClosed())
         {
-            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR), new Adapter());
+            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR), new StreamCallback());
             throw new IllegalStateException("Protocol violation: cannot send a DATA frame on a locally closed stream");
         }
 
         // Cannot update the close state here, because the data that we send may
         // be flow controlled, so we need the stream to update the window size.
-        session.data(this, dataInfo, dataInfo.getTimeout(), dataInfo.getUnit(), callback);
+        session.data(this, dataInfo, dataInfo.getTimeout(), dataInfo.getUnit(), new StreamCallback(callback));
     }
 
     @Override
@@ -448,18 +461,18 @@ public class StandardStream extends IdleTimeout implements IStream
         notIdle();
         if (!canSend())
         {
-            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR), new Adapter());
+            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR), new StreamCallback());
             throw new IllegalStateException("Protocol violation: cannot send a HEADERS frame before a SYN_REPLY frame");
         }
         if (isLocallyClosed())
         {
-            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR), new Adapter());
+            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR), new StreamCallback());
             throw new IllegalStateException("Protocol violation: cannot send a HEADERS frame on a closed stream");
         }
 
         updateCloseState(headersInfo.isClose(), true);
         HeadersFrame frame = new HeadersFrame(session.getVersion(), headersInfo.getFlags(), getId(), headersInfo.getHeaders());
-        session.control(this, frame, headersInfo.getTimeout(), headersInfo.getUnit(), callback);
+        session.control(this, frame, headersInfo.getTimeout(), headersInfo.getUnit(), new StreamCallback(callback));
     }
 
     @Override
@@ -526,5 +539,56 @@ public class StandardStream extends IdleTimeout implements IStream
     private enum CloseState
     {
         OPENED, LOCALLY_CLOSED, REMOTELY_CLOSED, CLOSED
+    }
+
+    private class StreamCallback implements Callback
+    {
+        private final Callback callback;
+
+        private StreamCallback()
+        {
+            this(new Adapter());
+        }
+
+        private StreamCallback(Callback callback)
+        {
+            this.callback = callback;
+        }
+
+        @Override
+        public void succeeded()
+        {
+            callback.succeeded();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            close();
+            callback.failed(x);
+        }
+    }
+
+    private class StreamPromise implements Promise<Stream>
+    {
+        private final Promise<Stream> promise;
+
+        public StreamPromise(Promise<Stream> promise)
+        {
+            this.promise = promise;
+        }
+
+        @Override
+        public void succeeded(Stream result)
+        {
+            promise.succeeded(result);
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            close();
+            promise.failed(x);
+        }
     }
 }

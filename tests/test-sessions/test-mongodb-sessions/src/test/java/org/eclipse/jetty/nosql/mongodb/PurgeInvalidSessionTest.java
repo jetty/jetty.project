@@ -145,26 +145,31 @@ public class PurgeInvalidSessionTest
             if ("create".equals(action))
             {
                 HttpSession session = request.getSession(true);
+                session.setAttribute("foo", "bar");
                 assertTrue(session.isNew());
             }
             else if ("invalidate".equals(action))
             {  
                 HttpSession existingSession = request.getSession(false);
                 assertNotNull(existingSession);
+                String id = existingSession.getId();
+                id = (id.indexOf(".") > 0?id.substring(0, id.indexOf(".")):id);
+                DBObject dbSession = _sessions.findOne(new BasicDBObject("id",id)); 
+                assertNotNull(dbSession);
+                
                 existingSession.invalidate();
-                String id = request.getRequestedSessionId();
-                assertNotNull(id);
-                id = id.substring(0, id.indexOf("."));
                 
                 //still in db, just marked as invalid
-                DBObject dbSession = _sessions.findOne(new BasicDBObject("id", id));
-                assertTrue(dbSession != null);
+                dbSession = _sessions.findOne(new BasicDBObject("id", id));       
+                assertNotNull(dbSession);
+                assertTrue(dbSession.containsField(MongoSessionManager.__INVALIDATED));
             }
             else if ("test".equals(action))
             {
                 String id = request.getRequestedSessionId();
                 assertNotNull(id);
-                id = id.substring(0, id.indexOf("."));
+       
+                id = (id.indexOf(".") > 0?id.substring(0, id.indexOf(".")):id);
   
                 HttpSession existingSession = request.getSession(false);
                 assertTrue(existingSession == null);
@@ -175,5 +180,4 @@ public class PurgeInvalidSessionTest
             }
         }
     }
-
 }

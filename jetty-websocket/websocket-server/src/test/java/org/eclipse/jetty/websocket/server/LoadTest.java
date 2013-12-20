@@ -43,6 +43,8 @@ import org.junit.Test;
 @Ignore("Need to rewrite this")
 public class LoadTest
 {
+    private final static int loops = 50;
+    
     @SuppressWarnings("serial")
     public static class LoadServlet extends WebSocketServlet
     {
@@ -130,6 +132,41 @@ public class LoadTest
     }
 
     @Test
+    public void testA() throws Exception
+    {
+        for (int i=0;i<loops;i++)
+            testManyMessages();
+    }
+    
+    @Test
+    public void testB() throws Exception
+    {
+        for (int i=0;i<loops;i++)
+            testManyMessages();
+    }
+    
+    @Test
+    public void testC() throws Exception
+    {
+        for (int i=0;i<loops;i++)
+            testManyMessages();
+    }
+    
+    @Test
+    public void testD() throws Exception
+    {
+        for (int i=0;i<loops;i++)
+            testManyMessages();
+    }
+    
+    @Test
+    public void testE() throws Exception
+    {
+        for (int i=0;i<loops;i++)
+            testManyMessages();
+    }
+    
+    @Test
     public void testManyMessages() throws Exception
     {
         ExecutorService threadPool = Executors.newCachedThreadPool();
@@ -140,13 +177,13 @@ public class LoadTest
             client.sendStandardRequest();
             client.expectUpgradeResponse();
 
-            int iterations = 2000;
+            int iterations = 10000;
 
             LoadSocket.count.set(0);
 
             threadPool.execute(new TextGen(client,iterations));
 
-            client.readFrames(iterations,TimeUnit.SECONDS,10);
+            client.readFrames(iterations,TimeUnit.SECONDS,40);
         }
         finally
         {

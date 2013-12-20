@@ -52,7 +52,7 @@ public class GeneratorParserRoundtripTest
             BufferUtil.flipToFill(out);
             WebSocketFrame frame = new TextFrame().setPayload(message);
             ByteBuffer header = gen.generateHeaderBytes(frame);
-            ByteBuffer payload = gen.getPayloadWindow(frame.getPayloadLength(),frame);
+            ByteBuffer payload = frame.getPayload();
             out.put(header);
             out.put(payload);
 
@@ -76,10 +76,9 @@ public class GeneratorParserRoundtripTest
     @Test
     public void testParserAndGeneratorMasked() throws Exception
     {
-        WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
         ByteBufferPool bufferPool = new MappedByteBufferPool();
-        Generator gen = new Generator(policy,bufferPool);
-        Parser parser = new Parser(policy,bufferPool);
+        Generator gen = new Generator(WebSocketPolicy.newClientPolicy(),bufferPool);
+        Parser parser = new Parser(WebSocketPolicy.newServerPolicy(),bufferPool);
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
 
@@ -99,7 +98,7 @@ public class GeneratorParserRoundtripTest
 
             // Generate Buffer
             ByteBuffer header = gen.generateHeaderBytes(frame);
-            ByteBuffer payload = gen.getPayloadWindow(8192,frame);
+            ByteBuffer payload = frame.getPayload();
             out.put(header);
             out.put(payload);
 

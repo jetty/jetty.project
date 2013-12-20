@@ -18,17 +18,16 @@
 
 package org.eclipse.jetty.websocket.common.message;
 
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.common.io.LocalWebSocketConnection;
 import org.junit.Assert;
 import org.junit.Rule;
@@ -37,8 +36,6 @@ import org.junit.rules.TestName;
 
 public class MessageInputStreamTest
 {
-    private static final Charset UTF8 = StringUtil.__UTF8_CHARSET;
-
     @Rule
     public TestName testname = new TestName();
 
@@ -49,23 +46,23 @@ public class MessageInputStreamTest
 
         try (MessageInputStream stream = new MessageInputStream(conn))
         {
-            // Append a message (simple, short)
-            ByteBuffer payload = BufferUtil.toBuffer("Hello World",UTF8);
+            // Append a single message (simple, short)
+            ByteBuffer payload = BufferUtil.toBuffer("Hello World",StandardCharsets.UTF_8);
             System.out.printf("payload = %s%n",BufferUtil.toDetailString(payload));
             boolean fin = true;
-            stream.appendMessage(payload,fin);
+            stream.appendFrame(payload,fin);
 
-            // Read it from the stream.
+            // Read entire message it from the stream.
             byte buf[] = new byte[32];
             int len = stream.read(buf);
-            String message = new String(buf,0,len,UTF8);
+            String message = new String(buf,0,len,StandardCharsets.UTF_8);
 
             // Test it
             Assert.assertThat("Message",message,is("Hello World"));
         }
     }
 
-    @Test(timeout=2000)
+    @Test(timeout=5000)
     public void testBlockOnRead() throws Exception
     {
         LocalWebSocketConnection conn = new LocalWebSocketConnection(testname);
@@ -75,6 +72,8 @@ public class MessageInputStreamTest
             final AtomicBoolean hadError = new AtomicBoolean(false);
             final CountDownLatch startLatch = new CountDownLatch(1);
 
+            // This thread fills the stream (from the "worker" thread)
+            // But slowly (intentionally).
             new Thread(new Runnable()
             {
                 @Override
@@ -85,12 +84,12 @@ public class MessageInputStreamTest
                         startLatch.countDown();
                         boolean fin = false;
                         TimeUnit.MILLISECONDS.sleep(200);
-                        stream.appendMessage(BufferUtil.toBuffer("Saved",UTF8),fin);
+                        stream.appendFrame(BufferUtil.toBuffer("Saved",StandardCharsets.UTF_8),fin);
                         TimeUnit.MILLISECONDS.sleep(200);
-                        stream.appendMessage(BufferUtil.toBuffer(" by ",UTF8),fin);
+                        stream.appendFrame(BufferUtil.toBuffer(" by ",StandardCharsets.UTF_8),fin);
                         fin = true;
                         TimeUnit.MILLISECONDS.sleep(200);
-                        stream.appendMessage(BufferUtil.toBuffer("Zero",UTF8),fin);
+                        stream.appendFrame(BufferUtil.toBuffer("Zero",StandardCharsets.UTF_8),fin);
                     }
                     catch (IOException | InterruptedException e)
                     {
@@ -106,7 +105,7 @@ public class MessageInputStreamTest
             // Read it from the stream.
             byte buf[] = new byte[32];
             int len = stream.read(buf);
-            String message = new String(buf,0,len,UTF8);
+            String message = new String(buf,0,len,StandardCharsets.UTF_8);
 
             // Test it
             Assert.assertThat("Error when appending",hadError.get(),is(false));
@@ -133,7 +132,7 @@ public class MessageInputStreamTest
                         boolean fin = true;
                         // wait for a little bit before populating buffers
                         TimeUnit.MILLISECONDS.sleep(400);
-                        stream.appendMessage(BufferUtil.toBuffer("I will conquer",UTF8),fin);
+                        stream.appendFrame(BufferUtil.toBuffer("I will conquer",StandardCharsets.UTF_8),fin);
                     }
                     catch (IOException | InterruptedException e)
                     {

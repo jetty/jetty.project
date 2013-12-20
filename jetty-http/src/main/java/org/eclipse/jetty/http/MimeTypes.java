@@ -20,10 +20,10 @@ package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.MissingResourceException;
@@ -53,30 +53,65 @@ public class MimeTypes
         TEXT_HTML("text/html"),
         TEXT_PLAIN("text/plain"),
         TEXT_XML("text/xml"),
-        TEXT_JSON("text/json"),
+        TEXT_JSON("text/json",StandardCharsets.UTF_8),
+        APPLICATION_JSON("application/json",StandardCharsets.UTF_8),
 
-        TEXT_HTML_8859_1("text/html;charset=ISO-8859-1"),
-        TEXT_PLAIN_8859_1("text/plain;charset=ISO-8859-1"),
-        TEXT_XML_8859_1("text/xml;charset=ISO-8859-1"),
-        TEXT_HTML_UTF_8("text/html;charset=UTF-8"),
-        TEXT_PLAIN_UTF_8("text/plain;charset=UTF-8"),
-        TEXT_XML_UTF_8("text/xml;charset=UTF-8"),
-        TEXT_JSON_UTF_8("text/json;charset=UTF-8");
+        TEXT_HTML_8859_1("text/html; charset=ISO-8859-1",TEXT_HTML),
+        TEXT_HTML_UTF_8("text/html; charset=UTF-8",TEXT_HTML),
+        
+        TEXT_PLAIN_8859_1("text/plain; charset=ISO-8859-1",TEXT_PLAIN),
+        TEXT_PLAIN_UTF_8("text/plain; charset=UTF-8",TEXT_PLAIN),
+        
+        TEXT_XML_8859_1("text/xml; charset=ISO-8859-1",TEXT_XML),
+        TEXT_XML_UTF_8("text/xml; charset=UTF-8",TEXT_XML),
+        
+        TEXT_JSON_8859_1("text/json; charset=ISO-8859-1",TEXT_JSON),
+        TEXT_JSON_UTF_8("text/json; charset=UTF-8",TEXT_JSON),
+        
+        APPLICATION_JSON_8859_1("text/json; charset=ISO-8859-1",APPLICATION_JSON),
+        APPLICATION_JSON_UTF_8("text/json; charset=UTF-8",APPLICATION_JSON);
 
 
         /* ------------------------------------------------------------ */
         private final String _string;
+        private final Type _base;
         private final ByteBuffer _buffer;
         private final Charset _charset;
+        private final boolean _assumedCharset;
+        private final HttpField _field;
 
         /* ------------------------------------------------------------ */
         Type(String s)
         {
             _string=s;
             _buffer=BufferUtil.toBuffer(s);
-            
-            int i=s.toLowerCase(Locale.ENGLISH).indexOf("charset=");
-            _charset=(i>0)?Charset.forName(s.substring(i+8)):null;
+            _base=this;
+            _charset=null;
+            _assumedCharset=false;
+            _field=new HttpGenerator.CachedHttpField(HttpHeader.CONTENT_TYPE,_string);
+        } 
+
+        /* ------------------------------------------------------------ */
+        Type(String s,Type base)
+        {
+            _string=s;
+            _buffer=BufferUtil.toBuffer(s);
+            _base=base;
+            int i=s.indexOf("; charset=");
+            _charset=Charset.forName(s.substring(i+10));
+            _assumedCharset=false;
+            _field=new HttpGenerator.CachedHttpField(HttpHeader.CONTENT_TYPE,_string);
+        }
+
+        /* ------------------------------------------------------------ */
+        Type(String s,Charset cs)
+        {
+            _string=s;
+            _base=this;
+            _buffer=BufferUtil.toBuffer(s);
+            _charset=cs;
+            _assumedCharset=true;
+            _field=new HttpGenerator.CachedHttpField(HttpHeader.CONTENT_TYPE,_string);
         }
 
         /* ------------------------------------------------------------ */
@@ -108,6 +143,24 @@ public class MimeTypes
         public String toString()
         {
             return _string;
+        }
+
+        /* ------------------------------------------------------------ */
+        public boolean isCharsetAssumed()
+        {
+            return _assumedCharset;
+        }
+
+        /* ------------------------------------------------------------ */
+        public HttpField getContentTypeField()
+        {
+            return _field;
+        }
+
+        /* ------------------------------------------------------------ */
+        public Type getBaseType()
+        {
+            return _base;
         }
     }
 

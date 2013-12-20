@@ -102,7 +102,8 @@ public class DeferredContentProvider implements AsyncContentProvider, Closeable
     public void setListener(Listener listener)
     {
         if (!this.listener.compareAndSet(null, listener))
-            throw new IllegalStateException();
+            throw new IllegalStateException(String.format("The same %s instance cannot be used in multiple requests",
+                    AsyncContentProvider.class.getName()));
     }
 
     @Override

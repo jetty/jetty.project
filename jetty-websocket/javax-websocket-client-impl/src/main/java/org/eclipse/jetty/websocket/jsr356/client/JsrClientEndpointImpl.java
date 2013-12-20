@@ -21,11 +21,13 @@ package org.eclipse.jetty.websocket.jsr356.client;
 import javax.websocket.ClientEndpoint;
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.DeploymentException;
+import javax.websocket.OnMessage;
 
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.events.EventDriverImpl;
 import org.eclipse.jetty.websocket.jsr356.annotations.JsrEvents;
+import org.eclipse.jetty.websocket.jsr356.annotations.OnMessageCallable;
 import org.eclipse.jetty.websocket.jsr356.endpoints.EndpointInstance;
 import org.eclipse.jetty.websocket.jsr356.endpoints.JsrAnnotatedEventDriver;
 
@@ -46,6 +48,13 @@ public class JsrClientEndpointImpl implements EventDriverImpl
         AnnotatedClientEndpointMetadata metadata = (AnnotatedClientEndpointMetadata)ei.getMetadata();
         JsrEvents<ClientEndpoint, ClientEndpointConfig> events = new JsrEvents<>(metadata);
 
+        // Handle @OnMessage maxMessageSizes
+        int maxBinaryMessage = getMaxMessageSize(policy.getMaxBinaryMessageSize(),metadata.onBinary,metadata.onBinaryStream);
+        int maxTextMessage = getMaxMessageSize(policy.getMaxTextMessageSize(),metadata.onText,metadata.onTextStream);
+
+        policy.setMaxBinaryMessageSize(maxBinaryMessage);
+        policy.setMaxTextMessageSize(maxTextMessage);
+
         return new JsrAnnotatedEventDriver(policy,ei,events);
     }
 
@@ -53,6 +62,27 @@ public class JsrClientEndpointImpl implements EventDriverImpl
     public String describeRule()
     {
         return "class is annotated with @" + ClientEndpoint.class.getName();
+    }
+
+    private int getMaxMessageSize(int defaultMaxMessageSize, OnMessageCallable... onMessages)
+    {
+        for (OnMessageCallable callable : onMessages)
+        {
+            if (callable == null)
+            {
+                continue;
+            }
+            OnMessage onMsg = callable.getMethod().getAnnotation(OnMessage.class);
+            if (onMsg == null)
+            {
+                continue;
+            }
+            if (onMsg.maxMessageSize() > 0)
+            {
+                return (int)onMsg.maxMessageSize();
+            }
+        }
+        return defaultMaxMessageSize;
     }
 
     @Override

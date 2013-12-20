@@ -21,6 +21,7 @@ package org.eclipse.jetty.http;
 import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.http.HttpTokens.EndOfContent;
 import org.eclipse.jetty.util.BufferUtil;
@@ -32,12 +33,20 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * HttpGenerator. Builds HTTP Messages.
  *
+ * If the system property "org.eclipse.jetty.http.HttpGenerator.STRICT" is set to true,
+ * then the generator will strictly pass on the exact strings received from methods and header
+ * fields.  Otherwise a fast case insensitive string lookup is used that may alter the
+ * case and white space of some methods/headers
+ * </p>
  */
 public class HttpGenerator
 {
-    private static final Logger LOG = Log.getLogger(HttpGenerator.class);
+    private final static Logger LOG = Log.getLogger(HttpGenerator.class);
+
+    public final static boolean __STRICT=Boolean.getBoolean("org.eclipse.jetty.http.HttpGenerator.STRICT"); 
 
     private final static byte[] __colon_space = new byte[] {':',' '};
+    private final static HttpHeaderValue[] CLOSE = {HttpHeaderValue.CLOSE};
     public static final ResponseInfo CONTINUE_100_INFO = new ResponseInfo(HttpVersion.HTTP_1_1,null,-1,100,null,false);
     public static final ResponseInfo PROGRESS_102_INFO = new ResponseInfo(HttpVersion.HTTP_1_1,null,-1,102,null,false);
     public final static ResponseInfo RESPONSE_500_INFO =
@@ -607,7 +616,7 @@ public class HttpGenerator
                             putTo(field,header);
 
                         // Lookup and/or split connection value field
-                        HttpHeaderValue[] values = new HttpHeaderValue[]{HttpHeaderValue.CACHE.get(field.getValue())};
+                        HttpHeaderValue[] values = HttpHeaderValue.CLOSE.is(field.getValue())?CLOSE:new HttpHeaderValue[]{HttpHeaderValue.CACHE.get(field.getValue())};
                         String[] split = null;
 
                         if (values[0]==null)
@@ -1085,7 +1094,7 @@ public class HttpGenerator
             int cbl=header.getBytesColonSpace().length;
             _bytes=new byte[cbl+value.length()+2];
             System.arraycopy(header.getBytesColonSpace(),0,_bytes,0,cbl);
-            System.arraycopy(value.getBytes(StringUtil.__ISO_8859_1_CHARSET),0,_bytes,cbl,value.length());
+            System.arraycopy(value.getBytes(StandardCharsets.ISO_8859_1),0,_bytes,cbl,value.length());
             _bytes[_bytes.length-2]=(byte)'\r';
             _bytes[_bytes.length-1]=(byte)'\n';
         }

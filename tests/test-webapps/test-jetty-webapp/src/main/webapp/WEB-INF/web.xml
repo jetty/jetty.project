@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <web-app 
-   xmlns="http://java.sun.com/xml/ns/javaee" 
+   xmlns="http://xmlns.jcp.org/xml/ns/javaee" 
    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-   xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_1.xsd"
+   xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
    metadata-complete="false"
    version="3.1"> 
 
@@ -55,7 +55,7 @@
 
   <filter>
     <filter-name>GzipFilter</filter-name>
-    <filter-class>org.eclipse.jetty.servlets.IncludableGzipFilter</filter-class>
+    <filter-class>org.eclipse.jetty.servlets.AsyncGzipFilter</filter-class>
     <async-supported>true</async-supported>
     <init-param>
       <param-name>bufferSize</param-name>
@@ -63,7 +63,7 @@
     </init-param>
     <init-param>
       <param-name>mimeTypes</param-name>
-      <param-value>text/plain,application/xml</param-value>
+      <param-value>text/plain,application/xml,text/html</param-value>
     </init-param>
     <init-param>
       <param-name>minGzipSize</param-name>
@@ -91,7 +91,6 @@
     <url-pattern>/dump/gzip/*</url-pattern>
     <url-pattern>*.txt</url-pattern>
   </filter-mapping>
-  
   
   <servlet>
     <servlet-name>Login</servlet-name>

@@ -39,8 +39,9 @@ import org.eclipse.jetty.security.authentication.FormAuthenticator;
 import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
-import org.eclipse.jetty.servlet.Holder;
+import org.eclipse.jetty.servlet.BaseHolder.Source;
 import org.eclipse.jetty.servlet.JspPropertyGroupServlet;
+import org.eclipse.jetty.servlet.ListenerHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler.JspConfig;
 import org.eclipse.jetty.servlet.ServletContextHandler.JspPropertyGroup;
 import org.eclipse.jetty.servlet.ServletContextHandler.TagLib;
@@ -198,7 +199,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
          */
         if (holder == null)
         {
-            holder = context.getServletHandler().newServletHolder(Holder.Source.DESCRIPTOR);
+            holder = context.getServletHandler().newServletHolder(Source.DESCRIPTOR);
             holder.setName(servlet_name);
             context.getServletHandler().addServlet(holder);
         }
@@ -1657,7 +1658,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         FilterHolder holder = context.getServletHandler().getFilter(name);
         if (holder == null)
         {
-            holder = context.getServletHandler().newFilterHolder(Holder.Source.DESCRIPTOR);
+            holder = context.getServletHandler().newFilterHolder(Source.DESCRIPTOR);
             holder.setName(name);
             context.getServletHandler().addFilter(holder);
         }
@@ -1899,21 +1900,14 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
      * @throws InstantiationException
      * @throws IllegalAccessException
      */
-    protected EventListener newListenerInstance(WebAppContext context,Class<? extends EventListener> clazz) throws ServletException, InstantiationException, IllegalAccessException
+    protected EventListener newListenerInstance(WebAppContext context,Class<? extends EventListener> clazz) throws Exception
     {
-        try
-        {
-            return context.getServletContext().createListener(clazz);
-        }
-        catch (ServletException se)
-        {
-            Throwable cause = se.getRootCause();
-            if (cause instanceof InstantiationException)
-                throw (InstantiationException)cause;
-            if (cause instanceof IllegalAccessException)
-                throw (IllegalAccessException)cause;
-            throw se;
-        }
+        ListenerHolder h = context.getServletHandler().newListenerHolder(Source.DESCRIPTOR);
+        EventListener l = context.getServletContext().createInstance(clazz);
+        h.setListener(l);
+        context.getServletHandler().addListener(h);
+        return l;
+
     }
 
     /**

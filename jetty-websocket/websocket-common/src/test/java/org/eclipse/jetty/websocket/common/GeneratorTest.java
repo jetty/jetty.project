@@ -18,8 +18,7 @@
 
 package org.eclipse.jetty.websocket.common;
 
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.hamcrest.Matchers.*;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -75,18 +74,12 @@ public class GeneratorTest
                 ByteBuffer header = generator.generateHeaderBytes(f);
                 totalBytes += BufferUtil.put(header,completeBuf);
 
-                // Generate using windowing
-                boolean done = false;
-                while (!done)
+                if (f.hasPayload())
                 {
-                    ByteBuffer window = generator.getPayloadWindow(windowSize,f);
-                    Assert.assertThat("Generated should not exceed window size",window.remaining(),lessThanOrEqualTo(windowSize));
-
-                    totalBytes += window.remaining();
-                    completeBuf.put(window);
+                    ByteBuffer payload=f.getPayload();
+                    totalBytes += payload.remaining();
                     totalParts++;
-
-                    done = (f.remaining() <= 0);
+                    completeBuf.put(payload.slice());
                 }
             }
 
@@ -262,7 +255,7 @@ public class GeneratorTest
         // Validate
         int expectedHeaderSize = 4;
         int expectedSize = payload.length + expectedHeaderSize;
-        int expectedParts = (int)Math.ceil((double)(payload.length) / windowSize);
+        int expectedParts = 1;
 
         helper.assertTotalParts(expectedParts);
         helper.assertTotalBytes(payload.length + expectedHeaderSize);
@@ -291,7 +284,7 @@ public class GeneratorTest
         // Validate
         int expectedHeaderSize = 8;
         int expectedSize = payload.length + expectedHeaderSize;
-        int expectedParts = (int)Math.ceil((double)(payload.length) / windowSize);
+        int expectedParts = 1;
 
         helper.assertTotalParts(expectedParts);
         helper.assertTotalBytes(payload.length + expectedHeaderSize);

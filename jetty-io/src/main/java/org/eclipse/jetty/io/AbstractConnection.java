@@ -538,12 +538,12 @@ public abstract class AbstractConnection implements Connection
                 @Override
                 public void run()
                 {
-            while(true)
-            {
-                State state=_state.get();
-                if (next(state,state.onFailed()))
-                    break;
-            }
+                    while(true)
+                    {
+                        State state=_state.get();
+                        if (next(state,state.onFailed()))
+                            break;
+                    }
                     onFillInterestedFailed(x);
                 }
             });

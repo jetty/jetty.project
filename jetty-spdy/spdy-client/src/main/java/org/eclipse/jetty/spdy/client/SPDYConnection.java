@@ -121,10 +121,10 @@ public class SPDYConnection extends AbstractConnection implements Controller, Id
     }
 
     @Override
-    public void write(ByteBuffer buffer, final Callback callback)
+    public void write(final Callback callback, ByteBuffer... buffers)
     {
         EndPoint endPoint = getEndPoint();
-        endPoint.write(callback, buffer);
+        endPoint.write(callback, buffers);
     }
 
     @Override

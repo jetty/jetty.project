@@ -26,21 +26,15 @@ public class OneServletContext
 {
     public static void main(String[] args) throws Exception
     {
-        Server server = new Server(8080);
+        Server server = new Server(8080);        
 
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/");
         server.setHandler(context);
 
-        // Serve content from java.io.tmpdir
-        ServletHolder holder = context.addServlet(org.eclipse.jetty.servlet.DefaultServlet.class,"/tmp/*");
-        String tmpDir = System.getProperty("java.io.tmpdir");
-        holder.setInitParameter("resourceBase",tmpDir);
-        holder.setInitParameter("pathInfoOnly","true");
+        context.addServlet(org.eclipse.jetty.servlet.DefaultServlet.class,"/");
+        context.addServlet(new ServletHolder(new DumpServlet()),"/dump/*");
         
-        // A Dump Servlet
-        context.addServlet(new ServletHolder(new DumpServlet()),"/*");
-
         server.start();
         server.join();
     }

@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import static java.nio.file.StandardOpenOption.CREATE;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -41,7 +37,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -65,6 +60,10 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static java.nio.file.StandardOpenOption.CREATE;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class HttpClientStreamTest extends AbstractHttpClientServerTest
 {
@@ -836,5 +835,72 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
         }
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testUploadWithWriteFailureClosesStream() throws Exception
+    {
+        start(new EmptyServerHandler());
+
+        final AtomicInteger bytes = new AtomicInteger();
+        final CountDownLatch closeLatch = new CountDownLatch(1);
+        InputStream stream = new InputStream()
+        {
+            @Override
+            public int read() throws IOException
+            {
+                int result = bytes.incrementAndGet();
+                switch (result)
+                {
+                    case 1:
+                    {
+                        break;
+                    }
+                    case 2:
+                    {
+                        try
+                        {
+                            connector.stop();
+                        }
+                        catch (Exception x)
+                        {
+                            throw new IOException(x);
+                        }
+                        break;
+                    }
+                    default:
+                    {
+                        result = -1;
+                        break;
+                    }
+                }
+                return result;
+            }
+
+            @Override
+            public void close() throws IOException
+            {
+                super.close();
+                closeLatch.countDown();
+            }
+        };
+        InputStreamContentProvider provider = new InputStreamContentProvider(stream, 1);
+
+        final CountDownLatch completeLatch = new CountDownLatch(1);
+        client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .content(provider)
+                .send(new Response.CompleteListener()
+                {
+                    @Override
+                    public void onComplete(Result result)
+                    {
+                        Assert.assertTrue(result.isFailed());
+                        completeLatch.countDown();
+                    }
+                });
+
+        Assert.assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
     }
 }

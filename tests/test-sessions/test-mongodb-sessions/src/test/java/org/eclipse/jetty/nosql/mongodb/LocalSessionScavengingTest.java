@@ -16,25 +16,26 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.api.io;
+package org.eclipse.jetty.nosql.mongodb;
 
-import java.io.IOException;
-import java.io.OutputStream;
+import org.eclipse.jetty.server.session.AbstractLocalSessionScavengingTest;
+import org.eclipse.jetty.server.session.AbstractTestServer;
 
-import org.eclipse.jetty.websocket.api.Session;
-
-public class WebSocketOutputStream extends OutputStream
+public class LocalSessionScavengingTest extends AbstractLocalSessionScavengingTest
 {
-    private final Session session;
 
-    public WebSocketOutputStream(Session session)
+    @Override
+    public AbstractTestServer createServer(int port, int max, int scavenge)
     {
-        this.session = session;
+       return new MongoTestServer(port,max,scavenge);
     }
 
     @Override
-    public void write(int b) throws IOException
+    public void testLocalSessionsScavenging() throws Exception
     {
-        // TODO Auto-generated method stub
+        super.testLocalSessionsScavenging();
     }
+    
+    
+
 }

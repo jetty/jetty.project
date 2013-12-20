@@ -661,6 +661,24 @@ public class Main
             moduleIni(args,module,true,false);
         }
 
+        // Check files
+        for (FileArg arg : args.getFiles())
+        {
+            File file = baseHome.getBaseFile(arg.location);
+            if (!file.exists() && args.isDownload())
+                initFile(arg);
+
+            if (!file.exists())
+            {
+                args.setRun(false);
+                String type=arg.location.endsWith("/")?"directory":"file";
+                if (arg.uri==null)
+                    StartLog.warn("Required %s '%s' does not exist. Run with --create",type,baseHome.toShortForm(file));
+                else
+                    StartLog.warn("Required %s '%s' not downloaded from %s.  Run with --download",type,baseHome.toShortForm(file),arg.uri);
+            }
+        }
+        
         // Informational command line, don't run jetty
         if (!args.isRun())
         {

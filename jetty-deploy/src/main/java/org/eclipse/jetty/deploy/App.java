@@ -83,6 +83,7 @@ public class App
         return _provider;
     }
 
+    /* ------------------------------------------------------------ */
     /**
      * Get ContextHandler for the App.
      * 

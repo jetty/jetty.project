@@ -50,6 +50,7 @@ import org.eclipse.jetty.server.HttpChannelState.Action;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.BlockingCallback;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -78,9 +79,14 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
         return __currentChannel.get();
     }
 
-    protected static void setCurrentHttpChannel(HttpChannel<?> channel)
+    protected static HttpChannel<?> setCurrentHttpChannel(HttpChannel<?> channel)
     {
-        __currentChannel.set(channel);
+        HttpChannel<?> last=__currentChannel.get();
+        if (channel==null)
+            __currentChannel.remove();
+        else 
+            __currentChannel.set(channel);
+        return last;
     }
 
     private final AtomicBoolean _committed = new AtomicBoolean();
@@ -93,7 +99,6 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     private final HttpChannelState _state;
     private final Request _request;
     private final Response _response;
-    private final BlockingCallback _writeblock=new BlockingCallback();
     private HttpVersion _version = HttpVersion.HTTP_1_1;
     private boolean _expect = false;
     private boolean _expect100Continue = false;
@@ -122,12 +127,6 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     {
         return _version;
     }
-
-    BlockingCallback getWriteBlockingCallback()
-    {
-        return _writeblock;
-    }
-
     /**
      * @return the number of requests handled by this connection
      */
@@ -246,7 +245,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     {
         LOG.debug("{} handle enter", this);
 
-        setCurrentHttpChannel(this);
+        final HttpChannel<?>last = setCurrentHttpChannel(this);
 
         String threadName = null;
         if (LOG.isDebugEnabled())
@@ -255,125 +254,131 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
             Thread.currentThread().setName(threadName + " - " + _uri);
         }
 
-        // Loop here to handle async request redispatches.
-        // The loop is controlled by the call to async.unhandle in the
-        // finally block below.  Unhandle will return false only if an async dispatch has
-        // already happened when unhandle is called.
         HttpChannelState.Action action = _state.handling();
-        loop: while (action.ordinal()<HttpChannelState.Action.WAIT.ordinal() && getServer().isRunning())
+        try
         {
-            boolean error=false;
-            try
+            // Loop here to handle async request redispatches.
+            // The loop is controlled by the call to async.unhandle in the
+            // finally block below.  Unhandle will return false only if an async dispatch has
+            // already happened when unhandle is called.
+            loop: while (action.ordinal()<HttpChannelState.Action.WAIT.ordinal() && getServer().isRunning())
             {
-                LOG.debug("{} action {}",this,action);
-                
-                switch(action)
+                boolean error=false;
+                try
                 {
-                    case REQUEST_DISPATCH:
-                        _request.setHandled(false);
-                        _response.getHttpOutput().reopen();
-                        _request.setTimeStamp(System.currentTimeMillis());
-                        _request.setDispatcherType(DispatcherType.REQUEST);
+                    LOG.debug("{} action {}",this,action);
 
-                        for (HttpConfiguration.Customizer customizer : _configuration.getCustomizers())
-                            customizer.customize(getConnector(),_configuration,_request);
-                        getServer().handle(this);
-                        break;
-                        
-                    case ASYNC_DISPATCH:
-                        _request.setHandled(false);
-                        _response.getHttpOutput().reopen();
-                        _request.setDispatcherType(DispatcherType.ASYNC);
-                        getServer().handleAsync(this);
-                        break;
-                        
-                    case ASYNC_EXPIRED:
-                        _request.setHandled(false);
-                        _response.getHttpOutput().reopen();
-                        _request.setDispatcherType(DispatcherType.ERROR);
-                        
-                        Throwable ex=_state.getAsyncContextEvent().getThrowable();
-                        String reason="Async Timeout";
-                        if (ex!=null)
-                        {
-                            reason="Async Exception";
-                            _request.setAttribute(RequestDispatcher.ERROR_EXCEPTION,ex);
-                        }
-                        _request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE,new Integer(500));
-                        _request.setAttribute(RequestDispatcher.ERROR_MESSAGE,reason);
-                        _request.setAttribute(RequestDispatcher.ERROR_REQUEST_URI,_request.getRequestURI());
-        
-                        _response.setStatusWithReason(500,reason);
-                        
-                        ErrorHandler eh = _state.getContextHandler().getErrorHandler();
-                        if (eh instanceof ErrorHandler.ErrorPageMapper)
-                        {
-                            String error_page=((ErrorHandler.ErrorPageMapper)eh).getErrorPage((HttpServletRequest)_state.getAsyncContextEvent().getSuppliedRequest());
-                            if (error_page!=null)
-                                _state.getAsyncContextEvent().setDispatchPath(error_page);
-                        }
-
-                        getServer().handleAsync(this);
-                        break;
-
-                    case READ_CALLBACK:
+                    switch(action)
                     {
-                        ContextHandler handler=_state.getContextHandler();
-                        if (handler!=null)
-                            handler.handle(_request.getHttpInput());
-                        else
-                            _request.getHttpInput().run();
-                        break;
+                        case REQUEST_DISPATCH:
+                            _request.setHandled(false);
+                            _response.getHttpOutput().reopen();
+                            _request.setTimeStamp(System.currentTimeMillis());
+                            _request.setDispatcherType(DispatcherType.REQUEST);
+
+                            for (HttpConfiguration.Customizer customizer : _configuration.getCustomizers())
+                                customizer.customize(getConnector(),_configuration,_request);
+                            getServer().handle(this);
+                            break;
+
+                        case ASYNC_DISPATCH:
+                            _request.setHandled(false);
+                            _response.getHttpOutput().reopen();
+                            _request.setDispatcherType(DispatcherType.ASYNC);
+                            getServer().handleAsync(this);
+                            break;
+
+                        case ASYNC_EXPIRED:
+                            _request.setHandled(false);
+                            _response.getHttpOutput().reopen();
+                            _request.setDispatcherType(DispatcherType.ERROR);
+
+                            Throwable ex=_state.getAsyncContextEvent().getThrowable();
+                            String reason="Async Timeout";
+                            if (ex!=null)
+                            {
+                                reason="Async Exception";
+                                _request.setAttribute(RequestDispatcher.ERROR_EXCEPTION,ex);
+                            }
+                            _request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE,new Integer(500));
+                            _request.setAttribute(RequestDispatcher.ERROR_MESSAGE,reason);
+                            _request.setAttribute(RequestDispatcher.ERROR_REQUEST_URI,_request.getRequestURI());
+
+                            _response.setStatusWithReason(500,reason);
+
+                            ErrorHandler eh = _state.getContextHandler().getErrorHandler();
+                            if (eh instanceof ErrorHandler.ErrorPageMapper)
+                            {
+                                String error_page=((ErrorHandler.ErrorPageMapper)eh).getErrorPage((HttpServletRequest)_state.getAsyncContextEvent().getSuppliedRequest());
+                                if (error_page!=null)
+                                    _state.getAsyncContextEvent().setDispatchPath(error_page);
+                            }
+
+                            getServer().handleAsync(this);
+                            break;
+
+                        case READ_CALLBACK:
+                        {
+                            ContextHandler handler=_state.getContextHandler();
+                            if (handler!=null)
+                                handler.handle(_request.getHttpInput());
+                            else
+                                _request.getHttpInput().run();
+                            break;
+                        }
+
+                        case WRITE_CALLBACK:
+                        {
+                            ContextHandler handler=_state.getContextHandler();
+
+                            if (handler!=null)
+                                handler.handle(_response.getHttpOutput());
+                            else
+                                _response.getHttpOutput().run();
+                            break;
+                        }   
+
+                        default:
+                            break loop;
+
                     }
-                        
-                    case WRITE_CALLBACK:
-                    {
-                        ContextHandler handler=_state.getContextHandler();
-                    
-                        if (handler!=null)
-                            handler.handle(_response.getHttpOutput());
-                        else
-                            _response.getHttpOutput().run();
-                        break;
-                    }   
-                        
-                    default:
-                        break loop;
-                        
                 }
-            }
-            catch (Error e)
-            {
-                if ("ContinuationThrowable".equals(e.getClass().getSimpleName()))
-                    LOG.ignore(e);
-                else
+                catch (Error e)
+                {
+                    if ("ContinuationThrowable".equals(e.getClass().getSimpleName()))
+                        LOG.ignore(e);
+                    else
+                    {
+                        error=true;
+                        throw e;
+                    }
+                }
+                catch (Exception e)
                 {
                     error=true;
-                    throw e;
+                    if (e instanceof EofException)
+                        LOG.debug(e);
+                    else
+                        LOG.warn(String.valueOf(_uri), e);
+                    _state.error(e);
+                    _request.setHandled(true);
+                    handleException(e);
+                }
+                finally
+                {
+                    if (error && _state.isAsyncStarted())
+                        _state.errorComplete();
+                    action = _state.unhandle();
                 }
             }
-            catch (Exception e)
-            {
-                error=true;
-                if (e instanceof EofException)
-                    LOG.debug(e);
-                else
-                    LOG.warn(String.valueOf(_uri), e);
-                _state.error(e);
-                _request.setHandled(true);
-                handleException(e);
-            }
-            finally
-            {
-                if (error && _state.isAsyncStarted())
-                    _state.errorComplete();
-                action = _state.unhandle();
-            }
-        }
 
-        if (threadName != null && LOG.isDebugEnabled())
-            Thread.currentThread().setName(threadName);
-        setCurrentHttpChannel(null);
+        }
+        finally
+        {
+            setCurrentHttpChannel(last);
+            if (threadName != null && LOG.isDebugEnabled())
+                Thread.currentThread().setName(threadName);
+        }
 
         if (action==Action.COMPLETE)
         {
@@ -592,8 +597,11 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     @Override
     public boolean parsedHostHeader(String host, int port)
     {
-        _request.setServerName(host);
-        _request.setServerPort(port);
+        if (_uri.getHost()==null)
+        {
+            _request.setServerName(host);
+            _request.setServerPort(port);
+        }
         return false;
     }
 
@@ -665,7 +673,16 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
         try
         {
             if (_state.handling()==Action.REQUEST_DISPATCH)
-                sendResponse(new ResponseInfo(HttpVersion.HTTP_1_1,new HttpFields(),0,status,reason,false),null,true);
+            {
+                ByteBuffer content=null;
+                HttpFields fields=new HttpFields();
+
+                ErrorHandler handler=getServer().getBean(ErrorHandler.class);
+                if (handler!=null)
+                    content=handler.badMessageError(status,reason,fields);
+
+                sendResponse(new ResponseInfo(HttpVersion.HTTP_1_1,fields,0,status,reason,false),content ,true);
+            }
         }
         catch (IOException e)
         {
@@ -711,27 +728,15 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
 
     protected boolean sendResponse(ResponseInfo info, ByteBuffer content, boolean complete) throws IOException
     {
-        boolean committing=sendResponse(info,content,complete,_writeblock);
-        _writeblock.block();
+        BlockingCallback writeBlock = _response.getHttpOutput().getWriteBlockingCallback();
+        boolean committing=sendResponse(info,content,complete,writeBlock);
+        writeBlock.block();
         return committing;
     }
 
-    protected boolean isCommitted()
+    public boolean isCommitted()
     {
         return _committed.get();
-    }
-
-    /**
-     * <p>Blocking write, committing the response if needed.</p>
-     *
-     * @param content  the content buffer to write
-     * @param complete whether the content is complete for the response
-     * @throws IOException if the write fails
-     */
-    protected void write(ByteBuffer content, boolean complete) throws IOException
-    {
-        sendResponse(null,content,complete,_writeblock);
-        _writeblock.block();
     }
 
     /**

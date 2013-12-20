@@ -23,7 +23,6 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
-import java.util.zip.DeflaterOutputStream;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.WriteListener;
@@ -46,7 +45,7 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
     protected final HttpServletResponse _response;
     protected OutputStream _out;
     protected ByteArrayOutputStream2 _bOut;
-    protected DeflaterOutputStream _compressedOutputStream;
+    protected OutputStream _compressedOutputStream;
     protected boolean _closed;
     protected boolean _doNotCompress;
 
@@ -392,7 +391,7 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
      * @throws IOException
      *             Signals that an I/O exception has occurred.
      */
-    protected abstract DeflaterOutputStream createStream() throws IOException;
+    protected abstract OutputStream createStream() throws IOException;
 
 
 }

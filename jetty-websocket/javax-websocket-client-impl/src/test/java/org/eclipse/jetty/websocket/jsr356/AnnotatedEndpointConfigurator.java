@@ -16,21 +16,19 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common;
+package org.eclipse.jetty.websocket.jsr356;
 
-import org.eclipse.jetty.util.log.StdErrLog;
+import java.util.Collections;
 
-public class LogShush
+import javax.websocket.ClientEndpointConfig;
+import javax.websocket.HandshakeResponse;
+
+public class AnnotatedEndpointConfigurator extends ClientEndpointConfig.Configurator
 {
-    public static void disableStacks(Class<?> clazz)
+    @Override
+    public void afterResponse(HandshakeResponse hr)
     {
-        StdErrLog log = StdErrLog.getLogger(clazz);
-        log.setHideStacks(true);
-    }
-
-    public static void enableStacks(Class<?> clazz)
-    {
-        StdErrLog log = StdErrLog.getLogger(clazz);
-        log.setHideStacks(false);
+        hr.getHeaders().put("X-Test",Collections.singletonList("Extra"));
+        super.afterResponse(hr);
     }
 }

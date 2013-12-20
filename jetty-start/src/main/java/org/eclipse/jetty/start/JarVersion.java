@@ -148,6 +148,11 @@ public class JarVersion
             String version = null;
 
             Manifest manifest = jar.getManifest();
+            
+            if (manifest == null)
+            {
+                return "(none specified)";
+            }
 
             version = getMainManifestImplVersion(manifest);
             if (version != null)
@@ -173,7 +178,7 @@ public class JarVersion
                 return version;
             }
 
-            return "(not specified)";
+            return "(none specified)";
         }
         catch (IOException e)
         {

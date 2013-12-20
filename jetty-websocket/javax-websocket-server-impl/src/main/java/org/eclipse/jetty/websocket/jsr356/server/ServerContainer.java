@@ -52,7 +52,7 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
         EventDriverFactory eventDriverFactory = this.webSocketServerFactory.getEventDriverFactory();
         eventDriverFactory.addImplementation(new JsrServerEndpointImpl());
         eventDriverFactory.addImplementation(new JsrServerExtendsEndpointImpl());
-        this.webSocketServerFactory.addSessionFactory(new JsrSessionFactory(this));
+        this.webSocketServerFactory.addSessionFactory(new JsrSessionFactory(this,this));
     }
     
     public EndpointInstance newClientEndpointInstance(Object endpoint, ServerEndpointConfig config, String path)

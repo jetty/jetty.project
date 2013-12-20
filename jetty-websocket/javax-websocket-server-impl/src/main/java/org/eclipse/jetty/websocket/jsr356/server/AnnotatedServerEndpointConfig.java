@@ -38,7 +38,7 @@ public class AnnotatedServerEndpointConfig implements ServerEndpointConfig
     private final String path;
     private final List<Class<? extends Decoder>> decoders;
     private final List<Class<? extends Encoder>> encoders;
-    private final Configurator configurator;
+    private final ServerEndpointConfig.Configurator configurator;
     private final List<String> subprotocols;
 
     private Map<String, Object> userProperties;
@@ -51,7 +51,7 @@ public class AnnotatedServerEndpointConfig implements ServerEndpointConfig
 
     public AnnotatedServerEndpointConfig(Class<?> endpointClass, ServerEndpoint anno, ServerEndpointConfig baseConfig) throws DeploymentException
     {
-        Configurator configr = null;
+        ServerEndpointConfig.Configurator configr = null;
 
         // Copy from base config
         if (baseConfig != null)
@@ -140,7 +140,7 @@ public class AnnotatedServerEndpointConfig implements ServerEndpointConfig
     }
 
     @Override
-    public Configurator getConfigurator()
+    public ServerEndpointConfig.Configurator getConfigurator()
     {
         return configurator;
     }

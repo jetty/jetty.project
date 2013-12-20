@@ -42,6 +42,7 @@ import org.eclipse.jetty.websocket.common.message.MessageAppender;
 public abstract class AbstractEventDriver implements IncomingFrames, EventDriver
 {
     private static final Logger LOG = Log.getLogger(AbstractEventDriver.class);
+    protected final Logger TARGET_LOG;
     protected final WebSocketPolicy policy;
     protected final Object websocket;
     protected WebSocketSession session;
@@ -51,11 +52,12 @@ public abstract class AbstractEventDriver implements IncomingFrames, EventDriver
     {
         this.policy = policy;
         this.websocket = websocket;
+        this.TARGET_LOG = Log.getLogger(websocket.getClass());
     }
 
     protected void appendMessage(ByteBuffer buffer, boolean fin) throws IOException
     {
-        activeMessage.appendMessage(buffer,fin);
+        activeMessage.appendFrame(buffer,fin);
 
         if (fin)
         {
@@ -230,7 +232,7 @@ public abstract class AbstractEventDriver implements IncomingFrames, EventDriver
 
     private void unhandled(Throwable t)
     {
-        LOG.warn("Unhandled Error (closing connection)",t);
+        TARGET_LOG.warn("Unhandled Error (closing connection)",t);
         onError(t);
 
         // Unhandled Error, close the connection.

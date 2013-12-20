@@ -155,7 +155,7 @@ public class SelectChannelEndPointTest
                     while (_blockAt > 0 && _endp.isOpen() && _in.remaining() < _blockAt)
                     {
                         FutureCallback blockingRead = new FutureCallback();
-                        _endp.fillInterested(blockingRead);
+                        fillInterested(blockingRead);
                         blockingRead.get();
                         filled = _endp.fill(_in);
                         progress |= filled > 0;

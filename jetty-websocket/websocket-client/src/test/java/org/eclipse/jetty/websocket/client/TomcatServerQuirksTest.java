@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.Arrays;

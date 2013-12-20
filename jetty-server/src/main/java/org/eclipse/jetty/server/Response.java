@@ -109,9 +109,9 @@ public class Response implements HttpServletResponse
     public final static String HTTP_ONLY_COMMENT = "__HTTP_ONLY__";
 
     private final HttpChannel<?> _channel;
-    private final HttpOutput _out;
     private final HttpFields _fields = new HttpFields();
     private final AtomicInteger _include = new AtomicInteger();
+    private HttpOutput _out;
     private int _status = HttpStatus.NOT_SET_000;
     private String _reason;
     private Locale _locale;
@@ -178,6 +178,11 @@ public class Response implements HttpServletResponse
     public HttpOutput getHttpOutput()
     {
         return _out;
+    }
+    
+    public void setHttpOutput(HttpOutput out)
+    {
+        _out=out;
     }
 
     public boolean isIncluding()
@@ -950,10 +955,15 @@ public class Response implements HttpServletResponse
             String encoding = _characterEncoding;
             if (encoding == null)
             {
-                encoding = MimeTypes.inferCharsetFromContentType(_contentType);
-                if (encoding == null)
-                    encoding = StringUtil.__ISO_8859_1;
-                setCharacterEncoding(encoding,false);
+                if (_mimeType!=null && _mimeType.isCharsetAssumed())
+                    encoding=_mimeType.getCharset().toString();
+                else
+                {
+                    encoding = MimeTypes.inferCharsetFromContentType(_contentType);
+                    if (encoding == null)
+                        encoding = StringUtil.__ISO_8859_1;
+                    setCharacterEncoding(encoding,false);
+                }
             }
             
             if (_writer != null && _writer.isFor(encoding))
@@ -983,15 +993,14 @@ public class Response implements HttpServletResponse
         if (isCommitted() || isIncluding())
             return;
 
-        long written = _out.getWritten();
-        if (written > len)
-            throw new IllegalArgumentException("setContentLength(" + len + ") when already written " + written);
-
         _contentLength = len;
-        _fields.putLongField(HttpHeader.CONTENT_LENGTH.toString(), len);
-
         if (_contentLength > 0)
         {
+            long written = _out.getWritten();
+            if (written > len)
+                throw new IllegalArgumentException("setContentLength(" + len + ") when already written " + written);
+            
+            _fields.putLongField(HttpHeader.CONTENT_LENGTH, len);
             if (isAllContentWritten(written))
             {
                 try
@@ -1004,6 +1013,20 @@ public class Response implements HttpServletResponse
                 }
             }
         }
+        else if (_contentLength==0)
+        {
+            long written = _out.getWritten();
+            if (written > 0)
+                throw new IllegalArgumentException("setContentLength(0) when already written " + written);
+            _fields.put(HttpHeader.CONTENT_LENGTH, "0");
+        }
+        else
+            _fields.remove(HttpHeader.CONTENT_LENGTH);
+    }
+    
+    public long getContentLength()
+    {
+        return _contentLength;
     }
 
     public boolean isAllContentWritten(long written)
@@ -1058,7 +1081,7 @@ public class Response implements HttpServletResponse
     
     private void setCharacterEncoding(String encoding, boolean explicit)
     {
-        if (isIncluding())
+        if (isIncluding() || isWriting())
             return;
 
         if (_outputType == OutputType.NONE && !isCommitted())
@@ -1071,30 +1094,38 @@ public class Response implements HttpServletResponse
                 if (_characterEncoding != null)
                 {
                     _characterEncoding = null;
-                    if (_contentType != null)
+                    
+                    if (_mimeType!=null)
+                    {
+                        _mimeType=_mimeType.getBaseType();
+                        _contentType=_mimeType.asString();
+                        _fields.put(_mimeType.getContentTypeField());
+                    }
+                    else if (_contentType != null)
                     {
                         _contentType = MimeTypes.getContentTypeWithoutCharset(_contentType);
-                        HttpField field = HttpParser.CONTENT_TYPE.get(_contentType);
-                        if (field!=null)
-                            _fields.put(field);
-                        else
-                            _fields.put(HttpHeader.CONTENT_TYPE, _contentType);
+                        _fields.put(HttpHeader.CONTENT_TYPE, _contentType);
                     }
                 }
             }
             else
             {
                 // No, so just add this one to the mimetype
-                _explicitEncoding=explicit;
-                _characterEncoding = StringUtil.normalizeCharset(encoding);
-                if (_contentType != null)
+                _explicitEncoding = explicit;
+                _characterEncoding = HttpGenerator.__STRICT?encoding:StringUtil.normalizeCharset(encoding);
+                if (_mimeType!=null)
                 {
-                    _contentType = MimeTypes.getContentTypeWithoutCharset(_contentType) + ";charset=" + _characterEncoding;
-                    HttpField field = HttpParser.CONTENT_TYPE.get(_contentType);
-                    if (field!=null)
-                        _fields.put(field);
-                    else
+                    _contentType=_mimeType.getBaseType().asString()+ "; charset=" + _characterEncoding;
+                    _mimeType = MimeTypes.CACHE.get(_contentType);
+                    if (_mimeType==null || HttpGenerator.__STRICT)
                         _fields.put(HttpHeader.CONTENT_TYPE, _contentType);
+                    else
+                        _fields.put(_mimeType.getContentTypeField());
+                }
+                else if (_contentType != null)
+                {
+                    _contentType = MimeTypes.getContentTypeWithoutCharset(_contentType) + "; charset=" + _characterEncoding;
+                    _fields.put(HttpHeader.CONTENT_TYPE, _contentType);
                 }
             }
         }
@@ -1121,9 +1152,10 @@ public class Response implements HttpServletResponse
         {
             _contentType = contentType;
             _mimeType = MimeTypes.CACHE.get(contentType);
+            
             String charset;
-            if (_mimeType != null && _mimeType.getCharset() != null)
-                charset = _mimeType.getCharset().toString();
+            if (_mimeType!=null && _mimeType.getCharset()!=null && !_mimeType.isCharsetAssumed())
+                charset=_mimeType.getCharset().toString();
             else
                 charset = MimeTypes.getCharsetFromContentType(contentType);
 
@@ -1131,7 +1163,7 @@ public class Response implements HttpServletResponse
             {
                 if (_characterEncoding != null)
                 {
-                    _contentType = contentType + ";charset=" + _characterEncoding;
+                    _contentType = contentType + "; charset=" + _characterEncoding;
                     _mimeType = null;
                 }
             }
@@ -1141,7 +1173,7 @@ public class Response implements HttpServletResponse
                 _mimeType = null;
                 _contentType = MimeTypes.getContentTypeWithoutCharset(_contentType);
                 if (_characterEncoding != null)
-                    _contentType = _contentType + ";charset=" + _characterEncoding;
+                    _contentType = _contentType + "; charset=" + _characterEncoding;
             }
             else
             {
@@ -1149,12 +1181,15 @@ public class Response implements HttpServletResponse
                 _explicitEncoding = true;
             }
 
-            HttpField field = HttpParser.CONTENT_TYPE.get(_contentType);
-            if (field!=null)
-                _fields.put(field);
-            else
+            if (HttpGenerator.__STRICT || _mimeType==null)
                 _fields.put(HttpHeader.CONTENT_TYPE, _contentType);
+            else
+            {
+                _contentType=_mimeType.asString();
+                _fields.put(_mimeType.getContentTypeField());
+            }
         }
+        
     }
 
     @Override

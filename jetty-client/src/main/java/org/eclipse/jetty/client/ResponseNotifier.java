@@ -120,6 +120,8 @@ public class ResponseNotifier
     {
         // Slice the buffer to avoid that listeners peek into data they should not look at.
         buffer = buffer.slice();
+        if (!buffer.hasRemaining())
+            return;
         // Optimized to avoid allocations of iterator instances
         for (int i = 0; i < listeners.size(); ++i)
         {

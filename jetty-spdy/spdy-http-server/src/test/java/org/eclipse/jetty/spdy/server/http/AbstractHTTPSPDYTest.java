@@ -89,6 +89,7 @@ public abstract class AbstractHTTPSPDYTest
         server.addConnector(connector);
         server.setHandler(handler);
         server.start();
+        server.dumpStdErr();
         return new InetSocketAddress("localhost", connector.getLocalPort());
     }
 

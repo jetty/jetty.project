@@ -21,13 +21,13 @@ package org.eclipse.jetty.spdy;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
-import org.eclipse.jetty.spdy.api.SPDYException;
+import org.eclipse.jetty.spdy.StandardSession.FrameBytes;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamStatus;
+import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -36,22 +36,27 @@ public class Flusher
 {
     private static final Logger LOG = Log.getLogger(Flusher.class);
 
-    private final IteratingCallback iteratingCallback = new SessionIteratingCallback();
+    private final IteratingCallback callback = new FlusherCallback();
+    private final Object lock = new Object();
+    private final ArrayQueue<StandardSession.FrameBytes> queue = new ArrayQueue<>(lock);
     private final Controller controller;
-    private final LinkedList<StandardSession.FrameBytes> queue = new LinkedList<>();
+    private final int maxGather;
     private Throwable failure;
-    private StandardSession.FrameBytes active;
-
-    private boolean flushing;
 
     public Flusher(Controller controller)
     {
-        this.controller = controller;
+        this(controller, 8);
     }
 
-    void removeFrameBytesFromQueue(Stream stream)
+    public Flusher(Controller controller, int maxGather)
     {
-        synchronized (queue)
+        this.controller = controller;
+        this.maxGather = maxGather;
+    }
+
+    public void removeFrameBytesFromQueue(Stream stream)
+    {
+        synchronized (lock)
         {
             for (StandardSession.FrameBytes frameBytes : queue)
                 if (frameBytes.getStream() == stream)
@@ -59,175 +64,187 @@ public class Flusher
         }
     }
 
-    void append(StandardSession.FrameBytes frameBytes)
+    public Throwable prepend(StandardSession.FrameBytes frameBytes)
     {
-        Throwable failure;
-        synchronized (queue)
+        synchronized (lock)
         {
-            failure = this.failure;
+            Throwable failure = this.failure;
             if (failure == null)
             {
-                // Frames containing headers must be send in the order the headers have been generated. We don't need
-                // to do this check in StandardSession.prepend() as no frames containing headers will be prepended.
-                if (frameBytes instanceof StandardSession.ControlFrameBytes)
-                    queue.addLast(frameBytes);
-                else
-                {
-                    int index = queue.size();
-                    while (index > 0)
-                    {
-                        StandardSession.FrameBytes element = queue.get(index - 1);
-                        if (element.compareTo(frameBytes) >= 0)
-                            break;
-                        --index;
-                    }
-                    queue.add(index, frameBytes);
-                }
-            }
-        }
-        if (failure == null)
-            iteratingCallback.iterate();
-        else
-            frameBytes.failed(new SPDYException(failure));
-    }
-
-    void prepend(StandardSession.FrameBytes frameBytes)
-    {
-        Throwable failure;
-        synchronized (queue)
-        {
-            failure = this.failure;
-            if (failure == null)
-            {
+                // Scan from the front of the queue looking to skip higher priority messages
                 int index = 0;
-                while (index < queue.size())
+                int size = queue.size();
+                while (index < size)
                 {
-                    StandardSession.FrameBytes element = queue.get(index);
+                    StandardSession.FrameBytes element = queue.getUnsafe(index);
                     if (element.compareTo(frameBytes) <= 0)
                         break;
                     ++index;
                 }
                 queue.add(index, frameBytes);
             }
+            return failure;
         }
-
-        if (failure == null)
-            iteratingCallback.iterate();
-        else
-            frameBytes.failed(new SPDYException(failure));
     }
 
-    void flush()
+    public Throwable append(StandardSession.FrameBytes frameBytes)
     {
-        StandardSession.FrameBytes frameBytes = null;
-        ByteBuffer buffer = null;
-        boolean failFrameBytes = false;
-        synchronized (queue)
+        synchronized (lock)
         {
-            if (flushing || queue.isEmpty())
-                return;
-
-            Set<IStream> stalledStreams = null;
-            for (int i = 0; i < queue.size(); ++i)
+            Throwable failure = this.failure;
+            if (failure == null)
             {
-                frameBytes = queue.get(i);
+                // Non DataFrameBytes are inserted last
+                queue.add(frameBytes);
+            }
+            return failure;
+        }
+    }
 
-                IStream stream = frameBytes.getStream();
-                if (stream != null && stalledStreams != null && stalledStreams.contains(stream))
-                    continue;
-
-                buffer = frameBytes.getByteBuffer();
-                if (buffer != null)
+    public Throwable append(StandardSession.DataFrameBytes frameBytes)
+    {
+        synchronized (lock)
+        {
+            Throwable failure = this.failure;
+            if (failure == null)
+            {
+                // DataFrameBytes are inserted by priority
+                int index = queue.size();
+                while (index > 0)
                 {
-                    queue.remove(i);
-                    if (stream != null && stream.isReset() && !(frameBytes instanceof StandardSession
-                            .ControlFrameBytes))
-                        failFrameBytes = true;
-                    break;
+                    StandardSession.FrameBytes element = queue.getUnsafe(index - 1);
+                    if (element.compareTo(frameBytes) >= 0)
+                        break;
+                    --index;
                 }
-
-                if (stalledStreams == null)
-                    stalledStreams = new HashSet<>();
-                if (stream != null)
-                    stalledStreams.add(stream);
-
-                LOG.debug("Flush stalled for {}, {} frame(s) in queue", frameBytes, queue.size());
+                queue.add(index, frameBytes);
             }
-
-            if (buffer == null)
-                return;
-
-            if (!failFrameBytes)
-            {
-                flushing = true;
-                LOG.debug("Flushing {}, {} frame(s) in queue", frameBytes, queue.size());
-            }
-        }
-        if (failFrameBytes)
-        {
-            frameBytes.failed(new StreamException(frameBytes.getStream().getId(), StreamStatus.INVALID_STREAM,
-                    "Stream: " + frameBytes.getStream() + " is reset!"));
-        }
-        else
-        {
-            write(buffer, frameBytes);
+            return failure;
         }
     }
 
-    private void write(ByteBuffer buffer, StandardSession.FrameBytes frameBytes)
+    public void flush()
     {
-        active = frameBytes;
-        if (controller != null)
-        {
-            LOG.debug("Writing {} frame bytes of {}", buffer.remaining(), buffer.limit());
-            controller.write(buffer, iteratingCallback);
-        }
+        callback.iterate();
     }
 
     public int getQueueSize()
     {
-        return queue.size();
+        synchronized (lock)
+        {
+            return queue.size();
+        }
     }
 
-    private class SessionIteratingCallback extends IteratingCallback
+    private class FlusherCallback extends IteratingCallback
     {
+        private final List<StandardSession.FrameBytes> active = new ArrayList<>(maxGather);
+        private final List<StandardSession.FrameBytes> succeeded = new ArrayList<>(maxGather);
+        private final Set<IStream> stalled = new HashSet<>();
+
         @Override
-        protected boolean process() throws Exception
+        protected Action process() throws Exception
         {
-            flush();
-            return false;
+            synchronized (lock)
+            {
+                // Scan queue for data to write from first non stalled stream.
+                int index = 0; // The index of the first non-stalled frame.
+                int size = queue.size();
+                while (index < size)
+                {
+                    FrameBytes frameBytes = queue.getUnsafe(index);
+                    IStream stream = frameBytes.getStream();
+
+                    if (stream != null)
+                    {
+                        // Is it a frame belonging to an already stalled stream ?
+                        if (stalled.size() > 0 && stalled.contains(stream))
+                        {
+                            ++index;
+                            continue;
+                        }
+
+                        // Has the stream consumed all its flow control window ?
+                        if (stream.getWindowSize() <= 0)
+                        {
+                            stalled.add(stream);
+                            ++index;
+                            continue;
+                        }
+                    }
+
+                    // We will be possibly writing this frame, so take the frame off the queue.
+                    queue.remove(index);
+                    --size;
+
+                    // Has the stream been reset for this data frame ?
+                    if (stream != null && stream.isReset() && frameBytes instanceof StandardSession.DataFrameBytes)
+                    {
+                        frameBytes.failed(new StreamException(frameBytes.getStream().getId(),
+                                StreamStatus.INVALID_STREAM, "Stream: " + frameBytes.getStream() + " is reset!"));
+                        continue;
+                    }
+
+                    active.add(frameBytes);
+                }
+                stalled.clear();
+
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Flushing {} of {} frame(s) in queue", active.size(), queue.size());
+            }
+
+            if (active.isEmpty())
+                return Action.IDLE;
+
+            // Get the bytes to write
+            ByteBuffer[] buffers = new ByteBuffer[active.size()];
+            for (int i = 0; i < buffers.length; i++)
+                buffers[i] = active.get(i).getByteBuffer();
+
+            if (controller != null)
+                controller.write(this, buffers);
+
+            // TODO: optimization
+            // If the callback completely immediately, it means that
+            // the connection is not congested, and therefore we can
+            // write more data without blocking.
+            // Therefore we should check this condition and increase
+            // the write window, which means two things: autotune the
+            // maxGather parameter, and/or autotune the buffer returned
+            // by FrameBytes.getByteBuffer() (see also comment there).
+
+            return Action.SCHEDULED;
         }
 
         @Override
         protected void completed()
         {
-            // will never be called as process always returns false!
+            // will never be called as process always returns SCHEDULED or IDLE
+            throw new IllegalStateException();
         }
 
         @Override
         public void succeeded()
         {
-            if (LOG.isDebugEnabled())
+            synchronized (lock)
             {
-                synchronized (queue)
-                {
-                    LOG.debug("Completed write of {}, {} frame(s) in queue", active, queue.size());
-                }
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Succeeded write of {}, q={}", active, queue.size());
+                succeeded.addAll(active);
+                active.clear();
             }
-            active.succeeded();
-            synchronized (queue)
-            {
-                flushing = false;
-            }
+            // Notify outside the synchronized block.
+            for (FrameBytes frame : succeeded)
+                frame.succeeded();
+            succeeded.clear();
             super.succeeded();
         }
 
         @Override
         public void failed(Throwable x)
         {
-            List<StandardSession.FrameBytes> frameBytesToFail = new ArrayList<>();
-
-            synchronized (queue)
+            List<StandardSession.FrameBytes> failed = new ArrayList<>();
+            synchronized (lock)
             {
                 failure = x;
                 if (LOG.isDebugEnabled())
@@ -235,15 +252,15 @@ public class Flusher
                     String logMessage = String.format("Failed write of %s, failing all %d frame(s) in queue", this, queue.size());
                     LOG.debug(logMessage, x);
                 }
-                frameBytesToFail.addAll(queue);
+                failed.addAll(active);
+                active.clear();
+                failed.addAll(queue);
                 queue.clear();
             }
-
-            active.failed(x);
-            for (StandardSession.FrameBytes fb : frameBytesToFail)
-                fb.failed(x);
+            // Notify outside the synchronized block.
+            for (StandardSession.FrameBytes frame : failed)
+                frame.failed(x);
             super.failed(x);
         }
     }
-
 }

@@ -22,18 +22,22 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.nio.ByteBuffer;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ByteArrayISO8859Writer;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -42,7 +46,8 @@ import org.eclipse.jetty.util.log.Logger;
 /** Handler for Error pages
  * An ErrorHandler is registered with {@link ContextHandler#setErrorHandler(ErrorHandler)} or
  * {@link org.eclipse.jetty.server.Server#addBean(Object)}.
- * It is called by the HttpResponse.sendError method to write a error page.
+ * It is called by the HttpResponse.sendError method to write a error page via {@link #handle(String, Request, HttpServletRequest, HttpServletResponse)}
+ * or via {@link #badMessageError(int, String, HttpFields)} for bad requests for which a dispatch cannot be done.
  *
  */
 public class ErrorHandler extends AbstractHandler
@@ -191,7 +196,26 @@ public class ErrorHandler extends AbstractHandler
         }
     }
 
-
+    /* ------------------------------------------------------------ */
+    /** Bad Message Error body
+     * <p>Generate a error response body to be sent for a bad message.
+     * In this case there is something wrong with the request, so either
+     * a request cannot be built, or it is not safe to build a request.
+     * This method allows for a simple error page body to be returned 
+     * and some response headers to be set.
+     * @param status The error code that will be sent
+     * @param reason The reason for the error code (may be null)
+     * @param fields The header fields that will be sent with the response.
+     * @return The content as a ByteBuffer, or null for no body.
+     */
+    public ByteBuffer badMessageError(int status, String reason, HttpFields fields)
+    {
+        if (reason==null)
+            reason=HttpStatus.getMessage(status);
+        fields.put(HttpHeader.CONTENT_TYPE,MimeTypes.Type.TEXT_HTML_8859_1.asString());
+        return BufferUtil.toBuffer("<h1>Bad Message "+status+"</h1><pre>reason: "+reason+"</pre>");
+    }    
+    
     /* ------------------------------------------------------------ */
     /** Get the cacheControl.
      * @return the cacheControl header to set on error responses.

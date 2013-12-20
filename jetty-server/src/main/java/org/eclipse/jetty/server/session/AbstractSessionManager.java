@@ -227,11 +227,25 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
                 _sessionIdManager=server.getSessionIdManager();
                 if (_sessionIdManager==null)
                 {
-                    _sessionIdManager=new HashSessionIdManager();
-                    server.setSessionIdManager(_sessionIdManager);
+                    //create a default SessionIdManager and set it as the shared
+                    //SessionIdManager for the Server, being careful NOT to use
+                    //the webapp context's classloader, otherwise if the context
+                    //is stopped, the classloader is leaked.
+                    ClassLoader serverLoader = server.getClass().getClassLoader();
+                    try
+                    {
+                        Thread.currentThread().setContextClassLoader(serverLoader);
+                        _sessionIdManager=new HashSessionIdManager();
+                        server.setSessionIdManager(_sessionIdManager);
+                    }
+                    finally
+                    {
+                        Thread.currentThread().setContextClassLoader(_loader);
+                    }
                 }
             }
         }
+        
         if (!_sessionIdManager.isStarted())
             _sessionIdManager.start();
 
@@ -276,7 +290,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     {
         super.doStop();
 
-        invalidateSessions();
+        shutdownSessions();
 
         _loader=null;
     }
@@ -735,7 +749,12 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
      */
     public abstract AbstractSession getSession(String idInCluster);
 
-    protected abstract void invalidateSessions() throws Exception;
+    /**
+     * Prepare sessions for session manager shutdown
+     * 
+     * @throws Exception
+     */
+    protected abstract void shutdownSessions() throws Exception;
 
 
     /* ------------------------------------------------------------ */
@@ -783,7 +802,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
      * @param invalidate True if {@link HttpSessionListener#sessionDestroyed(HttpSessionEvent)} and
      * {@link SessionIdManager#invalidateAll(String)} should be called.
      */
-    public void removeSession(AbstractSession session, boolean invalidate)
+    public boolean removeSession(AbstractSession session, boolean invalidate)
     {
         // Remove session from context and global maps
         boolean removed = removeSession(session.getClusterId());
@@ -807,6 +826,8 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
                 }
             }
         }
+        
+        return removed;
     }
 
     /* ------------------------------------------------------------ */

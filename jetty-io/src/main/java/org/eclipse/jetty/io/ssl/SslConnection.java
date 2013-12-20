@@ -23,7 +23,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.util.Arrays;
 import java.util.concurrent.Executor;
-
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
@@ -877,6 +876,7 @@ public class SslConnection extends AbstractConnection
         @Override
         public void close()
         {
+            super.close();
             // First send the TLS Close Alert, then the FIN
             shutdownOutput();
             getEndPoint().close();

@@ -784,8 +784,8 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                     max = len;
             }
 
-            // Check that a direct content buffer was used as a chunk
-            Assert.assertEquals(128 * 1024, max);
+            // Check that biggest chunk was <= buffer size
+            Assert.assertEquals(_connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().getOutputBufferSize() , max);
 
             // read and check the times are < 999ms
             String[] times = in.readLine().split(",");

@@ -20,6 +20,12 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.io.Connection;
@@ -42,22 +48,48 @@ import org.eclipse.jetty.util.statistic.SampleStatistic;
 @ManagedObject("Connector Statistics")
 public class ConnectorStatistics extends AbstractLifeCycle implements Dumpable, Connection.Listener
 {
+    private final static Sample ZERO=new Sample();
     private final AtomicLong _startMillis = new AtomicLong(-1L);
     private final CounterStatistic _connectionStats = new CounterStatistic();
     private final SampleStatistic _messagesIn = new SampleStatistic();
     private final SampleStatistic _messagesOut = new SampleStatistic();
     private final SampleStatistic _connectionDurationStats = new SampleStatistic();
+    private final ConcurrentMap<Connection, Sample> _samples = new ConcurrentHashMap<>();
+    private final AtomicInteger _closedIn = new AtomicInteger();
+    private final AtomicInteger _closedOut = new AtomicInteger();
+    private AtomicLong _nanoStamp=new AtomicLong();
+    private volatile int _messagesInPerSecond;
+    private volatile int _messagesOutPerSecond;
 
     @Override
     public void onOpened(Connection connection)
     {
-        connectionOpened();
+        if (isStarted())
+        {
+            _connectionStats.increment();
+            _samples.put(connection,ZERO);
+        }
     }
 
     @Override
     public void onClosed(Connection connection)
     {
-        connectionClosed(System.currentTimeMillis()-connection.getCreatedTimeStamp(),connection.getMessagesIn(),connection.getMessagesOut());
+        if (isStarted())
+        {
+            int msgsIn=connection.getMessagesIn();
+            int msgsOut=connection.getMessagesOut();
+            _messagesIn.set(msgsIn);
+            _messagesOut.set(msgsOut);
+            _connectionStats.decrement();
+            _connectionDurationStats.set(System.currentTimeMillis()-connection.getCreatedTimeStamp());
+
+            Sample sample=_samples.remove(connection);
+            if (sample!=null)
+            {
+                _closedIn.addAndGet(msgsIn-sample._messagesIn);
+                _closedOut.addAndGet(msgsOut-sample._messagesOut);
+            }
+        }
     }
 
     @ManagedAttribute("Total number of bytes received by this connector")
@@ -80,28 +112,22 @@ public class ConnectorStatistics extends AbstractLifeCycle implements Dumpable, 
         return (int)_connectionStats.getTotal();
     }
 
-    @ManagedAttribute("Connection duraton maximum in ms")
-    public long getConnectionsDurationMax()
+    @ManagedAttribute("Connection duration maximum in ms")
+    public long getConnectionDurationMax()
     {
         return _connectionDurationStats.getMax();
     }
 
-    @ManagedAttribute("Connection duraton mean in ms")
-    public double getConnectionsDurationMean()
+    @ManagedAttribute("Connection duration mean in ms")
+    public double getConnectionDurationMean()
     {
         return _connectionDurationStats.getMean();
     }
 
-    @ManagedAttribute("Connection duraton standard deviation")
-    public double getConnectionsDurationStdDev()
+    @ManagedAttribute("Connection duration standard deviation")
+    public double getConnectionDurationStdDev()
     {
         return _connectionDurationStats.getStdDev();
-    }
-
-    @ManagedAttribute("Connection duraton total of all connections in ms")
-    public long getConnectionsDurationTotal()
-    {
-        return _connectionDurationStats.getTotal();
     }
 
     @ManagedAttribute("Messages In for all connections")
@@ -111,19 +137,19 @@ public class ConnectorStatistics extends AbstractLifeCycle implements Dumpable, 
     }
 
     @ManagedAttribute("Messages In per connection maximum")
-    public int getConnectionsMessagesInMax()
+    public int getMessagesInPerConnectionMax()
     {
         return (int)_messagesIn.getMax();
     }
 
     @ManagedAttribute("Messages In per connection mean")
-    public double getConnectionsMessagesInMean()
+    public double getMessagesInPerConnectionMean()
     {
         return _messagesIn.getMean();
     }
 
     @ManagedAttribute("Messages In per connection standard deviation")
-    public double getConnectionsMessagesInStdDev()
+    public double getMessagesInPerConnectionStdDev()
     {
         return _messagesIn.getStdDev();
     }
@@ -146,11 +172,43 @@ public class ConnectorStatistics extends AbstractLifeCycle implements Dumpable, 
         return (int)_messagesIn.getTotal();
     }
 
+    @ManagedAttribute("Messages In per connection maximum")
+    public int getMessagesOutPerConnectionMax()
+    {
+        return (int)_messagesIn.getMax();
+    }
+
+    @ManagedAttribute("Messages In per connection mean")
+    public double getMessagesOutPerConnectionMean()
+    {
+        return _messagesIn.getMean();
+    }
+
+    @ManagedAttribute("Messages In per connection standard deviation")
+    public double getMessagesOutPerConnectionStdDev()
+    {
+        return _messagesIn.getStdDev();
+    }
+
     @ManagedAttribute("Connection statistics started ms since epoch")
     public long getStartedMillis()
     {
         long start = _startMillis.get();
         return start < 0 ? 0 : System.currentTimeMillis() - start;
+    }
+
+    @ManagedAttribute("Messages in per second calculated over period since last called")
+    public int getMessagesInPerSecond()
+    {
+        update();
+        return _messagesInPerSecond;
+    }
+
+    @ManagedAttribute("Messages out per second calculated over period since last called")
+    public int getMessagesOutPerSecond()
+    {
+        update();
+        return _messagesOutPerSecond;
     }
 
     @Override
@@ -162,6 +220,7 @@ public class ConnectorStatistics extends AbstractLifeCycle implements Dumpable, 
     @Override
     public void doStop()
     {
+        _samples.clear();
     }
 
     @ManagedOperation("Reset the statistics")
@@ -172,34 +231,7 @@ public class ConnectorStatistics extends AbstractLifeCycle implements Dumpable, 
         _messagesOut.reset();
         _connectionStats.reset();
         _connectionDurationStats.reset();
-    }
-
-    public void connectionOpened()
-    {
-        if (isStarted())
-        {
-            _connectionStats.increment();
-        }
-    }
-
-    public void connectionUpgraded(int messagesIn, int messagesOut)
-    {
-        if (isStarted())
-        {
-            _messagesIn.set(messagesIn);
-            _messagesOut.set(messagesOut);
-        }
-    }
-
-    public void connectionClosed(long duration, int messagesIn, int messagesOut)
-    {
-        if (isStarted())
-        {
-            _messagesIn.set(messagesIn);
-            _messagesOut.set(messagesOut);
-            _connectionStats.decrement();
-            _connectionDurationStats.set(duration);
-        }
+        _samples.clear();
     }
 
     @Override
@@ -223,5 +255,55 @@ public class ConnectorStatistics extends AbstractLifeCycle implements Dumpable, 
             if (connector instanceof Container)
              ((Container)connector).addBean(new ConnectorStatistics());
         }
+    }  
+    
+    private static final long SECOND_NANOS=TimeUnit.SECONDS.toNanos(1);
+    private synchronized void update()
+    {
+        long now=System.nanoTime();
+        long then=_nanoStamp.get();
+        long duration=now-then;
+                
+        if (duration>SECOND_NANOS/2)
+        {
+            if (_nanoStamp.compareAndSet(then,now))
+            {
+                long msgsIn=_closedIn.getAndSet(0);
+                long msgsOut=_closedOut.getAndSet(0);
+
+                for (Map.Entry<Connection, Sample> entry : _samples.entrySet())
+                {
+                    Connection connection=entry.getKey();
+                    Sample sample = entry.getValue();
+                    Sample next = new Sample(connection);
+                    if (_samples.replace(connection,sample,next))
+                    {
+                        msgsIn+=next._messagesIn-sample._messagesIn;
+                        msgsOut+=next._messagesOut-sample._messagesOut;
+                    }
+                }
+                
+                _messagesInPerSecond=(int)(msgsIn*SECOND_NANOS/duration);
+                _messagesOutPerSecond=(int)(msgsOut*SECOND_NANOS/duration);
+            }
+        }
+    }
+    
+    private static class Sample
+    {
+        Sample()
+        {
+            _messagesIn=0;
+            _messagesOut=0;
+        }
+        
+        Sample(Connection connection)
+        {
+            _messagesIn=connection.getMessagesIn();
+            _messagesOut=connection.getMessagesOut();
+        }
+        
+        final int _messagesIn;
+        final int _messagesOut;
     }
 }

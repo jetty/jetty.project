@@ -25,6 +25,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.common.SessionListener;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
@@ -78,7 +79,7 @@ public class DummyMuxAddServer implements MuxAddServer
         response.append("\r\n");
 
         EventDriver websocket = this.eventDriverFactory.wrap(echo);
-        WebSocketSession session = new WebSocketSession(request.getRequestURI(),websocket,channel);
+        WebSocketSession session = new WebSocketSession(request.getRequestURI(),websocket,channel, new SessionListener[0]);
         UpgradeResponse uresponse = new UpgradeResponse();
         uresponse.setAcceptedSubProtocol("echo");
         session.setUpgradeResponse(uresponse);

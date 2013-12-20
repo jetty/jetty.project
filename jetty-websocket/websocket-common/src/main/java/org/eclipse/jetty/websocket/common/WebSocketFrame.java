@@ -112,8 +112,6 @@ public abstract class WebSocketFrame implements Frame
      */
     protected ByteBuffer data;
 
-    protected int payloadLength = 0;
-
     /**
      * Construct form opcode
      */
@@ -219,11 +217,6 @@ public abstract class WebSocketFrame implements Frame
 
     /**
      * Get the payload ByteBuffer. possible null.
-     * <p>
-     * 
-     * @return A {@link ByteBuffer#slice()} of the payload buffer (to prevent modification of the buffer state). Possibly null if no payload present.
-     *         <p>
-     *         Note: this method is exposed via the immutable {@link Frame#getPayload()} method.
      */
     @Override
     public ByteBuffer getPayload()
@@ -243,7 +236,7 @@ public abstract class WebSocketFrame implements Frame
         {
             return 0;
         }
-        return payloadLength;
+        return data.remaining();
     }
 
     @Override
@@ -266,7 +259,7 @@ public abstract class WebSocketFrame implements Frame
     @Override
     public boolean hasPayload()
     {
-        return ((data != null) && (payloadLength > 0));
+        return ((data != null) && data.hasRemaining());
     }
 
     public abstract boolean isControlFrame();
@@ -309,45 +302,11 @@ public abstract class WebSocketFrame implements Frame
         return (byte)(finRsvOp & 0x10) != 0;
     }
 
-    /**
-     * Get the position currently within the payload data.
-     * <p>
-     * Used by flow control, generator and window sizing.
-     * 
-     * @return the number of bytes remaining in the payload data that has not yet been written out to Network ByteBuffers.
-     */
-    public int position()
-    {
-        if (data == null)
-        {
-            return -1;
-        }
-        return data.position();
-    }
-
-    /**
-     * Get the number of bytes remaining to write out to the Network ByteBuffer.
-     * <p>
-     * Used by flow control, generator and window sizing.
-     * 
-     * @return the number of bytes remaining in the payload data that has not yet been written out to Network ByteBuffers.
-     */
-    @Override
-    public int remaining()
-    {
-        if (data == null)
-        {
-            return 0;
-        }
-        return data.remaining();
-    }
-
     public void reset()
     {
         finRsvOp = (byte)0x80; // FIN (!RSV, opcode 0)
         masked = false;
         data = null;
-        payloadLength = 0;
         mask = null;
     }
 
@@ -396,7 +355,6 @@ public abstract class WebSocketFrame implements Frame
         }
 
         data = buf.slice();
-        payloadLength = data.limit();
         return this;
     }
 
@@ -427,15 +385,13 @@ public abstract class WebSocketFrame implements Frame
         StringBuilder b = new StringBuilder();
         b.append(OpCode.name((byte)(finRsvOp & 0x0F)));
         b.append('[');
-        b.append("len=").append(payloadLength);
+        b.append("len=").append(getPayloadLength());
         b.append(",fin=").append((finRsvOp & 0x80) != 0);
         b.append(",rsv=");
         b.append(((finRsvOp & 0x40) != 0)?'1':'.');
         b.append(((finRsvOp & 0x20) != 0)?'1':'.');
         b.append(((finRsvOp & 0x10) != 0)?'1':'.');
         b.append(",masked=").append(masked);
-        b.append(",remaining=").append(remaining());
-        b.append(",position=").append(position());
         b.append(']');
         return b.toString();
     }

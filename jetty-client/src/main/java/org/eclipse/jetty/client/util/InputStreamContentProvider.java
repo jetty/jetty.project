@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.client.util;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -122,7 +123,7 @@ public class InputStreamContentProvider implements ContentProvider
      * Therefore we need to make sure that {@link #hasNext()} does not perform any side effect (so that
      * it can be called multiple times) until {@link #next()} is called.
      */
-    private class InputStreamIterator implements Iterator<ByteBuffer>
+    private class InputStreamIterator implements Iterator<ByteBuffer>, Closeable
     {
         private Throwable failure;
         private ByteBuffer buffer;
@@ -141,20 +142,21 @@ public class InputStreamContentProvider implements ContentProvider
                 LOG.debug("Read {} bytes from {}", read, stream);
                 if (read > 0)
                 {
-                    buffer = onRead(bytes, 0, read);
                     hasNext = Boolean.TRUE;
+                    buffer = onRead(bytes, 0, read);
                     return true;
                 }
                 else if (read < 0)
                 {
                     hasNext = Boolean.FALSE;
+                    buffer = null;
                     close();
                     return false;
                 }
                 else
                 {
-                    buffer = BufferUtil.EMPTY_BUFFER;
                     hasNext = Boolean.TRUE;
+                    buffer = BufferUtil.EMPTY_BUFFER;
                     return true;
                 }
             }
@@ -167,6 +169,7 @@ public class InputStreamContentProvider implements ContentProvider
                     // Signal we have more content to cause a call to
                     // next() which will throw NoSuchElementException.
                     hasNext = Boolean.TRUE;
+                    buffer = null;
                     close();
                     return true;
                 }
@@ -178,13 +181,28 @@ public class InputStreamContentProvider implements ContentProvider
         public ByteBuffer next()
         {
             if (failure != null)
+            {
+                // Consume the failure so that calls to hasNext() will return false.
+                hasNext = Boolean.FALSE;
+                buffer = null;
                 throw (NoSuchElementException)new NoSuchElementException().initCause(failure);
+            }
+            if (!hasNext())
+                throw new NoSuchElementException();
+
             ByteBuffer result = buffer;
             if (result == null)
+            {
+                hasNext = Boolean.FALSE;
+                buffer = null;
                 throw new NoSuchElementException();
-            buffer = null;
-            hasNext = null;
-            return result;
+            }
+            else
+            {
+                hasNext = null;
+                buffer = null;
+                return result;
+            }
         }
 
         @Override
@@ -193,7 +211,8 @@ public class InputStreamContentProvider implements ContentProvider
             throw new UnsupportedOperationException();
         }
 
-        private void close()
+        @Override
+        public void close()
         {
             if (autoClose)
             {

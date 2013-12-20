@@ -35,6 +35,7 @@ import javax.servlet.Filter;
 import javax.servlet.FilterRegistration;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.Servlet;
+import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
@@ -59,8 +60,10 @@ import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.servlet.BaseHolder.Source;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.LifeCycle;
 
 
 /* ------------------------------------------------------------ */
@@ -81,6 +84,8 @@ public class ServletContextHandler extends ContextHandler
     public final static int SECURITY=2;
     public final static int NO_SESSIONS=0;
     public final static int NO_SECURITY=0;
+    
+    public interface ServletContainerInitializerCaller extends LifeCycle {};
 
     protected final List<Decorator> _decorators= new ArrayList<>();
     protected Class<? extends SecurityHandler> _defaultSecurityHandlerClass=org.eclipse.jetty.security.ConstraintSecurityHandler.class;
@@ -266,18 +271,25 @@ public class ServletContextHandler extends ContextHandler
     @Override
     protected void startContext() throws Exception
     {
-    	
-    	if (_servletHandler != null)
-    	{
-    	    for (int i=_decorators.size()-1;i>=0; i--)
-    	    {
-    	        Decorator decorator = _decorators.get(i);
-                if (_servletHandler.getFilters()!=null)
-                    for (FilterHolder holder:_servletHandler.getFilters())
-                        decorator.decorate(holder);
-    	        if(_servletHandler.getServlets()!=null)
-    	            for (ServletHolder holder:_servletHandler.getServlets())
-    	                decorator.decorate(holder);
+        ServletContainerInitializerCaller sciBean = getBean(ServletContainerInitializerCaller.class);
+        if (sciBean!=null)
+            sciBean.start();
+
+        if (_servletHandler != null)
+        {
+            //Call decorators on all holders, and also on any EventListeners before
+            //decorators are called on any other classes (like servlets and filters)
+            for (int i=_decorators.size()-1;i>=0; i--)
+            {
+                Decorator decorator = _decorators.get(i);
+                //Do any decorations on the ListenerHolders AND the listener instances first up
+                if (_servletHandler.getListeners()!=null)
+                {
+                    for (ListenerHolder holder:_servletHandler.getListeners())
+                    {             
+                        decorator.decorate(holder.getListener());
+                    }
+                }
     	    }
     	}
     	
@@ -908,7 +920,7 @@ public class ServletContextHandler extends ContextHandler
             if (holder == null)
             {
                 //new filter
-                holder = handler.newFilterHolder(Holder.Source.JAVAX_API);
+                holder = handler.newFilterHolder(Source.JAVAX_API);
                 holder.setName(filterName);
                 holder.setHeldClass(filterClass);
                 handler.addFilter(holder);
@@ -945,7 +957,7 @@ public class ServletContextHandler extends ContextHandler
             if (holder == null)
             {
                 //new filter
-                holder = handler.newFilterHolder(Holder.Source.JAVAX_API);
+                holder = handler.newFilterHolder(Source.JAVAX_API);
                 holder.setName(filterName);
                 holder.setClassName(className);
                 handler.addFilter(holder);
@@ -983,7 +995,7 @@ public class ServletContextHandler extends ContextHandler
             if (holder == null)
             {
                 //new filter
-                holder = handler.newFilterHolder(Holder.Source.JAVAX_API);
+                holder = handler.newFilterHolder(Source.JAVAX_API);
                 holder.setName(filterName);
                 holder.setFilter(filter);
                 handler.addFilter(holder);
@@ -1021,7 +1033,7 @@ public class ServletContextHandler extends ContextHandler
             if (holder == null)
             {
                 //new servlet
-                holder = handler.newServletHolder(Holder.Source.JAVAX_API);
+                holder = handler.newServletHolder(Source.JAVAX_API);
                 holder.setName(servletName);
                 holder.setHeldClass(servletClass);
                 handler.addServlet(holder);
@@ -1060,7 +1072,7 @@ public class ServletContextHandler extends ContextHandler
             if (holder == null)
             {
                 //new servlet
-                holder = handler.newServletHolder(Holder.Source.JAVAX_API);
+                holder = handler.newServletHolder(Source.JAVAX_API);
                 holder.setName(servletName);
                 holder.setClassName(className);
                 handler.addServlet(holder);
@@ -1097,7 +1109,7 @@ public class ServletContextHandler extends ContextHandler
             ServletHolder holder = handler.getServlet(servletName);
             if (holder == null)
             {
-                holder = handler.newServletHolder(Holder.Source.JAVAX_API);
+                holder = handler.newServletHolder(Source.JAVAX_API);
                 holder.setName(servletName);
                 holder.setServlet(servlet);
                 handler.addServlet(holder);
@@ -1134,6 +1146,11 @@ public class ServletContextHandler extends ContextHandler
             try
             {
                 T f = createInstance(c);
+                for (int i=_decorators.size()-1; i>=0; i--)
+                {
+                    Decorator decorator = _decorators.get(i);
+                    f=decorator.decorate(f);
+                }
                 return f;
             }
             catch (Exception e)
@@ -1149,6 +1166,11 @@ public class ServletContextHandler extends ContextHandler
             try
             {
                 T s = createInstance(c);
+                for (int i=_decorators.size()-1; i>=0; i--)
+                {
+                    Decorator decorator = _decorators.get(i);
+                    s=decorator.decorate(s);
+                }
                 return s;
             }
             catch (Exception e)
@@ -1156,20 +1178,6 @@ public class ServletContextHandler extends ContextHandler
                 throw new ServletException(e);
             }
         }
-        
-        
-        
-        public <T> T createInstance (Class<T> c) throws Exception
-        {
-              T o = super.createInstance(c);
-              for (int i=_decorators.size()-1; i>=0; i--)
-              {
-                  Decorator decorator = _decorators.get(i);
-                  o=decorator.decorate(o);
-              }
-              return o;
-        }
-        
         
 
         @Override
@@ -1284,6 +1292,9 @@ public class ServletContextHandler extends ContextHandler
             if (!_enabled)
                 throw new UnsupportedOperationException();
             super.addListener(t);
+            ListenerHolder holder = getServletHandler().newListenerHolder(Source.JAVAX_API);
+            holder.setListener(t);
+            getServletHandler().addListener(holder);
         }
 
         @Override
@@ -1302,6 +1313,11 @@ public class ServletContextHandler extends ContextHandler
             try
             {
                 T l = createInstance(clazz);
+                for (int i=_decorators.size()-1; i>=0; i--)
+                {
+                    Decorator decorator = _decorators.get(i);
+                    l=decorator.decorate(l);
+                }
                 return l;
             }            
             catch (Exception e)

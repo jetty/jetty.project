@@ -21,8 +21,6 @@ package org.eclipse.jetty.websocket.jsr356.annotations;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 
-import javax.websocket.OnMessage;
-
 import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
 import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
 import org.eclipse.jetty.websocket.jsr356.decoders.ByteArrayDecoder;

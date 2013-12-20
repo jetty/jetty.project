@@ -100,7 +100,6 @@ public class BrowserDebugTool implements WebSocketCreator
         server = new Server();
         ServerConnector connector = new ServerConnector(server);
         connector.setPort(port);
-
         server.addConnector(connector);
 
         WebSocketHandler wsHandler = new WebSocketHandler()
@@ -114,7 +113,7 @@ public class BrowserDebugTool implements WebSocketCreator
                 factory.setCreator(BrowserDebugTool.this);
 
                 // Set the timeout
-                factory.getPolicy().setIdleTimeout(20000);
+                factory.getPolicy().setIdleTimeout(30000);
             }
         };
 

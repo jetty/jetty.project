@@ -19,6 +19,7 @@
 package com.acme;
 import java.util.EventListener;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import javax.servlet.ServletContextAttributeEvent;
 import javax.servlet.ServletContextAttributeListener;
@@ -33,6 +34,7 @@ import javax.servlet.http.HttpSessionActivationListener;
 import javax.servlet.http.HttpSessionAttributeListener;
 import javax.servlet.http.HttpSessionBindingEvent;
 import javax.servlet.http.HttpSessionEvent;
+import javax.servlet.http.HttpSessionIdListener;
 import javax.servlet.http.HttpSessionListener;
 
 
@@ -40,7 +42,7 @@ import javax.servlet.http.HttpSessionListener;
 @WebListener
 public class TestListener implements HttpSessionListener,  HttpSessionAttributeListener, HttpSessionActivationListener, ServletContextListener, ServletContextAttributeListener, ServletRequestListener, ServletRequestAttributeListener
 {
-    public class NaughtyServletContextListener implements ServletContextListener
+    public static class NaughtyServletContextListener implements ServletContextListener
     {
 
         @Override
@@ -56,13 +58,32 @@ public class TestListener implements HttpSessionListener,  HttpSessionAttributeL
         }
     }
     
-    public class InvalidListener implements EventListener
+    public static class InvalidListener implements EventListener
     {
+        public InvalidListener()
+        {}
+    }
+    
+    public static class ValidListener implements HttpSessionIdListener
+    {
+        @Resource(mappedName="maxAmount")
+        private Double maxAmount;
+        
+        public ValidListener()
+        {}
+        
+        @Override
+        public void sessionIdChanged(HttpSessionEvent event, String oldSessionId)
+        {
+           
+        }
         
     }
 
     @Resource(mappedName="maxAmount")
     private Double maxAmount;
+    
+
 
     public void attributeAdded(HttpSessionBindingEvent se)
     {
@@ -91,6 +112,10 @@ public class TestListener implements HttpSessionListener,  HttpSessionAttributeL
 
     public void contextInitialized(ServletContextEvent sce)
     {
+        System.err.println("Calling TestListener.contextInitialized");
+        
+        sce.getServletContext().setAttribute("com.acme.AnnotationTest.sclInjectTest", Boolean.valueOf(maxAmount != null));
+        
         //Can't add a ServletContextListener from a ServletContextListener even if it is declared in web.xml
         try
         {
@@ -121,6 +146,17 @@ public class TestListener implements HttpSessionListener,  HttpSessionAttributeL
         {
             sce.getServletContext().setAttribute("com.acme.AnnotationTest.invalidListenerRegoTest", Boolean.FALSE);
         } 
+        
+        //Programmatically add a listener and make sure its injected
+        try
+        {
+            ValidListener l = sce.getServletContext().createListener(ValidListener.class);
+            sce.getServletContext().setAttribute("com.acme.AnnotationTest.programListenerInjectTest", Boolean.valueOf(l != null && l.maxAmount != null));
+        }   
+        catch (Exception e)
+        {
+            sce.getServletContext().setAttribute("com.acme.AnnotationTest.programListenerInjectTest", Boolean.FALSE);
+        }
     }
 
     public void contextDestroyed(ServletContextEvent sce)

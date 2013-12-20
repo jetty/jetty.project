@@ -81,6 +81,7 @@ public class JsrBasicRemote extends AbstractJsrRemote implements RemoteEndpoint.
     @Override
     public void sendObject(Object data) throws IOException, EncodeException
     {
+        // TODO avoid the use of a Future
         Future<Void> fut = sendObjectViaFuture(data);
         try
         {

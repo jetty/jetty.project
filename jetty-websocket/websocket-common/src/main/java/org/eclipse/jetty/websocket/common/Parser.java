@@ -51,7 +51,6 @@ public class Parser
     private enum State
     {
         START,
-        FINOP,
         PAYLOAD_LEN,
         PAYLOAD_LEN_BYTES,
         MASK,
@@ -76,13 +75,18 @@ public class Parser
     private PayloadProcessor maskProcessor = new DeMaskProcessor();
     // private PayloadProcessor strictnessProcessor;
 
-    /** Is there an extension using RSV1 */
-    private boolean rsv1InUse = false;
-    /** Is there an extension using RSV2 */
-    private boolean rsv2InUse = false;
-    /** Is there an extension using RSV3 */
-    private boolean rsv3InUse = false;
-
+    /** 
+     * Is there an extension using RSV flag?
+     * <p>
+     * 
+     * <pre>
+     *   0100_0000 (0x40) = rsv1
+     *   0010_0000 (0x20) = rsv2
+     *   0001_0000 (0x10) = rsv3
+     * </pre>
+     */
+    private byte flagsInUse=0x00;
+    
     private IncomingFrames incomingFramesHandler;
 
     public Parser(WebSocketPolicy wspolicy, ByteBufferPool bufferPool)
@@ -131,26 +135,24 @@ public class Parser
     }
 
     public void configureFromExtensions(List<? extends Extension> exts)
-    {
+    {        
         // default
-        this.rsv1InUse = false;
-        this.rsv2InUse = false;
-        this.rsv3InUse = false;
+        flagsInUse = 0x00;
 
         // configure from list of extensions in use
         for (Extension ext : exts)
         {
             if (ext.isRsv1User())
             {
-                this.rsv1InUse = true;
+                flagsInUse = (byte)(flagsInUse | 0x40);
             }
             if (ext.isRsv2User())
             {
-                this.rsv2InUse = true;
+                flagsInUse = (byte)(flagsInUse | 0x20);
             }
             if (ext.isRsv3User())
             {
-                this.rsv3InUse = true;
+                flagsInUse = (byte)(flagsInUse | 0x10);
             }
         }
     }
@@ -167,17 +169,17 @@ public class Parser
 
     public boolean isRsv1InUse()
     {
-        return rsv1InUse;
+        return (flagsInUse & 0x40) != 0;
     }
 
     public boolean isRsv2InUse()
     {
-        return rsv2InUse;
+        return (flagsInUse & 0x20) != 0;
     }
 
     public boolean isRsv3InUse()
     {
-        return rsv3InUse;
+        return (flagsInUse & 0x10) != 0;
     }
 
     protected void notifyFrame(final Frame f)
@@ -189,11 +191,26 @@ public class Parser
 
         if (policy.getBehavior() == WebSocketBehavior.SERVER)
         {
-            // Parsing on server?
-            // Then you MUST make sure all incoming frames are masked!
+            /* Parsing on server.
+             * 
+             * Then you MUST make sure all incoming frames are masked!
+             * 
+             * Technically, this test is in violation of RFC-6455, Section 5.1
+             * http://tools.ietf.org/html/rfc6455#section-5.1
+             * 
+             * But we can't trust the client at this point, so Jetty opts to close
+             * the connection as a Protocol error.
+             */
             if (f.isMasked() == false)
             {
-                throw new ProtocolException("Client frames MUST be masked (RFC-6455)");
+                throw new ProtocolException("Client MUST mask all frames (RFC-6455: Section 5.1)");
+            }
+        } else if(policy.getBehavior() == WebSocketBehavior.CLIENT)
+        {
+            // Required by RFC-6455 / Section 5.1
+            if (f.isMasked() == true)
+            {
+                throw new ProtocolException("Server MUST NOT mask any frames (RFC-6455: Section 5.1)");
             }
         }
 
@@ -294,18 +311,11 @@ public class Parser
                     {
                         frame.reset();
                     }
-
-                    state = State.FINOP;
-                    break;
-                }
-                case FINOP:
-                {
+                    
                     // peek at byte
                     byte b = buffer.get();
                     boolean fin = ((b & 0x80) != 0);
-                    boolean rsv1 = ((b & 0x40) != 0);
-                    boolean rsv2 = ((b & 0x20) != 0);
-                    boolean rsv3 = ((b & 0x10) != 0);
+                    
                     byte opc = (byte)(b & 0x0F);
                     byte opcode = opc;
 
@@ -313,37 +323,23 @@ public class Parser
                     {
                         throw new ProtocolException("Unknown opcode: " + opc);
                     }
-
+                    
                     if (LOG.isDebugEnabled())
                     {
-                        LOG.debug("OpCode {}, fin={} rsv={}{}{}",OpCode.name(opcode),fin,(rsv1?'1':'.'),(rsv2?'1':'.'),(rsv3?'1':'.'));
-                    }
-
-                    /*
-                     * RFC 6455 Section 5.2
-                     * 
-                     * MUST be 0 unless an extension is negotiated that defines meanings for non-zero values. If a nonzero value is received and none of the
-                     * negotiated extensions defines the meaning of such a nonzero value, the receiving endpoint MUST _Fail the WebSocket Connection_.
-                     */
-                    if (!rsv1InUse && rsv1)
-                    {
-                        throw new ProtocolException("RSV1 not allowed to be set");
-                    }
-
-                    if (!rsv2InUse && rsv2)
-                    {
-                        throw new ProtocolException("RSV2 not allowed to be set");
-                    }
-
-                    if (!rsv3InUse && rsv3)
-                    {
-                        throw new ProtocolException("RSV3 not allowed to be set");
+                        LOG.debug("OpCode {}, fin={} rsv={}{}{}",
+                                OpCode.name(opcode),
+                                fin,
+                                (isRsv1InUse()?'1':'.'),
+                                (isRsv2InUse()?'1':'.'),
+                                (isRsv3InUse()?'1':'.'));
                     }
 
                     // base framing flags
-                    switch(opcode) {
+                    switch(opcode) 
+                    {
                         case OpCode.TEXT:
                             frame = new TextFrame();
+                            lastDataOpcode = opcode;
                             // data validation
                             if ((priorDataFrame != null) && (!priorDataFrame.isFin()))
                             {
@@ -352,6 +348,7 @@ public class Parser
                             break;
                         case OpCode.BINARY:
                             frame = new BinaryFrame();
+                            lastDataOpcode = opcode;
                             // data validation
                             if ((priorDataFrame != null) && (!priorDataFrame.isFin()))
                             {
@@ -360,6 +357,7 @@ public class Parser
                             break;
                         case OpCode.CONTINUATION:
                             frame = new ContinuationFrame();
+                            lastDataOpcode = opcode;
                             // continuation validation
                             if (priorDataFrame == null)
                             {
@@ -395,18 +393,50 @@ public class Parser
                     }
                     
                     frame.setFin(fin);
-                    frame.setRsv1(rsv1);
-                    frame.setRsv2(rsv2);
-                    frame.setRsv3(rsv3);
 
-                    if (frame.isDataFrame())
+                    // Are any flags set?
+                    if ((b & 0x70) != 0)
                     {
-                        lastDataOpcode = opcode;
+                        /*
+                         * RFC 6455 Section 5.2
+                         * 
+                         * MUST be 0 unless an extension is negotiated that defines meanings for non-zero values. If a nonzero value is received and none of the
+                         * negotiated extensions defines the meaning of such a nonzero value, the receiving endpoint MUST _Fail the WebSocket Connection_.
+                         */
+                        if ((b & 0x40) != 0)
+                        {
+                            if (isRsv1InUse())
+                                frame.setRsv1(true);
+                            else
+                                throw new ProtocolException("RSV1 not allowed to be set");   
+                        }
+                        if ((b & 0x20) != 0)
+                        {
+                            if (isRsv2InUse())
+                                frame.setRsv2(true);
+                            else
+                                throw new ProtocolException("RSV2 not allowed to be set");   
+                        }
+                        if ((b & 0x10) != 0)
+                        {
+                            if (isRsv3InUse())
+                                frame.setRsv3(true);
+                            else
+                                throw new ProtocolException("RSV3 not allowed to be set");   
+                        }
                     }
-
+                    else
+                    {
+                        if (LOG.isDebugEnabled())
+                        {
+                            LOG.debug("OpCode {}, fin={} rsv=000",OpCode.name(opcode),fin);
+                        }
+                    }
+                    
                     state = State.PAYLOAD_LEN;
                     break;
                 }
+                
                 case PAYLOAD_LEN:
                 {
                     byte b = buffer.get();
@@ -450,6 +480,7 @@ public class Parser
 
                     break;
                 }
+                
                 case PAYLOAD_LEN_BYTES:
                 {
                     byte b = buffer.get();
@@ -477,6 +508,7 @@ public class Parser
                     }
                     break;
                 }
+                
                 case MASK:
                 {
                     byte m[] = new byte[4];
@@ -501,6 +533,7 @@ public class Parser
                     }
                     break;
                 }
+                
                 case MASK_BYTES:
                 {
                     byte b = buffer.get();
@@ -520,6 +553,7 @@ public class Parser
                     }
                     break;
                 }
+                
                 case PAYLOAD:
                 {
                     if (parsePayload(buffer))
@@ -549,13 +583,13 @@ public class Parser
      * @return true if payload is done reading, false if incomplete
      */
     private boolean parsePayload(ByteBuffer buffer)
-    {
+    {        
         if (payloadLength == 0)
         {
             return true;
         }
 
-        while (buffer.hasRemaining())
+        if (buffer.hasRemaining())
         {
             if (payload == null)
             {

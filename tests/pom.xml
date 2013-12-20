@@ -42,10 +42,10 @@
     </plugins>
   </build>
   <modules>
-    <!--module>test-integration</module-->
     <module>test-webapps</module>
     <module>test-sessions</module>
     <module>test-continuation</module>
     <module>test-loginservice</module>
+    <module>test-integration</module>
   </modules>
 </project>

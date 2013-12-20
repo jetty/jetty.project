@@ -85,6 +85,7 @@ public class StartArgs
     private Modules allModules;
     // Should the server be run?
     private boolean run = true;
+    private boolean download = false;
     private boolean help = false;
     private boolean stopCommand = false;
     private boolean listModules = false;
@@ -160,6 +161,9 @@ public class StartArgs
         dumpSystemProperty("java.runtime.name");
         dumpSystemProperty("java.runtime.version");
         dumpSystemProperty("java.io.tmpdir");
+        dumpSystemProperty("user.dir");
+        dumpSystemProperty("user.language");
+        dumpSystemProperty("user.country");
 
         // Jetty Environment
         System.out.println();
@@ -533,7 +537,12 @@ public class StartArgs
         }
         return false;
     }
-
+    
+    public boolean isDownload()
+    {
+        return download;
+    }
+    
     public boolean isDryRun()
     {
         return dryRun;
@@ -564,6 +573,11 @@ public class StartArgs
         return listModules;
     }
 
+    public void setRun(boolean run)
+    {
+        this.run = run;
+    }
+    
     public boolean isRun()
     {
         return run;
@@ -647,6 +661,15 @@ public class StartArgs
         if (arg.startsWith("--download="))
         {
             addFile(getValue(arg));
+            run=false;
+            download=true;
+            return;
+        }
+        
+        if (arg.equals("--download") || arg.equals("--create"))
+        {
+            run=false;
+            download=true;
             return;
         }
 
@@ -864,4 +887,5 @@ public class StartArgs
         builder.append("]");
         return builder.toString();
     }
+
 }

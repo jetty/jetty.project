@@ -52,6 +52,9 @@ public class HttpTesting
     
     public static List<HttpTester.Response> getParts (String boundary, HttpTester.Response response) throws IOException
     {
+        // TODO This method appears to be broken in how it uses the HttpParser
+        // Should use MultiPartInputStreamParser ??
+        
         List<HttpTester.Response> parts = new ArrayList<HttpTester.Response>();
 
         BufferedReader buf = new BufferedReader(new StringReader(response.getContent()));
