@@ -470,8 +470,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
     @Override
     public void onStreamException(StreamException x)
     {
-        // TODO: rename to onFailure
-        notifyOnException(listener, x); //TODO: notify StreamFrameListener if exists?
+        notifyOnFailure(listener, x); // TODO: notify StreamFrameListener if exists?
         rst(new RstInfo(x.getStreamId(), x.getStreamStatus()), new Callback.Adapter());
     }
 
@@ -479,7 +478,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
     public void onSessionException(SessionException x)
     {
         Throwable cause = x.getCause();
-        notifyOnException(listener, cause == null ? x : cause);
+        notifyOnFailure(listener, cause == null ? x : cause);
         goAway(x.getSessionStatus(), 0, TimeUnit.SECONDS, new Callback.Adapter());
     }
 
@@ -721,7 +720,6 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
     {
         if (goAwayReceived.compareAndSet(false, true))
         {
-            //TODO: Find a better name for GoAwayResultInfo
             GoAwayResultInfo goAwayResultInfo = new GoAwayResultInfo(frame.getLastStreamId(), SessionStatus.from(frame.getStatusCode()));
             notifyOnGoAway(listener, goAwayResultInfo);
             // SPDY does not require to send back a response to a GO_AWAY.
@@ -773,7 +771,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
             controller.close(false);
     }
 
-    private void notifyOnException(SessionFrameListener listener, Throwable x)
+    private void notifyOnFailure(SessionFrameListener listener, Throwable x)
     {
         try
         {
@@ -933,20 +931,24 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
             // Synchronization is necessary, since we may have concurrent replies
             // and those needs to be generated and enqueued atomically in order
             // to maintain a correct compression context
+            ControlFrameBytes frameBytes;
+            Throwable throwable;
             synchronized (this)
             {
                 ByteBuffer buffer = generator.control(frame);
                 LOG.debug("Queuing {} on {}", frame, stream);
-                ControlFrameBytes frameBytes = new ControlFrameBytes(stream, callback, frame, buffer);
+                frameBytes = new ControlFrameBytes(stream, callback, frame, buffer);
                 if (timeout > 0)
                     frameBytes.task = scheduler.schedule(frameBytes, timeout, unit);
 
                 // Special handling for PING frames, they must be sent as soon as possible
                 if (ControlFrameType.PING == frame.getType())
-                    flusher.prepend(frameBytes);
+                    throwable = flusher.prepend(frameBytes);
                 else
-                    flusher.append(frameBytes);
+                    throwable = flusher.append(frameBytes);
             }
+            // Flush MUST be done outside synchronized blocks
+            flush(frameBytes, throwable);
         }
         catch (Exception x)
         {
@@ -968,36 +970,47 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         DataFrameBytes frameBytes = new DataFrameBytes(stream, callback, dataInfo);
         if (timeout > 0)
             frameBytes.task = scheduler.schedule(frameBytes, timeout, unit);
-        flusher.append(frameBytes);
+        flush(frameBytes, flusher.append(frameBytes));
     }
 
     @Override
     public void shutdown()
     {
-        FrameBytes frameBytes = new CloseFrameBytes();
-        flusher.append(frameBytes);
+        CloseFrameBytes frameBytes = new CloseFrameBytes();
+        flush(frameBytes, flusher.append(frameBytes));
+    }
+
+    private void flush(FrameBytes frameBytes, Throwable throwable)
+    {
+        if (throwable != null)
+            frameBytes.failed(throwable);
+        else
+            flusher.flush();
     }
 
     private void complete(final Callback callback)
     {
-        callback.succeeded();
+        try
+        {
+            if (callback != null)
+                callback.succeeded();
+        }
+        catch (Throwable x)
+        {
+            LOG.info("Exception while notifying callback " + callback, x);
+        }
     }
 
-    private void notifyCallbackFailed(Callback callback, Throwable x)
+    private void notifyCallbackFailed(Callback callback, Throwable failure)
     {
         try
         {
             if (callback != null)
-                callback.failed(x);
+                callback.failed(failure);
         }
-        catch (Exception xx)
+        catch (Throwable x)
         {
-            LOG.info("Exception while notifying callback " + callback, xx);
-        }
-        catch (Error xx)
-        {
-            LOG.info("Exception while notifying callback " + callback, xx);
-            throw xx;
+            LOG.info("Exception while notifying callback " + callback, x);
         }
     }
 
@@ -1100,7 +1113,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         }
     }
 
-    class ControlFrameBytes extends AbstractFrameBytes
+    protected class ControlFrameBytes extends AbstractFrameBytes
     {
         private final ControlFrame frame;
         private final ByteBuffer buffer;
@@ -1143,7 +1156,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         }
     }
 
-    private class DataFrameBytes extends AbstractFrameBytes
+    protected class DataFrameBytes extends AbstractFrameBytes
     {
         private final DataInfo dataInfo;
         private int size;
@@ -1203,7 +1216,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
                 // We have written a frame out of this DataInfo, but there is more to write.
                 // We need to keep the correct ordering of frames, to avoid that another
                 // DataInfo for the same stream is written before this one is finished.
-                flusher.prepend(this);
+                flush(this, flusher.prepend(this));
             }
             else
             {
@@ -1221,7 +1234,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         }
     }
 
-    private class CloseFrameBytes extends AbstractFrameBytes
+    protected class CloseFrameBytes extends AbstractFrameBytes
     {
         private CloseFrameBytes()
         {
