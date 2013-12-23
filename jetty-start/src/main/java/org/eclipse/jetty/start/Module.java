@@ -261,9 +261,43 @@ public class Module
             {
                 String line;
                 String sectionType = "";
+                String switchProperty = null;
+                String caseTag = null;
+                String caseTagColon = null;
+                boolean switched = false;
                 while ((line = buf.readLine()) != null)
                 {
                     line = line.trim();
+                    
+                    if (caseTag!=null)
+                    {
+                        if ("}".equals(line))
+                        {
+                            if (!switched)
+                                StartLog.warn("WARN: No matching case in %s for ${switch %s=%s ...}",basehome.toShortForm(file),switchProperty,caseTag);
+                            caseTag=null;
+                            caseTagColon=null;
+                            switchProperty=null;
+                            continue;
+                        }
+                        
+                        if (switched)
+                            continue;
+                        
+                        if (!line.startsWith(caseTagColon) && !line.startsWith("*:"))
+                            continue;
+
+                        switched=true;
+                        line=line.substring(line.indexOf(':')+1).trim();
+                    }
+                    else if (line.startsWith("${switch "))
+                    {
+                        switched=false;
+                        switchProperty=line.substring(9).trim();
+                        caseTag=System.getProperty(switchProperty);
+                        caseTagColon=caseTag+":";
+                        continue;
+                    }
                                         
                     Matcher sectionMatcher = section.matcher(line);
 
@@ -273,7 +307,7 @@ public class Module
                     }
                     else
                     {
-                        // blank lines and comments are valid for initialise section
+                        // blank lines and comments are valid for initialize section
                         if (line.length() == 0 || line.startsWith("#"))
                         {
                             if ("INI-TEMPLATE".equals(sectionType))
