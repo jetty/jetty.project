@@ -102,7 +102,7 @@ public class Module
     /** List of sources that enabled this module */
     private final Set<String> sources = new HashSet<>();
 
-    public Module(File file) throws FileNotFoundException, IOException
+    public Module(BaseHome basehome,File file) throws FileNotFoundException, IOException
     {
         this.file = file;
 
@@ -111,7 +111,7 @@ public class Module
         name = Pattern.compile(".mod$",Pattern.CASE_INSENSITIVE).matcher(name).replaceFirst("");
 
         init();
-        process();
+        process(basehome);
     }
 
     public void addChildEdge(Module child)
@@ -245,13 +245,13 @@ public class Module
         return enabled;
     }
 
-    public void process() throws FileNotFoundException, IOException
+    public void process(BaseHome basehome) throws FileNotFoundException, IOException
     {
         Pattern section = Pattern.compile("\\s*\\[([^]]*)\\]\\s*");
 
         if (!FS.canReadFile(file))
         {
-            StartLog.debug("Skipping read of missing file: %s",file.getAbsolutePath());
+            StartLog.debug("Skipping read of missing file: %s",basehome.toShortForm(file));
             return;
         }
 
@@ -261,36 +261,9 @@ public class Module
             {
                 String line;
                 String sectionType = "";
-                String caseTag = null;
-                boolean switched = false;
                 while ((line = buf.readLine()) != null)
                 {
                     line = line.trim();
-                    
-                    if (caseTag!=null)
-                    {
-                        if ("}".equals(line))
-                        {
-                            caseTag=null;
-                            continue;
-                        }
-                        
-                        if (switched)
-                            continue;
-                        
-                        if (!line.startsWith(caseTag) && !line.startsWith("*:"))
-                            continue;
-
-                        switched=true;
-                        line=line.substring(line.indexOf(':')+1).trim();
-                    }
-                    else if (line.startsWith("${switch "))
-                    {
-                        switched=false;
-                        caseTag=line.substring(9).trim();
-                        caseTag=System.getProperty(caseTag)+":";
-                        continue;
-                    }
                                         
                     Matcher sectionMatcher = section.matcher(line);
 
@@ -300,7 +273,7 @@ public class Module
                     }
                     else
                     {
-                        // blank lines and comments are valid for initialize section
+                        // blank lines and comments are valid for initialise section
                         if (line.length() == 0 || line.startsWith("#"))
                         {
                             if ("INI-TEMPLATE".equals(sectionType))

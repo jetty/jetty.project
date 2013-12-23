@@ -666,7 +666,7 @@ public class StartArgs
             return;
         }
         
-        if (arg.equals("--download") || arg.equals("--create"))
+        if (arg.equals("--create-files"))
         {
             run=false;
             download=true;

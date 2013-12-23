@@ -381,7 +381,7 @@ public class Main
                         return;
                     }
                     source = short_start_ini;
-                    StartLog.warn("%-15s initialised in %s (appended)",name,source);
+                    StartLog.info("%-15s initialised in %s (appended)",name,source);
                     out = new PrintWriter(new FileWriter(start_ini,true));
                 }
                 else
@@ -403,7 +403,7 @@ public class Main
                         return;
                     }
                     source = short_ini;
-                    StartLog.warn("%-15s initialised in %s (created)",name,source);
+                    StartLog.info("%-15s initialised in %s (created)",name,source);
                     out = new PrintWriter(ini);
                 }
 
@@ -462,7 +462,7 @@ public class Main
         {
             if (!short_ini.equals(source))
             {
-                StartLog.warn("%-15s enabled in     %s",name,baseHome.toShortForm(source));
+                StartLog.info("%-15s enabled in     %s",name,baseHome.toShortForm(source));
             }
         }
 
@@ -673,9 +673,9 @@ public class Main
                 args.setRun(false);
                 String type=arg.location.endsWith("/")?"directory":"file";
                 if (arg.uri==null)
-                    StartLog.warn("Required %s '%s' does not exist. Run with --create",type,baseHome.toShortForm(file));
+                    StartLog.warn("Required %s '%s' does not exist. Run with --create-files to create",type,baseHome.toShortForm(file));
                 else
-                    StartLog.warn("Required %s '%s' not downloaded from %s.  Run with --download",type,baseHome.toShortForm(file),arg.uri);
+                    StartLog.warn("Required %s '%s' not downloaded from %s.  Run with --create-files to download",type,baseHome.toShortForm(file),arg.uri);
             }
         }
         

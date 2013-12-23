@@ -3,35 +3,13 @@
 #
 
 [files]
-${switch java.version
-1.7.0_9:  http://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.3.v20130313/npn-boot-1.1.3.v20130313.jar:lib/npn/npn-boot-1.1.3.v20130313.jar
-1.7.0_10: http://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.3.v20130313/npn-boot-1.1.3.v20130313.jar:lib/npn/npn-boot-1.1.3.v20130313.jar
-1.7.0_11: http://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.3.v20130313/npn-boot-1.1.3.v20130313.jar:lib/npn/npn-boot-1.1.3.v20130313.jar
-1.7.0_13: http://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.4.v20130313/npn-boot-1.1.4.v20130313.jar:lib/npn/npn-boot-1.1.4.v20130313.jar
-1.7.0_15: http://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.5.v20130313/npn-boot-1.1.5.v20130313.jar:lib/npn/npn-boot-1.1.5.v20130313.jar
-1.7.0_17: http://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.5.v20130313/npn-boot-1.1.5.v20130313.jar:lib/npn/npn-boot-1.1.5.v20130313.jar
-1.7.0_21: http://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.5.v20130313/npn-boot-1.1.5.v20130313.jar:lib/npn/npn-boot-1.1.5.v20130313.jar
-1.7.0_25: http://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.5.v20130313/npn-boot-1.1.5.v20130313.jar:lib/npn/npn-boot-1.1.5.v20130313.jar
-1.7.0_40: http://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.6.v20130911/npn-boot-1.1.6.v20130911.jar:lib/npn/npn-boot-1.1.6.v20130911.jar
-1.7.0_45: http://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.6.v20130911/npn-boot-1.1.6.v20130911.jar:lib/npn/npn-boot-1.1.6.v20130911.jar
-*:        http://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.6.v20130911/npn-boot-1.1.6.v20130911.jar:lib/npn/npn-boot-1.1.6.v20130911.jar
-}
+http://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.6.v20130911/npn-boot-1.1.6.v20130911.jar:lib/npn/npn-boot-1.1.6.v20130911.jar
 
 [ini-template]
+# NPN Configuration
+# NPN boot jar for JRE 1.7.0_45
 --exec
-${switch java.version
-1.7.0_9:  -Xbootclasspath/p:lib/npn/npn-boot-1.1.3.v20130313.jar
-1.7.0_10: -Xbootclasspath/p:lib/npn/npn-boot-1.1.3.v20130313.jar
-1.7.0_11: -Xbootclasspath/p:lib/npn/npn-boot-1.1.3.v20130313.jar
-1.7.0_13: -Xbootclasspath/p:lib/npn/npn-boot-1.1.4.v20130313.jar
-1.7.0_15: -Xbootclasspath/p:lib/npn/npn-boot-1.1.5.v20130313.jar
-1.7.0_17: -Xbootclasspath/p:lib/npn/npn-boot-1.1.5.v20130313.jar
-1.7.0_21: -Xbootclasspath/p:lib/npn/npn-boot-1.1.5.v20130313.jar
-1.7.0_25: -Xbootclasspath/p:lib/npn/npn-boot-1.1.5.v20130313.jar
-1.7.0_40: -Xbootclasspath/p:lib/npn/npn-boot-1.1.6.v20130911.jar
-1.7.0_45: -Xbootclasspath/p:lib/npn/npn-boot-1.1.6.v20130911.jar
-*:        -Xbootclasspath/p:lib/npn/npn-boot-1.1.6.v20130911.jar
-}
+-Xbootclasspath/p:lib/npn/npn-boot-1.1.6.v20130911.jar
 
 # For other versions of JRE, an appropriate npn-boot jar must be downloaded
 #

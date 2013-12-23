@@ -60,7 +60,7 @@ public class StartLog
 
     public static void info(String format, Object... args)
     {
-        System.err.printf("WARNING: " + format + "%n",args);
+        System.err.printf("INFO: " + format + "%n",args);
     }
     
     public static void warn(String format, Object... args)

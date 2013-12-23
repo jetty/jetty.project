@@ -309,7 +309,7 @@ public class Modules implements Iterable<Module>
     {
         for (File file : basehome.listFiles("modules",new FS.FilenameRegexFilter("^.*\\.mod$")))
         {
-            register(new Module(file));
+            register(new Module(basehome,file));
         }
     }
 
