@@ -35,6 +35,8 @@ public class ModuleGraphWriterTest
 {
     @SuppressWarnings("unused")
     private final static List<String> TEST_SOURCE = Collections.singletonList("<test>");
+    
+    private StartArgs DEFAULT_ARGS = new StartArgs(new String[]{"jetty.version=TEST"}).parseCommandLine();
 
     @Rule
     public TestingDir testdir = new TestingDir();
@@ -47,7 +49,7 @@ public class ModuleGraphWriterTest
         BaseHome basehome = new BaseHome(homeDir,baseDir);
 
         Modules modules = new Modules();
-        modules.registerAll(basehome);
+        modules.registerAll(basehome, DEFAULT_ARGS);
         modules.buildGraph();
 
         File outputFile = new File(baseDir,"graph.dot");

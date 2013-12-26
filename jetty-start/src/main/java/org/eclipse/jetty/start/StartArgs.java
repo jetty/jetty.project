@@ -889,12 +889,14 @@ public class StartArgs
         throw new UsageException(ERR_BAD_ARG,"Unrecognized argument: \"%s\" in %s",arg,source);
     }
 
-    public void parseCommandLine()
+    public StartArgs parseCommandLine()
     {
         for (String line : commandLine)
         {
             parse(line,StartArgs.CMD_LINE_SOURCE);
         }
+        
+        return this;
     }
 
     public void resolveExtraXmls(BaseHome baseHome) throws IOException

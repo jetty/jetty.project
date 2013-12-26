@@ -40,20 +40,6 @@ import java.util.regex.Pattern;
  */
 public class Module
 {
-    public static class NameComparator implements Comparator<Module>
-    {
-        private Collator collator = Collator.getInstance();
-
-        @Override
-        public int compare(Module o1, Module o2)
-        {
-            // by name (not really needed, but makes for predictable test cases)
-            CollationKey k1 = collator.getCollationKey(o1.name);
-            CollationKey k2 = collator.getCollationKey(o2.name);
-            return k1.compareTo(k2);
-        }
-    }
-
     public static class DepthComparator implements Comparator<Module>
     {
         private Collator collator = Collator.getInstance();
@@ -68,6 +54,20 @@ public class Module
                 return diff;
             }
             // then by name (not really needed, but makes for predictable test cases)
+            CollationKey k1 = collator.getCollationKey(o1.name);
+            CollationKey k2 = collator.getCollationKey(o2.name);
+            return k1.compareTo(k2);
+        }
+    }
+
+    public static class NameComparator implements Comparator<Module>
+    {
+        private Collator collator = Collator.getInstance();
+
+        @Override
+        public int compare(Module o1, Module o2)
+        {
+            // by name (not really needed, but makes for predictable test cases)
             CollationKey k1 = collator.getCollationKey(o1.name);
             CollationKey k2 = collator.getCollationKey(o2.name);
             return k1.compareTo(k2);
@@ -102,7 +102,7 @@ public class Module
     /** List of sources that enabled this module */
     private final Set<String> sources = new HashSet<>();
 
-    public Module(BaseHome basehome,File file) throws FileNotFoundException, IOException
+    public Module(BaseHome basehome, File file) throws FileNotFoundException, IOException
     {
         this.file = file;
 
@@ -110,7 +110,7 @@ public class Module
         // Strip .ini
         name = Pattern.compile(".mod$",Pattern.CASE_INSENSITIVE).matcher(name).replaceFirst("");
 
-        init();
+        init(basehome);
         process(basehome);
     }
 
@@ -132,6 +132,16 @@ public class Module
             return;
         }
         this.parentEdges.add(parent);
+    }
+
+    public void addSources(List<String> sources)
+    {
+        this.sources.addAll(sources);
+    }
+
+    public void clearSources()
+    {
+        this.sources.clear();
     }
 
     @Override
@@ -164,6 +174,18 @@ public class Module
         return true;
     }
 
+    public void expandProperties(Props props)
+    {
+        // Expand Parents
+        Set<String> parents = new HashSet<>();
+        for (String parent : parentNames)
+        {
+            parents.add(props.expand(parent));
+        }
+        parentNames.clear();
+        parentNames.addAll(parents);
+    }
+
     public Set<Module> getChildEdges()
     {
         return childEdges;
@@ -172,6 +194,16 @@ public class Module
     public int getDepth()
     {
         return depth;
+    }
+
+    public List<String> getFiles()
+    {
+        return files;
+    }
+
+    public List<String> getInitialise()
+    {
+        return initialise;
     }
 
     public List<String> getLibs()
@@ -199,19 +231,14 @@ public class Module
         return parentNames;
     }
 
+    public Set<String> getSources()
+    {
+        return Collections.unmodifiableSet(sources);
+    }
+
     public List<String> getXmls()
     {
         return xmls;
-    }
-
-    public List<String> getInitialise()
-    {
-        return initialise;
-    }
-
-    public List<String> getFiles()
-    {
-        return files;
     }
 
     @Override
@@ -223,12 +250,18 @@ public class Module
         return result;
     }
 
-    public void init()
+    private void init(BaseHome basehome)
     {
-        String name = file.getName();
+        String name = basehome.toShortForm(file);
 
-        // Strip .ini
-        this.name = Pattern.compile(".mod$",Pattern.CASE_INSENSITIVE).matcher(name).replaceFirst("");
+        // Find name
+        Pattern pat = Pattern.compile("^.*[/\\\\]{1}modules[/\\\\]{1}(.*).mod$",Pattern.CASE_INSENSITIVE);
+        Matcher mat = pat.matcher(name);
+        if (!mat.find())
+        {
+            throw new RuntimeException("Invalid Module location (must be located under /modules/ directory): " + name);
+        }
+        this.name = mat.group(1).replace('\\','/');
 
         parentNames = new HashSet<>();
         optionalParentNames = new HashSet<>();
@@ -268,37 +301,43 @@ public class Module
                 while ((line = buf.readLine()) != null)
                 {
                     line = line.trim();
-                    
-                    if (caseTag!=null)
+
+                    if (caseTag != null)
                     {
                         if ("}".equals(line))
                         {
                             if (!switched)
+                            {
                                 StartLog.warn("WARN: No matching case in %s for ${switch %s=%s ...}",basehome.toShortForm(file),switchProperty,caseTag);
-                            caseTag=null;
-                            caseTagColon=null;
-                            switchProperty=null;
+                            }
+                            caseTag = null;
+                            caseTagColon = null;
+                            switchProperty = null;
                             continue;
                         }
-                        
-                        if (switched)
-                            continue;
-                        
-                        if (!line.startsWith(caseTagColon) && !line.startsWith("*:"))
-                            continue;
 
-                        switched=true;
-                        line=line.substring(line.indexOf(':')+1).trim();
+                        if (switched)
+                        {
+                            continue;
+                        }
+
+                        if (!line.startsWith(caseTagColon) && !line.startsWith("*:"))
+                        {
+                            continue;
+                        }
+
+                        switched = true;
+                        line = line.substring(line.indexOf(':') + 1).trim();
                     }
                     else if (line.startsWith("${switch "))
                     {
-                        switched=false;
-                        switchProperty=line.substring(9).trim();
-                        caseTag=System.getProperty(switchProperty);
-                        caseTagColon=caseTag+":";
+                        switched = false;
+                        switchProperty = line.substring(9).trim();
+                        caseTag = System.getProperty(switchProperty);
+                        caseTagColon = caseTag + ":";
                         continue;
                     }
-                                        
+
                     Matcher sectionMatcher = section.matcher(line);
 
                     if (sectionMatcher.matches())
@@ -308,7 +347,7 @@ public class Module
                     else
                     {
                         // blank lines and comments are valid for initialize section
-                        if (line.length() == 0 || line.startsWith("#"))
+                        if ((line.length() == 0) || line.startsWith("#"))
                         {
                             if ("INI-TEMPLATE".equals(sectionType))
                             {
@@ -333,7 +372,7 @@ public class Module
                                     break;
                                 case "FILES":
                                     files.add(line);
-                                    break;                             
+                                    break;
                                 case "INI-TEMPLATE":
                                     initialise.add(line);
                                     break;
@@ -353,21 +392,6 @@ public class Module
     public void setEnabled(boolean enabled)
     {
         this.enabled = enabled;
-    }
-
-    public void addSources(List<String> sources)
-    {
-        this.sources.addAll(sources);
-    }
-
-    public void clearSources()
-    {
-        this.sources.clear();
-    }
-
-    public Set<String> getSources()
-    {
-        return Collections.unmodifiableSet(sources);
     }
 
     @Override

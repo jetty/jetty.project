@@ -39,6 +39,7 @@ public class TestUseCases
         List<String> cmdLine = new ArrayList<>();
         cmdLine.add("jetty.home=" + homeDir.getAbsolutePath());
         cmdLine.add("jetty.base=" + baseDir.getAbsolutePath());
+        // cmdLine.add("--debug");
         for (String arg : cmdLineArgs)
         {
             cmdLine.add(arg);
@@ -63,7 +64,7 @@ public class TestUseCases
     @Test
     public void testWithSpdy() throws Exception
     {
-        assertUseCase("home","base.enable.spdy","assert-enable-spdy.txt");
+        assertUseCase("home","base.enable.spdy","assert-enable-spdy.txt","java.version=1.7.0_21");
     }
 
     @Test

@@ -19,6 +19,7 @@
 package org.eclipse.jetty.start;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -305,12 +306,49 @@ public class Modules implements Iterable<Module>
         modules.put(module.getName(),module);
     }
 
-    public void registerAll(BaseHome basehome) throws IOException
+    public void registerAll(BaseHome basehome, StartArgs args) throws IOException
     {
         for (File file : basehome.listFiles("modules",new FS.FilenameRegexFilter("^.*\\.mod$")))
         {
-            register(new Module(basehome,file));
+            registerModule(basehome,args,file);
         }
+
+        // load missing post-expanded dependent modules
+        String missingParent;
+        while ((missingParent = nextMissingParent()) != null)
+        {
+            File file = basehome.getFile("modules/" + missingParent + ".mod");
+            registerModule(basehome,args,file);
+        }
+    }
+
+    private void registerModule(BaseHome basehome, StartArgs args, File file) throws FileNotFoundException, IOException
+    {
+        if (!FS.canReadFile(file))
+        {
+            throw new IOException("Cannot read file: " + file);
+        }
+        StartLog.debug("Registering Module: %s",basehome.toShortForm(file));
+        Module module = new Module(basehome,file);
+        module.expandProperties(args.getProperties());
+        register(module);
+    }
+
+    private String nextMissingParent()
+    {
+        for (Module module : modules.values())
+        {
+            for (String parent : module.getParentNames())
+            {
+                if (modules.containsKey(parent))
+                {
+                    continue; // found. skip it.
+                }
+                return parent;
+            }
+        }
+
+        return null;
     }
 
     public Set<String> resolveChildModulesOf(String moduleName)

@@ -33,7 +33,8 @@ import org.junit.Test;
 
 public class ModulesTest
 {
-    private final static List<String> TEST_SOURCE=Collections.singletonList("<test>");
+    private final static List<String> TEST_SOURCE = Collections.singletonList("<test>");
+    private StartArgs DEFAULT_ARGS = new StartArgs(new String[] { "jetty.version=TEST" }).parseCommandLine();
     
     @Test
     public void testLoadAllModules() throws IOException
@@ -42,8 +43,8 @@ public class ModulesTest
         BaseHome basehome = new BaseHome(homeDir,homeDir);
 
         Modules modules = new Modules();
-        modules.registerAll(basehome);
-        Assert.assertThat("Module count",modules.count(),is(28));
+        modules.registerAll(basehome, DEFAULT_ARGS);
+        Assert.assertThat("Module count",modules.count(),is(29));
     }
 
     @Test
@@ -54,7 +55,7 @@ public class ModulesTest
 
         // Register modules
         Modules modules = new Modules();
-        modules.registerAll(basehome);
+        modules.registerAll(basehome, DEFAULT_ARGS);
         modules.buildGraph();
 
         // Enable 2 modules
@@ -110,7 +111,7 @@ public class ModulesTest
 
         // Register modules
         Modules modules = new Modules();
-        modules.registerAll(basehome);
+        modules.registerAll(basehome, DEFAULT_ARGS);
         modules.buildGraph();
         // modules.dump();
 

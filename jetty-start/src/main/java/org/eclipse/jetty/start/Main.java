@@ -556,7 +556,7 @@ public class Main
         // 5) Module Registration
         Modules modules = new Modules();
         StartLog.debug("Registering all modules");
-        modules.registerAll(baseHome);
+        modules.registerAll(baseHome, args);
 
         // 6) Active Module Resolution
         for (String enabledModule : args.getEnabledModules())
