@@ -68,13 +68,13 @@ public class PropsTest
     {
         Props props = new Props();
         props.setProperty("name","jetty",FROM_TEST);
-        props.setProperty("name","projetty","(Pro-Jetty)");
+        props.setProperty("name","altjetty","(Alt-Jetty)");
 
         String prefix = "Overriden";
-        assertThat(prefix,props.getString("name"),is("projetty"));
+        assertThat(prefix,props.getString("name"),is("altjetty"));
 
         Prop prop = props.getProp("name");
-        assertProp(prefix,prop,"name","projetty","(Pro-Jetty)");
+        assertProp(prefix,prop,"name","altjetty","(Alt-Jetty)");
         Prop older = prop.overrides;
         assertThat(prefix + ".overrides",older,notNullValue());
         assertProp(prefix + ".overridden",older,"name","jetty",FROM_TEST);
@@ -97,12 +97,12 @@ public class PropsTest
     public void testNoExpandDoubleDollar()
     {
         Props props = new Props();
-        props.setProperty("http.port","8080",FROM_TEST);
+        props.setProperty("aa","123",FROM_TEST);
 
         // Should NOT expand double $$ symbols
-        assertThat(props.expand("port=$${http.port}"),is("port=$${http.port}"));
+        assertThat(props.expand("zz=$${aa}"),is("zz=${aa}"));
         // Should expand
-        assertThat(props.expand("port=${http.port}"),is("port=8080"));
+        assertThat(props.expand("zz=${aa}"),is("zz=123"));
     }
 
     @Test

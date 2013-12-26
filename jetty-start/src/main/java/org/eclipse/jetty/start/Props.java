@@ -155,7 +155,7 @@ public final class Props implements Iterable<Prop>
         // special case for "$$"
         if (expanded.indexOf("$$") >= 0)
         {
-            return expanded.toString().replace("\\$\\$","\\$");
+            return expanded.toString().replaceAll("\\$\\$","\\$");
         }
 
         return expanded.toString();
