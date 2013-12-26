@@ -18,8 +18,7 @@
 
 package org.eclipse.jetty.start;
 
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.*;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -28,11 +27,11 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.eclipse.jetty.start.Props.Prop;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.Assert;
 
@@ -97,18 +96,15 @@ public class ConfigurationAssert
             }
         }
         List<String> actualProperties = new ArrayList<>();
-        @SuppressWarnings("unchecked")
-        Enumeration<String> nameEnum = (Enumeration<String>)args.getProperties().propertyNames();
-        while (nameEnum.hasMoreElements())
+        for(Prop prop: args.getProperties())
         {
-            String name = nameEnum.nextElement();
-            if ("jetty.home".equals(name) || "jetty.base".equals(name))
+            String name = prop.key;
+            if ("jetty.home".equals(name) || "jetty.base".equals(name) || prop.origin.equals(Props.ORIGIN_SYSPROP))
             {
                 // strip these out from assertion, to make assertions easier.
                 continue;
             }
-            String value = args.getProperties().getProperty(name);
-            actualProperties.add(name + "=" + value);
+            actualProperties.add(prop.key + "=" + args.getProperties().expand(prop.value));
         }
         assertContainsUnordered("Properties",expectedProperties,actualProperties);
 

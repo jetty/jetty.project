@@ -519,8 +519,6 @@ public class Main
 
         StartLog.debug("jetty.home=%s",baseHome.getHome());
         StartLog.debug("jetty.base=%s",baseHome.getBase());
-        args.addSystemProperty("jetty.home",baseHome.getHome());
-        args.addSystemProperty("jetty.base",baseHome.getBase());
 
         // ------------------------------------------------------------
         // 3) Load Inis
@@ -634,12 +632,12 @@ public class Main
 
         if (args.isStopCommand())
         {
-            int stopPort = Integer.parseInt(args.getProperties().getProperty("STOP.PORT"));
-            String stopKey = args.getProperties().getProperty("STOP.KEY");
+            int stopPort = Integer.parseInt(args.getProperties().getString("STOP.PORT"));
+            String stopKey = args.getProperties().getString("STOP.KEY");
 
-            if (args.getProperties().getProperty("STOP.WAIT") != null)
+            if (args.getProperties().getString("STOP.WAIT") != null)
             {
-                int stopWait = Integer.parseInt(args.getProperties().getProperty("STOP.PORT"));
+                int stopWait = Integer.parseInt(args.getProperties().getString("STOP.PORT"));
 
                 stop(stopPort,stopKey,stopWait);
             }

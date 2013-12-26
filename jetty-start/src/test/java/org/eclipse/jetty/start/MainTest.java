@@ -64,9 +64,9 @@ public class MainTest
         System.err.println(args);
 
         //Assert.assertEquals("--stop should not build module tree", 0, args.getEnabledModules().size());
-        Assert.assertEquals("--stop missing port","10000",args.getProperties().get("STOP.PORT"));
-        Assert.assertEquals("--stop missing key","foo",args.getProperties().get("STOP.KEY"));
-        Assert.assertEquals("--stop missing wait","300",args.getProperties().get("STOP.WAIT"));
+        Assert.assertEquals("--stop missing port","10000",args.getProperties().getString("STOP.PORT"));
+        Assert.assertEquals("--stop missing key","foo",args.getProperties().getString("STOP.KEY"));
+        Assert.assertEquals("--stop missing wait","300",args.getProperties().getString("STOP.WAIT"));
     }
     
     @Test
@@ -76,6 +76,7 @@ public class MainTest
         addUseCasesHome(cmdLineArgs);
         cmdLineArgs.add("jetty.port=9090");
         cmdLineArgs.add("--list-config");
+        // cmdLineArgs.add("--debug");
 
         Main main = new Main();
         StartArgs args = main.processCommandLine(cmdLineArgs.toArray(new String[cmdLineArgs.size()]));

@@ -30,7 +30,7 @@ import org.junit.Test;
  */
 public class TestUseCases
 {
-    private void assertUseCase(String homeName, String baseName, String assertName) throws Exception
+    private void assertUseCase(String homeName, String baseName, String assertName, String... cmdLineArgs) throws Exception
     {
         File homeDir = MavenTestingUtils.getTestResourceDir("usecases/" + homeName);
         File baseDir = MavenTestingUtils.getTestResourceDir("usecases/" + baseName);
@@ -39,6 +39,10 @@ public class TestUseCases
         List<String> cmdLine = new ArrayList<>();
         cmdLine.add("jetty.home=" + homeDir.getAbsolutePath());
         cmdLine.add("jetty.base=" + baseDir.getAbsolutePath());
+        for (String arg : cmdLineArgs)
+        {
+            cmdLine.add(arg);
+        }
         StartArgs args = main.processCommandLine(cmdLine);
         BaseHome baseHome = main.getBaseHome();
         ConfigurationAssert.assertConfiguration(baseHome,args,"usecases/" + assertName);
@@ -49,22 +53,34 @@ public class TestUseCases
     {
         assertUseCase("home","base.barebones","assert-barebones.txt");
     }
-    
+
     @Test
     public void testJMX() throws Exception
     {
         assertUseCase("home","base.jmx","assert-jmx.txt");
     }
-    
+
     @Test
     public void testWithSpdy() throws Exception
     {
         assertUseCase("home","base.enable.spdy","assert-enable-spdy.txt");
     }
-    
+
     @Test
     public void testWithDatabase() throws Exception
     {
         assertUseCase("home","base.with.db","assert-with-db.txt");
+    }
+
+    @Test
+    public void testWithPropsBasic() throws Exception
+    {
+        assertUseCase("home","base.props.basic","assert-props.basic.txt","port=9090");
+    }
+    
+    @Test
+    public void testWithPropsAgent() throws Exception
+    {
+        assertUseCase("home","base.props.agent","assert-props.agent.txt","java.vm.specification.version=1.6");
     }
 }

@@ -184,14 +184,26 @@ public class BaseHome
         if (homePath != null)
         {
             // logic if home is specified
-            this.homeDir = homePath;
-            this.baseDir = basePath == null?homePath:basePath;
+            this.homeDir = homePath.getAbsoluteFile();
+            if (basePath == null)
+            {
+                this.baseDir = homePath.getAbsoluteFile();
+                args.getProperties().setProperty("jetty.base",this.baseDir.toString(),"<internal-fallback>");
+            }
+            else
+            {
+                this.baseDir = basePath.getAbsoluteFile();
+            }
         }
         else if (basePath != null)
         {
             // logic if home is undeclared
-            this.baseDir = basePath;
+            this.baseDir = basePath.getAbsoluteFile();
         }
+
+        // Update System Properties
+        args.addSystemProperty("jetty.home",this.homeDir.getAbsolutePath());
+        args.addSystemProperty("jetty.base",this.baseDir.getAbsolutePath());
     }
 
     public boolean isBaseDifferent()
