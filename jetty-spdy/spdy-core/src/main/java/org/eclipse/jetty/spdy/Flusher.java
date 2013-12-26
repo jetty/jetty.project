@@ -38,7 +38,7 @@ public class Flusher
 
     private final IteratingCallback callback = new FlusherCallback();
     private final Object lock = new Object();
-    private final ArrayQueue<StandardSession.FrameBytes> queue = new ArrayQueue<>(lock);
+    private final ArrayQueue<StandardSession.FrameBytes> queue = new ArrayQueue<>(ArrayQueue.DEFAULT_CAPACITY, ArrayQueue.DEFAULT_GROWTH, lock);
     private final Controller controller;
     private final int maxGather;
     private Throwable failure;
