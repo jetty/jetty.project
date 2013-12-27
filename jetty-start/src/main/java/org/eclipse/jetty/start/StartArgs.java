@@ -323,8 +323,20 @@ public class StartArgs
             for (String rawlibref : module.getLibs())
             {
                 String libref = properties.expand(rawlibref);
+
+                if (libref.startsWith("regex:"))
+                {
+                    String regex = libref.substring("regex:".length());
+                    for (File libfile : baseHome.listFilesRegex(regex))
+                    {
+                        classpath.addComponent(libfile);
+                    }
+                    continue;
+                }
+
                 libref = FS.separators(libref);
 
+                // Any globs here?
                 if (libref.contains("*"))
                 {
                     // Glob Reference
@@ -895,7 +907,7 @@ public class StartArgs
         {
             parse(line,StartArgs.CMD_LINE_SOURCE);
         }
-        
+
         return this;
     }
 

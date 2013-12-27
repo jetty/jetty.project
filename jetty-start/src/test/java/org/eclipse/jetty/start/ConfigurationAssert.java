@@ -96,7 +96,7 @@ public class ConfigurationAssert
             }
         }
         List<String> actualProperties = new ArrayList<>();
-        for(Prop prop: args.getProperties())
+        for (Prop prop : args.getProperties())
         {
             String name = prop.key;
             if ("jetty.home".equals(name) || "jetty.base".equals(name) || prop.origin.equals(Props.ORIGIN_SYSPROP))
@@ -120,10 +120,31 @@ public class ConfigurationAssert
         List<String> actualDownloads = new ArrayList<>();
         for (FileArg darg : args.getFiles())
         {
-            actualDownloads.add(String.format("%s:%s",darg.uri,darg.location));
+            if (darg.uri != null)
+            {
+                actualDownloads.add(String.format("%s:%s",darg.uri,darg.location));
+            }
         }
         assertContainsUnordered("Downloads",expectedDownloads,actualDownloads);
-
+        
+        // Validate Files/Dirs creation
+        List<String> expectedFiles = new ArrayList<>();
+        for(String line: textFile)
+        {
+            if(line.startsWith("FILE|"))
+            {
+                expectedFiles.add(getValue(line));
+            }
+        }
+        List<String> actualFiles = new ArrayList<>();
+        for(FileArg farg: args.getFiles())
+        {
+            if(farg.uri == null)
+            {
+                actualFiles.add(farg.location);
+            }
+        }
+        assertContainsUnordered("Files/Dirs",expectedFiles,actualFiles);
     }
 
     private static String shorten(BaseHome baseHome, File path, File testResourcesDir)

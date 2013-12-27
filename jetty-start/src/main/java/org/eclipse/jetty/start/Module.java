@@ -306,7 +306,7 @@ public class Module
                     }
                     else
                     {
-                        // blank lines and comments are valid for initialize section
+                        // blank lines and comments are valid for ini-template section
                         if ((line.length() == 0) || line.startsWith("#"))
                         {
                             if ("INI-TEMPLATE".equals(sectionType))

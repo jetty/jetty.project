@@ -74,6 +74,12 @@ public class TestUseCases
     }
 
     @Test
+    public void testWithDeepExt() throws Exception
+    {
+        assertUseCase("home","base.with.ext","assert-with.ext.txt");
+    }
+    
+    @Test
     public void testWithPropsBasic() throws Exception
     {
         assertUseCase("home","base.props.basic","assert-props.basic.txt","port=9090");

@@ -1,5 +1,5 @@
 #
-# Module to add all lib/ext/*.jar files to classpath
+# ext module
 #
 
 [lib]
@@ -8,4 +8,3 @@ regex:lib/ext/.*\.jar$
 [files]
 lib/
 lib/ext/
-

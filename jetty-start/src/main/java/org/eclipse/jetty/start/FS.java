@@ -37,6 +37,39 @@ public class FS
             return true;
         }
     }
+    
+    public static class DirFilter implements FileFilter
+    {
+        public static final DirFilter INSTANCE = new DirFilter();
+
+        @Override
+        public boolean accept(File path)
+        {
+            return path.isDirectory();
+        }
+    }
+    
+    public static class RelativeRegexFilter implements FileFilter
+    {
+        private final File baseDir;
+        private final Pattern pattern;
+
+        public RelativeRegexFilter(File baseDir, Pattern pattern)
+        {
+            this.baseDir = baseDir;
+            this.pattern = pattern;
+        }
+
+        @Override
+        public boolean accept(File path)
+        {
+            // get relative path
+            String relativePath = FS.toRelativePath(baseDir,path);
+            
+            // see if it matches
+            return (pattern.matcher(relativePath).matches());
+        }
+    }
 
     public static class FilenameRegexFilter implements FileFilter
     {
@@ -148,6 +181,11 @@ public class FS
     public static boolean isXml(String filename)
     {
         return filename.toLowerCase(Locale.ENGLISH).endsWith(".xml");
+    }
+    
+    public static String toRelativePath(File baseDir, File path)
+    {
+        return baseDir.toURI().relativize(path.toURI()).toASCIIString();
     }
 
     public static String separators(String path)

@@ -44,7 +44,7 @@ public class ModulesTest
 
         Modules modules = new Modules();
         modules.registerAll(basehome, DEFAULT_ARGS);
-        Assert.assertThat("Module count",modules.count(),is(29));
+        Assert.assertThat("Module count",modules.count(),is(30));
     }
 
     @Test

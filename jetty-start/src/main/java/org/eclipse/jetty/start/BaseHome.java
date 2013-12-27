@@ -32,6 +32,8 @@ import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.eclipse.jetty.start.FS.RelativeRegexFilter;
+
 /**
  * File access for <code>${jetty.home}</code>, <code>${jetty.base}</code>, directories.
  * <p>
@@ -286,9 +288,85 @@ public class BaseHome
             return homeFiles;
         }
     }
+    
+    /**
+     * Get all of the files that are in a specific relative directory, with applied regex.
+     * <p>
+     * If the same found path exists in both <code>${jetty.base}</code> and <code>${jetty.home}</code>, then the one in <code>${jetty.base}</code> is returned
+     * (it overrides the one in ${jetty.home})
+     * <p>
+     * All regex paths are assumed to be in unix notation (use of <code>"/"</code> to separate paths, as <code>"\"</code> is used to escape in regex)
+     * 
+     * @param regex
+     *            the regex to use to match against the found files.
+     * @return the list of files found.
+     */
+    public List<File> listFilesRegex(String regex)
+    {
+        Objects.requireNonNull(regex,"Glob cannot be null");
+
+        Pattern pattern = Pattern.compile(regex);
+
+        List<File> homeFiles = new ArrayList<>();
+        if (FS.canReadDirectory(homeDir))
+        {
+            StartLog.debug("Finding files in ${jetty.home} that match: %s",regex);
+            recurseDir(homeFiles,homeDir,new FS.RelativeRegexFilter(homeDir,pattern));
+            StartLog.debug("Found %,d files",homeFiles.size());
+        }
+
+        if (isBaseDifferent())
+        {
+            // merge
+            List<File> ret = new ArrayList<>();
+            if (FS.canReadDirectory(baseDir))
+            {
+                List<File> baseFiles = new ArrayList<>();
+                StartLog.debug("Finding files in ${jetty.base} that match: %s",regex);
+                recurseDir(baseFiles,baseDir,new FS.RelativeRegexFilter(baseDir,pattern));
+                StartLog.debug("Found %,d files",baseFiles.size());
+
+                for (File base : baseFiles)
+                {
+                    String relpath = toRelativePath(baseDir,base);
+                    File home = new File(homeDir,FS.separators(relpath));
+                    if (home.exists())
+                    {
+                        homeFiles.remove(home);
+                    }
+                    ret.add(base);
+                }
+            }
+
+            // add any remaining home files.
+            ret.addAll(homeFiles);
+            StartLog.debug("Merged Files: %,d files%n",ret.size());
+
+            Collections.sort(ret,new NaturalSort.Files());
+            return ret;
+        }
+        else
+        {
+            // simple return
+            Collections.sort(homeFiles,new NaturalSort.Files());
+            return homeFiles;
+        }
+    }
+
+    private void recurseDir(List<File> files, File dir, RelativeRegexFilter filter)
+    {
+        // find matches first
+        files.addAll(Arrays.asList(dir.listFiles(filter)));
+
+        // now dive down into sub-directories
+        for (File subdir : dir.listFiles(FS.DirFilter.INSTANCE))
+        {
+            recurseDir(files,subdir,filter);
+        }
+    }
 
     /**
-     * Collect the list of files in both <code>${jetty.base}</code> and <code>${jetty.home}</code>, with , even if the same file shows up in both places.
+     * Collect the list of files in both <code>${jetty.base}</code> and <code>${jetty.home}</code>, even if the same file shows up in both places.
      */
     public List<File> rawListFiles(String relPathToDirectory, FileFilter filter)
     {
@@ -338,9 +416,10 @@ public class BaseHome
         }
     }
 
+    // TODO - inline
     private String toRelativePath(File dir, File path)
     {
-        return dir.toURI().relativize(path.toURI()).toASCIIString();
+        return FS.toRelativePath(dir,path);
     }
 
     /**

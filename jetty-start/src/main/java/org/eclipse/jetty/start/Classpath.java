@@ -75,6 +75,7 @@ public class Classpath implements Iterable<File>
 
     public boolean addComponent(File path)
     {
+        StartLog.debug("Adding classpath component: %s",path);
         if ((path == null) || (!path.exists()))
         {
             // not a valid component
