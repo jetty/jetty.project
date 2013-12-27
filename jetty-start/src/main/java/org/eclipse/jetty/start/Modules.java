@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
+import java.util.regex.Pattern;
 
 /**
  * Access for all modules declared, as well as what is enabled.
@@ -207,13 +208,33 @@ public class Modules implements Iterable<Module>
 
     public void enable(String name, List<String> sources)
     {
-        Module module = modules.get(name);
-        if (module == null)
+        if (name.contains("*"))
         {
-            System.err.printf("WARNING: Cannot enable requested module [%s]: not a valid module name.%n",name);
-            return;
+            // A regex!
+            Pattern pat = Pattern.compile(name);
+            for (Map.Entry<String, Module> entry : modules.entrySet())
+            {
+                if (pat.matcher(entry.getKey()).matches())
+                {
+                    enableModule(entry.getValue(),sources);
+                }
+            }
         }
-        StartLog.debug("Enabling module: %s (via %s)",name,Main.join(sources,", "));
+        else
+        {
+            Module module = modules.get(name);
+            if (module == null)
+            {
+                System.err.printf("WARNING: Cannot enable requested module [%s]: not a valid module name.%n",name);
+                return;
+            }
+            enableModule(module,sources);
+        }
+    }
+
+    private void enableModule(Module module, List<String> sources)
+    {
+        StartLog.debug("Enabling module: %s (via %s)",module.getName(),Main.join(sources,", "));
         module.setEnabled(true);
         if (sources != null)
         {

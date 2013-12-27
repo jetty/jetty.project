@@ -46,6 +46,22 @@ public class ModulesTest
         modules.registerAll(basehome, DEFAULT_ARGS);
         Assert.assertThat("Module count",modules.count(),is(30));
     }
+    
+    @Test
+    public void testEnableRegexSimple() throws IOException
+    {
+        StartLog.enableDebug();
+        File homeDir = MavenTestingUtils.getTestResourceDir("usecases/home");
+        BaseHome basehome = new BaseHome(homeDir,homeDir);
+
+        Modules modules = new Modules();
+        modules.registerAll(basehome, DEFAULT_ARGS);
+        modules.enable("[sj]{1}.*",TEST_SOURCE);
+        
+        String expected[] = { "jmx", "stats", "spdy", "security", "jndi", "jsp", "servlet", "jaas", "server" };
+        
+        Assert.assertThat("Enabled Module count",modules.resolveEnabled().size(),is(expected.length));
+    }
 
     @Test
     public void testResolve_ServerHttp() throws IOException

@@ -146,4 +146,9 @@ public class StartLog
             System.out.println("Establishing " + logfile + " on " + new Date());
         }
     }
+
+    public static void enableDebug()
+    {
+        getInstance().debug = true;
+    }
 }
