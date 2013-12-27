@@ -50,7 +50,6 @@ public class ModulesTest
     @Test
     public void testEnableRegexSimple() throws IOException
     {
-        StartLog.enableDebug();
         File homeDir = MavenTestingUtils.getTestResourceDir("usecases/home");
         BaseHome basehome = new BaseHome(homeDir,homeDir);
 

@@ -70,6 +70,7 @@ public class MainTest
     }
     
     @Test
+    @Ignore("Just a bit noisy for general testing")
     public void testListConfig() throws Exception
     {
         List<String> cmdLineArgs = new ArrayList<>();
