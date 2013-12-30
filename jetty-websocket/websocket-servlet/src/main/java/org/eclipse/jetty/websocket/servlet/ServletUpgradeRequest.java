@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import javax.servlet.http.Cookie;
@@ -140,6 +141,26 @@ public class ServletUpgradeRequest extends UpgradeRequest
     public int getLocalPort()
     {
         return req.getLocalPort();
+    }
+    
+    /**
+     * Equivalent to {@link HttpServletRequest#getLocale()}
+     * 
+     * @return the preferred <code>Locale</code> for the client
+     */
+    public Locale getLocale() 
+    {
+        return req.getLocale();
+    }
+    
+    /**
+     * Equivalent to {@link HttpServletRequest#getLocales()}
+     * 
+     * @return an Enumeration of preferred Locale objects
+     */
+    public Enumeration<Locale> getLocales()
+    {
+        return req.getLocales();
     }
 
     /**
