@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-parent</artifactId>
-    <version>21-SNAPSHOT</version>
+    <version>21</version>
   </parent>
   <artifactId>jetty-project</artifactId>
   <version>9.1.1-SNAPSHOT</version>
@@ -204,7 +204,7 @@
           <aggregate>true</aggregate>
           <strictCheck>true</strictCheck>
           <properties>
-             <copyright-range>${project.inceptionYear}-2013</copyright-range>
+             <copyright-range>${project.inceptionYear}-2014</copyright-range>
           </properties>
           <mapping>
             <java>DOUBLESLASH_STYLE</java>
