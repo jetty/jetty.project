@@ -988,6 +988,22 @@ public class Request implements HttpServletRequest
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * Access the underlying Remote {@link InetSocketAddress} for this request.
+     * 
+     * @return the remote {@link InetSocketAddress} for this request, or null if the request has no remote (see {@link ServletRequest#getRemoteAddr()} for
+     *         conditions that result in no remote address)
+     */
+    public InetSocketAddress getRemoteInetSocketAddress()
+    {
+        InetSocketAddress remote = _remote;
+        if (remote == null)
+            remote = _channel.getRemoteAddress();
+
+        return remote;
+    }
+
+    /* ------------------------------------------------------------ */
     /*
      * @see javax.servlet.ServletRequest#getRemoteAddr()
      */
@@ -1907,7 +1923,7 @@ public class Request implements HttpServletRequest
     {
         _remote = addr;
     }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * @param requestedSessionId
