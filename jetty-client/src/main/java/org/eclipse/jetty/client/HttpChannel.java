@@ -43,10 +43,15 @@ public abstract class HttpChannel
 
     public void associate(HttpExchange exchange)
     {
-        if (!this.exchange.compareAndSet(null, exchange))
-            throw new UnsupportedOperationException("Pipelined requests not supported");
-        exchange.associate(this);
-        LOG.debug("{} associated to {}", exchange, this);
+        if (this.exchange.compareAndSet(null, exchange))
+        {
+            exchange.associate(this);
+            LOG.debug("{} associated to {}", exchange, this);
+        }
+        else
+        {
+            exchange.getRequest().abort(new UnsupportedOperationException("Pipelined requests not supported"));
+        }
     }
 
     public HttpExchange disassociate()
@@ -65,7 +70,7 @@ public abstract class HttpChannel
 
     public abstract void send();
 
-    public abstract void proceed(HttpExchange exchange, boolean proceed);
+    public abstract void proceed(HttpExchange exchange, Throwable failure);
 
     public abstract boolean abort(Throwable cause);
 

@@ -346,7 +346,7 @@ public abstract class HttpReceiver
             boolean ordered = getHttpDestination().getHttpClient().isStrictEventOrdering();
             if (!ordered)
                 channel.exchangeTerminated(result);
-            LOG.debug("Request/Response complete {}", response);
+            LOG.debug("Request/Response succeeded {}", response);
             notifier.notifyComplete(listeners, result);
             if (ordered)
                 channel.exchangeTerminated(result);
@@ -397,6 +397,7 @@ public abstract class HttpReceiver
             boolean ordered = getHttpDestination().getHttpClient().isStrictEventOrdering();
             if (!ordered)
                 channel.exchangeTerminated(result);
+            LOG.debug("Request/Response failed {}", response);
             notifier.notifyComplete(listeners, result);
             if (ordered)
                 channel.exchangeTerminated(result);

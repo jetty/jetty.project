@@ -69,8 +69,7 @@ public abstract class HttpConnection implements Connection
         if (listener != null)
             listeners.add(listener);
 
-        HttpConversation conversation = getHttpClient().getConversation(request.getConversationID(), true);
-        HttpExchange exchange = new HttpExchange(conversation, getHttpDestination(), request, listeners);
+        HttpExchange exchange = new HttpExchange(getHttpDestination(), (HttpRequest)request, listeners);
 
         send(exchange);
     }

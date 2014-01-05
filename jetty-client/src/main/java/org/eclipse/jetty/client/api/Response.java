@@ -40,8 +40,15 @@ import org.eclipse.jetty.http.HttpVersion;
 public interface Response
 {
     /**
-     * @return the conversation id
+     * @return the request associated with this response
      */
+    Request getRequest();
+
+    /**
+     * @return the conversation id
+     * @deprecated do not use this method anymore
+     */
+    @Deprecated
     long getConversationID();
 
     /**

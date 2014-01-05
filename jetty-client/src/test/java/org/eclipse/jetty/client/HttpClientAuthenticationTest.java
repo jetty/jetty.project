@@ -25,7 +25,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -133,7 +132,6 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         Assert.assertEquals(401, response.getStatus());
         Assert.assertTrue(requests.get().await(5, TimeUnit.SECONDS));
         client.getRequestListeners().remove(requestListener);
-        Assert.assertNull(client.getConversation(request.getConversationID(), false));
 
         authenticationStore.addAuthentication(authentication);
 

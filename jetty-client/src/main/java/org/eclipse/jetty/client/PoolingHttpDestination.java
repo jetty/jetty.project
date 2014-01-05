@@ -114,7 +114,8 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
             Throwable cause = request.getAbortCause();
             if (cause != null)
             {
-                abort(exchange, cause);
+                // If we have a non-null abort cause, it means that someone
+                // else has already aborted and notified, nothing do to here.
                 LOG.debug("Aborted before processing {}: {}", exchange, cause);
             }
             else

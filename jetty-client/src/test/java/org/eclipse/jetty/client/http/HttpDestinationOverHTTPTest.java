@@ -191,6 +191,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
         final CountDownLatch failureLatch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
+                .path("/one")
                 .onRequestQueued(new Request.QueuedListener()
                 {
                     @Override
@@ -199,6 +200,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
                         // This request exceeds the maximum queued, should fail
                         client.newRequest("localhost", connector.getLocalPort())
                                 .scheme(scheme)
+                                .path("/two")
                                 .send(new Response.CompleteListener()
                                 {
                                     @Override

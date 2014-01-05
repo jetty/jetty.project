@@ -24,6 +24,7 @@ import java.nio.charset.UnsupportedCharsetException;
 import java.util.List;
 
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
@@ -42,9 +43,16 @@ public class HttpContentResponse implements ContentResponse
     }
 
     @Override
+    public Request getRequest()
+    {
+        return response.getRequest();
+    }
+
+    @Override
+    @Deprecated
     public long getConversationID()
     {
-        return response.getConversationID();
+        return getRequest().getConversationID();
     }
 
     @Override

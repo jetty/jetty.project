@@ -102,8 +102,9 @@ public abstract class MultiplexHttpDestination<C extends Connection> extends Htt
         Throwable cause = request.getAbortCause();
         if (cause != null)
         {
-            LOG.debug("Abort before processing {}: {}", exchange, cause);
-            abort(exchange, cause);
+            // If we have a non-null abort cause, it means that someone
+            // else has already aborted and notified, nothing do to here.
+            LOG.debug("Aborted before processing {}: {}", exchange, cause);
         }
         else
         {

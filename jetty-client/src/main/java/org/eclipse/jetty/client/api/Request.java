@@ -51,7 +51,9 @@ public interface Request
 {
     /**
      * @return the conversation id
+     * @deprecated do not use this method anymore
      */
+    @Deprecated
     long getConversationID();
 
     /**

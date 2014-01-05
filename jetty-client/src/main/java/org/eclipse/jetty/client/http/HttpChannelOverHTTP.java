@@ -55,9 +55,9 @@ public class HttpChannelOverHTTP extends HttpChannel
     }
 
     @Override
-    public void proceed(HttpExchange exchange, boolean proceed)
+    public void proceed(HttpExchange exchange, Throwable failure)
     {
-        sender.proceed(exchange, proceed);
+        sender.proceed(exchange, failure);
     }
 
     @Override

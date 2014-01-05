@@ -41,6 +41,12 @@ public class HttpResponse implements Response
         this.listeners = listeners;
     }
 
+    @Override
+    public Request getRequest()
+    {
+        return request;
+    }
+
     public HttpVersion getVersion()
     {
         return version;
@@ -82,6 +88,7 @@ public class HttpResponse implements Response
     }
 
     @Override
+    @Deprecated
     public long getConversationID()
     {
         return request.getConversationID();
