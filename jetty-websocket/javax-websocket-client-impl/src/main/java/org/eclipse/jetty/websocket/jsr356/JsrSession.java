@@ -342,6 +342,7 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
     public void setMaxIdleTimeout(long milliseconds)
     {
         getPolicy().setIdleTimeout(milliseconds);
+        super.setIdleTimeout(milliseconds);
     }
 
     @Override

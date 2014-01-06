@@ -355,13 +355,17 @@ public class IOState
      */
     public void onOpened()
     {
+        if (this.state == ConnectionState.OPEN)
+        {
+            // already opened
+            return;
+        }
+        
         if (this.state != ConnectionState.CONNECTED)
         {
             LOG.debug("Unable to open, not in CONNECTED state: {}",this.state);
             return;
         }
-
-        assert (this.state == ConnectionState.CONNECTED);
 
         ConnectionState event = null;
         synchronized (this)
