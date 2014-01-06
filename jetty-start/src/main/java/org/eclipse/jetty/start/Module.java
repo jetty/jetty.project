@@ -84,9 +84,9 @@ public class Module
     private String logicalName;
     /** The depth of the module in the tree */
     private int depth = 0;
-    /** List of Modules, by name, that this Module depends on */
+    /** Set of Modules, by name, that this Module depends on */
     private Set<String> parentNames;
-    /** List of Modules, by name, that this Module optionally depend on */
+    /** Set of Modules, by name, that this Module optionally depend on */
     private Set<String> optionalParentNames;
     /** The Edges to parent modules */
     private Set<Module> parentEdges;
@@ -239,7 +239,7 @@ public class Module
     {
         return parentNames;
     }
-
+    
     public Set<String> getSources()
     {
         return Collections.unmodifiableSet(sources);

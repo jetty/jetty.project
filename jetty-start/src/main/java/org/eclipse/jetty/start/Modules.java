@@ -164,9 +164,33 @@ public class Modules implements Iterable<Module>
         ordered.addAll(modules.values());
         Collections.sort(ordered,new Module.NameComparator());
 
+        List<Module> active = resolveEnabled();
+
         for (Module module : ordered)
         {
-            System.out.printf("%nModule: %s%n",module.getName());
+            boolean activated = active.contains(module);
+            boolean enabled = module.isEnabled();
+            boolean transitive = activated && !enabled;
+
+            char status = '-';
+            if (enabled)
+            {
+                status = '*';
+            }
+            else if (transitive)
+            {
+                status = '+';
+            }
+
+            System.out.printf("%n %s Module: %s%n",status,module.getName());
+            if (!module.getName().equals(module.getFilesystemRef()))
+            {
+                System.out.printf("      Ref: %s%n",module.getFilesystemRef());
+            }
+            for (String parent : module.getParentNames())
+            {
+                System.out.printf("   Parent: %s%n",parent);
+            }
             for (String lib : module.getLibs())
             {
                 System.out.printf("      LIB: %s%n",lib);
@@ -175,14 +199,24 @@ public class Modules implements Iterable<Module>
             {
                 System.out.printf("      XML: %s%n",xml);
             }
-            System.out.printf("  depends: [%s]%n",Main.join(module.getParentNames(),", "));
             if (StartLog.isDebugEnabled())
             {
                 System.out.printf("    depth: %d%n",module.getDepth());
             }
-            for (String source : module.getSources())
+            if (activated)
             {
-                System.out.printf("  enabled: %s%n",source);
+                for (String source : module.getSources())
+                {
+                    System.out.printf("  Enabled: <via> %s%n",source);
+                }
+                if (transitive)
+                {
+                    System.out.printf("  Enabled: <via transitive reference>%n");
+                }
+            }
+            else
+            {
+                System.out.printf("  Enabled: <not enabled in this configuration>%n");
             }
         }
     }
