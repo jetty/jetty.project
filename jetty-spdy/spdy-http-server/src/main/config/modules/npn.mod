@@ -5,6 +5,10 @@
 [depend]
 npn/npn-${java.version}
 
+[files]
+lib/
+lib/npn/
+
 [ini-template]
 # NPN is provided via a -Xbootclasspath that modifies the secure connections
 # in java to support the NPN layer needed for SPDY.
