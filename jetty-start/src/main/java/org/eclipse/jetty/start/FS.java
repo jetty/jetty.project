@@ -168,6 +168,18 @@ public class FS
             throw new IOException("Unable to create directory: " + dir.getAbsolutePath());
         }
     }
+    
+    public static void ensureDirectoryWritable(File dir) throws IOException
+    {
+        if (!dir.exists())
+        {
+            throw new IOException("Directory does not exist: " + dir.getAbsolutePath());
+        }
+        if (!dir.canWrite())
+        {
+            throw new IOException("Unable to write to directory: " + dir.getAbsolutePath());
+        }
+    }
 
     public static boolean isFile(File file)
     {

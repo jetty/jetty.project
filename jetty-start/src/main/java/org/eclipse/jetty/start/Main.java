@@ -387,19 +387,21 @@ public class Main
                 else
                 {
                     // Create the directory if needed
-                    if (!start_d.exists())
+                    FS.ensureDirectoryExists(start_d);
+                    FS.ensureDirectoryWritable(start_d);
+                    try
                     {
-                        start_d.mkdirs();
+                        // Create a new ini file for it
+                        if (!ini.createNewFile())
+                        {
+                            StartLog.warn("ERROR: %s cannot be initialised in %s! ",name,short_ini);
+                            return;
+                        }
                     }
-                    if (!start_d.isDirectory() || !start_d.canWrite())
+                    catch (IOException e)
                     {
-                        StartLog.warn("ERROR: Bad start.d %s! ",start_d);
-                        return;
-                    }
-                    // Create a new ini file for it
-                    if (!ini.createNewFile())
-                    {
-                        StartLog.warn("ERROR: %s cannot be initialised in %s! ",name,short_ini);
+                        StartLog.warn("ERROR: Unable to create %s!",ini);
+                        StartLog.warn(e);
                         return;
                     }
                     source = short_ini;

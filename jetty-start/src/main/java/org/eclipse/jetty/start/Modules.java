@@ -322,9 +322,10 @@ public class Modules implements Iterable<Module>
         return xmls;
     }
 
-    public void register(Module module)
+    public Module register(Module module)
     {
         modules.put(module.getName(),module);
+        return module;
     }
 
     public void registerAll(BaseHome basehome, StartArgs args) throws IOException
@@ -335,15 +336,35 @@ public class Modules implements Iterable<Module>
         }
 
         // load missing post-expanded dependent modules
-        String missingParent;
-        while ((missingParent = nextMissingParent()) != null)
+        boolean done = false;
+        while (!done)
         {
-            File file = basehome.getFile("modules/" + missingParent + ".mod");
-            registerModule(basehome,args,file);
+            done = true;
+            Set<String> missingParents = new HashSet<>();
+
+            for (Module m : modules.values())
+            {
+                for (String parent : m.getParentNames())
+                {
+                    if (modules.containsKey(parent))
+                    {
+                        continue; // found. skip it.
+                    }
+                    done = false;
+                    missingParents.add(parent);
+                }
+            }
+
+            for (String missingParent : missingParents)
+            {
+                File file = basehome.getFile("modules/" + missingParent + ".mod");
+                Module module = registerModule(basehome,args,file);
+                updateParentReferencesTo(module);
+            }
         }
     }
 
-    private void registerModule(BaseHome basehome, StartArgs args, File file) throws FileNotFoundException, IOException
+    private Module registerModule(BaseHome basehome, StartArgs args, File file) throws FileNotFoundException, IOException
     {
         if (!FS.canReadFile(file))
         {
@@ -352,24 +373,7 @@ public class Modules implements Iterable<Module>
         StartLog.debug("Registering Module: %s",basehome.toShortForm(file));
         Module module = new Module(basehome,file);
         module.expandProperties(args.getProperties());
-        register(module);
-    }
-
-    private String nextMissingParent()
-    {
-        for (Module module : modules.values())
-        {
-            for (String parent : module.getParentNames())
-            {
-                if (modules.containsKey(parent))
-                {
-                    continue; // found. skip it.
-                }
-                return parent;
-            }
-        }
-
-        return null;
+        return register(module);
     }
 
     public Set<String> resolveChildModulesOf(String moduleName)
@@ -416,5 +420,40 @@ public class Modules implements Iterable<Module>
         char indent[] = new char[depth * 2];
         Arrays.fill(indent,' ');
         return new String(indent);
+    }
+
+    /**
+     * Modules can have a different logical name than to their filesystem reference. This updates existing references to the filesystem form to use the logical
+     * name form.
+     * 
+     * @param module
+     *            the module that might have other modules referring to it.
+     */
+    private void updateParentReferencesTo(Module module)
+    {
+        if (module.getName().equals(module.getFilesystemRef()))
+        {
+            // nothing to do, its sane already
+            return;
+        }
+
+        for (Module m : modules.values())
+        {
+            Set<String> resolvedParents = new HashSet<>();
+            for (String parent : m.getParentNames())
+            {
+                if (parent.equals(module.getFilesystemRef()))
+                {
+                    // use logical name instead
+                    resolvedParents.add(module.getName());
+                }
+                else
+                {
+                    // use name as-is
+                    resolvedParents.add(parent);
+                }
+            }
+            m.setParentNames(resolvedParents);
+        }
     }
 }

@@ -101,6 +101,9 @@ public class NpnModuleTest
         File modFile = basehome.getFile("modules/npn/" + modBootFile);
         Module mod = new Module(basehome,modFile);
         assertNotNull("module",mod);
+        
+        // Validate logical name
+        assertThat("Module name",mod.getName(),is("npn-boot"));
 
         List<String> expectedBootClasspath = new ArrayList<>();
 

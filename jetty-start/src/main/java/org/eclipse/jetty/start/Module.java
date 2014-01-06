@@ -54,8 +54,8 @@ public class Module
                 return diff;
             }
             // then by name (not really needed, but makes for predictable test cases)
-            CollationKey k1 = collator.getCollationKey(o1.name);
-            CollationKey k2 = collator.getCollationKey(o2.name);
+            CollationKey k1 = collator.getCollationKey(o1.fileRef);
+            CollationKey k2 = collator.getCollationKey(o2.fileRef);
             return k1.compareTo(k2);
         }
     }
@@ -68,16 +68,20 @@ public class Module
         public int compare(Module o1, Module o2)
         {
             // by name (not really needed, but makes for predictable test cases)
-            CollationKey k1 = collator.getCollationKey(o1.name);
-            CollationKey k2 = collator.getCollationKey(o2.name);
+            CollationKey k1 = collator.getCollationKey(o1.fileRef);
+            CollationKey k2 = collator.getCollationKey(o2.fileRef);
             return k1.compareTo(k2);
         }
     }
 
     /** The file of the module */
     private File file;
-    /** The name of this Module */
-    private String name;
+    /** The name of this Module (as a filesystem reference) */
+    private String fileRef;
+    /**
+     * The logical name of this module (for property selected references), And to aid in duplicate detection.
+     */
+    private String logicalName;
     /** The depth of the module in the tree */
     private int depth = 0;
     /** List of Modules, by name, that this Module depends on */
@@ -106,9 +110,9 @@ public class Module
     {
         this.file = file;
 
-        String name = file.getName();
-        // Strip .ini
-        name = Pattern.compile(".mod$",Pattern.CASE_INSENSITIVE).matcher(name).replaceFirst("");
+        // Strip .mod
+        this.fileRef = Pattern.compile(".mod$",Pattern.CASE_INSENSITIVE).matcher(file.getName()).replaceFirst("");
+        this.logicalName = fileRef;
 
         init(basehome);
         process(basehome);
@@ -160,14 +164,14 @@ public class Module
             return false;
         }
         Module other = (Module)obj;
-        if (name == null)
+        if (fileRef == null)
         {
-            if (other.name != null)
+            if (other.fileRef != null)
             {
                 return false;
             }
         }
-        else if (!name.equals(other.name))
+        else if (!fileRef.equals(other.fileRef))
         {
             return false;
         }
@@ -201,6 +205,11 @@ public class Module
         return files;
     }
 
+    public String getFilesystemRef()
+    {
+        return fileRef;
+    }
+
     public List<String> getInitialise()
     {
         return initialise;
@@ -213,7 +222,7 @@ public class Module
 
     public String getName()
     {
-        return name;
+        return logicalName;
     }
 
     public Set<String> getOptionalParentNames()
@@ -246,7 +255,7 @@ public class Module
     {
         final int prime = 31;
         int result = 1;
-        result = (prime * result) + ((name == null)?0:name.hashCode());
+        result = (prime * result) + ((fileRef == null)?0:fileRef.hashCode());
         return result;
     }
 
@@ -254,14 +263,15 @@ public class Module
     {
         String name = basehome.toShortForm(file);
 
-        // Find name
+        // Find module system name (usually in the form of a filesystem reference)
         Pattern pat = Pattern.compile("^.*[/\\\\]{1}modules[/\\\\]{1}(.*).mod$",Pattern.CASE_INSENSITIVE);
         Matcher mat = pat.matcher(name);
         if (!mat.find())
         {
             throw new RuntimeException("Invalid Module location (must be located under /modules/ directory): " + name);
         }
-        this.name = mat.group(1).replace('\\','/');
+        this.fileRef = mat.group(1).replace('\\','/');
+        this.logicalName = this.fileRef;
 
         parentNames = new HashSet<>();
         optionalParentNames = new HashSet<>();
@@ -321,6 +331,9 @@ public class Module
                                 case "":
                                     // ignore (this would be entries before first section)
                                     break;
+                                case "NAME":
+                                    logicalName = line;
+                                    break;
                                 case "DEPEND":
                                     parentNames.add(line);
                                     break;
@@ -359,11 +372,22 @@ public class Module
         this.enabled = enabled;
     }
 
+    public void setParentNames(Set<String> parents)
+    {
+        this.parentNames.clear();
+        this.parentEdges.clear();
+        if (parents != null)
+        {
+            this.parentNames.addAll(parents);
+        }
+    }
+
     @Override
     public String toString()
     {
         StringBuilder str = new StringBuilder();
-        str.append("Module[").append(name);
+        str.append("Module[").append(logicalName);
+        str.append(",").append(fileRef);
         if (enabled)
         {
             str.append(",enabled");
