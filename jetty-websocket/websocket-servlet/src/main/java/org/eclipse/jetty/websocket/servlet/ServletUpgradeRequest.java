@@ -34,6 +34,7 @@ import java.util.Map;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
@@ -44,12 +45,12 @@ import org.eclipse.jetty.websocket.api.util.WSURI;
  */
 public class ServletUpgradeRequest extends UpgradeRequest
 {
-    private HttpServletRequest req;
+    private final HttpServletRequest req;
 
     public ServletUpgradeRequest(HttpServletRequest request) throws URISyntaxException
     {
         super(WSURI.toWebsocket(request.getRequestURL(),request.getQueryString()));
-        this.req = request;
+        this.req = new PostUpgradedHttpServletRequest(request);
 
         // Copy Request Line Details
         setMethod(request.getMethod());
@@ -111,6 +112,19 @@ public class ServletUpgradeRequest extends UpgradeRequest
     public X509Certificate[] getCertificates()
     {
         return (X509Certificate[])req.getAttribute("javax.servlet.request.X509Certificate");
+    }
+    
+    /**
+     * Return the underlying HttpServletRequest that existed at Upgrade time.
+     * <p>
+     * Note: many features of the HttpServletRequest are invalid when upgraded,
+     * especially ones that deal with body content, streams, readers, and responses.
+     * 
+     * @return a limited version of the underlying HttpServletRequest
+     */
+    public HttpServletRequest getHttpServletRequest()
+    {
+        return req;
     }
 
     /**
@@ -264,7 +278,7 @@ public class ServletUpgradeRequest extends UpgradeRequest
      * Note: this is equivalent to {@link HttpServletRequest#getSession()} and will not create a new HttpSession.
      */
     @Override
-    public Object getSession()
+    public HttpSession getSession()
     {
         return this.req.getSession(false);
     }
