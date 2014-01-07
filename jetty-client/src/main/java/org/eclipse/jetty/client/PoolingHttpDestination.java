@@ -179,6 +179,7 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
 
     public void close()
     {
+        super.close();
         connectionPool.close();
     }
 
