@@ -210,8 +210,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     else
                     {
                         // Get a buffer
-                        if (_requestBuffer == null)
-                            _requestBuffer = _bufferPool.acquire(getInputBufferSize(), REQUEST_BUFFER_DIRECT);
+                        _requestBuffer = getRequestBuffer();
 
                         // fill
                         filled = getEndPoint().fill(_requestBuffer);
@@ -232,7 +231,11 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     // if the request suspends, the request/response will be incomplete so the outer loop will exit.
                     suspended = !_channel.handle();
                 }
-                
+                else
+                {
+                    // We parsed what we could, recycle the request buffer
+                    releaseRequestBuffer();
+                }
             }
         }
         catch (EofException e)
