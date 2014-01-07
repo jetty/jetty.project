@@ -83,7 +83,9 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
 
     public ClientContainer()
     {
+        // This constructor is used with Standalone JSR Client usage.
         this(null);
+        client.setDaemon(true);
     }
     
     public ClientContainer(Executor executor)
