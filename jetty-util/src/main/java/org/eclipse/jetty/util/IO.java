@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.util;
 import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -358,6 +359,24 @@ public class IO
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * closes any {@link Closeable}
+     *
+     * @param c the closeable to close
+     */
+    public static void close(Closeable c)
+    {
+        try
+        {
+            if (c != null)
+                c.close();
+        }
+        catch (IOException e)
+        {
+            LOG.ignore(e);
+        }
+    }
+    
     /**
      * closes an input stream, and logs exceptions
      *
