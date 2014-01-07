@@ -34,6 +34,6 @@ public class JsrPongMessage implements PongMessage
     @Override
     public ByteBuffer getApplicationData()
     {
-        return data;
+        return data.slice();
     }
 }

@@ -38,7 +38,7 @@ public class PingFrame extends ControlFrame
 
     public PingFrame setPayload(String payload)
     {
-        setPayload(StringUtil.getUtf8Bytes(payload));
+        setPayload(ByteBuffer.wrap(StringUtil.getUtf8Bytes(payload)));
         return this;
     }
 

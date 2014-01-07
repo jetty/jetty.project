@@ -33,6 +33,8 @@ import javax.websocket.OnOpen;
 import javax.websocket.RemoteEndpoint.Basic;
 import javax.websocket.Session;
 
+import org.eclipse.jetty.util.BufferUtil;
+
 @ClientEndpoint
 public class EchoClientSocket extends TrackingSocket
 {
@@ -107,5 +109,15 @@ public class EchoClientSocket extends TrackingSocket
     public void sendPartialText(String part, boolean fin) throws IOException
     {
         remote.sendText(part,fin);
+    }
+    
+    public void sendPing(String message) throws IOException
+    {
+        remote.sendPing(BufferUtil.toBuffer(message));
+    }
+    
+    public void sendPong(String message) throws IOException
+    {
+        remote.sendPong(BufferUtil.toBuffer(message));
     }
 }

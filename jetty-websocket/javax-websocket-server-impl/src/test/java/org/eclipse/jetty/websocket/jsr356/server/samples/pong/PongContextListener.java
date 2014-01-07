@@ -16,23 +16,29 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.server.samples.echo;
+package org.eclipse.jetty.websocket.jsr356.server.samples.pong;
 
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.websocket.DeploymentException;
+import javax.websocket.HandshakeResponse;
+import javax.websocket.server.HandshakeRequest;
 import javax.websocket.server.ServerContainer;
 import javax.websocket.server.ServerEndpointConfig;
+import javax.websocket.server.ServerEndpointConfig.Configurator;
 
-import org.eclipse.jetty.websocket.jsr356.server.samples.pong.PongMessageEndpoint;
-
-/**
- * Example of adding a server WebSocket (extending {@link Endpoint}) programmatically directly.
- * <p>
- * NOTE: this shouldn't work as the endpoint has no path associated with it.
- */
-public class BasicEchoEndpointContextListener implements ServletContextListener
+public class PongContextListener implements ServletContextListener
 {
+    public static class Config extends ServerEndpointConfig.Configurator
+    {
+        @Override
+        public void modifyHandshake(ServerEndpointConfig sec, HandshakeRequest request, HandshakeResponse response)
+        {
+            sec.getUserProperties().put("path",sec.getPath());
+            super.modifyHandshake(sec,request,response);
+        }
+    }
+    
     @Override
     public void contextDestroyed(ServletContextEvent sce)
     {
@@ -43,15 +49,18 @@ public class BasicEchoEndpointContextListener implements ServletContextListener
     public void contextInitialized(ServletContextEvent sce)
     {
         ServerContainer container = (ServerContainer)sce.getServletContext().getAttribute(ServerContainer.class.getName());
-        
         try
         {
-            container.addEndpoint(ServerEndpointConfig.Builder.create(PongMessageEndpoint.class,"/ping").build());
-            container.addEndpoint(ServerEndpointConfig.Builder.create(PongMessageEndpoint.class,"/pong").build());
+            Configurator config = new Config();
+            
+            container.addEndpoint(ServerEndpointConfig.Builder.create(PongMessageEndpoint.class,"/ping").configurator(config).build());
+            container.addEndpoint(ServerEndpointConfig.Builder.create(PongMessageEndpoint.class,"/pong").configurator(config).build());
+            container.addEndpoint(ServerEndpointConfig.Builder.create(PongSocket.class,"/ping-socket").build());
+            container.addEndpoint(ServerEndpointConfig.Builder.create(PongSocket.class,"/pong-socket").build());
         }
         catch (DeploymentException e)
         {
-            throw new RuntimeException("Unable to add endpoint via config file",e);
+            throw new RuntimeException("Unable to add endpoint directly",e);
         }
     }
 }
