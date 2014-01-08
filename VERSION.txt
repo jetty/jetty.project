@@ -1,6 +1,7 @@
-jetty-9.1.1.v20131220 - 20 December 2013
+jetty-9.1.1.v20140108 - 08 January 2014
  + 408912 JDBCSessionIdManager should allow configuration of schema
  + 410750 NPE Protection in Mongo save session
+ + 417202 Start / command line arguments with ${variable} should be expanded
  + 418622 WebSocket / When rejecting old WebSocket protocols, log client
    details
  + 418769 Allow resourceBases in run-forked Mojo
@@ -56,9 +57,11 @@ jetty-9.1.1.v20131220 - 20 December 2013
    not disconnected on server side
  + 423926 Remove code duplication in class IdleTimeout.
  + 423930 SPDY streams are leaked.
+ + 423948 Cleanup and consolidate testing utilities in WebSocket
  + 424014 PathContentProvider does not close its internal SeekableByteChannel.
  + 424043 IteratingCallback Idle race.
  + 424051 Using --list-config can result in NPE
+ + 424168 Module [ext] should load libraries recursively from lib/ext/
  + 424180 extensible bad message content
  + 424183 Start does not find LIB (Classpath) when on non-English locale
  + 424284 Identify conflicts in logging when error "Multiple servlets map to
@@ -66,9 +69,30 @@ jetty-9.1.1.v20131220 - 20 December 2013
  + 424303 @ServletSecurity not applied on non load-on-startup servlets
  + 424307 obfuscate unicode
  + 424380 Augment class / Jar scanning timing log events
+ + 424390 Allow enabling modules via regex
  + 424398 Servlet load-on-startup ordering is not obeyed
  + 424497 Allow concurrent async sends
  + 424498 made bytebufferendpoint threadsafe
+ + 424588 org.eclipse.jetty.ant.AntWebInfConfiguration does not add
+   WEB-INF/classes for annotation scanning
+ + 424598 Module [npn] downloads wrong npn jar
+ + 424651 org.eclipse.jetty.spdy.Flusher use of non-growable ArrayQueue yield
+   java.lang.IllegalStateException: Full.
+ + 424682 Session cannot be deserialized with form authentication
+ + 424706 The setMaxIdleTimeout of javax.websocket.Session does not take any
+   affect
+ + 424734 WebSocket / Expose Locale information from ServletUpgradeRequest
+ + 424735 WebSocket / Make ServletUpgradeRequest expose its HttpServletRequest
+ + 424743 Verify abort behavior in case the total timeout expires before the
+   connect timeout.
+ + 424762 ShutdownHandler hardcodes "127.0.0.1" and cannot be used with IPv6
+ + 424847 Deadlock in deflate-frame (webkit binary)
+ + 424863 IllegalStateException "Unable to find decoder for type
+   <javax.websocket.PongMessage>"
+ + 425038 WebSocketClient leaks file handles when exceptions are thrown from
+   open()
+ + 425043 Track whether pools are used correctly.
+ + 425049 add json mime mapping to mime.properties.
 
 jetty-9.1.0.v20131115 - 15 November 2013
  + 397167 Remote Access documentation is wrong
