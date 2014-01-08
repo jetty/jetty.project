@@ -58,6 +58,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.Ignore;
 
 public class SynDataReplyDataLoadTest extends AbstractTest
 {
@@ -65,6 +66,7 @@ public class SynDataReplyDataLoadTest extends AbstractTest
     private static final Logger logger = Log.getLogger(SynDataReplyDataLoadTest.class);
 
     @Test(timeout = TIMEOUT)
+    @Ignore("Test needs to be rewritten")
     public void testSynDataReplyDataLoad() throws Exception
     {
         final AtomicLong leaks = new AtomicLong();
