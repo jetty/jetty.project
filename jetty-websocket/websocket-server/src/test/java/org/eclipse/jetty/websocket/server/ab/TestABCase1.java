@@ -28,7 +28,8 @@ import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
-import org.eclipse.jetty.websocket.server.ab.Fuzzer.SendMode;
+import org.eclipse.jetty.websocket.common.test.Fuzzer;
+import org.eclipse.jetty.websocket.common.test.Fuzzer.SendMode;
 import org.junit.Test;
 
 public class TestABCase1 extends AbstractABCase

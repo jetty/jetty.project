@@ -16,27 +16,17 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.server;
+package org.eclipse.jetty.websocket.common.test;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
+import java.net.URI;
 
-public final class StackUtil
+import org.eclipse.jetty.websocket.common.Generator;
+
+public interface Fuzzed
 {
-    public static String toString(Throwable t)
-    {
-        try (StringWriter w = new StringWriter())
-        {
-            try (PrintWriter out = new PrintWriter(w))
-            {
-                t.printStackTrace(out);
-                return w.toString();
-            }
-        }
-        catch (IOException e)
-        {
-            return "Unable to get stacktrace for: " + t;
-        }
-    }
+    URI getServerURI();
+
+    Generator getLaxGenerator();
+
+    String getTestMethodName();
 }

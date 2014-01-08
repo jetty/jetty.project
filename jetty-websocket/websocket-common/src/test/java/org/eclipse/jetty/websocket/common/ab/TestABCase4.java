@@ -24,9 +24,9 @@ import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.common.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.Parser;
-import org.eclipse.jetty.websocket.common.UnitParser;
+import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
+import org.eclipse.jetty.websocket.common.test.UnitParser;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -55,7 +55,7 @@ public class TestABCase4
 
         Assert.assertEquals( "error on undefined opcode", 1, capture.getErrorCount(WebSocketException.class)) ;
 
-        Throwable known = capture.getErrors().get(0);
+        Throwable known = capture.getErrors().poll();
 
         Assert.assertTrue("undefined option should be in message",known.getMessage().contains("Unknown opcode: 11"));
     }
@@ -81,7 +81,7 @@ public class TestABCase4
 
         Assert.assertEquals( "error on undefined opcode", 1, capture.getErrorCount(WebSocketException.class)) ;
 
-        Throwable known = capture.getErrors().get(0);
+        Throwable known = capture.getErrors().poll();
 
         Assert.assertTrue("undefined option should be in message",known.getMessage().contains("Unknown opcode: 12"));
     }
@@ -108,7 +108,7 @@ public class TestABCase4
 
         Assert.assertEquals( "error on undefined opcode", 1, capture.getErrorCount(WebSocketException.class)) ;
 
-        Throwable known = capture.getErrors().get(0);
+        Throwable known = capture.getErrors().poll();
 
         Assert.assertTrue("undefined option should be in message",known.getMessage().contains("Unknown opcode: 3"));
     }
@@ -134,7 +134,7 @@ public class TestABCase4
 
         Assert.assertEquals( "error on undefined opcode", 1, capture.getErrorCount(WebSocketException.class)) ;
 
-        Throwable known = capture.getErrors().get(0);
+        Throwable known = capture.getErrors().poll();
 
         Assert.assertTrue("undefined option should be in message",known.getMessage().contains("Unknown opcode: 4"));
     }

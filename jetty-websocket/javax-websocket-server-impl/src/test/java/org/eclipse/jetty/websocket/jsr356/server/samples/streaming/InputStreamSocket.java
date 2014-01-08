@@ -30,7 +30,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.jsr356.server.StackUtil;
+import org.eclipse.jetty.websocket.common.util.StackUtil;
 
 @ServerEndpoint("/echo/streaming/inputstream")
 public class InputStreamSocket

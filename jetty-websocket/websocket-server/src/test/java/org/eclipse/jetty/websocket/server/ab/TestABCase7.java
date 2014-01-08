@@ -37,7 +37,8 @@ import org.eclipse.jetty.websocket.common.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.common.frames.PingFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
-import org.eclipse.jetty.websocket.server.helper.Hex;
+import org.eclipse.jetty.websocket.common.test.Fuzzer;
+import org.eclipse.jetty.websocket.common.util.Hex;
 import org.junit.Rule;
 import org.junit.Test;
 

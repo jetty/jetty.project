@@ -24,7 +24,7 @@ import java.util.List;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
-import org.eclipse.jetty.websocket.common.Hex;
+import org.eclipse.jetty.websocket.common.util.Hex;
 
 public class CapturedHexPayloads implements OutgoingFrames
 {

@@ -28,6 +28,7 @@ import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
+import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -69,7 +70,7 @@ public class GeneratorParserRoundtripTest
         capture.assertNoErrors();
         capture.assertHasFrame(OpCode.TEXT,1);
 
-        TextFrame txt = (TextFrame)capture.getFrames().get(0);
+        TextFrame txt = (TextFrame)capture.getFrames().poll();
         Assert.assertThat("Text parsed",txt.getPayloadAsUTF8(),is(message));
     }
 
@@ -115,7 +116,7 @@ public class GeneratorParserRoundtripTest
         capture.assertNoErrors();
         capture.assertHasFrame(OpCode.TEXT,1);
 
-        TextFrame txt = (TextFrame)capture.getFrames().get(0);
+        TextFrame txt = (TextFrame)capture.getFrames().poll();
         Assert.assertTrue("Text.isMasked",txt.isMasked());
         Assert.assertThat("Text parsed",txt.getPayloadAsUTF8(),is(message));
     }

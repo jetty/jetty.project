@@ -22,7 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.zip.Deflater;
 
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.websocket.common.Hex;
+import org.eclipse.jetty.websocket.common.util.Hex;
 import org.junit.Ignore;
 import org.junit.Test;
 

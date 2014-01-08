@@ -16,15 +16,13 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.server.helper;
+package org.eclipse.jetty.websocket.common.test;
 
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 import java.util.LinkedList;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
@@ -34,12 +32,6 @@ import org.junit.Assert;
 
 public class OutgoingFramesCapture implements OutgoingFrames
 {
-    public static class Write
-    {
-        public Callback callback;
-        public Frame frame;
-    }
-
     private LinkedList<WebSocketFrame> frames = new LinkedList<>();
 
     public void assertFrameCount(int expectedCount)
@@ -69,7 +61,7 @@ public class OutgoingFramesCapture implements OutgoingFrames
         {
             Frame frame = frames.get(i);
             System.out.printf("[%3d] %s%n",i,frame);
-            System.out.printf("       %s%n",BufferUtil.toDetailString(frame.getPayload()));
+            System.out.printf("      %s%n",BufferUtil.toDetailString(frame.getPayload()));
         }
     }
 
@@ -94,8 +86,7 @@ public class OutgoingFramesCapture implements OutgoingFrames
     @Override
     public void outgoingFrame(Frame frame, WriteCallback callback)
     {
-        WebSocketFrame copy = WebSocketFrame.copy(frame);
-        frames.add(copy);
+        frames.add(WebSocketFrame.copy(frame));
         if (callback != null)
         {
             callback.writeSuccess();

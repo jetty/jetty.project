@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.client.blockhead;
+package org.eclipse.jetty.websocket.common.test;
 
 import static org.hamcrest.Matchers.*;
 

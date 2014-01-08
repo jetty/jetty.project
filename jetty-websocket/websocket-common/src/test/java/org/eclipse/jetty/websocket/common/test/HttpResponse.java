@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.server.blockhead;
+package org.eclipse.jetty.websocket.common.test;
 
 import java.nio.ByteBuffer;
 import java.util.Map;

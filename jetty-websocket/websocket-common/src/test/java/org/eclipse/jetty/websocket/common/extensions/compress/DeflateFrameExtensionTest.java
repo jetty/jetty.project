@@ -36,17 +36,17 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.common.ByteBufferAssert;
 import org.eclipse.jetty.websocket.common.Generator;
-import org.eclipse.jetty.websocket.common.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.OpCode;
-import org.eclipse.jetty.websocket.common.OutgoingNetworkBytesCapture;
 import org.eclipse.jetty.websocket.common.Parser;
-import org.eclipse.jetty.websocket.common.UnitParser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.extensions.AbstractExtensionTest;
 import org.eclipse.jetty.websocket.common.extensions.ExtensionTool.Tester;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
+import org.eclipse.jetty.websocket.common.test.ByteBufferAssert;
+import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
+import org.eclipse.jetty.websocket.common.test.OutgoingNetworkBytesCapture;
+import org.eclipse.jetty.websocket.common.test.UnitParser;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -79,9 +79,9 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         capture.assertFrameCount(len);
         capture.assertHasFrame(OpCode.TEXT,len);
 
-        for (int i = 0; i < len; i++)
+        int i=0;
+        for (WebSocketFrame actual: capture.getFrames())
         {
-            WebSocketFrame actual = capture.getFrames().get(i);
             String prefix = "Frame[" + i + "]";
             Assert.assertThat(prefix + ".opcode",actual.getOpCode(),is(OpCode.TEXT));
             Assert.assertThat(prefix + ".fin",actual.isFin(),is(true));
@@ -92,6 +92,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
             ByteBuffer expected = BufferUtil.toBuffer(expectedTextDatas[i],StandardCharsets.UTF_8);
             Assert.assertThat(prefix + ".payloadLength",actual.getPayloadLength(),is(expected.remaining()));
             ByteBufferAssert.assertEquals(prefix + ".payload",expected,actual.getPayload().slice());
+            i++;
         }
     }
 

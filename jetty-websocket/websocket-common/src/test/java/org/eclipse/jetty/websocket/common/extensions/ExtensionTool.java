@@ -30,12 +30,12 @@ import org.eclipse.jetty.websocket.api.extensions.Extension;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.common.ByteBufferAssert;
-import org.eclipse.jetty.websocket.common.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.Parser;
-import org.eclipse.jetty.websocket.common.UnitParser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
+import org.eclipse.jetty.websocket.common.test.ByteBufferAssert;
+import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
+import org.eclipse.jetty.websocket.common.test.UnitParser;
 import org.junit.Assert;
 
 public class ExtensionTool
@@ -104,7 +104,7 @@ public class ExtensionTool
 
             for (int i = 0; i < expectedCount; i++)
             {
-                WebSocketFrame actual = capture.getFrames().pop();
+                WebSocketFrame actual = capture.getFrames().poll();
 
                 String prefix = String.format("frame[%d]",i);
                 Assert.assertThat(prefix + ".opcode",actual.getOpCode(),is(expectedFrames[i].getOpCode()));

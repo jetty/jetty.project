@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.server.blockhead;
+package org.eclipse.jetty.websocket.common.test;
 
 import static org.hamcrest.Matchers.is;
 
@@ -60,10 +60,10 @@ public class BlockheadClientConstructionTest
         this.expectedHttpUri = URI.create(httpuri);
     }
 
-    @SuppressWarnings("resource")
     @Test
     public void testURIs() throws URISyntaxException
     {
+        @SuppressWarnings("resource")
         BlockheadClient client = new BlockheadClient(expectedWsUri);
         Assert.assertThat("Websocket URI",client.getWebsocketURI(),is(expectedWsUri));
         Assert.assertThat("Websocket URI",client.getHttpURI(),is(expectedHttpUri));

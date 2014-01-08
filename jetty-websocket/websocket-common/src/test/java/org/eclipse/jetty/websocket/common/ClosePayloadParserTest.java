@@ -26,6 +26,9 @@ import java.nio.charset.StandardCharsets;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
+import org.eclipse.jetty.websocket.common.test.UnitParser;
+import org.eclipse.jetty.websocket.common.util.MaskedByteBuffer;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -57,7 +60,7 @@ public class ClosePayloadParserTest
 
         capture.assertNoErrors();
         capture.assertHasFrame(OpCode.CLOSE,1);
-        CloseInfo close = new CloseInfo(capture.getFrames().get(0));
+        CloseInfo close = new CloseInfo(capture.getFrames().poll());
         Assert.assertThat("CloseFrame.statusCode",close.getStatusCode(),is(StatusCode.NORMAL));
         Assert.assertThat("CloseFrame.data",close.getReason(),is(expectedReason));
     }

@@ -16,10 +16,9 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.server.ab;
+package org.eclipse.jetty.websocket.common.test;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 import java.io.IOException;
 import java.net.SocketException;
@@ -40,9 +39,6 @@ import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.io.IOState;
-import org.eclipse.jetty.websocket.server.ByteBufferAssert;
-import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
-import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
 import org.junit.Assert;
 
 /**
@@ -87,7 +83,7 @@ public class Fuzzer
     private SendMode sendMode = SendMode.BULK;
     private int slowSendSegmentSize = 5;
 
-    public Fuzzer(AbstractABCase testcase) throws Exception
+    public Fuzzer(Fuzzed testcase) throws Exception
     {
         WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
 
@@ -97,9 +93,9 @@ public class Fuzzer
         policy.setMaxBinaryMessageSize(bigMessageSize);
         policy.setIdleTimeout(5000);
 
-        this.client = new BlockheadClient(policy,testcase.getServer().getServerUri());
+        this.client = new BlockheadClient(policy,testcase.getServerURI());
         this.generator = testcase.getLaxGenerator();
-        this.testname = testcase.testname.getMethodName();
+        this.testname = testcase.getTestMethodName();
     }
 
     public ByteBuffer asNetworkBuffer(List<WebSocketFrame> send)

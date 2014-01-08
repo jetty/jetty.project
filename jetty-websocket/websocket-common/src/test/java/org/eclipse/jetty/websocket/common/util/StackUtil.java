@@ -16,20 +16,27 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.server;
+package org.eclipse.jetty.websocket.common.util;
 
-import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.common.Generator;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 
-/**
- * Convenience Generator.
- */
-public class UnitGenerator extends Generator
+public final class StackUtil
 {
-    public UnitGenerator()
+    public static String toString(Throwable t)
     {
-        super(WebSocketPolicy.newServerPolicy(),new MappedByteBufferPool());
+        try (StringWriter w = new StringWriter())
+        {
+            try (PrintWriter out = new PrintWriter(w))
+            {
+                t.printStackTrace(out);
+                return w.toString();
+            }
+        }
+        catch (IOException e)
+        {
+            return "Unable to get stacktrace for: " + t;
+        }
     }
-    
 }
