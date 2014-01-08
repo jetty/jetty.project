@@ -40,8 +40,10 @@ import org.eclipse.jetty.websocket.common.frames.PingFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.ByteBufferAssert;
 import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
+import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPool;
 import org.eclipse.jetty.websocket.common.test.OutgoingFramesCapture;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -51,6 +53,9 @@ import org.junit.Test;
  */
 public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 {
+    @Rule
+    public LeakTrackingBufferPool bufferPool = new LeakTrackingBufferPool("Test",new MappedByteBufferPool());
+    
     /**
      * Decode payload example as seen in draft-ietf-hybi-permessage-compression-15.
      * <p>
@@ -206,7 +211,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     public void testIncomingPing()
     {
         PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
-        ext.setBufferPool(new MappedByteBufferPool());
+        ext.setBufferPool(bufferPool);
         ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("permessage-deflate");
         ext.setConfig(config);
@@ -243,7 +248,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     public void testIncomingUncompressedFrames()
     {
         PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
-        ext.setBufferPool(new MappedByteBufferPool());
+        ext.setBufferPool(bufferPool);
         ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("permessage-deflate");
         ext.setConfig(config);
@@ -298,7 +303,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     public void testOutgoingPing() throws IOException
     {
         PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
-        ext.setBufferPool(new MappedByteBufferPool());
+        ext.setBufferPool(bufferPool);
         ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("permessage-deflate");
         ext.setConfig(config);

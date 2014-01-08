@@ -24,10 +24,12 @@ import java.net.URI;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPool;
 import org.eclipse.jetty.websocket.server.helper.CaptureSocket;
 import org.eclipse.jetty.websocket.server.helper.SessionServlet;
 import org.junit.AfterClass;
@@ -41,6 +43,9 @@ public class WebSocketOverSSLTest
     @Rule
     public TestTracker tracker = new TestTracker();
     
+    @Rule
+    public LeakTrackingBufferPool bufferPool = new LeakTrackingBufferPool("Test",new MappedByteBufferPool());
+
     private static SimpleServletServer server;
 
     @BeforeClass
@@ -64,7 +69,7 @@ public class WebSocketOverSSLTest
     public void testEcho() throws Exception
     {
         Assert.assertThat("server scheme",server.getServerUri().getScheme(),is("wss"));
-        WebSocketClient client = new WebSocketClient(server.getSslContextFactory());
+        WebSocketClient client = new WebSocketClient(server.getSslContextFactory(),null,bufferPool);
         try
         {
             client.start();
@@ -102,7 +107,7 @@ public class WebSocketOverSSLTest
     public void testServerSessionIsSecure() throws Exception
     {
         Assert.assertThat("server scheme",server.getServerUri().getScheme(),is("wss"));
-        WebSocketClient client = new WebSocketClient(server.getSslContextFactory());
+        WebSocketClient client = new WebSocketClient(server.getSslContextFactory(),null,bufferPool);
         try
         {
             client.setConnectTimeout(3000);
@@ -140,7 +145,7 @@ public class WebSocketOverSSLTest
     public void testServerSessionRequestURI() throws Exception
     {
         Assert.assertThat("server scheme",server.getServerUri().getScheme(),is("wss"));
-        WebSocketClient client = new WebSocketClient(server.getSslContextFactory());
+        WebSocketClient client = new WebSocketClient(server.getSslContextFactory(),null,bufferPool);
         try
         {
             client.setConnectTimeout(3000);

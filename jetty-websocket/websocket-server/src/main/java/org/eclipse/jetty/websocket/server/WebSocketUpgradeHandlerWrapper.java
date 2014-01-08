@@ -24,6 +24,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.websocket.server.pathmap.PathMappings;
@@ -38,7 +40,12 @@ public class WebSocketUpgradeHandlerWrapper extends HandlerWrapper implements Ma
 
     public WebSocketUpgradeHandlerWrapper()
     {
-        factory = new WebSocketServerFactory();
+        this(new MappedByteBufferPool());
+    }
+    
+    public WebSocketUpgradeHandlerWrapper(ByteBufferPool bufferPool)
+    {
+        factory = new WebSocketServerFactory(bufferPool);
     }
 
     @Override

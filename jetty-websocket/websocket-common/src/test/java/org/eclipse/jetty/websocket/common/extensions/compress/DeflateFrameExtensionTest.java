@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
@@ -45,19 +44,24 @@ import org.eclipse.jetty.websocket.common.extensions.ExtensionTool.Tester;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.ByteBufferAssert;
 import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
+import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPool;
 import org.eclipse.jetty.websocket.common.test.OutgoingNetworkBytesCapture;
 import org.eclipse.jetty.websocket.common.test.UnitParser;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class DeflateFrameExtensionTest extends AbstractExtensionTest
 {
+    @Rule
+    public LeakTrackingBufferPool bufferPool = new LeakTrackingBufferPool("Test",new MappedByteBufferPool());
+    
     private void assertIncoming(byte[] raw, String... expectedTextDatas)
     {
         WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
 
         DeflateFrameExtension ext = new DeflateFrameExtension();
-        ext.setBufferPool(new MappedByteBufferPool());
+        ext.setBufferPool(bufferPool);
         ext.setPolicy(policy);
 
         ExtensionConfig config = ExtensionConfig.parse("deflate-frame");
@@ -101,13 +105,12 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
 
         DeflateFrameExtension ext = new DeflateFrameExtension();
-        ext.setBufferPool(new MappedByteBufferPool());
+        ext.setBufferPool(bufferPool);
         ext.setPolicy(policy);
 
         ExtensionConfig config = ExtensionConfig.parse("deflate-frame");
         ext.setConfig(config);
 
-        ByteBufferPool bufferPool = new MappedByteBufferPool();
         boolean validating = true;
         Generator generator = new Generator(policy,bufferPool,validating);
         generator.configureFromExtensions(Collections.singletonList(ext));
@@ -235,7 +238,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
     private void init(DeflateFrameExtension ext)
     {
         ext.setConfig(new ExtensionConfig(ext.getName()));
-        ext.setBufferPool(new MappedByteBufferPool());
+        ext.setBufferPool(bufferPool);
     }
 
     @Test
@@ -290,11 +293,10 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
 
         DeflateFrameExtension ext = new DeflateFrameExtension();
-        ext.setBufferPool(new MappedByteBufferPool());
+        ext.setBufferPool(bufferPool);
         ext.setPolicy(policy);
         ext.setConfig(new ExtensionConfig(ext.getName()));
 
-        ByteBufferPool bufferPool = new MappedByteBufferPool();
         boolean validating = true;
         Generator generator = new Generator(policy,bufferPool,validating);
         generator.configureFromExtensions(Collections.singletonList(ext));

@@ -18,11 +18,10 @@
 
 package org.eclipse.jetty.websocket.common;
 
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.StatusCode;
@@ -31,15 +30,20 @@ import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.frames.CloseFrame;
 import org.eclipse.jetty.websocket.common.frames.PingFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
+import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPool;
 import org.eclipse.jetty.websocket.common.util.Hex;
 import org.junit.Assert;
-import org.junit.BeforeClass;
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class WebSocketFrameTest
 {
-    private static Generator strictGenerator;
-    private static Generator laxGenerator;
+    @Rule
+    public LeakTrackingBufferPool bufferPool = new LeakTrackingBufferPool("Test",new MappedByteBufferPool());
+
+    private Generator strictGenerator;
+    private Generator laxGenerator;
 
     private ByteBuffer generateWholeFrame(Generator generator, Frame frame)
     {
@@ -49,11 +53,10 @@ public class WebSocketFrameTest
         return buf;
     }
 
-    @BeforeClass
-    public static void initGenerator()
+    @Before
+    public void initGenerator()
     {
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
-        ByteBufferPool bufferPool = new MappedByteBufferPool();
         strictGenerator = new Generator(policy,bufferPool);
         laxGenerator = new Generator(policy,bufferPool,false);
     }

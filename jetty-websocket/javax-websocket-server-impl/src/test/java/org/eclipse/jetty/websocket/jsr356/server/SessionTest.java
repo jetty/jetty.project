@@ -28,14 +28,17 @@ import java.util.Queue;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPool;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -95,6 +98,9 @@ public class SessionTest
         return cases;
     }
 
+    @Rule
+    public LeakTrackingBufferPool bufferPool = new LeakTrackingBufferPool("Test",new MappedByteBufferPool());
+
     private final Case testcase;
     private WSServer server;
     private URI serverUri;
@@ -127,7 +133,7 @@ public class SessionTest
 
     private void assertResponse(String requestPath, String requestMessage, String expectedResponse) throws Exception
     {
-        WebSocketClient client = new WebSocketClient();
+        WebSocketClient client = new WebSocketClient(bufferPool);
         try
         {
             client.start();

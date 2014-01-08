@@ -33,12 +33,14 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeException;
 import org.eclipse.jetty.websocket.common.AcceptHash;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer;
+import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPool;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer.ServerConnection;
 import org.junit.After;
 import org.junit.Assert;
@@ -54,6 +56,9 @@ public class ClientConnectTest
 {
     @Rule
     public TestTracker tt = new TestTracker();
+
+    @Rule
+    public LeakTrackingBufferPool bufferPool = new LeakTrackingBufferPool("Test",new MappedByteBufferPool());
 
     private final int timeout = 500;
     private BlockheadServer server;
@@ -86,7 +91,7 @@ public class ClientConnectTest
     @Before
     public void startClient() throws Exception
     {
-        client = new WebSocketClient();
+        client = new WebSocketClient(bufferPool);
         client.setConnectTimeout(timeout);
         client.start();
     }

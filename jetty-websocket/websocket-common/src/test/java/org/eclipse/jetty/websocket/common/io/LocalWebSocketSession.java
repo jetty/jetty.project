@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.common.io;
 
 import java.net.URI;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.websocket.common.SessionListener;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
@@ -31,9 +32,9 @@ public class LocalWebSocketSession extends WebSocketSession
     private String id;
     private OutgoingFramesCapture outgoingCapture;
 
-    public LocalWebSocketSession(TestName testname, EventDriver driver)
+    public LocalWebSocketSession(TestName testname, EventDriver driver, ByteBufferPool bufferPool)
     {
-        super(URI.create("ws://localhost/LocalWebSocketSesssion/" + testname.getMethodName()),driver,new LocalWebSocketConnection(testname), new SessionListener[0]);
+        super(URI.create("ws://localhost/LocalWebSocketSesssion/" + testname.getMethodName()),driver,new LocalWebSocketConnection(testname,bufferPool), new SessionListener[0]);
         this.id = testname.getMethodName();
         outgoingCapture = new OutgoingFramesCapture();
         setOutgoingHandler(outgoingCapture);
