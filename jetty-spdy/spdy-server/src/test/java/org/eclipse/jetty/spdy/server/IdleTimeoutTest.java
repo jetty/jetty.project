@@ -169,6 +169,7 @@ public class IdleTimeoutTest extends AbstractTest
         QueuedThreadPool threadPool = new QueuedThreadPool();
         threadPool.setName(threadPool.getName() + "-client");
         clientFactory = newSPDYClientFactory(threadPool);
+        clientFactory.start();
         SPDYClient client = clientFactory.newSPDYClient(SPDY.V2);
         client.setIdleTimeout(idleTimeout);
         Session session = client.connect(address, null);
@@ -194,6 +195,7 @@ public class IdleTimeoutTest extends AbstractTest
         QueuedThreadPool threadPool = new QueuedThreadPool();
         threadPool.setName(threadPool.getName() + "-client");
         clientFactory = newSPDYClientFactory(threadPool);
+        clientFactory.start();
         SPDYClient client = clientFactory.newSPDYClient(SPDY.V2);
         client.setIdleTimeout(idleTimeout);
         Session session = client.connect(address, null);
@@ -226,6 +228,7 @@ public class IdleTimeoutTest extends AbstractTest
         QueuedThreadPool threadPool = new QueuedThreadPool();
         threadPool.setName(threadPool.getName() + "-client");
         clientFactory = newSPDYClientFactory(threadPool);
+        clientFactory.start();
         SPDYClient client = clientFactory.newSPDYClient(SPDY.V2);
         client.setIdleTimeout(idleTimeout);
         Session session = client.connect(address, null);
