@@ -2,47 +2,31 @@
 # NPN Module
 #
 
+[depend]
+npn/npn-${java.version}
+
 [files]
-${switch java.version
-1.7.0_9:  http://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.3.v20130313/npn-boot-1.1.3.v20130313.jar:lib/npn/npn-boot-1.1.3.v20130313.jar
-1.7.0_10: http://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.3.v20130313/npn-boot-1.1.3.v20130313.jar:lib/npn/npn-boot-1.1.3.v20130313.jar
-1.7.0_11: http://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.3.v20130313/npn-boot-1.1.3.v20130313.jar:lib/npn/npn-boot-1.1.3.v20130313.jar
-1.7.0_13: http://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.4.v20130313/npn-boot-1.1.4.v20130313.jar:lib/npn/npn-boot-1.1.4.v20130313.jar
-1.7.0_15: http://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.5.v20130313/npn-boot-1.1.5.v20130313.jar:lib/npn/npn-boot-1.1.5.v20130313.jar
-1.7.0_17: http://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.5.v20130313/npn-boot-1.1.5.v20130313.jar:lib/npn/npn-boot-1.1.5.v20130313.jar
-1.7.0_21: http://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.5.v20130313/npn-boot-1.1.5.v20130313.jar:lib/npn/npn-boot-1.1.5.v20130313.jar
-1.7.0_25: http://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.5.v20130313/npn-boot-1.1.5.v20130313.jar:lib/npn/npn-boot-1.1.5.v20130313.jar
-1.7.0_40: http://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.6.v20130911/npn-boot-1.1.6.v20130911.jar:lib/npn/npn-boot-1.1.6.v20130911.jar
-1.7.0_45: http://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.6.v20130911/npn-boot-1.1.6.v20130911.jar:lib/npn/npn-boot-1.1.6.v20130911.jar
-*:        http://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.6.v20130911/npn-boot-1.1.6.v20130911.jar:lib/npn/npn-boot-1.1.6.v20130911.jar
-}
+lib/
+lib/npn/
 
 [ini-template]
---exec
-${switch java.version
-1.7.0_9:  -Xbootclasspath/p:lib/npn/npn-boot-1.1.3.v20130313.jar
-1.7.0_10: -Xbootclasspath/p:lib/npn/npn-boot-1.1.3.v20130313.jar
-1.7.0_11: -Xbootclasspath/p:lib/npn/npn-boot-1.1.3.v20130313.jar
-1.7.0_13: -Xbootclasspath/p:lib/npn/npn-boot-1.1.4.v20130313.jar
-1.7.0_15: -Xbootclasspath/p:lib/npn/npn-boot-1.1.5.v20130313.jar
-1.7.0_17: -Xbootclasspath/p:lib/npn/npn-boot-1.1.5.v20130313.jar
-1.7.0_21: -Xbootclasspath/p:lib/npn/npn-boot-1.1.5.v20130313.jar
-1.7.0_25: -Xbootclasspath/p:lib/npn/npn-boot-1.1.5.v20130313.jar
-1.7.0_40: -Xbootclasspath/p:lib/npn/npn-boot-1.1.6.v20130911.jar
-1.7.0_45: -Xbootclasspath/p:lib/npn/npn-boot-1.1.6.v20130911.jar
-*:        -Xbootclasspath/p:lib/npn/npn-boot-1.1.6.v20130911.jar
-}
+# NPN is provided via a -Xbootclasspath that modifies the secure connections
+# in java to support the NPN layer needed for SPDY.
+#
+# This modification has a tight dependency on specific updates of Java 1.7.
+# (No support for Java 8 currently exists for npn / npn-boot)
+#
+# The npn module will use an appropriate npn-boot jar for your specific
+# version of Java.
+#
+# IMPORTANT: Versions of Java that exist after this module was created are
+#            not guaranteed to work with existing npn-boot jars, and might
+#            need a new npn-boot to be created / tested / deployed by the
+#            Jetty project in order to provide support for these future
+#            Java versions.
+#
+# All versions of npn-boot can be found at
+# http://central.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/
 
-# For other versions of JRE, an appropriate npn-boot jar must be downloaded
-#
-# 1.7.0 - 1.7.0u2 - 1.7.0u3                   http://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.0.0.v20120402/npn-boot-1.0.0.v20120402.jar
-# 1.7.0u4 - 1.7.0u5                           http://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.0.v20120525/npn-boot-1.1.0.v20120525.jar
-# 1.7.0u6 - 1.7.0u7                           http://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.1.v20121030/npn-boot-1.1.1.v20121030.jar
-# 1.7.0u9 - 1.7.0u10 - 1.7.0u11               http://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.3.v20130313/npn-boot-1.1.3.v20130313.jar
-# 1.7.0u13                                    http://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.4.v20130313/npn-boot-1.1.4.v20130313.jar
-# 1.7.0u15 - 1.7.0u17 - 1.7.0u21 - 1.7.0u25   http://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.5.v20130313/npn-boot-1.1.5.v20130313.jar
-# 1.7.0u40                                    http://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.6.v20130911/npn-boot-1.1.6.v20130911.jar
-# 1.7.0u45                                    http://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.6.v20130911/npn-boot-1.1.6.v20130911.jar
-#
-# Then edit the -Xbootclasspath line above with the correct version
+
 

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,6 +21,8 @@ package org.eclipse.jetty.websocket.jsr356.decoders;
 import java.io.InputStream;
 import java.io.Reader;
 import java.nio.ByteBuffer;
+
+import javax.websocket.PongMessage;
 
 import org.eclipse.jetty.websocket.jsr356.MessageType;
 import org.eclipse.jetty.websocket.jsr356.metadata.DecoderMetadataSet;
@@ -59,6 +61,10 @@ public class PrimitiveDecoderMetadataSet extends DecoderMetadataSet
         msgType = MessageType.BINARY;
         register(ByteBuffer.class,ByteBufferDecoder.class,msgType,streamed);
         register(byte[].class,ByteArrayDecoder.class,msgType,streamed);
+        
+        // PONG based
+        msgType = MessageType.PONG;
+        register(PongMessage.class,PongMessageDecoder.class,msgType,streamed);
 
         // STREAMING based
         streamed = true;

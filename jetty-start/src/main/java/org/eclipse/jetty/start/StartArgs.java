@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.start;
 
-import static org.eclipse.jetty.start.UsageException.ERR_BAD_ARG;
+import static org.eclipse.jetty.start.UsageException.*;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -27,20 +27,20 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
+
+import org.eclipse.jetty.start.Props.Prop;
 
 /**
  * The Arguments required to start Jetty.
  */
 public class StartArgs
 {
-    public static final String CMD_LINE_SOURCE = "<cmd-line>";
+    public static final String CMD_LINE_SOURCE = "<command-line>";
     public static final String VERSION;
 
     static
@@ -74,7 +74,7 @@ public class StartArgs
     private Classpath classpath;
     private List<String> xmlRefs = new ArrayList<>();
     private List<File> xmls = new ArrayList<>();
-    private Properties properties = new Properties();
+    private Props properties = new Props();
     private Set<String> systemPropertyKeys = new HashSet<>();
     private List<String> jvmArgs = new ArrayList<>();
     private List<String> moduleStartdIni = new ArrayList<>();
@@ -170,9 +170,9 @@ public class StartArgs
         System.out.println("Jetty Environment:");
         System.out.println("-----------------");
 
-        dumpSystemProperty("jetty.home");
-        dumpSystemProperty("jetty.base");
-        dumpSystemProperty("jetty.version");
+        dumpProperty("jetty.home");
+        dumpProperty("jetty.base");
+        dumpProperty("jetty.version");
     }
 
     public void dumpJvmArgs()
@@ -206,26 +206,27 @@ public class StartArgs
         System.out.println("Properties:");
         System.out.println("-----------");
 
-        if (properties.isEmpty())
+        List<String> sortedKeys = new ArrayList<>();
+        for (Prop prop : properties)
+        {
+            if (prop.origin.equals(Props.ORIGIN_SYSPROP))
+            {
+                continue; // skip
+            }
+            sortedKeys.add(prop.key);
+        }
+
+        if (sortedKeys.isEmpty())
         {
             System.out.println(" (no properties specified)");
             return;
-        }
-
-        List<String> sortedKeys = new ArrayList<>();
-        @SuppressWarnings("unchecked")
-        Enumeration<String> keyEnum = (Enumeration<String>)properties.propertyNames();
-        while (keyEnum.hasMoreElements())
-        {
-            sortedKeys.add(keyEnum.nextElement());
         }
 
         Collections.sort(sortedKeys);
 
         for (String key : sortedKeys)
         {
-            String value = properties.getProperty(key);
-            System.out.printf(" %s = %s%n",key,value);
+            dumpProperty(key);
         }
     }
 
@@ -248,13 +249,37 @@ public class StartArgs
         for (String key : sortedKeys)
         {
             String value = System.getProperty(key);
-            System.out.printf(" %s = %s%n",key,value);
+            System.out.printf(" %s = %s%n",key,properties.expand(value));
         }
     }
 
     private void dumpSystemProperty(String key)
     {
-        System.out.printf(" %s=%s%n",key,System.getProperty(key));
+        System.out.printf(" %s = %s%n",key,System.getProperty(key));
+    }
+
+    private void dumpProperty(String key)
+    {
+        Prop prop = properties.getProp(key);
+        if (prop == null)
+        {
+            System.out.printf(" %s (not defined)%n",key);
+        }
+        else
+        {
+            System.out.printf(" %s = %s%n",key,properties.expand(prop.value));
+            if (StartLog.isDebugEnabled())
+            {
+                System.out.printf("   origin: %s%n",prop.origin);
+                while (prop.overrides != null)
+                {
+                    prop = prop.overrides;
+                    System.out.printf("   (overrides)%n");
+                    System.out.printf("     %s = %s%n",key,properties.expand(prop.value));
+                    System.out.printf("     origin: %s%n",prop.origin);
+                }
+            }
+        }
     }
 
     /**
@@ -272,7 +297,7 @@ public class StartArgs
 
         if (properties.containsKey(key))
         {
-            String val = properties.getProperty(key,null);
+            String val = properties.expand(properties.getString(key));
             if (val == null)
             {
                 return; // no value to set
@@ -297,9 +322,21 @@ public class StartArgs
             // Find and Expand Libraries
             for (String rawlibref : module.getLibs())
             {
-                String libref = rawlibref.replace("${jetty.version}",VERSION);
+                String libref = properties.expand(rawlibref);
+
+                if (libref.startsWith("regex:"))
+                {
+                    String regex = libref.substring("regex:".length());
+                    for (File libfile : baseHome.listFilesRegex(regex))
+                    {
+                        classpath.addComponent(libfile);
+                    }
+                    continue;
+                }
+
                 libref = FS.separators(libref);
 
+                // Any globs here?
                 if (libref.contains("*"))
                 {
                     // Glob Reference
@@ -470,7 +507,7 @@ public class StartArgs
         return moduleStartIni;
     }
 
-    public Properties getProperties()
+    public Props getProperties()
     {
         return properties;
     }
@@ -537,12 +574,12 @@ public class StartArgs
         }
         return false;
     }
-    
+
     public boolean isDownload()
     {
         return download;
     }
-    
+
     public boolean isDryRun()
     {
         return dryRun;
@@ -573,11 +610,31 @@ public class StartArgs
         return listModules;
     }
 
+    private void setProperty(String key, String value, String source)
+    {
+        // Special / Prevent override from start.ini's
+        if (key.equals("jetty.home"))
+        {
+            properties.setProperty("jetty.home",System.getProperty("jetty.home"),source);
+            return;
+        }
+
+        // Special / Prevent override from start.ini's
+        if (key.equals("jetty.base"))
+        {
+            properties.setProperty("jetty.base",System.getProperty("jetty.base"),source);
+            return;
+        }
+
+        // Normal
+        properties.setProperty(key,value,source);
+    }
+
     public void setRun(boolean run)
     {
         this.run = run;
     }
-    
+
     public boolean isRun()
     {
         return run;
@@ -661,15 +718,15 @@ public class StartArgs
         if (arg.startsWith("--download="))
         {
             addFile(getValue(arg));
-            run=false;
-            download=true;
+            run = false;
+            download = true;
             return;
         }
-        
-        if (arg.equals("--download") || arg.equals("--create"))
+
+        if (arg.equals("--create-files"))
         {
-            run=false;
-            download=true;
+            run = false;
+            download = true;
             return;
         }
 
@@ -775,9 +832,11 @@ public class StartArgs
             {
                 case 2:
                     System.setProperty(assign[0],assign[1]);
+                    setProperty(assign[0],assign[1],source);
                     break;
                 case 1:
                     System.setProperty(assign[0],"");
+                    setProperty(assign[0],"",source);
                     break;
                 default:
                     break;
@@ -823,7 +882,7 @@ public class StartArgs
                 StartLog.warn(warn.toString());
             }
 
-            properties.setProperty(key,value);
+            setProperty(key,value,source);
             return;
         }
 
@@ -842,12 +901,14 @@ public class StartArgs
         throw new UsageException(ERR_BAD_ARG,"Unrecognized argument: \"%s\" in %s",arg,source);
     }
 
-    public void parseCommandLine()
+    public StartArgs parseCommandLine()
     {
         for (String line : commandLine)
         {
             parse(line,StartArgs.CMD_LINE_SOURCE);
         }
+
+        return this;
     }
 
     public void resolveExtraXmls(BaseHome baseHome) throws IOException

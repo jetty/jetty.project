@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,8 +18,7 @@
 
 package org.eclipse.jetty.start;
 
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.*;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -28,11 +27,11 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.eclipse.jetty.start.Props.Prop;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.Assert;
 
@@ -97,18 +96,15 @@ public class ConfigurationAssert
             }
         }
         List<String> actualProperties = new ArrayList<>();
-        @SuppressWarnings("unchecked")
-        Enumeration<String> nameEnum = (Enumeration<String>)args.getProperties().propertyNames();
-        while (nameEnum.hasMoreElements())
+        for (Prop prop : args.getProperties())
         {
-            String name = nameEnum.nextElement();
-            if ("jetty.home".equals(name) || "jetty.base".equals(name))
+            String name = prop.key;
+            if ("jetty.home".equals(name) || "jetty.base".equals(name) || prop.origin.equals(Props.ORIGIN_SYSPROP))
             {
                 // strip these out from assertion, to make assertions easier.
                 continue;
             }
-            String value = args.getProperties().getProperty(name);
-            actualProperties.add(name + "=" + value);
+            actualProperties.add(prop.key + "=" + args.getProperties().expand(prop.value));
         }
         assertContainsUnordered("Properties",expectedProperties,actualProperties);
 
@@ -124,10 +120,31 @@ public class ConfigurationAssert
         List<String> actualDownloads = new ArrayList<>();
         for (FileArg darg : args.getFiles())
         {
-            actualDownloads.add(String.format("%s:%s",darg.uri,darg.location));
+            if (darg.uri != null)
+            {
+                actualDownloads.add(String.format("%s:%s",darg.uri,darg.location));
+            }
         }
         assertContainsUnordered("Downloads",expectedDownloads,actualDownloads);
-
+        
+        // Validate Files/Dirs creation
+        List<String> expectedFiles = new ArrayList<>();
+        for(String line: textFile)
+        {
+            if(line.startsWith("FILE|"))
+            {
+                expectedFiles.add(getValue(line));
+            }
+        }
+        List<String> actualFiles = new ArrayList<>();
+        for(FileArg farg: args.getFiles())
+        {
+            if(farg.uri == null)
+            {
+                actualFiles.add(farg.location);
+            }
+        }
+        assertContainsUnordered("Files/Dirs",expectedFiles,actualFiles);
     }
 
     private static String shorten(BaseHome baseHome, File path, File testResourcesDir)

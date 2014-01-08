@@ -94,12 +94,9 @@ Module Management:
                    See http://graphviz.org/ for details on how to post-process
                    this file into the output best suited for your needs.
                    
-  --download       Download or create any missing files/directories that are 
-                   required by initialised modules.
-                   
-  --create         Download or create any missing files/directories that are 
-                   required by initialised modules.
-
+  --create-files   Create any missing files that are required by initialised 
+                   modules.  This may download a file from the network if the 
+                   module provides a URL.
 
 Startup / Shutdown Command Line:
 --------------------------------

@@ -2,6 +2,9 @@
 # Base server
 #
 
+[optional]
+ext
+
 [depend]
 base
 xml

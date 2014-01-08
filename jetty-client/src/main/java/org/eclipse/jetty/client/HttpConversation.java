@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,22 +22,22 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.util.AttributesMap;
 
 public class HttpConversation extends AttributesMap
 {
+    private static final AtomicLong ids = new AtomicLong();
+
     private final Deque<HttpExchange> exchanges = new ConcurrentLinkedDeque<>();
-    private final HttpClient client;
     private final long id;
-    private volatile boolean complete;
     private volatile List<Response.ResponseListener> listeners;
 
-    public HttpConversation(HttpClient client, long id)
+    protected HttpConversation()
     {
-        this.client = client;
-        this.id = id;
+        this.id = ids.incrementAndGet();
     }
 
     public long getID()
@@ -123,10 +123,6 @@ public class HttpConversation extends AttributesMap
      */
     public void updateResponseListeners(Response.ResponseListener overrideListener)
     {
-        // If we have no override listener, then the
-        // conversation may be completed at a later time
-        complete = overrideListener == null;
-
         // Create a new instance to avoid that iterating over the listeners
         // will notify a listener that may send a new request and trigger
         // another call to this method which will build different listeners
@@ -153,16 +149,10 @@ public class HttpConversation extends AttributesMap
         this.listeners = listeners;
     }
 
-    public void complete()
-    {
-        if (complete)
-            client.removeConversation(this);
-    }
-
     public boolean abort(Throwable cause)
     {
         HttpExchange exchange = exchanges.peekLast();
-        return exchange.abort(cause);
+        return exchange != null && exchange.abort(cause);
     }
 
     @Override

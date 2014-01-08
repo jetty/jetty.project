@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -137,6 +137,9 @@ public class AntWebInfConfiguration extends WebInfConfiguration
             }
         }
         webInfJarNameMatcher.match(webInfPattern, uris, true); //null is inclusive, no pattern == all jars match 
+        
+        //No pattern to appy to classes, just add to metadata
+        context.getMetaData().setWebInfClassesDirs(findClassDirs(context));
     }
     
 

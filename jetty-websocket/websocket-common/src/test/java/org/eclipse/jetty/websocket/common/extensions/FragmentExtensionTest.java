@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -32,15 +32,15 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.common.ByteBufferAssert;
-import org.eclipse.jetty.websocket.common.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.OpCode;
-import org.eclipse.jetty.websocket.common.OutgoingFramesCapture;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.extensions.fragment.FragmentExtension;
 import org.eclipse.jetty.websocket.common.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.common.frames.PingFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
+import org.eclipse.jetty.websocket.common.test.ByteBufferAssert;
+import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
+import org.eclipse.jetty.websocket.common.test.OutgoingFramesCapture;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -80,11 +80,10 @@ public class FragmentExtensionTest
         capture.assertHasFrame(OpCode.TEXT,len);
 
         String prefix;
-        for (int i = 0; i < len; i++)
+        int i = 0;
+        for (WebSocketFrame actual : capture.getFrames())
         {
             prefix = "Frame[" + i + "]";
-
-            WebSocketFrame actual = capture.getFrames().get(i);
 
             Assert.assertThat(prefix + ".opcode",actual.getOpCode(),is(OpCode.TEXT));
             Assert.assertThat(prefix + ".fin",actual.isFin(),is(true));
@@ -95,6 +94,7 @@ public class FragmentExtensionTest
             ByteBuffer expected = BufferUtil.toBuffer(quote.get(i),StandardCharsets.UTF_8);
             Assert.assertThat(prefix + ".payloadLength",actual.getPayloadLength(),is(expected.remaining()));
             ByteBufferAssert.assertEquals(prefix + ".payload",expected,actual.getPayload().slice());
+            i++;
         }
     }
 
@@ -120,7 +120,7 @@ public class FragmentExtensionTest
 
         capture.assertFrameCount(1);
         capture.assertHasFrame(OpCode.PING,1);
-        WebSocketFrame actual = capture.getFrames().getFirst();
+        WebSocketFrame actual = capture.getFrames().poll();
 
         Assert.assertThat("Frame.opcode",actual.getOpCode(),is(OpCode.PING));
         Assert.assertThat("Frame.fin",actual.isFin(),is(true));

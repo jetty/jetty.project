@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,15 +29,15 @@ import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.common.ByteBufferAssert;
 import org.eclipse.jetty.websocket.common.Generator;
-import org.eclipse.jetty.websocket.common.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.Parser;
-import org.eclipse.jetty.websocket.common.UnitGenerator;
-import org.eclipse.jetty.websocket.common.UnitParser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.PingFrame;
+import org.eclipse.jetty.websocket.common.test.ByteBufferAssert;
+import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
+import org.eclipse.jetty.websocket.common.test.UnitGenerator;
+import org.eclipse.jetty.websocket.common.test.UnitParser;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -193,7 +193,7 @@ public class TestABCase2
         capture.assertNoErrors();
         capture.assertHasFrame(OpCode.PING,1);
 
-        Frame pActual = capture.getFrames().get(0);
+        Frame pActual = capture.getFrames().poll();
         Assert.assertThat("PingFrame.payloadLength",pActual.getPayloadLength(),is(bytes.length));
         Assert.assertEquals("PingFrame.payload",bytes.length,pActual.getPayloadLength());
     }
@@ -223,7 +223,7 @@ public class TestABCase2
         capture.assertNoErrors();
         capture.assertHasFrame(OpCode.PING,1);
 
-        Frame pActual = capture.getFrames().get(0);
+        Frame pActual = capture.getFrames().poll();
         Assert.assertThat("PingFrame.payloadLength",pActual.getPayloadLength(),is(bytes.length));
         Assert.assertEquals("PingFrame.payload",bytes.length,pActual.getPayloadLength());
     }
@@ -246,7 +246,7 @@ public class TestABCase2
         capture.assertNoErrors();
         capture.assertHasFrame(OpCode.PING,1);
 
-        Frame pActual = capture.getFrames().get(0);
+        Frame pActual = capture.getFrames().poll();
         Assert.assertThat("PingFrame.payloadLength",pActual.getPayloadLength(),is(0));
         Assert.assertEquals("PingFrame.payload",0,pActual.getPayloadLength());
     }
@@ -277,7 +277,7 @@ public class TestABCase2
         capture.assertNoErrors();
         capture.assertHasFrame(OpCode.PING,1);
 
-        Frame pActual = capture.getFrames().get(0);
+        Frame pActual = capture.getFrames().poll();
         Assert.assertThat("PingFrame.payloadLength",pActual.getPayloadLength(),is(message.length()));
         Assert.assertEquals("PingFrame.payload",message.length(),pActual.getPayloadLength());
     }

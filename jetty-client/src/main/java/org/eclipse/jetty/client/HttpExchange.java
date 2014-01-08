@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -37,29 +37,28 @@ public class HttpExchange
     private final AtomicBoolean responseComplete = new AtomicBoolean();
     private final AtomicInteger complete = new AtomicInteger();
     private final AtomicReference<HttpChannel> channel = new AtomicReference<>();
-    private final HttpConversation conversation;
     private final HttpDestination destination;
-    private final Request request;
+    private final HttpRequest request;
     private final List<Response.ResponseListener> listeners;
     private final HttpResponse response;
     private volatile Throwable requestFailure;
     private volatile Throwable responseFailure;
   
 
-    public HttpExchange(HttpConversation conversation, HttpDestination destination, Request request, List<Response.ResponseListener> listeners)
+    public HttpExchange(HttpDestination destination, HttpRequest request, List<Response.ResponseListener> listeners)
     {
-        this.conversation = conversation;
         this.destination = destination;
         this.request = request;
         this.listeners = listeners;
         this.response = new HttpResponse(request, listeners);
+        HttpConversation conversation = request.getConversation();
         conversation.getExchanges().offer(this);
         conversation.updateResponseListeners(null);
     }
 
     public HttpConversation getConversation()
     {
-        return conversation;
+        return request.getConversation();
     }
 
     public Request getRequest()
@@ -121,11 +120,11 @@ public class HttpExchange
         if (failure == null)
         {
             int responseSuccess = 0b1100;
-            return terminate(responseSuccess, failure);
+            return terminate(responseSuccess, null);
         }
         else
         {
-            proceed(false);
+            proceed(failure);
             int responseFailure = 0b0100;
             return terminate(responseFailure, failure);
         }
@@ -148,6 +147,19 @@ public class HttpExchange
      */
     private Result terminate(int code, Throwable failure)
     {
+        int current = update(code, failure);
+        int terminated = 0b0101;
+        if ((current & terminated) == terminated)
+        {
+            // Request and response terminated
+            LOG.debug("{} terminated", this);
+            return new Result(getRequest(), getRequestFailure(), getResponse(), getResponseFailure());
+        }
+        return null;
+    }
+
+    private int update(int code, Throwable failure)
+    {
         int current;
         while (true)
         {
@@ -161,43 +173,48 @@ public class HttpExchange
                 current = candidate;
                 if ((code & 0b01) == 0b01)
                     requestFailure = failure;
-                else
+                if ((code & 0b0100) == 0b0100)
                     responseFailure = failure;
                 LOG.debug("{} updated", this);
             }
             break;
         }
-
-        int terminated = 0b0101;
-        if ((current & terminated) == terminated)
-        {
-            // Request and response terminated
-            LOG.debug("{} terminated", this);
-            conversation.complete();
-            return new Result(getRequest(), getRequestFailure(), getResponse(), getResponseFailure());
-        }
-
-        return null;
+        return current;
     }
 
     public boolean abort(Throwable cause)
     {
         if (destination.remove(this))
         {
-            destination.abort(this, cause);
-            LOG.debug("Aborted while queued {}: {}", this, cause);
-            return true;
+            LOG.debug("Aborting while queued {}: {}", this, cause);
+            return fail(cause);
         }
         else
         {
             HttpChannel channel = this.channel.get();
-            // If there is no channel, this exchange is already completed
             if (channel == null)
-                return false;
+                return fail(cause);
 
             boolean aborted = channel.abort(cause);
             LOG.debug("Aborted while active ({}) {}: {}", aborted, this, cause);
             return aborted;
+        }
+    }
+
+    private boolean fail(Throwable cause)
+    {
+        if (update(0b0101, cause) == 0b0101)
+        {
+            destination.getRequestNotifier().notifyFailure(request, cause);
+            List<Response.ResponseListener> listeners = getConversation().getResponseListeners();
+            ResponseNotifier responseNotifier = destination.getResponseNotifier();
+            responseNotifier.notifyFailure(listeners, response, cause);
+            responseNotifier.notifyComplete(listeners, new Result(request, cause, response, cause));
+            return true;
+        }
+        else
+        {
+            return false;
         }
     }
 
@@ -210,11 +227,11 @@ public class HttpExchange
         complete.addAndGet(-code);
     }
 
-    public void proceed(boolean proceed)
+    public void proceed(Throwable failure)
     {
         HttpChannel channel = this.channel.get();
         if (channel != null)
-            channel.proceed(this, proceed);
+            channel.proceed(this, failure);
     }
 
     private String toString(int code)

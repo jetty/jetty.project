@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -34,6 +34,10 @@ import org.eclipse.jetty.websocket.common.frames.DataFrame;
 import org.eclipse.jetty.websocket.common.frames.PingFrame;
 import org.eclipse.jetty.websocket.common.frames.PongFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
+import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
+import org.eclipse.jetty.websocket.common.test.UnitGenerator;
+import org.eclipse.jetty.websocket.common.test.UnitParser;
+import org.eclipse.jetty.websocket.common.util.Hex;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -238,7 +242,7 @@ public class ParserTest
 
         capture.assertNoErrors();
         Assert.assertThat("Frame Count",capture.getFrames().size(),is(2));
-        WebSocketFrame frame = capture.getFrames().pop();
+        WebSocketFrame frame = capture.getFrames().poll();
         Assert.assertThat("Frame[0].opcode",frame.getOpCode(),is(OpCode.TEXT));
         ByteBuffer actualPayload = frame.getPayload();
         Assert.assertThat("Frame[0].payload.length",actualPayload.remaining(),is(payload.length));

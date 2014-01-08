@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -60,7 +60,7 @@ public class StartLog
 
     public static void info(String format, Object... args)
     {
-        System.err.printf("WARNING: " + format + "%n",args);
+        System.err.printf("INFO: " + format + "%n",args);
     }
     
     public static void warn(String format, Object... args)
@@ -145,5 +145,10 @@ public class StartLog
             System.setErr(logger);
             System.out.println("Establishing " + logfile + " on " + new Date());
         }
+    }
+
+    public static void enableDebug()
+    {
+        getInstance().debug = true;
     }
 }

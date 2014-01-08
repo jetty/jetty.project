@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,9 +27,7 @@ import java.util.concurrent.RejectedExecutionException;
 
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Destination;
-import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
@@ -155,7 +153,7 @@ public abstract class HttpDestination implements Destination, Closeable, Dumpabl
         return hostField;
     }
 
-    protected void send(Request request, List<Response.ResponseListener> listeners)
+    protected void send(HttpRequest request, List<Response.ResponseListener> listeners)
     {
         if (!getScheme().equals(request.getScheme()))
             throw new IllegalArgumentException("Invalid request scheme " + request.getScheme() + " for destination " + this);
@@ -165,8 +163,7 @@ public abstract class HttpDestination implements Destination, Closeable, Dumpabl
         if (port >= 0 && getPort() != port)
             throw new IllegalArgumentException("Invalid request port " + port + " for destination " + this);
 
-        HttpConversation conversation = client.getConversation(request.getConversationID(), true);
-        HttpExchange exchange = new HttpExchange(conversation, this, request, listeners);
+        HttpExchange exchange = new HttpExchange(this, request, listeners);
 
         if (client.isRunning())
         {
@@ -174,7 +171,7 @@ public abstract class HttpDestination implements Destination, Closeable, Dumpabl
             {
                 if (!client.isRunning() && exchanges.remove(exchange))
                 {
-                    throw new RejectedExecutionException(client + " is stopping");
+                    request.abort(new RejectedExecutionException(client + " is stopping"));
                 }
                 else
                 {
@@ -185,13 +182,13 @@ public abstract class HttpDestination implements Destination, Closeable, Dumpabl
             }
             else
             {
-                LOG.debug("Max queued exceeded {}", request);
-                abort(exchange, new RejectedExecutionException("Max requests per destination " + client.getMaxRequestsQueuedPerDestination() + " exceeded for " + this));
+                LOG.debug("Max queue size {} exceeded by {}", client.getMaxRequestsQueuedPerDestination(), request);
+                request.abort(new RejectedExecutionException("Max requests per destination " + client.getMaxRequestsQueuedPerDestination() + " exceeded for " + this));
             }
         }
         else
         {
-            throw new RejectedExecutionException(client + " is stopped");
+            request.abort(new RejectedExecutionException(client + " is stopped"));
         }
     }
 
@@ -226,29 +223,13 @@ public abstract class HttpDestination implements Destination, Closeable, Dumpabl
      * Aborts all the {@link HttpExchange}s queued in this destination.
      *
      * @param cause the abort cause
-     * @see #abort(HttpExchange, Throwable)
      */
     public void abort(Throwable cause)
     {
         HttpExchange exchange;
-        while ((exchange = exchanges.poll()) != null)
-            abort(exchange, cause);
-    }
-
-    /**
-     * Aborts the given {@code exchange}, notifies listeners of the failure, and completes the exchange.
-     *
-     * @param exchange the {@link HttpExchange} to abort
-     * @param cause the abort cause
-     */
-    protected void abort(HttpExchange exchange, Throwable cause)
-    {
-        Request request = exchange.getRequest();
-        HttpResponse response = exchange.getResponse();
-        getRequestNotifier().notifyFailure(request, cause);
-        List<Response.ResponseListener> listeners = exchange.getConversation().getResponseListeners();
-        getResponseNotifier().notifyFailure(listeners, response, cause);
-        getResponseNotifier().notifyComplete(listeners, new Result(request, cause, response, cause));
+        // Just peek(), the abort() will remove it from the queue.
+        while ((exchange = exchanges.peek()) != null)
+            exchange.getRequest().abort(cause);
     }
 
     @Override

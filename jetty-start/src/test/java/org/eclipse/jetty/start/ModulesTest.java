@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -33,7 +33,8 @@ import org.junit.Test;
 
 public class ModulesTest
 {
-    private final static List<String> TEST_SOURCE=Collections.singletonList("<test>");
+    private final static List<String> TEST_SOURCE = Collections.singletonList("<test>");
+    private StartArgs DEFAULT_ARGS = new StartArgs(new String[] { "jetty.version=TEST" }).parseCommandLine();
     
     @Test
     public void testLoadAllModules() throws IOException
@@ -42,8 +43,23 @@ public class ModulesTest
         BaseHome basehome = new BaseHome(homeDir,homeDir);
 
         Modules modules = new Modules();
-        modules.registerAll(basehome);
-        Assert.assertThat("Module count",modules.count(),is(28));
+        modules.registerAll(basehome, DEFAULT_ARGS);
+        Assert.assertThat("Module count",modules.count(),is(30));
+    }
+    
+    @Test
+    public void testEnableRegexSimple() throws IOException
+    {
+        File homeDir = MavenTestingUtils.getTestResourceDir("usecases/home");
+        BaseHome basehome = new BaseHome(homeDir,homeDir);
+
+        Modules modules = new Modules();
+        modules.registerAll(basehome, DEFAULT_ARGS);
+        modules.enable("[sj]{1}.*",TEST_SOURCE);
+        
+        String expected[] = { "jmx", "stats", "spdy", "security", "jndi", "jsp", "servlet", "jaas", "server" };
+        
+        Assert.assertThat("Enabled Module count",modules.resolveEnabled().size(),is(expected.length));
     }
 
     @Test
@@ -54,7 +70,7 @@ public class ModulesTest
 
         // Register modules
         Modules modules = new Modules();
-        modules.registerAll(basehome);
+        modules.registerAll(basehome, DEFAULT_ARGS);
         modules.buildGraph();
 
         // Enable 2 modules
@@ -110,7 +126,7 @@ public class ModulesTest
 
         // Register modules
         Modules modules = new Modules();
-        modules.registerAll(basehome);
+        modules.registerAll(basehome, DEFAULT_ARGS);
         modules.buildGraph();
         // modules.dump();
 

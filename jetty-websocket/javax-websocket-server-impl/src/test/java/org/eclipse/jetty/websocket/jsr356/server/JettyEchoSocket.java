@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -45,6 +45,7 @@ public class JettyEchoSocket
     @SuppressWarnings("unused")
     private Session session;
     private RemoteEndpoint remote;
+    private Boolean closed = null;
     private EventQueue<String> incomingMessages = new EventQueue<>();
 
     public Queue<String> awaitMessages(int expected) throws TimeoutException, InterruptedException
@@ -53,9 +54,15 @@ public class JettyEchoSocket
         return incomingMessages;
     }
 
+    public Boolean getClosed()
+    {
+        return closed;
+    }
+
     @OnWebSocketClose
     public void onClose(int code, String reason)
     {
+        closed = true;
         session = null;
         remote = null;
     }
@@ -76,6 +83,7 @@ public class JettyEchoSocket
     @OnWebSocketConnect
     public void onOpen(Session session)
     {
+        this.closed = false;
         this.session = session;
         this.remote = session.getRemote();
     }

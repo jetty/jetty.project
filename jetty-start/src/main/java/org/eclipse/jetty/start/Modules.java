@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,6 +19,7 @@
 package org.eclipse.jetty.start;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
+import java.util.regex.Pattern;
 
 /**
  * Access for all modules declared, as well as what is enabled.
@@ -162,9 +164,33 @@ public class Modules implements Iterable<Module>
         ordered.addAll(modules.values());
         Collections.sort(ordered,new Module.NameComparator());
 
+        List<Module> active = resolveEnabled();
+
         for (Module module : ordered)
         {
-            System.out.printf("%nModule: %s%n",module.getName());
+            boolean activated = active.contains(module);
+            boolean enabled = module.isEnabled();
+            boolean transitive = activated && !enabled;
+
+            char status = '-';
+            if (enabled)
+            {
+                status = '*';
+            }
+            else if (transitive)
+            {
+                status = '+';
+            }
+
+            System.out.printf("%n %s Module: %s%n",status,module.getName());
+            if (!module.getName().equals(module.getFilesystemRef()))
+            {
+                System.out.printf("      Ref: %s%n",module.getFilesystemRef());
+            }
+            for (String parent : module.getParentNames())
+            {
+                System.out.printf("   Parent: %s%n",parent);
+            }
             for (String lib : module.getLibs())
             {
                 System.out.printf("      LIB: %s%n",lib);
@@ -173,14 +199,24 @@ public class Modules implements Iterable<Module>
             {
                 System.out.printf("      XML: %s%n",xml);
             }
-            System.out.printf("  depends: [%s]%n",Main.join(module.getParentNames(),", "));
             if (StartLog.isDebugEnabled())
             {
                 System.out.printf("    depth: %d%n",module.getDepth());
             }
-            for (String source : module.getSources())
+            if (activated)
             {
-                System.out.printf("  enabled: %s%n",source);
+                for (String source : module.getSources())
+                {
+                    System.out.printf("  Enabled: <via> %s%n",source);
+                }
+                if (transitive)
+                {
+                    System.out.printf("  Enabled: <via transitive reference>%n");
+                }
+            }
+            else
+            {
+                System.out.printf("  Enabled: <not enabled in this configuration>%n");
             }
         }
     }
@@ -206,13 +242,33 @@ public class Modules implements Iterable<Module>
 
     public void enable(String name, List<String> sources)
     {
-        Module module = modules.get(name);
-        if (module == null)
+        if (name.contains("*"))
         {
-            System.err.printf("WARNING: Cannot enable requested module [%s]: not a valid module name.%n",name);
-            return;
+            // A regex!
+            Pattern pat = Pattern.compile(name);
+            for (Map.Entry<String, Module> entry : modules.entrySet())
+            {
+                if (pat.matcher(entry.getKey()).matches())
+                {
+                    enableModule(entry.getValue(),sources);
+                }
+            }
         }
-        StartLog.debug("Enabling module: %s (via %s)",name,Main.join(sources,", "));
+        else
+        {
+            Module module = modules.get(name);
+            if (module == null)
+            {
+                System.err.printf("WARNING: Cannot enable requested module [%s]: not a valid module name.%n",name);
+                return;
+            }
+            enableModule(module,sources);
+        }
+    }
+
+    private void enableModule(Module module, List<String> sources)
+    {
+        StartLog.debug("Enabling module: %s (via %s)",module.getName(),Main.join(sources,", "));
         module.setEnabled(true);
         if (sources != null)
         {
@@ -300,17 +356,58 @@ public class Modules implements Iterable<Module>
         return xmls;
     }
 
-    public void register(Module module)
+    public Module register(Module module)
     {
         modules.put(module.getName(),module);
+        return module;
     }
 
-    public void registerAll(BaseHome basehome) throws IOException
+    public void registerAll(BaseHome basehome, StartArgs args) throws IOException
     {
         for (File file : basehome.listFiles("modules",new FS.FilenameRegexFilter("^.*\\.mod$")))
         {
-            register(new Module(file));
+            registerModule(basehome,args,file);
         }
+
+        // load missing post-expanded dependent modules
+        boolean done = false;
+        while (!done)
+        {
+            done = true;
+            Set<String> missingParents = new HashSet<>();
+
+            for (Module m : modules.values())
+            {
+                for (String parent : m.getParentNames())
+                {
+                    if (modules.containsKey(parent))
+                    {
+                        continue; // found. skip it.
+                    }
+                    done = false;
+                    missingParents.add(parent);
+                }
+            }
+
+            for (String missingParent : missingParents)
+            {
+                File file = basehome.getFile("modules/" + missingParent + ".mod");
+                Module module = registerModule(basehome,args,file);
+                updateParentReferencesTo(module);
+            }
+        }
+    }
+
+    private Module registerModule(BaseHome basehome, StartArgs args, File file) throws FileNotFoundException, IOException
+    {
+        if (!FS.canReadFile(file))
+        {
+            throw new IOException("Cannot read file: " + file);
+        }
+        StartLog.debug("Registering Module: %s",basehome.toShortForm(file));
+        Module module = new Module(basehome,file);
+        module.expandProperties(args.getProperties());
+        return register(module);
     }
 
     public Set<String> resolveChildModulesOf(String moduleName)
@@ -357,5 +454,40 @@ public class Modules implements Iterable<Module>
         char indent[] = new char[depth * 2];
         Arrays.fill(indent,' ');
         return new String(indent);
+    }
+
+    /**
+     * Modules can have a different logical name than to their filesystem reference. This updates existing references to the filesystem form to use the logical
+     * name form.
+     * 
+     * @param module
+     *            the module that might have other modules referring to it.
+     */
+    private void updateParentReferencesTo(Module module)
+    {
+        if (module.getName().equals(module.getFilesystemRef()))
+        {
+            // nothing to do, its sane already
+            return;
+        }
+
+        for (Module m : modules.values())
+        {
+            Set<String> resolvedParents = new HashSet<>();
+            for (String parent : m.getParentNames())
+            {
+                if (parent.equals(module.getFilesystemRef()))
+                {
+                    // use logical name instead
+                    resolvedParents.add(module.getName());
+                }
+                else
+                {
+                    // use name as-is
+                    resolvedParents.add(parent);
+                }
+            }
+            m.setParentNames(resolvedParents);
+        }
     }
 }

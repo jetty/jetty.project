@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,7 +28,9 @@ import javax.websocket.CloseReason;
 import javax.websocket.Endpoint;
 import javax.websocket.MessageHandler;
 import javax.websocket.MessageHandler.Whole;
+import javax.websocket.PongMessage;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -36,6 +38,7 @@ import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.message.MessageInputStream;
 import org.eclipse.jetty.websocket.common.message.MessageReader;
+import org.eclipse.jetty.websocket.jsr356.JsrPongMessage;
 import org.eclipse.jetty.websocket.jsr356.JsrSession;
 import org.eclipse.jetty.websocket.jsr356.MessageHandlerWrapper;
 import org.eclipse.jetty.websocket.jsr356.MessageType;
@@ -212,7 +215,37 @@ public class JsrEndpointEventDriver extends AbstractJsrEventDriver implements Ev
     {
         /* Ignored, handled by TextWholeMessage */
     }
+    
+    @Override
+    public void onPing(ByteBuffer buffer)
+    {
+        onPongMessage(buffer);
+    }
 
+    @Override
+    public void onPong(ByteBuffer buffer)
+    {
+        onPongMessage(buffer);
+    }
+
+    private void onPongMessage(ByteBuffer buffer)
+    {
+        final MessageHandlerWrapper wrapper = jsrsession.getMessageHandlerWrapper(MessageType.PONG);
+        if (wrapper == null)
+        {
+            LOG.debug("No PONG MessageHandler declared");
+            return;
+        }
+
+        ByteBuffer pongBuf = ByteBuffer.allocate(buffer.remaining());
+        BufferUtil.put(buffer,pongBuf);
+        BufferUtil.flipToFlush(pongBuf,0);
+        
+        @SuppressWarnings("unchecked")
+        Whole<PongMessage> pongHandler = (Whole<PongMessage>)wrapper.getHandler();
+        pongHandler.onMessage(new JsrPongMessage(pongBuf));
+    }
+    
     @Override
     public void setPathParameters(Map<String, String> pathParameters)
     {

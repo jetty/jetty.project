@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.security;
 
+import java.io.Serializable;
 import java.util.Set;
 
 import org.eclipse.jetty.server.Authentication.User;
@@ -30,10 +31,12 @@ import org.eclipse.jetty.server.UserIdentity.Scope;
  *
  * Base class for representing an authenticated user.
  */
-public abstract class AbstractUserAuthentication implements User
+public abstract class AbstractUserAuthentication implements User, Serializable
 {
+    private static final long serialVersionUID = -6290411814232723403L;
     protected String _method;
-    protected UserIdentity _userIdentity;
+    protected transient UserIdentity _userIdentity;
+    
     
     
     public AbstractUserAuthentication(String method, UserIdentity userIdentity)

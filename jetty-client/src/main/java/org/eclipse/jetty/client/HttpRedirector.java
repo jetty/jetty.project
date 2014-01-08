@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -273,8 +273,9 @@ public class HttpRedirector
 
     private Request redirect(final Request request, Response response, Response.CompleteListener listener, URI location, String method)
     {
-        HttpConversation conversation = client.getConversation(request.getConversationID(), false);
-        Integer redirects = conversation == null ? Integer.valueOf(0) : (Integer)conversation.getAttribute(ATTRIBUTE);
+        HttpRequest httpRequest = (HttpRequest)request;
+        HttpConversation conversation = httpRequest.getConversation();
+        Integer redirects = (Integer)conversation.getAttribute(ATTRIBUTE);
         if (redirects == null)
             redirects = 0;
         if (redirects < client.getMaxRedirects())
@@ -283,7 +284,7 @@ public class HttpRedirector
             if (conversation != null)
                 conversation.setAttribute(ATTRIBUTE, redirects);
 
-            Request redirect = client.copyRequest(request, location);
+            Request redirect = client.copyRequest(httpRequest, location);
 
             // Use given method
             redirect.method(method);
@@ -311,7 +312,7 @@ public class HttpRedirector
 
     protected void fail(Request request, Response response, Throwable failure)
     {
-        HttpConversation conversation = client.getConversation(request.getConversationID(), false);
+        HttpConversation conversation = ((HttpRequest)request).getConversation();
         conversation.updateResponseListeners(null);
         List<Response.ResponseListener> listeners = conversation.getResponseListeners();
         notifier.notifyFailure(listeners, response, failure);

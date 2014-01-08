@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -237,9 +237,7 @@ public class ResponseNotifier
 
     public void forwardSuccessComplete(List<Response.ResponseListener> listeners, Request request, Response response)
     {
-        HttpConversation conversation = client.getConversation(request.getConversationID(), false);
         forwardSuccess(listeners, response);
-        conversation.complete();
         notifyComplete(listeners, new Result(request, response));
     }
 
@@ -260,9 +258,7 @@ public class ResponseNotifier
 
     public void forwardFailureComplete(List<Response.ResponseListener> listeners, Request request, Throwable requestFailure, Response response, Throwable responseFailure)
     {
-        HttpConversation conversation = client.getConversation(request.getConversationID(), false);
         forwardFailure(listeners, response, responseFailure);
-        conversation.complete();
         notifyComplete(listeners, new Result(request, requestFailure, response, responseFailure));
     }
 }

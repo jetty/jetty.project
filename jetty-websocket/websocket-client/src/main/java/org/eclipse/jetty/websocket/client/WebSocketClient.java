@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -72,6 +72,7 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
     private final WebSocketPolicy policy;
     private final SslContextFactory sslContextFactory;
     private final WebSocketExtensionFactory extensionRegistry;
+    private boolean daemon = false;
     private EventDriverFactory eventDriverFactory;
     private SessionFactory sessionFactory;
     private Set<WebSocketSession> openSessions = new CopyOnWriteArraySet<>();
@@ -227,7 +228,7 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
 
         if (scheduler == null)
         {
-            scheduler = new ScheduledExecutorScheduler(name + "-scheduler",false);
+            scheduler = new ScheduledExecutorScheduler(name + "-scheduler",daemon);
         }
         addBean(scheduler);
 
@@ -290,7 +291,7 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
     {
         return cookieStore;
     }
-
+    
     public EventDriverFactory getEventDriverFactory()
     {
         return eventDriverFactory;
@@ -419,6 +420,7 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
             QueuedThreadPool threadPool = new QueuedThreadPool();
             String name = WebSocketClient.class.getSimpleName() + "@" + hashCode();
             threadPool.setName(name);
+            threadPool.setDaemon(daemon);
             executor = threadPool;
             addBean(executor,true);
         }
@@ -504,6 +506,11 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
     public void setCookieStore(CookieStore cookieStore)
     {
         this.cookieStore = cookieStore;
+    }
+    
+    public void setDaemon(boolean daemon)
+    {
+        this.daemon = daemon;
     }
 
     public void setEventDriverFactory(EventDriverFactory factory)

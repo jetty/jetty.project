@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.BlockingQueue;
@@ -33,9 +34,9 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class ConnectionPool implements Dumpable
+public class ConnectionPool implements Closeable, Dumpable
 {
-    private static final Logger LOG = Log.getLogger(ConnectionPool.class);
+    protected static final Logger LOG = Log.getLogger(ConnectionPool.class);
 
     private final AtomicInteger connectionCount = new AtomicInteger();
     private final Destination destination;
@@ -65,10 +66,14 @@ public class ConnectionPool implements Dumpable
 
     public Connection acquire()
     {
-        Connection result = acquireIdleConnection();
-        if (result != null)
-            return result;
+        Connection connection = acquireIdleConnection();
+        if (connection == null)
+            connection = tryCreate();
+        return connection;
+    }
 
+    private Connection tryCreate()
+    {
         while (true)
         {
             int current = connectionCount.get();
@@ -91,8 +96,8 @@ public class ConnectionPool implements Dumpable
                     public void succeeded(Connection connection)
                     {
                         LOG.debug("Connection {}/{} creation succeeded {}", next, maxConnections, connection);
-                        activate(connection);
-                        connectionPromise.succeeded(connection);
+                        if (activate(connection))
+                            connectionPromise.succeeded(connection);
                     }
 
                     @Override
@@ -113,9 +118,9 @@ public class ConnectionPool implements Dumpable
     private Connection acquireIdleConnection()
     {
         Connection connection = idleConnections.pollFirst();
-        if (connection != null)
-            activate(connection);
-        return connection;
+        if (connection == null)
+            return null;
+        return activate(connection) ? connection : null;
     }
 
     private boolean activate(Connection connection)
@@ -123,17 +128,24 @@ public class ConnectionPool implements Dumpable
         if (activeConnections.offer(connection))
         {
             LOG.debug("Connection active {}", connection);
+            acquired(connection);
             return true;
         }
         else
         {
             LOG.debug("Connection active overflow {}", connection);
+            connection.close();
             return false;
         }
     }
 
+    protected void acquired(Connection connection)
+    {
+    }
+
     public boolean release(Connection connection)
     {
+        released(connection);
         if (activeConnections.remove(connection))
         {
             // Make sure we use "hot" connections first
@@ -145,15 +157,23 @@ public class ConnectionPool implements Dumpable
             else
             {
                 LOG.debug("Connection idle overflow {}", connection);
+                connection.close();
             }
         }
         return false;
     }
 
+    protected void released(Connection connection)
+    {
+    }
+
     public boolean remove(Connection connection)
     {
-        boolean removed = activeConnections.remove(connection);
-        removed |= idleConnections.remove(connection);
+        boolean activeRemoved = activeConnections.remove(connection);
+        boolean idleRemoved = idleConnections.remove(connection);
+        if (!idleRemoved)
+            released(connection);
+        boolean removed = activeRemoved || idleRemoved;
         if (removed)
         {
             int pooled = connectionCount.decrementAndGet();

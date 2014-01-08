@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -83,7 +83,9 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
 
     public ClientContainer()
     {
+        // This constructor is used with Standalone JSR Client usage.
         this(null);
+        client.setDaemon(true);
     }
     
     public ClientContainer(Executor executor)

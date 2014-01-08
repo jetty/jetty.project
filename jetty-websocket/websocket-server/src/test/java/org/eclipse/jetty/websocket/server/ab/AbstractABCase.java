@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.server.ab;
 
+import java.net.URI;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -29,13 +30,15 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.test.Fuzzed;
+import org.eclipse.jetty.websocket.common.test.RawFrameBuilder;
 import org.eclipse.jetty.websocket.server.SimpleServletServer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.TestName;
 
-public abstract class AbstractABCase
+public abstract class AbstractABCase implements Fuzzed
 {
     // Allow Fuzzer / Generator to create bad frames for testing frame validation
     protected static class BadFrame extends WebSocketFrame
@@ -188,6 +191,18 @@ public abstract class AbstractABCase
     public SimpleServletServer getServer()
     {
         return server;
+    }
+    
+    @Override
+    public URI getServerURI()
+    {
+        return server.getServerUri();
+    }
+    
+    @Override
+    public String getTestMethodName()
+    {
+        return testname.getMethodName();
     }
 
     public static byte[] masked(final byte[] data)

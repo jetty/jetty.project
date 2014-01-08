@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -258,9 +258,9 @@ public class SPDYClient
     public static class Factory extends ContainerLifeCycle
     {
         private final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
-        private final ByteBufferPool bufferPool = new MappedByteBufferPool();
         private final Scheduler scheduler;
         private final Executor executor;
+        private final ByteBufferPool bufferPool;
         private final SslContextFactory sslContextFactory;
         private final SelectorManager selector;
         private final long idleTimeout;
@@ -293,6 +293,11 @@ public class SPDYClient
 
         public Factory(Executor executor, Scheduler scheduler, SslContextFactory sslContextFactory, long idleTimeout)
         {
+            this(executor, scheduler, null, sslContextFactory, idleTimeout);
+        }
+
+        public Factory(Executor executor, Scheduler scheduler, ByteBufferPool bufferPool, SslContextFactory sslContextFactory, long idleTimeout)
+        {
             this.idleTimeout = idleTimeout;
             setConnectTimeout(15000);
 
@@ -305,6 +310,11 @@ public class SPDYClient
                 scheduler = new ScheduledExecutorScheduler();
             this.scheduler = scheduler;
             addBean(scheduler);
+
+            if (bufferPool == null)
+                bufferPool = new MappedByteBufferPool();
+            this.bufferPool = bufferPool;
+            addBean(bufferPool);
 
             this.sslContextFactory = sslContextFactory;
             if (sslContextFactory != null)

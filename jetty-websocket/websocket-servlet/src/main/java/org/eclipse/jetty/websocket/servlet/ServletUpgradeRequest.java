@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,10 +29,12 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
@@ -43,12 +45,12 @@ import org.eclipse.jetty.websocket.api.util.WSURI;
  */
 public class ServletUpgradeRequest extends UpgradeRequest
 {
-    private HttpServletRequest req;
+    private final HttpServletRequest req;
 
     public ServletUpgradeRequest(HttpServletRequest request) throws URISyntaxException
     {
         super(WSURI.toWebsocket(request.getRequestURL(),request.getQueryString()));
-        this.req = request;
+        this.req = new PostUpgradedHttpServletRequest(request);
 
         // Copy Request Line Details
         setMethod(request.getMethod());
@@ -111,6 +113,19 @@ public class ServletUpgradeRequest extends UpgradeRequest
     {
         return (X509Certificate[])req.getAttribute("javax.servlet.request.X509Certificate");
     }
+    
+    /**
+     * Return the underlying HttpServletRequest that existed at Upgrade time.
+     * <p>
+     * Note: many features of the HttpServletRequest are invalid when upgraded,
+     * especially ones that deal with body content, streams, readers, and responses.
+     * 
+     * @return a limited version of the underlying HttpServletRequest
+     */
+    public HttpServletRequest getHttpServletRequest()
+    {
+        return req;
+    }
 
     /**
      * Equivalent to {@link HttpServletRequest#getLocalAddr()}
@@ -140,6 +155,26 @@ public class ServletUpgradeRequest extends UpgradeRequest
     public int getLocalPort()
     {
         return req.getLocalPort();
+    }
+    
+    /**
+     * Equivalent to {@link HttpServletRequest#getLocale()}
+     * 
+     * @return the preferred <code>Locale</code> for the client
+     */
+    public Locale getLocale() 
+    {
+        return req.getLocale();
+    }
+    
+    /**
+     * Equivalent to {@link HttpServletRequest#getLocales()}
+     * 
+     * @return an Enumeration of preferred Locale objects
+     */
+    public Enumeration<Locale> getLocales()
+    {
+        return req.getLocales();
     }
 
     /**
@@ -243,7 +278,7 @@ public class ServletUpgradeRequest extends UpgradeRequest
      * Note: this is equivalent to {@link HttpServletRequest#getSession()} and will not create a new HttpSession.
      */
     @Override
-    public Object getSession()
+    public HttpSession getSession()
     {
         return this.req.getSession(false);
     }

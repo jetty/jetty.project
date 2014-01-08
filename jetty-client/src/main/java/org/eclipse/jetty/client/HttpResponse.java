@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -39,6 +39,12 @@ public class HttpResponse implements Response
     {
         this.request = request;
         this.listeners = listeners;
+    }
+
+    @Override
+    public Request getRequest()
+    {
+        return request;
     }
 
     public HttpVersion getVersion()
@@ -82,6 +88,7 @@ public class HttpResponse implements Response
     }
 
     @Override
+    @Deprecated
     public long getConversationID()
     {
         return request.getConversationID();

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,6 +19,8 @@
 package org.eclipse.jetty.websocket.common.extensions.compress;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
@@ -45,8 +47,7 @@ public class DeflateFrameExtension extends AbstractExtension
 
     private static final int OVERHEAD = 64;
     /** Tail Bytes per Spec */
-    private static final byte[] TAIL = new byte[]
-    { 0x00, 0x00, (byte)0xFF, (byte)0xFF };
+    private static final byte[] TAIL = new byte[] { 0x00, 0x00, (byte)0xFF, (byte)0xFF };
     private int bufferSize = 64 * 1024;
     private Deflater compressor;
     private Inflater decompressor;
@@ -58,7 +59,7 @@ public class DeflateFrameExtension extends AbstractExtension
     }
 
     @Override
-    public synchronized void incomingFrame(Frame frame)
+    public void incomingFrame(Frame frame)
     {
         if (OpCode.isControlFrame(frame.getOpCode()) || !frame.isRsv1())
         {
@@ -80,7 +81,6 @@ public class DeflateFrameExtension extends AbstractExtension
         byte compressed[] = new byte[inlen + TAIL.length];
         payload.get(compressed,0,inlen);
         System.arraycopy(TAIL,0,compressed,inlen,TAIL.length);
-        decompressor.setInput(compressed,0,compressed.length);
 
         // Since we don't track text vs binary vs continuation state, just grab whatever is the greater value.
         int maxSize = Math.max(getPolicy().getMaxTextMessageSize(),getPolicy().getMaxBinaryMessageBufferSize());
@@ -89,33 +89,38 @@ public class DeflateFrameExtension extends AbstractExtension
         DataFrame out = new DataFrame(frame);
         out.setRsv1(false); // Unset RSV1
 
-        // Perform decompression
-        while (decompressor.getRemaining() > 0 && !decompressor.finished())
+        synchronized (decompressor)
         {
-            byte outbuf[] = new byte[Math.min(inlen * 2,bufferSize)];
-            try
+            decompressor.setInput(compressed,0,compressed.length);
+
+            // Perform decompression
+            while (decompressor.getRemaining() > 0 && !decompressor.finished())
             {
-                int len = decompressor.inflate(outbuf);
-                if (len == 0)
+                byte outbuf[] = new byte[Math.min(inlen * 2,bufferSize)];
+                try
                 {
-                    if (decompressor.needsInput())
+                    int len = decompressor.inflate(outbuf);
+                    if (len == 0)
                     {
-                        throw new BadPayloadException("Unable to inflate frame, not enough input on frame");
+                        if (decompressor.needsInput())
+                        {
+                            throw new BadPayloadException("Unable to inflate frame, not enough input on frame");
+                        }
+                        if (decompressor.needsDictionary())
+                        {
+                            throw new BadPayloadException("Unable to inflate frame, frame erroneously says it needs a dictionary");
+                        }
                     }
-                    if (decompressor.needsDictionary())
+                    if (len > 0)
                     {
-                        throw new BadPayloadException("Unable to inflate frame, frame erroneously says it needs a dictionary");
+                        accumulator.addBuffer(outbuf,0,len);
                     }
                 }
-                if (len > 0)
+                catch (DataFormatException e)
                 {
-                    accumulator.addBuffer(outbuf,0,len);
+                    LOG.warn(e);
+                    throw new BadPayloadException(e);
                 }
-            }
-            catch (DataFormatException e)
-            {
-                LOG.warn(e);
-                throw new BadPayloadException(e);
             }
         }
 
@@ -136,7 +141,7 @@ public class DeflateFrameExtension extends AbstractExtension
     }
 
     @Override
-    public synchronized void outgoingFrame(Frame frame, WriteCallback callback)
+    public void outgoingFrame(Frame frame, WriteCallback callback)
     {
         if (OpCode.isControlFrame(frame.getOpCode()))
         {
@@ -160,58 +165,71 @@ public class DeflateFrameExtension extends AbstractExtension
 
         // Prime the compressor
         byte uncompressed[] = BufferUtil.toArray(frame.getPayload());
+        List<DataFrame> dframes = new ArrayList<>();
 
-        // Perform the compression
-        if (!compressor.finished())
+        synchronized (compressor)
         {
-            compressor.setInput(uncompressed,0,uncompressed.length);
-            byte compressed[] = new byte[uncompressed.length + OVERHEAD];
-
-            while (!compressor.needsInput())
+            // Perform the compression
+            if (!compressor.finished())
             {
-                int len = compressor.deflate(compressed,0,compressed.length,Deflater.SYNC_FLUSH);
-                ByteBuffer outbuf = getBufferPool().acquire(len,true);
-                BufferUtil.clearToFill(outbuf);
+                compressor.setInput(uncompressed,0,uncompressed.length);
+                byte compressed[] = new byte[uncompressed.length + OVERHEAD];
 
-                if (len > 0)
+                while (!compressor.needsInput())
                 {
-                    outbuf.put(compressed,0,len - 4);
-                }
+                    int len = compressor.deflate(compressed,0,compressed.length,Deflater.SYNC_FLUSH);
+                    ByteBuffer outbuf = getBufferPool().acquire(len,true);
+                    BufferUtil.clearToFill(outbuf);
 
-                BufferUtil.flipToFlush(outbuf,0);
-
-                if (len > 0 && BFINAL_HACK)
-                {
-                    /*
-                     * Per the spec, it says that BFINAL 1 or 0 are allowed.
-                     * 
-                     * However, Java always uses BFINAL 1, whereas the browsers Chromium and Safari fail to decompress when it encounters BFINAL 1.
-                     * 
-                     * This hack will always set BFINAL 0
-                     */
-                    byte b0 = outbuf.get(0);
-                    if ((b0 & 1) != 0) // if BFINAL 1
+                    if (len > 0)
                     {
-                        outbuf.put(0,(b0 ^= 1)); // flip bit to BFINAL 0
+                        outbuf.put(compressed,0,len - 4);
                     }
-                }
 
-                DataFrame out = new DataFrame(frame);
-                out.setRsv1(true);
-                out.setBufferPool(getBufferPool());
-                out.setPayload(outbuf);
+                    BufferUtil.flipToFlush(outbuf,0);
 
-                if (!compressor.needsInput())
-                {
-                    // this is fragmented
-                    out.setFin(false);
-                    nextOutgoingFrame(out,null); // non final frames have no callback
+                    if (len > 0 && BFINAL_HACK)
+                    {
+                        /*
+                         * Per the spec, it says that BFINAL 1 or 0 are allowed.
+                         * 
+                         * However, Java always uses BFINAL 1, whereas the browsers Chromium and Safari fail to decompress when it encounters BFINAL 1.
+                         * 
+                         * This hack will always set BFINAL 0
+                         */
+                        byte b0 = outbuf.get(0);
+                        if ((b0 & 1) != 0) // if BFINAL 1
+                        {
+                            outbuf.put(0,(b0 ^= 1)); // flip bit to BFINAL 0
+                        }
+                    }
+
+                    DataFrame out = new DataFrame(frame);
+                    out.setRsv1(true);
+                    out.setBufferPool(getBufferPool());
+                    out.setPayload(outbuf);
+
+                    if (!compressor.needsInput())
+                    {
+                        // this is fragmented
+                        out.setFin(false);
+                    }
+                    dframes.add(out);
                 }
-                else
-                {
-                    // pass through the callback
-                    nextOutgoingFrame(out,callback);
-                }
+            }
+        }
+        
+        // notify outside of synchronize
+        for (DataFrame df : dframes)
+        {
+            if (df.isFin())
+            {
+                nextOutgoingFrame(df,callback);
+            }
+            else
+            {
+                // non final frames have no callback
+                nextOutgoingFrame(df,null);
             }
         }
     }

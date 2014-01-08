@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -381,12 +381,12 @@ public class HttpClient extends ContainerLifeCycle
      */
     public Request newRequest(URI uri)
     {
-        return new HttpRequest(this, uri);
+        return newHttpRequest(newConversation(), uri);
     }
 
-    protected Request copyRequest(Request oldRequest, URI newURI)
+    protected Request copyRequest(HttpRequest oldRequest, URI newURI)
     {
-        Request newRequest = new HttpRequest(this, oldRequest.getConversationID(), newURI);
+        Request newRequest = newHttpRequest(oldRequest.getConversation(), newURI);
         newRequest.method(oldRequest.getMethod())
                 .version(oldRequest.getVersion())
                 .content(oldRequest.getContent())
@@ -415,6 +415,11 @@ public class HttpClient extends ContainerLifeCycle
             newRequest.header(header.getName(), header.getValue());
         }
         return newRequest;
+    }
+
+    protected HttpRequest newHttpRequest(HttpConversation conversation, URI uri)
+    {
+        return new HttpRequest(this, conversation, uri);
     }
 
     /**
@@ -467,7 +472,7 @@ public class HttpClient extends ContainerLifeCycle
         return new ArrayList<Destination>(destinations.values());
     }
 
-    protected void send(final Request request, List<Response.ResponseListener> listeners)
+    protected void send(final HttpRequest request, List<Response.ResponseListener> listeners)
     {
         String scheme = request.getScheme().toLowerCase(Locale.ENGLISH);
         if (!HttpScheme.HTTP.is(scheme) && !HttpScheme.HTTPS.is(scheme))
@@ -499,25 +504,9 @@ public class HttpClient extends ContainerLifeCycle
         });
     }
 
-    protected HttpConversation getConversation(long id, boolean create)
+    private HttpConversation newConversation()
     {
-        HttpConversation conversation = conversations.get(id);
-        if (conversation == null && create)
-        {
-            conversation = new HttpConversation(this, id);
-            HttpConversation existing = conversations.putIfAbsent(id, conversation);
-            if (existing != null)
-                conversation = existing;
-            else
-                LOG.debug("{} created", conversation);
-        }
-        return conversation;
-    }
-
-    protected void removeConversation(HttpConversation conversation)
-    {
-        conversations.remove(conversation.getID());
-        LOG.debug("{} removed", conversation);
+        return new HttpConversation();
     }
 
     protected List<ProtocolHandler> getProtocolHandlers()

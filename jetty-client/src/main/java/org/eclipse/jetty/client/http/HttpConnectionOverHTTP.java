@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,6 +19,7 @@
 package org.eclipse.jetty.client.http;
 
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.client.HttpConnection;
 import org.eclipse.jetty.client.HttpDestination;
@@ -35,9 +36,9 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
 {
     private static final Logger LOG = Log.getLogger(HttpConnectionOverHTTP.class);
 
+    private final AtomicBoolean closed = new AtomicBoolean();
     private final Delegate delegate;
     private final HttpChannelOverHTTP channel;
-    private boolean closed;
     private long idleTimeout;
 
     public HttpConnectionOverHTTP(EndPoint endPoint, HttpDestination destination)
@@ -75,16 +76,9 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
         fillInterested();
     }
 
-    @Override
-    public void onClose()
-    {
-        closed = true;
-        super.onClose();
-    }
-
     protected boolean isClosed()
     {
-        return closed;
+        return closed.get();
     }
 
     @Override
@@ -126,11 +120,14 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
     @Override
     public void close()
     {
-        getHttpDestination().close(this);
-        getEndPoint().shutdownOutput();
-        LOG.debug("{} oshut", this);
-        getEndPoint().close();
-        LOG.debug("{} closed", this);
+        if (closed.compareAndSet(false, true))
+        {
+            getHttpDestination().close(this);
+            getEndPoint().shutdownOutput();
+            LOG.debug("{} oshut", this);
+            getEndPoint().close();
+            LOG.debug("{} closed", this);
+        }
     }
 
     @Override

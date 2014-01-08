@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -35,6 +35,39 @@ public class FS
         public boolean accept(File pathname)
         {
             return true;
+        }
+    }
+    
+    public static class DirFilter implements FileFilter
+    {
+        public static final DirFilter INSTANCE = new DirFilter();
+
+        @Override
+        public boolean accept(File path)
+        {
+            return path.isDirectory();
+        }
+    }
+    
+    public static class RelativeRegexFilter implements FileFilter
+    {
+        private final File baseDir;
+        private final Pattern pattern;
+
+        public RelativeRegexFilter(File baseDir, Pattern pattern)
+        {
+            this.baseDir = baseDir;
+            this.pattern = pattern;
+        }
+
+        @Override
+        public boolean accept(File path)
+        {
+            // get relative path
+            String relativePath = FS.toRelativePath(baseDir,path);
+            
+            // see if it matches
+            return (pattern.matcher(relativePath).matches());
         }
     }
 
@@ -135,6 +168,18 @@ public class FS
             throw new IOException("Unable to create directory: " + dir.getAbsolutePath());
         }
     }
+    
+    public static void ensureDirectoryWritable(File dir) throws IOException
+    {
+        if (!dir.exists())
+        {
+            throw new IOException("Directory does not exist: " + dir.getAbsolutePath());
+        }
+        if (!dir.canWrite())
+        {
+            throw new IOException("Unable to write to directory: " + dir.getAbsolutePath());
+        }
+    }
 
     public static boolean isFile(File file)
     {
@@ -148,6 +193,11 @@ public class FS
     public static boolean isXml(String filename)
     {
         return filename.toLowerCase(Locale.ENGLISH).endsWith(".xml");
+    }
+    
+    public static String toRelativePath(File baseDir, File path)
+    {
+        return baseDir.toURI().relativize(path.toURI()).toASCIIString();
     }
 
     public static String separators(String path)

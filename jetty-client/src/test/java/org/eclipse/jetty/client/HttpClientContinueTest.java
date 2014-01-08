@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -26,7 +26,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -610,7 +609,7 @@ public class HttpClientContinueTest extends AbstractHttpClientServerTest
         });
 
         final byte[] chunk1 = new byte[]{0, 1, 2, 3};
-        final byte[] chunk2 = new byte[]{4, 5, 6, 7};
+        final byte[] chunk2 = new byte[]{4, 5, 6};
         final byte[] data = new byte[chunk1.length + chunk2.length];
         System.arraycopy(chunk1, 0, data, 0, chunk1.length);
         System.arraycopy(chunk2, 0, data, chunk1.length, chunk2.length);

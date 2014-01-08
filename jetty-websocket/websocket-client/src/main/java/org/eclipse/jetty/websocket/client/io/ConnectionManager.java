@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.client.io;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.URI;
@@ -56,9 +57,10 @@ public class ConnectionManager extends ContainerLifeCycle
         @Override
         public void run()
         {
+            SocketChannel channel = null;
             try
             {
-                SocketChannel channel = SocketChannel.open();
+                channel = SocketChannel.open();
                 if (bindAddress != null)
                 {
                     channel.bind(bindAddress);
@@ -76,6 +78,20 @@ public class ConnectionManager extends ContainerLifeCycle
             }
             catch (Throwable t)
             {
+                // close the socket channel
+                if (channel != null)
+                {
+                    try
+                    {
+                        channel.close();
+                    }
+                    catch (IOException ignore)
+                    {
+                        LOG.ignore(ignore);
+                    }
+                }
+                
+                // notify the future
                 failed(t);
             }
         }

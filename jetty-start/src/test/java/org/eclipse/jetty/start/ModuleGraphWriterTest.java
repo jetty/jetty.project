@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -35,6 +35,8 @@ public class ModuleGraphWriterTest
 {
     @SuppressWarnings("unused")
     private final static List<String> TEST_SOURCE = Collections.singletonList("<test>");
+    
+    private StartArgs DEFAULT_ARGS = new StartArgs(new String[]{"jetty.version=TEST"}).parseCommandLine();
 
     @Rule
     public TestingDir testdir = new TestingDir();
@@ -47,7 +49,7 @@ public class ModuleGraphWriterTest
         BaseHome basehome = new BaseHome(homeDir,baseDir);
 
         Modules modules = new Modules();
-        modules.registerAll(basehome);
+        modules.registerAll(basehome, DEFAULT_ARGS);
         modules.buildGraph();
 
         File outputFile = new File(baseDir,"graph.dot");

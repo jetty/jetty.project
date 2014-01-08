@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -81,7 +81,7 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
         @Override
         public void onComplete(Result result)
         {
-            Request request = result.getRequest();
+            HttpRequest request = (HttpRequest)result.getRequest();
             ContentResponse response = new HttpContentResponse(result.getResponse(), getContent(), getEncoding());
             if (result.isFailed())
             {
@@ -91,7 +91,7 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
                 return;
             }
 
-            HttpConversation conversation = client.getConversation(request.getConversationID(), false);
+            HttpConversation conversation = request.getConversation();
             if (conversation.getAttribute(AUTHENTICATION_ATTRIBUTE) != null)
             {
                 // We have already tried to authenticate, but we failed again
@@ -153,16 +153,16 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
             }).send(null);
         }
 
-        private void forwardSuccessComplete(Request request, Response response)
+        private void forwardSuccessComplete(HttpRequest request, Response response)
         {
-            HttpConversation conversation = client.getConversation(request.getConversationID(), false);
+            HttpConversation conversation = request.getConversation();
             conversation.updateResponseListeners(null);
             notifier.forwardSuccessComplete(conversation.getResponseListeners(), request, response);
         }
 
-        private void forwardFailureComplete(Request request, Throwable requestFailure, Response response, Throwable responseFailure)
+        private void forwardFailureComplete(HttpRequest request, Throwable requestFailure, Response response, Throwable responseFailure)
         {
-            HttpConversation conversation = client.getConversation(request.getConversationID(), false);
+            HttpConversation conversation = request.getConversation();
             conversation.updateResponseListeners(null);
             notifier.forwardFailureComplete(conversation.getResponseListeners(), request, requestFailure, response, responseFailure);
         }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -31,6 +31,9 @@ import org.eclipse.jetty.websocket.api.MessageTooLargeException;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
+import org.eclipse.jetty.websocket.common.test.UnitParser;
+import org.eclipse.jetty.websocket.common.util.MaskedByteBuffer;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -65,7 +68,7 @@ public class TextPayloadParserTest
         capture.assertHasErrors(MessageTooLargeException.class,1);
         capture.assertHasNoFrames();
 
-        MessageTooLargeException err = (MessageTooLargeException)capture.getErrors().get(0);
+        MessageTooLargeException err = (MessageTooLargeException)capture.getErrors().poll();
         Assert.assertThat("Error.closeCode",err.getStatusCode(),is(StatusCode.MESSAGE_TOO_LARGE));
     }
 
@@ -101,7 +104,7 @@ public class TextPayloadParserTest
 
         capture.assertNoErrors();
         capture.assertHasFrame(OpCode.TEXT,1);
-        WebSocketFrame txt = capture.getFrames().get(0);
+        WebSocketFrame txt = capture.getFrames().poll();
         Assert.assertThat("TextFrame.data",txt.getPayloadAsUTF8(),is(expectedText));
     }
 
@@ -136,7 +139,7 @@ public class TextPayloadParserTest
 
         capture.assertNoErrors();
         capture.assertHasFrame(OpCode.TEXT,1);
-        WebSocketFrame txt = capture.getFrames().get(0);
+        WebSocketFrame txt = capture.getFrames().poll();
         Assert.assertThat("TextFrame.data",txt.getPayloadAsUTF8(),is(expectedText));
     }
 
@@ -174,9 +177,9 @@ public class TextPayloadParserTest
         capture.assertNoErrors();
         capture.assertHasFrame(OpCode.TEXT,1);
         capture.assertHasFrame(OpCode.CONTINUATION,1);
-        WebSocketFrame txt = capture.getFrames().get(0);
+        WebSocketFrame txt = capture.getFrames().poll();
         Assert.assertThat("TextFrame[0].data",txt.getPayloadAsUTF8(),is(part1));
-        txt = capture.getFrames().get(1);
+        txt = capture.getFrames().poll();
         Assert.assertThat("TextFrame[1].data",txt.getPayloadAsUTF8(),is(part2));
     }
 
@@ -201,7 +204,7 @@ public class TextPayloadParserTest
 
         capture.assertNoErrors();
         capture.assertHasFrame(OpCode.TEXT,1);
-        WebSocketFrame txt = capture.getFrames().get(0);
+        WebSocketFrame txt = capture.getFrames().poll();
         Assert.assertThat("TextFrame.data",txt.getPayloadAsUTF8(),is(expectedText));
     }
 
@@ -227,7 +230,7 @@ public class TextPayloadParserTest
 
         capture.assertNoErrors();
         capture.assertHasFrame(OpCode.TEXT,1);
-        WebSocketFrame txt = capture.getFrames().get(0);
+        WebSocketFrame txt = capture.getFrames().poll();
         Assert.assertThat("TextFrame.data",txt.getPayloadAsUTF8(),is(expectedText));
     }
 }

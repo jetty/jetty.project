@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -109,11 +109,18 @@ public abstract class AbstractHttpClientTransport extends ContainerLifeCycle imp
             }
             finally
             {
-                @SuppressWarnings("unchecked")
-                Promise<Connection> promise = (Promise<Connection>)context.get(HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
-                promise.failed(x);
+                connectFailed(context, x);
             }
         }
+    }
+
+    protected void connectFailed(Map<String, Object> context, Throwable x)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Could not connect to {}", context.get(HTTP_DESTINATION_CONTEXT_KEY));
+        @SuppressWarnings("unchecked")
+        Promise<Connection> promise = (Promise<Connection>)context.get(HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
+        promise.failed(x);
     }
 
     protected void configure(HttpClient client, SocketChannel channel) throws IOException
@@ -156,9 +163,7 @@ public abstract class AbstractHttpClientTransport extends ContainerLifeCycle imp
         {
             @SuppressWarnings("unchecked")
             Map<String, Object> context = (Map<String, Object>)attachment;
-            @SuppressWarnings("unchecked")
-            Promise<Connection> promise = (Promise<Connection>)context.get(HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
-            promise.failed(x);
+            connectFailed(context, x);
         }
     }
 }

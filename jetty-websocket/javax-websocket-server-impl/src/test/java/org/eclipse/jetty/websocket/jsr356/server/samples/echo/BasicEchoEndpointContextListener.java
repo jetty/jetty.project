@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,6 +22,9 @@ import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.websocket.DeploymentException;
 import javax.websocket.server.ServerContainer;
+import javax.websocket.server.ServerEndpointConfig;
+
+import org.eclipse.jetty.websocket.jsr356.server.samples.pong.PongMessageEndpoint;
 
 /**
  * Example of adding a server WebSocket (extending {@link Endpoint}) programmatically directly.
@@ -40,14 +43,15 @@ public class BasicEchoEndpointContextListener implements ServletContextListener
     public void contextInitialized(ServletContextEvent sce)
     {
         ServerContainer container = (ServerContainer)sce.getServletContext().getAttribute(ServerContainer.class.getName());
+        
         try
         {
-            // Should fail as there is no path associated with this endpoint
-            container.addEndpoint(BasicEchoEndpoint.class);
+            container.addEndpoint(ServerEndpointConfig.Builder.create(PongMessageEndpoint.class,"/ping").build());
+            container.addEndpoint(ServerEndpointConfig.Builder.create(PongMessageEndpoint.class,"/pong").build());
         }
         catch (DeploymentException e)
         {
-            throw new RuntimeException("Unable to add endpoint directly",e);
+            throw new RuntimeException("Unable to add endpoint via config file",e);
         }
     }
 }

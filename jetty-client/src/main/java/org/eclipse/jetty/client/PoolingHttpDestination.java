@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -114,7 +114,8 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
             Throwable cause = request.getAbortCause();
             if (cause != null)
             {
-                abort(exchange, cause);
+                // If we have a non-null abort cause, it means that someone
+                // else has already aborted and notified, nothing do to here.
                 LOG.debug("Aborted before processing {}: {}", exchange, cause);
             }
             else
@@ -178,6 +179,7 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
 
     public void close()
     {
+        super.close();
         connectionPool.close();
     }
 

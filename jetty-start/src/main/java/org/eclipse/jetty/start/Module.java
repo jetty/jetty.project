@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -40,20 +40,6 @@ import java.util.regex.Pattern;
  */
 public class Module
 {
-    public static class NameComparator implements Comparator<Module>
-    {
-        private Collator collator = Collator.getInstance();
-
-        @Override
-        public int compare(Module o1, Module o2)
-        {
-            // by name (not really needed, but makes for predictable test cases)
-            CollationKey k1 = collator.getCollationKey(o1.name);
-            CollationKey k2 = collator.getCollationKey(o2.name);
-            return k1.compareTo(k2);
-        }
-    }
-
     public static class DepthComparator implements Comparator<Module>
     {
         private Collator collator = Collator.getInstance();
@@ -68,21 +54,39 @@ public class Module
                 return diff;
             }
             // then by name (not really needed, but makes for predictable test cases)
-            CollationKey k1 = collator.getCollationKey(o1.name);
-            CollationKey k2 = collator.getCollationKey(o2.name);
+            CollationKey k1 = collator.getCollationKey(o1.fileRef);
+            CollationKey k2 = collator.getCollationKey(o2.fileRef);
+            return k1.compareTo(k2);
+        }
+    }
+
+    public static class NameComparator implements Comparator<Module>
+    {
+        private Collator collator = Collator.getInstance();
+
+        @Override
+        public int compare(Module o1, Module o2)
+        {
+            // by name (not really needed, but makes for predictable test cases)
+            CollationKey k1 = collator.getCollationKey(o1.fileRef);
+            CollationKey k2 = collator.getCollationKey(o2.fileRef);
             return k1.compareTo(k2);
         }
     }
 
     /** The file of the module */
     private File file;
-    /** The name of this Module */
-    private String name;
+    /** The name of this Module (as a filesystem reference) */
+    private String fileRef;
+    /**
+     * The logical name of this module (for property selected references), And to aid in duplicate detection.
+     */
+    private String logicalName;
     /** The depth of the module in the tree */
     private int depth = 0;
-    /** List of Modules, by name, that this Module depends on */
+    /** Set of Modules, by name, that this Module depends on */
     private Set<String> parentNames;
-    /** List of Modules, by name, that this Module optionally depend on */
+    /** Set of Modules, by name, that this Module optionally depend on */
     private Set<String> optionalParentNames;
     /** The Edges to parent modules */
     private Set<Module> parentEdges;
@@ -102,16 +106,16 @@ public class Module
     /** List of sources that enabled this module */
     private final Set<String> sources = new HashSet<>();
 
-    public Module(File file) throws FileNotFoundException, IOException
+    public Module(BaseHome basehome, File file) throws FileNotFoundException, IOException
     {
         this.file = file;
 
-        String name = file.getName();
-        // Strip .ini
-        name = Pattern.compile(".mod$",Pattern.CASE_INSENSITIVE).matcher(name).replaceFirst("");
+        // Strip .mod
+        this.fileRef = Pattern.compile(".mod$",Pattern.CASE_INSENSITIVE).matcher(file.getName()).replaceFirst("");
+        this.logicalName = fileRef;
 
-        init();
-        process();
+        init(basehome);
+        process(basehome);
     }
 
     public void addChildEdge(Module child)
@@ -134,6 +138,16 @@ public class Module
         this.parentEdges.add(parent);
     }
 
+    public void addSources(List<String> sources)
+    {
+        this.sources.addAll(sources);
+    }
+
+    public void clearSources()
+    {
+        this.sources.clear();
+    }
+
     @Override
     public boolean equals(Object obj)
     {
@@ -150,18 +164,30 @@ public class Module
             return false;
         }
         Module other = (Module)obj;
-        if (name == null)
+        if (fileRef == null)
         {
-            if (other.name != null)
+            if (other.fileRef != null)
             {
                 return false;
             }
         }
-        else if (!name.equals(other.name))
+        else if (!fileRef.equals(other.fileRef))
         {
             return false;
         }
         return true;
+    }
+
+    public void expandProperties(Props props)
+    {
+        // Expand Parents
+        Set<String> parents = new HashSet<>();
+        for (String parent : parentNames)
+        {
+            parents.add(props.expand(parent));
+        }
+        parentNames.clear();
+        parentNames.addAll(parents);
     }
 
     public Set<Module> getChildEdges()
@@ -174,6 +200,21 @@ public class Module
         return depth;
     }
 
+    public List<String> getFiles()
+    {
+        return files;
+    }
+
+    public String getFilesystemRef()
+    {
+        return fileRef;
+    }
+
+    public List<String> getInitialise()
+    {
+        return initialise;
+    }
+
     public List<String> getLibs()
     {
         return libs;
@@ -181,7 +222,7 @@ public class Module
 
     public String getName()
     {
-        return name;
+        return logicalName;
     }
 
     public Set<String> getOptionalParentNames()
@@ -198,20 +239,15 @@ public class Module
     {
         return parentNames;
     }
+    
+    public Set<String> getSources()
+    {
+        return Collections.unmodifiableSet(sources);
+    }
 
     public List<String> getXmls()
     {
         return xmls;
-    }
-
-    public List<String> getInitialise()
-    {
-        return initialise;
-    }
-
-    public List<String> getFiles()
-    {
-        return files;
     }
 
     @Override
@@ -219,16 +255,23 @@ public class Module
     {
         final int prime = 31;
         int result = 1;
-        result = (prime * result) + ((name == null)?0:name.hashCode());
+        result = (prime * result) + ((fileRef == null)?0:fileRef.hashCode());
         return result;
     }
 
-    public void init()
+    private void init(BaseHome basehome)
     {
-        String name = file.getName();
+        String name = basehome.toShortForm(file);
 
-        // Strip .ini
-        this.name = Pattern.compile(".mod$",Pattern.CASE_INSENSITIVE).matcher(name).replaceFirst("");
+        // Find module system name (usually in the form of a filesystem reference)
+        Pattern pat = Pattern.compile("^.*[/\\\\]{1}modules[/\\\\]{1}(.*).mod$",Pattern.CASE_INSENSITIVE);
+        Matcher mat = pat.matcher(name);
+        if (!mat.find())
+        {
+            throw new RuntimeException("Invalid Module location (must be located under /modules/ directory): " + name);
+        }
+        this.fileRef = mat.group(1).replace('\\','/');
+        this.logicalName = this.fileRef;
 
         parentNames = new HashSet<>();
         optionalParentNames = new HashSet<>();
@@ -245,13 +288,13 @@ public class Module
         return enabled;
     }
 
-    public void process() throws FileNotFoundException, IOException
+    public void process(BaseHome basehome) throws FileNotFoundException, IOException
     {
         Pattern section = Pattern.compile("\\s*\\[([^]]*)\\]\\s*");
 
         if (!FS.canReadFile(file))
         {
-            StartLog.debug("Skipping read of missing file: %s",file.getAbsolutePath());
+            StartLog.debug("Skipping read of missing file: %s",basehome.toShortForm(file));
             return;
         }
 
@@ -259,39 +302,12 @@ public class Module
         {
             try (BufferedReader buf = new BufferedReader(reader))
             {
-                String line;
                 String sectionType = "";
-                String caseTag = null;
-                boolean switched = false;
+                String line;
                 while ((line = buf.readLine()) != null)
                 {
                     line = line.trim();
-                    
-                    if (caseTag!=null)
-                    {
-                        if ("}".equals(line))
-                        {
-                            caseTag=null;
-                            continue;
-                        }
-                        
-                        if (switched)
-                            continue;
-                        
-                        if (!line.startsWith(caseTag) && !line.startsWith("*:"))
-                            continue;
 
-                        switched=true;
-                        line=line.substring(line.indexOf(':')+1).trim();
-                    }
-                    else if (line.startsWith("${switch "))
-                    {
-                        switched=false;
-                        caseTag=line.substring(9).trim();
-                        caseTag=System.getProperty(caseTag)+":";
-                        continue;
-                    }
-                                        
                     Matcher sectionMatcher = section.matcher(line);
 
                     if (sectionMatcher.matches())
@@ -300,8 +316,8 @@ public class Module
                     }
                     else
                     {
-                        // blank lines and comments are valid for initialize section
-                        if (line.length() == 0 || line.startsWith("#"))
+                        // blank lines and comments are valid for ini-template section
+                        if ((line.length() == 0) || line.startsWith("#"))
                         {
                             if ("INI-TEMPLATE".equals(sectionType))
                             {
@@ -312,6 +328,12 @@ public class Module
                         {
                             switch (sectionType)
                             {
+                                case "":
+                                    // ignore (this would be entries before first section)
+                                    break;
+                                case "NAME":
+                                    logicalName = line;
+                                    break;
                                 case "DEPEND":
                                     parentNames.add(line);
                                     break;
@@ -326,10 +348,12 @@ public class Module
                                     break;
                                 case "FILES":
                                     files.add(line);
-                                    break;                             
+                                    break;
                                 case "INI-TEMPLATE":
                                     initialise.add(line);
                                     break;
+                                default:
+                                    throw new IOException("Unrecognized Module section: [" + sectionType + "]");
                             }
                         }
                     }
@@ -348,26 +372,22 @@ public class Module
         this.enabled = enabled;
     }
 
-    public void addSources(List<String> sources)
+    public void setParentNames(Set<String> parents)
     {
-        this.sources.addAll(sources);
-    }
-
-    public void clearSources()
-    {
-        this.sources.clear();
-    }
-
-    public Set<String> getSources()
-    {
-        return Collections.unmodifiableSet(sources);
+        this.parentNames.clear();
+        this.parentEdges.clear();
+        if (parents != null)
+        {
+            this.parentNames.addAll(parents);
+        }
     }
 
     @Override
     public String toString()
     {
         StringBuilder str = new StringBuilder();
-        str.append("Module[").append(name);
+        str.append("Module[").append(logicalName);
+        str.append(",").append(fileRef);
         if (enabled)
         {
             str.append(",enabled");

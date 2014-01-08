@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -381,29 +381,31 @@ public class Main
                         return;
                     }
                     source = short_start_ini;
-                    StartLog.warn("%-15s initialised in %s (appended)",name,source);
+                    StartLog.info("%-15s initialised in %s (appended)",name,source);
                     out = new PrintWriter(new FileWriter(start_ini,true));
                 }
                 else
                 {
                     // Create the directory if needed
-                    if (!start_d.exists())
+                    FS.ensureDirectoryExists(start_d);
+                    FS.ensureDirectoryWritable(start_d);
+                    try
                     {
-                        start_d.mkdirs();
+                        // Create a new ini file for it
+                        if (!ini.createNewFile())
+                        {
+                            StartLog.warn("ERROR: %s cannot be initialised in %s! ",name,short_ini);
+                            return;
+                        }
                     }
-                    if (!start_d.isDirectory() || !start_d.canWrite())
+                    catch (IOException e)
                     {
-                        StartLog.warn("ERROR: Bad start.d %s! ",start_d);
-                        return;
-                    }
-                    // Create a new ini file for it
-                    if (!ini.createNewFile())
-                    {
-                        StartLog.warn("ERROR: %s cannot be initialised in %s! ",name,short_ini);
+                        StartLog.warn("ERROR: Unable to create %s!",ini);
+                        StartLog.warn(e);
                         return;
                     }
                     source = short_ini;
-                    StartLog.warn("%-15s initialised in %s (created)",name,source);
+                    StartLog.info("%-15s initialised in %s (created)",name,source);
                     out = new PrintWriter(ini);
                 }
 
@@ -462,7 +464,7 @@ public class Main
         {
             if (!short_ini.equals(source))
             {
-                StartLog.warn("%-15s enabled in     %s",name,baseHome.toShortForm(source));
+                StartLog.info("%-15s enabled in     %s",name,baseHome.toShortForm(source));
             }
         }
 
@@ -519,8 +521,6 @@ public class Main
 
         StartLog.debug("jetty.home=%s",baseHome.getHome());
         StartLog.debug("jetty.base=%s",baseHome.getBase());
-        args.addSystemProperty("jetty.home",baseHome.getHome());
-        args.addSystemProperty("jetty.base",baseHome.getBase());
 
         // ------------------------------------------------------------
         // 3) Load Inis
@@ -558,7 +558,7 @@ public class Main
         // 5) Module Registration
         Modules modules = new Modules();
         StartLog.debug("Registering all modules");
-        modules.registerAll(baseHome);
+        modules.registerAll(baseHome, args);
 
         // 6) Active Module Resolution
         for (String enabledModule : args.getEnabledModules())
@@ -634,12 +634,12 @@ public class Main
 
         if (args.isStopCommand())
         {
-            int stopPort = Integer.parseInt(args.getProperties().getProperty("STOP.PORT"));
-            String stopKey = args.getProperties().getProperty("STOP.KEY");
+            int stopPort = Integer.parseInt(args.getProperties().getString("STOP.PORT"));
+            String stopKey = args.getProperties().getString("STOP.KEY");
 
-            if (args.getProperties().getProperty("STOP.WAIT") != null)
+            if (args.getProperties().getString("STOP.WAIT") != null)
             {
-                int stopWait = Integer.parseInt(args.getProperties().getProperty("STOP.PORT"));
+                int stopWait = Integer.parseInt(args.getProperties().getString("STOP.PORT"));
 
                 stop(stopPort,stopKey,stopWait);
             }
@@ -673,9 +673,9 @@ public class Main
                 args.setRun(false);
                 String type=arg.location.endsWith("/")?"directory":"file";
                 if (arg.uri==null)
-                    StartLog.warn("Required %s '%s' does not exist. Run with --create",type,baseHome.toShortForm(file));
+                    StartLog.warn("Required %s '%s' does not exist. Run with --create-files to create",type,baseHome.toShortForm(file));
                 else
-                    StartLog.warn("Required %s '%s' not downloaded from %s.  Run with --download",type,baseHome.toShortForm(file),arg.uri);
+                    StartLog.warn("Required %s '%s' not downloaded from %s.  Run with --create-files to download",type,baseHome.toShortForm(file),arg.uri);
             }
         }
         

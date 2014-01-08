@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -38,7 +38,7 @@ public class Flusher
 
     private final IteratingCallback callback = new FlusherCallback();
     private final Object lock = new Object();
-    private final ArrayQueue<StandardSession.FrameBytes> queue = new ArrayQueue<>(lock);
+    private final ArrayQueue<StandardSession.FrameBytes> queue = new ArrayQueue<>(ArrayQueue.DEFAULT_CAPACITY, ArrayQueue.DEFAULT_GROWTH, lock);
     private final Controller controller;
     private final int maxGather;
     private Throwable failure;

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -44,8 +44,8 @@ public class ContinueProtocolHandler implements ProtocolHandler
     public boolean accept(Request request, Response response)
     {
         boolean expect100 = request.getHeaders().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
-        HttpConversation conversation = client.getConversation(request.getConversationID(), false);
-        boolean handled100 = conversation != null && conversation.getAttribute(ATTRIBUTE) != null;
+        HttpConversation conversation = ((HttpRequest)request).getConversation();
+        boolean handled100 = conversation.getAttribute(ATTRIBUTE) != null;
         return expect100 && !handled100;
     }
 
@@ -64,7 +64,7 @@ public class ContinueProtocolHandler implements ProtocolHandler
             // Handling of success must be done here and not from onComplete(),
             // since the onComplete() is not invoked because the request is not completed yet.
 
-            HttpConversation conversation = client.getConversation(response.getConversationID(), false);
+            HttpConversation conversation = ((HttpRequest)response.getRequest()).getConversation();
             // Mark the 100 Continue response as handled
             conversation.setAttribute(ATTRIBUTE, Boolean.TRUE);
 
@@ -79,7 +79,7 @@ public class ContinueProtocolHandler implements ProtocolHandler
                 {
                     // All good, continue
                     exchange.resetResponse(true);
-                    exchange.proceed(true);
+                    exchange.proceed(null);
                     break;
                 }
                 default:
@@ -90,7 +90,7 @@ public class ContinueProtocolHandler implements ProtocolHandler
                     List<Response.ResponseListener> listeners = exchange.getResponseListeners();
                     HttpContentResponse contentResponse = new HttpContentResponse(response, getContent(), getEncoding());
                     notifier.forwardSuccess(listeners, contentResponse);
-                    exchange.proceed(false);
+                    exchange.proceed(new HttpRequestException("Expectation failed", exchange.getRequest()));
                     break;
                 }
             }
@@ -99,7 +99,7 @@ public class ContinueProtocolHandler implements ProtocolHandler
         @Override
         public void onFailure(Response response, Throwable failure)
         {
-            HttpConversation conversation = client.getConversation(response.getConversationID(), false);
+            HttpConversation conversation = ((HttpRequest)response.getRequest()).getConversation();
             // Mark the 100 Continue response as handled
             conversation.setAttribute(ATTRIBUTE, Boolean.TRUE);
             // Reset the conversation listeners to allow the conversation to be completed

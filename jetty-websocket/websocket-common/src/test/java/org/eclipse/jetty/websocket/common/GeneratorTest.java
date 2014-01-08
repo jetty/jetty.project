@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -34,6 +34,10 @@ import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.common.frames.CloseFrame;
 import org.eclipse.jetty.websocket.common.frames.PingFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
+import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
+import org.eclipse.jetty.websocket.common.test.UnitGenerator;
+import org.eclipse.jetty.websocket.common.test.UnitParser;
+import org.eclipse.jetty.websocket.common.util.Hex;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -300,7 +304,7 @@ public class GeneratorTest
         parser.parse(completeBuffer);
 
         // Assert validity of frame
-        WebSocketFrame actual = capture.getFrames().get(0);
+        WebSocketFrame actual = capture.getFrames().poll();
         Assert.assertThat("Frame.opcode",actual.getOpCode(),is(OpCode.BINARY));
         Assert.assertThat("Frame.payloadLength",actual.getPayloadLength(),is(payload.length));
 

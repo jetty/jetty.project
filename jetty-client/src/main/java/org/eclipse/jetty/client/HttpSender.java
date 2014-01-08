@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -48,7 +48,7 @@ import org.eclipse.jetty.util.log.Logger;
  * the request has not been failed already.
  * <p />
  * The sender state machine is updated by {@link HttpSender} from three sources: deferred content notifications
- * (via {@link #onContent()}), 100-continue notifications (via {@link #proceed(HttpExchange, boolean)})
+ * (via {@link #onContent()}), 100-continue notifications (via {@link #proceed(HttpExchange, Throwable)})
  * and normal request send (via {@link #sendContent(HttpExchange, HttpContent, Callback)}).
  * This state machine must guarantee that the request sending is never executed concurrently: only one of
  * those sources may trigger the call to {@link #sendContent(HttpExchange, HttpContent, Callback)}.
@@ -96,48 +96,63 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
             {
                 case IDLE:
                 {
-                    if (updateSenderState(current, SenderState.SENDING))
+                    SenderState newSenderState = SenderState.SENDING;
+                    if (updateSenderState(current, newSenderState))
                     {
-                        LOG.debug("Deferred content available, idle -> sending");
+                        LOG.debug("Deferred content available, {} -> {}", current, newSenderState);
                         // TODO should just call contentCallback.iterate() here.
                         HttpContent content = this.content;
-                        content.advance();
-                        sendContent(exchange, content, contentCallback); // TODO old style usage!
+                        if (content.advance())
+                            sendContent(exchange, content, contentCallback); // TODO old style usage!
+                        else if (content.isConsumed())
+                            sendContent(exchange, content, lastCallback);
+                        else
+                            throw new IllegalStateException();
                         return;
                     }
                     break;
                 }
                 case SENDING:
                 {
-                    if (updateSenderState(current, SenderState.SCHEDULED))
+                    SenderState newSenderState = SenderState.SENDING_WITH_CONTENT;
+                    if (updateSenderState(current, newSenderState))
                     {
-                        LOG.debug("Deferred content available, sending -> scheduled");
+                        LOG.debug("Deferred content available, {} -> {}", current, newSenderState);
                         return;
                     }
                     break;
                 }
                 case EXPECTING:
                 {
-                    if (updateSenderState(current, SenderState.SCHEDULED))
+                    SenderState newSenderState = SenderState.EXPECTING_WITH_CONTENT;
+                    if (updateSenderState(current, newSenderState))
                     {
-                        LOG.debug("Deferred content available, expecting -> scheduled");
+                        LOG.debug("Deferred content available, {} -> {}", current, newSenderState);
                         return;
                     }
                     break;
                 }
+                case PROCEEDING:
+                {
+                    SenderState newSenderState = SenderState.PROCEEDING_WITH_CONTENT;
+                    if (updateSenderState(current, newSenderState))
+                    {
+                        LOG.debug("Deferred content available, {} -> {}", current, newSenderState);
+                        return;
+                    }
+                    break;
+                }
+                case SENDING_WITH_CONTENT:
+                case EXPECTING_WITH_CONTENT:
+                case PROCEEDING_WITH_CONTENT:
                 case WAITING:
                 {
-                    LOG.debug("Deferred content available, waiting");
-                    return;
-                }
-                case SCHEDULED:
-                {
-                    LOG.debug("Deferred content available, scheduled");
+                    LOG.debug("Deferred content available, {}", current);
                     return;
                 }
                 default:
                 {
-                    throw new IllegalStateException();
+                    throw new IllegalStateException(current.toString());
                 }
             }
         }
@@ -156,11 +171,14 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
             if (!queuedToBegin(request))
                 throw new IllegalStateException();
 
-            if (!updateSenderState(SenderState.IDLE, expects100Continue(request) ? SenderState.EXPECTING : SenderState.SENDING))
-                throw new IllegalStateException();
-
             ContentProvider contentProvider = request.getContent();
             HttpContent content = this.content = new HttpContent(contentProvider);
+
+            SenderState newSenderState = SenderState.SENDING;
+            if (expects100Continue(request))
+                newSenderState = content.hasContent() ? SenderState.EXPECTING_WITH_CONTENT : SenderState.EXPECTING;
+            if (!updateSenderState(SenderState.IDLE, newSenderState))
+                throw new IllegalStateException();
 
             // Setting the listener may trigger calls to onContent() by other
             // threads so we must set it only after the sender state has been updated
@@ -232,7 +250,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
             }
             default:
             {
-                throw new IllegalStateException();
+                throw new IllegalStateException(current.toString());
             }
         }
     }
@@ -285,7 +303,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
             }
             default:
             {
-                throw new IllegalStateException();
+                throw new IllegalStateException(current.toString());
             }
         }
     }
@@ -394,71 +412,75 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
         }
     }
 
-    public void proceed(HttpExchange exchange, boolean proceed)
+    public void proceed(HttpExchange exchange, Throwable failure)
     {
         if (!expects100Continue(exchange.getRequest()))
             return;
 
-        if (proceed)
+        if (failure != null)
         {
-            while (true)
-            {
-                SenderState current = senderState.get();
-                switch (current)
-                {
-                    case EXPECTING:
-                    {
-                        // We are still sending the headers, but we already got the 100 Continue.
-                        // Move to SEND so that the commit callback can send the content.
-                        if (!updateSenderState(current, SenderState.SENDING))
-                            break;
-                        LOG.debug("Proceed while expecting");
-                        return;
-                    }
-                    case WAITING:
-                    {
-                        // We received the 100 Continue, send the content if any.
-                        // First update the sender state to be sure to be the one
-                        // to call sendContent() since we race with onContent().
-                        if (!updateSenderState(current, SenderState.SENDING))
-                            break;
-                        HttpContent content = this.content;
+            anyToFailure(failure);
+            return;
+        }
 
-                        // TODO should just call contentCallback.iterate() here.
-                        if (content.advance())
-                        {
-                            // There is content to send
-                            LOG.debug("Proceed while waiting");
-                            sendContent(exchange, content, contentCallback); // TODO old style usage!
-                        }
-                        else
-                        {
-                            // No content to send yet - it's deferred.
-                            // We may fail the update as onContent() moved to SCHEDULE.
-                            if (!updateSenderState(SenderState.SENDING, SenderState.IDLE))
-                                break;
-                            LOG.debug("Proceed deferred");
-                        }
+        while (true)
+        {
+            SenderState current = senderState.get();
+            switch (current)
+            {
+                case EXPECTING:
+                {
+                    // We are still sending the headers, but we already got the 100 Continue.
+                    if (updateSenderState(current, SenderState.PROCEEDING))
+                    {
+                        LOG.debug("Proceeding while expecting");
                         return;
                     }
-                    case SCHEDULED:
+                    break;
+                }
+                case EXPECTING_WITH_CONTENT:
+                {
+                    // More deferred content was submitted to onContent(), we already
+                    // got the 100 Continue, but we may be still sending the headers
+                    // (for example, with SSL we may have sent the encrypted data,
+                    // received the 100 Continue but not yet updated the decrypted
+                    // WriteFlusher so sending more content now may result in a
+                    // WritePendingException).
+                    if (updateSenderState(current, SenderState.PROCEEDING_WITH_CONTENT))
                     {
-                        // We lost the race with onContent() to update the state, try again
-                        if (!updateSenderState(current, SenderState.WAITING))
-                            throw new IllegalStateException();
-                        LOG.debug("Proceed while scheduled");
-                        break;
+                        LOG.debug("Proceeding while scheduled");
+                        return;
                     }
-                    default:
+                    break;
+                }
+                case WAITING:
+                {
+                    // We received the 100 Continue, now send the content if any.
+                    HttpContent content = this.content;
+                    // TODO should just call contentCallback.iterate() here.
+                    if (content.advance())
                     {
-                        throw new IllegalStateException();
+                        // There is content to send.
+                        if (!updateSenderState(current, SenderState.SENDING))
+                            throw new IllegalStateException();
+                        LOG.debug("Proceeding while waiting");
+                        sendContent(exchange, content, contentCallback); // TODO old style usage!
+                        return;
+                    }
+                    else
+                    {
+                        // No content to send yet - it's deferred.
+                        if (!updateSenderState(current, SenderState.IDLE))
+                            throw new IllegalStateException();
+                        LOG.debug("Proceeding deferred");
+                        return;
                     }
                 }
+                default:
+                {
+                    throw new IllegalStateException(current.toString());
+                }
             }
-        }
-        else
-        {
-            anyToFailure(new HttpRequestException("Expectation failed", exchange.getRequest()));
         }
     }
 
@@ -547,25 +569,37 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
     private enum SenderState
     {
         /**
-         * {@link HttpSender} is not sending the request
+         * {@link HttpSender} is not sending request headers nor request content
          */
         IDLE,
         /**
-         * {@link HttpSender} is sending the request
+         * {@link HttpSender} is sending the request header or request content
          */
         SENDING,
         /**
-         * {@link HttpSender} is sending the headers but will wait for 100-Continue before sending the content
+         * {@link HttpSender} is currently sending the request, and deferred content is available to be sent
+         */
+        SENDING_WITH_CONTENT,
+        /**
+         * {@link HttpSender} is sending the headers but will wait for 100 Continue before sending the content
          */
         EXPECTING,
         /**
-         * {@link HttpSender} is waiting for 100-Continue
+         * {@link HttpSender} is currently sending the headers, will wait for 100 Continue, and deferred content is available to be sent
+         */
+        EXPECTING_WITH_CONTENT,
+        /**
+         * {@link HttpSender} has sent the headers and is waiting for 100 Continue
          */
         WAITING,
         /**
-         * {@link HttpSender} is currently sending the request, and deferred content is available to be sent
+         * {@link HttpSender} is sending the headers, while 100 Continue has arrived
          */
-        SCHEDULED
+        PROCEEDING,
+        /**
+         * {@link HttpSender} is sending the headers, while 100 Continue has arrived, and deferred content is available to be sent
+         */
+        PROCEEDING_WITH_CONTENT
     }
 
     private class CommitCallback implements Callback
@@ -623,34 +657,59 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
                             if (content.advance())
                             {
                                 sendContent(exchange, content, contentCallback); // TODO old style usage!
+                                return;
                             }
                             else
                             {
                                 if (content.isConsumed())
                                 {
-                                    sendContent(exchange, content, lastCallback);  
+                                    sendContent(exchange, content, lastCallback);
+                                    return;
                                 }
                                 else
                                 {
-                                    if (!updateSenderState(current, SenderState.IDLE))
-                                        break;
-                                    LOG.debug("Waiting for deferred content for {}", request);
+                                    if (updateSenderState(current, SenderState.IDLE))
+                                    {
+                                        LOG.debug("Waiting for deferred content for {}", request);
+                                        return;
+                                    }
+                                    break;
                                 }
                             }
-                            return;
+                        }
+                        case SENDING_WITH_CONTENT:
+                        {
+                            // We have deferred content to send.
+                            updateSenderState(current, SenderState.SENDING);
+                            break;
                         }
                         case EXPECTING:
                         {
-                            // Wait for the 100 Continue response
-                            if (!updateSenderState(current, SenderState.WAITING))
-                                break;
-                            return;
-                        }
-                        case SCHEDULED:
-                        {
-                            if (expects100Continue(request))
+                            // We sent the headers, wait for the 100 Continue response.
+                            if (updateSenderState(current, SenderState.WAITING))
                                 return;
-                            // We have deferred content to send.
+                            break;
+                        }
+                        case EXPECTING_WITH_CONTENT:
+                        {
+                            // We sent the headers, we have deferred content to send,
+                            // wait for the 100 Continue response.
+                            if (updateSenderState(current, SenderState.WAITING))
+                                return;
+                            break;
+                        }
+                        case PROCEEDING:
+                        {
+                            // We sent the headers, we have the 100 Continue response,
+                            // we have no content to send.
+                            if (updateSenderState(current, SenderState.IDLE))
+                                return;
+                            break;
+                        }
+                        case PROCEEDING_WITH_CONTENT:
+                        {
+                            // We sent the headers, we have the 100 Continue response,
+                            // we have deferred content to send.
                             updateSenderState(current, SenderState.SENDING);
                             break;
                         }
@@ -717,7 +776,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
                         }
                         break;
                     }
-                    case SCHEDULED:
+                    case SENDING_WITH_CONTENT:
                     {
                         if (updateSenderState(current, SenderState.SENDING))
                         {

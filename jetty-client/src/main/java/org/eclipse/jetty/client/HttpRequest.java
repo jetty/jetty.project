@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -36,7 +36,6 @@ import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.api.ContentProvider;
@@ -55,8 +54,6 @@ import org.eclipse.jetty.util.Fields;
 
 public class HttpRequest implements Request
 {
-    private static final AtomicLong ids = new AtomicLong();
-
     private final HttpFields headers = new HttpFields();
     private final Fields params = new Fields(true);
     private final Map<String, Object> attributes = new HashMap<>();
@@ -64,7 +61,7 @@ public class HttpRequest implements Request
     private final List<Response.ResponseListener> responseListeners = new ArrayList<>();
     private final AtomicReference<Throwable> aborted = new AtomicReference<>();
     private final HttpClient client;
-    private final long conversation;
+    private final HttpConversation conversation;
     private final String host;
     private final int port;
     private URI uri;
@@ -78,12 +75,7 @@ public class HttpRequest implements Request
     private ContentProvider content;
     private boolean followRedirects;
 
-    public HttpRequest(HttpClient client, URI uri)
-    {
-        this(client, ids.incrementAndGet(), uri);
-    }
-
-    protected HttpRequest(HttpClient client, long conversation, URI uri)
+    protected HttpRequest(HttpClient client, HttpConversation conversation, URI uri)
     {
         this.client = client;
         this.conversation = conversation;
@@ -100,10 +92,15 @@ public class HttpRequest implements Request
             headers.put(acceptEncodingField);
     }
 
+    protected HttpConversation getConversation()
+    {
+        return conversation;
+    }
+
     @Override
     public long getConversationID()
     {
-        return conversation;
+        return getConversation().getID();
     }
 
     @Override
@@ -602,7 +599,7 @@ public class HttpRequest implements Request
         send(this, listener);
     }
 
-    private void send(Request request, Response.CompleteListener listener)
+    private void send(HttpRequest request, Response.CompleteListener listener)
     {
         if (listener != null)
             responseListeners.add(listener);
@@ -612,13 +609,7 @@ public class HttpRequest implements Request
     @Override
     public boolean abort(Throwable cause)
     {
-        if (aborted.compareAndSet(null, Objects.requireNonNull(cause)))
-        {
-            // The conversation may be null if it is already completed
-            HttpConversation conversation = client.getConversation(getConversationID(), false);
-            return conversation != null && conversation.abort(cause);
-        }
-        return false;
+        return aborted.compareAndSet(null, Objects.requireNonNull(cause)) && conversation.abort(cause);
     }
 
     @Override

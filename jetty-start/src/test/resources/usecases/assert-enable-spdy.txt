@@ -28,9 +28,10 @@ PROP|jetty.keystore.password=friendly
 PROP|jetty.keymanager.password=icecream
 PROP|jetty.truststore=etc/keystore
 PROP|jetty.truststore.password=sundae
+PROP|java.version=1.7.0_21
 
 # The Downloads
-DOWNLOAD|http://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.5.v20130313/npn-boot-1.1.5.v20130313.jar:lib/npn/npn-boot-1.1.5.v20130313.jar
+DOWNLOAD|http://central.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.5.v20130313/npn-boot-1.1.5.v20130313.jar:lib/npn/npn-boot-1.1.5.v20130313.jar
 
 # The Bootlib
 BOOTLIB|-Xbootclasspath/p:lib/npn/npn-boot-1.1.5.v20130313.jar

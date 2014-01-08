@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.LinkedList;
+import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -31,10 +31,10 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer.ServerConnection;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.test.BlockheadServer.ServerConnection;
 import org.junit.Assert;
 
 public class ServerReadThread extends Thread
@@ -91,7 +91,7 @@ public class ServerReadThread extends Thread
                     conn.getParser().parse(buf);
                 }
 
-                LinkedList<WebSocketFrame> frames = conn.getIncomingFrames().getFrames();
+                Queue<WebSocketFrame> frames = conn.getIncomingFrames().getFrames();
                 WebSocketFrame frame;
                 while ((frame = frames.poll()) != null)
                 {

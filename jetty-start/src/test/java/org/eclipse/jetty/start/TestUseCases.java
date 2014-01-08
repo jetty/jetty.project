@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -30,7 +30,7 @@ import org.junit.Test;
  */
 public class TestUseCases
 {
-    private void assertUseCase(String homeName, String baseName, String assertName) throws Exception
+    private void assertUseCase(String homeName, String baseName, String assertName, String... cmdLineArgs) throws Exception
     {
         File homeDir = MavenTestingUtils.getTestResourceDir("usecases/" + homeName);
         File baseDir = MavenTestingUtils.getTestResourceDir("usecases/" + baseName);
@@ -39,6 +39,11 @@ public class TestUseCases
         List<String> cmdLine = new ArrayList<>();
         cmdLine.add("jetty.home=" + homeDir.getAbsolutePath());
         cmdLine.add("jetty.base=" + baseDir.getAbsolutePath());
+        // cmdLine.add("--debug");
+        for (String arg : cmdLineArgs)
+        {
+            cmdLine.add(arg);
+        }
         StartArgs args = main.processCommandLine(cmdLine);
         BaseHome baseHome = main.getBaseHome();
         ConfigurationAssert.assertConfiguration(baseHome,args,"usecases/" + assertName);
@@ -49,22 +54,40 @@ public class TestUseCases
     {
         assertUseCase("home","base.barebones","assert-barebones.txt");
     }
-    
+
     @Test
     public void testJMX() throws Exception
     {
         assertUseCase("home","base.jmx","assert-jmx.txt");
     }
-    
+
     @Test
     public void testWithSpdy() throws Exception
     {
-        assertUseCase("home","base.enable.spdy","assert-enable-spdy.txt");
+        assertUseCase("home","base.enable.spdy","assert-enable-spdy.txt","java.version=1.7.0_21");
     }
-    
+
     @Test
     public void testWithDatabase() throws Exception
     {
         assertUseCase("home","base.with.db","assert-with-db.txt");
+    }
+
+    @Test
+    public void testWithDeepExt() throws Exception
+    {
+        assertUseCase("home","base.with.ext","assert-with.ext.txt");
+    }
+    
+    @Test
+    public void testWithPropsBasic() throws Exception
+    {
+        assertUseCase("home","base.props.basic","assert-props.basic.txt","port=9090");
+    }
+    
+    @Test
+    public void testWithPropsAgent() throws Exception
+    {
+        assertUseCase("home","base.props.agent","assert-props.agent.txt","java.vm.specification.version=1.6");
     }
 }

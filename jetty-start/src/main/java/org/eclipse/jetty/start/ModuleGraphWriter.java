@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Collection;
 import java.util.List;
-import java.util.Properties;
 
 /**
  * Generate a graphviz dot graph of the modules found
@@ -48,7 +47,7 @@ public class ModuleGraphWriter
         colorModuleFont = "#888888";
     }
 
-    public void config(Properties props)
+    public void config(Props props)
     {
         String prefix = "jetty.graph.";
         colorModuleBg = getProperty(props,prefix + "color.module.bg",colorModuleBg);
@@ -59,9 +58,9 @@ public class ModuleGraphWriter
         colorModuleFont = getProperty(props,prefix + "color.font",colorModuleFont);
     }
 
-    private String getProperty(Properties props, String key, String defVal)
+    private String getProperty(Props props, String key, String defVal)
     {
-        String val = props.getProperty(key,defVal);
+        String val = props.getString(key,defVal);
         if (val == null)
         {
             return defVal;

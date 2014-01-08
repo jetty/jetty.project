@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -131,11 +131,15 @@ public abstract class AbstractEventDriver implements IncomingFrames, EventDriver
                 }
                 case OpCode.PING:
                 {
+                    if (LOG.isDebugEnabled())
+                    {
+                        LOG.debug("PING: {}",BufferUtil.toDetailString(frame.getPayload()));
+                    }
                     ByteBuffer pongBuf;
                     if (frame.hasPayload())
                     {
                         pongBuf = ByteBuffer.allocate(frame.getPayload().remaining());
-                        BufferUtil.put(frame.getPayload(),pongBuf);
+                        BufferUtil.put(frame.getPayload().slice(),pongBuf);
                         BufferUtil.flipToFlush(pongBuf,0);
                     }
                     else
@@ -148,6 +152,10 @@ public abstract class AbstractEventDriver implements IncomingFrames, EventDriver
                 }
                 case OpCode.PONG:
                 {
+                    if (LOG.isDebugEnabled())
+                    {
+                        LOG.debug("PONG: {}",BufferUtil.toDetailString(frame.getPayload()));
+                    }
                     onPong(frame.getPayload());
                     break;
                 }

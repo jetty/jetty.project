@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,6 +24,7 @@ import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
@@ -56,7 +57,7 @@ public abstract class AbstractTest
 
     protected Server server;
     protected SPDYClient.Factory clientFactory;
-    protected SPDYServerConnector connector;
+    protected ServerConnector connector;
 
     protected InetSocketAddress startServer(ServerSessionFrameListener listener) throws Exception
     {
@@ -93,7 +94,7 @@ public abstract class AbstractTest
         return new Server(pool);
     }
 
-    protected SPDYServerConnector newSPDYServerConnector(Server server, ServerSessionFrameListener listener)
+    protected ServerConnector newSPDYServerConnector(Server server, ServerSessionFrameListener listener)
     {
         return new SPDYServerConnector(server, listener);
     }
@@ -110,8 +111,8 @@ public abstract class AbstractTest
             QueuedThreadPool threadPool = new QueuedThreadPool();
             threadPool.setName(threadPool.getName() + "-client");
             clientFactory = newSPDYClientFactory(threadPool);
-            clientFactory.start();
         }
+        clientFactory.start();
 
         return clientFactory.newSPDYClient(version).connect(socketAddress, listener);
     }
