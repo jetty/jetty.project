@@ -963,7 +963,7 @@ public class JDBCSessionManager extends AbstractSessionManager
             long now = System.currentTimeMillis();
             connection.setAutoCommit(true);
             statement.setString(1, rowId); //rowId
-            statement.setString(2, session.getId()); //session id
+            statement.setString(2, session.getClusterId()); //session id
             statement.setString(3, session.getCanonicalContext()); //context path
             statement.setString(4, session.getVirtualHost()); //first vhost
             statement.setString(5, getSessionIdManager().getWorkerName());//my node id
@@ -1011,7 +1011,7 @@ public class JDBCSessionManager extends AbstractSessionManager
         {
             long now = System.currentTimeMillis();
             connection.setAutoCommit(true);
-            statement.setString(1, data.getId());
+            statement.setString(1, data.getClusterId());
             statement.setString(2, getSessionIdManager().getWorkerName());//my node id
             statement.setLong(3, data.getAccessed());//accessTime
             statement.setLong(4, data.getLastAccessedTime()); //lastAccessTime
