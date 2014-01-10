@@ -1,3 +1,5 @@
+jetty-9.1.2-SNAPSHOT
+
 jetty-9.1.1.v20140108 - 08 January 2014
  + 408912 JDBCSessionIdManager should allow configuration of schema
  + 410750 NPE Protection in Mongo save session
