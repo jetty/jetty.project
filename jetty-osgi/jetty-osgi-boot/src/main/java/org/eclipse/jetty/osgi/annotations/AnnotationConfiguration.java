@@ -25,6 +25,8 @@ import org.eclipse.jetty.annotations.AnnotationParser.Handler;
 import org.eclipse.jetty.annotations.ClassNameResolver;
 import org.eclipse.jetty.osgi.boot.OSGiWebappConstants;
 import org.eclipse.jetty.osgi.boot.utils.internal.PackageAdminServiceTracker;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.osgi.framework.Bundle;
@@ -37,12 +39,14 @@ import org.osgi.framework.Constants;
  */
 public class AnnotationConfiguration extends org.eclipse.jetty.annotations.AnnotationConfiguration
 {
+    private static final Logger LOG = Log.getLogger(org.eclipse.jetty.annotations.AnnotationConfiguration.class);
+    
     public class BundleParserTask extends ParserTask
     {
         
         public BundleParserTask (AnnotationParser parser, Set<? extends Handler>handlers, Resource resource, ClassNameResolver resolver)
         {
-           super(parser, handlers, resource, resolver);
+            super(parser, handlers, resource, resolver);
         }
 
         public Void call() throws Exception
@@ -51,7 +55,11 @@ public class AnnotationConfiguration extends org.eclipse.jetty.annotations.Annot
             {
                 org.eclipse.jetty.osgi.annotations.AnnotationParser osgiAnnotationParser = (org.eclipse.jetty.osgi.annotations.AnnotationParser)_parser;
                 Bundle bundle = osgiAnnotationParser.getBundle(_resource);
+                if (_stat != null)
+                    _stat.start();
                 osgiAnnotationParser.parse(_handlers, bundle,  _resolver); 
+                if (_stat != null)
+                    _stat.end();
             }
             return null;
         }
@@ -178,7 +186,12 @@ public class AnnotationConfiguration extends org.eclipse.jetty.annotations.Annot
 
         ClassNameResolver classNameResolver = createClassNameResolver(context);
         if (_parserTasks != null)
-            _parserTasks.add(new BundleParserTask(parser, handlers, bundleRes, classNameResolver));
+        {
+            BundleParserTask task = new BundleParserTask(parser, handlers, bundleRes, classNameResolver);
+            _parserTasks.add(task);
+            if (LOG.isDebugEnabled())
+                task.setStatistic(new TimeStatistic());
+        }
     }
     
     /**
