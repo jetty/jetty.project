@@ -643,6 +643,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                                 else
                                 {
                                     key.cancel();
+                                    channel.close();
                                 }
                             }
                         }
