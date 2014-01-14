@@ -42,10 +42,10 @@ public class Generator
     {
         id &= 0xFF_FF;
 
-        int remaining = content == null ? 0 : content.remaining();
+        int contentLength = content == null ? 0 : content.remaining();
         Result result = new Result(byteBufferPool, callback);
 
-        while (remaining > 0 || lastContent)
+        while (contentLength > 0 || lastContent)
         {
             ByteBuffer buffer = byteBufferPool.acquire(8, false);
             BufferUtil.clearToFill(buffer);
@@ -55,22 +55,26 @@ public class Generator
             buffer.put((byte)0x01);
             buffer.put((byte)frameType.code);
             buffer.putShort((short)id);
-            int length = Math.min(MAX_CONTENT_LENGTH, remaining);
+            int length = Math.min(MAX_CONTENT_LENGTH, contentLength);
             buffer.putShort((short)length);
             buffer.putShort((short)0);
             buffer.flip();
 
-            if (remaining == 0)
+            if (contentLength == 0)
                 break;
 
-            // Slice to content to avoid copying
+            // Slice the content to avoid copying
             int limit = content.limit();
             content.limit(content.position() + length);
             ByteBuffer slice = content.slice();
-            result = result.append(slice, recycle);
+            // Don't recycle the slice
+            result = result.append(slice, false);
             content.position(content.limit());
             content.limit(limit);
-            remaining -= length;
+            contentLength -= length;
+            // Recycle the content buffer if needed
+            if (recycle && contentLength == 0)
+                result = result.append(content, true);
         }
 
         return result;
