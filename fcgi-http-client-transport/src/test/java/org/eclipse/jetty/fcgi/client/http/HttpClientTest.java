@@ -74,7 +74,10 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             }
         });
 
-        for (int i = 0; i < 2; ++i)
+        int maxConnections = 256;
+        client.setMaxConnectionsPerDestination(maxConnections);
+
+        for (int i = 0; i < maxConnections + 1; ++i)
         {
             ContentResponse response = client.GET(scheme + "://localhost:" + connector.getLocalPort());
             Assert.assertNotNull(response);
@@ -269,15 +272,18 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             }
         });
 
-        ContentResponse response = client.POST(scheme + "://localhost:" + connector.getLocalPort() + "/?b=1")
-                .param(paramName, paramValue)
-                .content(new BytesContentProvider(content))
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+        for (int i = 0; i < 256; ++i)
+        {
+            ContentResponse response = client.POST(scheme + "://localhost:" + connector.getLocalPort() + "/?b=1")
+                    .param(paramName, paramValue)
+                    .content(new BytesContentProvider(content))
+                    .timeout(5, TimeUnit.SECONDS)
+                    .send();
 
-        Assert.assertNotNull(response);
-        Assert.assertEquals(200, response.getStatus());
-        Assert.assertArrayEquals(content, response.getContent());
+            Assert.assertNotNull(response);
+            Assert.assertEquals(200, response.getStatus());
+            Assert.assertArrayEquals(content, response.getContent());
+        }
     }
 
     @Test
