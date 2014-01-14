@@ -48,10 +48,20 @@ public class HttpClientTransportOverFCGI extends AbstractHttpClientTransport
         this.scriptRoot = scriptRoot;
     }
 
+    public boolean isMultiplexed()
+    {
+        return multiplexed;
+    }
+
+    public String getScriptRoot()
+    {
+        return scriptRoot;
+    }
+
     @Override
     public HttpDestination newHttpDestination(Origin origin)
     {
-        return multiplexed ? new MultiplexHttpDestinationOverFCGI(getHttpClient(), origin)
+        return isMultiplexed() ? new MultiplexHttpDestinationOverFCGI(getHttpClient(), origin)
                 : new HttpDestinationOverFCGI(getHttpClient(), origin);
     }
 
@@ -69,6 +79,6 @@ public class HttpClientTransportOverFCGI extends AbstractHttpClientTransport
 
     protected void customize(Request request, HttpFields fastCGIHeaders)
     {
-        fastCGIHeaders.put(FCGI.Headers.DOCUMENT_ROOT, scriptRoot);
+        fastCGIHeaders.put(FCGI.Headers.DOCUMENT_ROOT, getScriptRoot());
     }
 }

@@ -19,6 +19,7 @@
 package org.eclipse.jetty.fcgi.client.http;
 
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.concurrent.TimeUnit;
@@ -35,7 +36,7 @@ public class ExternalFastCGIServerTest
     @Ignore("Relies on an external server")
     public void testExternalFastCGIServer() throws Exception
     {
-        // Assume a FastCGI server is listening on port 9000
+        // Assume a FastCGI server is listening on localhost:9000
 
         HttpClient client = new HttpClient(new HttpClientTransportOverFCGI("/var/www/php-fcgi"), null);
         client.start();
@@ -47,6 +48,7 @@ public class ExternalFastCGIServerTest
 
         Assert.assertEquals(200, response.getStatus());
 
-        Files.write(Paths.get(System.getProperty("java.io.tmpdir"), "fcgi_response.html"), response.getContent(), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+        Path responseFile = Paths.get(System.getProperty("java.io.tmpdir"), "fcgi_response.html");
+        Files.write(responseFile, response.getContent(), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
     }
 }

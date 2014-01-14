@@ -14,6 +14,7 @@ import org.eclipse.jetty.fcgi.generator.Generator;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Jetty;
 
@@ -87,7 +88,7 @@ public class HttpSenderOverFCGI extends HttpSender
         }
         else
         {
-            Generator.Result noContentResult = generator.generateRequestContent(id, null, true, callback);
+            Generator.Result noContentResult = generator.generateRequestContent(id, BufferUtil.EMPTY_BUFFER, true, callback);
             getHttpChannel().flush(headersResult, noContentResult);
         }
     }
