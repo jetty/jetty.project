@@ -180,6 +180,7 @@ public class Flusher
                     // Has the stream been reset for this data frame ?
                     if (stream != null && stream.isReset() && frameBytes instanceof StandardSession.DataFrameBytes)
                     {
+                        // TODO: notify from within sync block !
                         frameBytes.failed(new StreamException(frameBytes.getStream().getId(),
                                 StreamStatus.INVALID_STREAM, "Stream: " + frameBytes.getStream() + " is reset!"));
                         continue;

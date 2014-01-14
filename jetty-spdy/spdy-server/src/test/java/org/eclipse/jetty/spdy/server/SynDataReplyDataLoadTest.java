@@ -57,12 +57,12 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.junit.Assert;
-import org.junit.Test;
 import org.junit.Ignore;
+import org.junit.Test;
 
 public class SynDataReplyDataLoadTest extends AbstractTest
 {
-    private static final int TIMEOUT = 60000;
+    private static final int TIMEOUT = 60 * 1000;
     private static final Logger logger = Log.getLogger(SynDataReplyDataLoadTest.class);
 
     @Test(timeout = TIMEOUT)
@@ -104,14 +104,20 @@ public class SynDataReplyDataLoadTest extends AbstractTest
                 };
             }
         };
+
+        short spdyVersion = SPDY.V2;
+        long idleTimeout = 2 * TIMEOUT;
+
         server = newServer();
         connector = new ServerConnector(server, null, null, serverBufferPool, 1,
-                Runtime.getRuntime().availableProcessors() / 2, new SPDYServerConnectionFactory(SPDY.V3, listener));
+                Math.max(1, Runtime.getRuntime().availableProcessors() / 2),
+                new SPDYServerConnectionFactory(spdyVersion, listener));
+        connector.setIdleTimeout(idleTimeout);
 
         QueuedThreadPool clientExecutor = new QueuedThreadPool();
         clientExecutor.setName(clientExecutor.getName() + "-client");
-        clientFactory = new SPDYClient.Factory(clientExecutor, null, clientBufferPool, null, 30000);
-        final Session session = startClient(SPDY.V3, startServer(SPDY.V3, listener), null);
+        clientFactory = new SPDYClient.Factory(clientExecutor, null, clientBufferPool, null, idleTimeout);
+        final Session session = startClient(spdyVersion, startServer(spdyVersion, listener), null);
 
         final Thread testThread = Thread.currentThread();
         Runnable timeout = new Runnable()
@@ -162,7 +168,7 @@ public class SynDataReplyDataLoadTest extends AbstractTest
                 }
             });
         }
-        Scheduler.Task timeoutTask = clientFactory.getScheduler().schedule(timeout, TIMEOUT / 2, TimeUnit.MILLISECONDS);
+        Scheduler.Task syncTimeoutTask = clientFactory.getScheduler().schedule(timeout, TIMEOUT / 2, TimeUnit.MILLISECONDS);
         {
             long begin = System.nanoTime();
             List<Future<Object>> futures = threadPool.invokeAll(tasks);
@@ -172,7 +178,7 @@ public class SynDataReplyDataLoadTest extends AbstractTest
             long end = System.nanoTime();
             System.err.printf("SYN+GET+DATA+GET completed in %d ms%n", TimeUnit.NANOSECONDS.toMillis(end - begin));
         }
-        timeoutTask.cancel();
+        syncTimeoutTask.cancel();
 
         tasks.clear();
         for (int i = 0; i < count; ++i)
@@ -187,7 +193,7 @@ public class SynDataReplyDataLoadTest extends AbstractTest
                 }
             });
         }
-        timeoutTask = clientFactory.getScheduler().schedule(timeout, TIMEOUT / 2, TimeUnit.MILLISECONDS);
+        Scheduler.Task asyncTimeoutTask = clientFactory.getScheduler().schedule(timeout, TIMEOUT / 2, TimeUnit.MILLISECONDS);
         {
             long begin = System.nanoTime();
             List<Future<Object>> futures = threadPool.invokeAll(tasks);
@@ -197,7 +203,8 @@ public class SynDataReplyDataLoadTest extends AbstractTest
             long end = System.nanoTime();
             System.err.printf("SYN+COMPLETED+DATA completed in %d ms%n", TimeUnit.NANOSECONDS.toMillis(end - begin));
         }
-        timeoutTask.cancel();
+        asyncTimeoutTask.cancel();
+
         threadPool.shutdown();
 
         Assert.assertEquals(0, leaks.get());
@@ -206,7 +213,7 @@ public class SynDataReplyDataLoadTest extends AbstractTest
     private void synCompletedData(Session session, Fields headers, int iterations) throws Exception
     {
         final Map<Integer, Integer> counter = new ConcurrentHashMap<>(iterations);
-        final CountDownLatch latch = new CountDownLatch(2 * iterations);
+        final CountDownLatch requestsLatch = new CountDownLatch(2 * iterations);
         for (int i = 0; i < iterations; ++i)
         {
             final AtomicInteger count = new AtomicInteger(2);
@@ -218,7 +225,7 @@ public class SynDataReplyDataLoadTest extends AbstractTest
                         public void onReply(Stream stream, ReplyInfo replyInfo)
                         {
                             Assert.assertEquals(2, count.getAndDecrement());
-                            latch.countDown();
+                            requestsLatch.countDown();
                         }
 
                         @Override
@@ -230,7 +237,7 @@ public class SynDataReplyDataLoadTest extends AbstractTest
                             {
                                 Assert.assertEquals(1, count.getAndDecrement());
                                 counter.remove(index);
-                                latch.countDown();
+                                requestsLatch.countDown();
                             }
                         }
                     }, new Promise.Adapter<Stream>()
@@ -244,7 +251,7 @@ public class SynDataReplyDataLoadTest extends AbstractTest
                     }
             );
         }
-        Assert.assertTrue(latch.await(iterations, TimeUnit.SECONDS));
+        Assert.assertTrue(requestsLatch.await(iterations, TimeUnit.SECONDS));
         Assert.assertTrue(counter.toString(), counter.isEmpty());
     }
 

@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.spdy.server;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Queue;
@@ -180,6 +181,13 @@ public class SPDYServerConnectionFactory extends AbstractConnectionFactory
     public Collection<Session> getSessions()
     {
         return Collections.unmodifiableCollection(sessions);
+    }
+
+    @Override
+    protected void dumpThis(Appendable out) throws IOException
+    {
+        super.dumpThis(out);
+        dump(out, "", sessions);
     }
 
     private class ServerSPDYConnection extends SPDYConnection implements Runnable

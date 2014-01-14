@@ -19,7 +19,6 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
-
 import javax.servlet.ReadListener;
 import javax.servlet.ServletInputStream;
 
@@ -30,37 +29,19 @@ import org.eclipse.jetty.util.log.Logger;
 
 /**
  * <p>{@link HttpInput} provides an implementation of {@link ServletInputStream} for {@link HttpChannel}.</p>
- * <p>{@link HttpInput} holds a queue of items passed to it by calls to {@link #content(T)}.</p>
- * <p>{@link HttpInput} stores the items directly; if the items contain byte buffers, it does not copy them
- * but simply holds references to the item, thus the caller must organize for those buffers to valid while
- * held by this class.</p>
- * <p>To assist the caller, subclasses may override methods {@link #onContentQueued(T)},
- * {@link #onContentConsumed(T)} and {@link #onAllContentConsumed()} that can be implemented so that the
- * caller will know when buffers are queued and consumed.</p>
- */
-/**
- * @author gregw
- *
- * @param <T>
- */
-/**
- * @author gregw
- *
- * @param <T>
  */
 public abstract class HttpInput<T> extends ServletInputStream implements Runnable
 {
     private final static Logger LOG = Log.getLogger(HttpInput.class);
 
     private final byte[] _oneByteBuffer = new byte[1];
-    private HttpChannelState _channelState;
-    private Throwable _onError;
-    private ReadListener _listener;
-    private boolean _notReady;
-
-    protected State _state = BLOCKING;
-    private State _eof=null;
     private final Object _lock;
+    private HttpChannelState _channelState;
+    private ReadListener _listener;
+    private Throwable _onError;
+    private boolean _notReady;
+    private State _state = BLOCKING;
+    private State _eof;
     private long _contentRead;
 
     protected HttpInput()
@@ -70,7 +51,15 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
 
     protected HttpInput(Object lock)
     {
-        _lock=lock==null?this:lock;
+        _lock = lock == null ? this : lock;
+    }
+
+    public void init(HttpChannelState state)
+    {
+        synchronized (lock())
+        {
+            _channelState = state;
+        }
     }
 
     public final Object lock()
@@ -89,43 +78,6 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
         }
     }
 
-    /**
-     * Access the next content to be consumed from.   Returning the next item does not consume it
-     * and it may be returned multiple times until it is consumed.   Calls to {@link #get(Object, byte[], int, int)}
-     * or {@link #consume(Object, int)} are required to consume data from the content.
-     * @return Content or null if none available.
-     * @throws IOException
-     */
-    protected abstract T nextContent() throws IOException;
-
-    /**
-     * A convenience method to call nextContent and to check the return value, which if null then the
-     * a check is made for EOF and the state changed accordingly.
-     * @see #nextContent()
-     * @return Content or null if none available.
-     * @throws IOException
-     */
-    protected T getNextContent() throws IOException
-    {
-        T content=nextContent();
-
-        if (content==null && _eof!=null)
-        {
-            LOG.debug("{} eof {}",this,_eof);
-            _state=_eof;
-            _eof=null;
-        }
-
-        return content;
-    }
-
-    @Override
-    public int read() throws IOException
-    {
-        int read = read(_oneByteBuffer, 0, 1);
-        return read < 0 ? -1 : 0xff & _oneByteBuffer[0];
-    }
-
     @Override
     public int available()
     {
@@ -141,6 +93,13 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
         {
             throw new RuntimeIOException(e);
         }
+    }
+
+    @Override
+    public int read() throws IOException
+    {
+        int read = read(_oneByteBuffer, 0, 1);
+        return read < 0 ? -1 : 0xff & _oneByteBuffer[0];
     }
 
     @Override
@@ -171,6 +130,36 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
         return l;
     }
     
+    /**
+     * A convenience method to call nextContent and to check the return value, which if null then the
+     * a check is made for EOF and the state changed accordingly.
+     * @see #nextContent()
+     * @return Content or null if none available.
+     * @throws IOException
+     */
+    protected T getNextContent() throws IOException
+    {
+        T content=nextContent();
+
+        if (content==null && _eof!=null)
+        {
+            LOG.debug("{} eof {}",this,_eof);
+            _state=_eof;
+            _eof=null;
+        }
+
+        return content;
+    }
+
+    /**
+     * Access the next content to be consumed from.   Returning the next item does not consume it
+     * and it may be returned multiple times until it is consumed.   Calls to {@link #get(Object, byte[], int, int)}
+     * or {@link #consume(Object, int)} are required to consume data from the content.
+     * @return Content or null if none available.
+     * @throws IOException
+     */
+    protected abstract T nextContent() throws IOException;
+
     protected abstract int remaining(T item);
 
     protected abstract int get(T item, byte[] buffer, int offset, int length);
@@ -178,10 +167,15 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
     protected abstract void consume(T item, int length);
 
     protected abstract void blockForContent() throws IOException;
+    
+    /** Add some content to the input stream
+     * @param item
+     */
+    public abstract void content(T item);
 
     protected boolean onAsyncRead()
     {
-        if (_listener==null)
+        if (_listener == null)
             return false;
         _channelState.onReadPossible();
         return true;
@@ -194,11 +188,6 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
             return _contentRead;
         }
     }
-    
-    /** Add some content to the input stream
-     * @param item
-     */
-    public abstract void content(T item);
 
 
     /** This method should be called to signal to the HttpInput
@@ -442,13 +431,4 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
             return "EOF";
         }
     };
-
-    public void init(HttpChannelState state)
-    {
-        synchronized (lock())
-        {
-            _channelState=state;
-        }
-    }
-
 }
