@@ -20,7 +20,6 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
-
 import javax.servlet.ServletInputStream;
 
 import org.eclipse.jetty.util.ArrayQueue;
@@ -44,8 +43,34 @@ public abstract class QueuedHttpInput<T> extends HttpInput<T>
     private final ArrayQueue<T> _inputQ = new ArrayQueue<>(lock());
     
     public QueuedHttpInput()
-    {}
+    {
+    }
 
+    /** Add some content to the input stream
+     * @param item
+     */
+    public void content(T item)
+    {
+        // The buffer is not copied here.  This relies on the caller not recycling the buffer
+        // until the it is consumed.  The onContentConsumed and onAllContentConsumed() callbacks are 
+        // the signals to the caller that the buffers can be recycled.
+        
+        synchronized (lock())
+        {
+            boolean empty=_inputQ.isEmpty();
+            
+            _inputQ.add(item);
+
+            if (empty)
+            {
+                if (!onAsyncRead())
+                    lock().notify();
+            }
+            
+            LOG.debug("{} queued {}", this, item);
+        }
+    }
+    
     public void recycle()
     {
         synchronized (lock())
@@ -84,13 +109,11 @@ public abstract class QueuedHttpInput<T> extends HttpInput<T>
         return item;
     }
     
-    protected abstract void onContentConsumed(T item);
-
     protected void blockForContent() throws IOException
     {
         synchronized (lock())
         {
-            while (_inputQ.isEmpty() && !_state.isEOF())
+            while (_inputQ.isEmpty() && !isFinished())
             {
                 try
                 {
@@ -105,40 +128,13 @@ public abstract class QueuedHttpInput<T> extends HttpInput<T>
         }
     }
 
+    protected abstract void onContentConsumed(T item);
 
-    /* ------------------------------------------------------------ */
     /** Called by this HttpInput to signal all available content has been consumed
      */
     protected void onAllContentConsumed()
     {
     }
-
-    /* ------------------------------------------------------------ */
-    /** Add some content to the input stream
-     * @param item
-     */
-    public void content(T item)
-    {
-        // The buffer is not copied here.  This relies on the caller not recycling the buffer
-        // until the it is consumed.  The onContentConsumed and onAllContentConsumed() callbacks are 
-        // the signals to the caller that the buffers can be recycled.
-        
-        synchronized (lock())
-        {
-            boolean empty=_inputQ.isEmpty();
-            
-            _inputQ.add(item);
-
-            if (empty)
-            {
-                if (!onAsyncRead())
-                    lock().notify();
-            }
-            
-            LOG.debug("{} queued {}", this, item);
-        }
-    }
-    
 
     public void earlyEOF()
     {
@@ -157,5 +153,4 @@ public abstract class QueuedHttpInput<T> extends HttpInput<T>
             lock().notify();
         }
     }
-
 }
