@@ -86,6 +86,7 @@ public class ClientGenerator extends Generator
         // Generate the FCGI_BEGIN_REQUEST frame
         beginRequestBuffer.putInt(0x01_01_00_00 + request);
         beginRequestBuffer.putInt(0x00_08_00_00);
+        // Hardcode RESPONDER role and KEEP_ALIVE flag
         beginRequestBuffer.putLong(0x00_01_01_00_00_00_00_00L);
         beginRequestBuffer.flip();
 

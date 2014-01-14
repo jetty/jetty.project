@@ -115,8 +115,9 @@ public class ServerFCGIConnection extends AbstractConnection
     private class ServerListener implements ServerParser.Listener
     {
         @Override
-        public void onStart(int request, FCGI.Role role)
+        public void onStart(int request, FCGI.Role role, int flags)
         {
+            // TODO: handle flags
             HttpChannelOverFCGI channel = new HttpChannelOverFCGI(connector, configuration, getEndPoint(),
                     new HttpTransportOverFCGI(connector.getByteBufferPool(), flusher, request), new ByteBufferQueuedHttpInput());
             HttpChannelOverFCGI existing = channels.putIfAbsent(request, channel);

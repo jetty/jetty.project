@@ -76,7 +76,7 @@ public class BeginRequestContentParser extends ContentParser
                     if (buffer.remaining() >= 5)
                     {
                         buffer.position(buffer.position() + 5);
-                        onStart(getRequest(), role);
+                        onStart();
                         reset();
                         return true;
                     }
@@ -92,7 +92,7 @@ public class BeginRequestContentParser extends ContentParser
                     buffer.get();
                     if (++cursor == 5)
                     {
-                        onStart(getRequest(), role);
+                        onStart();
                         reset();
                         return true;
                     }
@@ -107,9 +107,9 @@ public class BeginRequestContentParser extends ContentParser
         return false;
     }
 
-    private void onStart(int request, int role)
+    private void onStart()
     {
-        listener.onStart(request, FCGI.Role.from(role));
+        listener.onStart(getRequest(), FCGI.Role.from(role), flags);
     }
 
     private void reset()
