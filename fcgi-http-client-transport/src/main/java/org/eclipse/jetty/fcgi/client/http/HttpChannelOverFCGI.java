@@ -27,11 +27,15 @@ import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.fcgi.generator.Flusher;
 import org.eclipse.jetty.fcgi.generator.Generator;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.IdleTimeout;
 
 public class HttpChannelOverFCGI extends HttpChannel
 {
+    private final HttpConnectionOverFCGI connection;
     private final Flusher flusher;
     private final int request;
     private final HttpSenderOverFCGI sender;
@@ -42,6 +46,7 @@ public class HttpChannelOverFCGI extends HttpChannel
     public HttpChannelOverFCGI(final HttpConnectionOverFCGI connection, Flusher flusher, int request, long idleTimeout)
     {
         super(connection.getHttpDestination());
+        this.connection = connection;
         this.flusher = flusher;
         this.request = request;
         this.sender = new HttpSenderOverFCGI(this);
@@ -121,6 +126,13 @@ public class HttpChannelOverFCGI extends HttpChannel
     {
         super.exchangeTerminated(result);
         idle.onClose();
+        boolean close = result.isFailed();
+        HttpFields responseHeaders = result.getResponse().getHeaders();
+        close |= responseHeaders.contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
+        if (close)
+            connection.close();
+        else
+            connection.release();
     }
 
     protected void flush(Generator.Result... results)

@@ -24,11 +24,13 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpConnection;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpExchange;
+import org.eclipse.jetty.client.PoolingHttpDestination;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
@@ -49,6 +51,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
 
     private final LinkedList<Integer> requests = new LinkedList<>();
     private final Map<Integer, HttpChannelOverFCGI> channels = new ConcurrentHashMap<>();
+    private final AtomicBoolean closed = new AtomicBoolean();
     private final Flusher flusher;
     private final HttpDestination destination;
     private final Delegate delegate;
@@ -153,14 +156,28 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
         return false;
     }
 
+    public void release()
+    {
+        if (destination instanceof PoolingHttpDestination)
+        {
+            @SuppressWarnings("unchecked")
+            PoolingHttpDestination<HttpConnectionOverFCGI> fcgiDestination =
+                    (PoolingHttpDestination<HttpConnectionOverFCGI>)destination;
+            fcgiDestination.release(this);
+        }
+    }
+
     @Override
     public void close()
     {
-        getHttpDestination().close(this);
-        getEndPoint().shutdownOutput();
-        LOG.debug("{} oshut", this);
-        getEndPoint().close();
-        LOG.debug("{} closed", this);
+        if (closed.compareAndSet(false, true))
+        {
+            getHttpDestination().close(this);
+            getEndPoint().shutdownOutput();
+            LOG.debug("{} oshut", this);
+            getEndPoint().close();
+            LOG.debug("{} closed", this);
+        }
     }
 
     private int acquireRequest()
