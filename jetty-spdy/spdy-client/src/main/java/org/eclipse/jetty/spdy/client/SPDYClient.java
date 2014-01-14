@@ -392,6 +392,13 @@ public class SPDYClient
             return Collections.unmodifiableCollection(sessions);
         }
 
+        @Override
+        protected void dumpThis(Appendable out) throws IOException
+        {
+            super.dumpThis(out);
+            dump(out, "", sessions);
+        }
+
         private class ClientSelectorManager extends SelectorManager
         {
             private ClientSelectorManager(Executor executor, Scheduler scheduler)
