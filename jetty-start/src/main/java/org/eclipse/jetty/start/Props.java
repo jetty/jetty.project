@@ -98,8 +98,9 @@ public final class Props implements Iterable<Prop>
 
         if (props.isEmpty())
         {
-            // This is a stupid programming error, we should have something, even system properties
-            throw new PropsException("Props is empty: no properties declared!?");
+            // nothing to expand
+            // this situation can occur from --add-to-startd on a new blank base directory
+            return str;
         }
 
         Pattern pat = Pattern.compile("(?<=[^$]|^)(\\$\\{[^}]*\\})");
