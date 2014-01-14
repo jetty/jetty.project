@@ -60,7 +60,7 @@ public class ConfigurationAssert
         {
             if (line.startsWith("XML|"))
             {
-                expectedXmls.add(getValue(line));
+                expectedXmls.add(FS.separators(getValue(line)));
             }
         }
         List<String> actualXmls = new ArrayList<>();
@@ -76,7 +76,7 @@ public class ConfigurationAssert
         {
             if (line.startsWith("LIB|"))
             {
-                expectedLibs.add(getValue(line));
+                expectedLibs.add(FS.separators(getValue(line)));
             }
         }
         List<String> actualLibs = new ArrayList<>();
