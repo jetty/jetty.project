@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,6 +24,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
@@ -56,9 +58,14 @@ public abstract class WebSocketHandler extends HandlerWrapper
 
     public WebSocketHandler()
     {
+        this(new MappedByteBufferPool());
+    }
+    
+    public WebSocketHandler(ByteBufferPool bufferPool)
+    {
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
         configurePolicy(policy);
-        webSocketFactory = new WebSocketServerFactory(policy);
+        webSocketFactory = new WebSocketServerFactory(policy, bufferPool);
         addBean(webSocketFactory);
     }
 

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,11 +18,15 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -31,9 +35,10 @@ import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer;
-import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer.ServerConnection;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.frames.TextFrame;
+import org.eclipse.jetty.websocket.common.io.FutureWriteCallback;
+import org.eclipse.jetty.websocket.common.test.BlockheadServer;
+import org.eclipse.jetty.websocket.common.test.BlockheadServer.ServerConnection;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -65,7 +70,7 @@ public class WebSocketClientTest
         client.start();
         try
         {
-            TrackingSocket cliSock = new TrackingSocket();
+            JettyTrackingSocket cliSock = new JettyTrackingSocket();
 
             client.getPolicy().setIdleTimeout(10000);
 
@@ -90,7 +95,7 @@ public class WebSocketClientTest
         client.start();
         try
         {
-            TrackingSocket cliSock = new TrackingSocket();
+            JettyTrackingSocket cliSock = new JettyTrackingSocket();
 
             client.getPolicy().setIdleTimeout(10000);
 
@@ -127,13 +132,54 @@ public class WebSocketClientTest
     }
 
     @Test
+    public void testBasicEcho_UsingCallback() throws Exception
+    {
+        WebSocketClient client = new WebSocketClient();
+        client.start();
+        try
+        {
+            JettyTrackingSocket cliSock = new JettyTrackingSocket();
+
+            client.getPolicy().setIdleTimeout(10000);
+
+            URI wsUri = server.getWsUri();
+            ClientUpgradeRequest request = new ClientUpgradeRequest();
+            request.setSubProtocols("echo");
+            Future<Session> future = client.connect(cliSock,wsUri,request);
+
+            final ServerConnection srvSock = server.accept();
+            srvSock.upgrade();
+
+            Session sess = future.get(500,TimeUnit.MILLISECONDS);
+            Assert.assertThat("Session",sess,notNullValue());
+            Assert.assertThat("Session.open",sess.isOpen(),is(true));
+            Assert.assertThat("Session.upgradeRequest",sess.getUpgradeRequest(),notNullValue());
+            Assert.assertThat("Session.upgradeResponse",sess.getUpgradeResponse(),notNullValue());
+
+            cliSock.assertWasOpened();
+            cliSock.assertNotClosed();
+
+            Assert.assertThat("client.connectionManager.sessions.size",client.getConnectionManager().getSessions().size(),is(1));
+
+            FutureWriteCallback callback = new FutureWriteCallback();
+
+            cliSock.getSession().getRemote().sendString("Hello World!",callback);
+            callback.get(1,TimeUnit.SECONDS);
+        }
+        finally
+        {
+            client.stop();
+        }
+    }
+
+    @Test
     public void testBasicEcho_FromServer() throws Exception
     {
         WebSocketClient client = new WebSocketClient();
         client.start();
         try
         {
-            TrackingSocket wsocket = new TrackingSocket();
+            JettyTrackingSocket wsocket = new JettyTrackingSocket();
             Future<Session> future = client.connect(wsocket,server.getWsUri());
 
             // Server
@@ -148,7 +194,7 @@ public class WebSocketClientTest
             Assert.assertThat("Session.upgradeResponse",sess.getUpgradeResponse(),notNullValue());
 
             // Have server send initial message
-            srvSock.write(WebSocketFrame.text("Hello World"));
+            srvSock.write(new TextFrame().setPayload("Hello World"));
 
             // Verify connect
             future.get(500,TimeUnit.MILLISECONDS);
@@ -170,7 +216,7 @@ public class WebSocketClientTest
         fact.start();
         try
         {
-            TrackingSocket wsocket = new TrackingSocket();
+            JettyTrackingSocket wsocket = new JettyTrackingSocket();
 
             URI wsUri = server.getWsUri();
             Future<Session> future = fact.connect(wsocket,wsUri);
@@ -210,7 +256,7 @@ public class WebSocketClientTest
         {
             int bufferSize = 512;
 
-            TrackingSocket wsocket = new TrackingSocket();
+            JettyTrackingSocket wsocket = new JettyTrackingSocket();
 
             URI wsUri = server.getWsUri();
             Future<Session> future = factSmall.connect(wsocket,wsUri);
@@ -261,10 +307,10 @@ public class WebSocketClientTest
             Session sess = future.get(500,TimeUnit.MILLISECONDS);
             Assert.assertThat("Session",sess,notNullValue());
             Assert.assertThat("Session.open",sess.isOpen(),is(true));
-            
+
             // Create string that is larger than default size of 64k
             // but smaller than maxMessageSize of 100k
-            byte buf[] = new byte[80*1024];
+            byte buf[] = new byte[80 * 1024];
             Arrays.fill(buf,(byte)'x');
             String msg = StringUtil.toUTF8String(buf,0,buf.length);
 
@@ -290,7 +336,7 @@ public class WebSocketClientTest
         fact.start();
         try
         {
-            TrackingSocket wsocket = new TrackingSocket();
+            JettyTrackingSocket wsocket = new JettyTrackingSocket();
 
             URI wsUri = server.getWsUri().resolve("/test?snack=cashews&amount=handful&brand=off");
             Future<Session> future = fact.connect(wsocket,wsUri);
@@ -306,15 +352,15 @@ public class WebSocketClientTest
             UpgradeRequest req = session.getUpgradeRequest();
             Assert.assertThat("Upgrade Request",req,notNullValue());
 
-            Map<String, String[]> parameterMap = req.getParameterMap();
+            Map<String, List<String>> parameterMap = req.getParameterMap();
             Assert.assertThat("Parameter Map",parameterMap,notNullValue());
 
-            Assert.assertThat("Parameter[snack]",parameterMap.get("snack"),is(new String[]
-            { "cashews" }));
-            Assert.assertThat("Parameter[amount]",parameterMap.get("amount"),is(new String[]
-            { "handful" }));
-            Assert.assertThat("Parameter[brand]",parameterMap.get("brand"),is(new String[]
-            { "off" }));
+            Assert.assertThat("Parameter[snack]",parameterMap.get("snack"),is(Arrays.asList(new String[]
+            { "cashews" })));
+            Assert.assertThat("Parameter[amount]",parameterMap.get("amount"),is(Arrays.asList(new String[]
+            { "handful" })));
+            Assert.assertThat("Parameter[brand]",parameterMap.get("brand"),is(Arrays.asList(new String[]
+            { "off" })));
 
             Assert.assertThat("Parameter[cost]",parameterMap.get("cost"),nullValue());
         }

@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.0.7-SNAPSHOT</version>
+    <version>9.1.2-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-jaas</artifactId>
@@ -13,9 +13,6 @@
   </properties>
   <build>
     <plugins>
-<!--
-  COMMENTED OUT UNTIL CORRECT CONFIG IS FOUND FOR Export uses clauses
--->
       <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
@@ -29,7 +26,7 @@
               <instructions>
                <_versionpolicy> </_versionpolicy>
                <Import-Package>javax.sql.*,javax.security.*,javax.naming.*,
-               javax.servlet.*;version="2.6.0",
+               javax.servlet.*;version="[2.6.0,3.2)",
                *</Import-Package>
               </instructions>
             </configuration>

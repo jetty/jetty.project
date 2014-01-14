@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,7 +21,7 @@ package org.eclipse.jetty.websocket.api.extensions;
 /**
  * Interface for WebSocket Extensions.
  * <p>
- * That work is performed by the two {@link FrameHandler} implementations for incoming and outgoing frame handling.
+ * That {@link Frame}s are passed through the Extension via the {@link IncomingFrames} and {@link OutgoingFrames} interfaces
  */
 public interface Extension extends IncomingFrames, OutgoingFrames
 {
@@ -67,19 +67,6 @@ public interface Extension extends IncomingFrames, OutgoingFrames
     public abstract boolean isRsv3User();
 
     /**
-     * Used to indicate that the extension works as a decoder of TEXT Data Frames.
-     * <p>
-     * This is used to adjust validation during parsing/generating, as per spec TEXT Data Frames can only contain UTF8 encoded String data.
-     * <p>
-     * Example: a compression extension will process a compressed set of text data, the parser/generator should no longer be concerned about the validity of the
-     * TEXT Data Frames as this is now the responsibility of the extension.
-     * 
-     * @return true if extension will process TEXT Data Frames, false if extension makes no modifications of TEXT Data Frames. If false, the parser/generator is
-     *         now free to validate the conformance to spec of TEXT Data Frames.
-     */
-    public abstract boolean isTextDataDecoder();
-
-    /**
      * Set the next {@link IncomingFrames} to call in the chain.
      * 
      * @param nextIncoming
@@ -94,4 +81,9 @@ public interface Extension extends IncomingFrames, OutgoingFrames
      *            the next outgoing extension
      */
     public void setNextOutgoingFrames(OutgoingFrames nextOutgoing);
+    
+    // TODO: Extension should indicate if it requires boundary of fragments to be preserved
+    
+    // TODO: Extension should indicate if it uses the Extension data field of frame for its own reasons.
+    
 }

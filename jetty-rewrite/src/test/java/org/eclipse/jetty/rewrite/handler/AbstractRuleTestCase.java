@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -85,7 +85,7 @@ public abstract class AbstractRuleTestCase
         _server.start();
 
         _latch=new CountDownLatch(1);
-        _connector.executeRequest("GET / HTTP/1.0\n\n");
+        _connector.executeRequest("GET / HTTP/1.0\nCookie: set=already\n\n");
         
         while (_response==null)
             Thread.sleep(1);
@@ -98,7 +98,7 @@ public abstract class AbstractRuleTestCase
         _request = null;
         _response = null;
         _latch=new CountDownLatch(1);
-        _connector.executeRequest("GET / HTTP/1.0\n\n");
+        _connector.executeRequest("GET / HTTP/1.0\nCookie: set=already\n\n");
         
         while (_response==null)
             Thread.yield();

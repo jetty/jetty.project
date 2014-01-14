@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,11 +28,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.spdy.api.ReplyInfo;
+import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.client.SPDYClient;
+import org.eclipse.jetty.spdy.http.HTTPSPDYHeader;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
@@ -40,12 +42,12 @@ import org.junit.Assume;
 import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore("Reliance on external server fails test")
 public class SSLExternalServerTest extends AbstractHTTPSPDYTest
 {
     public SSLExternalServerTest(short version)
     {
-        super(version);
+        // Google Servers do not support SPDY/2 anymore
+        super(SPDY.V3);
     }
 
     @Override
@@ -58,7 +60,8 @@ public class SSLExternalServerTest extends AbstractHTTPSPDYTest
         return new SPDYClient.Factory(threadPool, null, sslContextFactory, 30000);
     }
 
-    @Test(timeout=5000)
+    @Test
+    @Ignore("Relies on an external server")
     public void testExternalServer() throws Exception
     {
         String host = "encrypted.google.com";
@@ -94,7 +97,7 @@ public class SSLExternalServerTest extends AbstractHTTPSPDYTest
                 Fields.Field versionHeader = headers.get(HTTPSPDYHeader.STATUS.name(version));
                 if (versionHeader != null)
                 {
-                    Matcher matcher = Pattern.compile("(\\d{3}).*").matcher(versionHeader.value());
+                    Matcher matcher = Pattern.compile("(\\d{3}).*").matcher(versionHeader.getValue());
                     if (matcher.matches() && Integer.parseInt(matcher.group(1)) < 400)
                         latch.countDown();
                 }

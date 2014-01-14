@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -36,8 +36,10 @@ import javax.net.ssl.TrustManagerFactory;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.server.HttpServerTestBase;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -61,6 +63,9 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
     @Override
     public void testFullMethod() throws Exception
     {
+    	// Don't run on Windows (buggy JVM)
+    	Assume.assumeTrue(!OS.IS_WINDOWS);
+    	
         try
         {
             super.testFullMethod();
@@ -74,6 +79,8 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
     @Override
     public void testFullURI() throws Exception
     {
+    	// Don't run on Windows (buggy JVM)
+    	Assume.assumeTrue(!OS.IS_WINDOWS);
         try
         {
             super.testFullURI();

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
@@ -78,7 +79,7 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
             OutputStream output = socket.getOutputStream();
             BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-            output.write(request.getBytes("UTF-8"));
+            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             // Expect 200 OK from the CONNECT request
@@ -98,7 +99,7 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
                         "GET /echo HTTP/1.1\r\n" +
                                 "Host: " + hostPort + "\r\n" +
                                 "\r\n";
-                output.write(request.getBytes("UTF-8"));
+                output.write(request.getBytes(StandardCharsets.UTF_8));
                 output.flush();
 
                 response = readResponse(input);
@@ -121,7 +122,7 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
             OutputStream output = socket.getOutputStream();
             BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-            output.write(request.getBytes("UTF-8"));
+            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             // Expect 200 OK from the CONNECT request
@@ -145,7 +146,7 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
                             "Content-Length: 5\r\n" +
                             "\r\n" +
                             "HELLO";
-                    output.write(request.getBytes("UTF-8"));
+                    output.write(request.getBytes(StandardCharsets.UTF_8));
                     output.flush();
 
                     response = readResponse(input);

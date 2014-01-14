@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -129,10 +129,10 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
             jobs.offer(noop);
 
         // try to jobs complete naturally for half our stop time
-        long stopby = System.currentTimeMillis() + timeout / 2;
+        long stopby = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeout) / 2;
         for (Thread thread : _threads)
         {
-            long canwait = stopby - System.currentTimeMillis();
+            long canwait = TimeUnit.NANOSECONDS.toMillis(stopby - System.nanoTime());
             if (canwait > 0)
                 thread.join(canwait);
         }
@@ -145,10 +145,10 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
                 thread.interrupt();
 
         // wait again for the other half of our stop time
-        stopby = System.currentTimeMillis() + timeout / 2;
+        stopby = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeout) / 2;
         for (Thread thread : _threads)
         {
-            long canwait = stopby - System.currentTimeMillis();
+            long canwait = TimeUnit.NANOSECONDS.toMillis(stopby - System.nanoTime());
             if (canwait > 0)
                 thread.join(canwait);
         }
@@ -242,7 +242,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     }
 
     /**
-     * @param name Name of the BoundedThreadPool to use when naming Threads.
+     * @param name Name of this thread pool to use when naming threads.
      */
     public void setName(String name)
     {
@@ -303,7 +303,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     }
 
     /**
-     * @return The name of the BoundedThreadPool.
+     * @return The name of the this thread pool
      */
     @ManagedAttribute("name of the thread pool")
     public String getName()
@@ -320,6 +320,17 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     public int getThreadsPriority()
     {
         return _priority;
+    }
+    
+    /**
+     * Get the size of the job queue.
+     * 
+     * @return Number of jobs queued waiting for a thread
+     */
+    @ManagedAttribute("Size of the job queue")
+    public int getQueueSize()
+    {
+        return _jobs.size();
     }
 
     /**
@@ -340,18 +351,11 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     {
         _detailedDump = detailedDump;
     }
-
-    @Override
-    public boolean dispatch(Runnable job)
-    {
-        LOG.debug("{} dispatched {}", this, job);
-        return isRunning() && _jobs.offer(job);
-    }
-
+    
     @Override
     public void execute(Runnable job)
     {
-        if (!dispatch(job))
+        if (!isRunning() || !_jobs.offer(job))
         {
             LOG.warn("{} rejected {}", this, job);
             throw new RejectedExecutionException(job.toString());
@@ -524,12 +528,14 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
                     startThreads(1);
                 }
 
-                while (isRunning())
+                loop: while (isRunning())
                 {
                     // Job loop
                     while (job != null && isRunning())
                     {
                         runJob(job);
+                        if (Thread.interrupted())
+                            break loop;
                         job = _jobs.poll();
                     }
 
@@ -549,8 +555,8 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
                                 if (size > _minThreads)
                                 {
                                     long last = _lastShrink.get();
-                                    long now = System.currentTimeMillis();
-                                    if (last == 0 || (now - last) > _idleTimeout)
+                                    long now = System.nanoTime();
+                                    if (last == 0 || (now - last) > TimeUnit.MILLISECONDS.toNanos(_idleTimeout))
                                     {
                                         shrink = _lastShrink.compareAndSet(last, now) &&
                                                 _threadsStarted.compareAndSet(size, size - 1);

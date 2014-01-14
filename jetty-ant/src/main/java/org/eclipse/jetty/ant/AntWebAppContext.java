@@ -22,8 +22,6 @@ package org.eclipse.jetty.ant;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Array;
-import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.security.CodeSource;
@@ -50,7 +48,6 @@ import org.eclipse.jetty.ant.types.FileMatchingConfiguration;
 import org.eclipse.jetty.ant.utils.TaskLog;
 import org.eclipse.jetty.plus.webapp.EnvConfiguration;
 import org.eclipse.jetty.plus.webapp.PlusConfiguration;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.Holder;
@@ -432,9 +429,9 @@ public class AntWebAppContext extends WebAppContext
 
 
     /**
-     * Default constructor. Takes application name as an argument
+     * Default constructor. Takes project as an argument
      *
-     * @param name web application name.
+     * @param project the project.
      */
     public AntWebAppContext(Project project) throws Exception
     {
@@ -669,9 +666,6 @@ public class AntWebAppContext extends WebAppContext
         }
     }
 
-    /**
-     * @see WebApplicationProxy#stop()
-     */
     public void doStop()
     {
         try

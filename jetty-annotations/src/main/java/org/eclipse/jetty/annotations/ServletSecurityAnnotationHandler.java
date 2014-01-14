@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -112,6 +112,9 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
 
        for (ConstraintMapping m:constraintMappings)
            securityHandler.addConstraintMapping(m);
+       
+       //Servlet Spec 3.1 requires paths with uncovered http methods to be reported
+       securityHandler.checkPathsWithUncoveredHttpMethods();
     }
 
 
@@ -123,17 +126,10 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
      * @param rolesAllowed
      * @param permitOrDeny
      * @param transport
-     * @return
      */
     protected Constraint makeConstraint (Class servlet, String[] rolesAllowed, EmptyRoleSemantic permitOrDeny, TransportGuarantee transport)
     {
         return ConstraintSecurityHandler.createConstraint(servlet.getName(), rolesAllowed, permitOrDeny, transport);
-
-
-
-
-
-
     }
 
 
@@ -141,7 +137,6 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
     /**
      * Get the ServletMappings for the servlet's class.
      * @param className
-     * @return
      */
     protected List<ServletMapping> getServletMappings(String className)
     {
@@ -163,7 +158,6 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
      * Check if there are already <security-constraint> elements defined that match the url-patterns for
      * the servlet.
      * @param servletMappings
-     * @return
      */
     protected boolean constraintsExist (List<ServletMapping> servletMappings, List<ConstraintMapping> constraintMappings)
     {

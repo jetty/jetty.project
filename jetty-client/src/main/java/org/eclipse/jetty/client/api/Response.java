@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -40,8 +40,15 @@ import org.eclipse.jetty.http.HttpVersion;
 public interface Response
 {
     /**
-     * @return the conversation id
+     * @return the request associated with this response
      */
+    Request getRequest();
+
+    /**
+     * @return the conversation id
+     * @deprecated do not use this method anymore
+     */
+    @Deprecated
     long getConversationID();
 
     /**
@@ -202,7 +209,7 @@ public interface Response
         /**
          * An empty implementation of {@link Listener}
          */
-        public static class Empty implements Listener
+        public static class Adapter implements Listener
         {
             @Override
             public void onBegin(Response response)

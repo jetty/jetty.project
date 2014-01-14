@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,13 +28,17 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.HeadersInfo;
 import org.eclipse.jetty.spdy.api.PushInfo;
+import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
@@ -47,7 +51,6 @@ import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.frames.DataFrame;
 import org.eclipse.jetty.spdy.frames.SettingsFrame;
 import org.eclipse.jetty.spdy.frames.SynReplyFrame;
-import org.eclipse.jetty.spdy.frames.SynStreamFrame;
 import org.eclipse.jetty.spdy.generator.Generator;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
@@ -55,9 +58,10 @@ import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -75,6 +79,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class StandardSessionTest
@@ -84,6 +89,10 @@ public class StandardSessionTest
 
     @Mock
     private Controller controller;
+
+    @Mock
+    private EndPoint endPoint;
+
     private ExecutorService threadPool;
     private StandardSession session;
     private Scheduler scheduler;
@@ -95,10 +104,11 @@ public class StandardSessionTest
     public void setUp() throws Exception
     {
         threadPool = Executors.newCachedThreadPool();
-        scheduler = new TimerScheduler();
+        scheduler = new ScheduledExecutorScheduler();
         scheduler.start();
-        session = new StandardSession(VERSION, bufferPool, threadPool, scheduler, controller, null, null, 1, null,
+        session = new StandardSession(VERSION, bufferPool, scheduler, controller, endPoint, null, 1, null,
                 generator, new FlowControlStrategy.None());
+        when(endPoint.getIdleTimeout()).thenReturn(30000L);
         headers = new Fields();
     }
 
@@ -117,15 +127,14 @@ public class StandardSessionTest
             public Object answer(InvocationOnMock invocation)
             {
                 Object[] args = invocation.getArguments();
-                Callback callback = (Callback)args[1];
+                Callback callback = (Callback)args[0];
                 if (fail)
                     callback.failed(new ClosedChannelException());
                 else
                     callback.succeeded();
                 return null;
             }
-        })
-                .when(controller).write(any(ByteBuffer.class), any(Callback.class));
+        }).when(controller).write(any(Callback.class), any(ByteBuffer.class));
     }
 
     @Test
@@ -422,14 +431,38 @@ public class StandardSessionTest
 
     @SuppressWarnings("unchecked")
     @Test
-    public void testControllerWriteFailsInEndPointFlush() throws InterruptedException
+    public void testControllerWriteFails() throws Exception
     {
-        setControllerWriteExpectation(true);
+        final AtomicInteger writes = new AtomicInteger();
+        final AtomicBoolean fail = new AtomicBoolean();
+        Controller controller = new Controller()
+        {
+            @Override
+            public void write(Callback callback, ByteBuffer... buffers)
+            {
+                writes.incrementAndGet();
+                if (fail.get())
+                    callback.failed(new ClosedChannelException());
+                else
+                    callback.succeeded();
+            }
 
-        final CountDownLatch failedCalledLatch = new CountDownLatch(2);
-        SynStreamFrame synStreamFrame = new SynStreamFrame(VERSION, SynInfo.FLAG_CLOSE, 1, 0, (byte)0, (short)0, null);
-        IStream stream = new StandardStream(synStreamFrame.getStreamId(), synStreamFrame.getPriority(), session, null, null);
+            @Override
+            public void close(boolean onlyOutput)
+            {
+
+            }
+        };
+        ISession session = new StandardSession(VERSION, bufferPool, scheduler, controller, endPoint, null, 1, null, generator, null);
+        IStream stream = new StandardStream(1, (byte)0, session, null, scheduler, null);
         stream.updateWindowSize(8192);
+
+        // Send a reply to comply with the API usage
+        stream.reply(new ReplyInfo(false), new Callback.Adapter());
+
+        // Make the controller fail
+        fail.set(true);
+        final CountDownLatch failedCalledLatch = new CountDownLatch(1);
         Callback.Adapter callback = new Callback.Adapter()
         {
             @Override
@@ -438,14 +471,11 @@ public class StandardSessionTest
                 failedCalledLatch.countDown();
             }
         };
-
-        // first data frame should fail on controller.write()
-        stream.data(new StringDataInfo(5, TimeUnit.SECONDS, "data", false), callback);
-        // second data frame should fail without controller.write() as the connection is expected to be broken after first controller.write() call failed.
+        // Data frame should fail on controller.write()
         stream.data(new StringDataInfo(5, TimeUnit.SECONDS, "data", false), callback);
 
-        verify(controller, times(1)).write(any(ByteBuffer.class), any(Callback.class));
-        assertThat("Callback.failed has been called twice", failedCalledLatch.await(5, TimeUnit.SECONDS), is(true));
+        Assert.assertEquals(2, writes.get());
+        Assert.assertTrue(failedCalledLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -458,7 +488,7 @@ public class StandardSessionTest
         session.rst(new RstInfo(stream.getId(), StreamStatus.INVALID_STREAM));
         stream.headers(new HeadersInfo(headers, true));
 
-        verify(controller, times(3)).write(any(ByteBuffer.class), any(Callback.class));
+        verify(controller, times(3)).write(any(Callback.class), any(ByteBuffer.class));
     }
 
     @Test
@@ -501,8 +531,8 @@ public class StandardSessionTest
 
     private void testHeaderFramesAreSentInOrder(final byte priority0, final byte priority1, final byte priority2) throws InterruptedException, ExecutionException
     {
-        final StandardSession testLocalSession = new StandardSession(VERSION, bufferPool, threadPool, scheduler,
-                new ControllerMock(), null, null, 1, null, generator, new FlowControlStrategy.None());
+        final StandardSession testLocalSession = new StandardSession(VERSION, bufferPool, scheduler,
+                new ControllerMock(), endPoint, null, 1, null, generator, new FlowControlStrategy.None());
         HashSet<Future> tasks = new HashSet<>();
 
         int numberOfTasksToRun = 128;
@@ -541,7 +571,7 @@ public class StandardSessionTest
         long lastStreamId = 0;
 
         @Override
-        public void write(ByteBuffer buffer, Callback callback)
+        public void write(Callback callback, ByteBuffer... buffers)
         {
             StandardSession.FrameBytes frameBytes = (StandardSession.FrameBytes)callback;
 

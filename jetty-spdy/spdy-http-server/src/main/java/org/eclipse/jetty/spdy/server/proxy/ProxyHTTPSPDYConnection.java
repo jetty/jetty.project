@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.spdy.server.proxy;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -52,7 +51,7 @@ import org.eclipse.jetty.spdy.api.SessionStatus;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.SynInfo;
-import org.eclipse.jetty.spdy.server.http.HTTPSPDYHeader;
+import org.eclipse.jetty.spdy.http.HTTPSPDYHeader;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
@@ -193,7 +192,7 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
     {
         private HTTPSession(short version, Connector connector)
         {
-            super(version, connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), null,
+            super(version, connector.getByteBufferPool(), connector.getScheduler(), null,
                     getEndPoint(), null, 1, proxyEngineSelector, null, null);
         }
 
@@ -201,7 +200,7 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
         public void rst(RstInfo rstInfo, Callback handler)
         {
             HttpGenerator.ResponseInfo info = new HttpGenerator.ResponseInfo(HttpVersion.fromString(headers.get
-                    ("version").value()), null, 0, 502, "SPDY reset received from upstream server", false);
+                    ("version").getValue()), null, 0, 502, "SPDY reset received from upstream server", false);
             send(info, null, true, new Callback.Adapter());
         }
 
@@ -222,7 +221,7 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
 
         private HTTPStream(int id, byte priority, ISession session, IStream associatedStream)
         {
-            super(id, priority, session, associatedStream, null);
+            super(id, priority, session, associatedStream, getHttpChannel().getScheduler(), null);
         }
 
         @Override
@@ -240,53 +239,52 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
         }
 
         @Override
-        public void reply(ReplyInfo replyInfo, Callback handler)
+        public void reply(ReplyInfo replyInfo, final Callback handler)
         {
-            try
-            {
-                Fields headers = new Fields(replyInfo.getHeaders(), false);
+            Fields headers = new Fields(replyInfo.getHeaders(), false);
 
                 addPersistenceHeader(headers);
 
-                headers.remove(HTTPSPDYHeader.SCHEME.name(version));
+            headers.remove(HTTPSPDYHeader.SCHEME.name(version));
 
-                String status = headers.remove(HTTPSPDYHeader.STATUS.name(version)).value();
-                Matcher matcher = statusRegexp.matcher(status);
-                matcher.matches();
-                int code = Integer.parseInt(matcher.group(1));
-                String reason = matcher.group(2).trim();
+            String status = headers.remove(HTTPSPDYHeader.STATUS.name(version)).getValue();
+            Matcher matcher = statusRegexp.matcher(status);
+            matcher.matches();
+            int code = Integer.parseInt(matcher.group(1));
+            String reason = matcher.group(2).trim();
 
-                HttpVersion httpVersion = HttpVersion.fromString(headers.remove(HTTPSPDYHeader.VERSION.name(version)).value());
+            HttpVersion httpVersion = HttpVersion.fromString(headers.remove(HTTPSPDYHeader.VERSION.name(version)).getValue());
 
-                // Convert the Host header from a SPDY special header to a normal header
-                Fields.Field host = headers.remove(HTTPSPDYHeader.HOST.name(version));
-                if (host != null)
-                    headers.put("host", host.value());
+            // Convert the Host header from a SPDY special header to a normal header
+            Fields.Field host = headers.remove(HTTPSPDYHeader.HOST.name(version));
+            if (host != null)
+                headers.put("host", host.getValue());
 
-                HttpFields fields = new HttpFields();
-                for (Fields.Field header : headers)
-                {
-                    String name = camelize(header.name());
-                    fields.put(name, header.value());
-                }
-
-                // TODO: handle better the HEAD last parameter
-                long contentLength = fields.getLongField(HttpHeader.CONTENT_LENGTH.asString());
-                HttpGenerator.ResponseInfo info = new HttpGenerator.ResponseInfo(httpVersion, fields, contentLength, code,
-                        reason, false);
-
-                // TODO use the async send 
-                send(info, null, replyInfo.isClose());
-
-                if (replyInfo.isClose())
-                    completed();
-
-                handler.succeeded();
-            }
-            catch (IOException x)
+            HttpFields fields = new HttpFields();
+            for (Fields.Field header : headers)
             {
-                handler.failed(x);
+                String name = camelize(header.getName());
+                fields.put(name, header.getValue());
             }
+
+            // TODO: handle better the HEAD last parameter
+            long contentLength = fields.getLongField(HttpHeader.CONTENT_LENGTH.asString());
+            HttpGenerator.ResponseInfo info = new HttpGenerator.ResponseInfo(httpVersion, fields, contentLength, code,
+                    reason, false);
+
+            send(info, null, replyInfo.isClose(), new Adapter()
+            {
+                @Override
+                public void failed(Throwable x)
+                {
+                    handler.failed(x);
+                }
+            });
+
+            if (replyInfo.isClose())
+                completed();
+
+            handler.succeeded();
         }
 
         private String camelize(String name)
@@ -305,41 +303,40 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
         }
 
         @Override
-        public void data(DataInfo dataInfo, Callback handler)
+        public void data(DataInfo dataInfo, final Callback handler)
         {
-            try
+            // Data buffer must be copied, as the ByteBuffer is pooled
+            ByteBuffer byteBuffer = dataInfo.asByteBuffer(false);
+
+            send(null, byteBuffer, dataInfo.isClose(), new Adapter()
             {
-                // Data buffer must be copied, as the ByteBuffer is pooled
-                ByteBuffer byteBuffer = dataInfo.asByteBuffer(false);
+                @Override
+                public void failed(Throwable x)
+                {
+                    handler.failed(x);
+                }
+            });
 
-                // TODO use the async send with callback!
-                send(null, byteBuffer, dataInfo.isClose());
+            if (dataInfo.isClose())
+                completed();
 
-                if (dataInfo.isClose())
-                    completed();
-
-                handler.succeeded();
-            }
-            catch (IOException x)
-            {
-                handler.failed(x);
-            }
+            handler.succeeded();
         }
     }
 
     private void addPersistenceHeader(Fields headersToAddTo)
     {
-        HttpVersion httpVersion = HttpVersion.fromString(headers.get("version").value());
+        HttpVersion httpVersion = HttpVersion.fromString(headers.get("version").getValue());
         boolean persistent = false;
         switch (httpVersion)
         {
             case HTTP_1_0:
             {
                 Fields.Field keepAliveHeader = headers.get(HttpHeader.KEEP_ALIVE.asString());
-                if (keepAliveHeader != null)
-                    persistent = HttpHeaderValue.KEEP_ALIVE.asString().equals(keepAliveHeader.value());
+                if(keepAliveHeader!=null)
+                    persistent = HttpHeaderValue.KEEP_ALIVE.asString().equals(keepAliveHeader.getValue());
                 if (!persistent)
-                    persistent = HttpMethod.CONNECT.is(headers.get("method").value());
+                    persistent = HttpMethod.CONNECT.is(headers.get("method").getValue());
                 if (persistent)
                     headersToAddTo.add(HttpHeader.CONNECTION.asString(), HttpHeaderValue.KEEP_ALIVE.asString());
                 break;
@@ -347,12 +344,12 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
             case HTTP_1_1:
             {
                 Fields.Field connectionHeader = headers.get(HttpHeader.CONNECTION.asString());
-                if (connectionHeader != null)
-                    persistent = !HttpHeaderValue.CLOSE.asString().equals(connectionHeader.value());
+                if(connectionHeader != null)
+                    persistent = !HttpHeaderValue.CLOSE.asString().equals(connectionHeader.getValue());
                 else
                     persistent = true;
                 if (!persistent)
-                    persistent = HttpMethod.CONNECT.is(headers.get("method").value());
+                    persistent = HttpMethod.CONNECT.is(headers.get("method").getValue());
                 if (!persistent)
                     headersToAddTo.add(HttpHeader.CONNECTION.asString(), HttpHeaderValue.CLOSE.asString());
                 break;
@@ -368,7 +365,7 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
     {
         private HTTPPushStream(int id, byte priority, ISession session, IStream associatedStream)
         {
-            super(id, priority, session, associatedStream, null);
+            super(id, priority, session, associatedStream, getHttpChannel().getScheduler(), null);
         }
 
         @Override

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,10 +25,6 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Extension;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
-import org.eclipse.jetty.websocket.common.extensions.compress.FrameCompressionExtension;
-import org.eclipse.jetty.websocket.common.extensions.compress.MessageCompressionExtension;
-import org.eclipse.jetty.websocket.common.extensions.fragment.FragmentExtension;
-import org.eclipse.jetty.websocket.common.extensions.identity.IdentityExtension;
 
 public class WebSocketExtensionFactory extends ExtensionFactory
 {
@@ -40,13 +36,6 @@ public class WebSocketExtensionFactory extends ExtensionFactory
         super();
         this.policy = policy;
         this.bufferPool = bufferPool;
-
-        register("identity",IdentityExtension.class);
-        register("fragment",FragmentExtension.class);
-        /* FIXME: Disabled due to bug report - http://bugs.eclipse.org/395444 
-         * register("x-webkit-deflate-frame",FrameCompressionExtension.class);
-         * register("permessage-compress",MessageCompressionExtension.class);
-         */
     }
 
     @Override
@@ -75,9 +64,9 @@ public class WebSocketExtensionFactory extends ExtensionFactory
             if (ext instanceof AbstractExtension)
             {
                 AbstractExtension aext = (AbstractExtension)ext;
-                aext.setConfig(config);
                 aext.setPolicy(policy);
                 aext.setBufferPool(bufferPool);
+                aext.setConfig(config);
             }
             return ext;
         }

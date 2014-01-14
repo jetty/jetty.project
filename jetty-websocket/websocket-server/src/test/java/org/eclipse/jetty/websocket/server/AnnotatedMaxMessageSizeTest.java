@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,21 +22,22 @@ import static org.hamcrest.Matchers.*;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.OpCode;
+import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
-import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
+import org.eclipse.jetty.websocket.common.frames.TextFrame;
+import org.eclipse.jetty.websocket.common.test.BlockheadClient;
+import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.server.examples.echo.BigEchoSocket;
-import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
-import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -61,14 +62,7 @@ public class AnnotatedMaxMessageSizeTest
             @Override
             public void configure(WebSocketServletFactory factory)
             {
-                factory.setCreator(new WebSocketCreator()
-                {
-                    @Override
-                    public Object createWebSocket(UpgradeRequest req, UpgradeResponse resp)
-                    {
-                        return new BigEchoSocket();
-                    }
-                });
+                factory.register(BigEchoSocket.class);
             }
         };
 
@@ -103,7 +97,7 @@ public class AnnotatedMaxMessageSizeTest
 
             // Generate text frame
             String msg = "this is an echo ... cho ... ho ... o";
-            client.write(WebSocketFrame.text(msg));
+            client.write(new TextFrame().setPayload(msg));
 
             // Read frame (hopefully text frame)
             IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
@@ -116,11 +110,11 @@ public class AnnotatedMaxMessageSizeTest
         }
     }
     
-    @Test
+    @Test(timeout=4000)
     public void testEchoTooBig() throws IOException, Exception
     {
         BlockheadClient client = new BlockheadClient(serverUri);
-        try
+        try(StacklessLogging logging = new StacklessLogging(Parser.class))
         {
             client.setProtocols("echo");
             client.connect();
@@ -130,7 +124,7 @@ public class AnnotatedMaxMessageSizeTest
             // Generate text frame
             byte buf[] = new byte[90*1024]; // buffer bigger than maxMessageSize
             Arrays.fill(buf,(byte)'x');
-            client.write(WebSocketFrame.text().setPayload(buf));
+            client.write(new TextFrame().setPayload(ByteBuffer.wrap(buf)));
 
             // Read frame (hopefully close frame saying its too large)
             IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);

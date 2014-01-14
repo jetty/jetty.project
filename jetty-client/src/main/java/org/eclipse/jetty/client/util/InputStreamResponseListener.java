@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -34,13 +34,14 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.api.Response.Listener;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
- * Implementation of {@link Response.Listener} that produces an {@link InputStream}
+ * Implementation of {@link Listener} that produces an {@link InputStream}
  * that allows applications to read the response content.
  * <p />
  * Typical usage is:
@@ -70,7 +71,7 @@ import org.eclipse.jetty.util.log.Logger;
  * If the consumer is slower than the producer, then the producer will block
  * until the client consumes.
  */
-public class InputStreamResponseListener extends Response.Listener.Empty
+public class InputStreamResponseListener extends Listener.Adapter
 {
     private static final Logger LOG = Log.getLogger(InputStreamResponseListener.class);
     private static final byte[] EOF = new byte[0];
@@ -107,25 +108,36 @@ public class InputStreamResponseListener extends Response.Listener.Empty
     @Override
     public void onContent(Response response, ByteBuffer content)
     {
-        // Avoid buffering if the input stream is early closed.
-        if (closed)
-            return;
-
-        int remaining = content.remaining();
-        byte[] bytes = new byte[remaining];
-        content.get(bytes);
-        LOG.debug("Queuing {}/{} bytes", bytes, bytes.length);
-        queue.offer(bytes);
-
-        long newLength = length.addAndGet(remaining);
-        while (newLength >= maxBufferSize)
+        if (!closed)
         {
-            LOG.debug("Queued bytes limit {}/{} exceeded, waiting", newLength, maxBufferSize);
-            // Block to avoid infinite buffering
-            if (!await())
-                break;
-            newLength = length.get();
-            LOG.debug("Queued bytes limit {}/{} exceeded, woken up", newLength, maxBufferSize);
+            int remaining = content.remaining();
+            if (remaining > 0)
+            {
+
+                byte[] bytes = new byte[remaining];
+                content.get(bytes);
+                LOG.debug("Queuing {}/{} bytes", bytes, remaining);
+                queue.offer(bytes);
+
+                long newLength = length.addAndGet(remaining);
+                while (newLength >= maxBufferSize)
+                {
+                    LOG.debug("Queued bytes limit {}/{} exceeded, waiting", newLength, maxBufferSize);
+                    // Block to avoid infinite buffering
+                    if (!await())
+                        break;
+                    newLength = length.get();
+                    LOG.debug("Queued bytes limit {}/{} exceeded, woken up", newLength, maxBufferSize);
+                }
+            }
+            else
+            {
+                LOG.debug("Queuing skipped, empty content {}", content);
+            }
+        }
+        else
+        {
+            LOG.debug("Queuing skipped, stream already closed");
         }
     }
 
@@ -304,11 +316,14 @@ public class InputStreamResponseListener extends Response.Listener.Empty
         @Override
         public void close() throws IOException
         {
-            LOG.debug("Queuing close {}{}", CLOSED, "");
-            queue.offer(CLOSED);
-            closed = true;
-            signal();
-            super.close();
+            if (!closed)
+            {
+                super.close();
+                LOG.debug("Queuing close {}{}", CLOSED, "");
+                queue.offer(CLOSED);
+                closed = true;
+                signal();
+            }
         }
     }
 }

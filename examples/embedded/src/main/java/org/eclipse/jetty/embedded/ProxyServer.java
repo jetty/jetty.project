@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -32,6 +32,7 @@ public class ProxyServer
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server);
         connector.setPort(8888);
+        server.addConnector(connector);
 
         // Setup proxy handler to handle CONNECT methods
         ConnectHandler proxy = new ConnectHandler();

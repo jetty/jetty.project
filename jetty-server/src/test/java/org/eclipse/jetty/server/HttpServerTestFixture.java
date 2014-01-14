@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
-import java.io.Writer;
 import java.net.Socket;
 import java.net.URI;
 
@@ -47,7 +46,7 @@ public class HttpServerTestFixture
 
     protected Server _server;
     protected URI _serverURI;
-    protected NetworkConnector _connector;
+    protected ServerConnector _connector;
     protected String _scheme="http";
 
     protected Socket newSocket(String host,int port) throws Exception
@@ -65,7 +64,7 @@ public class HttpServerTestFixture
         _server = new Server();
     }
 
-    protected void startServer(NetworkConnector connector) throws Exception
+    protected void startServer(ServerConnector connector) throws Exception
     {
         _connector = connector;
         _server.addConnector(_connector);
@@ -93,14 +92,14 @@ public class HttpServerTestFixture
 
     protected static class EchoHandler extends AbstractHandler
     {
-        boolean musthavecontent=true;
+        boolean _musthavecontent=true;
 
         public EchoHandler()
         {}
 
         public EchoHandler(boolean content)
         {
-            musthavecontent=false;
+            _musthavecontent=false;
         }
 
         @Override
@@ -134,7 +133,7 @@ public class HttpServerTestFixture
 
             if (count==0)
             {
-                if (musthavecontent)
+                if (_musthavecontent)
                     throw new IllegalStateException("no input recieved");
 
                 writer.println("No content");

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,8 +23,11 @@ import java.net.CookieStore;
 import java.net.SocketAddress;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 
@@ -40,6 +43,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Extension;
@@ -47,8 +51,13 @@ import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.client.io.ConnectPromise;
 import org.eclipse.jetty.websocket.client.io.ConnectionManager;
+import org.eclipse.jetty.websocket.client.io.UpgradeListener;
 import org.eclipse.jetty.websocket.client.masks.Masker;
 import org.eclipse.jetty.websocket.client.masks.RandomMasker;
+import org.eclipse.jetty.websocket.common.SessionFactory;
+import org.eclipse.jetty.websocket.common.SessionListener;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
+import org.eclipse.jetty.websocket.common.WebSocketSessionFactory;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
 import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionFactory;
@@ -56,14 +65,17 @@ import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionFactory;
 /**
  * WebSocketClient provides a means of establishing connections to remote websocket endpoints.
  */
-public class WebSocketClient extends ContainerLifeCycle
+public class WebSocketClient extends ContainerLifeCycle implements SessionListener
 {
     private static final Logger LOG = Log.getLogger(WebSocketClient.class);
 
     private final WebSocketPolicy policy;
     private final SslContextFactory sslContextFactory;
     private final WebSocketExtensionFactory extensionRegistry;
-    private final EventDriverFactory eventDriverFactory;
+    private boolean daemon = false;
+    private EventDriverFactory eventDriverFactory;
+    private SessionFactory sessionFactory;
+    private Set<WebSocketSession> openSessions = new CopyOnWriteArraySet<>();
     private ByteBufferPool bufferPool;
     private Executor executor;
     private Scheduler scheduler;
@@ -75,16 +87,43 @@ public class WebSocketClient extends ContainerLifeCycle
 
     public WebSocketClient()
     {
-        this(null);
+        this(null,null);
+    }
+
+    public WebSocketClient(Executor executor)
+    {
+        this(null,executor);
+    }
+    
+    public WebSocketClient(ByteBufferPool bufferPool)
+    {
+        this(null,null,bufferPool);
     }
 
     public WebSocketClient(SslContextFactory sslContextFactory)
     {
+        this(sslContextFactory,null);
+    }
+
+    public WebSocketClient(SslContextFactory sslContextFactory, Executor executor)
+    {
+        this(sslContextFactory,executor,new MappedByteBufferPool());
+    }
+    
+    public WebSocketClient(SslContextFactory sslContextFactory, Executor executor, ByteBufferPool bufferPool)
+    {
+        this.executor = executor;
         this.sslContextFactory = sslContextFactory;
         this.policy = WebSocketPolicy.newClientPolicy();
+        this.bufferPool = bufferPool;
         this.extensionRegistry = new WebSocketExtensionFactory(policy,bufferPool);
         this.masker = new RandomMasker();
         this.eventDriverFactory = new EventDriverFactory(policy);
+        this.sessionFactory = new WebSocketSessionFactory(this);
+        
+        addBean(this.executor);
+        addBean(this.sslContextFactory);
+        addBean(this.bufferPool);
     }
 
     public Future<Session> connect(Object websocket, URI toUri) throws IOException
@@ -97,6 +136,11 @@ public class WebSocketClient extends ContainerLifeCycle
     }
 
     public Future<Session> connect(Object websocket, URI toUri, ClientUpgradeRequest request) throws IOException
+    {
+        return connect(websocket,toUri,request,null);
+    }
+
+    public Future<Session> connect(Object websocket, URI toUri, ClientUpgradeRequest request, UpgradeListener upgradeListener) throws IOException
     {
         if (!isStarted())
         {
@@ -133,16 +177,39 @@ public class WebSocketClient extends ContainerLifeCycle
         }
 
         // Validate websocket URI
-        LOG.debug("connect websocket:{} to:{}",websocket,toUri);
+        LOG.debug("connect websocket {} to {}",websocket,toUri);
 
         // Grab Connection Manager
+        initialiseClient();
         ConnectionManager manager = getConnectionManager();
 
         // Setup Driver for user provided websocket
-        EventDriver driver = eventDriverFactory.wrap(websocket);
+        EventDriver driver = null;
+        if (websocket instanceof EventDriver)
+        {
+            // Use the EventDriver as-is
+            driver = (EventDriver)websocket;
+        }
+        else
+        {
+            // Wrap websocket with appropriate EventDriver
+            driver = eventDriverFactory.wrap(websocket);
+        }
+
+        if (driver == null)
+        {
+            throw new IllegalStateException("Unable to identify as websocket object: " + websocket.getClass().getName());
+        }
 
         // Create the appropriate (physical vs virtual) connection task
         ConnectPromise promise = manager.connect(this,driver,request);
+
+        if (upgradeListener != null)
+        {
+            promise.setUpgradeListener(upgradeListener);
+        }
+
+        LOG.debug("Connect Promise: {}",promise);
 
         // Execute the connection on the executor thread
         executor.execute(promise);
@@ -163,14 +230,6 @@ public class WebSocketClient extends ContainerLifeCycle
 
         String name = WebSocketClient.class.getSimpleName() + "@" + hashCode();
 
-        if (executor == null)
-        {
-            QueuedThreadPool threadPool = new QueuedThreadPool();
-            threadPool.setName(name);
-            executor = threadPool;
-        }
-        addBean(executor);
-
         if (bufferPool == null)
         {
             bufferPool = new MappedByteBufferPool();
@@ -179,7 +238,7 @@ public class WebSocketClient extends ContainerLifeCycle
 
         if (scheduler == null)
         {
-            scheduler = new ScheduledExecutorScheduler(name + "-scheduler",false);
+            scheduler = new ScheduledExecutorScheduler(name + "-scheduler",daemon);
         }
         addBean(scheduler);
 
@@ -188,12 +247,9 @@ public class WebSocketClient extends ContainerLifeCycle
             cookieStore = new HttpCookieStore.Empty();
         }
 
-        this.connectionManager = newConnectionManager();
-        addBean(this.connectionManager);
-
         super.doStart();
 
-        LOG.info("Started {}",this);
+        LOG.debug("Started {}",this);
     }
 
     @Override
@@ -209,6 +265,16 @@ public class WebSocketClient extends ContainerLifeCycle
 
         super.doStop();
         LOG.info("Stopped {}",this);
+    }
+
+    /**
+     * Return the number of milliseconds for a timeout of an attempted write operation.
+     * 
+     * @return number of milliseconds for timeout of an attempted write operation
+     */
+    public long getAsyncWriteTimeout()
+    {
+        return this.policy.getAsyncWriteTimeout();
     }
 
     public SocketAddress getBindAddress()
@@ -235,6 +301,11 @@ public class WebSocketClient extends ContainerLifeCycle
     {
         return cookieStore;
     }
+    
+    public EventDriverFactory getEventDriverFactory()
+    {
+        return eventDriverFactory;
+    }
 
     public Executor getExecutor()
     {
@@ -252,6 +323,26 @@ public class WebSocketClient extends ContainerLifeCycle
     }
 
     /**
+     * Get the maximum size for buffering of a binary message.
+     * 
+     * @return the maximum size of a binary message buffer.
+     */
+    public int getMaxBinaryMessageBufferSize()
+    {
+        return this.policy.getMaxBinaryMessageBufferSize();
+    }
+
+    /**
+     * Get the maximum size for a binary message.
+     * 
+     * @return the maximum size of a binary message.
+     */
+    public long getMaxBinaryMessageSize()
+    {
+        return this.policy.getMaxBinaryMessageSize();
+    }
+
+    /**
      * Get the max idle timeout for new connections.
      * 
      * @return the max idle timeout in milliseconds for new connections.
@@ -259,6 +350,31 @@ public class WebSocketClient extends ContainerLifeCycle
     public long getMaxIdleTimeout()
     {
         return this.policy.getIdleTimeout();
+    }
+
+    /**
+     * Get the maximum size for buffering of a text message.
+     * 
+     * @return the maximum size of a text message buffer.
+     */
+    public int getMaxTextMessageBufferSize()
+    {
+        return this.policy.getMaxTextMessageBufferSize();
+    }
+
+    /**
+     * Get the maximum size for a text message.
+     * 
+     * @return the maximum size of a text message.
+     */
+    public long getMaxTextMessageSize()
+    {
+        return this.policy.getMaxTextMessageSize();
+    }
+
+    public Set<WebSocketSession> getOpenSessions()
+    {
+        return Collections.unmodifiableSet(this.openSessions);
     }
 
     public WebSocketPolicy getPolicy()
@@ -271,9 +387,14 @@ public class WebSocketClient extends ContainerLifeCycle
         return scheduler;
     }
 
+    public SessionFactory getSessionFactory()
+    {
+        return sessionFactory;
+    }
+
     /**
      * @return the {@link SslContextFactory} that manages TLS encryption
-     * @see WebSocketClient(SslContextFactory)
+     * @see #WebSocketClient(SslContextFactory)
      */
     public SslContextFactory getSslContextFactory()
     {
@@ -300,6 +421,44 @@ public class WebSocketClient extends ContainerLifeCycle
         return extensions;
     }
 
+    private synchronized void initialiseClient() throws IOException
+    {
+        ShutdownThread.register(this);
+
+        if (executor == null)
+        {
+            QueuedThreadPool threadPool = new QueuedThreadPool();
+            String name = WebSocketClient.class.getSimpleName() + "@" + hashCode();
+            threadPool.setName(name);
+            threadPool.setDaemon(daemon);
+            executor = threadPool;
+            addBean(executor,true);
+        }
+        else
+        {
+            addBean(executor,false);
+        }
+
+        if (connectionManager != null)
+        {
+            return;
+        }
+        try
+        {
+            connectionManager = newConnectionManager();
+            addBean(connectionManager);
+            connectionManager.start();
+        }
+        catch (IOException e)
+        {
+            throw e;
+        }
+        catch (Exception e)
+        {
+            throw new IOException(e);
+        }
+    }
+
     /**
      * Factory method for new ConnectionManager (used by other projects like cometd)
      * 
@@ -308,6 +467,25 @@ public class WebSocketClient extends ContainerLifeCycle
     protected ConnectionManager newConnectionManager()
     {
         return new ConnectionManager(this);
+    }
+
+    @Override
+    public void onSessionClosed(WebSocketSession session)
+    {
+        LOG.info("Session Closed: {}",session);
+        this.openSessions.remove(session);
+    }
+
+    @Override
+    public void onSessionOpened(WebSocketSession session)
+    {
+        LOG.info("Session Opened: {}",session);
+        this.openSessions.add(session);
+    }
+
+    public void setAsyncWriteTimeout(long ms)
+    {
+        this.policy.setAsyncWriteTimeout(ms);
     }
 
     public void setBindAdddress(SocketAddress bindAddress)
@@ -323,25 +501,36 @@ public class WebSocketClient extends ContainerLifeCycle
     /**
      * Set the timeout for connecting to the remote server.
      * 
-     * @param timeoutMilliseconds
+     * @param ms
      *            the timeout in milliseconds
      */
-    public void setConnectTimeout(long timeoutMilliseconds)
+    public void setConnectTimeout(long ms)
     {
-        if (timeoutMilliseconds < 0)
+        if (ms < 0)
         {
             throw new IllegalStateException("Connect Timeout cannot be negative");
         }
-        this.connectTimeout = timeoutMilliseconds;
+        this.connectTimeout = ms;
     }
 
     public void setCookieStore(CookieStore cookieStore)
     {
         this.cookieStore = cookieStore;
     }
+    
+    public void setDaemon(boolean daemon)
+    {
+        this.daemon = daemon;
+    }
+
+    public void setEventDriverFactory(EventDriverFactory factory)
+    {
+        this.eventDriverFactory = factory;
+    }
 
     public void setExecutor(Executor executor)
     {
+        updateBean(this.executor,executor);
         this.executor = executor;
     }
 
@@ -350,16 +539,31 @@ public class WebSocketClient extends ContainerLifeCycle
         this.masker = masker;
     }
 
+    public void setMaxBinaryMessageBufferSize(int max)
+    {
+        this.policy.setMaxBinaryMessageBufferSize(max);
+    }
+    
     /**
      * Set the max idle timeout for new connections.
      * <p>
      * Existing connections will not have their max idle timeout adjusted.
      * 
-     * @param milliseconds
+     * @param ms
      *            the timeout in milliseconds
      */
-    public void setMaxIdleTimeout(long milliseconds)
+    public void setMaxIdleTimeout(long ms)
     {
-        this.policy.setIdleTimeout(milliseconds);
+        this.policy.setIdleTimeout(ms);
+    }
+
+    public void setMaxTextMessageBufferSize(int max)
+    {
+        this.policy.setMaxTextMessageBufferSize(max);
+    }
+
+    public void setSessionFactory(SessionFactory sessionFactory)
+    {
+        this.sessionFactory = sessionFactory;
     }
 }

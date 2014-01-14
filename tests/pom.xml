@@ -21,7 +21,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.0.7-SNAPSHOT</version>
+    <version>9.1.2-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <groupId>org.eclipse.jetty.tests</groupId>
@@ -42,10 +42,10 @@
     </plugins>
   </build>
   <modules>
-    <!--module>test-integration</module-->
     <module>test-webapps</module>
     <module>test-sessions</module>
     <module>test-continuation</module>
     <module>test-loginservice</module>
+    <module>test-integration</module>
   </modules>
 </project>

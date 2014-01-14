@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -533,7 +533,7 @@ public class ResourceHandler extends HandlerWrapper
                     resource.length()>_minMemoryMappedContentLength &&
                     resource instanceof FileResource)
                 {
-                    ByteBuffer buffer = BufferUtil.toBuffer(resource.getFile());
+                    ByteBuffer buffer = BufferUtil.toMappedBuffer(resource.getFile());
                     ((HttpOutput)out).sendContent(buffer,callback);
                 }
                 else  // Do a blocking write of a channel (if available) or input stream
@@ -553,7 +553,7 @@ public class ResourceHandler extends HandlerWrapper
                     resource.length()>_minMemoryMappedContentLength &&
                     resource instanceof FileResource)
                 {
-                    ByteBuffer buffer = BufferUtil.toBuffer(resource.getFile());
+                    ByteBuffer buffer = BufferUtil.toMappedBuffer(resource.getFile());
                     ((HttpOutput)out).sendContent(buffer);
                 }
                 else  // Do a blocking write of a channel (if available) or input stream

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,7 +29,7 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 /**
  * Example Socket for echoing back Big data using the Annotation techniques along with stateless techniques.
  */
-@WebSocket(maxMessageSize = 64 * 1024)
+@WebSocket(maxTextMessageSize = 64 * 1024, maxBinaryMessageSize = 64 * 1024)
 public class BigEchoSocket
 {
     private static final Logger LOG = Log.getLogger(BigEchoSocket.class);
@@ -42,7 +42,7 @@ public class BigEchoSocket
             LOG.warn("Session is closed");
             return;
         }
-        session.getRemote().sendBytesByFuture(ByteBuffer.wrap(buf,offset,length));
+        session.getRemote().sendBytes(ByteBuffer.wrap(buf,offset,length),null);
     }
 
     @OnWebSocketMessage
@@ -53,6 +53,6 @@ public class BigEchoSocket
             LOG.warn("Session is closed");
             return;
         }
-        session.getRemote().sendStringByFuture(message);
+        session.getRemote().sendString(message,null);
     }
 }

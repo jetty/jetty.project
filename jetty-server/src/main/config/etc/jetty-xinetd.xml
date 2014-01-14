@@ -44,9 +44,9 @@ service jetty
             -->
 
             <!-- sane defaults -->
-            <Set name="idleTimeout">300000</Set>
-            <Set name="Acceptors">2</Set>
-            <Set name="statsOn">false</Set>
+            <Set name="idleTimeout"><Property name="jetty.xinetd.idleTimeout" default="300000"/></Set>
+            <Set name="Acceptors"><Property name="jetty.xinetd.acceptors" default="2"/></Set>
+            <Set name="statsOn"><Property name="jetty.xinetd.statsOn" default="false"/></Set>
           </New>
       </Arg>
     </Call>

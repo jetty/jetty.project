@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,10 +19,12 @@
 package org.eclipse.jetty.client;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
 import java.util.List;
 
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
@@ -41,9 +43,16 @@ public class HttpContentResponse implements ContentResponse
     }
 
     @Override
+    public Request getRequest()
+    {
+        return response.getRequest();
+    }
+
+    @Override
+    @Deprecated
     public long getConversationID()
     {
-        return response.getConversationID();
+        return getRequest().getConversationID();
     }
 
     @Override
@@ -92,13 +101,20 @@ public class HttpContentResponse implements ContentResponse
     public String getContentAsString()
     {
         String encoding = this.encoding;
-        try
+        if (encoding == null)
         {
-            return new String(getContent(), encoding == null ? "UTF-8" : encoding);
+            return new String(getContent(), StandardCharsets.UTF_8);
         }
-        catch (UnsupportedEncodingException e)
+        else
         {
-            throw new UnsupportedCharsetException(encoding);
+            try
+            {
+                return new String(getContent(), encoding);
+            }
+            catch (UnsupportedEncodingException e)
+            {
+                throw new UnsupportedCharsetException(encoding);
+            }
         }
     }
 

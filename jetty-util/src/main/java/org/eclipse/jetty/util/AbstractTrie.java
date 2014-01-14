@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,6 +19,7 @@
 package org.eclipse.jetty.util;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 
 
 /* ------------------------------------------------------------ */
@@ -72,7 +73,7 @@ public abstract class AbstractTrie<V> implements Trie<V>
     @Override
     public V getBest(byte[] b, int offset, int len)
     {
-        return getBest(new String(b,offset,len,StringUtil.__ISO_8859_1_CHARSET));
+        return getBest(new String(b,offset,len,StandardCharsets.ISO_8859_1));
     }
 
     @Override

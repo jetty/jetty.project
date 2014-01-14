@@ -1,0 +1,33 @@
+body {
+	font-family: sans-serif;
+}
+
+div {
+    border: 0px solid black;	
+}
+
+div#console {
+    clear: both;
+    width: 40em;
+    height: 20em;
+    overflow: auto;
+    background-color: #f0f0f0;
+    padding: 4px;
+    border: 1px solid black;
+}
+
+div#console .info {
+	color: black;
+}
+
+div#console .error {
+    color: red;
+}
+
+div#console .client {
+	color: blue;
+}
+
+div#console .server {
+    color: magenta;
+}

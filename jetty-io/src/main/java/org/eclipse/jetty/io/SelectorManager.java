@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,8 +25,6 @@ import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
 import java.nio.channels.CancelledKeyException;
-import java.nio.channels.ClosedChannelException;
-import java.nio.channels.ClosedSelectorException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -39,6 +37,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.ConcurrentArrayQueue;
 import org.eclipse.jetty.util.TypeUtil;
@@ -57,12 +56,11 @@ import org.eclipse.jetty.util.thread.Scheduler;
  */
 public abstract class SelectorManager extends AbstractLifeCycle implements Dumpable
 {
-    protected static final Logger LOG = Log.getLogger(SelectorManager.class);
-    /**
-     * The default connect timeout, in milliseconds
-     */
+    public static final String SUBMIT_KEY_UPDATES = "org.eclipse.jetty.io.SelectorManager.submitKeyUpdates";
     public static final int DEFAULT_CONNECT_TIMEOUT = 15000;
-
+    protected static final Logger LOG = Log.getLogger(SelectorManager.class);
+    private final static boolean __submitKeyUpdates = Boolean.valueOf(System.getProperty(SUBMIT_KEY_UPDATES, "false"));
+    
     private final Executor executor;
     private final Scheduler scheduler;
     private final ManagedSelector[] _selectors;
@@ -76,6 +74,8 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 
     protected SelectorManager(Executor executor, Scheduler scheduler, int selectors)
     {
+        if (selectors<=0)
+            throw new IllegalArgumentException("No selectors");
         this.executor = executor;
         this.scheduler = scheduler;
         _selectors = new ManagedSelector[selectors];
@@ -165,6 +165,34 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         final ManagedSelector selector = chooseSelector();
         selector.submit(selector.new Accept(channel));
     }
+    
+    /**
+     * <p>Registers a server channel for accept operations.
+     * When a {@link SocketChannel} is accepted from the given {@link ServerSocketChannel}
+     * then the {@link #accepted(SocketChannel)} method is called, which must be
+     * overridden by a derivation of this class to handle the accepted channel
+     * 
+     * @param server the server channel to register
+     */
+    public void acceptor(final ServerSocketChannel server)
+    {
+        final ManagedSelector selector = chooseSelector();
+        selector.submit(selector.new Acceptor(server));
+    }
+    
+    /**
+     * Callback method when a channel is accepted from the {@link ServerSocketChannel}
+     * passed to {@link #acceptor(ServerSocketChannel)}.
+     * The default impl throws an {@link UnsupportedOperationException}, so it must
+     * be overridden by subclasses if a server channel is provided.
+     *
+     * @param channel the
+     * @throws IOException
+     */
+    protected void accepted(SocketChannel channel) throws IOException
+    {
+        throw new UnsupportedOperationException();
+    }
 
     @Override
     protected void doStart() throws Exception
@@ -229,7 +257,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         {
             connection.onOpen();
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             if (isRunning())
                 LOG.warn("Exception while notifying connection " + connection, x);
@@ -249,9 +277,9 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         {
             connection.onClose();
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
-            LOG.info("Exception while notifying connection " + connection, x);
+            LOG.debug("Exception while notifying connection " + connection, x);
         }
     }
 
@@ -312,6 +340,11 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         ContainerLifeCycle.dump(out, indent, TypeUtil.asList(_selectors));
     }
 
+    private enum State
+    {
+        CHANGES, MORE_CHANGES, SELECT, WAKEUP, PROCESS
+    }
+
     /**
      * <p>{@link ManagedSelector} wraps a {@link Selector} simplifying non-blocking operations on channels.</p>
      * <p>{@link ManagedSelector} runs the select loop, which waits on {@link Selector#select()} until events
@@ -320,13 +353,11 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      */
     public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dumpable
     {
+        private final AtomicReference<State> _state= new AtomicReference<>(State.PROCESS);
         private final Queue<Runnable> _changes = new ConcurrentArrayQueue<>();
-
         private final int _id;
         private Selector _selector;
         private volatile Thread _thread;
-        private boolean _needsWakeup = true;
-        private boolean _runningChanges = false;
 
         public ManagedSelector(int id)
         {
@@ -339,6 +370,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         {
             super.doStart();
             _selector = Selector.open();
+            _state.set(State.PROCESS);
         }
 
         @Override
@@ -352,6 +384,26 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         }
 
         /**
+         * Submit a task to update a selector key.  If the System property {@link SelectorManager#SUBMIT_KEY_UPDATES}
+         * is set true (default is false), the task is passed to {@link #submit(Runnable)}.   Otherwise it is run immediately and the selector 
+         * woken up if need be.   
+         * @param update the update to a key
+         */
+        public void updateKey(Runnable update)
+        {
+            if (__submitKeyUpdates)
+            {
+                submit(update);
+            }
+            else
+            {
+                runChange(update);
+                if (_state.compareAndSet(State.SELECT, State.WAKEUP))
+                   wakeup();
+            }
+        }
+        
+        /**
          * <p>Submits a change to be executed in the selector thread.</p>
          * <p>Changes may be submitted from any thread, and the selector thread woken up
          * (if necessary) to execute the change.</p>
@@ -360,54 +412,63 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
          */
         public void submit(Runnable change)
         {
-            // if we have been called by the selector thread we can directly run the change
-            if (_thread==Thread.currentThread())
+            // This method may be called from the selector thread, and therefore
+            // we could directly run the change without queueing, but this may
+            // lead to stack overflows on a busy server, so we always offer the
+            // change to the queue and process the state.
+
+            _changes.offer(change);
+            LOG.debug("Queued change {}", change);
+
+            out: while (true)
             {
-                // If we are already iterating over the changes, just add this change to the list.
-                // No race here because it is this thread that is iterating over the changes.
-                if (_runningChanges)
-                    _changes.offer(change);
-                else
+                switch (_state.get())
                 {
-                    // Otherwise we run the queued changes
-                    runChanges();
-                    // and then directly run the passed change
-                    runChange(change);
+                    case SELECT:
+                        // Avoid multiple wakeup() calls if we the CAS fails
+                        if (!_state.compareAndSet(State.SELECT, State.WAKEUP))
+                            continue;
+                        wakeup();
+                        break out;
+                    case CHANGES:
+                        // Tell the selector thread that we have more changes.
+                        // If we fail to CAS, we possibly need to wakeup(), so loop.
+                        if (_state.compareAndSet(State.CHANGES, State.MORE_CHANGES))
+                            break out;
+                        continue;
+                    case WAKEUP:
+                        // Do nothing, we have already a wakeup scheduled
+                        break out;
+                    case MORE_CHANGES:
+                        // Do nothing, we already notified the selector thread of more changes
+                        break out;
+                    case PROCESS:
+                        // Do nothing, the changes will be run after the processing
+                        break out;
+                    default:
+                        throw new IllegalStateException();
                 }
-            }
-            else
-            {
-                // otherwise we have to queue the change and wakeup the selector
-                _changes.offer(change);
-                LOG.debug("Queued change {}", change);
-                boolean wakeup = _needsWakeup;
-                if (wakeup)
-                    wakeup();
             }
         }
 
         private void runChanges()
         {
-            try
-            {
-                if (_runningChanges)
-                    throw new IllegalStateException();
-                _runningChanges=true;
-
-                Runnable change;
-                while ((change = _changes.poll()) != null)
-                    runChange(change);
-            }
-            finally
-            {
-                _runningChanges=false;
-            }
+            Runnable change;
+            while ((change = _changes.poll()) != null)
+                runChange(change);
         }
 
         protected void runChange(Runnable change)
         {
-            LOG.debug("Running change {}", change);
-            change.run();
+            try
+            {
+                LOG.debug("Running change {}", change);
+                change.run();
+            }
+            catch (Throwable x)
+            {
+                LOG.debug("Could not run change " + change, x);
+            }
         }
 
         @Override
@@ -417,11 +478,11 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             String name = _thread.getName();
             try
             {
-                _thread.setName(name + "-selector-" + _id);
+                _thread.setName(name + "-selector-" + SelectorManager.this.getClass().getSimpleName()+"@"+Integer.toHexString(SelectorManager.this.hashCode())+"/"+_id);
                 LOG.debug("Starting {} on {}", _thread, this);
                 while (isRunning())
                     select();
-                processChanges();
+                runChanges();
             }
             finally
             {
@@ -440,7 +501,30 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             boolean debug = LOG.isDebugEnabled();
             try
             {
-                processChanges();
+                _state.set(State.CHANGES);
+
+                // Run the changes, and only exit if we ran all changes
+                out: while(true)
+                {
+                    switch (_state.get())
+                    {
+                        case CHANGES:
+                            runChanges();
+                            if (_state.compareAndSet(State.CHANGES, State.SELECT))
+                                break out;
+                            continue;
+                        case MORE_CHANGES:
+                            runChanges();
+                            _state.set(State.CHANGES);
+                            continue;
+                        default:
+                            throw new IllegalStateException();    
+                    }
+                }
+                // Must check first for SELECT and *then* for WAKEUP
+                // because we read the state twice in the assert, and
+                // it could change from SELECT to WAKEUP in between.
+                assert _state.get() == State.SELECT || _state.get() == State.WAKEUP;
 
                 if (debug)
                     LOG.debug("Selector loop waiting on select");
@@ -448,7 +532,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 if (debug)
                     LOG.debug("Selector loop woken up from select, {}/{} selected", selected, _selector.keys().size());
 
-                _needsWakeup = false;
+                _state.set(State.PROCESS);
 
                 Set<SelectionKey> selectedKeys = _selector.selectedKeys();
                 for (SelectionKey key : selectedKeys)
@@ -468,27 +552,13 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 }
                 selectedKeys.clear();
             }
-            catch (Exception x)
+            catch (Throwable x)
             {
                 if (isRunning())
                     LOG.warn(x);
                 else
                     LOG.ignore(x);
             }
-        }
-
-        private void processChanges()
-        {
-            runChanges();
-
-            // If tasks are submitted between these 2 statements, they will not
-            // wakeup the selector, therefore below we run again the tasks
-
-            _needsWakeup = true;
-
-            // Run again the tasks to avoid the race condition where a task is
-            // submitted but will not wake up the selector
-            runChanges();
         }
 
         private void processKey(SelectionKey key)
@@ -504,6 +574,10 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 {
                     processConnect(key, (Connect)attachment);
                 }
+                else if (key.isAcceptable())
+                {
+                    processAccept(key);
+                }
                 else
                 {
                     throw new IllegalStateException();
@@ -513,22 +587,22 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             {
                 LOG.debug("Ignoring cancelled key for channel {}", key.channel());
                 if (attachment instanceof EndPoint)
-                    ((EndPoint)attachment).close();
+                    closeNoExceptions((EndPoint)attachment);
             }
-            catch (Exception x)
+            catch (Throwable x)
             {
                 LOG.warn("Could not process key for channel " + key.channel(), x);
                 if (attachment instanceof EndPoint)
-                    ((EndPoint)attachment).close();
+                    closeNoExceptions((EndPoint)attachment);
             }
         }
 
         private void processConnect(SelectionKey key, Connect connect)
         {
-            key.attach(connect.attachment);
             SocketChannel channel = (SocketChannel)key.channel();
             try
             {
+                key.attach(connect.attachment);
                 boolean connected = finishConnect(channel);
                 if (connected)
                 {
@@ -542,10 +616,27 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                     throw new ConnectException();
                 }
             }
-            catch (Exception x)
+            catch (Throwable x)
             {
                 connect.failed(x);
+            }
+        }
+        
+        private void processAccept(SelectionKey key)
+        {
+            ServerSocketChannel server = (ServerSocketChannel)key.channel();
+            SocketChannel channel = null;
+            try
+            {
+                while ((channel = server.accept()) != null)
+                {
+                    accepted(channel);
+                }
+            }
+            catch (Throwable x)
+            {
                 closeNoExceptions(channel);
+                LOG.warn("Accept failed for channel " + channel, x);
             }
         }
 
@@ -553,9 +644,10 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         {
             try
             {
-                closeable.close();
+                if (closeable != null)
+                    closeable.close();
             }
-            catch (IOException x)
+            catch (Throwable x)
             {
                 LOG.ignore(x);
             }
@@ -684,6 +776,31 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             }
         }
 
+        private class Acceptor implements Runnable
+        {
+            private final ServerSocketChannel _channel;
+
+            public Acceptor(ServerSocketChannel channel)
+            {
+                this._channel = channel;
+            }
+
+            @Override
+            public void run()
+            {
+                try
+                {
+                    SelectionKey key = _channel.register(_selector, SelectionKey.OP_ACCEPT, null);
+                    LOG.debug("{} acceptor={}", this, key);
+                }
+                catch (Throwable x)
+                {
+                    closeNoExceptions(_channel);
+                    LOG.warn(x);
+                }
+            }
+        }
+
         private class Accept implements Runnable
         {
             private final SocketChannel _channel;
@@ -702,8 +819,9 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                     EndPoint endpoint = createEndPoint(_channel, key);
                     key.attach(endpoint);
                 }
-                catch (IOException x)
+                catch (Throwable x)
                 {
+                    closeNoExceptions(_channel);
                     LOG.debug(x);
                 }
             }
@@ -730,16 +848,20 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 {
                     channel.register(_selector, SelectionKey.OP_CONNECT, this);
                 }
-                catch (ClosedSelectorException | ClosedChannelException x)
+                catch (Throwable x)
                 {
-                    LOG.debug(x);
+                    failed(x);
                 }
             }
 
             protected void failed(Throwable failure)
             {
                 if (failed.compareAndSet(false, true))
+                {
+                    timeout.cancel();
+                    closeNoExceptions(channel);
                     connectionFailed(channel, failure, attachment);
+                }
             }
         }
 
@@ -759,19 +881,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 if (channel.isConnectionPending())
                 {
                     LOG.debug("Channel {} timed out while connecting, closing it", channel);
-                    try
-                    {
-                        // This will unregister the channel from the selector
-                        channel.close();
-                    }
-                    catch (IOException x)
-                    {
-                        LOG.ignore(x);
-                    }
-                    finally
-                    {
-                        connect.failed(new SocketTimeoutException());
-                    }
+                    connect.failed(new SocketTimeoutException());
                 }
             }
         }
@@ -836,7 +946,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             {
                 try
                 {
-                    endPoint.getConnection().close();
+                    closeNoExceptions(endPoint.getConnection());
                 }
                 finally
                 {

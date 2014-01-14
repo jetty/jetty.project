@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -31,6 +31,7 @@ import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
@@ -67,7 +68,7 @@ public class BrowserSocket
                     randomText[i] = letters[rand.nextInt(lettersLen)];
                 }
                 msg = String.format("ManyThreads [%s]",String.valueOf(randomText));
-                remote.sendStringByFuture(msg);
+                remote.sendString(msg,null);
             }
         }
     }
@@ -98,6 +99,13 @@ public class BrowserSocket
     {
         this.session = null;
         LOG.info("Closed [{}, {}]",statusCode,reason);
+    }
+
+    @OnWebSocketError
+    public void onError(Throwable cause)
+    {
+        this.session = null;
+        LOG.warn("Error",cause);
     }
 
     @OnWebSocketMessage
@@ -219,7 +227,7 @@ public class BrowserSocket
         }
 
         // Async write
-        remote.sendStringByFuture(message);
+        remote.sendString(message,null);
     }
 
     private void writeMessage(String format, Object... args)

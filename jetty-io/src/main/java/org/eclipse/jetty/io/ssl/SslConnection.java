@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -107,21 +107,6 @@ public class SslConnection extends AbstractConnection
         this._bufferPool = byteBufferPool;
         this._sslEngine = sslEngine;
         this._decryptedEndPoint = newDecryptedEndPoint();
-
-        // commented out for now as it might cause native code being stuck in preClose0.
-        // See: https://java.net/jira/browse/GRIZZLY-547
-
-//        if (endPoint instanceof SocketBased)
-//        {
-//            try
-//            {
-//                ((SocketBased)endPoint).getSocket().setSoLinger(true, 30000);
-//            }
-//            catch (SocketException e)
-//            {
-//                throw new RuntimeIOException(e);
-//            }
-//        }
     }
 
     protected DecryptedEndPoint newDecryptedEndPoint()
@@ -647,11 +632,6 @@ public class SslConnection extends AbstractConnection
                     }
                 }
             }
-            catch (SSLException e)
-            {
-                getEndPoint().close();
-                throw new EofException(e);
-            }
             catch (Exception e)
             {
                 getEndPoint().close();
@@ -896,6 +876,7 @@ public class SslConnection extends AbstractConnection
         @Override
         public void close()
         {
+            super.close();
             // First send the TLS Close Alert, then the FIN
             shutdownOutput();
             getEndPoint().close();

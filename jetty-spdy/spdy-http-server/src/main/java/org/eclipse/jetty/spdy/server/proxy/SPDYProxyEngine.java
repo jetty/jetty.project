@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -43,7 +43,7 @@ import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.StreamStatus;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.client.SPDYClient;
-import org.eclipse.jetty.spdy.server.http.HTTPSPDYHeader;
+import org.eclipse.jetty.spdy.http.HTTPSPDYHeader;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Promise;
@@ -170,6 +170,12 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
         streamPromise.data(serverDataInfo);
     }
 
+    @Override
+    public void onFailure(Stream stream, Throwable x)
+    {
+        LOG.debug(x);
+    }
+
     private Session produceSession(String host, short version, InetSocketAddress address)
     {
         try
@@ -178,7 +184,7 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
             if (session == null)
             {
                 SPDYClient client = factory.newSPDYClient(version);
-                session = client.connect(address, sessionListener).get(getConnectTimeout(), TimeUnit.MILLISECONDS);
+                session = client.connect(address, sessionListener);
                 LOG.debug("Proxy session connected to {}", address);
                 Session existing = serverSessions.putIfAbsent(host, session);
                 if (existing != null)
@@ -206,7 +212,7 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
                 if (header != null)
                 {
                     String toName = httpHeader.name(toVersion);
-                    for (String value : header.values())
+                    for (String value : header.getValues())
                         headers.add(toName, value);
                 }
             }
@@ -266,6 +272,12 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
             };
 
             pushStreamPromise.data(clientDataInfo);
+        }
+
+        @Override
+        public void onFailure(Stream stream, Throwable x)
+        {
+            LOG.debug(x);
         }
     }
 

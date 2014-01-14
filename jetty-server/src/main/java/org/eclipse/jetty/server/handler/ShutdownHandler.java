@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,6 +20,7 @@ package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.net.URL;
 
@@ -132,7 +133,6 @@ public class ShutdownHandler extends HandlerWrapper
         }
     }
 
-    @SuppressWarnings("resource")
     private String getServerUrl()
     {
         NetworkConnector connector=null;
@@ -176,18 +176,18 @@ public class ShutdownHandler extends HandlerWrapper
         }
         if (!hasCorrectSecurityToken(request))
         {
-            LOG.warn("Unauthorized shutdown attempt from " + getRemoteAddr(request));
+            LOG.warn("Unauthorized tokenless shutdown attempt from " + request.getRemoteAddr());
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
             return;
         }
-        if (!requestFromLocalhost(request))
+        if (!requestFromLocalhost(baseRequest))
         {
-            LOG.warn("Unauthorized shutdown attempt from " + getRemoteAddr(request));
+            LOG.warn("Unauthorized non-loopback shutdown attempt from " + request.getRemoteAddr());
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
             return;
         }
 
-        LOG.info("Shutting down by request from " + getRemoteAddr(request));
+        LOG.info("Shutting down by request from " + request.getRemoteAddr());
 
         final Server server=getServer();
         new Thread()
@@ -211,14 +211,14 @@ public class ShutdownHandler extends HandlerWrapper
         }.start();
     }
 
-    private boolean requestFromLocalhost(HttpServletRequest request)
+    private boolean requestFromLocalhost(Request request)
     {
-        return "127.0.0.1".equals(getRemoteAddr(request));
-    }
-
-    protected String getRemoteAddr(HttpServletRequest request)
-    {
-        return request.getRemoteAddr();
+        InetSocketAddress addr = request.getRemoteInetSocketAddress();
+        if (addr == null)
+        {
+            return false;
+        }
+        return addr.getAddress().isLoopbackAddress();
     }
 
     private boolean hasCorrectSecurityToken(HttpServletRequest request)

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,12 +20,13 @@ package org.eclipse.jetty.websocket.api;
 
 import java.net.HttpCookie;
 import java.net.URI;
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
+import java.util.TreeMap;
 
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.util.QuoteUtil;
@@ -36,8 +37,8 @@ public class UpgradeRequest
     private List<String> subProtocols = new ArrayList<>();
     private List<ExtensionConfig> extensions = new ArrayList<>();
     private List<HttpCookie> cookies = new ArrayList<>();
-    private Map<String, List<String>> headers = new HashMap<>();
-    private Map<String, String[]> parameters = new HashMap<>();
+    private Map<String, List<String>> headers = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    private Map<String, List<String>> parameters = new HashMap<>();
     private Object session;
     private String httpVersion;
     private String method;
@@ -76,6 +77,11 @@ public class UpgradeRequest
         }
     }
 
+    public void clearHeaders()
+    {
+        headers.clear();
+    }
+
     public List<HttpCookie> getCookies()
     {
         return cookies;
@@ -88,7 +94,7 @@ public class UpgradeRequest
 
     public String getHeader(String name)
     {
-        List<String> values = headers.get(name.toLowerCase(Locale.ENGLISH));
+        List<String> values = headers.get(name);
         // no value list
         if (values == null)
         {
@@ -122,7 +128,7 @@ public class UpgradeRequest
 
     public int getHeaderInt(String name)
     {
-        List<String> values = headers.get(name.toLowerCase(Locale.ENGLISH));
+        List<String> values = headers.get(name);
         // no value list
         if (values == null)
         {
@@ -177,11 +183,11 @@ public class UpgradeRequest
      * 
      * @return a unmodifiable map of query parameters of the request.
      */
-    public Map<String, String[]> getParameterMap()
+    public Map<String, List<String>> getParameterMap()
     {
         return Collections.unmodifiableMap(parameters);
     }
-    
+
     public String getProtocolVersion()
     {
         String version = getHeader("Sec-WebSocket-Version");
@@ -219,6 +225,19 @@ public class UpgradeRequest
         return subProtocols;
     }
 
+    /**
+     * Get the User Principal for this request.
+     * <p>
+     * Only applicable when using UpgradeRequest from server side.
+     * 
+     * @return the user principal
+     */
+    public Principal getUserPrincipal()
+    {
+        // Server side should override to implement
+        return null;
+    }
+
     public boolean hasSubProtocol(String test)
     {
         for (String protocol : subProtocols)
@@ -246,16 +265,37 @@ public class UpgradeRequest
         this.cookies = cookies;
     }
 
+    public void setExtensions(List<ExtensionConfig> configs)
+    {
+        this.extensions.clear();
+        if (configs != null)
+        {
+            this.extensions.addAll(configs);
+        }
+    }
+
     public void setHeader(String name, List<String> values)
     {
-        headers.put(name.toLowerCase(Locale.ENGLISH),values);
+        headers.put(name,values);
     }
 
     public void setHeader(String name, String value)
     {
         List<String> values = new ArrayList<>();
         values.add(value);
-        setHeader(name.toLowerCase(Locale.ENGLISH),values);
+        setHeader(name,values);
+    }
+
+    public void setHeaders(Map<String, List<String>> headers)
+    {
+        clearHeaders();
+
+        for (Map.Entry<String, List<String>> entry : headers.entrySet())
+        {
+            String name = entry.getKey();
+            List<String> values = entry.getValue();
+            setHeader(name,values);
+        }
     }
 
     public void setHttpVersion(String httpVersion)
@@ -268,7 +308,7 @@ public class UpgradeRequest
         this.method = method;
     }
 
-    protected void setParameterMap(Map<String, String[]> parameters)
+    protected void setParameterMap(Map<String, List<String>> parameters)
     {
         this.parameters.clear();
         this.parameters.putAll(parameters);

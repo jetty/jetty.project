@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,10 +28,10 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.util.MultiMap;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Utf8Appendable;
 import org.junit.Assert;
@@ -330,7 +330,7 @@ public class HttpURITest
 
         huri=new HttpURI(uri);
         params = new MultiMap<>();
-        huri.decodeQueryTo(params,"UTF-8");
+        huri.decodeQueryTo(params,StandardCharsets.UTF_8);
         assertEquals("data"+Utf8Appendable.REPLACEMENT+"here"+Utf8Appendable.REPLACEMENT,params.getValue("invalid",0));
 
     }
@@ -343,7 +343,7 @@ public class HttpURITest
             HttpURI uri = new HttpURI("/path?value="+URLEncoder.encode(value,"UTF-8"));
 
             MultiMap<String> parameters = new MultiMap<>();
-            uri.decodeQueryTo(parameters,"UTF-8");
+            uri.decodeQueryTo(parameters,StandardCharsets.UTF_8);
             assertEquals(value,parameters.getString("value"));
         }
     }
@@ -366,7 +366,7 @@ public class HttpURITest
         {
             try
             {
-                byte[] buf = connect_tests[i][0].getBytes(StringUtil.__UTF8);
+                byte[] buf = connect_tests[i][0].getBytes(StandardCharsets.UTF_8);
 
                 uri.parseConnect(buf,2,buf.length-4);
                 assertEquals("path"+i,connect_tests[i][0].trim(),uri.getPath());
@@ -384,13 +384,13 @@ public class HttpURITest
     public void testNonURIAscii() throws Exception
     {
         String url = "http://www.foo.com/ma\u00F1ana";
-        byte[] asISO = url.getBytes("ISO-8859-1");
-        new String(asISO, "ISO-8859-1");
+        byte[] asISO = url.getBytes(StandardCharsets.ISO_8859_1);
+        new String(asISO, StandardCharsets.ISO_8859_1);
 
         //use a non UTF-8 charset as the encoding and url-escape as per
         //http://www.w3.org/TR/html40/appendix/notes.html#non-ascii-chars
         String s = URLEncoder.encode(url, "ISO-8859-1");
-        HttpURI uri = new HttpURI(Charset.forName("ISO-8859-1"));
+        HttpURI uri = new HttpURI(StandardCharsets.ISO_8859_1);
 
         //parse it, using the same encoding
         uri.parse(s);

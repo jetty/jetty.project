@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Set;
 
 import org.eclipse.jetty.deploy.test.XmlConfiguredJetty;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.junit.Assert;
 import org.junit.Rule;
@@ -29,13 +30,14 @@ import org.junit.Test;
 
 public class DeploymentManagerTest
 {
-	@Rule
-	public TestingDir testdir = new TestingDir();
+    @Rule
+    public TestingDir testdir = new TestingDir();
 
-	@Test
+    @Test
     public void testReceiveApp() throws Exception
     {
         DeploymentManager depman = new DeploymentManager();
+        depman.setContexts(new ContextHandlerCollection());
         depman.setDefaultLifeCycleGoal(null); // no default
         AppLifeCyclePathCollector pathtracker = new AppLifeCyclePathCollector();
         MockAppProvider mockProvider = new MockAppProvider();

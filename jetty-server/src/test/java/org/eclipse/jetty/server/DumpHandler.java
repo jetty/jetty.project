@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,6 +24,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.util.Enumeration;
 
 import javax.servlet.ServletException;
@@ -34,7 +35,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -97,11 +97,12 @@ public class DumpHandler extends AbstractHandler
 
         OutputStream out = response.getOutputStream();
         ByteArrayOutputStream buf = new ByteArrayOutputStream(2048);
-        Writer writer = new OutputStreamWriter(buf,StringUtil.__ISO_8859_1);
+        Writer writer = new OutputStreamWriter(buf,StandardCharsets.ISO_8859_1);
         writer.write("<html><h1>"+label+"</h1>");
         writer.write("<pre>\npathInfo="+request.getPathInfo()+"\n</pre>\n");
         writer.write("<pre>\ncontentType="+request.getContentType()+"\n</pre>\n");
         writer.write("<pre>\nencoding="+request.getCharacterEncoding()+"\n</pre>\n");
+        writer.write("<pre>\nservername="+request.getServerName()+"\n</pre>\n");
         writer.write("<h3>Header:</h3><pre>");
         writer.write(request.getMethod()+" "+request.getRequestURI()+" "+request.getProtocol()+"\n");
         Enumeration<String> headers = request.getHeaderNames();
@@ -178,7 +179,7 @@ public class DumpHandler extends AbstractHandler
         }
 
         writer.write("</pre>\n<h3>Attributes:</h3>\n<pre>");
-        Enumeration attributes=request.getAttributeNames();
+        Enumeration<String> attributes=request.getAttributeNames();
         if (attributes!=null && attributes.hasMoreElements())
         {
             while(attributes.hasMoreElements())

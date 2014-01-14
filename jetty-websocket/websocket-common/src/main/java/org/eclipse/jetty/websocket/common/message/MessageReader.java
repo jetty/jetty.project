@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,79 +19,34 @@
 package org.eclipse.jetty.websocket.common.message;
 
 import java.io.IOException;
-import java.io.Reader;
+import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
-
-import org.eclipse.jetty.util.Utf8StringBuilder;
-import org.eclipse.jetty.websocket.common.events.AnnotatedEventDriver;
+import java.nio.charset.StandardCharsets;
 
 /**
- * Support class for reading text message data as an Reader.
+ * Support class for reading a (single) WebSocket TEXT message via a Reader.
  * <p>
- * Due to the spec, this reader is forced to use the UTF8 charset.
+ * In compliance to the WebSocket spec, this reader always uses the UTF8 {@link Charset}.
  */
-public class MessageReader extends Reader implements MessageAppender
+public class MessageReader extends InputStreamReader implements MessageAppender
 {
-    private final AnnotatedEventDriver driver;
-    private final Utf8StringBuilder utf;
-    private int size;
-    private boolean finished;
-    private boolean needsNotification;
+    private final MessageInputStream stream;
 
-    public MessageReader(AnnotatedEventDriver driver)
+    public MessageReader(MessageInputStream stream)
     {
-        this.driver = driver;
-        this.utf = new Utf8StringBuilder();
-        size = 0;
-        finished = false;
-        needsNotification = true;
+        super(stream,StandardCharsets.UTF_8);
+        this.stream = stream;
     }
 
     @Override
-    public void appendMessage(ByteBuffer payload) throws IOException
+    public void appendFrame(ByteBuffer payload, boolean isLast) throws IOException
     {
-        if (finished)
-        {
-            throw new IOException("Cannot append to finished buffer");
-        }
-
-        if (payload == null)
-        {
-            // empty payload is valid
-            return;
-        }
-
-        driver.getPolicy().assertValidMessageSize(size + payload.remaining());
-        size += payload.remaining();
-
-        synchronized (utf)
-        {
-            utf.append(payload);
-        }
-
-        if (needsNotification)
-        {
-            needsNotification = true;
-            this.driver.onReader(this);
-        }
-    }
-
-    @Override
-    public void close() throws IOException
-    {
-        finished = true;
+        this.stream.appendFrame(payload,isLast);
     }
 
     @Override
     public void messageComplete()
     {
-        finished = true;
-    }
-
-    @Override
-    public int read(char[] cbuf, int off, int len) throws IOException
-    {
-        // TODO Auto-generated method stub
-        return 0;
+        this.stream.messageComplete();
     }
 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -163,12 +163,6 @@ public class JspcMojo extends AbstractMojo
      */
     private boolean keepSources;
 
-    /**
-     * Default root package for all generated classes
-     * 
-     * @parameter default-value="jsp"
-     */
-    private String packageRoot;
 
     /**
      * Root directory for all html/jsp etc files
@@ -209,48 +203,6 @@ public class JspcMojo extends AbstractMojo
      */
     private File classesDirectory;
 
-    /**
-     * Whether or not to output more verbose messages during compilation.
-     * 
-     * @parameter default-value="false";
-     */
-    private boolean verbose;
-
-    /**
-     * If true, validates tlds when parsing.
-     * 
-     * @parameter default-value="false";
-     */
-    private boolean validateXml;
-
-    /**
-     * The encoding scheme to use.
-     * 
-     * @parameter default-value="UTF-8"
-     */
-    private String javaEncoding;
-
-    /**
-     * Whether or not to generate JSR45 compliant debug info
-     * 
-     * @parameter default-value="true";
-     */
-    private boolean suppressSmap;
-
-    /**
-     * Whether or not to ignore precompilation errors caused by jsp fragments.
-     * 
-     * @parameter default-value="false"
-     */
-    private boolean ignoreJspFragmentErrors;
-
-    /**
-     * Allows a prefix to be appended to the standard schema locations so that
-     * they can be loaded from elsewhere.
-     * 
-     * @parameter
-     */
-    private String schemaResourcePrefix;
     
     /**
      * Patterns of jars on the system path that contain tlds. Use | to separate each pattern.
@@ -258,35 +210,32 @@ public class JspcMojo extends AbstractMojo
      * @parameter default-value=".*taglibs[^/]*\.jar|.*jstl-impl[^/]*\.jar$
      */
     private String tldJarNamePatterns;
-
-
-
+    
+    
     /**
-     * Should white spaces in template text between actions or directives be trimmed? Defaults to false.
+     * 
+     * The JspC instance being used to compile the jsps.
+     * 
      * @parameter
      */
-    private boolean trimSpaces = false;
+    private JspC jspc;
+
+
+
     
 
     public void execute() throws MojoExecutionException, MojoFailureException
     {
         if (getLog().isDebugEnabled())
         {
-            getLog().info("verbose=" + verbose);
+
             getLog().info("webAppSourceDirectory=" + webAppSourceDirectory);
             getLog().info("generatedClasses=" + generatedClasses);
             getLog().info("webXmlFragment=" + webXmlFragment);
             getLog().info("webXml="+webXml);
-            getLog().info("validateXml=" + validateXml);
-            getLog().info("packageRoot=" + packageRoot);
-            getLog().info("javaEncoding=" + javaEncoding);
             getLog().info("insertionMarker="+ (insertionMarker == null || insertionMarker.equals("") ? END_OF_WEBAPP : insertionMarker));
             getLog().info("keepSources=" + keepSources);
-            getLog().info("mergeFragment=" + mergeFragment);
-            getLog().info("suppressSmap=" + suppressSmap);
-            getLog().info("ignoreJspFragmentErrors=" + ignoreJspFragmentErrors);
-            getLog().info("schemaResourcePrefix=" + schemaResourcePrefix);
-            getLog().info("trimSpaces=" + trimSpaces);
+            getLog().info("mergeFragment=" + mergeFragment);            
         }
         try
         {
@@ -338,22 +287,17 @@ public class JspcMojo extends AbstractMojo
         }
 
         Thread.currentThread().setContextClassLoader(webAppClassLoader);
-
-        JspC jspc = new JspC();
+  
+        if (jspc == null)
+            jspc = new JspC();
+        
         jspc.setWebXmlFragment(webXmlFragment);
-        jspc.setUriroot(webAppSourceDirectory);
-        jspc.setPackage(packageRoot);
+        jspc.setUriroot(webAppSourceDirectory);     
         jspc.setOutputDir(generatedClasses);
-        jspc.setValidateXml(validateXml);
         jspc.setClassPath(webAppClassPath.toString());
         jspc.setCompile(true);
-        jspc.setSmapSuppressed(suppressSmap);
-        jspc.setSmapDumped(!suppressSmap);
-        jspc.setJavaEncoding(javaEncoding);
-        jspc.setTrimSpaces(trimSpaces);
         jspc.setSystemClassPath(sysClassPath);
-        
-        
+               
 
         // JspC#setExtensions() does not exist, so 
         // always set concrete list of files that will be processed.
@@ -362,34 +306,8 @@ public class JspcMojo extends AbstractMojo
         getLog().info("Includes="+includes);
         getLog().info("Excludes="+excludes);
         jspc.setJspFiles(jspFiles);
-        if (verbose)
-        {
-            getLog().info("Files selected to precompile: " + jspFiles);
-        }
-        
 
-        try
-        {
-            jspc.setIgnoreJspFragmentErrors(ignoreJspFragmentErrors);
-        }
-        catch (NoSuchMethodError e)
-        {
-            getLog().debug("Tomcat Jasper does not support configuration option 'ignoreJspFragmentErrors': ignored");
-        }
-
-        try
-        {
-            if (schemaResourcePrefix != null)
-                jspc.setSchemaResourcePrefix(schemaResourcePrefix);
-        }
-        catch (NoSuchMethodError e)
-        {
-            getLog().debug("Tomcat Jasper does not support configuration option 'schemaResourcePrefix': ignored");
-        }
-        if (verbose)
-            jspc.setVerbose(99);
-        else
-            jspc.setVerbose(0);
+        getLog().info("Files selected to precompile: " + jspFiles);
 
         jspc.execute();
 

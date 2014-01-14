@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -49,10 +49,10 @@ public class EncodingHttpWriter extends HttpWriter
     public void write (char[] s,int offset, int length) throws IOException
     {
         HttpOutput out = _out;
-        if (length==0)
+        if (length==0 && out.isAllContentWritten())
         {
-            if (_out.isAllContentWritten())
-                close();
+            out.close();
+            return;
         }
             
         while (length > 0)

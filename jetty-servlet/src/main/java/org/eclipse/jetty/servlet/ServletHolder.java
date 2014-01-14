@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -323,6 +323,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                 throw ue;
         }
 
+        //check if we need to forcibly set load-on-startup
+        checkInitOnStartup();
 
         _identityService = _servletHandler.getIdentityService();
         if (_identityService!=null && _runAsRole!=null)
@@ -465,6 +467,23 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
 
         return isStarted()&& _unavailable==0;
     }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Check if there is a javax.servlet.annotation.ServletSecurity
+     * annotation on the servlet class. If there is, then we force
+     * it to be loaded on startup, because all of the security 
+     * constraints must be calculated as the container starts.
+     * 
+     */
+    private void checkInitOnStartup()
+    {
+        if (_class==null)
+            return;
+        
+        if ((_class.getAnnotation(javax.servlet.annotation.ServletSecurity.class) != null) && !_initOnStartup)
+            setInitOrder(Integer.MAX_VALUE);    
+    }
 
     /* ------------------------------------------------------------ */
     private void makeUnavailable(UnavailableException e)
@@ -521,6 +540,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                 _servlet=newInstance();
             if (_config==null)
                 _config=new Config();
+            
+          
 
             // Handle run as
             if (_identityService!=null)

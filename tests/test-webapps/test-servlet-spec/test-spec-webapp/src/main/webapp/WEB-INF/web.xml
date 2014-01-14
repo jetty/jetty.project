@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <web-app 
-   xmlns="http://java.sun.com/xml/ns/j2ee" 
+   xmlns="http://xmlns.jcp.org/xml/ns/javaee"
    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-   xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee http://java.sun.com/xml/ns/j2ee/web-app_2_5.xsd" 
+   xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
    metadata-complete="false"
-   version="2.5"> 
+   version="3.1"> 
 
   <display-name>Test Annotations WebApp</display-name>
   
@@ -51,14 +51,14 @@
 
   <env-entry>
     <env-entry-name>com.acme.AnnotationTest/avgAmount</env-entry-name>
-    <env-entry-value>1.25</env-entry-value>
     <env-entry-type>java.lang.Double</env-entry-type>
+    <env-entry-value>1.25</env-entry-value>
   </env-entry>
 
   <env-entry>
     <env-entry-name>someAmount</env-entry-name>
-    <env-entry-value>0.99</env-entry-value>
     <env-entry-type>java.lang.Double</env-entry-type>
+    <env-entry-value>0.99</env-entry-value>
   </env-entry>
 
   <security-constraint>
@@ -73,6 +73,10 @@
 
   <security-role>
     <role-name>admin</role-name>
+  </security-role>
+
+  <security-role>
+    <role-name>server-administrator</role-name>
   </security-role>
 
 

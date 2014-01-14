@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,6 +19,7 @@
 package org.eclipse.jetty.webapp;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.net.URL;
@@ -121,9 +122,24 @@ public class WebAppClassLoaderTest
         assertTrue(canLoadClass("org.acme.webapp.ClassInJarA"));
         assertTrue(canLoadClass("org.acme.webapp.ClassInJarB"));
         assertTrue(canLoadClass("org.acme.other.ClassInClassesC"));
-
         assertTrue(cantLoadClass("org.eclipse.jetty.webapp.Configuration"));
         assertTrue(cantLoadClass("org.eclipse.jetty.webapp.JarScanner"));
+
+        oldSysC=_context.getSystemClasses();
+        newSysC=new String[oldSysC.length+1];
+        newSysC[0]="org.acme.webapp.ClassInJarA";
+        System.arraycopy(oldSysC,0,newSysC,1,oldSysC.length);
+        _context.setSystemClasses(newSysC);
+
+        assertNotNull(_loader.getResource("org/acme/webapp/ClassInJarA.class"));
+        _context.setSystemClasses(oldSysC);
+
+        oldServC=_context.getServerClasses();
+        newServC=new String[oldServC.length+1];
+        newServC[0]="org.acme.webapp.ClassInJarA";
+        System.arraycopy(oldServC,0,newServC,1,oldServC.length);
+        _context.setServerClasses(newServC);
+        assertNotNull(_loader.getResource("org/acme/webapp/ClassInJarA.class"));
     }
 
     @Test

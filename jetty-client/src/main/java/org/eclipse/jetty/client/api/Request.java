@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -51,7 +51,9 @@ public interface Request
 {
     /**
      * @return the conversation id
+     * @deprecated do not use this method anymore
      */
+    @Deprecated
     long getConversationID();
 
     /**
@@ -76,16 +78,9 @@ public interface Request
     int getPort();
 
     /**
-     * @return the method of this request, such as GET or POST, or null if the method is not a standard HTTP method
-     * @deprecated use {@link #method()} instead
-     */
-    @Deprecated
-    HttpMethod getMethod();
-
-    /**
      * @return the method of this request, such as GET or POST, as a String
      */
-    String method();
+    String getMethod();
 
     /**
      * @param method the method of this request, such as GET or POST
@@ -361,6 +356,12 @@ public interface Request
     Request onResponseFailure(Response.FailureListener listener);
 
     /**
+     * @param listener a listener for complete event
+     * @return this request object
+     */
+    Request onComplete(Response.CompleteListener listener);
+
+    /**
      * Sends this request and returns the response.
      * <p />
      * This method should be used when a simple blocking semantic is needed, and when it is known
@@ -510,7 +511,7 @@ public interface Request
         /**
          * An empty implementation of {@link Listener}
          */
-        public static class Empty implements Listener
+        public static class Adapter implements Listener
         {
             @Override
             public void onQueued(Request request)

@@ -27,8 +27,7 @@ public interface ServerProxy
     /**
      * Adds a new web application to this server.
      * 
-     * @param webApp a WebApplicationProxy object.
-     * @param scanIntervalSeconds
+     * @param awc a AntWebAppContext object.
      */
     public void addWebApplication(AntWebAppContext awc);
 

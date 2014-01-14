@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-servlet-spec-parent</artifactId>
-    <version>9.0.7-SNAPSHOT</version>
+    <version>9.1.2-SNAPSHOT</version>
   </parent>
   <artifactId>test-container-initializer</artifactId>
   <packaging>jar</packaging>
@@ -20,9 +20,17 @@
   </build>
   <dependencies>
     <dependency>
+       <groupId>javax.servlet</groupId>
+       <artifactId>javax.servlet-api</artifactId>
+       <scope>provided</scope>
+    </dependency>
+
+<!--
+    <dependency>
       <groupId>org.eclipse.jetty.orbit</groupId>
       <artifactId>javax.servlet</artifactId>
       <scope>provided</scope>
     </dependency>
+-->
   </dependencies>
 </project>

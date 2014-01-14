@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,7 +22,6 @@ import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -76,18 +75,21 @@ public abstract class AbstractHTTPSPDYTest
 
     protected InetSocketAddress startHTTPServer(Handler handler) throws Exception
     {
-        return startHTTPServer(SPDY.V2, handler);
+        return startHTTPServer(SPDY.V2, handler, 30000);
     }
 
-    protected InetSocketAddress startHTTPServer(short version, Handler handler) throws Exception
+    protected InetSocketAddress startHTTPServer(short version, Handler handler, long idleTimeout) throws Exception
     {
-        server = new Server();
+        QueuedThreadPool threadPool = new QueuedThreadPool(256);
+        threadPool.setName("serverQTP");
+        server = new Server(threadPool);
         connector = newHTTPSPDYServerConnector(version);
         connector.setPort(0);
-        connector.setIdleTimeout(30000);
+        connector.setIdleTimeout(idleTimeout);
         server.addConnector(connector);
         server.setHandler(handler);
         server.start();
+        server.dumpStdErr();
         return new InetSocketAddress("localhost", connector.getLocalPort());
     }
 
@@ -120,7 +122,7 @@ public abstract class AbstractHTTPSPDYTest
             clientFactory = newSPDYClientFactory(threadPool);
             clientFactory.start();
         }
-        return clientFactory.newSPDYClient(version).connect(socketAddress, listener).get(5, TimeUnit.SECONDS);
+        return clientFactory.newSPDYClient(version).connect(socketAddress, listener);
     }
 
     protected SPDYClient.Factory newSPDYClientFactory(Executor threadPool)

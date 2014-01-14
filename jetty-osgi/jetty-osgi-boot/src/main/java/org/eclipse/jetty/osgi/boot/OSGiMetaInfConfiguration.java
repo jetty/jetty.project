@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,7 +21,11 @@ package org.eclipse.jetty.osgi.boot;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.osgi.boot.utils.internal.PackageAdminServiceTracker;
@@ -53,8 +57,8 @@ public class OSGiMetaInfConfiguration extends MetaInfConfiguration
     @Override
     public void preConfigure(final WebAppContext context) throws Exception
     {
-        List<Resource> frags = (List<Resource>) context.getAttribute(METAINF_FRAGMENTS);
-        List<Resource> resfrags = (List<Resource>) context.getAttribute(METAINF_RESOURCES);
+        Map<Resource, Resource> frags = (Map<Resource, Resource>) context.getAttribute(METAINF_FRAGMENTS);
+        Set<Resource> resfrags = (Set<Resource>) context.getAttribute(METAINF_RESOURCES);
         List<Resource> tldfrags = (List<Resource>) context.getAttribute(METAINF_TLDS);
 
         Bundle[] fragments = PackageAdminServiceTracker.INSTANCE.getFragmentsAndRequiredBundles((Bundle)context.getAttribute(OSGiWebappConstants.JETTY_OSGI_BUNDLE));
@@ -73,10 +77,11 @@ public class OSGiMetaInfConfiguration extends MetaInfConfiguration
                     {
                         if (frags == null)
                         {
-                            frags = new ArrayList<Resource>();
+                            frags = new HashMap<Resource,Resource>();
                             context.setAttribute(METAINF_FRAGMENTS, frags);
                         }
-                        frags.add(Resource.newResource(BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(frag).toURI()));
+                        frags.put(Resource.newResource(BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(frag).toURI()), 
+                                  Resource.newResource(webFrag));
                     }
                     if (resEnum != null && resEnum.hasMoreElements())
                     {
@@ -92,7 +97,7 @@ public class OSGiMetaInfConfiguration extends MetaInfConfiguration
                         {
                             if (resfrags == null)
                             {
-                                resfrags = new ArrayList<Resource>();
+                                resfrags = new HashSet<Resource>();
                                 context.setAttribute(METAINF_RESOURCES, resfrags);
                             }
                             resfrags.add(Resource.newResource(BundleFileLocatorHelperFactory.getFactory().getHelper().getLocalURL(resourcesEntry)));

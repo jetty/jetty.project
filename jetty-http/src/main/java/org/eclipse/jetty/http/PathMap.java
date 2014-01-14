@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.StringTokenizer;
 
 import org.eclipse.jetty.util.ArrayTernaryTrie;
-import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.util.URIUtil;
 

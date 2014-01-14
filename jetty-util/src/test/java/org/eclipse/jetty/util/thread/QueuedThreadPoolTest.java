@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -88,7 +88,7 @@ public class QueuedThreadPoolTest
         waitForIdle(tp,5);
 
         RunningJob job=new RunningJob();
-        tp.dispatch(job);
+        tp.execute(job);
         waitForIdle(tp,4);
         waitForThreads(tp,5);
 
@@ -104,14 +104,14 @@ public class QueuedThreadPoolTest
         for (int i=0;i<jobs.length;i++)
         {
             jobs[i]=new RunningJob();
-            tp.dispatch(jobs[i]);
+            tp.execute(jobs[i]);
         }
 
         waitForIdle(tp,1);
         waitForThreads(tp,6);
 
         job=new RunningJob();
-        tp.dispatch(job);
+        tp.execute(job);
         waitForIdle(tp,1);
         waitForThreads(tp,7);
 
@@ -135,7 +135,7 @@ public class QueuedThreadPoolTest
         for (int i=0;i<jobs.length;i++)
         {
             jobs[i]=new RunningJob();
-            tp.dispatch(jobs[i]);
+            tp.execute(jobs[i]);
         }
 
         waitForIdle(tp,0);
@@ -182,10 +182,10 @@ public class QueuedThreadPoolTest
         waitForThreads(tp,2);
 
         sleep.set(200);
-        tp.dispatch(job);
-        tp.dispatch(job);
+        tp.execute(job);
+        tp.execute(job);
         for (int i=0;i<20;i++)
-            tp.dispatch(job);
+            tp.execute(job);
 
         waitForThreads(tp,10);
         waitForIdle(tp,0);
@@ -193,7 +193,7 @@ public class QueuedThreadPoolTest
         sleep.set(5);
         for (int i=0;i<500;i++)
         {
-            tp.dispatch(job);
+            tp.execute(job);
             Thread.sleep(10);
         }
         waitForThreads(tp,2);
@@ -206,7 +206,7 @@ public class QueuedThreadPoolTest
         QueuedThreadPool tp= new QueuedThreadPool();
         tp.setStopTimeout(500);
         tp.start();
-        tp.dispatch(new Runnable(){
+        tp.execute(new Runnable(){
             public void run () {
                 while (true) {
                     try {

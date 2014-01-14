@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.net.Socket;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.List;
@@ -41,6 +42,8 @@ import org.eclipse.jetty.test.support.rawhttp.HttpTesting;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.StringAssert;
+import org.eclipse.jetty.util.MultiPartInputStreamParser;
+import org.hamcrest.Matchers;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
@@ -91,6 +94,7 @@ public abstract class RFC2616BaseTest
         server = testableserver;
         server.load();
         server.start();
+        //server.getServer().dumpStdErr();
     }
     
     @Before
@@ -216,11 +220,11 @@ public abstract class RFC2616BaseTest
 
         response = responses.get(1); // Response 2
         assertEquals("3.6.1 Transfer Codings / Response 2 Code", HttpStatus.OK_200, response.getStatus());
-        assertTrue("3.6.1 Transfer Codings / Chunked String",response.getContent().contains("6789abcde\n"));
+        assertThat("3.6.1 Transfer Codings / Chunked String",response.getContent(),Matchers.containsString("6789abcde\n"));
 
         response = responses.get(2); // Response 3
         assertEquals("3.6.1 Transfer Codings / Response 3 Code", HttpStatus.OK_200, response.getStatus());
-        assertTrue("3.6.1 Transfer Codings / No Body",response.getContent() == null);
+        assertEquals("3.6.1 Transfer Codings / No Body","",response.getContent());
     }
 
     /**
@@ -273,7 +277,7 @@ public abstract class RFC2616BaseTest
 
         response = responses.get(2); // Response 3
         assertEquals("3.6.1 Transfer Codings / Response 3 Code", HttpStatus.OK_200, response.getStatus());
-        assertTrue("3.6.1 Transfer Codings / No Body", response.getContent() == null);
+        assertEquals("3.6.1 Transfer Codings / No Body","",response.getContent());
 
     }
 
@@ -313,7 +317,7 @@ public abstract class RFC2616BaseTest
 
         response = responses.get(1); // Response 2
         assertEquals("3.6.1 Transfer Codings / Response 2 Code", HttpStatus.OK_200, response.getStatus());
-        assertTrue("3.6.1 Transfer Codings / No Body", response.getContent() == null);
+        assertEquals("3.6.1 Transfer Codings / No Body","",response.getContent());
     }
 
     /**
@@ -368,10 +372,10 @@ public abstract class RFC2616BaseTest
 
         HttpTester.Response response = responses.get(0);
         assertEquals("4.4.2 Message Length / Response Code", HttpStatus.OK_200, response.getStatus());
-        assertTrue("4.4.2 Message Length / Body",response.getContent().contains("123\n"));
+        assertThat("4.4.2 Message Length / Body",response.getContent(),Matchers.containsString("123\n"));
         response = responses.get(1);
         assertEquals("4.4.2 Message Length / Response Code", HttpStatus.OK_200, response.getStatus());
-        assertTrue("4.4.2 Message Length / No Body", response.getContent() == null);
+        assertEquals("4.4.2 Message Length / No Body", "",response.getContent());
 
         // 4.4.3 -
         // Client - do not send 'Content-Length' if entity-length
@@ -464,7 +468,7 @@ public abstract class RFC2616BaseTest
         HttpTester.Response response = http.request(req1);
 
         assertEquals("5.2 Default Host", HttpStatus.OK_200, response.getStatus());
-        assertTrue("5.2 Default Host",response.getContent().contains("Default DOCRoot"));
+        assertThat("5.2 Default Host",response.getContent(),Matchers.containsString("Default DOCRoot"));
     }
 
     /**
@@ -486,7 +490,7 @@ public abstract class RFC2616BaseTest
         HttpTester.Response response = http.request(req2);
 
         assertEquals("5.2 Virtual Host", HttpStatus.OK_200, response.getStatus());
-        assertTrue("5.2 Virtual Host",response.getContent().contains("VirtualHost DOCRoot"));
+        assertThat("5.2 Virtual Host",response.getContent(),Matchers.containsString("VirtualHost DOCRoot"));
     }
 
     /**
@@ -508,7 +512,7 @@ public abstract class RFC2616BaseTest
         HttpTester.Response response = http.request(req3);
 
         assertEquals("5.2 Virtual Host (mixed case)", HttpStatus.OK_200, response.getStatus());
-        assertTrue("5.2 Virtual Host (mixed case)",response.getContent().contains("VirtualHost DOCRoot"));
+        assertThat("5.2 Virtual Host (mixed case)",response.getContent(),Matchers.containsString("VirtualHost DOCRoot"));
     }
 
     /**
@@ -551,7 +555,7 @@ public abstract class RFC2616BaseTest
         HttpTester.Response response = http.request(req5);
 
         assertEquals("5.2 Bad Host",HttpStatus.OK_200, response.getStatus());
-        assertTrue("5.2 Bad Host",response.getContent().contains("Default DOCRoot")); // served by default context
+        assertThat("5.2 Bad Host",response.getContent(),Matchers.containsString("Default DOCRoot")); // served by default context
     }
 
     /**
@@ -571,7 +575,7 @@ public abstract class RFC2616BaseTest
 
         HttpTester.Response response = http.request(req6);
 
-        // No host header should always return a 400 Bad Request.
+        // No host header should always return a 400 Bad Request by 19.6.1.1
         assertEquals("5.2 Virtual Host as AbsoluteURI (No Host Header / HTTP 1.1)",HttpStatus.BAD_REQUEST_400,response.getStatus());
     }
 
@@ -593,7 +597,7 @@ public abstract class RFC2616BaseTest
         HttpTester.Response response = http.request(req6);
 
         assertEquals("5.2 Virtual Host as AbsoluteURI (No Host Header / HTTP 1.0)",HttpStatus.OK_200, response.getStatus());
-        assertTrue("5.2 Virtual Host as AbsoluteURI (No Host Header / HTTP 1.1)",response.getContent().contains("VirtualHost DOCRoot"));
+        assertThat("5.2 Virtual Host as AbsoluteURI (No Host Header / HTTP 1.1)",response.getContent(),Matchers.containsString("VirtualHost DOCRoot"));
     }
 
     /**
@@ -615,8 +619,8 @@ public abstract class RFC2616BaseTest
         HttpTester.Response response = http.request(req7);
 
         assertEquals("5.2 Virtual Host as AbsoluteURI (and Host header)", HttpStatus.OK_200, response.getStatus());
-        System.err.println(response.getContent());
-        assertTrue("5.2 Virtual Host as AbsoluteURI (and Host header)",response.getContent().contains("VirtualHost DOCRoot"));
+        // System.err.println(response.getContent());
+        assertThat("5.2 Virtual Host as AbsoluteURI (and Host header)",response.getContent(),Matchers.containsString("VirtualHost DOCRoot"));
     }
 
     /**
@@ -637,7 +641,7 @@ public abstract class RFC2616BaseTest
 
         assertEquals("8.1 Persistent Connections", HttpStatus.OK_200, response.getStatus());
         assertTrue("8.1 Persistent Connections", response.get("Content-Length") != null);
-        assertTrue("8.1 Persistent Connections",response.getContent().contains("Resource=R1"));
+        assertThat("8.1 Persistent Connections",response.getContent(),Matchers.containsString("Resource=R1"));
 
         StringBuffer req2 = new StringBuffer();
         req2.append("GET /tests/R1.txt HTTP/1.1\n");
@@ -753,14 +757,11 @@ public abstract class RFC2616BaseTest
         // System.err.println(responses);
         
         HttpTester.Response response=responses.get(0);
-        // System.err.println(response.getRawResponse());
+        // System.err.println(response);
         
         assertEquals("8.2.3 ignored no 100",302, response.getStatus());
-        
-        response=responses.get(1);
-        // System.err.println(response.getRawResponse());
-        assertEquals("8.2.3 ignored no 100",200, response.getStatus());
-        assertTrue(response.getContent().contains("87654321\n"));
+        assertEquals("close",response.get("Connection"));
+        assertEquals(1,responses.size());
     }
 
     /**
@@ -795,7 +796,7 @@ public abstract class RFC2616BaseTest
             response = http.read(sock);
 
             assertEquals("8.2.3 expect 100", HttpStatus.OK_200, response.getStatus());
-            assertTrue("8.2.3 expect 100",response.getContent().contains("654321\n"));
+            assertThat("8.2.3 expect 100",response.getContent(),Matchers.containsString("654321\n"));
         }
         finally
         {
@@ -935,8 +936,8 @@ public abstract class RFC2616BaseTest
             // As there is a possibility that the time between GET and HEAD requests
             // can cross the second mark. (eg: GET at 11:00:00.999 and HEAD at 11:00:01.001)
             // So with that knowledge, we will remove the 'Date:' header from both sides before comparing.
-            List<String> linesGet = StringUtil.asLines(rawGetResponse);
-            List<String> linesHead = StringUtil.asLines(rawHeadResponse);
+            List<String> linesGet = StringUtil.asLines(rawGetResponse.trim());
+            List<String> linesHead = StringUtil.asLines(rawHeadResponse.trim());
 
             StringUtil.removeStartsWith("Date: ",linesGet);
             StringUtil.removeStartsWith("Date: ",linesHead);
@@ -1011,6 +1012,8 @@ public abstract class RFC2616BaseTest
         req2.append("\n");
 
         response = http.request(req2);
+        
+        // System.err.println(response);
 
         assertEquals("10.2.7 Partial Content",HttpStatus.PARTIAL_CONTENT_206, response.getStatus());
 
@@ -1052,7 +1055,7 @@ public abstract class RFC2616BaseTest
         // TODO: Not sure how to test this condition.
 
         // Test the body sent
-        assertTrue("10.2.7 Partial Content",response.getContent().contains("BCD")); // should only have bytes 1-3
+        assertThat("10.2.7 Partial Content",response.getContent(),Matchers.containsString("BCD")); // should only have bytes 1-3
     }
 
     /**
@@ -1451,7 +1454,7 @@ public abstract class RFC2616BaseTest
         req4.append("\n");
 
         HttpTester.Response response = http.request(req4);
-        assertEquals("14.23 HTTP/1.1 - Empty Host", HttpStatus.OK_200, response.getStatus());
+        assertEquals("14.23 HTTP/1.1 - Empty Host", HttpStatus.BAD_REQUEST_400, response.getStatus());
     }
 
     /**
@@ -1530,7 +1533,7 @@ public abstract class RFC2616BaseTest
         req1.append("\n");
 
         HttpTester.Response response = http.request(req1);
-
+        
         String msg = "Partial (Byte) Range: '" + rangedef + "'";
         assertEquals(msg,HttpStatus.PARTIAL_CONTENT_206, response.getStatus());
 
@@ -1553,21 +1556,20 @@ public abstract class RFC2616BaseTest
 
         Assert.assertNotNull(msg + " Should have found boundary in Content-Type header",boundary);
 
-        // Find boundary offsets within body
-        List<HttpTester.Response> multiparts = HttpTesting.getParts(boundary, response);
-        Assert.assertEquals(msg + " multiparts in body (count)",2,multiparts.size());
-
-        // Validate multipart #1
-        HttpTester.Response multipart1 = multiparts.get(0);
-        assertEquals(msg + " Multipart 1","text/plain", multipart1.get("Content-Type"));
-        assertEquals(msg + " Multipart 1","bytes 23-23/27", multipart1.get("Content-Range"));
-        assertTrue(msg + " Multipart 1", multipart1.getContent().contains("X"));
-
-        // Validate multipart #2
-        HttpTester.Response multipart2 = multiparts.get(1);
-        assertEquals(msg + " Multipart 2","text/plain", multipart2.get("Content-Type"));
-        assertEquals(msg + " Multipart 2","bytes 25-26/27", multipart2.get("Content-Range"));
-        assertTrue(msg + " Multipart 2", multipart2.getContent().contains("Z\n"));
+        List<String> lines = StringUtil.asLines(response.getContent().trim());
+        int i=0;
+        assertEquals("--"+boundary,lines.get(i++));
+        assertEquals("Content-Type: text/plain",lines.get(i++));
+        assertEquals("Content-Range: bytes 23-23/27",lines.get(i++));
+        assertEquals("",lines.get(i++));
+        assertEquals("X",lines.get(i++));
+        assertEquals("--"+boundary,lines.get(i++));
+        assertEquals("Content-Type: text/plain",lines.get(i++));
+        assertEquals("Content-Range: bytes 25-26/27",lines.get(i++));
+        assertEquals("",lines.get(i++));
+        assertEquals("Z",lines.get(i++));
+        assertEquals("",lines.get(i++));
+        assertEquals("--"+boundary+"--",lines.get(i++));
     }
 
     /**
@@ -1591,6 +1593,7 @@ public abstract class RFC2616BaseTest
         req1.append("\n");
 
         HttpTester.Response response = http.request(req1);
+        // System.err.println(response+response.getContent());
 
         String msg = "Partial (Byte) Range: '" + rangedef + "'";
         assertEquals(msg,HttpStatus.PARTIAL_CONTENT_206,response.getStatus());
@@ -1614,27 +1617,29 @@ public abstract class RFC2616BaseTest
 
         Assert.assertNotNull(msg + " Should have found boundary in Content-Type header",boundary);
 
-        // Find boundary offsets within body
-        List<HttpTester.Response> multiparts = HttpTesting.getParts(boundary, response);
-        Assert.assertEquals(msg + " multiparts in body (count)",3,multiparts.size());
 
-        // Validate multipart #1
-        HttpTester.Response multipart1 = multiparts.get(0);
-        assertEquals(msg + " Multipart 1", "text/plain", multipart1.get("Content-Type"));
-        assertEquals(msg + " Multipart 1","bytes 26-26/27", multipart1.get("Content-Range"));
-        assertTrue(msg + " Multipart 1",multipart1.getContent().contains("\n"));
-
-        // Validate multipart #2
-        HttpTester.Response multipart2 = multiparts.get(1);
-        assertEquals(msg + " Multipart 2","text/plain", multipart2.get("Content-Type"));
-        assertEquals(msg + " Multipart 2","bytes 25-26/27", multipart2.get("Content-Range"));
-        assertTrue(msg + " Multipart 2", multipart2.getContent().contains("Z\n"));
-
-        // Validate multipart #3
-        HttpTester.Response multipart3 = multiparts.get(2);
-        assertEquals(msg + " Multipart 3","text/plain", multipart3.get("Content-Type"));
-        assertEquals(msg + " Multipart 3","bytes 24-26/27", multipart3.get("Content-Range"));
-        assertTrue(msg + " Multipart 3", multipart3.getContent().contains("YZ\n"));
+        List<String> lines = StringUtil.asLines(response.getContent().trim());
+        int i=0;
+        assertEquals("--"+boundary,lines.get(i++));
+        assertEquals("Content-Type: text/plain",lines.get(i++));
+        assertEquals("Content-Range: bytes 26-26/27",lines.get(i++));
+        assertEquals("",lines.get(i++));
+        assertEquals("",lines.get(i++));
+        assertEquals("",lines.get(i++));
+        assertEquals("--"+boundary,lines.get(i++));
+        assertEquals("Content-Type: text/plain",lines.get(i++));
+        assertEquals("Content-Range: bytes 25-26/27",lines.get(i++));
+        assertEquals("",lines.get(i++));
+        assertEquals("Z",lines.get(i++));
+        assertEquals("",lines.get(i++));
+        assertEquals("--"+boundary,lines.get(i++));
+        assertEquals("Content-Type: text/plain",lines.get(i++));
+        assertEquals("Content-Range: bytes 24-26/27",lines.get(i++));
+        assertEquals("",lines.get(i++));
+        assertEquals("YZ",lines.get(i++));
+        assertEquals("",lines.get(i++));
+        assertEquals("--"+boundary+"--",lines.get(i++));
+        
     }
 
     /**

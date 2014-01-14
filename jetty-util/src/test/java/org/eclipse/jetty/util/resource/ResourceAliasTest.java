@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,13 +25,9 @@ import static junit.framework.Assert.assertTrue;
 
 import java.io.File;
 import java.net.MalformedURLException;
-import java.net.URISyntaxException;
-
-import junit.framework.Assert;
 
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -51,6 +52,7 @@ import org.eclipse.jetty.spdy.api.SessionFrameListener;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.SynInfo;
+import org.eclipse.jetty.spdy.http.HTTPSPDYHeader;
 import org.eclipse.jetty.util.Fields;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -81,7 +83,7 @@ public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
     @Test
     public void benchmarkPushStrategy() throws Exception
     {
-        InetSocketAddress address = startHTTPServer(version, new PushStrategyBenchmarkHandler());
+        InetSocketAddress address = startHTTPServer(version, new PushStrategyBenchmarkHandler(), 30000);
 
         // Plain HTTP
         ConnectionFactory factory = new HttpConnectionFactory(new HttpConfiguration());
@@ -366,7 +368,7 @@ public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
         @Override
         public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
         {
-            String path = synInfo.getHeaders().get(HTTPSPDYHeader.URI.name(version)).value();
+            String path = synInfo.getHeaders().get(HTTPSPDYHeader.URI.name(version)).getValue();
             addPushedResource(path);
             return new DataListener();
         }
@@ -383,7 +385,7 @@ public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
         }
     }
 
-    private class TestListener extends Response.Listener.Empty
+    private class TestListener extends Response.Listener.Adapter
     {
         @Override
         public void onComplete(Result result)

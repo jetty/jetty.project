@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,10 +21,11 @@ package org.eclipse.jetty.io;
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ReadPendingException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 /* ------------------------------------------------------------ */
@@ -35,6 +36,7 @@ import org.eclipse.jetty.util.Callback;
  */
 public abstract class FillInterest
 {
+    private final static Logger LOG = Log.getLogger(FillInterest.class);
     private final AtomicReference<Callback> _interested = new AtomicReference<>(null);
 
     /* ------------------------------------------------------------ */
@@ -46,7 +48,6 @@ public abstract class FillInterest
     /** Call to register interest in a callback when a read is possible.
      * The callback will be called either immediately if {@link #needsFill()} 
      * returns true or eventually once {@link #fillable()} is called.
-     * @param context
      * @param callback
      * @throws ReadPendingException
      */
@@ -56,7 +57,10 @@ public abstract class FillInterest
             throw new IllegalArgumentException();
         
         if (!_interested.compareAndSet(null,callback))
+        {
+            LOG.warn("Read pending for "+_interested.get()+" pervented "+callback);
             throw new ReadPendingException();
+        }
         try
         {
             if (needsFill())

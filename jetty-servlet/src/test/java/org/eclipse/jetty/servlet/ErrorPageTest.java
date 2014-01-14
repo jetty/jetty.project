@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.servlet;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
@@ -36,7 +35,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.hamcrest.Matchers;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -102,8 +100,8 @@ public class ErrorPageTest
         assertThat(response,Matchers.containsString("HTTP/1.1 500 Server Error"));
         assertThat(response,Matchers.containsString("ERROR_PAGE: /TestException"));
         assertThat(response,Matchers.containsString("ERROR_CODE: 500"));
-        assertThat(response,Matchers.containsString("ERROR_EXCEPTION: java.lang.IllegalStateException"));
-        assertThat(response,Matchers.containsString("ERROR_EXCEPTION_TYPE: class java.lang.IllegalStateException"));
+        assertThat(response,Matchers.containsString("ERROR_EXCEPTION: javax.servlet.ServletException: java.lang.IllegalStateException"));
+        assertThat(response,Matchers.containsString("ERROR_EXCEPTION_TYPE: class javax.servlet.ServletException"));
         assertThat(response,Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$FailServlet-"));
         assertThat(response,Matchers.containsString("ERROR_REQUEST_URI: /fail/exception"));
     }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -41,7 +41,6 @@ import org.junit.Test;
 
 public class IdleTimeoutTest extends AbstractTest
 {
-
     private final int idleTimeout = 1000;
 
     @Test
@@ -173,7 +172,7 @@ public class IdleTimeoutTest extends AbstractTest
         clientFactory.start();
         SPDYClient client = clientFactory.newSPDYClient(SPDY.V2);
         client.setIdleTimeout(idleTimeout);
-        Session session = client.connect(address, null).get(5, TimeUnit.SECONDS);
+        Session session = client.connect(address, null);
 
         session.syn(new SynInfo(new Fields(), true), null);
 
@@ -199,7 +198,7 @@ public class IdleTimeoutTest extends AbstractTest
         clientFactory.start();
         SPDYClient client = clientFactory.newSPDYClient(SPDY.V2);
         client.setIdleTimeout(idleTimeout);
-        Session session = client.connect(address, null).get(5, TimeUnit.SECONDS);
+        Session session = client.connect(address, null);
 
         session.syn(new SynInfo(new Fields(), true), null);
 
@@ -232,7 +231,7 @@ public class IdleTimeoutTest extends AbstractTest
         clientFactory.start();
         SPDYClient client = clientFactory.newSPDYClient(SPDY.V2);
         client.setIdleTimeout(idleTimeout);
-        Session session = client.connect(address, null).get(5, TimeUnit.SECONDS);
+        Session session = client.connect(address, null);
 
         final CountDownLatch replyLatch = new CountDownLatch(1);
         session.syn(new SynInfo(new Fields(), true), new StreamFrameListener.Adapter()

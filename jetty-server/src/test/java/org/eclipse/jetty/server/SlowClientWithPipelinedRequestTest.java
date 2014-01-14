@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -37,7 +38,6 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.After;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class SlowClientWithPipelinedRequestTest
@@ -82,9 +82,7 @@ public class SlowClientWithPipelinedRequestTest
         }
     }
 
-    // TODO merged from jetty-8 - not working???
     @Test
-    @Ignore
     public void testSlowClientWithPipelinedRequest() throws Exception
     {
         final int contentLength = 512 * 1024;
@@ -118,7 +116,7 @@ public class SlowClientWithPipelinedRequestTest
                 "GET /content HTTP/1.1\r\n" +
                 "Host: localhost:" + connector.getLocalPort() + "\r\n" +
                 "\r\n" +
-                "").getBytes("UTF-8"));
+                "").getBytes(StandardCharsets.UTF_8));
         output.flush();
 
         InputStream input = client.getInputStream();
@@ -131,7 +129,7 @@ public class SlowClientWithPipelinedRequestTest
                 "GET /pipelined HTTP/1.1\r\n" +
                 "Host: localhost:" + connector.getLocalPort() + "\r\n" +
                 "\r\n" +
-                "").getBytes("UTF-8"));
+                "").getBytes(StandardCharsets.UTF_8));
         output.flush();
 
         // Simulate a slow reader

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -33,6 +33,7 @@ import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.SynInfo;
+import org.eclipse.jetty.spdy.http.HTTPSPDYHeader;
 import org.eclipse.jetty.util.Fields;
 import org.junit.Assert;
 import org.junit.Test;
@@ -79,7 +80,7 @@ public class ConcurrentStreamsTest extends AbstractHTTPSPDYTest
                     throw new ServletException(x);
                 }
             }
-        }), null);
+        }, 30000), null);
 
         // Perform slow request. This will wait on server side until the fast request wakes it up
         Fields headers = createHeaders(slowPath);
@@ -90,7 +91,7 @@ public class ConcurrentStreamsTest extends AbstractHTTPSPDYTest
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
                 Fields replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).getValue().contains("200"));
                 slowClientLatch.countDown();
             }
         });
@@ -104,7 +105,7 @@ public class ConcurrentStreamsTest extends AbstractHTTPSPDYTest
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
                 Fields replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).getValue().contains("200"));
                 fastClientLatch.countDown();
             }
         });

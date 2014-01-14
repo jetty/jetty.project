@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -26,7 +26,6 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Extension;
@@ -108,7 +107,7 @@ public abstract class AbstractExtension extends ContainerLifeCycle implements Ex
     }
 
     @Override
-    public void incomingError(WebSocketException e)
+    public void incomingError(Throwable e)
     {
         nextIncomingError(e);
     }
@@ -152,24 +151,7 @@ public abstract class AbstractExtension extends ContainerLifeCycle implements Ex
         return false;
     }
 
-    /**
-     * Used to indicate that the extension works as a decoder of TEXT Data Frames.
-     * <p>
-     * This is used to adjust validation during parsing/generating, as per spec TEXT Data Frames can only contain UTF8 encoded String data.
-     * <p>
-     * Example: a compression extension will process a compressed set of text data, the parser/generator should no longer be concerned about the validity of the
-     * TEXT Data Frames as this is now the responsibility of the extension.
-     * 
-     * @return true if extension will process TEXT Data Frames, false if extension makes no modifications of TEXT Data Frames. If false, the parser/generator is
-     *         now free to validate the conformance to spec of TEXT Data Frames.
-     */
-    @Override
-    public boolean isTextDataDecoder()
-    {
-        return false;
-    }
-
-    protected void nextIncomingError(WebSocketException e)
+    protected void nextIncomingError(Throwable e)
     {
         this.nextIncoming.incomingError(e);
     }

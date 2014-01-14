@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,36 +18,23 @@
 
 package org.eclipse.jetty.http;
 
-import static org.eclipse.jetty.util.QuotedStringTokenizer.isQuoted;
-import static org.eclipse.jetty.util.QuotedStringTokenizer.quoteOnly;
-
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.Enumeration;
-import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.StringTokenizer;
-import java.util.TimeZone;
+import java.util.regex.Pattern;
 
 import org.eclipse.jetty.util.ArrayTernaryTrie;
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
-import org.eclipse.jetty.util.StringMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.util.log.Log;
@@ -57,7 +44,7 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * HTTP Fields. A collection of HTTP header and or Trailer fields.
  *
- * <p>This class is not synchronised as it is expected that modifications will only be performed by a
+ * <p>This class is not synchronized as it is expected that modifications will only be performed by a
  * single thread.
  * 
  * <p>The cookie handling provided by this class is guided by the Servlet specification and RFC6265.
@@ -66,222 +53,9 @@ import org.eclipse.jetty.util.log.Logger;
 public class HttpFields implements Iterable<HttpField>
 {
     private static final Logger LOG = Log.getLogger(HttpFields.class);
-    public static final TimeZone __GMT = TimeZone.getTimeZone("GMT");
-    public static final DateCache __dateCache = new DateCache("EEE, dd MMM yyyy HH:mm:ss 'GMT'", Locale.US);
-
-    public static final String __COOKIE_DELIM="\",;\\ \t";
-    
-    static
-    {
-        __GMT.setID("GMT");
-        __dateCache.setTimeZone(__GMT);
-    }
-    
+    private final static Pattern __splitter = Pattern.compile("\\s*,\\s*");     
     public final static String __separators = ", \t";
 
-    private static final String[] DAYS =
-        { "Sat", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
-    private static final String[] MONTHS =
-        { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan"};
-
-    public static class DateGenerator
-    {
-        private final StringBuilder buf = new StringBuilder(32);
-        private final GregorianCalendar gc = new GregorianCalendar(__GMT);
-
-        /**
-         * Format HTTP date "EEE, dd MMM yyyy HH:mm:ss 'GMT'"
-         */
-        public String formatDate(long date)
-        {
-            buf.setLength(0);
-            gc.setTimeInMillis(date);
-
-            int day_of_week = gc.get(Calendar.DAY_OF_WEEK);
-            int day_of_month = gc.get(Calendar.DAY_OF_MONTH);
-            int month = gc.get(Calendar.MONTH);
-            int year = gc.get(Calendar.YEAR);
-            int century = year / 100;
-            year = year % 100;
-
-            int hours = gc.get(Calendar.HOUR_OF_DAY);
-            int minutes = gc.get(Calendar.MINUTE);
-            int seconds = gc.get(Calendar.SECOND);
-
-            buf.append(DAYS[day_of_week]);
-            buf.append(',');
-            buf.append(' ');
-            StringUtil.append2digits(buf, day_of_month);
-
-            buf.append(' ');
-            buf.append(MONTHS[month]);
-            buf.append(' ');
-            StringUtil.append2digits(buf, century);
-            StringUtil.append2digits(buf, year);
-
-            buf.append(' ');
-            StringUtil.append2digits(buf, hours);
-            buf.append(':');
-            StringUtil.append2digits(buf, minutes);
-            buf.append(':');
-            StringUtil.append2digits(buf, seconds);
-            buf.append(" GMT");
-            return buf.toString();
-        }
-
-        /**
-         * Format "EEE, dd-MMM-yy HH:mm:ss 'GMT'" for cookies
-         */
-        public void formatCookieDate(StringBuilder buf, long date)
-        {
-            gc.setTimeInMillis(date);
-
-            int day_of_week = gc.get(Calendar.DAY_OF_WEEK);
-            int day_of_month = gc.get(Calendar.DAY_OF_MONTH);
-            int month = gc.get(Calendar.MONTH);
-            int year = gc.get(Calendar.YEAR);
-            year = year % 10000;
-
-            int epoch = (int) ((date / 1000) % (60 * 60 * 24));
-            int seconds = epoch % 60;
-            epoch = epoch / 60;
-            int minutes = epoch % 60;
-            int hours = epoch / 60;
-
-            buf.append(DAYS[day_of_week]);
-            buf.append(',');
-            buf.append(' ');
-            StringUtil.append2digits(buf, day_of_month);
-
-            buf.append('-');
-            buf.append(MONTHS[month]);
-            buf.append('-');
-            StringUtil.append2digits(buf, year/100);
-            StringUtil.append2digits(buf, year%100);
-
-            buf.append(' ');
-            StringUtil.append2digits(buf, hours);
-            buf.append(':');
-            StringUtil.append2digits(buf, minutes);
-            buf.append(':');
-            StringUtil.append2digits(buf, seconds);
-            buf.append(" GMT");
-        }
-    }
-
-    private static final ThreadLocal<DateGenerator> __dateGenerator =new ThreadLocal<DateGenerator>()
-    {
-        @Override
-        protected DateGenerator initialValue()
-        {
-            return new DateGenerator();
-        }
-    };
-
-    /**
-     * Format HTTP date "EEE, dd MMM yyyy HH:mm:ss 'GMT'"
-     */
-    public static String formatDate(long date)
-    {
-        return __dateGenerator.get().formatDate(date);
-    }
-
-    /**
-     * Format "EEE, dd-MMM-yyyy HH:mm:ss 'GMT'" for cookies
-     */
-    public static void formatCookieDate(StringBuilder buf, long date)
-    {
-        __dateGenerator.get().formatCookieDate(buf,date);
-    }
-
-    /**
-     * Format "EEE, dd-MMM-yyyy HH:mm:ss 'GMT'" for cookies
-     */
-    public static String formatCookieDate(long date)
-    {
-        StringBuilder buf = new StringBuilder(28);
-        formatCookieDate(buf, date);
-        return buf.toString();
-    }
-
-    private final static String __dateReceiveFmt[] =
-        {
-        "EEE, dd MMM yyyy HH:mm:ss zzz",
-        "EEE, dd-MMM-yy HH:mm:ss",
-        "EEE MMM dd HH:mm:ss yyyy",
-
-        "EEE, dd MMM yyyy HH:mm:ss", "EEE dd MMM yyyy HH:mm:ss zzz",
-        "EEE dd MMM yyyy HH:mm:ss", "EEE MMM dd yyyy HH:mm:ss zzz", "EEE MMM dd yyyy HH:mm:ss",
-        "EEE MMM-dd-yyyy HH:mm:ss zzz", "EEE MMM-dd-yyyy HH:mm:ss", "dd MMM yyyy HH:mm:ss zzz",
-        "dd MMM yyyy HH:mm:ss", "dd-MMM-yy HH:mm:ss zzz", "dd-MMM-yy HH:mm:ss", "MMM dd HH:mm:ss yyyy zzz",
-        "MMM dd HH:mm:ss yyyy", "EEE MMM dd HH:mm:ss yyyy zzz",
-        "EEE, MMM dd HH:mm:ss yyyy zzz", "EEE, MMM dd HH:mm:ss yyyy", "EEE, dd-MMM-yy HH:mm:ss zzz",
-        "EEE dd-MMM-yy HH:mm:ss zzz", "EEE dd-MMM-yy HH:mm:ss",
-        };
-
-    private static class DateParser
-    {
-        final SimpleDateFormat _dateReceive[]= new SimpleDateFormat[__dateReceiveFmt.length];
-
-        long parse(final String dateVal)
-        {
-            for (int i = 0; i < _dateReceive.length; i++)
-            {
-                if (_dateReceive[i] == null)
-                {
-                    _dateReceive[i] = new SimpleDateFormat(__dateReceiveFmt[i], Locale.US);
-                    _dateReceive[i].setTimeZone(__GMT);
-                }
-
-                try
-                {
-                    Date date = (Date) _dateReceive[i].parseObject(dateVal);
-                    return date.getTime();
-                }
-                catch (java.lang.Exception e)
-                {
-                    // LOG.ignore(e);
-                }
-            }
-
-            if (dateVal.endsWith(" GMT"))
-            {
-                final String val = dateVal.substring(0, dateVal.length() - 4);
-
-                for (SimpleDateFormat element : _dateReceive)
-                {
-                    try
-                    {
-                        Date date = (Date) element.parseObject(val);
-                        return date.getTime();
-                    }
-                    catch (java.lang.Exception e)
-                    {
-                        // LOG.ignore(e);
-                    }
-                }
-            }
-            return -1;
-        }
-    }
-
-    public static long parseDate(String date)
-    {
-        return __dateParser.get().parse(date);
-    }
-
-    private static final ThreadLocal<DateParser> __dateParser =new ThreadLocal<DateParser>()
-    {
-        @Override
-        protected DateParser initialValue()
-        {
-            return new DateParser();
-        }
-    };
-
-    public final static String __01Jan1970=formatDate(0);
-    public final static ByteBuffer __01Jan1970_BUFFER=BufferUtil.toBuffer(__01Jan1970);
-    public final static String __01Jan1970_COOKIE = formatCookieDate(0).trim();
     private final ArrayList<HttpField> _fields = new ArrayList<>(20);
 
     /**
@@ -290,7 +64,6 @@ public class HttpFields implements Iterable<HttpField>
     public HttpFields()
     {
     }
-
 
     /**
      * Get Collection of header names.
@@ -357,13 +130,13 @@ public class HttpFields implements Iterable<HttpField>
         }
         return null;
     }
-
+    
     public boolean contains(HttpHeader header, String value)
     {
         for (int i=0;i<_fields.size();i++)
         {
             HttpField f=_fields.get(i);
-            if (f.getHeader()==header && f.contains(value))
+            if (f.getHeader()==header && contains(f,value))
                 return true;
         }
         return false;
@@ -374,9 +147,28 @@ public class HttpFields implements Iterable<HttpField>
         for (int i=0;i<_fields.size();i++)
         {
             HttpField f=_fields.get(i);
-            if (f.getName().equalsIgnoreCase(name) && f.contains(value))
+            if (f.getName().equalsIgnoreCase(name) && contains(f,value))
                 return true;
         }
+        return false;
+    }
+    
+    private boolean contains(HttpField field,String value)
+    {
+        String v = field.getValue();
+        if (v==null)
+            return false;
+
+        if (value.equalsIgnoreCase(v))
+            return true;
+
+        String[] split = __splitter.split(v);
+        for (int i = 0; split!=null && i < split.length; i++) 
+        {
+            if (value.equals(split[i]))
+                return true;
+        }
+
         return false;
     }
     
@@ -417,14 +209,13 @@ public class HttpFields implements Iterable<HttpField>
         return field==null?null:field.getValue();
     }
 
-
     /**
      * Get multi headers
      *
-     * @return Enumeration of the values, or null if no such header.
+     * @return List the values
      * @param name the case-insensitive field name
      */
-    public Collection<String> getValuesCollection(String name)
+    public List<String> getValuesList(String name)
     {
         final List<String> list = new ArrayList<>();
         for (HttpField f : _fields)
@@ -488,7 +279,6 @@ public class HttpFields implements Iterable<HttpField>
 
         List<String> empty=Collections.emptyList();
         return Collections.enumeration(empty);
-
     }
 
     /**
@@ -649,14 +439,15 @@ public class HttpFields implements Iterable<HttpField>
      *
      * @param name the field to remove
      */
-    public void remove(HttpHeader name)
+    public HttpField remove(HttpHeader name)
     {
         for (int i=_fields.size();i-->0;)
         {
             HttpField f=_fields.get(i);
             if (f.getHeader()==name)
-                _fields.remove(i);
+                return _fields.remove(i);
         }
+        return null;
     }
 
     /**
@@ -664,14 +455,15 @@ public class HttpFields implements Iterable<HttpField>
      *
      * @param name the field to remove
      */
-    public void remove(String name)
+    public HttpField remove(String name)
     {
         for (int i=_fields.size();i-->0;)
         {
             HttpField f=_fields.get(i);
             if (f.getName().equalsIgnoreCase(name))
-                _fields.remove(i);
+                return _fields.remove(i);
         }
+        return null;
     }
 
     /**
@@ -684,7 +476,7 @@ public class HttpFields implements Iterable<HttpField>
     public long getLongField(String name) throws NumberFormatException
     {
         HttpField field = getField(name);
-        return field==null?-1L:field.getLongValue();
+        return field==null?-1L:StringUtil.toLong(field.getValue());
     }
 
     /**
@@ -703,7 +495,7 @@ public class HttpFields implements Iterable<HttpField>
         if (val == null)
             return -1;
 
-        final long date = __dateParser.get().parse(val);
+        final long date = DateParser.parseDate(val);
         if (date==-1)
             throw new IllegalArgumentException("Cannot convert date: " + val);
         return date;
@@ -743,7 +535,7 @@ public class HttpFields implements Iterable<HttpField>
      */
     public void putDateField(HttpHeader name, long date)
     {
-        String d=formatDate(date);
+        String d=DateGenerator.formatDate(date);
         put(name, d);
     }
 
@@ -755,7 +547,7 @@ public class HttpFields implements Iterable<HttpField>
      */
     public void putDateField(String name, long date)
     {
-        String d=formatDate(date);
+        String d=DateGenerator.formatDate(date);
         put(name, d);
     }
 
@@ -767,168 +559,8 @@ public class HttpFields implements Iterable<HttpField>
      */
     public void addDateField(String name, long date)
     {
-        String d=formatDate(date);
+        String d=DateGenerator.formatDate(date);
         add(name,d);
-    }
-
-    /**
-     * Format a set cookie value
-     *
-     * @param cookie The cookie.
-     */
-    public void addSetCookie(HttpCookie cookie)
-    {
-        addSetCookie(
-                cookie.getName(),
-                cookie.getValue(),
-                cookie.getDomain(),
-                cookie.getPath(),
-                cookie.getMaxAge(),
-                cookie.getComment(),
-                cookie.isSecure(),
-                cookie.isHttpOnly(),
-                cookie.getVersion());
-    }
-
-    /**
-     * Format a set cookie value
-     *
-     * @param name the name
-     * @param value the value
-     * @param domain the domain
-     * @param path the path
-     * @param maxAge the maximum age
-     * @param comment the comment (only present on versions > 0)
-     * @param isSecure true if secure cookie
-     * @param isHttpOnly true if for http only
-     * @param version version of cookie logic to use (0 == default behavior)
-     */
-    public void addSetCookie(
-            final String name,
-            final String value,
-            final String domain,
-            final String path,
-            final long maxAge,
-            final String comment,
-            final boolean isSecure,
-            final boolean isHttpOnly,
-            int version)
-    {
-        // Check arguments
-        if (name == null || name.length() == 0)
-            throw new IllegalArgumentException("Bad cookie name");
-
-        // Format value and params
-        StringBuilder buf = new StringBuilder(128);
-        
-        // Name is checked for legality by servlet spec, but can also be passed directly so check again for quoting
-        boolean quote_name=isQuoteNeededForCookie(name);
-        quoteOnlyOrAppend(buf,name,quote_name);
-        
-        buf.append('=');
-        
-        // Remember name= part to look for other matching set-cookie
-        String name_equals=buf.toString();
-
-        // Append the value
-        boolean quote_value=isQuoteNeededForCookie(value);
-        quoteOnlyOrAppend(buf,value,quote_value);
-
-        // Look for domain and path fields and check if they need to be quoted
-        boolean has_domain = domain!=null && domain.length()>0;
-        boolean quote_domain = has_domain && isQuoteNeededForCookie(domain);
-        boolean has_path = path!=null && path.length()>0;
-        boolean quote_path = has_path && isQuoteNeededForCookie(path);
-        
-        // Upgrade the version if we have a comment or we need to quote value/path/domain or if they were already quoted
-        if (version==0 && ( comment!=null || quote_name || quote_value || quote_domain || quote_path || isQuoted(name) || isQuoted(value) || isQuoted(path) || isQuoted(domain)))
-            version=1;
-
-        // Append version
-        if (version==1)
-            buf.append (";Version=1");
-        else if (version>1)
-            buf.append (";Version=").append(version);
-        
-        // Append path
-        if (has_path)
-        {
-            buf.append(";Path=");
-            quoteOnlyOrAppend(buf,path,quote_path);
-        }
-        
-        // Append domain
-        if (has_domain)
-        {
-            buf.append(";Domain=");
-            quoteOnlyOrAppend(buf,domain,quote_domain);
-        }
-
-        // Handle max-age and/or expires
-        if (maxAge >= 0)
-        {
-            // Always use expires
-            // This is required as some browser (M$ this means you!) don't handle max-age even with v1 cookies
-            buf.append(";Expires=");
-            if (maxAge == 0)
-                buf.append(__01Jan1970_COOKIE);
-            else
-                formatCookieDate(buf, System.currentTimeMillis() + 1000L * maxAge);
-            
-            // for v1 cookies, also send max-age
-            if (version>=1)
-            {
-                buf.append(";Max-Age=");
-                buf.append(maxAge);
-            }
-        }
-
-        // add the other fields
-        if (isSecure)
-            buf.append(";Secure");
-        if (isHttpOnly)
-            buf.append(";HttpOnly");
-        if (comment != null)
-        {
-            buf.append(";Comment=");
-            quoteOnlyOrAppend(buf,comment,isQuoteNeededForCookie(comment));
-        }
-
-        // remove any existing set-cookie fields of same name
-        Iterator<HttpField> i=_fields.iterator();
-        while (i.hasNext())
-        {
-            HttpField field=i.next();
-            if (field.getHeader()==HttpHeader.SET_COOKIE)
-            {
-                String val = field.getValue();
-                if (val!=null && val.startsWith(name_equals))
-                {
-                    //existing cookie has same name, does it also match domain and path?
-                    if (((!has_domain && !val.contains("Domain")) || (has_domain && val.contains(domain))) &&
-                        ((!has_path && !val.contains("Path")) || (has_path && val.contains(path))))
-                    {
-                        i.remove();
-                    }
-                }
-            }
-        }
-        
-        // add the set cookie
-        add(HttpHeader.SET_COOKIE.toString(), buf.toString());
-
-        // Expire responses with set-cookie headers so they do not get cached.
-        put(HttpHeader.EXPIRES.toString(), __01Jan1970);
-    }
-
-    public void putTo(ByteBuffer bufferInFillMode) 
-    {
-        for (HttpField field : _fields)
-        {
-            if (field != null)
-                field.putTo(bufferInFillMode);
-        }
-        BufferUtil.putCRLF(bufferInFillMode);
     }
 
     @Override
@@ -1149,39 +781,4 @@ public class HttpFields implements Iterable<HttpField>
 
 
 
-    /* ------------------------------------------------------------ */
-    /** Does a cookie value need to be quoted?
-     * @param s value string
-     * @return true if quoted;
-     * @throws IllegalArgumentException If there a control characters in the string
-     */
-    public static boolean isQuoteNeededForCookie(String s)
-    {
-        if (s==null || s.length()==0)
-            return true;
-        
-        if (QuotedStringTokenizer.isQuoted(s))
-            return false;
-
-        for (int i=0;i<s.length();i++)
-        {
-            char c = s.charAt(i);
-            if (__COOKIE_DELIM.indexOf(c)>=0)
-                return true;
-            
-            if (c<0x20 || c>=0x7f)
-                throw new IllegalArgumentException("Illegal character in cookie value");
-        }
-
-        return false;
-    }
-    
-    
-    private static void quoteOnlyOrAppend(StringBuilder buf, String s, boolean quote)
-    {
-        if (quote)
-            QuotedStringTokenizer.quoteOnly(buf,s);
-        else
-            buf.append(s);
-    }
 }

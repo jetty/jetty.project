@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -314,7 +314,7 @@ abstract public class WriteFlusher
      * Tries to switch state to WRITING. If successful it writes the given buffers to the EndPoint. If state transition
      * fails it'll fail the callback.
      *
-     * If not all buffers can be written in one go it creates a new {@link PendingState} object to preserve the state
+     * If not all buffers can be written in one go it creates a new <code>PendingState</code> object to preserve the state
      * and then calls {@link #onIncompleteFlushed()}. The remaining buffers will be written in {@link #completeWrite()}.
      *
      * If all buffers have been written it calls callback.complete().
@@ -432,9 +432,6 @@ abstract public class WriteFlusher
 
     public void onFail(Throwable cause)
     {
-        if (DEBUG)
-            LOG.debug("failed: {} {}", this, cause);
-
         // Keep trying to handle the failure until we get to IDLE or FAILED state
         while(true)
         {
@@ -443,9 +440,14 @@ abstract public class WriteFlusher
             {
                 case IDLE:
                 case FAILED:
+                    if (DEBUG)
+                        LOG.debug("ignored: {} {}", this, cause);
                     return;
 
                 case PENDING:
+                    if (DEBUG)
+                        LOG.debug("failed: {} {}", this, cause);
+
                     PendingState pending = (PendingState)current;
                     if (updateState(pending,__IDLE))
                     {
@@ -455,6 +457,9 @@ abstract public class WriteFlusher
                     break;
 
                 default:
+                    if (DEBUG)
+                        LOG.debug("failed: {} {}", this, cause);
+
                     if (updateState(current,new FailedState(cause)))
                         return;
                     break;

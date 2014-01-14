@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -31,6 +31,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
@@ -120,7 +121,7 @@ public class ServiceContextProvider extends AbstractContextProvider implements S
                     properties.put(key, serviceRef.getProperty(key));
             }
             Bundle bundle = serviceRef.getBundle();                
-            String originId = bundle.getSymbolicName() + "-" + bundle.getVersion().toString() + "-"+contextFile;
+            String originId = bundle.getSymbolicName() + "-" + bundle.getVersion().toString() + "-"+(contextFile!=null?contextFile:serviceRef.getProperty(Constants.SERVICE_ID));
             ServiceApp app = new ServiceApp(getDeploymentManager(), this, bundle, properties, contextFile, originId);         
             app.setHandler(context); //set the pre=made ContextHandler instance
             _serviceMap.put(serviceRef, app);

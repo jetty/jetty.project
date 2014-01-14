@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,14 +18,17 @@
 
 package org.eclipse.jetty.websocket.common;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
+import org.eclipse.jetty.websocket.common.test.UnitParser;
+import org.eclipse.jetty.websocket.common.util.MaskedByteBuffer;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -36,7 +39,7 @@ public class ClosePayloadParserTest
     {
         String expectedReason = "Game Over";
 
-        byte utf[] = expectedReason.getBytes(StringUtil.__UTF8_CHARSET);
+        byte utf[] = expectedReason.getBytes(StandardCharsets.UTF_8);
         ByteBuffer payload = ByteBuffer.allocate(utf.length + 2);
         payload.putChar((char)StatusCode.NORMAL);
         payload.put(utf,0,utf.length);
@@ -57,7 +60,7 @@ public class ClosePayloadParserTest
 
         capture.assertNoErrors();
         capture.assertHasFrame(OpCode.CLOSE,1);
-        CloseInfo close = new CloseInfo(capture.getFrames().get(0));
+        CloseInfo close = new CloseInfo(capture.getFrames().poll());
         Assert.assertThat("CloseFrame.statusCode",close.getStatusCode(),is(StatusCode.NORMAL));
         Assert.assertThat("CloseFrame.data",close.getReason(),is(expectedReason));
     }

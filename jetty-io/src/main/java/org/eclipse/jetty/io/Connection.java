@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.io;
 
+import java.io.Closeable;
+
 import org.eclipse.jetty.util.Callback;
 
 /**
@@ -28,7 +30,7 @@ import org.eclipse.jetty.util.Callback;
  * and when the {@link EndPoint} signals read readyness, this {@link Connection} can
  * read bytes from the network and interpret them.</p>
  */
-public interface Connection extends AutoCloseable
+public interface Connection extends Closeable
 {
     public void addListener(Listener listener);
 
@@ -71,7 +73,7 @@ public interface Connection extends AutoCloseable
 
         public void onClosed(Connection connection);
 
-        public static class Empty implements Listener
+        public static class Adapter implements Listener
         {
             @Override
             public void onOpened(Connection connection)

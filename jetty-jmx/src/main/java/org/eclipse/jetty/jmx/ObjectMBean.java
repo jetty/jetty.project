@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -130,7 +130,7 @@ public class ObjectMBean implements DynamicMBean
 
                 try
                 {
-                    Class<?> mClass = (Object.class.equals(oClass))?oClass=ObjectMBean.class:Loader.loadClass(oClass,mName,true);
+                    Class<?> mClass = (Object.class.equals(oClass))?oClass=ObjectMBean.class:Loader.loadClass(oClass,mName);
 
                     LOG.debug("ObjectMbean: mbeanFor {} mClass={}", o, mClass);
 
@@ -590,8 +590,8 @@ public class ObjectMBean implements DynamicMBean
      * getter and setter methods. Descriptions are obtained with a call to findDescription with the
      * attribute name.
      *
-     * @param name
-     * @param metaData "description" or "access:description" or "type:access:description"  where type is
+     * @param method
+     * @param attributeAnnotation "description" or "access:description" or "type:access:description"  where type is
      * one of: <ul>
      * <li>"Object" The field/method is on the managed object.
      * <li>"MBean" The field/method is on the mbean proxy object

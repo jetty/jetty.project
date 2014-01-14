@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.client.io;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
@@ -31,7 +32,6 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.UpgradeException;
@@ -40,6 +40,7 @@ import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.ClientUpgradeResponse;
 import org.eclipse.jetty.websocket.common.AcceptHash;
+import org.eclipse.jetty.websocket.common.SessionFactory;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.extensions.ExtensionStack;
@@ -60,9 +61,16 @@ public class UpgradeConnection extends AbstractConnection
         {
             URI uri = connectPromise.getRequest().getRequestURI();
             request.setRequestURI(uri);
+
+            UpgradeListener handshakeListener = connectPromise.getUpgradeListener();
+            if (handshakeListener != null)
+            {
+                handshakeListener.onHandshakeRequest(request);
+            }
+
             String rawRequest = request.generate();
 
-            ByteBuffer buf = BufferUtil.toBuffer(rawRequest,StringUtil.__UTF8_CHARSET);
+            ByteBuffer buf = BufferUtil.toBuffer(rawRequest, StandardCharsets.UTF_8);
             getEndPoint().write(this,buf);
         }
 
@@ -73,6 +81,14 @@ public class UpgradeConnection extends AbstractConnection
             super.succeeded();
             // start the interest in fill
             fillInterested();
+        }
+
+        @Override
+        public void failed(Throwable cause)
+        {
+            super.failed(cause);
+            // Fail the connect promise when a fundamental exception during connect occurs.
+            connectPromise.failed(cause);
         }
     }
 
@@ -113,6 +129,12 @@ public class UpgradeConnection extends AbstractConnection
     private void notifyConnect(ClientUpgradeResponse response)
     {
         connectPromise.setResponse(response);
+
+        UpgradeListener handshakeListener = connectPromise.getUpgradeListener();
+        if (handshakeListener != null)
+        {
+            handshakeListener.onHandshakeResponse(response);
+        }
     }
 
     @Override
@@ -215,7 +237,8 @@ public class UpgradeConnection extends AbstractConnection
 
         WebSocketClientConnection connection = new WebSocketClientConnection(endp,executor,connectPromise,policy);
 
-        WebSocketSession session = new WebSocketSession(request.getRequestURI(),websocket,connection);
+        SessionFactory sessionFactory = connectPromise.getClient().getSessionFactory();
+        WebSocketSession session = sessionFactory.createSession(request.getRequestURI(),websocket,connection);
         session.setPolicy(policy);
         session.setUpgradeResponse(response);
 

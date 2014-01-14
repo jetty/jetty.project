@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,9 +21,9 @@ package org.eclipse.jetty.io;
 
 import java.util.concurrent.TimeoutException;
 
-import junit.framework.Assert;
 import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -99,7 +99,7 @@ public class IdleTimeoutTest
             Thread.sleep(100);
             _timeout.notIdle();
         }
-        _timeout.close();
+        _timeout.onClose();
         Thread.sleep(1500);
         Assert.assertNull(_expired);
     }

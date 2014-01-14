@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -75,6 +75,12 @@ public class StatusCode
      * See <a href="https://tools.ietf.org/html/rfc6455#section-7.4.1">RFC 6455, Section 7.4.1 Defined Status Codes</a>.
      */
     public final static int NO_CLOSE = 1006;
+    
+    /**
+     * Abnormal Close is a synonym for {@link #NO_CLOSE}, used to indicate a close
+     * condition where no close frame was processed from the remote side.
+     */
+    public final static int ABNORMAL = NO_CLOSE;
 
     /**
      * 1007 indicates that an endpoint is terminating the connection because it has received data within a message that was not consistent with the type of the

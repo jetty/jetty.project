@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,8 +19,6 @@
 package org.eclipse.jetty.plus.annotation;
 
 import java.util.HashMap;
-
-import javax.servlet.ServletException;
 
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.log.Log;
@@ -52,7 +50,6 @@ public class RunAsCollection
     }
 
     public RunAs getRunAs (Object o)
-    throws ServletException
     {
         if (o==null)
             return null;
@@ -61,7 +58,6 @@ public class RunAsCollection
     }
 
     public void setRunAs(Object o)
-    throws ServletException
     {
         if (o == null)
             return;

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -31,15 +31,18 @@ import org.eclipse.jetty.server.Request;
 /** ScopedHandler.
  *
  * A ScopedHandler is a HandlerWrapper where the wrapped handlers
- * each define a scope.   When {@link #handle(String, Request, HttpServletRequest, HttpServletResponse)}
+ * each define a scope.   
+ * 
+ * <p>When {@link #handle(String, Request, HttpServletRequest, HttpServletResponse)}
  * is called on the first ScopedHandler in a chain of HandlerWrappers,
  * the {@link #doScope(String, Request, HttpServletRequest, HttpServletResponse)} method is
  * called on all contained ScopedHandlers, before the
  * {@link #doHandle(String, Request, HttpServletRequest, HttpServletResponse)} method
- * is called on all contained handlers.
+ * is called on all contained handlers.</p>
  *
  * <p>For example if Scoped handlers A, B & C were chained together, then
- * the calling order would be:<pre>
+ * the calling order would be:</p>
+ * <pre>
  * A.handle(...)
  *   A.doScope(...)
  *     B.doScope(...)
@@ -47,10 +50,11 @@ import org.eclipse.jetty.server.Request;
  *         A.doHandle(...)
  *           B.doHandle(...)
  *              C.doHandle(...)
- * <pre>
+ * </pre>
  *
  * <p>If non scoped handler X was in the chained A, B, X & C, then
- * the calling order would be:<pre>
+ * the calling order would be:</p>
+ * <pre>
  * A.handle(...)
  *   A.doScope(...)
  *     B.doScope(...)
@@ -60,9 +64,10 @@ import org.eclipse.jetty.server.Request;
  *             X.handle(...)
  *               C.handle(...)
  *                 C.doHandle(...)
- * <pre>
+ * </pre>
  *
- * <p>A typical usage pattern is:<pre>
+ * <p>A typical usage pattern is:</p>
+ * <pre>
  *     private static class MyHandler extends ScopedHandler
  *     {
  *         public void doScope(String target, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,6 +22,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 
 import org.junit.Test;
 
@@ -31,7 +32,7 @@ public class Utf8StringBufferTest
     public void testUtfStringBuffer() throws Exception
     {
         String source = "abcd012345\n\r\u0000\u00a4\u10fb\ufffdjetty";
-        byte[] bytes = source.getBytes(StringUtil.__UTF8);
+        byte[] bytes = source.getBytes(StandardCharsets.UTF_8);
         Utf8StringBuffer buffer = new Utf8StringBuffer();
         for (byte aByte : bytes)
             buffer.append(aByte);
@@ -43,7 +44,7 @@ public class Utf8StringBufferTest
     public void testUtf8WithMissingByte() throws Exception
     {
         String source = "abc\u10fb";
-        byte[] bytes = source.getBytes(StringUtil.__UTF8);
+        byte[] bytes = source.getBytes(StandardCharsets.UTF_8);
         Utf8StringBuffer buffer = new Utf8StringBuffer();
         for (int i = 0; i < bytes.length - 1; i++)
             buffer.append(bytes[i]);
@@ -54,7 +55,7 @@ public class Utf8StringBufferTest
     public void testUtf8WithAdditionalByte() throws Exception
     {
         String source = "abcXX";
-        byte[] bytes = source.getBytes(StringUtil.__UTF8);
+        byte[] bytes = source.getBytes(StandardCharsets.UTF_8);
         bytes[3] = (byte)0xc0;
         bytes[4] = (byte)0x00;
 
@@ -68,9 +69,9 @@ public class Utf8StringBufferTest
     public void testUTF32codes() throws Exception
     {
         String source = "\uD842\uDF9F";
-        byte[] bytes = source.getBytes("UTF-8");
+        byte[] bytes = source.getBytes(StandardCharsets.UTF_8);
 
-        String jvmcheck = new String(bytes,0,bytes.length,"UTF-8");
+        String jvmcheck = new String(bytes,0,bytes.length,StandardCharsets.UTF_8);
         assertEquals(source,jvmcheck);
 
         Utf8StringBuffer buffer = new Utf8StringBuffer();

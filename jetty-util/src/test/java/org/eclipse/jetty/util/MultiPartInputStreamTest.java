@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,8 +18,17 @@
 
 package org.eclipse.jetty.util;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -589,7 +598,7 @@ public class MultiPartInputStreamTest
         mpis.setDeleteOnExit(true);
         Collection<Part> parts = mpis.getParts();
         assertThat(parts.size(), is(1));
-        assertThat(((MultiPartInputStreamParser.MultiPart)parts.iterator().next()).getContentDispositionFilename(), is("Taken on Aug 22 \\ 2012.jpg"));
+        assertThat(((MultiPartInputStreamParser.MultiPart)parts.iterator().next()).getSubmittedFileName(), is("Taken on Aug 22 \\ 2012.jpg"));
     }
     
     @Test
@@ -611,7 +620,7 @@ public class MultiPartInputStreamTest
         mpis.setDeleteOnExit(true);
         Collection<Part> parts = mpis.getParts();
         assertThat(parts.size(), is(1));
-        assertThat(((MultiPartInputStreamParser.MultiPart)parts.iterator().next()).getContentDispositionFilename(), is("c:\\this\\really\\is\\some\\path\\to\\a\\file.txt"));
+        assertThat(((MultiPartInputStreamParser.MultiPart)parts.iterator().next()).getSubmittedFileName(), is("c:\\this\\really\\is\\some\\path\\to\\a\\file.txt"));
     }
 
     @Test
@@ -632,7 +641,7 @@ public class MultiPartInputStreamTest
         mpis.setDeleteOnExit(true);
         Collection<Part> parts = mpis.getParts();
         assertThat(parts.size(), is(1));
-        assertThat(((MultiPartInputStreamParser.MultiPart)parts.iterator().next()).getContentDispositionFilename(), is("c:\\this\\really\\is\\some\\path\\to\\a\\file.txt"));
+        assertThat(((MultiPartInputStreamParser.MultiPart)parts.iterator().next()).getSubmittedFileName(), is("c:\\this\\really\\is\\some\\path\\to\\a\\file.txt"));
     }
     
     public void testMulti ()
@@ -683,7 +692,7 @@ public class MultiPartInputStreamTest
         assertFalse(f2.exists()); //2nd written file was explicitly deleted
 
         MultiPart stuff = (MultiPart)mpis.getPart("stuff");
-        assertThat(stuff.getContentDispositionFilename(), is(filename));
+        assertThat(stuff.getSubmittedFileName(), is(filename));
         assertThat(stuff.getContentType(),is("text/plain"));
         assertThat(stuff.getHeader("Content-Type"),is("text/plain"));
         assertThat(stuff.getHeaders("content-type").size(),is(1));

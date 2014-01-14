@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -26,20 +26,15 @@ public class OneServletContext
 {
     public static void main(String[] args) throws Exception
     {
-        Server server = new Server(8080);
+        Server server = new Server(8080);        
 
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/");
         server.setHandler(context);
 
-        // Server content from tmp
-        ServletHolder holder = context.addServlet(org.eclipse.jetty.servlet.DefaultServlet.class,"/tmp/*");
-        holder.setInitParameter("resourceBase","/tmp");
-        holder.setInitParameter("pathInfoOnly","true");
+        context.addServlet(org.eclipse.jetty.servlet.DefaultServlet.class,"/");
+        context.addServlet(new ServletHolder(new DumpServlet()),"/dump/*");
         
-        // A Dump Servlet
-        context.addServlet(new ServletHolder(new DumpServlet()),"/*");
-
         server.start();
         server.join();
     }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -209,8 +209,19 @@ public abstract class DataInfo extends Info
      */
     public String asString(String charset, boolean consume)
     {
+        return asString(Charset.forName(charset), consume);
+    }
+
+    /**
+     *
+     * @param charset the charset used to convert the bytes
+     * @param consume whether to consume the content
+     * @return a String with the content of this {@link DataInfo}
+     */
+    public String asString(Charset charset, boolean consume)
+    {
         ByteBuffer buffer = asByteBuffer(consume);
-        return Charset.forName(charset).decode(buffer).toString();
+        return charset.decode(buffer).toString();
     }
 
     /**

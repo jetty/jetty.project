@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,10 +20,15 @@ package org.eclipse.jetty.client;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.SSLEngine;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -34,9 +39,14 @@ import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.client.http.HttpDestinationOverHTTP;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.InputStreamContentProvider;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
@@ -45,6 +55,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 
 public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
@@ -240,22 +251,37 @@ public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
         start(new TimeoutHandler(2 * timeout));
         client.stop();
         final AtomicBoolean sslIdle = new AtomicBoolean();
-        client = new HttpClient(sslContextFactory)
+        client = new HttpClient(new HttpClientTransportOverHTTP()
         {
             @Override
-            protected SslConnection newSslConnection(HttpClient httpClient, EndPoint endPoint, SSLEngine engine)
+            public HttpDestination newHttpDestination(Origin origin)
             {
-                return new SslConnection(httpClient.getByteBufferPool(), httpClient.getExecutor(), endPoint, engine)
+                return new HttpDestinationOverHTTP(getHttpClient(), origin)
                 {
                     @Override
-                    protected boolean onReadTimeout()
+                    protected ClientConnectionFactory newSslClientConnectionFactory(ClientConnectionFactory connectionFactory)
                     {
-                        sslIdle.set(true);
-                        return super.onReadTimeout();
+                        HttpClient client = getHttpClient();
+                        return new SslClientConnectionFactory(client.getSslContextFactory(), client.getByteBufferPool(), client.getExecutor(), connectionFactory)
+                        {
+                            @Override
+                            protected SslConnection newSslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine engine)
+                            {
+                                return new SslConnection(byteBufferPool, executor, endPoint, engine)
+                                {
+                                    @Override
+                                    protected boolean onReadTimeout()
+                                    {
+                                        sslIdle.set(true);
+                                        return super.onReadTimeout();
+                                    }
+                                };
+                            }
+                        };
                     }
                 };
             }
-        };
+        }, sslContextFactory);
         client.setIdleTimeout(timeout);
         client.start();
 
@@ -270,6 +296,90 @@ public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
         {
             Assert.assertFalse(sslIdle.get());
             Assert.assertThat(x.getCause(), Matchers.instanceOf(TimeoutException.class));
+        }
+    }
+
+    @Slow
+    @Test
+    public void testConnectTimeoutFailsRequest() throws Exception
+    {
+        String host = "10.255.255.1";
+        int port = 80;
+        int connectTimeout = 1000;
+        assumeConnectTimeout(host, port, connectTimeout);
+
+        start(new EmptyServerHandler());
+        client.stop();
+        client.setConnectTimeout(connectTimeout);
+        client.start();
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        Request request = client.newRequest(host, port);
+        request.scheme(scheme)
+                .send(new Response.CompleteListener()
+                {
+                    @Override
+                    public void onComplete(Result result)
+                    {
+                        if (result.isFailed())
+                            latch.countDown();
+                    }
+                });
+
+        Assert.assertTrue(latch.await(2 * connectTimeout, TimeUnit.MILLISECONDS));
+        Assert.assertNotNull(request.getAbortCause());
+    }
+
+    @Slow
+    @Test
+    public void testConnectTimeoutIsCancelledByShorterTimeout() throws Exception
+    {
+        String host = "10.255.255.1";
+        int port = 80;
+        int connectTimeout = 2000;
+        assumeConnectTimeout(host, port, connectTimeout);
+
+        start(new EmptyServerHandler());
+        client.stop();
+        client.setConnectTimeout(connectTimeout);
+        client.start();
+
+        final AtomicInteger completes = new AtomicInteger();
+        final CountDownLatch latch = new CountDownLatch(2);
+        Request request = client.newRequest(host, port);
+        request.scheme(scheme)
+                .timeout(connectTimeout / 2, TimeUnit.MILLISECONDS)
+                .send(new Response.CompleteListener()
+                {
+                    @Override
+                    public void onComplete(Result result)
+                    {
+                        completes.incrementAndGet();
+                        latch.countDown();
+                    }
+                });
+
+        Assert.assertFalse(latch.await(2 * connectTimeout, TimeUnit.MILLISECONDS));
+        Assert.assertEquals(1, completes.get());
+        Assert.assertNotNull(request.getAbortCause());
+    }
+
+    private void assumeConnectTimeout(String host, int port, int connectTimeout) throws IOException
+    {
+        try (Socket socket = new Socket())
+        {
+            // Try to connect to a private address in the 10.x.y.z range.
+            // These addresses are usually not routed, so an attempt to
+            // connect to them will hang the connection attempt, which is
+            // what we want to simulate in this test.
+            socket.connect(new InetSocketAddress(host, port), connectTimeout);
+            // Abort the test if we can connect.
+            Assume.assumeTrue(false);
+        }
+        catch (SocketTimeoutException x)
+        {
+            // Expected timeout during connect, continue the test.
+            Assume.assumeTrue(true);
         }
     }
 

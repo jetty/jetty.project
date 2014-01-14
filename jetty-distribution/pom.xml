@@ -3,14 +3,14 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.0.7-SNAPSHOT</version>
+    <version>9.1.2-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-distribution</artifactId>
   <name>Jetty :: Distribution Assemblies</name>
   <url>http://www.eclipse.org/jetty</url>
   <packaging>pom</packaging>
   <properties>
-    <assembly-directory>target/distribution</assembly-directory>
+    <assembly-directory>${basedir}/target/distribution</assembly-directory>
     <jetty-setuid-version>1.0.1</jetty-setuid-version>
   </properties>
   <build>
@@ -101,7 +101,7 @@
                   <type>war</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/webapps.demo</outputDirectory>
+                  <outputDirectory>${assembly-directory}/demo-base/webapps</outputDirectory>
                   <destFileName>test.war</destFileName>
                 </artifactItem>
                 <artifactItem>
@@ -111,7 +111,7 @@
                   <type>war</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/webapps.demo</outputDirectory>
+                  <outputDirectory>${assembly-directory}/demo-base/webapps</outputDirectory>
                   <destFileName>test-jaas.war</destFileName>
                 </artifactItem>
                 <artifactItem>
@@ -121,7 +121,7 @@
                   <type>war</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/webapps.demo</outputDirectory>
+                  <outputDirectory>${assembly-directory}/demo-base/webapps</outputDirectory>
                   <destFileName>test-jndi.war</destFileName>
                 </artifactItem>
                 <artifactItem>
@@ -131,7 +131,7 @@
                   <type>war</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/webapps.demo</outputDirectory>
+                  <outputDirectory>${assembly-directory}/demo-base/webapps</outputDirectory>
                   <destFileName>test-spec.war</destFileName>
                 </artifactItem>
                 <artifactItem>
@@ -141,7 +141,7 @@
                   <type>war</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/webapps.demo</outputDirectory>
+                  <outputDirectory>${assembly-directory}/demo-base/webapps</outputDirectory>
                   <destFileName>xref-proxy.war</destFileName>
                 </artifactItem>
                 <artifactItem>
@@ -151,7 +151,7 @@
                   <type>war</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/webapps.demo</outputDirectory>
+                  <outputDirectory>${assembly-directory}/demo-base/webapps</outputDirectory>
                   <destFileName>async-rest.war</destFileName>
                 </artifactItem>
                 <artifactItem>
@@ -223,6 +223,7 @@
                   <outputDirectory>${assembly-directory}</outputDirectory>
                 </artifactItem>
               </artifactItems>
+              <excludes>META-INF/**</excludes>
             </configuration>
           </execution>
 
@@ -244,6 +245,7 @@
                   <outputDirectory>${assembly-directory}</outputDirectory>
                 </artifactItem>
               </artifactItems>
+              <excludes>META-INF/**</excludes>
             </configuration>
           </execution>
 
@@ -265,6 +267,7 @@
                   <outputDirectory>${assembly-directory}</outputDirectory>
                 </artifactItem>
               </artifactItems>
+              <excludes>META-INF/**</excludes>
             </configuration>
           </execution>
 
@@ -286,6 +289,7 @@
                   <outputDirectory>${assembly-directory}</outputDirectory>
                 </artifactItem>
               </artifactItems>
+              <excludes>META-INF/**</excludes>
             </configuration>
           </execution>
 
@@ -297,8 +301,8 @@
             </goals>
             <configuration>
               <includeGroupIds>org.eclipse.jetty</includeGroupIds>
-              <excludeGroupIds>org.eclipse.jetty.orbit,org.eclipse.jetty.spdy,org.eclipse.jetty.websocket,org.eclipse.jetty.drafts</excludeGroupIds>
-              <excludeArtifactIds>jetty-all,jetty-start,jetty-monitor,jetty-jsp</excludeArtifactIds>
+              <excludeGroupIds>org.eclipse.jetty.orbit,org.eclipse.jetty.spdy,org.eclipse.jetty.websocket,org.eclipse.jetty.toolchain</excludeGroupIds>
+              <excludeArtifactIds>jetty-all,jetty-jsp,jetty-start,jetty-monitor</excludeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib</outputDirectory>
             </configuration>
@@ -310,7 +314,8 @@
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <includeGroupIds>org.eclipse.jetty.websocket,org.eclipse.jetty.drafts</includeGroupIds>
+              <includeGroupIds>javax.websocket,org.eclipse.jetty.websocket</includeGroupIds>
+              <excludeArtifactIds>javax.websocket-client-api</excludeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/websocket</outputDirectory>
             </configuration>
@@ -335,7 +340,7 @@
             </configuration>
           </execution>
           <execution>
-            <id>copy-orbit-servlet-api-deps</id>
+            <id>copy-servlet-api-deps</id>
             <phase>generate-resources</phase>
             <goals>
               <goal>copy</goal>
@@ -343,12 +348,20 @@
             <configuration>
               <artifactItems>
                 <artifactItem>
-                  <groupId>org.eclipse.jetty.orbit</groupId>
-                  <artifactId>javax.servlet</artifactId>
-                  <version>${orbit-servlet-api-version}</version>
+                 <groupId>javax.servlet</groupId>
+                 <artifactId>javax.servlet-api</artifactId>
+                 <version>3.1.0</version>
                   <overWrite>true</overWrite>
                   <outputDirectory>${assembly-directory}/lib</outputDirectory>
-                  <destFileName>servlet-api-3.0.jar</destFileName>
+                  <destFileName>servlet-api-3.1.jar</destFileName>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty.toolchain</groupId>
+                  <artifactId>jetty-schemas</artifactId>
+                  <version>3.1.M0</version>
+                  <overWrite>true</overWrite>
+                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
+                  <destFileName>jetty-schemas-3.1.jar</destFileName>
                 </artifactItem>
               </artifactItems>
             </configuration>
@@ -380,56 +393,69 @@
             </configuration>
           </execution>
           <execution>
-            <id>copy-orbit-lib-annotations-deps</id>
+            <id>copy-annotations-deps</id>
             <phase>generate-resources</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <includeGroupIds>org.eclipse.jetty.orbit</includeGroupIds>
-              <includeArtifactIds>javax.annotation,org.objectweb.asm</includeArtifactIds>
+              <includeGroupIds>javax.annotation,org.eclipse.jetty.orbit,org.ow2.asm</includeGroupIds>
+              <includeArtifactIds>javax.annotation-api,asm,asm-commons</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/annotations</outputDirectory>
             </configuration>
           </execution>
 
           <execution>
-            <id>copy-orbit-lib-jta-deps</id>
+            <id>copy-jta-deps</id>
             <phase>generate-resources</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <includeGroupIds>org.eclipse.jetty.orbit</includeGroupIds>
-              <includeArtifactIds>javax.transaction</includeArtifactIds>
+              <includeGroupIds>javax.transaction</includeGroupIds>
+              <includeArtifactIds>javax.transaction-api</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/jndi</outputDirectory>
             </configuration>
           </execution>
           <execution>
-            <id>copy-orbit-lib-jndi-deps</id>
+            <id>copy-jndi-deps</id>
             <phase>generate-resources</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
               <includeGroupIds>org.eclipse.jetty.orbit</includeGroupIds>
-              <includeArtifactIds>javax.mail.glassfish,javax.activation</includeArtifactIds>
+              <includeArtifactIds>javax.activation,javax.mail.glassfish</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/jndi</outputDirectory>
             </configuration>
           </execution>
           <execution>
-            <id>copy-orbit-lib-jsp-deps</id>
+            <id>copy-jsp-deps</id>
             <phase>generate-resources</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <includeGroupIds>org.eclipse.jetty.orbit</includeGroupIds>
-              <includeArtifactIds>com.sun.el,javax.el,javax.servlet.jsp,javax.servlet.jsp.jstl,org.apache.jasper.glassfish,org.apache.taglibs.standard.glassfish,org.eclipse.jdt.core</includeArtifactIds>
+              <includeGroupIds>org.eclipse.jetty.orbit,org.glassfish.web, org.glassfish, javax.el, javax.servlet.jsp, org.eclipse.jetty.toolchain</includeGroupIds>
+              <includeArtifactIds>javax.servlet.jsp.jstl,org.apache.taglibs.standard.glassfish,org.eclipse.jdt.core, javax.servlet.jsp-api, javax.servlet.jsp, jetty-jsp-jdt, javax.el-api, javax.el</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/jsp</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-jaspi-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>org.eclipse.jetty.orbit</includeGroupIds>
+              <includeArtifactIds>javax.security.auth.message</includeArtifactIds>
+              <includeTypes>jar</includeTypes>
+              <outputDirectory>${assembly-directory}/lib/jaspi</outputDirectory>
             </configuration>
           </execution>
           <execution>
@@ -439,12 +465,50 @@
               <goal>unpack-dependencies</goal>
             </goals>
             <configuration>
-              <includeGroupIds>org.eclipse.jetty</includeGroupIds>
+              <includeGroupIds>org.eclipse.jetty,org.eclipse.jetty.websocket</includeGroupIds>
               <classifier>config</classifier>
               <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
               <excludes>META-INF/**</excludes>
               <outputDirectory>${assembly-directory}</outputDirectory>
             </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <executions>
+          <execution>
+	    <id>setup home</id>
+            <phase>process-classes</phase>
+	    <configuration>
+	      <mainClass>org.eclipse.jetty.start.Main</mainClass>
+	      <arguments>
+		<argument>jetty.home=${assembly-directory}</argument>
+		<argument>jetty.base=${assembly-directory}</argument>
+		<argument>--add-to-start=server,deploy,websocket,jsp,ext,resources</argument>
+		<argument>--add-to-startd=http</argument>
+	      </arguments>
+	    </configuration>
+            <goals>
+              <goal>java</goal>
+            </goals>
+          </execution>
+          <execution>
+	    <id>setup demo-base</id>
+            <phase>process-classes</phase>
+	    <configuration>
+	      <mainClass>org.eclipse.jetty.start.Main</mainClass>
+	      <arguments>
+		<argument>jetty.home=${assembly-directory}</argument>
+		<argument>jetty.base=${assembly-directory}/demo-base</argument>
+		<argument>--add-to-start=server,continuation,deploy,jsp,ext,resources,client,annotations,jndi,servlets</argument>
+		<argument>--add-to-startd-ini=http,https</argument>
+	      </arguments>
+	    </configuration>
+            <goals>
+              <goal>java</goal>
+            </goals>
           </execution>
         </executions>
       </plugin>
@@ -488,12 +552,8 @@
   <dependencies>
     <!-- Orbit Deps -->
     <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>javax.annotation</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>org.objectweb.asm</artifactId>
+      <groupId>javax.annotation</groupId>
+      <artifactId>javax.annotation-api</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.orbit</groupId>
@@ -504,12 +564,42 @@
       <artifactId>javax.mail.glassfish</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>javax.transaction</artifactId>
+      <groupId>javax.transaction</groupId>
+      <artifactId>javax.transaction-api</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.orbit</groupId>
       <artifactId>javax.security.auth.message</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.orbit</groupId>
+      <artifactId>org.apache.taglibs.standard.glassfish</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.glassfish.web</groupId>
+      <artifactId>javax.servlet.jsp</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-jsp-jdt</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>javax.servlet.jsp</groupId>
+      <artifactId>javax.servlet.jsp-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.glassfish</groupId>
+      <artifactId>javax.el</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm-commons</artifactId>
     </dependency>
 
     <!-- jetty deps -->
@@ -552,7 +642,17 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
+      <artifactId>websocket-servlet</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>websocket-server</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.websocket</groupId>
+      <artifactId>javax-websocket-server-impl</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -580,6 +680,13 @@
       <artifactId>jetty-proxy</artifactId>
       <version>${project.version}</version>
     </dependency>
+<!--
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-overlay-deployer</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+-->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jaas</artifactId>
@@ -621,6 +728,11 @@
       <artifactId>example-async-rest-webapp</artifactId>
       <version>${project.version}</version>
       <type>war</type>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-jaspi</artifactId>
+      <version>${project.version}</version>
     </dependency>
   </dependencies>
 </project>

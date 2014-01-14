@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,13 +18,14 @@
 
 package org.eclipse.jetty.servlet;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -109,7 +110,7 @@ public class RequestHeadersTest
             
             try (InputStream in = http.getInputStream())
             {
-                String resp = IO.toString(in, "UTF-8");
+                String resp = IO.toString(in, StandardCharsets.UTF_8);
                 Assert.assertThat("Response", resp, is("X-Camel-Type = bactrian"));
             }
         }

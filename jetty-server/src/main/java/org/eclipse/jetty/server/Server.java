@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,17 +28,17 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.List;
-import java.util.TimerTask;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -48,7 +48,6 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
-import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.URIUtil;
@@ -62,6 +61,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.util.thread.ThreadPool;
+import org.eclipse.jetty.util.thread.ThreadPool.SizedThreadPool;
 
 /* ------------------------------------------------------------ */
 /** Jetty HTTP Servlet Server.
@@ -82,9 +82,9 @@ public class Server extends HandlerWrapper implements Attributes
     private boolean _stopAtShutdown;
     private boolean _dumpAfterStart=false;
     private boolean _dumpBeforeStop=false;
-    private HttpField _dateField;
-
-
+    
+    private volatile DateField _dateField;
+    
     /* ------------------------------------------------------------ */
     public Server()
     {
@@ -263,11 +263,27 @@ public class Server extends HandlerWrapper implements Attributes
         _dumpBeforeStop = dumpBeforeStop;
     }
 
-
     /* ------------------------------------------------------------ */
     public HttpField getDateField()
     {
-        return _dateField;
+        long now=System.currentTimeMillis();
+        long seconds = now/1000;
+        DateField df = _dateField;
+        
+        if (df==null || df._seconds!=seconds)
+        {
+            synchronized (this) // Trade some contention for less garbage
+            {
+                df = _dateField;
+                if (df==null || df._seconds!=seconds)
+                {
+                    HttpField field=new HttpGenerator.CachedHttpField(HttpHeader.DATE,DateGenerator.formatDate(now));
+                    _dateField=new DateField(seconds,field);
+                    return field;
+                }
+            }
+        }
+        return df._dateField;
     }
 
     /* ------------------------------------------------------------ */
@@ -285,6 +301,24 @@ public class Server extends HandlerWrapper implements Attributes
         HttpGenerator.setJettyVersion(HttpConfiguration.SERVER_VERSION);
         MultiException mex=new MultiException();
 
+        // check size of thread pool
+        SizedThreadPool pool = getBean(SizedThreadPool.class);
+        int max=pool==null?-1:pool.getMaxThreads();
+        int needed=1;
+        if (mex.size()==0)
+        {
+            for (Connector connector : _connectors)
+            {
+                if (connector instanceof AbstractConnector)
+                    needed+=((AbstractConnector)connector).getAcceptors();
+                if (connector instanceof ServerConnector)
+                    needed+=((ServerConnector)connector).getSelectorManager().getSelectorCount();
+            }
+        }
+
+        if (max>0 && needed>max)
+            throw new IllegalStateException("Insufficient max threads in ThreadPool: max="+max+" < needed="+needed);
+        
         try
         {
             super.doStart();
@@ -294,42 +328,21 @@ public class Server extends HandlerWrapper implements Attributes
             mex.add(e);
         }
 
-        if (mex.size()==0)
+        // start connectors last
+        for (Connector connector : _connectors)
         {
-            for (Connector _connector : _connectors)
+            try
+            {   
+                connector.start();
+            }
+            catch(Throwable e)
             {
-                try
-                {
-                    _connector.start();
-                }
-                catch (Throwable e)
-                {
-                    mex.add(e);
-                }
+                mex.add(e);
             }
         }
-
+        
         if (isDumpAfterStart())
             dumpStdErr();
-
-
-        // use DateCache timer for Date field reformat
-        final HttpFields.DateGenerator date = new HttpFields.DateGenerator();
-        long now=System.currentTimeMillis();
-        long tick=1000*((now/1000)+1)-now;
-        _dateField=new HttpField.CachedHttpField(HttpHeader.DATE,date.formatDate(now));
-        DateCache.getTimer().scheduleAtFixedRate(new TimerTask()
-        {
-            @Override
-            public void run()
-            {
-                long now=System.currentTimeMillis();
-                _dateField=new HttpField.CachedHttpField(HttpHeader.DATE,date.formatDate(now));
-                if (!isRunning())
-                    this.cancel();
-            }
-        },tick,1000);
-
 
         mex.ifExceptionThrow();
     }
@@ -536,9 +549,9 @@ public class Server extends HandlerWrapper implements Attributes
     @Override
     public void clearAttributes()
     {
-        Enumeration names = _attributes.getAttributeNames();
+        Enumeration<String> names = _attributes.getAttributeNames();
         while (names.hasMoreElements())
-            removeBean(_attributes.getAttribute((String)names.nextElement()));
+            removeBean(_attributes.getAttribute(names.nextElement()));
         _attributes.clearAttributes();
     }
 
@@ -646,5 +659,20 @@ public class Server extends HandlerWrapper implements Attributes
     public static void main(String...args) throws Exception
     {
         System.err.println(getVersion());
+    }
+
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    private static class DateField
+    {
+        final long _seconds;
+        final HttpField _dateField;
+        public DateField(long seconds, HttpField dateField)
+        {
+            super();
+            _seconds = seconds;
+            _dateField = dateField;
+        }
+        
     }
 }

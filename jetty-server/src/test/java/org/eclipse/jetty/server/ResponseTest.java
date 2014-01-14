@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,13 @@
 
 package org.eclipse.jetty.server;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
@@ -29,7 +36,6 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Locale;
-import java.util.concurrent.TimeoutException;
 
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
@@ -37,7 +43,7 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpGenerator;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpURI;
@@ -48,7 +54,6 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.session.HashSessionIdManager;
 import org.eclipse.jetty.server.session.HashSessionManager;
 import org.eclipse.jetty.server.session.HashedSession;
-import org.eclipse.jetty.util.BlockingCallback;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.TimerScheduler;
@@ -57,12 +62,6 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 public class ResponseTest
 {
@@ -81,17 +80,9 @@ public class ResponseTest
         _server.start();
 
         AbstractEndPoint endp = new ByteArrayEndPoint(_scheduler, 5000);
-        ByteBufferHttpInput input = new ByteBufferHttpInput();
-        _channel = new HttpChannel<>(connector, new HttpConfiguration(), endp, new HttpTransport()
+        ByteBufferQueuedHttpInput input = new ByteBufferQueuedHttpInput();
+        _channel = new HttpChannel<ByteBuffer>(connector, new HttpConfiguration(), endp, new HttpTransport()
         {
-            @Override
-            public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent) throws IOException
-            {
-                BlockingCallback cb = new BlockingCallback();
-                send(info,content,lastContent,cb);
-                cb.block();
-            }
-
             @Override
             public void send(ResponseInfo info, ByteBuffer content, boolean lastContent, Callback callback)
             {
@@ -132,9 +123,9 @@ public class ResponseTest
         response.setContentType("foo/bar");
         assertEquals("foo/bar", response.getContentType());
         response.getWriter();
-        assertEquals("foo/bar;charset=ISO-8859-1", response.getContentType());
+        assertEquals("foo/bar; charset=ISO-8859-1", response.getContentType());
         response.setContentType("foo2/bar2");
-        assertEquals("foo2/bar2;charset=ISO-8859-1", response.getContentType());
+        assertEquals("foo2/bar2; charset=ISO-8859-1", response.getContentType());
         response.setHeader("name", "foo");
 
         Iterator<String> en = response.getHeaders("name").iterator();
@@ -151,15 +142,16 @@ public class ResponseTest
         response.setContentType("text/html");
         assertEquals("text/html", response.getContentType());
         response.getWriter();
-        assertEquals("text/html;charset=ISO-8859-1", response.getContentType());
+        assertEquals("text/html; charset=ISO-8859-1", response.getContentType());
         response.setContentType("foo2/bar2");
-        assertEquals("foo2/bar2;charset=ISO-8859-1", response.getContentType());
+        assertEquals("foo2/bar2; charset=ISO-8859-1", response.getContentType());
 
         response.recycle();
         response.setContentType("text/xml;charset=ISO-8859-7");
         response.getWriter();
+        assertEquals("text/xml;charset=ISO-8859-7", response.getContentType());
         response.setContentType("text/html;charset=UTF-8");
-        assertEquals("text/html;charset=ISO-8859-7", response.getContentType());
+        assertEquals("text/html; charset=ISO-8859-7", response.getContentType());
 
         response.recycle();
         response.setContentType("text/html;charset=US-ASCII");
@@ -167,19 +159,30 @@ public class ResponseTest
         assertEquals("text/html;charset=US-ASCII", response.getContentType());
 
         response.recycle();
+        response.setContentType("text/html; charset=utf-8");
+        response.getWriter();
+        assertEquals("text/html; charset=UTF-8", response.getContentType());
+
+        response.recycle();
         response.setContentType("text/json");
         response.getWriter();
-        assertEquals("text/json;charset=UTF-8", response.getContentType());
+        assertEquals("text/json", response.getContentType());
+        
+        response.recycle();
+        response.setContentType("text/json");
+        response.setCharacterEncoding("UTF-8");
+        response.getWriter();
+        assertEquals("text/json; charset=UTF-8", response.getContentType());
 
         response.recycle();
         response.setCharacterEncoding("xyz");
         response.setContentType("foo/bar");
-        assertEquals("foo/bar;charset=xyz", response.getContentType());
+        assertEquals("foo/bar; charset=xyz", response.getContentType());
 
         response.recycle();
         response.setContentType("foo/bar");
         response.setCharacterEncoding("xyz");
-        assertEquals("foo/bar;charset=xyz", response.getContentType());
+        assertEquals("foo/bar; charset=xyz", response.getContentType());
 
         response.recycle();
         response.setCharacterEncoding("xyz");
@@ -189,7 +192,7 @@ public class ResponseTest
         response.recycle();
         response.setContentType("foo/bar;charset=abc");
         response.setCharacterEncoding("xyz");
-        assertEquals("foo/bar;charset=xyz", response.getContentType());
+        assertEquals("foo/bar; charset=xyz", response.getContentType());
 
         response.recycle();
         response.setCharacterEncoding("xyz");
@@ -205,6 +208,11 @@ public class ResponseTest
         response.recycle();
         response.addHeader("Content-Type","text/something");
         assertEquals("text/something",response.getContentType());
+        
+        response.recycle();
+        response.addHeader("Content-Type","application/json");
+        response.getWriter();
+        assertEquals("application/json",response.getContentType());
 
     }
 
@@ -221,13 +229,13 @@ public class ResponseTest
         response.setLocale(java.util.Locale.ITALIAN);
         assertEquals(null, response.getContentType());
         response.setContentType("text/plain");
-        assertEquals("text/plain;charset=ISO-8859-2", response.getContentType());
+        assertEquals("text/plain; charset=ISO-8859-2", response.getContentType());
 
         response.recycle();
         response.setContentType("text/plain");
         response.setCharacterEncoding("utf-8");
         response.setLocale(java.util.Locale.ITALIAN);
-        assertEquals("text/plain;charset=UTF-8", response.getContentType());
+        assertEquals("text/plain; charset=UTF-8", response.getContentType());
         assertTrue(response.toString().indexOf("charset=UTF-8") > 0);
     }
 
@@ -238,25 +246,25 @@ public class ResponseTest
 
         response.setContentType("foo/bar");
         response.setCharacterEncoding("utf-8");
-        assertEquals("foo/bar;charset=UTF-8", response.getContentType());
+        assertEquals("foo/bar; charset=UTF-8", response.getContentType());
         response.getWriter();
-        assertEquals("foo/bar;charset=UTF-8", response.getContentType());
+        assertEquals("foo/bar; charset=UTF-8", response.getContentType());
         response.setContentType("foo2/bar2");
-        assertEquals("foo2/bar2;charset=UTF-8", response.getContentType());
+        assertEquals("foo2/bar2; charset=UTF-8", response.getContentType());
         response.setCharacterEncoding("ISO-8859-1");
-        assertEquals("foo2/bar2;charset=UTF-8", response.getContentType());
+        assertEquals("foo2/bar2; charset=UTF-8", response.getContentType());
 
         response.recycle();
 
         response.setContentType("text/html");
         response.setCharacterEncoding("utf-8");
-        assertEquals("text/html;charset=UTF-8", response.getContentType());
+        assertEquals("text/html; charset=UTF-8", response.getContentType());
         response.getWriter();
-        assertEquals("text/html;charset=UTF-8", response.getContentType());
+        assertEquals("text/html; charset=UTF-8", response.getContentType());
         response.setContentType("text/xml");
-        assertEquals("text/xml;charset=UTF-8", response.getContentType());
+        assertEquals("text/xml; charset=UTF-8", response.getContentType());
         response.setCharacterEncoding("ISO-8859-1");
-        assertEquals("text/xml;charset=UTF-8", response.getContentType());
+        assertEquals("text/xml; charset=UTF-8", response.getContentType());
     }
 
     @Test
@@ -265,25 +273,25 @@ public class ResponseTest
         Response response = newResponse();
         response.setCharacterEncoding("utf-8");
         response.setContentType("foo/bar");
-        assertEquals("foo/bar;charset=UTF-8", response.getContentType());
+        assertEquals("foo/bar; charset=UTF-8", response.getContentType());
         response.getWriter();
-        assertEquals("foo/bar;charset=UTF-8", response.getContentType());
+        assertEquals("foo/bar; charset=UTF-8", response.getContentType());
         response.setContentType("foo2/bar2");
-        assertEquals("foo2/bar2;charset=UTF-8", response.getContentType());
+        assertEquals("foo2/bar2; charset=UTF-8", response.getContentType());
         response.setCharacterEncoding("ISO-8859-1");
-        assertEquals("foo2/bar2;charset=UTF-8", response.getContentType());
+        assertEquals("foo2/bar2; charset=UTF-8", response.getContentType());
 
         response.recycle();
 
         response.setCharacterEncoding("utf-8");
         response.setContentType("text/html");
-        assertEquals("text/html;charset=UTF-8", response.getContentType());
+        assertEquals("text/html; charset=UTF-8", response.getContentType());
         response.getWriter();
-        assertEquals("text/html;charset=UTF-8", response.getContentType());
+        assertEquals("text/html; charset=UTF-8", response.getContentType());
         response.setContentType("text/xml");
-        assertEquals("text/xml;charset=UTF-8", response.getContentType());
+        assertEquals("text/xml; charset=UTF-8", response.getContentType());
         response.setCharacterEncoding("iso-8859-1");
-        assertEquals("text/xml;charset=UTF-8", response.getContentType());
+        assertEquals("text/xml; charset=UTF-8", response.getContentType());
     }
 
     @Test
@@ -297,21 +305,21 @@ public class ResponseTest
         response.getWriter();
         assertEquals("foo/bar; charset=utf-8", response.getContentType());
         response.setContentType("foo2/bar2");
-        assertEquals("foo2/bar2;charset=UTF-8", response.getContentType());
+        assertEquals("foo2/bar2; charset=UTF-8", response.getContentType());
         response.setCharacterEncoding("ISO-8859-1");
-        assertEquals("foo2/bar2;charset=UTF-8", response.getContentType());
+        assertEquals("foo2/bar2; charset=UTF-8", response.getContentType());
 
         response.recycle();
 
         response.setCharacterEncoding("utf16");
         response.setContentType("text/html; charset=utf-8");
-        assertEquals("text/html; charset=utf-8", response.getContentType());
+        assertEquals("text/html; charset=UTF-8", response.getContentType());
         response.getWriter();
-        assertEquals("text/html; charset=utf-8", response.getContentType());
+        assertEquals("text/html; charset=UTF-8", response.getContentType());
         response.setContentType("text/xml");
-        assertEquals("text/xml;charset=UTF-8", response.getContentType());
+        assertEquals("text/xml; charset=UTF-8", response.getContentType());
         response.setCharacterEncoding("iso-8859-1");
-        assertEquals("text/xml;charset=UTF-8", response.getContentType());
+        assertEquals("text/xml; charset=UTF-8", response.getContentType());
     }
 
     @Test
@@ -322,19 +330,19 @@ public class ResponseTest
         response.setContentType("foo/bar; other=xyz");
         assertEquals("foo/bar; other=xyz", response.getContentType());
         response.getWriter();
-        assertEquals("foo/bar; other=xyz;charset=ISO-8859-1", response.getContentType());
+        assertEquals("foo/bar; other=xyz; charset=ISO-8859-1", response.getContentType());
         response.setContentType("foo2/bar2");
-        assertEquals("foo2/bar2;charset=ISO-8859-1", response.getContentType());
+        assertEquals("foo2/bar2; charset=ISO-8859-1", response.getContentType());
 
         response.recycle();
 
         response.setCharacterEncoding("utf-8");
         response.setContentType("text/html; other=xyz");
-        assertEquals("text/html; other=xyz;charset=UTF-8", response.getContentType());
+        assertEquals("text/html; other=xyz; charset=UTF-8", response.getContentType());
         response.getWriter();
-        assertEquals("text/html; other=xyz;charset=UTF-8", response.getContentType());
+        assertEquals("text/html; other=xyz; charset=UTF-8", response.getContentType());
         response.setContentType("text/xml");
-        assertEquals("text/xml;charset=UTF-8", response.getContentType());
+        assertEquals("text/xml; charset=UTF-8", response.getContentType());
     }
 
     @Test
@@ -352,17 +360,17 @@ public class ResponseTest
 
         response.setCharacterEncoding("utf16");
         response.setContentType("text/html; other=xyz charset=utf-8");
-        assertEquals("text/html; other=xyz charset=utf-8;charset=UTF-16", response.getContentType());
+        assertEquals("text/html; other=xyz charset=utf-8; charset=UTF-16", response.getContentType());
         response.getWriter();
-        assertEquals("text/html; other=xyz charset=utf-8;charset=UTF-16", response.getContentType());
+        assertEquals("text/html; other=xyz charset=utf-8; charset=UTF-16", response.getContentType());
 
         response.recycle();
 
         response.setCharacterEncoding("utf16");
         response.setContentType("foo/bar; other=pq charset=utf-8 other=xyz");
-        assertEquals("foo/bar; other=pq charset=utf-8 other=xyz;charset=UTF-16", response.getContentType());
+        assertEquals("foo/bar; other=pq charset=utf-8 other=xyz; charset=UTF-16", response.getContentType());
         response.getWriter();
-        assertEquals("foo/bar; other=pq charset=utf-8 other=xyz;charset=UTF-16", response.getContentType());
+        assertEquals("foo/bar; other=pq charset=utf-8 other=xyz; charset=UTF-16", response.getContentType());
     }
 
     @Test
@@ -653,6 +661,126 @@ public class ResponseTest
         output.flush();
     }
 
+
+    @Test
+    public void testSetCookie() throws Exception
+    {
+        Response response = _channel.getResponse();
+        HttpFields fields = response.getHttpFields();
+
+        response.addSetCookie("null",null,null,null,-1,null,false,false,-1);
+        assertEquals("null=",fields.getStringField("Set-Cookie"));
+
+        fields.clear();
+        
+        response.addSetCookie("minimal","value",null,null,-1,null,false,false,-1);
+        assertEquals("minimal=value",fields.getStringField("Set-Cookie"));
+
+        fields.clear();
+        //test cookies with same name, domain and path, only 1 allowed
+        response.addSetCookie("everything","wrong","domain","path",0,"to be replaced",true,true,0);
+        response.addSetCookie("everything","value","domain","path",0,"comment",true,true,0);
+        assertEquals("everything=value;Version=1;Path=path;Domain=domain;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=comment",fields.getStringField("Set-Cookie"));
+        Enumeration<String> e =fields.getValues("Set-Cookie");
+        assertTrue(e.hasMoreElements());
+        assertEquals("everything=value;Version=1;Path=path;Domain=domain;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=comment",e.nextElement());
+        assertFalse(e.hasMoreElements());
+        assertEquals("Thu, 01 Jan 1970 00:00:00 GMT",fields.getStringField("Expires"));
+        assertFalse(e.hasMoreElements());
+        
+        //test cookies with same name, different domain
+        fields.clear();
+        response.addSetCookie("everything","other","domain1","path",0,"blah",true,true,0);
+        response.addSetCookie("everything","value","domain2","path",0,"comment",true,true,0);
+        e =fields.getValues("Set-Cookie");
+        assertTrue(e.hasMoreElements());
+        assertEquals("everything=other;Version=1;Path=path;Domain=domain1;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=blah",e.nextElement());
+        assertTrue(e.hasMoreElements());
+        assertEquals("everything=value;Version=1;Path=path;Domain=domain2;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=comment",e.nextElement());
+        assertFalse(e.hasMoreElements());
+        
+        //test cookies with same name, same path, one with domain, one without
+        fields.clear();
+        response.addSetCookie("everything","other","domain1","path",0,"blah",true,true,0);
+        response.addSetCookie("everything","value","","path",0,"comment",true,true,0);
+        e =fields.getValues("Set-Cookie");
+        assertTrue(e.hasMoreElements());
+        assertEquals("everything=other;Version=1;Path=path;Domain=domain1;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=blah",e.nextElement());
+        assertTrue(e.hasMoreElements());
+        assertEquals("everything=value;Version=1;Path=path;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=comment",e.nextElement());
+        assertFalse(e.hasMoreElements());
+        
+        
+        //test cookies with same name, different path
+        fields.clear();
+        response.addSetCookie("everything","other","domain1","path1",0,"blah",true,true,0);
+        response.addSetCookie("everything","value","domain1","path2",0,"comment",true,true,0);
+        e =fields.getValues("Set-Cookie");
+        assertTrue(e.hasMoreElements());
+        assertEquals("everything=other;Version=1;Path=path1;Domain=domain1;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=blah",e.nextElement());
+        assertTrue(e.hasMoreElements());
+        assertEquals("everything=value;Version=1;Path=path2;Domain=domain1;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=comment",e.nextElement());
+        assertFalse(e.hasMoreElements());
+        
+        //test cookies with same name, same domain, one with path, one without
+        fields.clear();
+        response.addSetCookie("everything","other","domain1","path1",0,"blah",true,true,0);
+        response.addSetCookie("everything","value","domain1","",0,"comment",true,true,0);
+        e =fields.getValues("Set-Cookie");
+        assertTrue(e.hasMoreElements());
+        assertEquals("everything=other;Version=1;Path=path1;Domain=domain1;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=blah",e.nextElement());
+        assertTrue(e.hasMoreElements());
+        assertEquals("everything=value;Version=1;Domain=domain1;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=comment",e.nextElement());
+        assertFalse(e.hasMoreElements());
+        
+        //test cookies same name only, no path, no domain
+        fields.clear();
+        response.addSetCookie("everything","other","","",0,"blah",true,true,0);
+        response.addSetCookie("everything","value","","",0,"comment",true,true,0);
+        e =fields.getValues("Set-Cookie");
+        assertTrue(e.hasMoreElements());
+        assertEquals("everything=value;Version=1;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=comment",e.nextElement());
+        assertFalse(e.hasMoreElements());
+
+        fields.clear();
+        response.addSetCookie("ev erything","va lue","do main","pa th",1,"co mment",true,true,1);
+        String setCookie=fields.getStringField("Set-Cookie");
+        assertThat(setCookie,Matchers.startsWith("\"ev erything\"=\"va lue\";Version=1;Path=\"pa th\";Domain=\"do main\";Expires="));
+        assertThat(setCookie,Matchers.endsWith(" GMT;Max-Age=1;Secure;HttpOnly;Comment=\"co mment\""));
+
+        fields.clear();
+        response.addSetCookie("name","value",null,null,-1,null,false,false,0);
+        setCookie=fields.getStringField("Set-Cookie");
+        assertEquals(-1,setCookie.indexOf("Version="));
+        fields.clear();
+        response.addSetCookie("name","v a l u e",null,null,-1,null,false,false,0);
+        setCookie=fields.getStringField("Set-Cookie");
+
+        fields.clear();
+        response.addSetCookie("json","{\"services\":[\"cwa\", \"aa\"]}",null,null,-1,null,false,false,-1);
+        assertEquals("json=\"{\\\"services\\\":[\\\"cwa\\\", \\\"aa\\\"]}\"",fields.getStringField("Set-Cookie"));
+
+        fields.clear();
+        response.addSetCookie("name","value","domain",null,-1,null,false,false,-1);
+        response.addSetCookie("name","other","domain",null,-1,null,false,false,-1);
+        assertEquals("name=other;Domain=domain",fields.getStringField("Set-Cookie"));
+        response.addSetCookie("name","more","domain",null,-1,null,false,false,-1);
+        assertEquals("name=more;Domain=domain",fields.getStringField("Set-Cookie"));
+        response.addSetCookie("foo","bar","domain",null,-1,null,false,false,-1);
+        response.addSetCookie("foo","bob","domain",null,-1,null,false,false,-1);
+        assertEquals("name=more;Domain=domain",fields.getStringField("Set-Cookie"));
+
+        e=fields.getValues("Set-Cookie");
+        assertEquals("name=more;Domain=domain",e.nextElement());
+        assertEquals("foo=bob;Domain=domain",e.nextElement());
+
+        fields.clear();
+        response.addSetCookie("name","value%=",null,null,-1,null,false,false,0);
+        setCookie=fields.getStringField("Set-Cookie");
+        assertEquals("name=value%=",setCookie);
+
+    }
+    
     private Response newResponse()
     {
         _channel.reset();

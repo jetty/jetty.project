@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,10 +18,18 @@
 
 package org.eclipse.jetty.spdy.server.http;
 
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
 import java.io.IOException;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -35,6 +43,7 @@ import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.SynInfo;
+import org.eclipse.jetty.spdy.http.HTTPSPDYHeader;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -43,18 +52,11 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 @Ignore("So far only used for testing performance tweaks. So no need to run it in a build")
 public class SimpleHTTPBenchmarkTest extends AbstractHTTPSPDYTest
 {
     private static final Logger LOG = Log.getLogger(SimpleHTTPBenchmarkTest.class);
-    private final int dataSize = 4096*100;
+    private final int dataSize = 4096 * 100;
     private Session session;
     private int requestCount = 100;
 
@@ -81,7 +83,7 @@ public class SimpleHTTPBenchmarkTest extends AbstractHTTPSPDYTest
                 assertThat(httpRequest.getHeader("host"), is("localhost:" + connector.getLocalPort()));
                 httpResponse.getOutputStream().write(data);
             }
-        }), null);
+        }, 0), null);
     }
 
     @Test
@@ -97,8 +99,8 @@ public class SimpleHTTPBenchmarkTest extends AbstractHTTPSPDYTest
             long timeElapsed = System.nanoTime() - start;
             LOG.info("Requests with {}b response took: {}ms", dataSize, timeElapsed / 1000 / 1000);
         }
-        long timeElapsedOverall = (System.nanoTime() - overallStart)/1000/1000;
-        LOG.info("Time elapsed overall: {}ms avg: {}ms", timeElapsedOverall, timeElapsedOverall/iterations);
+        long timeElapsedOverall = (System.nanoTime() - overallStart) / 1000 / 1000;
+        LOG.info("Time elapsed overall: {}ms avg: {}ms", timeElapsedOverall, timeElapsedOverall / iterations);
     }
 
     private void sendGetRequest() throws Exception
@@ -114,7 +116,7 @@ public class SimpleHTTPBenchmarkTest extends AbstractHTTPSPDYTest
             {
                 assertTrue(replyInfo.isClose());
                 Fields replyHeaders = replyInfo.getHeaders();
-                assertThat(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"), CoreMatchers.is(true));
+                assertThat(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).getValue().contains("200"), CoreMatchers.is(true));
                 assertThat(replyHeaders.get(HttpHeader.SERVER.asString()), CoreMatchers.is(notNullValue()));
                 assertThat(replyHeaders.get(HttpHeader.X_POWERED_BY.asString()), CoreMatchers.is(notNullValue()));
                 replyLatch.countDown();
@@ -137,7 +139,7 @@ public class SimpleHTTPBenchmarkTest extends AbstractHTTPSPDYTest
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
                 Fields replyHeaders = replyInfo.getHeaders();
-                assertThat(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"), CoreMatchers.is(true));
+                assertThat(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).getValue().contains("200"), CoreMatchers.is(true));
                 assertThat(replyHeaders.get(HttpHeader.SERVER.asString()), CoreMatchers.is(notNullValue()));
                 assertThat(replyHeaders.get(HttpHeader.X_POWERED_BY.asString()), CoreMatchers.is(notNullValue()));
                 replyLatch.countDown();

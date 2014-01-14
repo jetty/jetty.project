@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.common.extensions.identity;
 
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
@@ -35,9 +34,15 @@ public class IdentityExtension extends AbstractExtension
     {
         return getConfig().getParameter(key,"?");
     }
+    
+    @Override
+    public String getName()
+    {
+        return "identity";
+    }
 
     @Override
-    public void incomingError(WebSocketException e)
+    public void incomingError(Throwable e)
     {
         // pass through
         nextIncomingError(e);

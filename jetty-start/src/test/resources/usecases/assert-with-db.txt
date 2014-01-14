@@ -1,0 +1,31 @@
+# The XMLs we expect (order is important)
+XML|${jetty.home}/etc/jetty.xml
+XML|${jetty.home}/etc/jetty-http.xml
+XML|${jetty.home}/etc/jetty-plus.xml
+XML|${jetty.home}/etc/jetty-deploy.xml
+XML|${jetty.base}/etc/jetty-db.xml
+
+# The LIBs we expect (order is irrelevant)
+LIB|${jetty.home}/lib/jetty-http-TEST.jar
+LIB|${jetty.home}/lib/jetty-io-TEST.jar
+LIB|${jetty.home}/lib/jetty-schemas-3.1.jar
+LIB|${jetty.home}/lib/jetty-server-TEST.jar
+LIB|${jetty.home}/lib/jetty-util-TEST.jar
+LIB|${jetty.home}/lib/jetty-xml-TEST.jar
+LIB|${jetty.home}/lib/servlet-api-3.1.jar
+LIB|${jetty.home}/lib/jetty-jndi-TEST.jar
+LIB|${jetty.home}/lib/jetty-continuation-TEST.jar
+LIB|${jetty.home}/lib/jndi/javax.transaction-api-1.2.jar
+LIB|${jetty.home}/lib/jetty-plus-TEST.jar
+LIB|${jetty.home}/lib/jetty-deploy-TEST.jar
+LIB|${jetty.home}/lib/jetty-security-TEST.jar
+LIB|${jetty.home}/lib/jndi/javax.activation-1.1.jar
+LIB|${jetty.home}/lib/jetty-webapp-TEST.jar
+LIB|${jetty.home}/lib/jetty-servlet-TEST.jar
+LIB|${jetty.base}/lib/db/mysql-driver.jar
+LIB|${jetty.base}/lib/db/bonecp.jar
+
+# The Properties we expect (order is irrelevant)
+PROP|jetty.port=9090
+PROP|mysql.user=frank
+PROP|mysql.pass=secret

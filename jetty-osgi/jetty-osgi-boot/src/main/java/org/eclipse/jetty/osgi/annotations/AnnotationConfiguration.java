@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,16 +18,16 @@
 
 package org.eclipse.jetty.osgi.annotations;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
-import org.eclipse.jetty.annotations.AbstractDiscoverableAnnotationHandler;
-import org.eclipse.jetty.annotations.AnnotationParser.DiscoverableAnnotationHandler;
+import org.eclipse.jetty.annotations.AnnotationParser.Handler;
 import org.eclipse.jetty.annotations.ClassNameResolver;
 import org.eclipse.jetty.osgi.boot.OSGiWebappConstants;
 import org.eclipse.jetty.osgi.boot.utils.internal.PackageAdminServiceTracker;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.webapp.DiscoveredAnnotation;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.Constants;
@@ -39,7 +39,33 @@ import org.osgi.framework.Constants;
  */
 public class AnnotationConfiguration extends org.eclipse.jetty.annotations.AnnotationConfiguration
 {
+    private static final Logger LOG = Log.getLogger(org.eclipse.jetty.annotations.AnnotationConfiguration.class);
+    
+    public class BundleParserTask extends ParserTask
+    {
+        
+        public BundleParserTask (AnnotationParser parser, Set<? extends Handler>handlers, Resource resource, ClassNameResolver resolver)
+        {
+            super(parser, handlers, resource, resolver);
+        }
 
+        public Void call() throws Exception
+        {
+            if (_parser != null)
+            {
+                org.eclipse.jetty.osgi.annotations.AnnotationParser osgiAnnotationParser = (org.eclipse.jetty.osgi.annotations.AnnotationParser)_parser;
+                Bundle bundle = osgiAnnotationParser.getBundle(_resource);
+                if (_stat != null)
+                    _stat.start();
+                osgiAnnotationParser.parse(_handlers, bundle,  _resolver); 
+                if (_stat != null)
+                    _stat.end();
+            }
+            return null;
+        }
+    }
+    
+    
     /**
      * This parser scans the bundles using the OSGi APIs instead of assuming a jar.
      */
@@ -69,7 +95,7 @@ public class AnnotationConfiguration extends org.eclipse.jetty.annotations.Annot
         Bundle[] fragAndRequiredBundles = PackageAdminServiceTracker.INSTANCE.getFragmentsAndRequiredBundles(webbundle);
         if (fragAndRequiredBundles != null)
         {
-            //index:
+            //index and scan fragments
             for (Bundle bundle : fragAndRequiredBundles)
             {
                 Resource bundleRes = oparser.indexBundle(bundle);
@@ -77,19 +103,16 @@ public class AnnotationConfiguration extends org.eclipse.jetty.annotations.Annot
                 {
                     context.getMetaData().addWebInfJar(bundleRes);
                 }
-            }
-        
-            //scan the fragments
-            for (Bundle fragmentBundle : fragAndRequiredBundles)
-            {
-                if (fragmentBundle.getHeaders().get(Constants.FRAGMENT_HOST) != null)
+                
+                if (bundle.getHeaders().get(Constants.FRAGMENT_HOST) != null)
                 {
                     //a fragment indeed:
-                    parseFragmentBundle(context,oparser,webbundle,fragmentBundle);
+                    parseFragmentBundle(context,oparser,webbundle,bundle);
                 }
             }
         }
         //scan ourselves
+        oparser.indexBundle(webbundle);
         parseWebBundle(context,oparser,webbundle);
         
         //scan the WEB-INF/lib
@@ -151,27 +174,24 @@ public class AnnotationConfiguration extends org.eclipse.jetty.annotations.Annot
     }
     
     protected void parseBundle(WebAppContext context, AnnotationParser parser,
-            Bundle webbundle, Bundle bundle) throws Exception
-    {
-        
-        Resource bundleRes = parser.getResource(bundle);
-        
-        parser.clearHandlers();
-        for (DiscoverableAnnotationHandler h:_discoverableAnnotationHandlers)
+                               Bundle webbundle, Bundle bundle) throws Exception
+                               {
+
+        Resource bundleRes = parser.getResource(bundle);  
+        Set<Handler> handlers = new HashSet<Handler>();
+        handlers.addAll(_discoverableAnnotationHandlers);
+        if (_classInheritanceHandler != null)
+            handlers.add(_classInheritanceHandler);
+        handlers.addAll(_containerInitializerAnnotationHandlers);
+
+        ClassNameResolver classNameResolver = createClassNameResolver(context);
+        if (_parserTasks != null)
         {
-            if (h instanceof AbstractDiscoverableAnnotationHandler)
-            {
-                if (webbundle == bundle)                    
-                ((AbstractDiscoverableAnnotationHandler)h).setResource(null); 
-                else
-                    ((AbstractDiscoverableAnnotationHandler)h).setResource(bundleRes);  
-            }
+            BundleParserTask task = new BundleParserTask(parser, handlers, bundleRes, classNameResolver);
+            _parserTasks.add(task);
+            if (LOG.isDebugEnabled())
+                task.setStatistic(new TimeStatistic());
         }
-        parser.registerHandlers(_discoverableAnnotationHandlers);
-        parser.registerHandler(_classInheritanceHandler);
-        parser.registerHandlers(_containerInitializerAnnotationHandlers);
-      
-        parser.parse(bundle,createClassNameResolver(context));
     }
     
     /**

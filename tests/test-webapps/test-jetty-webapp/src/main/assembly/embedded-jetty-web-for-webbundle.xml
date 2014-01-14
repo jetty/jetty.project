@@ -28,7 +28,7 @@ detected.
   <Set name="extractWAR">true</Set>
   <Set name="copyWebDir">false</Set>
   <Set name="defaultsDescriptor"><SystemProperty name="jetty.home" default="."/>/etc/webdefault.xml</Set>
-  <Set name="overrideDescriptor"><SystemProperty name="jetty.home" default="."/>/contexts/test.d/override-web.xml</Set>
+  <Set name="overrideDescriptor"><SystemProperty name="jetty.base" default="."/>/etc/override-web.xml</Set>
 
   <!-- virtual hosts
   <Set name="virtualHosts">

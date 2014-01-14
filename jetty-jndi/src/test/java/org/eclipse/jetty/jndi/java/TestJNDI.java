@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,7 +20,6 @@ package org.eclipse.jetty.jndi.java;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -45,10 +44,11 @@ import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 
 import org.eclipse.jetty.jndi.NamingContext;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.junit.Ignore;
 import org.junit.Test;
 /**
  *
@@ -78,17 +78,24 @@ public class TestJNDI
     public void testThreadContextClassloaderAndCurrentContext()
     throws Exception
     {
+
+        
         //create a jetty context, and start it so that its classloader it created
         //and it is the current context
         ClassLoader currentLoader = Thread.currentThread().getContextClassLoader();
         ContextHandler ch = new ContextHandler();
         URLClassLoader chLoader = new URLClassLoader(new URL[0], currentLoader);
         ch.setClassLoader(chLoader);
-        
+        Server server = new Server();      
+        HandlerList hl = new HandlerList();
+        server.setHandler(hl);
+        hl.addHandler(ch);
+              
         //Create another one
         ContextHandler ch2 = new ContextHandler();
         URLClassLoader ch2Loader = new URLClassLoader(new URL[0], currentLoader);
         ch2.setClassLoader(ch2Loader);
+        hl.addHandler(ch2);
         
         try
         {

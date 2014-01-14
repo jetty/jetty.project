@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,27 +22,35 @@ import static org.hamcrest.Matchers.*;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.common.ByteBufferAssert;
-import org.eclipse.jetty.websocket.common.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.OpCode;
-import org.eclipse.jetty.websocket.common.OutgoingFramesCapture;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.extensions.fragment.FragmentExtension;
+import org.eclipse.jetty.websocket.common.frames.ContinuationFrame;
+import org.eclipse.jetty.websocket.common.frames.PingFrame;
+import org.eclipse.jetty.websocket.common.frames.TextFrame;
+import org.eclipse.jetty.websocket.common.test.ByteBufferAssert;
+import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
+import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPool;
+import org.eclipse.jetty.websocket.common.test.OutgoingFramesCapture;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class FragmentExtensionTest
 {
+    @Rule
+    public LeakTrackingBufferPool bufferPool = new LeakTrackingBufferPool("Test",new MappedByteBufferPool());
+
     /**
      * Verify that incoming frames are passed thru without modification
      */
@@ -52,7 +60,7 @@ public class FragmentExtensionTest
         IncomingFramesCapture capture = new IncomingFramesCapture();
 
         FragmentExtension ext = new FragmentExtension();
-        ext.setBufferPool(new MappedByteBufferPool());
+        ext.setBufferPool(bufferPool);
         ext.setPolicy(WebSocketPolicy.newClientPolicy());
         ExtensionConfig config = ExtensionConfig.parse("fragment;maxLength=4");
         ext.setConfig(config);
@@ -68,7 +76,7 @@ public class FragmentExtensionTest
         // Manually create frame and pass into extension
         for (String q : quote)
         {
-            Frame frame = WebSocketFrame.text(q);
+            Frame frame = new TextFrame().setPayload(q);
             ext.incomingFrame(frame);
         }
 
@@ -77,11 +85,10 @@ public class FragmentExtensionTest
         capture.assertHasFrame(OpCode.TEXT,len);
 
         String prefix;
-        for (int i = 0; i < len; i++)
+        int i = 0;
+        for (WebSocketFrame actual : capture.getFrames())
         {
             prefix = "Frame[" + i + "]";
-
-            WebSocketFrame actual = capture.getFrames().get(i);
 
             Assert.assertThat(prefix + ".opcode",actual.getOpCode(),is(OpCode.TEXT));
             Assert.assertThat(prefix + ".fin",actual.isFin(),is(true));
@@ -89,9 +96,10 @@ public class FragmentExtensionTest
             Assert.assertThat(prefix + ".rsv2",actual.isRsv2(),is(false));
             Assert.assertThat(prefix + ".rsv3",actual.isRsv3(),is(false));
 
-            ByteBuffer expected = BufferUtil.toBuffer(quote.get(i),StringUtil.__UTF8_CHARSET);
+            ByteBuffer expected = BufferUtil.toBuffer(quote.get(i),StandardCharsets.UTF_8);
             Assert.assertThat(prefix + ".payloadLength",actual.getPayloadLength(),is(expected.remaining()));
             ByteBufferAssert.assertEquals(prefix + ".payload",expected,actual.getPayload().slice());
+            i++;
         }
     }
 
@@ -104,7 +112,7 @@ public class FragmentExtensionTest
         IncomingFramesCapture capture = new IncomingFramesCapture();
 
         FragmentExtension ext = new FragmentExtension();
-        ext.setBufferPool(new MappedByteBufferPool());
+        ext.setBufferPool(bufferPool);
         ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("fragment;maxLength=4");
         ext.setConfig(config);
@@ -112,12 +120,12 @@ public class FragmentExtensionTest
         ext.setNextIncomingFrames(capture);
 
         String payload = "Are you there?";
-        Frame ping = WebSocketFrame.ping().setPayload(payload);
+        Frame ping = new PingFrame().setPayload(payload);
         ext.incomingFrame(ping);
 
         capture.assertFrameCount(1);
         capture.assertHasFrame(OpCode.PING,1);
-        WebSocketFrame actual = capture.getFrames().getFirst();
+        WebSocketFrame actual = capture.getFrames().poll();
 
         Assert.assertThat("Frame.opcode",actual.getOpCode(),is(OpCode.PING));
         Assert.assertThat("Frame.fin",actual.isFin(),is(true));
@@ -125,7 +133,7 @@ public class FragmentExtensionTest
         Assert.assertThat("Frame.rsv2",actual.isRsv2(),is(false));
         Assert.assertThat("Frame.rsv3",actual.isRsv3(),is(false));
 
-        ByteBuffer expected = BufferUtil.toBuffer(payload,StringUtil.__UTF8_CHARSET);
+        ByteBuffer expected = BufferUtil.toBuffer(payload,StandardCharsets.UTF_8);
         Assert.assertThat("Frame.payloadLength",actual.getPayloadLength(),is(expected.remaining()));
         ByteBufferAssert.assertEquals("Frame.payload",expected,actual.getPayload().slice());
     }
@@ -139,7 +147,7 @@ public class FragmentExtensionTest
         OutgoingFramesCapture capture = new OutgoingFramesCapture();
 
         FragmentExtension ext = new FragmentExtension();
-        ext.setBufferPool(new MappedByteBufferPool());
+        ext.setBufferPool(bufferPool);
         ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("fragment;maxLength=20");
         ext.setConfig(config);
@@ -155,20 +163,20 @@ public class FragmentExtensionTest
         // Write quote as separate frames
         for (String section : quote)
         {
-            Frame frame = WebSocketFrame.text(section);
+            Frame frame = new TextFrame().setPayload(section);
             ext.outgoingFrame(frame,null);
         }
 
         // Expected Frames
         List<WebSocketFrame> expectedFrames = new ArrayList<>();
-        expectedFrames.add(new WebSocketFrame(OpCode.TEXT).setPayload("No amount of experim").setFin(false));
-        expectedFrames.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("entation can ever pr").setFin(false));
-        expectedFrames.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("ove me right;").setFin(true));
+        expectedFrames.add(new TextFrame().setPayload("No amount of experim").setFin(false));
+        expectedFrames.add(new ContinuationFrame().setPayload("entation can ever pr").setFin(false));
+        expectedFrames.add(new ContinuationFrame().setPayload("ove me right;").setFin(true));
 
-        expectedFrames.add(new WebSocketFrame(OpCode.TEXT).setPayload("a single experiment ").setFin(false));
-        expectedFrames.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("can prove me wrong.").setFin(true));
+        expectedFrames.add(new TextFrame().setPayload("a single experiment ").setFin(false));
+        expectedFrames.add(new ContinuationFrame().setPayload("can prove me wrong.").setFin(true));
 
-        expectedFrames.add(new WebSocketFrame(OpCode.TEXT).setPayload("-- Albert Einstein").setFin(true));
+        expectedFrames.add(new TextFrame().setPayload("-- Albert Einstein").setFin(true));
 
         // capture.dump();
 
@@ -182,6 +190,9 @@ public class FragmentExtensionTest
             prefix = "Frame[" + i + "]";
             WebSocketFrame actualFrame = frames.get(i);
             WebSocketFrame expectedFrame = expectedFrames.get(i);
+
+            // System.out.printf("actual: %s%n",actualFrame);
+            // System.out.printf("expect: %s%n",expectedFrame);
 
             // Validate Frame
             Assert.assertThat(prefix + ".opcode",actualFrame.getOpCode(),is(expectedFrame.getOpCode()));
@@ -208,7 +219,7 @@ public class FragmentExtensionTest
         OutgoingFramesCapture capture = new OutgoingFramesCapture();
 
         FragmentExtension ext = new FragmentExtension();
-        ext.setBufferPool(new MappedByteBufferPool());
+        ext.setBufferPool(bufferPool);
         ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("fragment");
         ext.setConfig(config);
@@ -224,15 +235,15 @@ public class FragmentExtensionTest
         // Write quote as separate frames
         for (String section : quote)
         {
-            Frame frame = WebSocketFrame.text(section);
+            Frame frame = new TextFrame().setPayload(section);
             ext.outgoingFrame(frame,null);
         }
 
         // Expected Frames
         List<WebSocketFrame> expectedFrames = new ArrayList<>();
-        expectedFrames.add(new WebSocketFrame(OpCode.TEXT).setPayload("No amount of experimentation can ever prove me right;"));
-        expectedFrames.add(new WebSocketFrame(OpCode.TEXT).setPayload("a single experiment can prove me wrong."));
-        expectedFrames.add(new WebSocketFrame(OpCode.TEXT).setPayload("-- Albert Einstein"));
+        expectedFrames.add(new TextFrame().setPayload("No amount of experimentation can ever prove me right;"));
+        expectedFrames.add(new TextFrame().setPayload("a single experiment can prove me wrong."));
+        expectedFrames.add(new TextFrame().setPayload("-- Albert Einstein"));
 
         // capture.dump();
 
@@ -272,7 +283,7 @@ public class FragmentExtensionTest
         OutgoingFramesCapture capture = new OutgoingFramesCapture();
 
         FragmentExtension ext = new FragmentExtension();
-        ext.setBufferPool(new MappedByteBufferPool());
+        ext.setBufferPool(bufferPool);
         ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("fragment;maxLength=4");
         ext.setConfig(config);
@@ -280,7 +291,7 @@ public class FragmentExtensionTest
         ext.setNextOutgoingFrames(capture);
 
         String payload = "Are you there?";
-        Frame ping = WebSocketFrame.ping().setPayload(payload);
+        Frame ping = new PingFrame().setPayload(payload);
 
         ext.outgoingFrame(ping,null);
 
@@ -295,7 +306,7 @@ public class FragmentExtensionTest
         Assert.assertThat("Frame.rsv2",actual.isRsv2(),is(false));
         Assert.assertThat("Frame.rsv3",actual.isRsv3(),is(false));
 
-        ByteBuffer expected = BufferUtil.toBuffer(payload,StringUtil.__UTF8_CHARSET);
+        ByteBuffer expected = BufferUtil.toBuffer(payload,StandardCharsets.UTF_8);
         Assert.assertThat("Frame.payloadLength",actual.getPayloadLength(),is(expected.remaining()));
         ByteBufferAssert.assertEquals("Frame.payload",expected,actual.getPayload().slice());
     }

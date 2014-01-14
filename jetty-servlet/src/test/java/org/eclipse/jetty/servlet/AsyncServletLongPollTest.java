@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,8 +23,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -122,7 +124,7 @@ public class AsyncServletLongPollTest
                     "Host: localhost:" + connector.getLocalPort() + "\r\n" +
                     "\r\n";
             OutputStream output1 = socket1.getOutputStream();
-            output1.write(request1.getBytes("UTF-8"));
+            output1.write(request1.getBytes(StandardCharsets.UTF_8));
             output1.flush();
 
             Assert.assertTrue(asyncLatch.await(5, TimeUnit.SECONDS));
@@ -134,18 +136,18 @@ public class AsyncServletLongPollTest
                         "Host: localhost:" + connector.getLocalPort() + "\r\n" +
                         "\r\n";
                 OutputStream output2 = socket2.getOutputStream();
-                output2.write(request2.getBytes("UTF-8"));
+                output2.write(request2.getBytes(StandardCharsets.UTF_8));
                 output2.flush();
 
                 SimpleHttpParser parser2 = new SimpleHttpParser();
-                BufferedReader input2 = new BufferedReader(new InputStreamReader(socket2.getInputStream(), "UTF-8"));
+                BufferedReader input2 = new BufferedReader(new InputStreamReader(socket2.getInputStream(), StandardCharsets.UTF_8));
                 SimpleHttpResponse response2 = parser2.readResponse(input2);
                 Assert.assertEquals("200", response2.getCode());
             }
 
             socket1.setSoTimeout(2 * wait);
             SimpleHttpParser parser1 = new SimpleHttpParser();
-            BufferedReader input1 = new BufferedReader(new InputStreamReader(socket1.getInputStream(), "UTF-8"));
+            BufferedReader input1 = new BufferedReader(new InputStreamReader(socket1.getInputStream(), StandardCharsets.UTF_8));
             SimpleHttpResponse response1 = parser1.readResponse(input1);
             Assert.assertEquals(error, response1.getCode());
 
@@ -154,7 +156,7 @@ public class AsyncServletLongPollTest
             String request3 = "GET " + uri + " HTTP/1.1\r\n" +
                     "Host: localhost:" + connector.getLocalPort() + "\r\n" +
                     "\r\n";
-            output1.write(request3.getBytes("UTF-8"));
+            output1.write(request3.getBytes(StandardCharsets.UTF_8));
             output1.flush();
 
             SimpleHttpResponse response3 = parser1.readResponse(input1);

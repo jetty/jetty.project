@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,10 +18,10 @@
 
 package org.eclipse.jetty.spdy.server.http;
 
-import org.eclipse.jetty.server.HttpInput;
+import org.eclipse.jetty.server.QueuedHttpInput;
 import org.eclipse.jetty.spdy.api.DataInfo;
 
-public class HttpInputOverSPDY extends HttpInput<DataInfo>
+public class HttpInputOverSPDY extends QueuedHttpInput<DataInfo>
 {
     @Override
     protected int remaining(DataInfo item)
@@ -33,6 +33,12 @@ public class HttpInputOverSPDY extends HttpInput<DataInfo>
     protected int get(DataInfo item, byte[] buffer, int offset, int length)
     {
         return item.readInto(buffer, offset, length);
+    }
+    
+    @Override
+    protected void consume(DataInfo item, int length)
+    {
+        item.consume(length);
     }
 
     @Override

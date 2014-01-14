@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -57,8 +57,7 @@ public class JSONDateConvertor implements JSON.Convertor
 
     public JSONDateConvertor(String format,TimeZone zone,boolean fromJSON)
     {
-        _dateCache=new DateCache(format);
-        _dateCache.setTimeZone(zone);
+        _dateCache=new DateCache(format,null,zone);
         _fromJSON=fromJSON;
         _format=new SimpleDateFormat(format);
         _format.setTimeZone(zone);
@@ -66,8 +65,7 @@ public class JSONDateConvertor implements JSON.Convertor
 
     public JSONDateConvertor(String format, TimeZone zone, boolean fromJSON, Locale locale)
     {
-        _dateCache = new DateCache(format, locale);
-        _dateCache.setTimeZone(zone);
+        _dateCache = new DateCache(format, locale, zone);
         _fromJSON = fromJSON;
         _format = new SimpleDateFormat(format, new DateFormatSymbols(locale));
         _format.setTimeZone(zone);

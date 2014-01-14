@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,8 +18,8 @@
 
 package examples;
 
-import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 
 public class MyAdvancedEchoCreator implements WebSocketCreator
@@ -35,7 +35,7 @@ public class MyAdvancedEchoCreator implements WebSocketCreator
     }
 
     @Override
-    public Object createWebSocket(UpgradeRequest req, UpgradeResponse resp)
+    public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp)
     {
         for (String subprotocol : req.getSubProtocols())
         {

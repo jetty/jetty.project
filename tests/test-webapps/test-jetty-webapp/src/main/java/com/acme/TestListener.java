@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -126,16 +126,20 @@ public class TestListener implements HttpSessionListener,  HttpSessionAttributeL
         //// System.err.println("Overridding web.xml constraints not possible:" +!unchanged.isEmpty());
 
         /* For servlet 3.0 */
-        FilterRegistration.Dynamic registration = sce.getServletContext().addFilter("TestFilter",TestFilter.class.getName());
+        FilterRegistration registration = sce.getServletContext().addFilter("TestFilter",TestFilter.class.getName());
         if (registration != null) //otherwise defined in web.xml
         {
-            registration.setInitParameter("remote", "false");
-            registration.setAsyncSupported(true);
-            registration.addMappingForUrlPatterns(
-                                                  EnumSet.of(DispatcherType.ERROR,DispatcherType.ASYNC,DispatcherType.FORWARD,DispatcherType.INCLUDE,DispatcherType.REQUEST),
-                                                  true, 
-                                                  new String[]{"/*"});
+            ((FilterRegistration.Dynamic)registration).setAsyncSupported(true);
         }
+        else
+        {
+            registration=sce.getServletContext().getFilterRegistration("TestFilter");
+        }
+        registration.setInitParameter("remote", "false");
+        registration.addMappingForUrlPatterns(
+                EnumSet.of(DispatcherType.ERROR,DispatcherType.ASYNC,DispatcherType.FORWARD,DispatcherType.INCLUDE,DispatcherType.REQUEST),
+                true, 
+                new String[]{"/*"});
     }
 
     @Override

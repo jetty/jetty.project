@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -38,6 +38,7 @@ import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
 
@@ -207,19 +208,22 @@ public class Starter
         if (str != null)
             webApp.setTempDirectory(new File(str.trim()));
 
+        str = (String)props.getProperty("tmp.dir.persist");
+        if (str != null)
+            webApp.setPersistTempDirectory(Boolean.valueOf(str));
 
-        // - the base directory
-        str = (String)props.getProperty("base.dir");
+        // - the base directories
+        str = (String)props.getProperty("base.dirs");
         if (str != null && !"".equals(str.trim()))
         {
-            webApp.setWar(str);      
-            webApp.setBaseResource(Resource.newResource(str));
+            webApp.setWar(str);
+            webApp.setBaseResource(new ResourceCollection(str.split(File.pathSeparator)));
         }
         
         // - put virtual webapp base resource first on resource path or not
         str = (String)props.getProperty("base.first");
         if (str != null && !"".equals(str.trim()))
-            webApp.setBaseAppFirst(Boolean.getBoolean(str));
+            webApp.setBaseAppFirst(Boolean.valueOf(str));
         
         
         //For overlays

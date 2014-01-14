@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,14 +21,22 @@ package org.eclipse.jetty.websocket.common;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.util.concurrent.ExecutionException;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
+import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
+import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
+import org.eclipse.jetty.websocket.common.frames.ContinuationFrame;
+import org.eclipse.jetty.websocket.common.frames.DataFrame;
+import org.eclipse.jetty.websocket.common.frames.PingFrame;
+import org.eclipse.jetty.websocket.common.frames.PongFrame;
+import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.io.FutureWriteCallback;
 
 /**
@@ -36,9 +44,43 @@ import org.eclipse.jetty.websocket.common.io.FutureWriteCallback;
  */
 public class WebSocketRemoteEndpoint implements RemoteEndpoint
 {
+    /** Message Type*/
+    private enum MsgType 
+    {
+        BLOCKING,
+        ASYNC,
+        STREAMING,
+        PARTIAL_TEXT,
+        PARTIAL_BINARY
+    };
+    
+    private static final WriteCallback NOOP_CALLBACK = new WriteCallback()
+    {
+        @Override
+        public void writeSuccess()
+        {
+        }
+        
+        @Override
+        public void writeFailed(Throwable x)
+        {
+        }
+    };
+
     private static final Logger LOG = Log.getLogger(WebSocketRemoteEndpoint.class);
     public final LogicalConnection connection;
     public final OutgoingFrames outgoing;
+    /** JSR-356 blocking send behaviour message and Type sanity to support partial send properly */
+
+    private final static int ASYNC_MASK =       0x0000FFFF;
+    private final static int BLOCK_MASK =       0x00010000;
+    private final static int STREAM_MASK =      0x00020000;
+    private final static int PARTIAL_TEXT_MASK= 0x00040000;
+    private final static int PARTIAL_BINARY_MASK= 0x00080000;
+    
+    private final AtomicInteger msgState = new AtomicInteger();
+    
+    private final BlockingWriteCallback blocker = new BlockingWriteCallback();
 
     public WebSocketRemoteEndpoint(LogicalConnection connection, OutgoingFrames outgoing)
     {
@@ -52,21 +94,119 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
 
     private void blockingWrite(WebSocketFrame frame) throws IOException
     {
-        Future<Void> fut = sendAsyncFrame(frame);
-        try
+        uncheckedSendFrame(frame,blocker);
+        blocker.block();
+    }
+
+    private boolean lockMsg(MsgType type)
+    {
+        // Blocking -> BLOCKING  ; Async -> ASYNC     ; Partial -> PARTIAL_XXXX ; Stream -> STREAMING
+        // Blocking -> Pending!! ; Async -> BLOCKING  ; Partial -> Pending!!    ; Stream -> STREAMING 
+        // Blocking -> BLOCKING  ; Async -> ASYNC     ; Partial -> Pending!!    ; Stream -> STREAMING
+        // Blocking -> Pending!! ; Async -> STREAMING ; Partial -> Pending!!    ; Stream -> STREAMING
+        // Blocking -> Pending!! ; Async -> Pending!! ; Partial -> PARTIAL_TEXT ; Stream -> Pending!!
+        // Blocking -> Pending!! ; Async -> Pending!! ; Partial -> PARTIAL_BIN  ; Stream -> Pending!!
+        
+        while(true)
         {
-            fut.get(); // block till done
-        }
-        catch (ExecutionException e)
-        {
-            throw new IOException("Failed to write bytes",e.getCause());
-        }
-        catch (InterruptedException e)
-        {
-            throw new IOException("Failed to write bytes",e);
+            int state = msgState.get();
+            
+            switch (type)
+            {
+                case BLOCKING:
+                    if ((state&(PARTIAL_BINARY_MASK+PARTIAL_TEXT_MASK))!=0)
+                        throw new IllegalStateException(String.format("Partial message pending %x for %s",state,type));
+                    if ((state&BLOCK_MASK)!=0)
+                        throw new IllegalStateException(String.format("Blocking message pending %x for %s",state,type));
+                    if (msgState.compareAndSet(state,state|BLOCK_MASK))
+                        return state==0;
+                    break;
+                    
+                case ASYNC:
+                    if ((state&(PARTIAL_BINARY_MASK+PARTIAL_TEXT_MASK))!=0)
+                        throw new IllegalStateException(String.format("Partial message pending %x for %s",state,type));
+                    if ((state&ASYNC_MASK)==ASYNC_MASK)
+                        throw new IllegalStateException(String.format("Too many async sends: %x",state));
+                    if (msgState.compareAndSet(state,state+1))
+                        return state==0;
+                    break;
+                    
+                case STREAMING:
+                    if ((state&(PARTIAL_BINARY_MASK+PARTIAL_TEXT_MASK))!=0)
+                        throw new IllegalStateException(String.format("Partial message pending %x for %s",state,type));
+                    if ((state&STREAM_MASK)!=0)
+                        throw new IllegalStateException(String.format("Already streaming %x for %s",state,type));
+                    if (msgState.compareAndSet(state,state|STREAM_MASK))
+                        return state==0;
+                    break;
+                
+                case PARTIAL_BINARY:
+                    if (state==PARTIAL_BINARY_MASK)
+                        return false;
+                    if (state==0)
+                    {
+                        if (msgState.compareAndSet(0,state|PARTIAL_BINARY_MASK))
+                            return true;
+                    }
+                    throw new IllegalStateException(String.format("Cannot send %s in state %x",type,state));
+                    
+                case PARTIAL_TEXT:
+                    if (state==PARTIAL_TEXT_MASK)
+                        return false;
+                    if (state==0)
+                    {
+                        if (msgState.compareAndSet(0,state|PARTIAL_TEXT_MASK))
+                            return true;
+                    }
+                    throw new IllegalStateException(String.format("Cannot send %s in state %x",type,state));
+            }
         }
     }
 
+    private void unlockMsg(MsgType type)
+    {
+        while(true)
+        {
+            int state = msgState.get();
+            
+            switch (type)
+            {
+                case BLOCKING:
+                    if ((state&BLOCK_MASK)==0)
+                        throw new IllegalStateException(String.format("Not Blocking in state %x",state));
+                    if (msgState.compareAndSet(state,state&~BLOCK_MASK))
+                        return;
+                    break;
+                    
+                case ASYNC:
+                    if ((state&ASYNC_MASK)==0)
+                        throw new IllegalStateException(String.format("Not Async in %x",state));
+                    if (msgState.compareAndSet(state,state-1))
+                        return;
+                    break;
+                    
+                case STREAMING:
+                    if ((state&STREAM_MASK)==0)
+                        throw new IllegalStateException(String.format("Not Streaming in state %x",state));
+                    if (msgState.compareAndSet(state,state&~STREAM_MASK))
+                        return;
+                    break;
+                
+                case PARTIAL_BINARY:
+                    if (msgState.compareAndSet(PARTIAL_BINARY_MASK,0))
+                        return;
+                    throw new IllegalStateException(String.format("Not Partial Binary in state %x",state));
+                    
+                case PARTIAL_TEXT:
+                    if (msgState.compareAndSet(PARTIAL_TEXT_MASK,0))
+                        return;
+                    throw new IllegalStateException(String.format("Not Partial Text in state %x",state));
+                    
+            }
+        }
+    }
+    
+    
     public InetSocketAddress getInetSocketAddress()
     {
         return connection.getRemoteAddress();
@@ -82,15 +222,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
     private Future<Void> sendAsyncFrame(WebSocketFrame frame)
     {
         FutureWriteCallback future = new FutureWriteCallback();
-        try
-        {
-            connection.getIOState().assertOutputOpen();
-            outgoing.outgoingFrame(frame,future);
-        }
-        catch (IOException e)
-        {
-            future.writeFailed(e);
-        }
+        uncheckedSendFrame(frame,future);
         return future;
     }
 
@@ -100,46 +232,118 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
     @Override
     public void sendBytes(ByteBuffer data) throws IOException
     {
-        connection.getIOState().assertOutputOpen();
-        if (LOG.isDebugEnabled())
+        lockMsg(MsgType.BLOCKING);
+        try
         {
-            LOG.debug("sendBytes with {}",BufferUtil.toDetailString(data));
+            connection.getIOState().assertOutputOpen();
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("sendBytes with {}",BufferUtil.toDetailString(data));
+            }
+            blockingWrite(new BinaryFrame().setPayload(data));
         }
-        WebSocketFrame frame = WebSocketFrame.binary().setPayload(data);
-        blockingWrite(frame);
+        finally
+        {
+            unlockMsg(MsgType.BLOCKING);
+        }
     }
 
     @Override
     public Future<Void> sendBytesByFuture(ByteBuffer data)
     {
-        if (LOG.isDebugEnabled())
+        lockMsg(MsgType.ASYNC);
+        try
         {
-            LOG.debug("sendBytesByFuture with {}",BufferUtil.toDetailString(data));
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("sendBytesByFuture with {}",BufferUtil.toDetailString(data));
+            }
+            return sendAsyncFrame(new BinaryFrame().setPayload(data));
         }
-        WebSocketFrame frame = WebSocketFrame.binary().setPayload(data);
-        return sendAsyncFrame(frame);
+        finally
+        {
+            unlockMsg(MsgType.ASYNC);
+        }
+    }
+
+    @Override
+    public void sendBytes(ByteBuffer data, WriteCallback callback)
+    {
+        lockMsg(MsgType.ASYNC);
+        try
+        {
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("sendBytes({}, {})",BufferUtil.toDetailString(data),callback);
+            }
+            uncheckedSendFrame(new BinaryFrame().setPayload(data),callback==null?NOOP_CALLBACK:callback);
+        }
+        finally
+        {
+            unlockMsg(MsgType.ASYNC);
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    /** unchecked send
+     * @param frame
+     * @param callback
+     */
+    public void uncheckedSendFrame(WebSocketFrame frame, WriteCallback callback)
+    {
+        try
+        {
+            connection.getIOState().assertOutputOpen();
+            outgoing.outgoingFrame(frame,callback);
+        }
+        catch (IOException e)
+        {
+            callback.writeFailed(e);
+        }
     }
 
     @Override
     public void sendPartialBytes(ByteBuffer fragment, boolean isLast) throws IOException
     {
-        if (LOG.isDebugEnabled())
+        boolean first=lockMsg(MsgType.PARTIAL_BINARY);
+        try
         {
-            LOG.debug("sendPartialBytes({}, {})",BufferUtil.toDetailString(fragment),isLast);
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("sendPartialBytes({}, {})",BufferUtil.toDetailString(fragment),isLast);
+            }
+            DataFrame frame = first?new BinaryFrame():new ContinuationFrame();
+            frame.setPayload(fragment);
+            frame.setFin(isLast);
+            blockingWrite(frame);
         }
-        WebSocketFrame frame = WebSocketFrame.binary().setPayload(fragment).setFin(isLast);
-        blockingWrite(frame);
+        finally
+        {
+            if (isLast)
+                unlockMsg(MsgType.PARTIAL_BINARY);
+        }
     }
 
     @Override
     public void sendPartialString(String fragment, boolean isLast) throws IOException
     {
-        if (LOG.isDebugEnabled())
+        boolean first=lockMsg(MsgType.PARTIAL_TEXT);
+        try
         {
-            LOG.debug("sendPartialString({}, {})",fragment,isLast);
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("sendPartialString({}, {})",fragment,isLast);
+            }
+            DataFrame frame = first?new TextFrame():new ContinuationFrame();
+            frame.setPayload(BufferUtil.toBuffer(fragment,StandardCharsets.UTF_8));
+            frame.setFin(isLast);
+            blockingWrite(frame);
         }
-        WebSocketFrame frame = WebSocketFrame.text(fragment).setFin(isLast);
-        blockingWrite(frame);
+        finally
+        {
+            if (isLast)
+                unlockMsg(MsgType.PARTIAL_TEXT);
+        }
     }
 
     @Override
@@ -149,8 +353,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
         {
             LOG.debug("sendPing with {}",BufferUtil.toDetailString(applicationData));
         }
-        WebSocketFrame frame = WebSocketFrame.ping().setPayload(applicationData);
-        blockingWrite(frame);
+        sendAsyncFrame(new PingFrame().setPayload(applicationData));
     }
 
     @Override
@@ -160,29 +363,63 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
         {
             LOG.debug("sendPong with {}",BufferUtil.toDetailString(applicationData));
         }
-        WebSocketFrame frame = WebSocketFrame.pong().setPayload(applicationData);
-        blockingWrite(frame);
+        sendAsyncFrame(new PongFrame().setPayload(applicationData));
     }
 
     @Override
     public void sendString(String text) throws IOException
     {
-        WebSocketFrame frame = WebSocketFrame.text(text);
-        if (LOG.isDebugEnabled())
+        lockMsg(MsgType.BLOCKING);
+        try
         {
-            LOG.debug("sendString with {}",BufferUtil.toDetailString(frame.getPayload()));
+            WebSocketFrame frame = new TextFrame().setPayload(text);
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("sendString with {}",BufferUtil.toDetailString(frame.getPayload()));
+            }
+            blockingWrite(frame);
         }
-        blockingWrite(WebSocketFrame.text(text));
+        finally
+        {
+            unlockMsg(MsgType.BLOCKING);
+        }
     }
 
     @Override
     public Future<Void> sendStringByFuture(String text)
     {
-        WebSocketFrame frame = WebSocketFrame.text(text);
-        if (LOG.isDebugEnabled())
+        lockMsg(MsgType.ASYNC);
+        try
         {
-            LOG.debug("sendStringByFuture with {}",BufferUtil.toDetailString(frame.getPayload()));
+            TextFrame frame = new TextFrame().setPayload(text);
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("sendStringByFuture with {}",BufferUtil.toDetailString(frame.getPayload()));
+            }
+            return sendAsyncFrame(frame);  
         }
-        return sendAsyncFrame(frame);
+        finally
+        {
+            unlockMsg(MsgType.ASYNC);
+        }
+    }
+
+    @Override
+    public void sendString(String text, WriteCallback callback)
+    {
+        lockMsg(MsgType.ASYNC);
+        try
+        {
+            TextFrame frame = new TextFrame().setPayload(text);
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("sendString({},{})",BufferUtil.toDetailString(frame.getPayload()),callback);
+            }
+            uncheckedSendFrame(frame,callback==null?NOOP_CALLBACK:callback);
+        }
+        finally
+        {
+            unlockMsg(MsgType.ASYNC);
+        }
     }
 }

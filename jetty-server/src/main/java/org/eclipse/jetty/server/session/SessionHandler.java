@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,6 +29,9 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import javax.servlet.http.HttpSessionAttributeListener;
+import javax.servlet.http.HttpSessionIdListener;
+import javax.servlet.http.HttpSessionListener;
 
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.server.Request;
@@ -46,6 +49,11 @@ public class SessionHandler extends ScopedHandler
     final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
 
     public final static EnumSet<SessionTrackingMode> DEFAULT_TRACKING = EnumSet.of(SessionTrackingMode.COOKIE,SessionTrackingMode.URL);
+    
+    public static final Class[] SESSION_LISTENER_TYPES = new Class[] {HttpSessionAttributeListener.class,
+                                                                      HttpSessionIdListener.class,
+                                                                      HttpSessionListener.class};
+
 
 
     /* -------------------------------------------------------------- */

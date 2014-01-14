@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -35,6 +35,7 @@ import javax.servlet.Filter;
 import javax.servlet.FilterRegistration;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.Servlet;
+import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
@@ -59,8 +60,10 @@ import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.servlet.BaseHolder.Source;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.LifeCycle;
 
 
 /* ------------------------------------------------------------ */
@@ -81,6 +84,8 @@ public class ServletContextHandler extends ContextHandler
     public final static int SECURITY=2;
     public final static int NO_SESSIONS=0;
     public final static int NO_SECURITY=0;
+    
+    public interface ServletContainerInitializerCaller extends LifeCycle {};
 
     protected final List<Decorator> _decorators= new ArrayList<>();
     protected Class<? extends SecurityHandler> _defaultSecurityHandlerClass=org.eclipse.jetty.security.ConstraintSecurityHandler.class;
@@ -266,18 +271,25 @@ public class ServletContextHandler extends ContextHandler
     @Override
     protected void startContext() throws Exception
     {
-    	
-    	if (_servletHandler != null)
-    	{
-    	    for (int i=_decorators.size()-1;i>=0; i--)
-    	    {
-    	        Decorator decorator = _decorators.get(i);
-                if (_servletHandler.getFilters()!=null)
-                    for (FilterHolder holder:_servletHandler.getFilters())
-                        decorator.decorateFilterHolder(holder);
-    	        if(_servletHandler.getServlets()!=null)
-    	            for (ServletHolder holder:_servletHandler.getServlets())
-    	                decorator.decorateServletHolder(holder);
+        ServletContainerInitializerCaller sciBean = getBean(ServletContainerInitializerCaller.class);
+        if (sciBean!=null)
+            sciBean.start();
+
+        if (_servletHandler != null)
+        {
+            //Call decorators on all holders, and also on any EventListeners before
+            //decorators are called on any other classes (like servlets and filters)
+            for (int i=_decorators.size()-1;i>=0; i--)
+            {
+                Decorator decorator = _decorators.get(i);
+                //Do any decorations on the ListenerHolders AND the listener instances first up
+                if (_servletHandler.getListeners()!=null)
+                {
+                    for (ListenerHolder holder:_servletHandler.getListeners())
+                    {             
+                        decorator.decorate(holder.getListener());
+                    }
+                }
     	    }
     	}
     	
@@ -574,14 +586,14 @@ public class ServletContextHandler extends ContextHandler
     void destroyServlet(Servlet servlet)
     {
         for (Decorator decorator : _decorators)
-            decorator.destroyServletInstance(servlet);
+            decorator.destroy(servlet);
     }
 
     /* ------------------------------------------------------------ */
     void destroyFilter(Filter filter)
     {
         for (Decorator decorator : _decorators)
-            decorator.destroyFilterInstance(filter);
+            decorator.destroy(filter);
     }
 
     /* ------------------------------------------------------------ */
@@ -896,6 +908,9 @@ public class ServletContextHandler extends ContextHandler
         {
             if (isStarted())
                 throw new IllegalStateException();
+            
+            if (filterName == null || "".equals(filterName.trim()))
+                throw new IllegalStateException("Missing filter name");
 
             if (!_enabled)
                 throw new UnsupportedOperationException();
@@ -905,7 +920,7 @@ public class ServletContextHandler extends ContextHandler
             if (holder == null)
             {
                 //new filter
-                holder = handler.newFilterHolder(Holder.Source.JAVAX_API);
+                holder = handler.newFilterHolder(Source.JAVAX_API);
                 holder.setName(filterName);
                 holder.setHeldClass(filterClass);
                 handler.addFilter(holder);
@@ -930,6 +945,9 @@ public class ServletContextHandler extends ContextHandler
         {
             if (isStarted())
                 throw new IllegalStateException();
+            
+            if (filterName == null || "".equals(filterName.trim()))
+                throw new IllegalStateException("Missing filter name");
 
             if (!_enabled)
                 throw new UnsupportedOperationException();
@@ -939,7 +957,7 @@ public class ServletContextHandler extends ContextHandler
             if (holder == null)
             {
                 //new filter
-                holder = handler.newFilterHolder(Holder.Source.JAVAX_API);
+                holder = handler.newFilterHolder(Source.JAVAX_API);
                 holder.setName(filterName);
                 holder.setClassName(className);
                 handler.addFilter(holder);
@@ -966,6 +984,9 @@ public class ServletContextHandler extends ContextHandler
             if (isStarted())
                 throw new IllegalStateException();
 
+            if (filterName == null || "".equals(filterName.trim()))
+                throw new IllegalStateException("Missing filter name");
+            
             if (!_enabled)
                 throw new UnsupportedOperationException();
 
@@ -974,7 +995,7 @@ public class ServletContextHandler extends ContextHandler
             if (holder == null)
             {
                 //new filter
-                holder = handler.newFilterHolder(Holder.Source.JAVAX_API);
+                holder = handler.newFilterHolder(Source.JAVAX_API);
                 holder.setName(filterName);
                 holder.setFilter(filter);
                 handler.addFilter(holder);
@@ -1001,6 +1022,9 @@ public class ServletContextHandler extends ContextHandler
             if (!isStarting())
                 throw new IllegalStateException();
 
+            if (servletName == null || "".equals(servletName.trim()))
+                throw new IllegalStateException("Missing servlet name");
+            
             if (!_enabled)
                 throw new UnsupportedOperationException();
 
@@ -1009,7 +1033,7 @@ public class ServletContextHandler extends ContextHandler
             if (holder == null)
             {
                 //new servlet
-                holder = handler.newServletHolder(Holder.Source.JAVAX_API);
+                holder = handler.newServletHolder(Source.JAVAX_API);
                 holder.setName(servletName);
                 holder.setHeldClass(servletClass);
                 handler.addServlet(holder);
@@ -1036,6 +1060,9 @@ public class ServletContextHandler extends ContextHandler
             if (!isStarting())
                 throw new IllegalStateException();
 
+            if (servletName == null || "".equals(servletName.trim()))
+                throw new IllegalStateException("Missing servlet name");
+            
             if (!_enabled)
                 throw new UnsupportedOperationException();
 
@@ -1045,7 +1072,7 @@ public class ServletContextHandler extends ContextHandler
             if (holder == null)
             {
                 //new servlet
-                holder = handler.newServletHolder(Holder.Source.JAVAX_API);
+                holder = handler.newServletHolder(Source.JAVAX_API);
                 holder.setName(servletName);
                 holder.setClassName(className);
                 handler.addServlet(holder);
@@ -1071,7 +1098,10 @@ public class ServletContextHandler extends ContextHandler
         {
             if (!isStarting())
                 throw new IllegalStateException();
-
+            
+            if (servletName == null || "".equals(servletName.trim()))
+                throw new IllegalStateException("Missing servlet name");
+            
             if (!_enabled)
                 throw new UnsupportedOperationException();
 
@@ -1079,7 +1109,7 @@ public class ServletContextHandler extends ContextHandler
             ServletHolder holder = handler.getServlet(servletName);
             if (holder == null)
             {
-                holder = handler.newServletHolder(Holder.Source.JAVAX_API);
+                holder = handler.newServletHolder(Source.JAVAX_API);
                 holder.setName(servletName);
                 holder.setServlet(servlet);
                 handler.addServlet(holder);
@@ -1115,19 +1145,15 @@ public class ServletContextHandler extends ContextHandler
         {
             try
             {
-                T f = c.newInstance();
+                T f = createInstance(c);
                 for (int i=_decorators.size()-1; i>=0; i--)
                 {
                     Decorator decorator = _decorators.get(i);
-                    f=decorator.decorateFilterInstance(f);
+                    f=decorator.decorate(f);
                 }
                 return f;
             }
-            catch (InstantiationException e)
-            {
-                throw new ServletException(e);
-            }
-            catch (IllegalAccessException e)
+            catch (Exception e)
             {
                 throw new ServletException(e);
             }
@@ -1139,23 +1165,20 @@ public class ServletContextHandler extends ContextHandler
         {
             try
             {
-                T s = c.newInstance();
+                T s = createInstance(c);
                 for (int i=_decorators.size()-1; i>=0; i--)
                 {
                     Decorator decorator = _decorators.get(i);
-                    s=decorator.decorateServletInstance(s);
+                    s=decorator.decorate(s);
                 }
                 return s;
             }
-            catch (InstantiationException e)
-            {
-                throw new ServletException(e);
-            }
-            catch (IllegalAccessException e)
+            catch (Exception e)
             {
                 throw new ServletException(e);
             }
         }
+        
 
         @Override
         public Set<SessionTrackingMode> getDefaultSessionTrackingModes()
@@ -1269,6 +1292,9 @@ public class ServletContextHandler extends ContextHandler
             if (!_enabled)
                 throw new UnsupportedOperationException();
             super.addListener(t);
+            ListenerHolder holder = getServletHandler().newListenerHolder(Source.JAVAX_API);
+            holder.setListener(t);
+            getServletHandler().addListener(holder);
         }
 
         @Override
@@ -1286,20 +1312,15 @@ public class ServletContextHandler extends ContextHandler
         {
             try
             {
-                T l = super.createListener(clazz);
-
+                T l = createInstance(clazz);
                 for (int i=_decorators.size()-1; i>=0; i--)
                 {
                     Decorator decorator = _decorators.get(i);
-                    l=decorator.decorateListenerInstance(l);
+                    l=decorator.decorate(l);
                 }
                 return l;
-            }
-            catch(ServletException e)
-            {
-                throw e;
-            }
-            catch(Exception e)
+            }            
+            catch (Exception e)
             {
                 throw new ServletException(e);
             }
@@ -1340,15 +1361,7 @@ public class ServletContextHandler extends ContextHandler
      */
     public interface Decorator
     {
-        <T extends Filter> T decorateFilterInstance(T filter) throws ServletException;
-        <T extends Servlet> T decorateServletInstance(T servlet) throws ServletException;
-        <T extends EventListener> T decorateListenerInstance(T listener) throws ServletException;
-
-        void decorateFilterHolder(FilterHolder filter) throws ServletException;
-        void decorateServletHolder(ServletHolder servlet) throws ServletException;
-
-        void destroyServletInstance(Servlet s);
-        void destroyFilterInstance(Filter f);
-        void destroyListenerInstance(EventListener f);
+        <T> T decorate (T o);
+        void destroy (Object o);
     }
 }

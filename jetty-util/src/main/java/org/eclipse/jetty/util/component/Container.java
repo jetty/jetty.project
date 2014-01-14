@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -53,20 +53,19 @@ public interface Container
      * Removes the given bean.
      * If the bean is-a {@link Listener}, then also do an implicit {@link #removeEventListener(Listener)}.
      * @return whether the bean was removed
-     * @see #removeBeans()
      */
     public boolean removeBean(Object o);
     
     /**
      * Add an event listener. 
-     * @see Container#addBean(Object), which also adds listeners if the bean is-a Listener
+     * @see Container#addBean(Object)
      * @param listener
      */
     public void addEventListener(Listener listener);
     
     /**
      * Remove an event listener. 
-     * @see Container#removeBean(Object), which also adds listeners if the bean is-a Listener
+     * @see Container#removeBean(Object)
      * @param listener
      */
     public void removeEventListener(Listener listener);

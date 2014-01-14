@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -54,7 +54,7 @@ public class AllowSymLinkAliasChecker implements AliasCheck
             {
                 // we can use the real path method to check the symlinks resolve to the alias
                 URI real = file.toPath().toRealPath().toUri();
-                if (real.equals(resource.getAlias().toURI()))
+                if (real.equals(resource.getAlias()))
                 {
                     LOG.debug("Allow symlink {} --> {}",resource,real);
                     return true;
@@ -77,7 +77,7 @@ public class AllowSymLinkAliasChecker implements AliasCheck
                         d=link.toFile().getAbsoluteFile().getCanonicalFile();
                     }
                 }
-                if (resource.getAlias().toURI().equals(d.toURI()))
+                if (resource.getAlias().equals(d.toURI()))
                 {
                     LOG.debug("Allow symlink {} --> {}",resource,d);
                     return true;

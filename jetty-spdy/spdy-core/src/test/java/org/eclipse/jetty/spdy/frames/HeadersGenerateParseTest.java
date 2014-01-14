@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -85,7 +85,7 @@ public class HeadersGenerateParseTest
         parser.parse(createHeadersFrameBuffer(headers));
         HeadersFrame parsedHeadersFrame = assertExpectationsAreMet(headers);
         Fields.Field viaHeader = parsedHeadersFrame.getHeaders().get("via");
-        assertThat("Via Header name is lowercase", viaHeader.name(), is("via"));
+        assertThat("Via Header name is lowercase", viaHeader.getName(), is("via"));
     }
 
     private HeadersFrame assertExpectationsAreMet(Fields headers)

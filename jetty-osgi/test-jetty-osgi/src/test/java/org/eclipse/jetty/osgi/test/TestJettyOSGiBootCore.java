@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -78,7 +78,8 @@ public class TestJettyOSGiBootCore
  
         res.add(mavenBundle().groupId( "org.eclipse.jetty.osgi" ).artifactId( "jetty-osgi-boot" ).versionAsInProject().start());
  
-        res.add(mavenBundle().groupId( "org.eclipse.jetty.orbit" ).artifactId( "javax.servlet" ).versionAsInProject().noStart());
+        res.add(mavenBundle().groupId( "javax.servlet" ).artifactId( "javax.servlet-api" ).versionAsInProject().noStart());
+        res.add(mavenBundle().groupId( "org.eclipse.jetty.toolchain" ).artifactId( "jetty-schemas" ).versionAsInProject().noStart());
         res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-deploy" ).versionAsInProject().noStart());
         res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-server" ).versionAsInProject().noStart());  
         res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-servlet" ).versionAsInProject().noStart());  
@@ -95,6 +96,7 @@ public class TestJettyOSGiBootCore
         res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "websocket-common" ).versionAsInProject().noStart());
         res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "websocket-servlet" ).versionAsInProject().noStart());
         res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "websocket-server" ).versionAsInProject().noStart());
+        res.add(mavenBundle().groupId( "javax.websocket" ).artifactId( "javax.websocket-api" ).versionAsInProject().noStart());
         return res;
     }
      
@@ -126,6 +128,4 @@ public class TestJettyOSGiBootCore
     {
         TestOSGiUtil.testHttpServiceGreetings(bundleContext, "http", DEFAULT_JETTY_HTTP_PORT);
     }
-         
-     
 }

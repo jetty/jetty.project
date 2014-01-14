@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.client.util;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
@@ -30,6 +31,8 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import org.eclipse.jetty.client.api.ContentProvider;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * A {@link ContentProvider} for files using JDK 7's {@code java.nio.file} APIs.
@@ -39,6 +42,8 @@ import org.eclipse.jetty.client.api.ContentProvider;
  */
 public class PathContentProvider implements ContentProvider
 {
+    private static final Logger LOG = Log.getLogger(PathContentProvider.class);
+
     private final Path filePath;
     private final long fileSize;
     private final int bufferSize;
@@ -68,46 +73,78 @@ public class PathContentProvider implements ContentProvider
     @Override
     public Iterator<ByteBuffer> iterator()
     {
-        return new Iterator<ByteBuffer>()
+        return new PathIterator();
+    }
+
+    private class PathIterator implements Iterator<ByteBuffer>, Closeable
+    {
+        private final ByteBuffer buffer = ByteBuffer.allocateDirect(bufferSize);
+        private SeekableByteChannel channel;
+        private long position;
+
+        @Override
+        public boolean hasNext()
         {
-            private final ByteBuffer buffer = ByteBuffer.allocateDirect(bufferSize);
-            private SeekableByteChannel channel;
-            private long position;
+            return position < getLength();
+        }
 
-            @Override
-            public boolean hasNext()
+        @Override
+        public ByteBuffer next()
+        {
+            try
             {
-                return position < getLength();
-            }
-
-            @Override
-            public ByteBuffer next()
-            {
-                try
+                if (channel == null)
                 {
-                    if (channel == null)
-                        channel = Files.newByteChannel(filePath, StandardOpenOption.READ);
-
-                    buffer.clear();
-                    int read = channel.read(buffer);
-                    if (read < 0)
-                        throw new NoSuchElementException();
-
-                    position += read;
-                    buffer.flip();
-                    return buffer;
+                    channel = Files.newByteChannel(filePath, StandardOpenOption.READ);
+                    LOG.debug("Opened file {}", filePath);
                 }
-                catch (IOException x)
-                {
-                    throw (NoSuchElementException)new NoSuchElementException().initCause(x);
-                }
+
+                buffer.clear();
+                int read = channel.read(buffer);
+                if (read < 0)
+                    throw new NoSuchElementException();
+
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Read {} bytes from {}", read, filePath);
+
+                position += read;
+
+                if (!hasNext())
+                    close();
+
+                buffer.flip();
+                return buffer;
             }
-
-            @Override
-            public void remove()
+            catch (NoSuchElementException x)
             {
-                throw new UnsupportedOperationException();
+                close();
+                throw x;
             }
-        };
+            catch (Exception x)
+            {
+                close();
+                throw (NoSuchElementException)new NoSuchElementException().initCause(x);
+            }
+        }
+
+        @Override
+        public void remove()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void close()
+        {
+            try
+            {
+                if (channel != null)
+                    channel.close();
+            }
+            catch (Exception x)
+            {
+                LOG.ignore(x);
+            }
+        }
     }
 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -30,28 +30,21 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
-import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.StringUtil;
-import org.hamcrest.Matchers;
 import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class AsyncRequestReadTest
@@ -96,7 +89,7 @@ public class AsyncRequestReadTest
                     "Content-Length: "+content.length+"\r\n"+
                     "Content-Type: bytes\r\n"+
                     "\r\n";
-            byte[] h=header.getBytes(StringUtil.__ISO_8859_1);
+            byte[] h=header.getBytes(StandardCharsets.ISO_8859_1);
             out.write(h);
             out.write(content);
             
@@ -108,7 +101,7 @@ public class AsyncRequestReadTest
                     "Content-Type: bytes\r\n"+
                     "Connection: close\r\n"+
                     "\r\n";
-            h=header.getBytes(StringUtil.__ISO_8859_1);
+            h=header.getBytes(StandardCharsets.ISO_8859_1);
             out.write(h);
             out.write(content);
             out.flush();
@@ -244,7 +237,7 @@ public class AsyncRequestReadTest
                     "Content-Length: "+content.length+"\r\n"+
                     "Content-Type: bytes\r\n"+
                     "\r\n";
-            byte[] h=header.getBytes(StringUtil.__ISO_8859_1);
+            byte[] h=header.getBytes(StandardCharsets.ISO_8859_1);
             out.write(h);
             out.write(content);
             
@@ -254,7 +247,7 @@ public class AsyncRequestReadTest
                     "Content-Type: bytes\r\n"+
                     "Connection: close\r\n"+
                     "\r\n";
-            h=header.getBytes(StringUtil.__ISO_8859_1);
+            h=header.getBytes(StandardCharsets.ISO_8859_1);
             out.write(h);
             out.write(content);
             out.flush();
@@ -294,7 +287,7 @@ public class AsyncRequestReadTest
                     "Content-Length: "+content.length+"\r\n"+
                     "Content-Type: bytes\r\n"+
                     "\r\n";
-            byte[] h=header.getBytes(StringUtil.__ISO_8859_1);
+            byte[] h=header.getBytes(StandardCharsets.ISO_8859_1);
             out.write(h);
             out.write(content,0,4096);
             out.flush();
@@ -329,7 +322,7 @@ public class AsyncRequestReadTest
                     "Content-Length: "+content.length+"\r\n"+
                     "Content-Type: bytes\r\n"+
                     "\r\n";
-            byte[] h=header.getBytes(StringUtil.__ISO_8859_1);
+            byte[] h=header.getBytes(StandardCharsets.ISO_8859_1);
             out.write(h);
             out.write(content,0,4096);
             out.flush();

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -50,7 +50,7 @@ public class JarVersion
                 return entry;
             }
         }
-        
+
         return null;
     }
 
@@ -58,11 +58,15 @@ public class JarVersion
     {
         Attributes attribs = manifest.getMainAttributes();
         if (attribs == null)
+        {
             return null;
+        }
 
         String version = attribs.getValue("Bundle-Version");
         if (version == null)
+        {
             return null;
+        }
 
         return stripV(version);
     }
@@ -71,11 +75,15 @@ public class JarVersion
     {
         Attributes attribs = manifest.getMainAttributes();
         if (attribs == null)
+        {
             return null;
+        }
 
         String version = attribs.getValue(Attributes.Name.IMPLEMENTATION_VERSION);
         if (version == null)
+        {
             return null;
+        }
 
         return stripV(version);
     }
@@ -84,40 +92,48 @@ public class JarVersion
     {
         JarEntry pomProp = findEntry(jar,"META-INF/maven/.*/pom\\.properties$");
         if (pomProp == null)
+        {
             return null;
-        
+        }
+
         InputStream stream = null;
-        
+
         try
         {
             stream = jar.getInputStream(pomProp);
             Properties props = new Properties();
             props.load(stream);
-            
+
             String version = props.getProperty("version");
             if (version == null)
+            {
                 return null;
+            }
 
             return stripV(version);
         }
         finally
         {
-            Main.close(stream);
+            FS.close(stream);
         }
     }
 
     private static String getSubManifestImplVersion(Manifest manifest)
     {
         Map<String, Attributes> entries = manifest.getEntries();
-        
+
         for (Attributes attribs : entries.values())
         {
             if (attribs == null)
+            {
                 continue; // skip entry
+            }
 
             String version = attribs.getValue(Attributes.Name.IMPLEMENTATION_VERSION);
             if (version == null)
+            {
                 continue; // empty, no value, skip it
+            }
 
             return stripV(version);
         }
@@ -127,31 +143,42 @@ public class JarVersion
 
     public static String getVersion(File file)
     {
-        try
+        try (JarFile jar = new JarFile(file))
         {
-            JarFile jar = new JarFile(file);
-            
             String version = null;
-            
+
             Manifest manifest = jar.getManifest();
+            
+            if (manifest == null)
+            {
+                return "(none specified)";
+            }
 
             version = getMainManifestImplVersion(manifest);
             if (version != null)
+            {
                 return version;
-            
+            }
+
             version = getSubManifestImplVersion(manifest);
             if (version != null)
+            {
                 return version;
-            
+            }
+
             version = getBundleVersion(manifest);
             if (version != null)
+            {
                 return version;
-            
+            }
+
             version = getMavenVersion(jar);
             if (version != null)
+            {
                 return version;
-            
-            return "(not specified)";
+            }
+
+            return "(none specified)";
         }
         catch (IOException e)
         {
@@ -162,7 +189,9 @@ public class JarVersion
     private static String stripV(String version)
     {
         if (version.charAt(0) == 'v')
+        {
             return version.substring(1);
+        }
 
         return version;
     }

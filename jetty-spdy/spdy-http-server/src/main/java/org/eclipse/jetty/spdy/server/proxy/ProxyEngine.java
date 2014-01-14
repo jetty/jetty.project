@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,7 +28,7 @@ import java.util.Set;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.SynInfo;
-import org.eclipse.jetty.spdy.server.http.HTTPSPDYHeader;
+import org.eclipse.jetty.spdy.http.HTTPSPDYHeader;
 import org.eclipse.jetty.util.Fields;
 
 /**
@@ -98,7 +98,7 @@ public abstract class ProxyEngine
         addViaHeader(headers);
         Fields.Field schemeField = headers.get(HTTPSPDYHeader.SCHEME.name(stream.getSession().getVersion()));
         if(schemeField != null)
-            headers.add("X-Forwarded-Proto", schemeField.value());
+            headers.add("X-Forwarded-Proto", schemeField.getValue());
         InetSocketAddress address = stream.getSession().getRemoteAddress();
         if (address != null)
         {

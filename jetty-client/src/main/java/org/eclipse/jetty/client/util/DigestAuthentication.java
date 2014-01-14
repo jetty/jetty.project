@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,7 +19,7 @@
 package org.eclipse.jetty.client.util;
 
 import java.net.URI;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -217,14 +217,13 @@ public class DigestAuthentication implements Authentication
             if (digester == null)
                 return;
 
-            Charset charset = Charset.forName("ISO-8859-1");
             String A1 = user + ":" + realm + ":" + password;
-            String hashA1 = toHexString(digester.digest(A1.getBytes(charset)));
+            String hashA1 = toHexString(digester.digest(A1.getBytes(StandardCharsets.ISO_8859_1)));
 
-            String A2 = request.method() + ":" + request.getURI();
+            String A2 = request.getMethod() + ":" + request.getURI();
             if ("auth-int".equals(qop))
                 A2 += ":" + toHexString(digester.digest(content));
-            String hashA2 = toHexString(digester.digest(A2.getBytes(charset)));
+            String hashA2 = toHexString(digester.digest(A2.getBytes(StandardCharsets.ISO_8859_1)));
 
             String nonceCount;
             String clientNonce;
@@ -241,7 +240,7 @@ public class DigestAuthentication implements Authentication
                 clientNonce = null;
                 A3 = hashA1 + ":" + nonce + ":" + hashA2;
             }
-            String hashA3 = toHexString(digester.digest(A3.getBytes(charset)));
+            String hashA3 = toHexString(digester.digest(A3.getBytes(StandardCharsets.ISO_8859_1)));
 
             StringBuilder value = new StringBuilder("Digest");
             value.append(" username=\"").append(user).append("\"");

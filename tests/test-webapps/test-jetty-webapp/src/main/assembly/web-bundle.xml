@@ -27,7 +27,7 @@
       <destName>jetty-web.xml</destName>
     </file>
     <file>
-      <source>src/main/config/etc/realm.properties</source>
+      <source>src/main/config/demo-base/etc/realm.properties</source>
       <outputDirectory>WEB-INF</outputDirectory>
       <destName>realm.properties</destName>
     </file>

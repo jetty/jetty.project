@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,6 +24,7 @@ import java.io.OutputStream;
 import java.net.HttpCookie;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -133,7 +134,7 @@ public class Usage
 
         Response response = client.newRequest("localhost", 8080)
                 // Add a request listener
-                .listener(new Request.Listener.Empty()
+                .listener(new Request.Listener.Adapter()
                 {
                     @Override
                     public void onSuccess(Request request)
@@ -269,7 +270,7 @@ public class Usage
         HttpClient client = new HttpClient();
         client.start();
 
-        InputStream input = new ByteArrayInputStream("content".getBytes("UTF-8"));
+        InputStream input = new ByteArrayInputStream("content".getBytes(StandardCharsets.UTF_8));
 
         ContentResponse response = client.newRequest("localhost", 8080)
                 // Provide the content as InputStream
@@ -319,7 +320,7 @@ public class Usage
         DeferredContentProvider async = new DeferredContentProvider(ByteBuffer.wrap(new byte[]{0, 1, 2}));
         client.newRequest("localhost", 8080)
                 .content(async)
-                .send(new Response.Listener.Empty()
+                .send(new Response.Listener.Adapter()
                 {
                     @Override
                     public void onBegin(Response response)

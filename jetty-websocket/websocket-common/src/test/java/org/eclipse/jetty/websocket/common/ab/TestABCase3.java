@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,9 +25,10 @@ import java.util.List;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.common.CloseInfo;
-import org.eclipse.jetty.websocket.common.Generator;
-import org.eclipse.jetty.websocket.common.UnitGenerator;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.frames.PingFrame;
+import org.eclipse.jetty.websocket.common.frames.PongFrame;
+import org.eclipse.jetty.websocket.common.test.UnitGenerator;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -46,21 +47,21 @@ public class TestABCase3
         List<WebSocketFrame[]> data = new ArrayList<>();
         // @formatter:off
         data.add(new WebSocketFrame[]
-                { WebSocketFrame.ping().setFin(false) });
+                { new PingFrame().setFin(false) });
         data.add(new WebSocketFrame[]
-                { WebSocketFrame.ping().setRsv1(true) });
+                { new PingFrame().setRsv1(true) });
         data.add(new WebSocketFrame[]
-                { WebSocketFrame.ping().setRsv2(true) });
+                { new PingFrame().setRsv2(true) });
         data.add(new WebSocketFrame[]
-                { WebSocketFrame.ping().setRsv3(true) });
+                { new PingFrame().setRsv3(true) });
         data.add(new WebSocketFrame[]
-                { WebSocketFrame.pong().setFin(false) });
+                { new PongFrame().setFin(false) });
         data.add(new WebSocketFrame[]
-                { WebSocketFrame.ping().setRsv1(true) });
+                { new PingFrame().setRsv1(true) });
         data.add(new WebSocketFrame[]
-                { WebSocketFrame.pong().setRsv2(true) });
+                { new PongFrame().setRsv2(true) });
         data.add(new WebSocketFrame[]
-                { WebSocketFrame.pong().setRsv3(true) });
+                { new PongFrame().setRsv3(true) });
         data.add(new WebSocketFrame[]
                 { new CloseInfo().asFrame().setFin(false) });
         data.add(new WebSocketFrame[]
@@ -86,10 +87,6 @@ public class TestABCase3
     @Test(expected = ProtocolException.class)
     public void testGenerateInvalidControlFrame()
     {
-        Generator generator = new UnitGenerator();
-
-        generator.generate(invalidFrame);
+        UnitGenerator.generate(invalidFrame);
     }
-
-
 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -59,6 +59,7 @@ public class ProxyAuthenticationProtocolHandler extends AuthenticationProtocolHa
     protected URI getAuthenticationURI(Request request)
     {
         HttpDestination destination = getHttpClient().destinationFor(request.getScheme(), request.getHost(), request.getPort());
-        return destination.isProxied() ? destination.getProxyURI() : request.getURI();
+        ProxyConfiguration.Proxy proxy = destination.getProxy();
+        return proxy != null ? proxy.getURI() : request.getURI();
     }
 }

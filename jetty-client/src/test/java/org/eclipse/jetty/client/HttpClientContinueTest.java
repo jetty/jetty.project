@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,6 +21,7 @@ package org.eclipse.jetty.client;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -60,13 +61,13 @@ public class HttpClientContinueTest extends AbstractHttpClientServerTest
     @Test
     public void test_Expect100Continue_WithOneContent_Respond100Continue() throws Exception
     {
-        test_Expect100Continue_Respond100Continue("data1".getBytes("UTF-8"));
+        test_Expect100Continue_Respond100Continue("data1".getBytes(StandardCharsets.UTF_8));
     }
 
     @Test
     public void test_Expect100Continue_WithMultipleContents_Respond100Continue() throws Exception
     {
-        test_Expect100Continue_Respond100Continue("data1".getBytes("UTF-8"), "data2".getBytes("UTF-8"), "data3".getBytes("UTF-8"));
+        test_Expect100Continue_Respond100Continue("data1".getBytes(StandardCharsets.UTF_8), "data2".getBytes(StandardCharsets.UTF_8), "data3".getBytes(StandardCharsets.UTF_8));
     }
 
     private void test_Expect100Continue_Respond100Continue(byte[]... contents) throws Exception
@@ -407,7 +408,7 @@ public class HttpClientContinueTest extends AbstractHttpClientServerTest
             public Response.Listener getResponseListener()
             {
                 final Response.Listener listener = super.getResponseListener();
-                return new Response.Listener.Empty()
+                return new Response.Listener.Adapter()
                 {
                     @Override
                     public void onBegin(Response response)
@@ -564,40 +565,7 @@ public class HttpClientContinueTest extends AbstractHttpClientServerTest
         });
 
         final byte[] data = new byte[]{0, 1, 2, 3, 4, 5, 6, 7};
-        final DeferredContentProvider content = new DeferredContentProvider()
-        {
-            @Override
-            public Iterator<ByteBuffer> iterator()
-            {
-                final Iterator<ByteBuffer> delegate = super.iterator();
-                return new Iterator<ByteBuffer>()
-                {
-                    private int count;
-
-                    @Override
-                    public boolean hasNext()
-                    {
-                        return delegate.hasNext();
-                    }
-
-                    @Override
-                    public ByteBuffer next()
-                    {
-                        // Fake that it returns null for two times,
-                        // to trigger particular branches in HttpSender
-                        if (++count <= 2)
-                            return null;
-                        return delegate.next();
-                    }
-
-                    @Override
-                    public void remove()
-                    {
-                        delegate.remove();
-                    }
-                };
-            }
-        };
+        final DeferredContentProvider content = new DeferredContentProvider();
 
         final CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
@@ -641,7 +609,7 @@ public class HttpClientContinueTest extends AbstractHttpClientServerTest
         });
 
         final byte[] chunk1 = new byte[]{0, 1, 2, 3};
-        final byte[] chunk2 = new byte[]{4, 5, 6, 7};
+        final byte[] chunk2 = new byte[]{4, 5, 6};
         final byte[] data = new byte[chunk1.length + chunk2.length];
         System.arraycopy(chunk1, 0, data, 0, chunk1.length);
         System.arraycopy(chunk2, 0, data, chunk1.length, chunk2.length);

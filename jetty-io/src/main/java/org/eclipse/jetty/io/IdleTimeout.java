@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -84,14 +84,12 @@ public abstract class IdleTimeout
                 return;
 
             // old timeout is too long, so cancel it.
-            Scheduler.Task oldTimeout = _timeout.getAndSet(null);
-            if (oldTimeout != null)
-                oldTimeout.cancel();
+            deactivate();
         }
 
         // If we have a new timeout, then check and reschedule
-        if (idleTimeout > 0 && isOpen())
-            _idleTask.run();
+        if (isOpen())
+            activate();
     }
 
     /**
@@ -114,18 +112,21 @@ public abstract class IdleTimeout
 
     public void onOpen()
     {
+        activate();
+    }
+
+    private void activate()
+    {
         if (_idleTimeout > 0)
             _idleTask.run();
     }
 
     public void onClose()
     {
-        Scheduler.Task oldTimeout = _timeout.getAndSet(null);
-        if (oldTimeout != null)
-            oldTimeout.cancel();
+        deactivate();
     }
 
-    protected void close()
+    private void deactivate()
     {
         Scheduler.Task oldTimeout = _timeout.getAndSet(null);
         if (oldTimeout != null)

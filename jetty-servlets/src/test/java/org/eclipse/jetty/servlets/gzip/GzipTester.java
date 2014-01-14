@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,8 +18,13 @@
 
 package org.eclipse.jetty.servlets.gzip;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertThat;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -39,12 +44,14 @@ import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
 import javax.servlet.DispatcherType;
+import javax.servlet.Filter;
 import javax.servlet.Servlet;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletTester;
@@ -57,21 +64,33 @@ import org.junit.Assert;
 
 public class GzipTester
 {
-    private Class<? extends GzipFilter> gzipFilterClass = GzipFilter.class;
+    private Class<? extends Filter> gzipFilterClass = GzipFilter.class;
     private String encoding = "ISO8859_1";
     private String userAgent = null;
-    private ServletTester tester;
+    private final ServletTester tester = new ServletTester();;
     private TestingDir testdir;
+    private String accept;
     private String compressionType;
 
+    public GzipTester(TestingDir testingdir, String compressionType, String accept)
+    {
+        this.testdir = testingdir;
+        this.compressionType = compressionType;
+        this.accept=accept;
+    }
+    
     public GzipTester(TestingDir testingdir, String compressionType)
     {
         this.testdir = testingdir;
         this.compressionType = compressionType;
-        // Make sure we start with a clean testing directory.
-        // DOES NOT WORK IN WINDOWS - this.testdir.ensureEmpty();
+        this.accept=compressionType;
     }
 
+    public int getOutputBufferSize()
+    {
+        return tester.getConnector().getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().getOutputBufferSize();
+    }
+    
     public HttpTester.Response assertIsResponseGzipCompressed(String method, String filename) throws Exception
     {
         return assertIsResponseGzipCompressed(method,filename,filename,-1);
@@ -87,6 +106,63 @@ public class GzipTester
         return assertIsResponseGzipCompressed(method,requestedFilename,serverFilename,-1);
     }
     
+
+    public HttpTester.Response assertNonStaticContentIsResponseGzipCompressed(String method, String path, String expected) throws Exception
+    {
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
+
+        request.setMethod(method);
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host","tester");
+        request.setHeader("Accept-Encoding",accept);
+       
+        if (this.userAgent != null)
+            request.setHeader("User-Agent", this.userAgent);
+        request.setURI("/context/" + path);
+
+        // Issue the request
+        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
+        
+        int qindex = compressionType.indexOf(";");
+        if (qindex < 0)
+            Assert.assertThat("Response.header[Content-Encoding]",response.get("Content-Encoding"),containsString(compressionType));
+        else
+            Assert.assertThat("Response.header[Content-Encoding]", response.get("Content-Encoding"),containsString(compressionType.substring(0,qindex)));
+
+       ByteArrayInputStream bais = null;
+       InputStream in = null;
+       ByteArrayOutputStream out = null;
+       String actual = null;
+       
+        try
+        {
+            bais = new ByteArrayInputStream(response.getContentBytes());
+            if (compressionType.startsWith(GzipFilter.GZIP))
+            {
+                in = new GZIPInputStream(bais);
+            }
+            else if (compressionType.startsWith(GzipFilter.DEFLATE))
+            {
+                in = new InflaterInputStream(bais, new Inflater(true));
+            }
+            out = new ByteArrayOutputStream();
+            IO.copy(in,out);
+
+            actual = out.toString(encoding);
+            assertThat("Uncompressed contents",actual,equalTo(expected));
+        }
+        finally
+        {
+            IO.close(out);
+            IO.close(in);
+            IO.close(bais);
+        }
+        
+        
+        return response;
+    }
+    
     public HttpTester.Response assertIsResponseGzipCompressed(String method, String requestedFilename, String serverFilename, long ifmodifiedsince) throws Exception
     {
         // System.err.printf("[GzipTester] requesting /context/%s%n",requestedFilename);
@@ -98,7 +174,7 @@ public class GzipTester
         request.setHeader("Host","tester");
         request.setHeader("Accept-Encoding",compressionType);
         if (ifmodifiedsince>0)
-            request.setHeader(HttpHeader.IF_MODIFIED_SINCE.asString(),HttpFields.formatDate(ifmodifiedsince));
+            request.setHeader(HttpHeader.IF_MODIFIED_SINCE.asString(),DateGenerator.formatDate(ifmodifiedsince));
         if (this.userAgent != null)
             request.setHeader("User-Agent", this.userAgent);
         request.setURI("/context/" + requestedFilename);
@@ -176,7 +252,7 @@ public class GzipTester
         request.setHeader("Host","tester");
         request.setHeader("Accept-Encoding",compressionType);
         if (ifmodifiedsince>0)
-            request.setHeader(HttpHeader.IF_MODIFIED_SINCE.asString(),HttpFields.formatDate(ifmodifiedsince));
+            request.setHeader(HttpHeader.IF_MODIFIED_SINCE.asString(),DateGenerator.formatDate(ifmodifiedsince));
         if (this.userAgent != null)
             request.setHeader("User-Agent", this.userAgent);
         request.setURI("/context/" + requestedFilename);
@@ -507,7 +583,6 @@ public class GzipTester
      */
     public FilterHolder setContentServlet(Class<? extends Servlet> servletClass) throws IOException
     {
-        tester = new ServletTester();
         tester.setContextPath("/context");
         tester.setResourceBase(testdir.getDir().getCanonicalPath());
         ServletHolder servletHolder = tester.addServlet(servletClass,"/");
@@ -518,12 +593,12 @@ public class GzipTester
         return holder;
     }
 
-    public Class<? extends GzipFilter> getGzipFilterClass()
+    public Class<? extends Filter> getGzipFilterClass()
     {
         return gzipFilterClass;
     }
 
-    public void setGzipFilterClass(Class<? extends GzipFilter> gzipFilterClass)
+    public void setGzipFilterClass(Class<? extends Filter> gzipFilterClass)
     {
         this.gzipFilterClass = gzipFilterClass;
     }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -112,9 +112,10 @@ public class PropertyFileLoginModule extends AbstractLoginModule
         PropertyUserStore propertyUserStore = _propertyUserStores.get(_filename);
         if (propertyUserStore == null)
             throw new IllegalStateException("PropertyUserStore should never be null here!");
-
+        
+        LOG.debug("Checking PropertyUserStore "+_filename+" for "+userName);
         UserIdentity userIdentity = propertyUserStore.getUserIdentity(userName);
-        if(userIdentity==null)
+        if (userIdentity==null)
             return null;
 
         Set<Principal> principals = userIdentity.getSubject().getPrincipals();
@@ -127,7 +128,7 @@ public class PropertyFileLoginModule extends AbstractLoginModule
         }
 
         Credential credential = (Credential)userIdentity.getSubject().getPrivateCredentials().iterator().next();
-        LOG.debug("Found: " + userName + " in PropertyUserStore");
+        LOG.debug("Found: " + userName + " in PropertyUserStore "+_filename);
         return new UserInfo(userName, credential, roles);
     }
 

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -32,11 +32,13 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import javax.servlet.http.HttpSessionEvent;
+import javax.servlet.http.HttpSessionIdListener;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.webapp.WebAppContext;
 
 
 public abstract class AbstractSessionRenewTest
@@ -49,8 +51,11 @@ public abstract class AbstractSessionRenewTest
         String servletMapping = "/server";
         int scavengePeriod = 3;
         AbstractTestServer server = createServer(0, 1, scavengePeriod);
-        ServletContextHandler context = server.addContext(contextPath);
+        WebAppContext context = server.addWebAppContext(".", contextPath);
         context.addServlet(TestServlet.class, servletMapping);
+        TestHttpSessionIdListener testListener = new TestHttpSessionIdListener();
+        context.addEventListener(testListener);
+        
 
 
         HttpClient client = new HttpClient();
@@ -67,6 +72,7 @@ public abstract class AbstractSessionRenewTest
 
             String sessionCookie = response.getHeaders().getStringField("Set-Cookie");
             assertTrue(sessionCookie != null);
+            assertFalse(testListener.isCalled());
 
             //make a request to change the sessionid
             Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=renew");
@@ -76,6 +82,7 @@ public abstract class AbstractSessionRenewTest
             String renewSessionCookie = renewResponse.getHeaders().getStringField("Set-Cookie");
             assertNotNull(renewSessionCookie);
             assertNotSame(sessionCookie, renewSessionCookie);
+            assertTrue(testListener.isCalled());
         }
         finally
         {
@@ -84,9 +91,30 @@ public abstract class AbstractSessionRenewTest
         }
     }
 
+    
+    
+    public static class TestHttpSessionIdListener implements HttpSessionIdListener
+    {
+        boolean called = false;
+        
+        @Override
+        public void sessionIdChanged(HttpSessionEvent event, String oldSessionId)
+        {
+            assertNotNull(event.getSession());
+            assertNotSame(oldSessionId, event.getSession().getId());
+            called = true;
+        }
+        
+        public boolean isCalled()
+        {
+            return called;
+        }
+    }
+
 
     public static class TestServlet extends HttpServlet
     {
+        
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {

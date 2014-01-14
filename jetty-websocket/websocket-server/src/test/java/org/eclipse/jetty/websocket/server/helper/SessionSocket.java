@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.server.helper;
 
+import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.util.log.Log;
@@ -52,15 +53,15 @@ public class SessionSocket
         {
             if (message.startsWith("getParameterMap"))
             {
-                Map<String, String[]> parameterMap = session.getUpgradeRequest().getParameterMap();
+                Map<String, List<String>> parameterMap = session.getUpgradeRequest().getParameterMap();
 
                 int idx = message.indexOf('|');
                 String key = message.substring(idx + 1);
-                String values[] = parameterMap.get(key);
+                List<String> values = parameterMap.get(key);
 
                 if (values == null)
                 {
-                    session.getRemote().sendStringByFuture("<null>");
+                    session.getRemote().sendString("<null>",null);
                     return;
                 }
 
@@ -77,21 +78,21 @@ public class SessionSocket
                     delim = true;
                 }
                 valueStr.append(']');
-                session.getRemote().sendStringByFuture(valueStr.toString());
+                session.getRemote().sendString(valueStr.toString(),null);
                 return;
             }
 
             if ("session.isSecure".equals(message))
             {
                 String issecure = String.format("session.isSecure=%b",session.isSecure());
-                session.getRemote().sendStringByFuture(issecure);
+                session.getRemote().sendString(issecure,null);
                 return;
             }
 
             if ("session.upgradeRequest.requestURI".equals(message))
             {
                 String response = String.format("session.upgradeRequest.requestURI=%s",session.getUpgradeRequest().getRequestURI().toASCIIString());
-                session.getRemote().sendStringByFuture(response);
+                session.getRemote().sendString(response,null);
                 return;
             }
 
@@ -102,7 +103,7 @@ public class SessionSocket
             }
 
             // echo the message back.
-            this.session.getRemote().sendStringByFuture(message);
+            this.session.getRemote().sendString(message,null);
         }
         catch (Throwable t)
         {

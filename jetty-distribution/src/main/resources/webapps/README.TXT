@@ -23,3 +23,11 @@ only the XML is deployed (which may use the war in its configuration).
 This directory is scanned for additions, removals and updates 
 for hot deployment.
 
+To configure the deployment mechanism, edit the files:
+   start.d/500-deploy.ini
+   etc/jetty-deploy.ini
+
+To disable the auto deploy mechanism use the command:
+
+   java -jar start.jar --disable=deploy
+

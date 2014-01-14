@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,22 +22,26 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**
- * Appender for messages (used for multiple fragments with continuations, and also to allow for streaming APIs)
+ * Appender for messages (used for multiple frames with continuations, and also to allow for streaming APIs)
  */
 public interface MessageAppender
 {
     /**
-     * Append the payload to the message.
+     * Append the frame payload to the message.
      * 
-     * @param payload
-     *            the payload to append.
+     * @param framePayload
+     *            the frame payload to append.
+     * @param isLast
+     *            flag indicating if this is the last part of the message or not.
      * @throws IOException
-     *             if unable to append the payload
+     *             if unable to append the frame payload
      */
-    abstract void appendMessage(ByteBuffer payload) throws IOException;
+    abstract void appendFrame(ByteBuffer framePayload, boolean isLast) throws IOException;
 
     /**
      * Notification that message is to be considered complete.
+     * <p>
+     * Any cleanup or final actions should be taken here.
      */
     abstract void messageComplete();
 }

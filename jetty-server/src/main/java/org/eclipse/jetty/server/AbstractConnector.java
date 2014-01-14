@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -189,7 +189,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         for (ConnectionFactory factory:factories)
             addConnectionFactory(factory);
 
-        if (acceptors<=0)
+        if (acceptors<0)
             acceptors=Math.max(1,(Runtime.getRuntime().availableProcessors()) / 2);
         if (acceptors > 2 * Runtime.getRuntime().availableProcessors())
             LOG.warn("Acceptors should be <= 2*availableProcessors: " + this);
@@ -268,10 +268,13 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
 
     protected void interruptAcceptors()
     {
-        for (Thread thread : _acceptors)
+        synchronized (this)
         {
-            if (thread != null)
-                thread.interrupt();
+            for (Thread thread : _acceptors)
+            {
+                if (thread != null)
+                    thread.interrupt();
+            }
         }
     }
 
@@ -306,9 +309,12 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
 
     public void join(long timeout) throws InterruptedException
     {
-        for (Thread thread : _acceptors)
-            if (thread != null)
-                thread.join(timeout);
+        synchronized (this)
+        {
+            for (Thread thread : _acceptors)
+                if (thread != null)
+                    thread.join(timeout);
+        }
     }
 
     protected abstract void accept(int acceptorID) throws IOException, InterruptedException;
@@ -464,7 +470,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
                         if (isAccepting())
                             LOG.warn(e);
                         else
-                            LOG.debug(e);
+                            LOG.ignore(e);
                     }
                 }
             }

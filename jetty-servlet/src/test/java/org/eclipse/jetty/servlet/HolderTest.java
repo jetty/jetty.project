@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -48,26 +48,35 @@ import java.util.Set;
 
 import javax.servlet.ServletRegistration;
 
+import org.eclipse.jetty.servlet.BaseHolder.Source;
 import org.junit.Test;
 
 /**
  * @version $Rev$ $Date$
  */
-public class HolderTest {
+public class HolderTest
+{
 
     @Test
-    public void testInitParams() throws Exception {
-        ServletHolder holder = new ServletHolder(Holder.Source.JAVAX_API);
+    public void testInitParams() throws Exception
+    {
+        ServletHolder holder = new ServletHolder(Source.JAVAX_API);
         ServletRegistration reg = holder.getRegistration();
-        try {
+        try
+        {
             reg.setInitParameter(null, "foo");
             fail("null name accepted");
-        } catch (IllegalArgumentException e) {
         }
-        try {
+        catch (IllegalArgumentException e)
+        {
+        }
+        try
+        {
             reg.setInitParameter("foo", null);
             fail("null value accepted");
-        } catch (IllegalArgumentException e) {
+        }
+        catch (IllegalArgumentException e)
+        {
         }
         reg.setInitParameter("foo", "bar");
         assertFalse(reg.setInitParameter("foo", "foo"));
@@ -75,15 +84,21 @@ public class HolderTest {
         Set<String> clash = reg.setInitParameters(Collections.singletonMap("foo", "bax"));
         assertTrue("should be one clash", clash != null && clash.size() == 1);
 
-        try {
-            reg.setInitParameters(Collections.singletonMap((String)null, "bax"));
+        try
+        {
+            reg.setInitParameters(Collections.singletonMap((String) null, "bax"));
             fail("null name in map accepted");
-        } catch (IllegalArgumentException e) {
         }
-        try {
-            reg.setInitParameters(Collections.singletonMap("foo", (String)null));
+        catch (IllegalArgumentException e)
+        {
+        }
+        try
+        {
+            reg.setInitParameters(Collections.singletonMap("foo", (String) null));
             fail("null value in map accepted");
-        } catch (IllegalArgumentException e) {
+        }
+        catch (IllegalArgumentException e)
+        {
         }
 
         Set<String> clash2 = reg.setInitParameters(Collections.singletonMap("FOO", "bax"));

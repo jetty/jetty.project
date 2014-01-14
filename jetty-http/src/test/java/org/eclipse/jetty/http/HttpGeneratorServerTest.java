@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -34,7 +34,6 @@ import java.util.List;
 
 import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
 import org.eclipse.jetty.util.BufferUtil;
-import org.hamcrest.Matchers;
 import org.junit.Test;
 
 public class HttpGeneratorServerTest
@@ -372,7 +371,7 @@ public class HttpGeneratorServerTest
         assertEquals(HttpGenerator.State.START, gen.getState());
 
         ResponseInfo info = new ResponseInfo(HttpVersion.HTTP_1_1, new HttpFields(), -1, 200, null, false);
-        info.getHttpFields().add("Last-Modified", HttpFields.__01Jan1970);
+        info.getHttpFields().add("Last-Modified", DateGenerator.__01Jan1970);
 
         result = gen.generateResponse(info, null, null, null, true);
         assertEquals(HttpGenerator.Result.NEED_HEADER, result);
@@ -441,7 +440,7 @@ public class HttpGeneratorServerTest
         assertEquals(HttpGenerator.State.START, gen.getState());
 
         ResponseInfo info = new ResponseInfo(HttpVersion.HTTP_1_1, new HttpFields(), -1, 200, null, false);
-        info.getHttpFields().add("Last-Modified", HttpFields.__01Jan1970);
+        info.getHttpFields().add("Last-Modified", DateGenerator.__01Jan1970);
         result = gen.generateResponse(info, null, null, content0, false);
         assertEquals(HttpGenerator.Result.NEED_HEADER, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
@@ -503,7 +502,7 @@ public class HttpGeneratorServerTest
         assertEquals(HttpGenerator.State.START, gen.getState());
 
         ResponseInfo info = new ResponseInfo(HttpVersion.HTTP_1_1, new HttpFields(), 59, 200, null, false);
-        info.getHttpFields().add("Last-Modified", HttpFields.__01Jan1970);
+        info.getHttpFields().add("Last-Modified", DateGenerator.__01Jan1970);
         result = gen.generateResponse(info, null, null, content0, false);
         assertEquals(HttpGenerator.Result.NEED_HEADER, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
@@ -570,7 +569,7 @@ public class HttpGeneratorServerTest
         assertEquals(HttpGenerator.State.START, gen.getState());
 
         ResponseInfo info = new ResponseInfo(HttpVersion.HTTP_1_1, new HttpFields(), 59, 200, null, false);
-        info.getHttpFields().add("Last-Modified", HttpFields.__01Jan1970);
+        info.getHttpFields().add("Last-Modified", DateGenerator.__01Jan1970);
         result = gen.generateResponse(info, null, null, content0, false);
         assertEquals(HttpGenerator.Result.NEED_HEADER, result);
         assertEquals(HttpGenerator.State.START, gen.getState());

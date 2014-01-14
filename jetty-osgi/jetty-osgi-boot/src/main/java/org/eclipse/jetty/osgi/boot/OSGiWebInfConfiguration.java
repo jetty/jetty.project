@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -212,7 +212,7 @@ public class OSGiWebInfConfiguration extends WebInfConfiguration
                     }
                 }
                 if (!appendedResourcesPath.isEmpty())
-                    context.setAttribute(WebInfConfiguration.RESOURCE_URLS, new ArrayList<Resource>(appendedResourcesPath.values()));
+                    context.setAttribute(WebInfConfiguration.RESOURCE_DIRS, new HashSet<Resource>(appendedResourcesPath.values()));
             }
         }
         

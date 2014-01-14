@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -163,7 +163,7 @@ public class AsyncRestServlet extends AbstractRestServlet
         out.close();
     }
 
-    private abstract class AsyncRestRequest extends Response.Listener.Empty
+    private abstract class AsyncRestRequest extends Response.Listener.Adapter
     {
         final Utf8StringBuilder _content = new Utf8StringBuilder();
 

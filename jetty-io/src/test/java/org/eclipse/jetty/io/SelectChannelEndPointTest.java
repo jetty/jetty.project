@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,12 @@
 
 package org.eclipse.jetty.io;
 
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -29,13 +35,13 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -45,12 +51,6 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 public class SelectChannelEndPointTest
 {
@@ -155,7 +155,7 @@ public class SelectChannelEndPointTest
                     while (_blockAt > 0 && _endp.isOpen() && _in.remaining() < _blockAt)
                     {
                         FutureCallback blockingRead = new FutureCallback();
-                        _endp.fillInterested(blockingRead);
+                        fillInterested(blockingRead);
                         blockingRead.get();
                         filled = _endp.fill(_in);
                         progress |= filled > 0;
@@ -228,7 +228,7 @@ public class SelectChannelEndPointTest
         _manager.accept(server);
 
         // Write client to server
-        client.getOutputStream().write("HelloWorld".getBytes("UTF-8"));
+        client.getOutputStream().write("HelloWorld".getBytes(StandardCharsets.UTF_8));
 
         // Verify echo server to client
         for (char c : "HelloWorld".toCharArray())
@@ -253,7 +253,7 @@ public class SelectChannelEndPointTest
         }
 
         // write then shutdown
-        client.getOutputStream().write("Goodbye Cruel TLS".getBytes("UTF-8"));
+        client.getOutputStream().write("Goodbye Cruel TLS".getBytes(StandardCharsets.UTF_8));
 
         // Verify echo server to client
         for (char c : "Goodbye Cruel TLS".toCharArray())
@@ -287,7 +287,7 @@ public class SelectChannelEndPointTest
         _manager.accept(server);
 
         // Write client to server
-        client.getOutputStream().write("HelloWorld".getBytes("UTF-8"));
+        client.getOutputStream().write("HelloWorld".getBytes(StandardCharsets.UTF_8));
 
         // Verify echo server to client
         for (char c : "HelloWorld".toCharArray())
@@ -310,7 +310,7 @@ public class SelectChannelEndPointTest
         }
 
         // write then shutdown
-        client.getOutputStream().write("Goodbye Cruel TLS".getBytes("UTF-8"));
+        client.getOutputStream().write("Goodbye Cruel TLS".getBytes(StandardCharsets.UTF_8));
         client.shutdownOutput();
 
         // Verify echo server to client
@@ -343,7 +343,7 @@ public class SelectChannelEndPointTest
 
         // Write 8 and cause block waiting for 10
         _blockAt = 10;
-        clientOutputStream.write("12345678".getBytes("UTF-8"));
+        clientOutputStream.write("12345678".getBytes(StandardCharsets.UTF_8));
         clientOutputStream.flush();
 
         Assert.assertTrue(_lastEndPointLatch.await(1, TimeUnit.SECONDS));
@@ -363,7 +363,7 @@ public class SelectChannelEndPointTest
         }
 
         // write remaining characters
-        clientOutputStream.write("90ABCDEF".getBytes("UTF-8"));
+        clientOutputStream.write("90ABCDEF".getBytes(StandardCharsets.UTF_8));
         clientOutputStream.flush();
 
         // Verify echo server to client
@@ -388,7 +388,7 @@ public class SelectChannelEndPointTest
         _manager.accept(server);
 
         // Write client to server
-        client.getOutputStream().write("HelloWorld".getBytes("UTF-8"));
+        client.getOutputStream().write("HelloWorld".getBytes(StandardCharsets.UTF_8));
 
         // Verify echo server to client
         for (char c : "HelloWorld".toCharArray())
@@ -436,7 +436,7 @@ public class SelectChannelEndPointTest
         _manager.accept(server);
 
         // Write client to server
-        clientOutputStream.write("HelloWorld".getBytes("UTF-8"));
+        clientOutputStream.write("HelloWorld".getBytes(StandardCharsets.UTF_8));
 
         // Verify echo server to client
         for (char c : "HelloWorld".toCharArray())
@@ -452,7 +452,7 @@ public class SelectChannelEndPointTest
 
         // Write 8 and cause block waiting for 10
         _blockAt = 10;
-        clientOutputStream.write("12345678".getBytes("UTF-8"));
+        clientOutputStream.write("12345678".getBytes(StandardCharsets.UTF_8));
         clientOutputStream.flush();
 
         // read until idle shutdown received
@@ -493,8 +493,8 @@ public class SelectChannelEndPointTest
         _manager.accept(server);
         final int writes = 200000;
 
-        final byte[] bytes = "HelloWorld-".getBytes(StringUtil.__UTF8_CHARSET);
-        byte[] count = "0\n".getBytes(StringUtil.__UTF8_CHARSET);
+        final byte[] bytes = "HelloWorld-".getBytes(StandardCharsets.UTF_8);
+        byte[] count = "0\n".getBytes(StandardCharsets.UTF_8);
         BufferedOutputStream out = new BufferedOutputStream(client.getOutputStream());
         final CountDownLatch latch = new CountDownLatch(writes);
         final InputStream in = new BufferedInputStream(client.getInputStream());
@@ -561,7 +561,7 @@ public class SelectChannelEndPointTest
         for (int i = 1; i < writes; i++)
         {
             out.write(bytes);
-            out.write(Integer.toString(i).getBytes(StringUtil.__ISO_8859_1_CHARSET));
+            out.write(Integer.toString(i).getBytes(StandardCharsets.ISO_8859_1));
             out.write('\n');
             if (i % 1000 == 0)
             {
@@ -599,7 +599,7 @@ public class SelectChannelEndPointTest
         // Write client to server
         _writeCount = 10000;
         String data = "Now is the time for all good men to come to the aid of the party";
-        client.getOutputStream().write(data.getBytes("UTF-8"));
+        client.getOutputStream().write(data.getBytes(StandardCharsets.UTF_8));
         BufferedInputStream in = new BufferedInputStream(client.getInputStream());
 
         int byteNum = 0;

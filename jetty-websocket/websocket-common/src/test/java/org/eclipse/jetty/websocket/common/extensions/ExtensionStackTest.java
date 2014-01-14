@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -32,12 +31,17 @@ import org.eclipse.jetty.websocket.api.extensions.Extension;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.common.extensions.identity.IdentityExtension;
+import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPool;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class ExtensionStackTest
 {
     private static final Logger LOG = Log.getLogger(ExtensionStackTest.class);
+    
+    @Rule
+    public LeakTrackingBufferPool bufferPool = new LeakTrackingBufferPool("Test",new ArrayByteBufferPool());
 
     @SuppressWarnings("unchecked")
     private <T> T assertIsExtension(String msg, Object obj, Class<T> clazz)
@@ -53,7 +57,6 @@ public class ExtensionStackTest
     private ExtensionStack createExtensionStack()
     {
         WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
-        ByteBufferPool bufferPool = new ArrayByteBufferPool();
         ExtensionFactory factory = new WebSocketExtensionFactory(policy,bufferPool);
         return new ExtensionStack(factory);
     }
@@ -166,6 +169,22 @@ public class ExtensionStackTest
     {
         ExtensionStack stack = createExtensionStack();
         // Shouldn't cause a NPE.
+        LOG.debug("Shouldn't cause a NPE: {}",stack.toString());
+    }
+    
+    @Test
+    public void testNegotiateChrome32()
+    {
+        ExtensionStack stack = createExtensionStack();
+        
+        String chromeRequest = "permessage-deflate; client_max_window_bits, x-webkit-deflate-frame";
+        List<ExtensionConfig> requestedConfigs = ExtensionConfig.parseList(chromeRequest);
+        stack.negotiate(requestedConfigs);
+        
+        List<ExtensionConfig> negotiated = stack.getNegotiatedExtensions();
+        String response = ExtensionConfig.toHeaderValue(negotiated);
+        
+        Assert.assertThat("Negotiated Extensions", response, is("permessage-deflate"));
         LOG.debug("Shouldn't cause a NPE: {}",stack.toString());
     }
 }

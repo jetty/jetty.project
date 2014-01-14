@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.client.ssl;
 
+import static org.hamcrest.Matchers.nullValue;
+
 import java.io.BufferedReader;
 import java.io.EOFException;
 import java.io.File;
@@ -28,6 +30,7 @@ import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -39,6 +42,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSocket;
@@ -48,6 +52,7 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.client.ssl.SslBytesTest.TLSRecord.Type;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -164,7 +169,7 @@ public class SslBytesServerTest extends SslBytesTest
             }
         };
 
-        ServerConnector connector = new ServerConnector(server, sslFactory, httpFactory)
+        ServerConnector connector = new ServerConnector(server, null,null,null,1,1,sslFactory, httpFactory)
         {
             @Override
             protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
@@ -470,7 +475,14 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Socket close
         record = proxy.readFromServer();
-        Assert.assertNull(String.valueOf(record), record);
+        if (record!=null)
+        {
+            Assert.assertEquals(record.getType(),Type.ALERT);
+            
+            // Now should be a raw close
+            record = proxy.readFromServer();
+            Assert.assertNull(String.valueOf(record), record);
+        }
     }
 
     @Test
@@ -575,7 +587,7 @@ public class SslBytesServerTest extends SslBytesTest
                 clientOutput.write(("" +
                         "GET / HTTP/1.1\r\n" +
                         "Host: localhost\r\n" +
-                        "\r\n").getBytes("UTF-8"));
+                        "\r\n").getBytes(StandardCharsets.UTF_8));
                 clientOutput.flush();
                 return null;
             }
@@ -617,7 +629,7 @@ public class SslBytesServerTest extends SslBytesTest
                 clientOutput.write(("" +
                         "GET / HTTP/1.1\r\n" +
                         "Host: localhost\r\n" +
-                        "\r\n").getBytes("UTF-8"));
+                        "\r\n").getBytes(StandardCharsets.UTF_8));
                 clientOutput.flush();
                 return null;
             }
@@ -633,7 +645,7 @@ public class SslBytesServerTest extends SslBytesTest
         Assert.assertEquals(TLSRecord.Type.APPLICATION, record.getType());
         proxy.flushToClient(record);
 
-        BufferedReader reader = new BufferedReader(new InputStreamReader(client.getInputStream(), "UTF-8"));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(client.getInputStream(), StandardCharsets.UTF_8));
         String line = reader.readLine();
         Assert.assertNotNull(line);
         Assert.assertTrue(line.startsWith("HTTP/1.1 200 "));
@@ -710,7 +722,7 @@ public class SslBytesServerTest extends SslBytesTest
                 clientOutput.write(("" +
                         "GET / HTTP/1.1\r\n" +
                         "Host: localhost\r\n" +
-                        "\r\n").getBytes("UTF-8"));
+                        "\r\n").getBytes(StandardCharsets.UTF_8));
                 clientOutput.flush();
                 return null;
             }
@@ -727,7 +739,7 @@ public class SslBytesServerTest extends SslBytesTest
         Assert.assertEquals(TLSRecord.Type.APPLICATION, record.getType());
         proxy.flushToClient(record);
 
-        BufferedReader reader = new BufferedReader(new InputStreamReader(client.getInputStream(), "UTF-8"));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(client.getInputStream(), StandardCharsets.UTF_8));
         String line = reader.readLine();
         Assert.assertNotNull(line);
         Assert.assertTrue(line.startsWith("HTTP/1.1 200 "));
@@ -758,7 +770,15 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Socket close
         record = proxy.readFromServer();
-        Assert.assertNull(String.valueOf(record), record);
+        // Raw close or alert
+        if (record!=null)
+        {
+            Assert.assertEquals(record.getType(),Type.ALERT);
+            
+            // Now should be a raw close
+            record = proxy.readFromServer();
+            Assert.assertNull(String.valueOf(record), record);
+        }
     }
 
     @Test
@@ -782,7 +802,7 @@ public class SslBytesServerTest extends SslBytesTest
                 clientOutput.write(("" +
                         "GET / HTTP/1.1\r\n" +
                         "Host: localhost\r\n" +
-                        "\r\n").getBytes("UTF-8"));
+                        "\r\n").getBytes(StandardCharsets.UTF_8));
                 clientOutput.flush();
                 return null;
             }
@@ -813,7 +833,14 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Socket close
         record = proxy.readFromServer();
-        Assert.assertNull(record);
+        if (record!=null)
+        {
+            Assert.assertEquals(record.getType(),Type.ALERT);
+            
+            // Now should be a raw close
+            record = proxy.readFromServer();
+            Assert.assertNull(String.valueOf(record), record);
+        }
 
         // Check that we did not spin
         TimeUnit.MILLISECONDS.sleep(500);
@@ -850,7 +877,7 @@ public class SslBytesServerTest extends SslBytesTest
                 clientOutput.write(("" +
                         "GET / HTTP/1.1\r\n" +
                         "Host: localhost\r\n" +
-                        "\r\n").getBytes("UTF-8"));
+                        "\r\n").getBytes(StandardCharsets.UTF_8));
                 clientOutput.flush();
                 return null;
             }
@@ -881,7 +908,14 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Socket close
         record = proxy.readFromServer();
-        Assert.assertNull(String.valueOf(record), record);
+        if (record!=null)
+        {
+            Assert.assertEquals(record.getType(),Type.ALERT);
+            
+            // Now should be a raw close
+            record = proxy.readFromServer();
+            Assert.assertNull(String.valueOf(record), record);
+        }
 
         // Check that we did not spin
         TimeUnit.MILLISECONDS.sleep(500);
@@ -913,7 +947,7 @@ public class SslBytesServerTest extends SslBytesTest
                 clientOutput.write(("" +
                         "GET / HTTP/1.1\r\n" +
                         "Host: localhost\r\n" +
-                        "\r\n").getBytes("UTF-8"));
+                        "\r\n").getBytes(StandardCharsets.UTF_8));
                 clientOutput.flush();
                 return null;
             }
@@ -933,9 +967,17 @@ public class SslBytesServerTest extends SslBytesTest
         // Close the raw socket, this generates a truncation attack
         proxy.flushToServer(null);
 
-        // Expect raw close from server
+        // Expect raw close from server OR ALERT
         record = proxy.readFromServer();
-        Assert.assertNull(String.valueOf(record), record);
+        // TODO check that this is OK?
+        if (record!=null)
+        {
+            Assert.assertEquals(record.getType(),Type.ALERT);
+            
+            // Now should be a raw close
+            record = proxy.readFromServer();
+            Assert.assertNull(String.valueOf(record), record);
+        }
 
         // Check that we did not spin
         TimeUnit.MILLISECONDS.sleep(500);
@@ -964,7 +1006,7 @@ public class SslBytesServerTest extends SslBytesTest
                 clientOutput.write(("" +
                         "GET / HTTP/1.1\r\n" +
                         "Host: localhost\r\n" +
-                        "\r\n").getBytes("UTF-8"));
+                        "\r\n").getBytes(StandardCharsets.UTF_8));
                 clientOutput.flush();
                 return null;
             }
@@ -985,7 +1027,14 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Expect raw close from server
         record = proxy.readFromServer();
-        Assert.assertNull(String.valueOf(record), record);
+        if (record!=null)
+        {
+            Assert.assertEquals(record.getType(),Type.ALERT);
+            
+            // Now should be a raw close
+            record = proxy.readFromServer();
+            Assert.assertNull(String.valueOf(record), record);
+        }
 
         // Check that we did not spin
         TimeUnit.MILLISECONDS.sleep(500);
@@ -999,6 +1048,9 @@ public class SslBytesServerTest extends SslBytesTest
     @Test
     public void testRequestWithBigContentWriteBlockedThenReset() throws Exception
     {
+    	// Don't run on Windows (buggy JVM)
+    	Assume.assumeTrue(!OS.IS_WINDOWS);
+    	
         final SSLSocket client = newClient();
 
         SimpleProxy.AutomaticFlow automaticProxyFlow = proxy.startAutomaticFlow();
@@ -1007,7 +1059,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         byte[] data = new byte[128 * 1024];
         Arrays.fill(data, (byte)'X');
-        final String content = new String(data, "UTF-8");
+        final String content = new String(data, StandardCharsets.UTF_8);
         Future<Object> request = threadPool.submit(new Callable<Object>()
         {
             @Override
@@ -1019,7 +1071,7 @@ public class SslBytesServerTest extends SslBytesTest
                         "Host: localhost\r\n" +
                         "Content-Length: " + content.length() + "\r\n" +
                         "\r\n" +
-                        content).getBytes("UTF-8"));
+                        content).getBytes(StandardCharsets.UTF_8));
                 clientOutput.flush();
                 return null;
             }
@@ -1057,7 +1109,10 @@ public class SslBytesServerTest extends SslBytesTest
     @Test
     public void testRequestWithBigContentReadBlockedThenReset() throws Exception
     {
-        final SSLSocket client = newClient();
+    	// Don't run on Windows (buggy JVM)
+    	Assume.assumeTrue(!OS.IS_WINDOWS);
+    	
+    	final SSLSocket client = newClient();
 
         SimpleProxy.AutomaticFlow automaticProxyFlow = proxy.startAutomaticFlow();
         client.startHandshake();
@@ -1065,7 +1120,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         byte[] data = new byte[128 * 1024];
         Arrays.fill(data, (byte)'X');
-        final String content = new String(data, "UTF-8");
+        final String content = new String(data, StandardCharsets.UTF_8);
         Future<Object> request = threadPool.submit(new Callable<Object>()
         {
             @Override
@@ -1077,7 +1132,7 @@ public class SslBytesServerTest extends SslBytesTest
                         "Host: localhost\r\n" +
                         "Content-Length: " + content.length() + "\r\n" +
                         "\r\n" +
-                        content).getBytes("UTF-8"));
+                        content).getBytes(StandardCharsets.UTF_8));
                 clientOutput.flush();
                 return null;
             }
@@ -1139,7 +1194,7 @@ public class SslBytesServerTest extends SslBytesTest
                 clientOutput.write(("" +
                         "GET / HTTP/1.1\r\n" +
                         "Host: localhost\r\n" +
-                        "\r\n").getBytes("UTF-8"));
+                        "\r\n").getBytes(StandardCharsets.UTF_8));
                 clientOutput.flush();
                 return null;
             }
@@ -1179,7 +1234,14 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Socket close
         record = proxy.readFromServer();
-        Assert.assertNull(record);
+        if (record!=null)
+        {
+            Assert.assertEquals(record.getType(),Type.ALERT);
+            
+            // Now should be a raw close
+            record = proxy.readFromServer();
+            Assert.assertNull(String.valueOf(record), record);
+        }
 
         // Check that we did not spin
         TimeUnit.MILLISECONDS.sleep(500);
@@ -1211,7 +1273,7 @@ public class SslBytesServerTest extends SslBytesTest
                         "Content-Type: text/plain\r\n" +
                         "Content-Length: " + content.length() + "\r\n" +
                         "\r\n" +
-                        content).getBytes("UTF-8"));
+                        content).getBytes(StandardCharsets.UTF_8));
                 clientOutput.flush();
                 return null;
             }
@@ -1232,7 +1294,7 @@ public class SslBytesServerTest extends SslBytesTest
         Assert.assertEquals(TLSRecord.Type.APPLICATION, record.getType());
         proxy.flushToClient(record);
 
-        BufferedReader reader = new BufferedReader(new InputStreamReader(client.getInputStream(), "UTF-8"));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(client.getInputStream(), StandardCharsets.UTF_8));
         String line = reader.readLine();
         Assert.assertNotNull(line);
         Assert.assertTrue(line.startsWith("HTTP/1.1 200 "));
@@ -1263,7 +1325,7 @@ public class SslBytesServerTest extends SslBytesTest
         // Use a content that is larger than the TLS record which is 2^14 (around 16k)
         byte[] data = new byte[128 * 1024];
         Arrays.fill(data, (byte)'X');
-        final String content = new String(data, "UTF-8");
+        final String content = new String(data, StandardCharsets.UTF_8);
 
         Future<Object> request = threadPool.submit(new Callable<Object>()
         {
@@ -1277,7 +1339,7 @@ public class SslBytesServerTest extends SslBytesTest
                         "Content-Type: text/plain\r\n" +
                         "Content-Length: " + content.length() + "\r\n" +
                         "\r\n" +
-                        content).getBytes("UTF-8"));
+                        content).getBytes(StandardCharsets.UTF_8));
                 clientOutput.flush();
                 return null;
             }
@@ -1309,7 +1371,7 @@ public class SslBytesServerTest extends SslBytesTest
         Assert.assertEquals(TLSRecord.Type.APPLICATION, record.getType());
         proxy.flushToClient(record);
 
-        BufferedReader reader = new BufferedReader(new InputStreamReader(client.getInputStream(), "UTF-8"));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(client.getInputStream(), StandardCharsets.UTF_8));
         String line = reader.readLine();
         Assert.assertNotNull(line);
         Assert.assertTrue(line.startsWith("HTTP/1.1 200 "));
@@ -1344,10 +1406,10 @@ public class SslBytesServerTest extends SslBytesTest
 
         byte[] data1 = new byte[1024];
         Arrays.fill(data1, (byte)'X');
-        String content1 = new String(data1, "UTF-8");
+        String content1 = new String(data1, StandardCharsets.UTF_8);
         byte[] data2 = new byte[1024];
         Arrays.fill(data2, (byte)'Y');
-        final String content2 = new String(data2, "UTF-8");
+        final String content2 = new String(data2, StandardCharsets.UTF_8);
 
         // Write only part of the body
         automaticProxyFlow = proxy.startAutomaticFlow();
@@ -1357,7 +1419,7 @@ public class SslBytesServerTest extends SslBytesTest
                 "Content-Type: text/plain\r\n" +
                 "Content-Length: " + (content1.length() + content2.length()) + "\r\n" +
                 "\r\n" +
-                content1).getBytes("UTF-8"));
+                content1).getBytes(StandardCharsets.UTF_8));
         clientOutput.flush();
         Assert.assertTrue(automaticProxyFlow.stop(5, TimeUnit.SECONDS));
 
@@ -1391,7 +1453,7 @@ public class SslBytesServerTest extends SslBytesTest
             @Override
             public Object call() throws Exception
             {
-                clientOutput.write(content2.getBytes("UTF-8"));
+                clientOutput.write(content2.getBytes(StandardCharsets.UTF_8));
                 clientOutput.flush();
                 return null;
             }
@@ -1435,10 +1497,10 @@ public class SslBytesServerTest extends SslBytesTest
         // Use a content that is larger than the TLS record which is 2^14 (around 16k)
         byte[] data1 = new byte[80 * 1024];
         Arrays.fill(data1, (byte)'X');
-        String content1 = new String(data1, "UTF-8");
+        String content1 = new String(data1, StandardCharsets.UTF_8);
         byte[] data2 = new byte[48 * 1024];
         Arrays.fill(data2, (byte)'Y');
-        final String content2 = new String(data2, "UTF-8");
+        final String content2 = new String(data2, StandardCharsets.UTF_8);
 
         // Write only part of the body
         automaticProxyFlow = proxy.startAutomaticFlow();
@@ -1448,7 +1510,7 @@ public class SslBytesServerTest extends SslBytesTest
                 "Content-Type: text/plain\r\n" +
                 "Content-Length: " + (content1.length() + content2.length()) + "\r\n" +
                 "\r\n" +
-                content1).getBytes("UTF-8"));
+                content1).getBytes(StandardCharsets.UTF_8));
         clientOutput.flush();
         Assert.assertTrue(automaticProxyFlow.stop(5, TimeUnit.SECONDS));
 
@@ -1513,7 +1575,7 @@ public class SslBytesServerTest extends SslBytesTest
             @Override
             public Object call() throws Exception
             {
-                clientOutput.write(content2.getBytes("UTF-8"));
+                clientOutput.write(content2.getBytes(StandardCharsets.UTF_8));
                 clientOutput.flush();
                 return null;
             }
@@ -1535,7 +1597,7 @@ public class SslBytesServerTest extends SslBytesTest
         Assert.assertEquals(TLSRecord.Type.APPLICATION, record.getType());
         proxy.flushToClient(record);
 
-        BufferedReader reader = new BufferedReader(new InputStreamReader(client.getInputStream(), "UTF-8"));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(client.getInputStream(), StandardCharsets.UTF_8));
         String line = reader.readLine();
         Assert.assertNotNull(line);
         Assert.assertTrue(line.startsWith("HTTP/1.1 200 "));
@@ -1569,10 +1631,10 @@ public class SslBytesServerTest extends SslBytesTest
         // Use a content that is larger than the TLS record which is 2^14 (around 16k)
         byte[] data1 = new byte[80 * 1024];
         Arrays.fill(data1, (byte)'X');
-        String content1 = new String(data1, "UTF-8");
+        String content1 = new String(data1, StandardCharsets.UTF_8);
         byte[] data2 = new byte[48 * 1024];
         Arrays.fill(data2, (byte)'Y');
-        final String content2 = new String(data2, "UTF-8");
+        final String content2 = new String(data2, StandardCharsets.UTF_8);
 
         // Write only part of the body
         automaticProxyFlow = proxy.startAutomaticFlow();
@@ -1582,7 +1644,7 @@ public class SslBytesServerTest extends SslBytesTest
                 "Content-Type: text/plain\r\n" +
                 "Content-Length: " + (content1.length() + content2.length()) + "\r\n" +
                 "\r\n" +
-                content1).getBytes("UTF-8"));
+                content1).getBytes(StandardCharsets.UTF_8));
         clientOutput.flush();
         Assert.assertTrue(automaticProxyFlow.stop(5, TimeUnit.SECONDS));
 
@@ -1665,7 +1727,7 @@ public class SslBytesServerTest extends SslBytesTest
             @Override
             public Object call() throws Exception
             {
-                clientOutput.write(content2.getBytes("UTF-8"));
+                clientOutput.write(content2.getBytes(StandardCharsets.UTF_8));
                 clientOutput.flush();
                 return null;
             }
@@ -1697,7 +1759,7 @@ public class SslBytesServerTest extends SslBytesTest
         Assert.assertEquals(TLSRecord.Type.APPLICATION, record.getType());
         proxy.flushToClient(record);
 
-        BufferedReader reader = new BufferedReader(new InputStreamReader(client.getInputStream(), "UTF-8"));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(client.getInputStream(), StandardCharsets.UTF_8));
         String line = reader.readLine();
         Assert.assertNotNull(line);
         Assert.assertTrue(line.startsWith("HTTP/1.1 200 "));
@@ -1728,7 +1790,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         byte[] data = new byte[3 * 1024];
         Arrays.fill(data, (byte)'Y');
-        String content = new String(data, "UTF-8");
+        String content = new String(data, StandardCharsets.UTF_8);
         automaticProxyFlow = proxy.startAutomaticFlow();
         clientOutput.write(("" +
                 "POST / HTTP/1.1\r\n" +
@@ -1737,10 +1799,10 @@ public class SslBytesServerTest extends SslBytesTest
                 "Content-Length: " + content.length() + "\r\n" +
                 "Connection: close\r\n" +
                 "\r\n" +
-                content).getBytes("UTF-8"));
+                content).getBytes(StandardCharsets.UTF_8));
         clientOutput.flush();
 
-        BufferedReader reader = new BufferedReader(new InputStreamReader(client.getInputStream(), "UTF-8"));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(client.getInputStream(), StandardCharsets.UTF_8));
         String line = reader.readLine();
         Assert.assertNotNull(line);
         Assert.assertTrue(line.startsWith("HTTP/1.1 200 "));
@@ -1786,7 +1848,7 @@ public class SslBytesServerTest extends SslBytesTest
         });
 
         // Instead of passing the Client Hello, we simulate plain text was passed in
-        proxy.flushToServer(0, "GET / HTTP/1.1\r\n".getBytes("UTF-8"));
+        proxy.flushToServer(0, "GET / HTTP/1.1\r\n".getBytes(StandardCharsets.UTF_8));
 
         // We expect that the server closes the connection immediately
         TLSRecord record = proxy.readFromServer();
@@ -1820,7 +1882,7 @@ public class SslBytesServerTest extends SslBytesTest
                     clientOutput.write(("" +
                             "GET / HTTP/1.1\r\n" +
                             "Host: localhost\r\n" +
-                            "\r\n").getBytes("UTF-8"));
+                            "\r\n").getBytes(StandardCharsets.UTF_8));
                     clientOutput.flush();
                     latch.countDown();
                 }
@@ -1903,6 +1965,11 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Socket close
         record = proxy.readFromServer();
-        Assert.assertNull(String.valueOf(record), record);
+        if (record!=null)
+        {
+            Assert.assertEquals(record.getType(),Type.ALERT);
+            record = proxy.readFromServer();
+        }
+        Assert.assertThat(record,nullValue());
     }
 }

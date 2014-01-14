@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 
 import javax.net.ssl.SSLContext;
 import javax.servlet.ServletException;
@@ -105,7 +106,7 @@ public class SSLCloseTest
                 // data=data+data+data+data+data+data+data+data+data+data+data+data+data;
                 // data=data+data+data+data+data+data+data+data+data+data+data+data+data;
                 data=data+data+data+data;
-                byte[] bytes=data.getBytes("UTF-8");
+                byte[] bytes=data.getBytes(StandardCharsets.UTF_8);
 
                 for (int i=0;i<2;i++)
                 {

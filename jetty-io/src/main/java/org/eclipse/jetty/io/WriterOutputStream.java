@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,6 +21,7 @@ package org.eclipse.jetty.io;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Writer;
+import java.nio.charset.Charset;
 
 
 /* ------------------------------------------------------------ */
@@ -33,14 +34,14 @@ import java.io.Writer;
 public class WriterOutputStream extends OutputStream
 {
     protected final Writer _writer;
-    protected final String _encoding;
+    protected final Charset _encoding;
     private final byte[] _buf=new byte[1];
     
     /* ------------------------------------------------------------ */
     public WriterOutputStream(Writer writer, String encoding)
     {
         _writer=writer;
-        _encoding=encoding;
+        _encoding=encoding==null?null:Charset.forName(encoding);
     }
     
     /* ------------------------------------------------------------ */

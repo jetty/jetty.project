@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -102,7 +102,8 @@ public class DeferredContentProvider implements AsyncContentProvider, Closeable
     public void setListener(Listener listener)
     {
         if (!this.listener.compareAndSet(null, listener))
-            throw new IllegalStateException();
+            throw new IllegalStateException(String.format("The same %s instance cannot be used in multiple requests",
+                    AsyncContentProvider.class.getName()));
     }
 
     @Override

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -87,8 +87,6 @@ public class QueueBenchmarkTest
         final int iterations = 16 * 1024 * 1024;
 
         final List<Queue<Runnable>> queues = new ArrayList<>();
-        queues.add(new ConcurrentArrayBlockingQueue.Unbounded<Runnable>());
-        queues.add(new ConcurrentArrayBlockingQueue.Bounded<Runnable>(iterations * writers));
         queues.add(new LinkedBlockingQueue<Runnable>());
         queues.add(new ArrayBlockingQueue<Runnable>(iterations * writers));
         queues.add(new BlockingArrayQueue<Runnable>(iterations * writers));

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -34,7 +34,10 @@ public abstract class ExtensionFactory implements Iterable<Class<? extends Exten
         availableExtensions = new HashMap<>();
         for (Extension ext : extensionLoader)
         {
-            availableExtensions.put(ext.getName(),ext.getClass());
+            if (ext != null)
+            {
+                availableExtensions.put(ext.getName(),ext.getClass());
+            }
         }
     }
 

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,7 +24,10 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.EnumSet;
 
 import javax.servlet.DispatcherType;
@@ -112,35 +115,37 @@ public abstract class AbstractDoSFilterTest
 
     private String doRequests(String loopRequests, int loops, long pauseBetweenLoops, long pauseBeforeLast, String lastRequest) throws Exception
     {
-        Socket socket = new Socket(_host, _port);
-        socket.setSoTimeout(30000);
-
-        for (int i=loops;i-->0;)
+        try (Socket socket = new Socket(_host,_port))
         {
-            socket.getOutputStream().write(loopRequests.getBytes("UTF-8"));
-            socket.getOutputStream().flush();
-            if (i>0 && pauseBetweenLoops>0)
-                Thread.sleep(pauseBetweenLoops);
-        }
-        if (pauseBeforeLast>0)
-            Thread.sleep(pauseBeforeLast);
-        socket.getOutputStream().write(lastRequest.getBytes("UTF-8"));
-        socket.getOutputStream().flush();
+            socket.setSoTimeout(30000);
 
+            OutputStream out = socket.getOutputStream();
 
-        String response;
-        if (loopRequests.contains("/unresponsive"))
-        {
-            // don't read in anything, forcing the request to time out
-            Thread.sleep(_requestMaxTime * 2);
-            response = IO.toString(socket.getInputStream(),"UTF-8");
+            for (int i = loops; i-- > 0;)
+            {
+                out.write(loopRequests.getBytes(StandardCharsets.UTF_8));
+                out.flush();
+                if (i > 0 && pauseBetweenLoops > 0)
+                {
+                    Thread.sleep(pauseBetweenLoops);
+                }
+            }
+            if (pauseBeforeLast > 0)
+            {
+                Thread.sleep(pauseBeforeLast);
+            }
+            out.write(lastRequest.getBytes(StandardCharsets.UTF_8));
+            out.flush();
+
+            InputStream in = socket.getInputStream();
+            if (loopRequests.contains("/unresponsive"))
+            {
+                // don't read in anything, forcing the request to time out
+                Thread.sleep(_requestMaxTime * 2);
+            }
+            String response = IO.toString(in,StandardCharsets.UTF_8);
+            return response;
         }
-        else
-        {
-            response = IO.toString(socket.getInputStream(),"UTF-8");
-        }
-        socket.close();
-        return response;
     }
 
     private int count(String responses,String substring)

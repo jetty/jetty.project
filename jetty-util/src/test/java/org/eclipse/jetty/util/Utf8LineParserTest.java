@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -32,7 +32,7 @@ public class Utf8LineParserTest
 {
     private void appendUtf8(ByteBuffer buf, String line)
     {
-        buf.put(ByteBuffer.wrap(StringUtil.getBytes(line,StringUtil.__UTF8)));
+        buf.put(ByteBuffer.wrap(StringUtil.getUtf8Bytes(line)));
     }
 
     private void assertEquals(List<String> expected, List<String> actual)

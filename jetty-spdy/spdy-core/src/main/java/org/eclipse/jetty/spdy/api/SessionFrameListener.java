@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -115,9 +115,10 @@ public interface SessionFrameListener extends EventListener
      * SPDY session.</p>
      * <p>Examples of such conditions are invalid frames received, corrupted headers compression state, etc.</p>
      *
+     * @param session the session
      * @param x the exception that caused the event processing failure
      */
-    public void onException(Throwable x);
+    public void onFailure(Session session, Throwable x);
 
 
     /**
@@ -154,7 +155,7 @@ public interface SessionFrameListener extends EventListener
         }
 
         @Override
-        public void onException(Throwable x)
+        public void onFailure(Session session, Throwable x)
         {
             logger.info("", x);
         }

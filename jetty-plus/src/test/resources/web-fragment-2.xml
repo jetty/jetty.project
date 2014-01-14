@@ -9,13 +9,13 @@
   <name>Fragment2</name>
   
   <ordering>
-    <after>others</after>
+    <after><others/></after>
   </ordering>
 
   <resource-ref>
     <res-ref-name>jdbc/mydatasource</res-ref-name>
     <res-type>javax.sql.DataSource</res-type>
-    <res-auth>User</res-auth>
+    <res-auth>Application</res-auth>
 <!--
     <injection-target>
       <injection-target-class>com.acme.Bar</injection-target-class>

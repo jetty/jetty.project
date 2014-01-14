@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,8 +19,6 @@
 package org.eclipse.jetty.embedded;
 
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
@@ -74,7 +72,6 @@ public class SecuredHelloHandler
         security.setConstraintMappings(Collections.singletonList(mapping));
         security.setAuthenticator(new BasicAuthenticator());
         security.setLoginService(loginService);
-        security.setStrict(false);
 
         // The Hello Handler is the handler we are securing so we create one, and then set it as the handler on the
         // security handler to complain the simple handler chain.

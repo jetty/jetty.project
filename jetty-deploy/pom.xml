@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.0.7-SNAPSHOT</version>
+    <version>9.1.2-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-deploy</artifactId>
@@ -25,7 +25,7 @@
             </goals>
             <configuration>
               <instructions>
-                <Import-Package>org.eclipse.jetty.jmx.*;version="9.0";resolution:=optional,*</Import-Package>
+                <Import-Package>org.eclipse.jetty.jmx.*;version="9.1";resolution:=optional,*</Import-Package>
                 <_nouses>true</_nouses>
               </instructions>
             </configuration>
@@ -92,12 +92,5 @@
       <version>${project.version}</version>
       <optional>true</optional>
     </dependency>
-    <!--
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-websocket</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency> -->
   </dependencies>
 </project>

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -31,9 +31,9 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpContent.ResourceAsHttpContent;
-import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -284,26 +284,9 @@ public class ResourceCache
     {
         try
         {
-            int len=(int)resource.length();
-            if (len<0)
-            {
-                LOG.warn("invalid resource: "+String.valueOf(resource)+" "+len);
-                return null;
-            }
-            ByteBuffer buffer = BufferUtil.allocate(len);
-            int pos=BufferUtil.flipToFill(buffer);
-            if (resource.getFile()!=null)
-                BufferUtil.readFrom(resource.getFile(),buffer);
-            else
-            {
-                InputStream is = resource.getInputStream();
-                BufferUtil.readFrom(is,len,buffer);
-                is.close();
-            }
-            BufferUtil.flipToFlush(buffer,pos);
-            return buffer;
+            return BufferUtil.toBuffer(resource,true);
         }
-        catch(IOException e)
+        catch(IOException|IllegalArgumentException e)
         {
             LOG.warn(e);
             return null;
@@ -316,30 +299,11 @@ public class ResourceCache
         try
         {
             if (_useFileMappedBuffer && resource.getFile()!=null) 
-                return BufferUtil.toBuffer(resource.getFile());
+                return BufferUtil.toMappedBuffer(resource.getFile());
             
-            int len=(int)resource.length();
-            if (len<0)
-            {
-                LOG.warn("invalid resource: "+String.valueOf(resource)+" "+len);
-                return null;
-            }
-            ByteBuffer buffer = BufferUtil.allocateDirect(len);
-
-            int pos=BufferUtil.flipToFill(buffer);
-            if (resource.getFile()!=null)
-                BufferUtil.readFrom(resource.getFile(),buffer);
-            else
-            {
-                InputStream is = resource.getInputStream();
-                BufferUtil.readFrom(is,len,buffer);
-                is.close();
-            }
-            BufferUtil.flipToFlush(buffer,pos);
-            
-            return buffer;
+            return BufferUtil.toBuffer(resource,true);
         }
-        catch(IOException e)
+        catch(IOException|IllegalArgumentException e)
         {
             LOG.warn(e);
             return null;
@@ -381,7 +345,7 @@ public class ResourceCache
             _contentType=(mimeType==null?null:BufferUtil.toBuffer(mimeType));
             boolean exists=resource.exists();
             _lastModified=exists?resource.lastModified():-1;
-            _lastModifiedBytes=_lastModified<0?null:BufferUtil.toBuffer(HttpFields.formatDate(_lastModified));
+            _lastModifiedBytes=_lastModified<0?null:BufferUtil.toBuffer(DateGenerator.formatDate(_lastModified));
             
             _length=exists?(int)resource.length():0;
             _cachedSize.addAndGet(_length);

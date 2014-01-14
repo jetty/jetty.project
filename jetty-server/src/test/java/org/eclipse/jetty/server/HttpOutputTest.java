@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,15 +29,19 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Arrays;
 
+import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
+import javax.servlet.WriteListener;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.junit.Assert;
+
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.hamcrest.Matchers;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -80,6 +84,16 @@ public class HttpOutputTest
         String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response,containsString("HTTP/1.1 200 OK"));
     }
+    
+
+
+    @Test
+    public void testByteUnknown() throws Exception
+    {
+        String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
+        assertThat(response,containsString("HTTP/1.1 200 OK"));
+    }
+    
     
     @Test
     public void testSendArray() throws Exception
@@ -142,9 +156,9 @@ public class HttpOutputTest
         
         assertThat(response,containsString("HTTP/1.1 200 OK"));
         assertThat(response,containsString("Transfer-Encoding: chunked"));
+        assertThat(response,containsString("400\tThis is a big file"));
         assertThat(response,containsString("\r\n0\r\n"));
     }
-    
 
     @Test
     public void testSendChannelSimple() throws Exception
@@ -164,7 +178,31 @@ public class HttpOutputTest
         String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response,containsString("HTTP/1.1 200 OK"));
         assertThat(response,Matchers.not(containsString("Content-Length")));
+        assertThat(response,containsString("400\tThis is a big file"));
     }
+    
+    @Test
+    public void testSendBigDirect() throws Exception
+    {
+        Resource big = Resource.newClassPathResource("simple/big.txt");
+        _handler._content=BufferUtil.toBuffer(big,true);
+        String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
+        assertThat(response,containsString("HTTP/1.1 200 OK"));
+        assertThat(response,containsString("Content-Length"));
+        assertThat(response,containsString("400\tThis is a big file"));
+    }
+    
+    @Test
+    public void testSendBigInDirect() throws Exception
+    {
+        Resource big = Resource.newClassPathResource("simple/big.txt");
+        _handler._content=BufferUtil.toBuffer(big,false);
+        String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
+        assertThat(response,containsString("HTTP/1.1 200 OK"));
+        assertThat(response,containsString("Content-Length"));
+        assertThat(response,containsString("400\tThis is a big file"));
+    }
+    
     
     @Test
     public void testSendChannelBigChunked() throws Exception
@@ -173,7 +211,6 @@ public class HttpOutputTest
         final ReadableByteChannel channel = big.getReadableByteChannel();
         _handler._contentChannel=new ReadableByteChannel()
         {
-            
             @Override
             public boolean isOpen()
             {
@@ -213,9 +250,309 @@ public class HttpOutputTest
         assertThat(response,containsString("Transfer-Encoding: chunked"));
         assertThat(response,containsString("\r\n0\r\n"));
     }
+
+    @Test
+    public void testWriteByte() throws Exception
+    {
+        final Resource big = Resource.newClassPathResource("simple/big.txt");
+        _handler._writeLengthIfKnown=false;
+        _handler._content=BufferUtil.toBuffer(big,false);
+        _handler._arrayBuffer=new byte[1];
+        
+        String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
+        assertThat(response,containsString("HTTP/1.1 200 OK"));
+        assertThat(response,Matchers.not(containsString("Content-Length")));
+        assertThat(response,containsString("400\tThis is a big file"));
+    }
+
+    @Test
+    public void testWriteSmall() throws Exception
+    {
+        final Resource big = Resource.newClassPathResource("simple/big.txt");
+        _handler._writeLengthIfKnown=false;
+        _handler._content=BufferUtil.toBuffer(big,false);
+        _handler._arrayBuffer=new byte[8];
+        
+        String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
+        assertThat(response,containsString("HTTP/1.1 200 OK"));
+        assertThat(response,Matchers.not(containsString("Content-Length")));
+        assertThat(response,containsString("400\tThis is a big file"));
+    }
+    
+    @Test
+    public void testWriteMed() throws Exception
+    {
+        final Resource big = Resource.newClassPathResource("simple/big.txt");
+        _handler._writeLengthIfKnown=false;
+        _handler._content=BufferUtil.toBuffer(big,false);
+        _handler._arrayBuffer=new byte[4000];
+        
+        String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
+        assertThat(response,containsString("HTTP/1.1 200 OK"));
+        assertThat(response,Matchers.not(containsString("Content-Length")));
+        assertThat(response,containsString("400\tThis is a big file"));
+    }
+    
+    @Test
+    public void testWriteLarge() throws Exception
+    {
+        final Resource big = Resource.newClassPathResource("simple/big.txt");
+        _handler._writeLengthIfKnown=false;
+        _handler._content=BufferUtil.toBuffer(big,false);
+        _handler._arrayBuffer=new byte[8192];
+        
+        String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
+        assertThat(response,containsString("HTTP/1.1 200 OK"));
+        assertThat(response,Matchers.not(containsString("Content-Length")));
+        assertThat(response,containsString("400\tThis is a big file"));
+    }
+
+    @Test
+    public void testWriteByteKnown() throws Exception
+    {
+        final Resource big = Resource.newClassPathResource("simple/big.txt");
+        _handler._writeLengthIfKnown=true;
+        _handler._content=BufferUtil.toBuffer(big,false);
+        _handler._arrayBuffer=new byte[1];
+        
+        String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
+        assertThat(response,containsString("HTTP/1.1 200 OK"));
+        assertThat(response,containsString("Content-Length"));
+        assertThat(response,containsString("400\tThis is a big file"));
+    }
+
+    @Test
+    public void testWriteSmallKnown() throws Exception
+    {
+        final Resource big = Resource.newClassPathResource("simple/big.txt");
+        _handler._writeLengthIfKnown=true;
+        _handler._content=BufferUtil.toBuffer(big,false);
+        _handler._arrayBuffer=new byte[8];
+        
+        String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
+        assertThat(response,containsString("HTTP/1.1 200 OK"));
+        assertThat(response,containsString("Content-Length"));
+        assertThat(response,containsString("400\tThis is a big file"));
+    }
+    
+    @Test
+    public void testWriteMedKnown() throws Exception
+    {
+        final Resource big = Resource.newClassPathResource("simple/big.txt");
+        _handler._writeLengthIfKnown=true;
+        _handler._content=BufferUtil.toBuffer(big,false);
+        _handler._arrayBuffer=new byte[4000];
+        
+        String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
+        assertThat(response,containsString("HTTP/1.1 200 OK"));
+        assertThat(response,containsString("Content-Length"));
+        assertThat(response,containsString("400\tThis is a big file"));
+    }
+    
+    @Test
+    public void testWriteLargeKnown() throws Exception
+    {
+        final Resource big = Resource.newClassPathResource("simple/big.txt");
+        _handler._writeLengthIfKnown=true;
+        _handler._content=BufferUtil.toBuffer(big,false);
+        _handler._arrayBuffer=new byte[8192];
+        
+        String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
+        assertThat(response,containsString("HTTP/1.1 200 OK"));
+        assertThat(response,containsString("Content-Length"));
+        assertThat(response,containsString("400\tThis is a big file"));
+    }
+
+    
+    @Test
+    public void testWriteHugeKnown() throws Exception
+    {
+        _handler._writeLengthIfKnown=true;
+        _handler._content=BufferUtil.allocate(4*1024*1024);
+        _handler._content.limit(_handler._content.capacity());
+        for (int i=_handler._content.capacity();i-->0;)
+            _handler._content.put(i,(byte)'x');
+        _handler._arrayBuffer=new byte[8192];
+        
+        String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
+        assertThat(response,containsString("HTTP/1.1 200 OK"));
+        assertThat(response,containsString("Content-Length"));
+    }
+    
+
+    @Test
+    public void testWriteBufferSmall() throws Exception
+    {
+        final Resource big = Resource.newClassPathResource("simple/big.txt");
+        _handler._writeLengthIfKnown=false;
+        _handler._content=BufferUtil.toBuffer(big,false);
+        _handler._byteBuffer=BufferUtil.allocate(8);
+        
+        String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
+        assertThat(response,containsString("HTTP/1.1 200 OK"));
+        assertThat(response,Matchers.not(containsString("Content-Length")));
+        assertThat(response,containsString("400\tThis is a big file"));
+    }
+
+    @Test
+    public void testWriteBufferMed() throws Exception
+    {
+        final Resource big = Resource.newClassPathResource("simple/big.txt");
+        _handler._writeLengthIfKnown=false;
+        _handler._content=BufferUtil.toBuffer(big,false);
+        _handler._byteBuffer=BufferUtil.allocate(4000);
+        
+        String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
+        assertThat(response,containsString("HTTP/1.1 200 OK"));
+        assertThat(response,Matchers.not(containsString("Content-Length")));
+        assertThat(response,containsString("400\tThis is a big file"));
+    }
+    
+    @Test
+    public void testWriteBufferLarge() throws Exception
+    {
+        final Resource big = Resource.newClassPathResource("simple/big.txt");
+        _handler._writeLengthIfKnown=false;
+        _handler._content=BufferUtil.toBuffer(big,false);
+        _handler._byteBuffer=BufferUtil.allocate(8192);
+        
+        String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
+        assertThat(response,containsString("HTTP/1.1 200 OK"));
+        assertThat(response,Matchers.not(containsString("Content-Length")));
+        assertThat(response,containsString("400\tThis is a big file"));
+    }
+
+
+    @Test
+    public void testAsyncWriteByte() throws Exception
+    {
+        final Resource big = Resource.newClassPathResource("simple/big.txt");
+        _handler._writeLengthIfKnown=false;
+        _handler._content=BufferUtil.toBuffer(big,false);
+        _handler._arrayBuffer=new byte[1];
+        _handler._async=true;
+        
+        String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
+        assertThat(response,containsString("HTTP/1.1 200 OK"));
+        assertThat(response,Matchers.not(containsString("Content-Length")));
+        assertThat(response,containsString("400\tThis is a big file"));
+    }
+    
+    @Test
+    public void testAsyncWriteSmall() throws Exception
+    {
+        final Resource big = Resource.newClassPathResource("simple/big.txt");
+        _handler._writeLengthIfKnown=false;
+        _handler._content=BufferUtil.toBuffer(big,false);
+        _handler._arrayBuffer=new byte[8];
+        _handler._async=true;
+        
+        String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
+        assertThat(response,containsString("HTTP/1.1 200 OK"));
+        assertThat(response,Matchers.not(containsString("Content-Length")));
+        assertThat(response,containsString("400\tThis is a big file"));
+    }
+    
+    @Test
+    public void testAsyncWriteMed() throws Exception
+    {
+        final Resource big = Resource.newClassPathResource("simple/big.txt");
+        _handler._writeLengthIfKnown=false;
+        _handler._content=BufferUtil.toBuffer(big,false);
+        _handler._arrayBuffer=new byte[4000];
+        _handler._async=true;
+        
+        String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
+        assertThat(response,containsString("HTTP/1.1 200 OK"));
+        assertThat(response,Matchers.not(containsString("Content-Length")));
+        assertThat(response,containsString("400\tThis is a big file"));
+    }
+    
+    @Test
+    public void testAsyncWriteLarge() throws Exception
+    {
+        final Resource big = Resource.newClassPathResource("simple/big.txt");
+        _handler._writeLengthIfKnown=false;
+        _handler._content=BufferUtil.toBuffer(big,false);
+        _handler._arrayBuffer=new byte[8192];
+        _handler._async=true;
+        
+        String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
+        assertThat(response,containsString("HTTP/1.1 200 OK"));
+        assertThat(response,Matchers.not(containsString("Content-Length")));
+        assertThat(response,containsString("400\tThis is a big file"));
+    }
+
+    
+    @Test
+    public void testAsyncWriteHuge() throws Exception
+    {
+        _handler._writeLengthIfKnown=true;
+        _handler._content=BufferUtil.allocate(4*1024*1024);
+        _handler._content.limit(_handler._content.capacity());
+        for (int i=_handler._content.capacity();i-->0;)
+            _handler._content.put(i,(byte)'x');
+        _handler._arrayBuffer=new byte[8192];
+        _handler._async=true;
+        
+        String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
+        assertThat(response,containsString("HTTP/1.1 200 OK"));
+        assertThat(response,containsString("Content-Length"));
+    }
+
+    
+    
+    @Test
+    public void testAsyncWriteBufferSmall() throws Exception
+    {
+        final Resource big = Resource.newClassPathResource("simple/big.txt");
+        _handler._writeLengthIfKnown=false;
+        _handler._content=BufferUtil.toBuffer(big,false);
+        _handler._byteBuffer=BufferUtil.allocate(8);
+        _handler._async=true;
+        
+        String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
+        assertThat(response,containsString("HTTP/1.1 200 OK"));
+        assertThat(response,Matchers.not(containsString("Content-Length")));
+        assertThat(response,containsString("400\tThis is a big file"));
+    }
+
+    @Test
+    public void testAsyncWriteBufferMed() throws Exception
+    {
+        final Resource big = Resource.newClassPathResource("simple/big.txt");
+        _handler._writeLengthIfKnown=false;
+        _handler._content=BufferUtil.toBuffer(big,false);
+        _handler._byteBuffer=BufferUtil.allocate(4000);
+        _handler._async=true;
+        
+        String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
+        assertThat(response,containsString("HTTP/1.1 200 OK"));
+        assertThat(response,Matchers.not(containsString("Content-Length")));
+        assertThat(response,containsString("400\tThis is a big file"));
+    }
+    
+    @Test
+    public void testAsyncWriteBufferLarge() throws Exception
+    {
+        final Resource big = Resource.newClassPathResource("simple/big.txt");
+        _handler._writeLengthIfKnown=false;
+        _handler._content=BufferUtil.toBuffer(big,false);
+        _handler._byteBuffer=BufferUtil.allocate(8192);
+        _handler._async=true;
+        
+        String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
+        assertThat(response,containsString("HTTP/1.1 200 OK"));
+        assertThat(response,Matchers.not(containsString("Content-Length")));
+        assertThat(response,containsString("400\tThis is a big file"));
+    }
     
     static class ContentHandler extends AbstractHandler
     {
+        boolean _writeLengthIfKnown=true;
+        boolean _async;
+        ByteBuffer _byteBuffer;
+        byte[] _arrayBuffer;
         InputStream _contentInputStream;
         ReadableByteChannel _contentChannel;
         ByteBuffer _content;
@@ -226,18 +563,8 @@ public class HttpOutputTest
             baseRequest.setHandled(true);
             response.setContentType("text/plain");
             
-            HttpOutput out = (HttpOutput) response.getOutputStream();
+            final HttpOutput out = (HttpOutput) response.getOutputStream();
             
-            if (_content!=null)
-            {
-                response.setContentLength(_content.remaining());
-                if (_content.hasArray())
-                    out.write(_content.array(),_content.arrayOffset()+_content.position(),_content.remaining());
-                else
-                    out.sendContent(_content);
-                _content=null;
-                return;
-            }
             
             if (_contentInputStream!=null)
             {
@@ -252,6 +579,127 @@ public class HttpOutputTest
                 _contentChannel=null;
                 return;
             }
+            
+            if (_content!=null && _writeLengthIfKnown)
+                response.setContentLength(_content.remaining());
+            
+            if (_arrayBuffer!=null)
+            {
+                if (_async)
+                {
+                    final AsyncContext async = request.startAsync();
+                    out.setWriteListener(new WriteListener()
+                    {
+                        @Override
+                        public void onWritePossible() throws IOException
+                        {
+                            while (out.isReady())
+                            {
+                                Assert.assertTrue(out.isReady());
+                                int len=_content.remaining();
+                                if (len>_arrayBuffer.length)
+                                    len=_arrayBuffer.length;
+                                if (len==0)
+                                {
+                                    async.complete();
+                                    break;
+                                }
+                                
+                                _content.get(_arrayBuffer,0,len);
+                                if (len==1)
+                                    out.write(_arrayBuffer[0]);
+                                else
+                                    out.write(_arrayBuffer,0,len);
+                            }
+                            // Assert.assertFalse(out.isReady());
+                        }
+
+                        @Override
+                        public void onError(Throwable t)
+                        {
+                            t.printStackTrace();
+                            async.complete();
+                        }
+                    });
+                    
+                    return;  
+                }
+                
+                while(BufferUtil.hasContent(_content))
+                {
+                    int len=_content.remaining();
+                    if (len>_arrayBuffer.length)
+                        len=_arrayBuffer.length;
+                    _content.get(_arrayBuffer,0,len);
+                    if (len==1)
+                        out.write(_arrayBuffer[0]);
+                    else
+                        out.write(_arrayBuffer,0,len);
+                }
+                
+                return;
+            }
+            
+            if (_byteBuffer!=null)
+            {
+                if (_async)
+                {
+                    final AsyncContext async = request.startAsync();
+                    out.setWriteListener(new WriteListener()
+                    {
+                        @Override
+                        public void onWritePossible() throws IOException
+                        {
+                            while (out.isReady())
+                            {
+                                Assert.assertTrue(out.isReady());
+                                if(BufferUtil.isEmpty(_content))
+                                {
+                                    async.complete();
+                                    break;
+                                }
+                                    
+                                BufferUtil.clearToFill(_byteBuffer);
+                                BufferUtil.put(_content,_byteBuffer);
+                                BufferUtil.flipToFlush(_byteBuffer,0);
+                                out.write(_byteBuffer);
+                            }
+                            Assert.assertFalse(out.isReady());
+                        }
+
+                        @Override
+                        public void onError(Throwable t)
+                        {
+                            t.printStackTrace();
+                            async.complete();
+                        }
+                    });
+                    
+                    return;  
+                }
+                
+                
+                while(BufferUtil.hasContent(_content))
+                {
+                    BufferUtil.clearToFill(_byteBuffer);
+                    BufferUtil.put(_content,_byteBuffer);
+                    BufferUtil.flipToFlush(_byteBuffer,0);
+                    out.write(_byteBuffer);
+                }
+                
+                return;
+            }
+            
+            if (_content!=null)
+            {
+                if (_content.hasArray())
+                    out.write(_content.array(),_content.arrayOffset()+_content.position(),_content.remaining());
+                else
+                    out.sendContent(_content);
+                _content=null;
+                return;
+            }
+            
             
         }
         

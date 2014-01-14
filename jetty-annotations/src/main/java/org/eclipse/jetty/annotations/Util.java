@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -67,6 +67,44 @@ public class Util
                 isServlet=true;
         
         return isServlet;  
+    }
+    
+    
+    public static boolean supportsResourceInjection (Class c)
+    {
+        if (javax.servlet.Servlet.class.isAssignableFrom(c) ||
+                javax.servlet.Filter.class.isAssignableFrom(c) || 
+                javax.servlet.ServletContextListener.class.isAssignableFrom(c) ||
+                javax.servlet.ServletContextAttributeListener.class.isAssignableFrom(c) ||
+                javax.servlet.ServletRequestListener.class.isAssignableFrom(c) ||
+                javax.servlet.ServletRequestAttributeListener.class.isAssignableFrom(c) ||
+                javax.servlet.http.HttpSessionListener.class.isAssignableFrom(c) ||
+                javax.servlet.http.HttpSessionAttributeListener.class.isAssignableFrom(c) ||
+                javax.servlet.http.HttpSessionIdListener.class.isAssignableFrom(c) ||
+                javax.servlet.AsyncListener.class.isAssignableFrom(c) ||
+                javax.servlet.http.HttpUpgradeHandler.class.isAssignableFrom(c))
+            return true;
+        
+        return false;
+    }
+    
+    
+    public static boolean supportsPostConstructPreDestroy (Class c)
+    {
+        if (javax.servlet.Servlet.class.isAssignableFrom(c) ||
+                javax.servlet.Filter.class.isAssignableFrom(c) || 
+                javax.servlet.ServletContextListener.class.isAssignableFrom(c) ||
+                javax.servlet.ServletContextAttributeListener.class.isAssignableFrom(c) ||
+                javax.servlet.ServletRequestListener.class.isAssignableFrom(c) ||
+                javax.servlet.ServletRequestAttributeListener.class.isAssignableFrom(c) ||
+                javax.servlet.http.HttpSessionListener.class.isAssignableFrom(c) ||
+                javax.servlet.http.HttpSessionAttributeListener.class.isAssignableFrom(c) ||
+                javax.servlet.http.HttpSessionIdListener.class.isAssignableFrom(c) ||
+                javax.servlet.AsyncListener.class.isAssignableFrom(c) ||
+                javax.servlet.http.HttpUpgradeHandler.class.isAssignableFrom(c))
+            return true;
+        
+        return false;
     }
 
     public static boolean isEnvEntryType (Class type)

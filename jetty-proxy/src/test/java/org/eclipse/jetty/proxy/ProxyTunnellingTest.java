@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.proxy;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.Socket;
@@ -33,10 +35,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Destination;
-import org.eclipse.jetty.client.api.ProxyConfiguration;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpHeader;
@@ -61,8 +63,6 @@ import org.junit.Assume;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
 
 public class ProxyTunnellingTest
 {
@@ -143,7 +143,7 @@ public class ProxyTunnellingTest
         startProxy();
 
         HttpClient httpClient = new HttpClient(sslContextFactory);
-        httpClient.setProxyConfiguration(new ProxyConfiguration("localhost", proxyPort()));
+        httpClient.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyPort()));
         httpClient.start();
 
         try
@@ -172,7 +172,7 @@ public class ProxyTunnellingTest
         startProxy();
 
         HttpClient httpClient = new HttpClient(sslContextFactory);
-        httpClient.setProxyConfiguration(new ProxyConfiguration("localhost", proxyPort()));
+        httpClient.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyPort()));
         httpClient.start();
 
         try
@@ -215,7 +215,7 @@ public class ProxyTunnellingTest
         startProxy();
 
         final HttpClient httpClient = new HttpClient(sslContextFactory);
-        httpClient.setProxyConfiguration(new ProxyConfiguration("localhost", proxyPort()));
+        httpClient.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyPort()));
         httpClient.start();
 
         try
@@ -285,7 +285,7 @@ public class ProxyTunnellingTest
         stopProxy();
 
         HttpClient httpClient = new HttpClient(sslContextFactory);
-        httpClient.setProxyConfiguration(new ProxyConfiguration("localhost", proxyPort));
+        httpClient.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyPort));
         httpClient.start();
 
         try
@@ -317,7 +317,7 @@ public class ProxyTunnellingTest
         startProxy();
 
         HttpClient httpClient = new HttpClient(sslContextFactory);
-        httpClient.setProxyConfiguration(new ProxyConfiguration("localhost", proxyPort()));
+        httpClient.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyPort()));
         httpClient.start();
 
         try
@@ -354,7 +354,7 @@ public class ProxyTunnellingTest
         });
 
         HttpClient httpClient = new HttpClient(sslContextFactory);
-        httpClient.setProxyConfiguration(new ProxyConfiguration("localhost", proxyPort()));
+        httpClient.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyPort()));
         httpClient.start();
 
         try
@@ -375,7 +375,7 @@ public class ProxyTunnellingTest
     }
 
     @Test
-    @Ignore // to delicate to rely on external proxy.
+    @Ignore("External Proxy Server no longer stable enough for testing")
     public void testExternalProxy() throws Exception
     {
         // Free proxy server obtained from http://hidemyass.com/proxy-list/
@@ -394,7 +394,7 @@ public class ProxyTunnellingTest
         sslContextFactory.start();
 
         HttpClient httpClient = new HttpClient(sslContextFactory);
-        httpClient.setProxyConfiguration(new ProxyConfiguration(proxyHost, proxyPort));
+        httpClient.getProxyConfiguration().getProxies().add(new HttpProxy(proxyHost, proxyPort));
         httpClient.start();
 
         try

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,24 +18,26 @@
 
 package org.eclipse.jetty.websocket.common.ab;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.common.ByteBufferAssert;
 import org.eclipse.jetty.websocket.common.Generator;
-import org.eclipse.jetty.websocket.common.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.Parser;
-import org.eclipse.jetty.websocket.common.UnitGenerator;
-import org.eclipse.jetty.websocket.common.UnitParser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.frames.PingFrame;
+import org.eclipse.jetty.websocket.common.test.ByteBufferAssert;
+import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
+import org.eclipse.jetty.websocket.common.test.UnitGenerator;
+import org.eclipse.jetty.websocket.common.test.UnitParser;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -53,10 +55,9 @@ public class TestABCase2
             bytes[i] = Integer.valueOf(Integer.toOctalString(i)).byteValue();
         }
 
-        WebSocketFrame pingFrame = WebSocketFrame.ping().setPayload(bytes);
+        WebSocketFrame pingFrame = new PingFrame().setPayload(bytes);
 
-        Generator generator = new UnitGenerator();
-        ByteBuffer actual = generator.generate(pingFrame);
+        ByteBuffer actual = UnitGenerator.generate(pingFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(bytes.length + 32);
 
@@ -78,10 +79,9 @@ public class TestABCase2
     {
         byte[] bytes = new byte[] { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 };
 
-        WebSocketFrame pingFrame = WebSocketFrame.ping().setPayload(bytes);
+        PingFrame pingFrame = new PingFrame().setPayload(bytes);
 
-        Generator generator = new UnitGenerator();
-        ByteBuffer actual = generator.generate(pingFrame);
+        ByteBuffer actual = UnitGenerator.generate(pingFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(32);
 
@@ -102,11 +102,9 @@ public class TestABCase2
     @Test
     public void testGenerateEmptyPingCase2_1()
     {
-        WebSocketFrame pingFrame = WebSocketFrame.ping();
+        WebSocketFrame pingFrame = new PingFrame();
 
-
-        Generator generator = new UnitGenerator();
-        ByteBuffer actual = generator.generate(pingFrame);
+        ByteBuffer actual = UnitGenerator.generate(pingFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(5);
 
@@ -122,12 +120,11 @@ public class TestABCase2
     public void testGenerateHelloPingCase2_2()
     {
         String message = "Hello, world!";
-        byte[] messageBytes = message.getBytes();
+        byte[] messageBytes = StringUtil.getUtf8Bytes(message);
 
-        WebSocketFrame pingFrame = WebSocketFrame.ping().setPayload(messageBytes);
+        PingFrame pingFrame = new PingFrame().setPayload(messageBytes);
 
-        Generator generator = new UnitGenerator();
-        ByteBuffer actual = generator.generate(pingFrame);
+        ByteBuffer actual = UnitGenerator.generate(pingFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(32);
 
@@ -148,29 +145,22 @@ public class TestABCase2
     public void testGenerateOversizedBinaryPingCase2_5_A()
     {
         byte[] bytes = new byte[126];
+        Arrays.fill(bytes,(byte)0x00);
 
-        for ( int i = 0 ; i < bytes.length ; ++i )
-        {
-            bytes[i] = 0x00;
-        }
-
-        WebSocketFrame.ping().setPayload(bytes);
+        PingFrame pingFrame = new PingFrame();
+        pingFrame.setPayload(ByteBuffer.wrap(bytes)); // should throw exception
     }
 
     @Test( expected=WebSocketException.class )
     public void testGenerateOversizedBinaryPingCase2_5_B()
     {
         byte[] bytes = new byte[126];
+        Arrays.fill(bytes, (byte)0x00);
 
-        for ( int i = 0 ; i < bytes.length ; ++i )
-        {
-            bytes[i] = 0x00;
-        }
+        PingFrame pingFrame = new PingFrame();
+        pingFrame.setPayload(ByteBuffer.wrap(bytes)); // should throw exception
 
-        WebSocketFrame pingFrame = WebSocketFrame.ping().setPayload(bytes);
-
-        Generator generator = new UnitGenerator();
-        generator.generate(pingFrame);
+        // FIXME: Remove? UnitGenerator.generate(pingFrame);
     }
 
     @Test
@@ -203,7 +193,7 @@ public class TestABCase2
         capture.assertNoErrors();
         capture.assertHasFrame(OpCode.PING,1);
 
-        Frame pActual = capture.getFrames().get(0);
+        Frame pActual = capture.getFrames().poll();
         Assert.assertThat("PingFrame.payloadLength",pActual.getPayloadLength(),is(bytes.length));
         Assert.assertEquals("PingFrame.payload",bytes.length,pActual.getPayloadLength());
     }
@@ -233,7 +223,7 @@ public class TestABCase2
         capture.assertNoErrors();
         capture.assertHasFrame(OpCode.PING,1);
 
-        Frame pActual = capture.getFrames().get(0);
+        Frame pActual = capture.getFrames().poll();
         Assert.assertThat("PingFrame.payloadLength",pActual.getPayloadLength(),is(bytes.length));
         Assert.assertEquals("PingFrame.payload",bytes.length,pActual.getPayloadLength());
     }
@@ -256,7 +246,7 @@ public class TestABCase2
         capture.assertNoErrors();
         capture.assertHasFrame(OpCode.PING,1);
 
-        Frame pActual = capture.getFrames().get(0);
+        Frame pActual = capture.getFrames().poll();
         Assert.assertThat("PingFrame.payloadLength",pActual.getPayloadLength(),is(0));
         Assert.assertEquals("PingFrame.payload",0,pActual.getPayloadLength());
     }
@@ -287,7 +277,7 @@ public class TestABCase2
         capture.assertNoErrors();
         capture.assertHasFrame(OpCode.PING,1);
 
-        Frame pActual = capture.getFrames().get(0);
+        Frame pActual = capture.getFrames().poll();
         Assert.assertThat("PingFrame.payloadLength",pActual.getPayloadLength(),is(message.length()));
         Assert.assertEquals("PingFrame.payload",message.length(),pActual.getPayloadLength());
     }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -397,8 +397,7 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
     {
         if (_logDateFormat != null)
         {
-            _logDateCache = new DateCache(_logDateFormat, _logLocale);
-            _logDateCache.setTimeZoneID(_logTimeZone);
+            _logDateCache = new DateCache(_logDateFormat, _logLocale ,_logTimeZone);
         }
 
         if (_ignorePaths != null && _ignorePaths.length > 0)

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,7 +19,7 @@
 
 package org.eclipse.jetty.webapp;
 
-import java.util.List;
+import java.util.Map;
 
 import org.eclipse.jetty.util.resource.Resource;
 
@@ -70,18 +70,18 @@ public class FragmentConfiguration extends AbstractConfiguration
     public void findWebFragments (final WebAppContext context, final MetaData metaData) throws Exception
     {
         @SuppressWarnings("unchecked")
-        List<Resource> frags = (List<Resource>)context.getAttribute(FRAGMENT_RESOURCES);
+        Map<Resource, Resource> frags = (Map<Resource,Resource>)context.getAttribute(FRAGMENT_RESOURCES);
         if (frags!=null)
         {
-            for (Resource frag : frags)
+            for (Resource key : frags.keySet())
             {
-            	if (frag.isDirectory()) //tolerate the case where the library is a directory, not a jar. useful for OSGi for example
+            	if (key.isDirectory()) //tolerate the case where the library is a directory, not a jar. useful for OSGi for example
             	{
-                    metaData.addFragment(frag, Resource.newResource(frag.getURL()+"/META-INF/web-fragment.xml"));            		
+                    metaData.addFragment(key, frags.get(key));            		
             	}
                 else //the standard case: a jar most likely inside WEB-INF/lib
                 {
-                    metaData.addFragment(frag, Resource.newResource("jar:"+frag.getURL()+"!/META-INF/web-fragment.xml"));
+                    metaData.addFragment(key, frags.get(key));
                 }
             }
         }

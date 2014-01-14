@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -36,12 +36,13 @@ import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.client.util.PathContentProvider;
 import org.eclipse.jetty.http.HttpField;
@@ -53,35 +54,28 @@ import org.eclipse.jetty.util.Fields;
 
 public class HttpRequest implements Request
 {
-    private static final AtomicLong ids = new AtomicLong();
-
     private final HttpFields headers = new HttpFields();
     private final Fields params = new Fields(true);
     private final Map<String, Object> attributes = new HashMap<>();
     private final List<RequestListener> requestListeners = new ArrayList<>();
     private final List<Response.ResponseListener> responseListeners = new ArrayList<>();
+    private final AtomicReference<Throwable> aborted = new AtomicReference<>();
     private final HttpClient client;
-    private final long conversation;
+    private final HttpConversation conversation;
     private final String host;
     private final int port;
     private URI uri;
     private String scheme;
     private String path;
     private String query;
-    private String method;
-    private HttpVersion version;
+    private String method = HttpMethod.GET.asString();
+    private HttpVersion version = HttpVersion.HTTP_1_1;
     private long idleTimeout;
     private long timeout;
     private ContentProvider content;
     private boolean followRedirects;
-    private volatile Throwable aborted;
 
-    public HttpRequest(HttpClient client, URI uri)
-    {
-        this(client, ids.incrementAndGet(), uri);
-    }
-
-    protected HttpRequest(HttpClient client, long conversation, URI uri)
+    protected HttpRequest(HttpClient client, HttpConversation conversation, URI uri)
     {
         this.client = client;
         this.conversation = conversation;
@@ -91,14 +85,22 @@ public class HttpRequest implements Request
         path = uri.getRawPath();
         query = uri.getRawQuery();
         extractParams(query);
-        this.uri = buildURI(true);
         followRedirects(client.isFollowRedirects());
+        idleTimeout = client.getIdleTimeout();
+        HttpField acceptEncodingField = client.getAcceptEncodingField();
+        if (acceptEncodingField != null)
+            headers.put(acceptEncodingField);
+    }
+
+    protected HttpConversation getConversation()
+    {
+        return conversation;
     }
 
     @Override
     public long getConversationID()
     {
-        return conversation;
+        return getConversation().getID();
     }
 
     @Override
@@ -111,7 +113,7 @@ public class HttpRequest implements Request
     public Request scheme(String scheme)
     {
         this.scheme = scheme;
-        this.uri = buildURI(true);
+        this.uri = null;
         return this;
     }
 
@@ -128,13 +130,7 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public HttpMethod getMethod()
-    {
-        return HttpMethod.fromString(method);
-    }
-
-    @Override
-    public String method()
+    public String getMethod()
     {
         return method;
     }
@@ -142,8 +138,7 @@ public class HttpRequest implements Request
     @Override
     public Request method(HttpMethod method)
     {
-        this.method = method.asString();
-        return this;
+        return method(method.asString());
     }
 
     @Override
@@ -176,9 +171,9 @@ public class HttpRequest implements Request
             params.clear();
             extractParams(query);
         }
-        this.uri = buildURI(true);
         if (uri.isAbsolute())
             this.path = buildURI(false).toString();
+        this.uri = null;
         return this;
     }
 
@@ -191,7 +186,9 @@ public class HttpRequest implements Request
     @Override
     public URI getURI()
     {
-        return uri;
+        if (uri != null)
+            return uri;
+        return uri = buildURI(true);
     }
 
     @Override
@@ -203,7 +200,7 @@ public class HttpRequest implements Request
     @Override
     public Request version(HttpVersion version)
     {
-        this.version = version;
+        this.version = Objects.requireNonNull(version);
         return this;
     }
 
@@ -212,7 +209,7 @@ public class HttpRequest implements Request
     {
         params.add(name, value);
         this.query = buildQuery();
-        this.uri = buildURI(true);
+        this.uri = null;
         return this;
     }
 
@@ -275,6 +272,7 @@ public class HttpRequest implements Request
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public <T extends RequestListener> List<T> getRequestListeners(Class<T> type)
     {
         // This method is invoked often in a request/response conversation,
@@ -479,6 +477,20 @@ public class HttpRequest implements Request
     }
 
     @Override
+    public Request onComplete(final Response.CompleteListener listener)
+    {
+        this.responseListeners.add(new Response.CompleteListener()
+        {
+            @Override
+            public void onComplete(Result result)
+            {
+                listener.onComplete(result);
+            }
+        });
+        return this;
+    }
+
+    @Override
     public ContentProvider getContent()
     {
         return content;
@@ -558,12 +570,12 @@ public class HttpRequest implements Request
         FutureResponseListener listener = new FutureResponseListener(this);
         send(this, listener);
 
-        long timeout = getTimeout();
-        if (timeout <= 0)
-            return listener.get();
-
         try
         {
+            long timeout = getTimeout();
+            if (timeout <= 0)
+                return listener.get();
+
             return listener.get(timeout, TimeUnit.MILLISECONDS);
         }
         catch (InterruptedException | TimeoutException x)
@@ -587,7 +599,7 @@ public class HttpRequest implements Request
         send(this, listener);
     }
 
-    private void send(Request request, Response.CompleteListener listener)
+    private void send(HttpRequest request, Response.CompleteListener listener)
     {
         if (listener != null)
             responseListeners.add(listener);
@@ -597,16 +609,13 @@ public class HttpRequest implements Request
     @Override
     public boolean abort(Throwable cause)
     {
-        aborted = Objects.requireNonNull(cause);
-        // The conversation may be null if it is already completed
-        HttpConversation conversation = client.getConversation(getConversationID(), false);
-        return conversation != null && conversation.abort(cause);
+        return aborted.compareAndSet(null, Objects.requireNonNull(cause)) && conversation.abort(cause);
     }
 
     @Override
     public Throwable getAbortCause()
     {
-        return aborted;
+        return aborted.get();
     }
 
     private String buildQuery()
@@ -615,13 +624,13 @@ public class HttpRequest implements Request
         for (Iterator<Fields.Field> iterator = params.iterator(); iterator.hasNext();)
         {
             Fields.Field field = iterator.next();
-            String[] values = field.values();
-            for (int i = 0; i < values.length; ++i)
+            List<String> values = field.getValues();
+            for (int i = 0; i < values.size(); ++i)
             {
                 if (i > 0)
                     result.append("&");
-                result.append(field.name()).append("=");
-                result.append(urlEncode(values[i]));
+                result.append(field.getName()).append("=");
+                result.append(urlEncode(values.get(i)));
             }
             if (iterator.hasNext())
                 result.append("&");
@@ -681,13 +690,13 @@ public class HttpRequest implements Request
             path += "?" + query;
         URI result = URI.create(path);
         if (!result.isAbsolute() && !result.isOpaque())
-            result = URI.create(client.address(getScheme(), getHost(), getPort()) + path);
+            result = URI.create(new Origin(getScheme(), getHost(), getPort()).asString() + path);
         return result;
     }
 
     @Override
     public String toString()
     {
-        return String.format("%s[%s %s %s]@%x", HttpRequest.class.getSimpleName(), method(), getPath(), getVersion(), hashCode());
+        return String.format("%s[%s %s %s]@%x", HttpRequest.class.getSimpleName(), getMethod(), getPath(), getVersion(), hashCode());
     }
 }

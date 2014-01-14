@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -36,6 +36,9 @@ import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import javax.servlet.AsyncContext;
+import javax.servlet.AsyncEvent;
+import javax.servlet.AsyncListener;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -51,9 +54,6 @@ import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 
-import org.eclipse.jetty.continuation.Continuation;
-import org.eclipse.jetty.continuation.ContinuationListener;
-import org.eclipse.jetty.continuation.ContinuationSupport;
 
 /** 
  * Dump Servlet Request.
@@ -176,59 +176,18 @@ public class Dump extends HttpServlet
             }
         }
 
-        if (request.getAttribute("RESUME")==null && request.getParameter("resume")!=null)
+        if (request.getParameter("startAsync")!=null && request.getAttribute("ASYNC")!=Boolean.TRUE)
         {
-            request.setAttribute("RESUME",Boolean.TRUE);
-
-            final long resume=Long.parseLong(request.getParameter("resume"));
-            final Continuation continuation = ContinuationSupport.getContinuation(request);
-            _timer.schedule(new TimerTask()
-            {
-                @Override
-                public void run()
-                {
-                    continuation.resume();
-                }
-            },resume);
-
-        }
-
-        if (request.getParameter("complete")!=null)
-        {
-            final long complete=Long.parseLong(request.getParameter("complete"));
-            _timer.schedule(new TimerTask()
-            {
-                @Override
-                public void run()
-                {
-                    try
-                    {
-                        response.setContentType("text/html");
-                        response.getOutputStream().println("<h1>COMPLETED</h1>");
-                        Continuation continuation = ContinuationSupport.getContinuation(request);
-                        continuation.complete();
-                    }
-                    catch(Exception e)
-                    {
-                        e.printStackTrace();
-                    }
-                }
-            },complete);
-        }
-
-        if (request.getParameter("suspend")!=null && request.getAttribute("SUSPEND")!=Boolean.TRUE)
-        {
-            request.setAttribute("SUSPEND",Boolean.TRUE);
+            request.setAttribute("ASYNC",Boolean.TRUE);
             try
             {
-                Continuation continuation = ContinuationSupport.getContinuation(request);
-                continuation.setTimeout(Long.parseLong(request.getParameter("suspend")));
-                continuation.suspend();
-
-                continuation.addContinuationListener(new ContinuationListener()
+                final AsyncContext async=request.startAsync(request,response);
+                async.setTimeout(Long.parseLong(request.getParameter("startAsync")));
+                async.addListener(new AsyncListener()
                 {
+                    
                     @Override
-                    public void onTimeout(Continuation continuation)
+                    public void onTimeout(AsyncEvent event) throws IOException
                     {
                         response.addHeader("Dump","onTimeout");
                         try
@@ -238,22 +197,73 @@ public class Dump extends HttpServlet
                                 response.setContentType("text/plain");
                                 response.getOutputStream().println("EXPIRED");
                             }
-                            continuation.complete();
+                            async.complete();
                         }
                         catch (IOException e)
                         {
                             getServletContext().log("",e);
                         }
                     }
-
+                    
                     @Override
-                    public void onComplete(Continuation continuation)
+                    public void onStartAsync(AsyncEvent event) throws IOException
+                    {
+                        response.addHeader("Dump","onStartAsync");
+                    }
+                    
+                    @Override
+                    public void onError(AsyncEvent event) throws IOException
+                    {
+                        response.addHeader("Dump","onError");
+                    }
+                    
+                    @Override
+                    public void onComplete(AsyncEvent event) throws IOException
                     {
                         response.addHeader("Dump","onComplete");
                     }
                 });
 
-                continuation.undispatch();
+                if (request.getParameter("dispatch")!=null)
+                {
+                    request.setAttribute("RESUME",Boolean.TRUE);
+
+                    final long resume=Long.parseLong(request.getParameter("dispatch"));
+                    _timer.schedule(new TimerTask()
+                    {
+                        @Override
+                        public void run()
+                        {
+                            async.dispatch();
+                        }
+                    },resume);
+                }
+
+                if (request.getParameter("complete")!=null)
+                {
+                    final long complete=Long.parseLong(request.getParameter("complete"));
+                    _timer.schedule(new TimerTask()
+                    {
+                        @Override
+                        public void run()
+                        {
+                            try
+                            {
+                                response.setContentType("text/html");
+                                response.getOutputStream().println("<h1>COMPLETED</h1>");
+                                async.complete();
+                            }
+                            catch(Exception e)
+                            {
+                                e.printStackTrace();
+                            }
+                        }
+                    },complete);
+                }
+
+                
+                
+                return;
             }
             catch(Exception e)
             {
@@ -424,48 +434,20 @@ public class Dump extends HttpServlet
             pout.write("<h1>Dump Servlet</h1>\n");
             pout.write("<table width=\"95%\">");
             pout.write("<tr>\n");
-            pout.write("<th align=\"right\">getMethod:&nbsp;</th>");
-            pout.write("<td>" + notag(request.getMethod())+"</td>");
-            pout.write("</tr><tr>\n");
             pout.write("<th align=\"right\">getContentLength:&nbsp;</th>");
             pout.write("<td>"+Integer.toString(request.getContentLength())+"</td>");
             pout.write("</tr><tr>\n");
             pout.write("<th align=\"right\">getContentType:&nbsp;</th>");
             pout.write("<td>"+notag(request.getContentType())+"</td>");
             pout.write("</tr><tr>\n");
-            pout.write("<th align=\"right\">getRequestURI:&nbsp;</th>");
-            pout.write("<td>"+notag(request.getRequestURI())+"</td>");
-            pout.write("</tr><tr>\n");
-            pout.write("<th align=\"right\">getRequestURL:&nbsp;</th>");
-            pout.write("<td>"+notag(request.getRequestURL().toString())+"</td>");
-            pout.write("</tr><tr>\n");
             pout.write("<th align=\"right\">getContextPath:&nbsp;</th>");
             pout.write("<td>"+request.getContextPath()+"</td>");
             pout.write("</tr><tr>\n");
-            pout.write("<th align=\"right\">getServletPath:&nbsp;</th>");
-            pout.write("<td>"+notag(request.getServletPath())+"</td>");
+            pout.write("<th align=\"right\">getDispatcherType:&nbsp;</th>");
+            pout.write("<td>"+request.getDispatcherType()+"</td>");
             pout.write("</tr><tr>\n");
-            pout.write("<th align=\"right\">getPathInfo:&nbsp;</th>");
-            pout.write("<td>"+notag(request.getPathInfo())+"</td>");
-            pout.write("</tr><tr>\n");
-            pout.write("<th align=\"right\">getPathTranslated:&nbsp;</th>");
-            pout.write("<td>"+notag(request.getPathTranslated())+"</td>");
-            pout.write("</tr><tr>\n");
-            pout.write("<th align=\"right\">getQueryString:&nbsp;</th>");
-            pout.write("<td>"+notag(request.getQueryString())+"</td>");
-            pout.write("</tr><tr>\n");
-
-            pout.write("<th align=\"right\">getProtocol:&nbsp;</th>");
-            pout.write("<td>"+request.getProtocol()+"</td>");
-            pout.write("</tr><tr>\n");
-            pout.write("<th align=\"right\">getScheme:&nbsp;</th>");
-            pout.write("<td>"+request.getScheme()+"</td>");
-            pout.write("</tr><tr>\n");
-            pout.write("<th align=\"right\">getServerName:&nbsp;</th>");
-            pout.write("<td>"+notag(request.getServerName())+"</td>");
-            pout.write("</tr><tr>\n");
-            pout.write("<th align=\"right\">getServerPort:&nbsp;</th>");
-            pout.write("<td>"+Integer.toString(request.getServerPort())+"</td>");
+            pout.write("<th align=\"right\">getLocale:&nbsp;</th>");
+            pout.write("<td>"+request.getLocale()+"</td>");
             pout.write("</tr><tr>\n");
             pout.write("<th align=\"right\">getLocalName:&nbsp;</th>");
             pout.write("<td>"+request.getLocalName()+"</td>");
@@ -476,11 +458,20 @@ public class Dump extends HttpServlet
             pout.write("<th align=\"right\">getLocalPort:&nbsp;</th>");
             pout.write("<td>"+Integer.toString(request.getLocalPort())+"</td>");
             pout.write("</tr><tr>\n");
-            pout.write("<th align=\"right\">getRemoteUser:&nbsp;</th>");
-            pout.write("<td>"+request.getRemoteUser()+"</td>");
+            pout.write("<th align=\"right\">getMethod:&nbsp;</th>");
+            pout.write("<td>" + notag(request.getMethod())+"</td>");
             pout.write("</tr><tr>\n");
-            pout.write("<th align=\"right\">getUserPrincipal:&nbsp;</th>");
-            pout.write("<td>"+request.getUserPrincipal()+"</td>");
+            pout.write("<th align=\"right\">getPathInfo:&nbsp;</th>");
+            pout.write("<td>"+notag(request.getPathInfo())+"</td>");
+            pout.write("</tr><tr>\n");
+            pout.write("<th align=\"right\">getPathTranslated:&nbsp;</th>");
+            pout.write("<td>"+notag(request.getPathTranslated())+"</td>");
+            pout.write("</tr><tr>\n");
+            pout.write("<th align=\"right\">getProtocol:&nbsp;</th>");
+            pout.write("<td>"+request.getProtocol()+"</td>");
+            pout.write("</tr><tr>\n");
+            pout.write("<th align=\"right\">getQueryString:&nbsp;</th>");
+            pout.write("<td>"+notag(request.getQueryString())+"</td>");
             pout.write("</tr><tr>\n");
             pout.write("<th align=\"right\">getRemoteAddr:&nbsp;</th>");
             pout.write("<td>"+request.getRemoteAddr()+"</td>");
@@ -491,23 +482,48 @@ public class Dump extends HttpServlet
             pout.write("<th align=\"right\">getRemotePort:&nbsp;</th>");
             pout.write("<td>"+request.getRemotePort()+"</td>");
             pout.write("</tr><tr>\n");
+            pout.write("<th align=\"right\">getRemoteUser:&nbsp;</th>");
+            pout.write("<td>"+request.getRemoteUser()+"</td>");
+            pout.write("</tr><tr>\n");
             pout.write("<th align=\"right\">getRequestedSessionId:&nbsp;</th>");
             pout.write("<td>"+request.getRequestedSessionId()+"</td>");
             pout.write("</tr><tr>\n");
+            pout.write("<th align=\"right\">getRequestURI:&nbsp;</th>");
+            pout.write("<td>"+notag(request.getRequestURI())+"</td>");
+            pout.write("</tr><tr>\n");
+            pout.write("<th align=\"right\">getRequestURL:&nbsp;</th>");
+            pout.write("<td>"+notag(request.getRequestURL().toString())+"</td>");
+            pout.write("</tr><tr>\n");
+            pout.write("<th align=\"right\">getScheme:&nbsp;</th>");
+            pout.write("<td>"+request.getScheme()+"</td>");
+            pout.write("</tr><tr>\n");
+            pout.write("<th align=\"right\">getServerName:&nbsp;</th>");
+            pout.write("<td>"+notag(request.getServerName())+"</td>");
+            pout.write("</tr><tr>\n");
+            pout.write("<th align=\"right\">getServletPath:&nbsp;</th>");
+            pout.write("<td>"+notag(request.getServletPath())+"</td>");
+            pout.write("</tr><tr>\n");
+            pout.write("<th align=\"right\">getServerPort:&nbsp;</th>");
+            pout.write("<td>"+Integer.toString(request.getServerPort())+"</td>");
+            pout.write("</tr><tr>\n");
+            pout.write("<th align=\"right\">getUserPrincipal:&nbsp;</th>");
+            pout.write("<td>"+request.getUserPrincipal()+"</td>");
+            pout.write("</tr><tr>\n");
+            pout.write("<th align=\"right\">isAsyncStarted():&nbsp;</th>");
+            pout.write("<td>"+request.isAsyncStarted()+"</td>");
+            pout.write("</tr><tr>\n");
+            pout.write("<th align=\"right\">isAsyncSupported():&nbsp;</th>");
+            pout.write("<td>"+request.isAsyncSupported()+"</td>");
+            pout.write("</tr><tr>\n");
             pout.write("<th align=\"right\">isSecure():&nbsp;</th>");
             pout.write("<td>"+request.isSecure()+"</td>");
-
+            pout.write("</tr><tr>\n");
+            pout.write("<th align=\"right\">isUserInRole(admin):&nbsp;</th>");
+            pout.write("<td>"+request.isUserInRole("admin")+"</td>");
             pout.write("</tr><tr>\n");
             pout.write("<th align=\"right\">encodeRedirectURL(/foo?bar):&nbsp;</th>");
             pout.write("<td>"+response.encodeRedirectURL("/foo?bar")+"</td>");
 
-            pout.write("</tr><tr>\n");
-            pout.write("<th align=\"right\">isUserInRole(admin):&nbsp;</th>");
-            pout.write("<td>"+request.isUserInRole("admin")+"</td>");
-
-            pout.write("</tr><tr>\n");
-            pout.write("<th align=\"right\">getLocale:&nbsp;</th>");
-            pout.write("<td>"+request.getLocale()+"</td>");
 
             Enumeration<Locale> locales= request.getLocales();
             while (locales.hasMoreElements())

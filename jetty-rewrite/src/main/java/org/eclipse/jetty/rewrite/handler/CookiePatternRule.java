@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -73,6 +73,18 @@ public class CookiePatternRule extends PatternRule
     @Override
     public String apply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
+        // Check that cookie is not already set
+        Cookie[] cookies = request.getCookies();
+        if (cookies!=null)
+        {
+            for (Cookie cookie:cookies)
+            {
+                if (_name.equals(cookie.getName()) && _value.equals(cookie.getValue()))
+                    return target;
+            }
+        }
+        
+        // set it
         response.addCookie(new Cookie(_name, _value));
         return target;
     }

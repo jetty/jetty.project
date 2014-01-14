@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,16 +28,16 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.api.util.QuoteUtil;
 import org.eclipse.jetty.websocket.api.util.WSURI;
 
 /**
@@ -45,19 +45,27 @@ import org.eclipse.jetty.websocket.api.util.WSURI;
  */
 public class ServletUpgradeRequest extends UpgradeRequest
 {
-    private HttpServletRequest req;
+    private final HttpServletRequest req;
 
     public ServletUpgradeRequest(HttpServletRequest request) throws URISyntaxException
     {
         super(WSURI.toWebsocket(request.getRequestURL(),request.getQueryString()));
-        this.req = request;
+        this.req = new PostUpgradedHttpServletRequest(request);
 
         // Copy Request Line Details
         setMethod(request.getMethod());
         setHttpVersion(request.getProtocol());
 
         // Copy parameters
-        super.setParameterMap(request.getParameterMap());
+        Map<String, List<String>> pmap = new HashMap<>();
+        if (request.getParameterMap() != null)
+        {
+            for (Map.Entry<String, String[]> entry : request.getParameterMap().entrySet())
+            {
+                pmap.put(entry.getKey(),Arrays.asList(entry.getValue()));
+            }
+        }
+        super.setParameterMap(pmap);
 
         // Copy Cookies
         Cookie rcookies[] = request.getCookies();
@@ -78,12 +86,7 @@ public class ServletUpgradeRequest extends UpgradeRequest
         while (headerNames.hasMoreElements())
         {
             String name = headerNames.nextElement();
-            Enumeration<String> valuesEnum = request.getHeaders(name);
-            List<String> values = new ArrayList<>();
-            while (valuesEnum.hasMoreElements())
-            {
-                values.add(valuesEnum.nextElement());
-            }
+            List<String> values = Collections.list(request.getHeaders(name));
             setHeader(name,values);
         }
 
@@ -103,21 +106,25 @@ public class ServletUpgradeRequest extends UpgradeRequest
 
         // Parse Extension Configurations
         Enumeration<String> e = request.getHeaders("Sec-WebSocket-Extensions");
-        while (e.hasMoreElements())
-        {
-            Iterator<String> extTokenIter = QuoteUtil.splitAt(e.nextElement(),",");
-            while (extTokenIter.hasNext())
-            {
-                String extToken = extTokenIter.next();
-                ExtensionConfig config = ExtensionConfig.parse(extToken);
-                addExtensions(config);
-            }
-        }
+        setExtensions(ExtensionConfig.parseEnum(e));
     }
 
     public X509Certificate[] getCertificates()
     {
         return (X509Certificate[])req.getAttribute("javax.servlet.request.X509Certificate");
+    }
+    
+    /**
+     * Return the underlying HttpServletRequest that existed at Upgrade time.
+     * <p>
+     * Note: many features of the HttpServletRequest are invalid when upgraded,
+     * especially ones that deal with body content, streams, readers, and responses.
+     * 
+     * @return a limited version of the underlying HttpServletRequest
+     */
+    public HttpServletRequest getHttpServletRequest()
+    {
+        return req;
     }
 
     /**
@@ -149,6 +156,26 @@ public class ServletUpgradeRequest extends UpgradeRequest
     {
         return req.getLocalPort();
     }
+    
+    /**
+     * Equivalent to {@link HttpServletRequest#getLocale()}
+     * 
+     * @return the preferred <code>Locale</code> for the client
+     */
+    public Locale getLocale() 
+    {
+        return req.getLocale();
+    }
+    
+    /**
+     * Equivalent to {@link HttpServletRequest#getLocales()}
+     * 
+     * @return an Enumeration of preferred Locale objects
+     */
+    public Enumeration<Locale> getLocales()
+    {
+        return req.getLocales();
+    }
 
     /**
      * Return a {@link InetSocketAddress} for the local socket.
@@ -162,7 +189,19 @@ public class ServletUpgradeRequest extends UpgradeRequest
         return new InetSocketAddress(req.getLocalAddr(),req.getLocalPort());
     }
 
+    /**
+     * @deprecated use {@link #getUserPrincipal()} instead
+     */
+    @Deprecated
     public Principal getPrincipal()
+    {
+        return req.getUserPrincipal();
+    }
+    
+    /**
+     * Equivalent to {@link HttpServletRequest#getUserPrincipal()}
+     */
+    public Principal getUserPrincipal()
     {
         return req.getUserPrincipal();
     }
@@ -239,7 +278,7 @@ public class ServletUpgradeRequest extends UpgradeRequest
      * Note: this is equivalent to {@link HttpServletRequest#getSession()} and will not create a new HttpSession.
      */
     @Override
-    public Object getSession()
+    public HttpSession getSession()
     {
         return this.req.getSession(false);
     }
@@ -266,4 +305,26 @@ public class ServletUpgradeRequest extends UpgradeRequest
         this.req.setAttribute(name,o);
     }
 
+    public Object getServletAttribute(String name)
+    {
+        return req.getAttribute(name);
+    }
+
+    public boolean isUserInRole(String role)
+    {
+        return req.isUserInRole(role);
+    }
+
+    public String getRequestPath()
+    {
+        // Since this can be called from a filter, we need to be smart about determining the target request path
+        String contextPath = req.getContextPath();
+        String requestPath = req.getRequestURI();
+        if (requestPath.startsWith(contextPath))
+        {
+            requestPath = requestPath.substring(contextPath.length());
+        }
+
+        return requestPath;
+    }
 }

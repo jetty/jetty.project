@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
 
 import java.net.URI;
 import java.util.concurrent.Future;
@@ -28,9 +28,9 @@ import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer;
-import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer.ServerConnection;
 import org.eclipse.jetty.websocket.client.masks.ZeroMasker;
+import org.eclipse.jetty.websocket.common.test.BlockheadServer;
+import org.eclipse.jetty.websocket.common.test.BlockheadServer.ServerConnection;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -76,7 +76,7 @@ public class SlowServerTest
     @Slow
     public void testServerSlowToRead() throws Exception
     {
-        TrackingSocket tsocket = new TrackingSocket();
+        JettyTrackingSocket tsocket = new JettyTrackingSocket();
         client.setMasker(new ZeroMasker());
         client.getPolicy().setIdleTimeout(60000);
 
@@ -125,7 +125,7 @@ public class SlowServerTest
     public void testServerSlowToSend() throws Exception
     {
         // final Exchanger<String> exchanger = new Exchanger<String>();
-        TrackingSocket tsocket = new TrackingSocket();
+        JettyTrackingSocket tsocket = new JettyTrackingSocket();
         // tsocket.messageExchanger = exchanger;
         client.setMasker(new ZeroMasker());
         client.getPolicy().setIdleTimeout(60000);

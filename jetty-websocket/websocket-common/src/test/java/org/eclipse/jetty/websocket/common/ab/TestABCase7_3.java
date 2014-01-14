@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,26 +18,27 @@
 
 package org.eclipse.jetty.websocket.common.ab;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.common.ByteBufferAssert;
 import org.eclipse.jetty.websocket.common.CloseInfo;
-import org.eclipse.jetty.websocket.common.Generator;
-import org.eclipse.jetty.websocket.common.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.Parser;
-import org.eclipse.jetty.websocket.common.UnitGenerator;
-import org.eclipse.jetty.websocket.common.UnitParser;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.frames.CloseFrame;
+import org.eclipse.jetty.websocket.common.test.ByteBufferAssert;
+import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
+import org.eclipse.jetty.websocket.common.test.UnitGenerator;
+import org.eclipse.jetty.websocket.common.test.UnitParser;
+import org.eclipse.jetty.websocket.common.util.Hex;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -50,8 +51,7 @@ public class TestABCase7_3
     {
         CloseInfo close = new CloseInfo();
 
-        Generator generator = new UnitGenerator();
-        ByteBuffer actual = generator.generate(close.asFrame());
+        ByteBuffer actual = UnitGenerator.generate(close.asFrame());
 
         ByteBuffer expected = ByteBuffer.allocate(5);
 
@@ -81,7 +81,7 @@ public class TestABCase7_3
         capture.assertNoErrors();
         capture.assertHasFrame(OpCode.CLOSE,1);
 
-        Frame pActual = capture.getFrames().get(0);
+        Frame pActual = capture.getFrames().poll();
         Assert.assertThat("CloseFrame.payloadLength",pActual.getPayloadLength(),is(0));
 
     }
@@ -90,22 +90,16 @@ public class TestABCase7_3
     @Test(expected = ProtocolException.class)
     public void testCase7_3_2Generate1BytePayloadClose()
     {
-        WebSocketFrame closeFrame = new WebSocketFrame(OpCode.CLOSE).setPayload(new byte[]
-                { 0x00 });
+        CloseFrame closeFrame = new CloseFrame();
+        closeFrame.setPayload(Hex.asByteBuffer("00"));
 
-        Generator generator = new UnitGenerator();
-        generator.generate(closeFrame);
+        UnitGenerator.generate(closeFrame);
     }
 
     @Test
     public void testCase7_3_2Parse1BytePayloadClose()
     {
-        ByteBuffer expected = ByteBuffer.allocate(32);
-
-        expected.put(new byte[]
-                { (byte)0x88, 0x01, 0x00 });
-
-        expected.flip();
+        ByteBuffer expected = Hex.asByteBuffer("880100");
 
         UnitParser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
@@ -114,7 +108,7 @@ public class TestABCase7_3
 
         Assert.assertEquals("error on invalid close payload",1,capture.getErrorCount(ProtocolException.class));
 
-        ProtocolException known = (ProtocolException)capture.getErrors().get(0);
+        ProtocolException known = (ProtocolException)capture.getErrors().poll();
 
         Assert.assertThat("Payload.message",known.getMessage(),containsString("Invalid close frame payload length"));
     }
@@ -124,8 +118,7 @@ public class TestABCase7_3
     {
         CloseInfo close = new CloseInfo(1000);
 
-        Generator generator = new UnitGenerator();
-        ByteBuffer actual = generator.generate(close.asFrame());
+        ByteBuffer actual = UnitGenerator.generate(close.asFrame());
 
         ByteBuffer expected = ByteBuffer.allocate(5);
 
@@ -155,7 +148,7 @@ public class TestABCase7_3
         capture.assertNoErrors();
         capture.assertHasFrame(OpCode.CLOSE,1);
 
-        Frame pActual = capture.getFrames().get(0);
+        Frame pActual = capture.getFrames().poll();
         Assert.assertThat("CloseFrame.payloadLength",pActual.getPayloadLength(),is(2));
 
     }
@@ -169,8 +162,7 @@ public class TestABCase7_3
 
         CloseInfo close = new CloseInfo(1000,message);
 
-        Generator generator = new UnitGenerator();
-        ByteBuffer actual = generator.generate(close.asFrame());
+        ByteBuffer actual = UnitGenerator.generate(close.asFrame());
 
         ByteBuffer expected = ByteBuffer.allocate(32);
 
@@ -213,7 +205,7 @@ public class TestABCase7_3
         capture.assertNoErrors();
         capture.assertHasFrame(OpCode.CLOSE,1);
 
-        Frame pActual = capture.getFrames().get(0);
+        Frame pActual = capture.getFrames().poll();
         Assert.assertThat("CloseFrame.payloadLength",pActual.getPayloadLength(),is(messageBytes.length + 2));
 
     }
@@ -230,11 +222,10 @@ public class TestABCase7_3
 
         CloseInfo close = new CloseInfo(1000,message.toString());
 
-        Generator generator = new UnitGenerator();
-        ByteBuffer actual = generator.generate(close.asFrame());
+        ByteBuffer actual = UnitGenerator.generate(close.asFrame());
         ByteBuffer expected = ByteBuffer.allocate(132);
 
-        byte messageBytes[] = message.toString().getBytes(StringUtil.__UTF8_CHARSET);
+        byte messageBytes[] = message.toString().getBytes(StandardCharsets.UTF_8);
 
         expected.put(new byte[]
                 { (byte)0x88 });
@@ -260,7 +251,7 @@ public class TestABCase7_3
             message.append("*");
         }
 
-        byte[] messageBytes = message.toString().getBytes(StringUtil.__UTF8_CHARSET);
+        byte[] messageBytes = message.toString().getBytes(StandardCharsets.UTF_8);
 
         ByteBuffer expected = ByteBuffer.allocate(132);
 
@@ -283,7 +274,7 @@ public class TestABCase7_3
         capture.assertNoErrors();
         capture.assertHasFrame(OpCode.CLOSE,1);
 
-        Frame pActual = capture.getFrames().get(0);
+        Frame pActual = capture.getFrames().poll();
         Assert.assertThat("CloseFrame.payloadLength",pActual.getPayloadLength(),is(125));
 
     }
@@ -299,19 +290,18 @@ public class TestABCase7_3
 
         byte[] messageBytes = message.toString().getBytes();
 
-        WebSocketFrame closeFrame = new WebSocketFrame(OpCode.CLOSE);
+        CloseFrame closeFrame = new CloseFrame();
 
-        ByteBuffer bb = ByteBuffer.allocate(WebSocketFrame.MAX_CONTROL_PAYLOAD + 1); // 126 which is too big for control
+        ByteBuffer bb = ByteBuffer.allocate(CloseFrame.MAX_CONTROL_PAYLOAD + 1); // 126 which is too big for control
 
         bb.putChar((char)1000);
         bb.put(messageBytes);
 
         BufferUtil.flipToFlush(bb,0);
 
-        closeFrame.setPayload(BufferUtil.toArray(bb));
+        closeFrame.setPayload(bb);
 
-        Generator generator = new UnitGenerator();
-        generator.generate(closeFrame);
+        UnitGenerator.generate(closeFrame);
     }
 
     @Test
@@ -352,7 +342,7 @@ public class TestABCase7_3
 
         Assert.assertEquals("error on invalid close payload",1,capture.getErrorCount(ProtocolException.class));
 
-        ProtocolException known = (ProtocolException)capture.getErrors().get(0);
+        ProtocolException known = (ProtocolException)capture.getErrors().poll();
 
         Assert.assertThat("Payload.message",known.getMessage(),containsString("Invalid control frame payload length"));
     }

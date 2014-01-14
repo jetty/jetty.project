@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -41,6 +41,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
@@ -71,6 +72,7 @@ public class HttpConnectionTest
         connector.setIdleTimeout(500);
         server.addConnector(connector);
         server.setHandler(new DumpHandler());
+        server.addBean(new ErrorHandler());
         server.start();
     }
 
@@ -201,7 +203,20 @@ public class HttpConnectionTest
     }
 
     @Test
-    public void testEmpty() throws Exception
+    public void testSimple() throws Exception
+    {
+        String response=connector.getResponses("GET /R1 HTTP/1.1\n"+
+                "Host: localhost\n"+
+                "Connection: close\n"+
+                "\n");
+
+        int offset=0;
+        offset = checkContains(response,offset,"HTTP/1.1 200");
+        checkContains(response,offset,"/R1");
+    }
+
+    @Test
+    public void testEmptyChunk() throws Exception
     {
         String response=connector.getResponses("GET /R1 HTTP/1.1\n"+
                 "Host: localhost\n"+
@@ -440,7 +455,7 @@ public class HttpConnectionTest
     }
     
     @Test
-    public void testUnconsumedError() throws Exception
+    public void testUnconsumedErrorRead() throws Exception
     {
         String response=null;
         String requests=null;
@@ -448,7 +463,7 @@ public class HttpConnectionTest
 
         offset=0;
         requests=
-        "GET /R1?read=1&error=500 HTTP/1.1\n"+
+        "GET /R1?read=1&error=499 HTTP/1.1\n"+
         "Host: localhost\n"+
         "Transfer-Encoding: chunked\n"+
         "Content-Type: text/plain; charset=utf-8\n"+
@@ -468,7 +483,43 @@ public class HttpConnectionTest
 
         response=connector.getResponses(requests);
 
-        offset = checkContains(response,offset,"HTTP/1.1 500");
+        offset = checkContains(response,offset,"HTTP/1.1 499");
+        offset = checkContains(response,offset,"HTTP/1.1 200");
+        offset = checkContains(response,offset,"/R2");
+        offset = checkContains(response,offset,"encoding=UTF-8");
+        offset = checkContains(response,offset,"abcdefghij");
+    }
+    
+    @Test
+    public void testUnconsumedErrorStream() throws Exception
+    {
+        String response=null;
+        String requests=null;
+        int offset=0;
+
+        offset=0;
+        requests=
+        "GET /R1?error=599 HTTP/1.1\n"+
+        "Host: localhost\n"+
+        "Transfer-Encoding: chunked\n"+
+        "Content-Type: application/data; charset=utf-8\n"+
+        "\015\012"+
+        "5;\015\012"+
+        "12345\015\012"+
+        "5;\015\012"+
+        "67890\015\012"+
+        "0;\015\012\015\012"+
+        "GET /R2 HTTP/1.1\n"+
+        "Host: localhost\n"+
+        "Content-Type: text/plain; charset=utf-8\n"+
+        "Content-Length: 10\n"+
+        "Connection: close\n"+
+        "\n"+
+        "abcdefghij\n";
+
+        response=connector.getResponses(requests);
+
+        offset = checkContains(response,offset,"HTTP/1.1 599");
         offset = checkContains(response,offset,"HTTP/1.1 200");
         offset = checkContains(response,offset,"/R2");
         offset = checkContains(response,offset,"encoding=UTF-8");
@@ -591,7 +642,8 @@ public class HttpConnectionTest
         request.append("\015\012");
 
         response = connector.getResponses(request.toString());
-        checkContains(response, offset, "HTTP/1.1 413");
+        offset = checkContains(response, offset, "HTTP/1.1 413");
+        checkContains(response, offset, "<h1>Bad Message 413</h1><pre>reason: Request Entity Too Large</pre>");
     }
 
     @Test

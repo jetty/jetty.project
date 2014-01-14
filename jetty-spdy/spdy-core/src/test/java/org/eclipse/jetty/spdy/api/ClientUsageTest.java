@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.spdy.api;
 
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -36,7 +36,7 @@ public class ClientUsageTest
     @Test
     public void testClientRequestResponseNoBody() throws Exception
     {
-        Session session = new StandardSession(SPDY.V2, null, null, null, null, null, null, 1, null, null, null);
+        Session session = new StandardSession(SPDY.V2, null, null, null, null, null, 1, null, null, null);
 
         session.syn(new SynInfo(new Fields(), true), new StreamFrameListener.Adapter()
         {
@@ -62,7 +62,7 @@ public class ClientUsageTest
     @Test
     public void testClientReceivesPush1() throws InterruptedException, ExecutionException, TimeoutException
     {
-        Session session = new StandardSession(SPDY.V2, null, null, null, null, null, null, 1, null, null, null);
+        Session session = new StandardSession(SPDY.V2, null, null, null, null, null, 1, null, null, null);
 
         session.syn(new SynInfo(new Fields(), true), new StreamFrameListener.Adapter()
         {
@@ -99,7 +99,7 @@ public class ClientUsageTest
     @Test
     public void testClientReceivesPush2() throws InterruptedException, ExecutionException, TimeoutException
     {
-        Session session = new StandardSession(SPDY.V2, null, null, null, null, null, null, 1, new SessionFrameListener.Adapter()
+        Session session = new StandardSession(SPDY.V2, null, null, null, null, null, 1, new SessionFrameListener.Adapter()
         {
             public StreamFrameListener onPush(Stream stream, PushInfo pushInfo)
             {
@@ -137,7 +137,7 @@ public class ClientUsageTest
     @Test
     public void testClientRequestWithBodyResponseNoBody() throws Exception
     {
-        Session session = new StandardSession(SPDY.V2, null, null, null, null, null, null, 1, null, null, null);
+        Session session = new StandardSession(SPDY.V2, null, null, null, null, null, 1, null, null, null);
 
         Stream stream = session.syn(new SynInfo(5, TimeUnit.SECONDS, new Fields(), false, (byte)0),
                 new StreamFrameListener.Adapter()
@@ -166,7 +166,7 @@ public class ClientUsageTest
     @Test
     public void testAsyncClientRequestWithBodyResponseNoBody() throws Exception
     {
-        Session session = new StandardSession(SPDY.V2, null, null, null, null, null, null, 1, null, null, null);
+        Session session = new StandardSession(SPDY.V2, null, null, null, null, null, 1, null, null, null);
 
         final String context = "context";
         session.syn(new SynInfo(new Fields(), false), new StreamFrameListener.Adapter()
@@ -209,7 +209,7 @@ public class ClientUsageTest
     @Test
     public void testAsyncClientRequestWithBodyAndResponseWithBody() throws Exception
     {
-        Session session = new StandardSession(SPDY.V2, null, null, null, null, null, null, 1, null, null, null);
+        Session session = new StandardSession(SPDY.V2, null, null, null, null, null, 1, null, null, null);
 
         session.syn(new SynInfo(new Fields(), false), new StreamFrameListener.Adapter()
                 {
@@ -222,7 +222,7 @@ public class ClientUsageTest
                     {
                         // Do something with the response
                         Fields headers = replyInfo.getHeaders();
-                        int contentLength = headers.get("content-length").valueAsInt();
+                        int contentLength = headers.get("content-length").getValueAsInt();
                         stream.setAttribute("content-length", contentLength);
                         if (!replyInfo.isClose())
                             stream.setAttribute("builder", new StringBuilder());
@@ -242,7 +242,7 @@ public class ClientUsageTest
                     public void onData(Stream stream, DataInfo dataInfo)
                     {
                         StringBuilder builder = (StringBuilder)stream.getAttribute("builder");
-                        builder.append(dataInfo.asString("UTF-8", true));
+                        builder.append(dataInfo.asString(StandardCharsets.UTF_8, true));
 
                     }
                 }, new Promise.Adapter<Stream>()
@@ -250,9 +250,9 @@ public class ClientUsageTest
                     @Override
                     public void succeeded(Stream stream)
                     {
-                        stream.data(new BytesDataInfo("wee".getBytes(Charset.forName("UTF-8")), false), new Callback.Adapter());
+                        stream.data(new BytesDataInfo("wee".getBytes(StandardCharsets.UTF_8), false), new Callback.Adapter());
                         stream.data(new StringDataInfo("foo", false), new Callback.Adapter());
-                        stream.data(new ByteBufferDataInfo(Charset.forName("UTF-8").encode("bar"), true), new Callback.Adapter());
+                        stream.data(new ByteBufferDataInfo(StandardCharsets.UTF_8.encode("bar"), true), new Callback.Adapter());
                     }
                 }
         );

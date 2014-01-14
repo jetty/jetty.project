@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.spdy.server.http;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Queue;
 import java.util.Set;
@@ -46,7 +45,7 @@ import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamStatus;
-import org.eclipse.jetty.util.BlockingCallback;
+import org.eclipse.jetty.spdy.http.HTTPSPDYHeader;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ConcurrentArrayQueue;
@@ -66,7 +65,6 @@ public class HttpTransportOverSPDY implements HttpTransport
     private final Stream stream;
     private final short version;
     private final Fields requestHeaders;
-    private final BlockingCallback streamBlocker = new BlockingCallback();
     private final AtomicBoolean committed = new AtomicBoolean();
 
     public HttpTransportOverSPDY(Connector connector, HttpConfiguration configuration, EndPoint endPoint, PushStrategy pushStrategy, Stream stream, Fields requestHeaders)
@@ -121,7 +119,7 @@ public class HttpTransportOverSPDY implements HttpTransport
         // info!=null content!=null lastContent==false          reply, commit with content
         // info!=null content!=null lastContent==true           reply, commit with content and complete
 
-        boolean isHeadRequest = HttpMethod.HEAD.name().equalsIgnoreCase(requestHeaders.get(HTTPSPDYHeader.METHOD.name(version)).value());
+        boolean isHeadRequest = HttpMethod.HEAD.name().equalsIgnoreCase(requestHeaders.get(HTTPSPDYHeader.METHOD.name(version)).getValue());
         boolean hasContent = BufferUtil.hasContent(content) && !isHeadRequest;
         boolean close = !hasContent && lastContent;
 
@@ -132,7 +130,7 @@ public class HttpTransportOverSPDY implements HttpTransport
                 StreamException exception = new StreamException(stream.getId(), StreamStatus.PROTOCOL_ERROR,
                         "Stream already committed!");
                 callback.failed(exception);
-                LOG.warn("Committed response twice.", exception);
+                LOG.debug("Committed response twice.", exception);
                 return;
             }
             sendReply(info, !hasContent ? callback : new Callback.Adapter()
@@ -209,20 +207,6 @@ public class HttpTransportOverSPDY implements HttpTransport
     }
 
     @Override
-    public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent) throws IOException
-    {
-        send(info, content, lastContent, streamBlocker);
-        try
-        {
-            streamBlocker.block();
-        }
-        catch (Exception e)
-        {
-            LOG.debug(e);
-        }
-    }
-
-    @Override
     public void completed()
     {
         LOG.debug("Completed {}", this);
@@ -236,7 +220,7 @@ public class HttpTransportOverSPDY implements HttpTransport
             stream.headers(new HeadersInfo(replyInfo.getHeaders(), replyInfo.isClose()), callback);
 
         Fields responseHeaders = replyInfo.getHeaders();
-        if (responseHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().startsWith("200") && !stream.isClosed())
+        if (responseHeaders.get(HTTPSPDYHeader.STATUS.name(version)).getValue().startsWith("200") && !stream.isClosed())
         {
             Set<String> pushResources = pushStrategy.apply(stream, requestHeaders, responseHeaders);
             if (pushResources.size() > 0)
@@ -367,7 +351,7 @@ public class HttpTransportOverSPDY implements HttpTransport
             newRequestHeaders.put(scheme);
             newRequestHeaders.put(host);
             newRequestHeaders.put(HTTPSPDYHeader.URI.name(version), pushResourcePath);
-            String referrer = scheme.value() + "://" + host.value() + uri.value();
+            String referrer = scheme.getValue() + "://" + host.getValue() + uri.getValue();
             newRequestHeaders.put("referer", referrer);
             newRequestHeaders.put("x-spdy-push", "true");
             return newRequestHeaders;
@@ -377,7 +361,7 @@ public class HttpTransportOverSPDY implements HttpTransport
         {
             final Fields pushHeaders = new Fields();
             if (version == SPDY.V2)
-                pushHeaders.put(HTTPSPDYHeader.URI.name(version), scheme.value() + "://" + host.value() + pushResourcePath);
+                pushHeaders.put(HTTPSPDYHeader.URI.name(version), scheme.getValue() + "://" + host.getValue() + pushResourcePath);
             else
             {
                 pushHeaders.put(HTTPSPDYHeader.URI.name(version), pushResourcePath);

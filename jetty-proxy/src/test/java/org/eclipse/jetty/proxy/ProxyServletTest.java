@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.proxy;
 
+import static java.nio.file.StandardOpenOption.CREATE;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,15 +30,16 @@ import java.net.HttpCookie;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.zip.GZIPOutputStream;
+
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -48,8 +51,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpContentResponse;
+import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.ProxyConfiguration;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
@@ -75,8 +78,6 @@ import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import static java.nio.file.StandardOpenOption.CREATE;
 
 @RunWith(AdvancedRunner.class)
 public class ProxyServletTest
@@ -110,7 +111,7 @@ public class ProxyServletTest
     private HttpClient prepareClient() throws Exception
     {
         HttpClient result = new HttpClient();
-        result.setProxyConfiguration(new ProxyConfiguration("localhost", proxyConnector.getLocalPort()));
+        result.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyConnector.getLocalPort()));
         result.start();
         return result;
     }
@@ -236,17 +237,17 @@ public class ProxyServletTest
         prepareProxy(new ProxyServlet());
 
         HttpClient result = new HttpClient();
-        result.setProxyConfiguration(new ProxyConfiguration("localhost", proxyConnector.getLocalPort()));
+        result.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyConnector.getLocalPort()));
         QueuedThreadPool threadPool = new QueuedThreadPool();
         threadPool.setName("foo");
-        threadPool.setMaxThreads(2);
+        threadPool.setMaxThreads(20);
         result.setExecutor(threadPool);
         result.start();
 
         ContentResponse[] responses = new ContentResponse[10];
 
         final byte[] content = new byte[1024];
-        Arrays.fill(content, (byte)'A');
+        new Random().nextBytes(content);
         prepareServer(new HttpServlet()
         {
             @Override
@@ -269,10 +270,9 @@ public class ProxyServletTest
 
         for ( int i = 0; i < 10; ++i )
         {
-
-        Assert.assertEquals(200, responses[i].getStatus());
-        Assert.assertTrue(responses[i].getHeaders().containsKey(PROXIED_HEADER));
-        Assert.assertArrayEquals(content, responses[i].getContent());
+            Assert.assertEquals(200, responses[i].getStatus());
+            Assert.assertTrue(responses[i].getHeaders().containsKey(PROXIED_HEADER));
+            Assert.assertArrayEquals(content, responses[i].getContent());
         }
     }
 
@@ -292,7 +292,7 @@ public class ProxyServletTest
         });
 
         byte[] content = new byte[1024];
-        Arrays.fill(content, (byte)'A');
+        new Random().nextBytes(content);
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
                 .method(HttpMethod.POST)
                 .content(new BytesContentProvider(content))
@@ -332,6 +332,9 @@ public class ProxyServletTest
     @Test
     public void testProxyWithBigRequestContentConsumed() throws Exception
     {
+        final byte[] content = new byte[128 * 1024];
+        new Random().nextBytes(content);
+
         prepareProxy(new ProxyServlet());
         prepareServer(new HttpServlet()
         {
@@ -341,13 +344,18 @@ public class ProxyServletTest
                 if (req.getHeader("Via") != null)
                     resp.addHeader(PROXIED_HEADER, "true");
                 InputStream input = req.getInputStream();
+                int index = 0;
                 while (true)
-                    if (input.read() < 0)
+                {
+                    int value = input.read();
+                    if (value < 0)
                         break;
+                    Assert.assertEquals("Content mismatch at index=" + index, content[index] & 0xFF, value);
+                    ++index;
+                }
             }
         });
 
-        byte[] content = new byte[128 * 1024];
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
                 .method(HttpMethod.POST)
                 .content(new BytesContentProvider(content))
@@ -370,7 +378,7 @@ public class ProxyServletTest
         Files.createDirectories(targetTestsDir);
         final Path temp = Files.createTempFile(targetTestsDir, "test_", null);
         byte[] kb = new byte[1024];
-        Arrays.fill(kb, (byte)'X');
+        new Random().nextBytes(kb);
         try (OutputStream output = Files.newOutputStream(temp, CREATE))
         {
             for (int i = 0; i < length; ++i)
@@ -632,7 +640,7 @@ public class ProxyServletTest
             }
         });
         int port = serverConnector.getLocalPort();
-        client.getProxyConfiguration().getExcludedOrigins().add("127.0.0.1:" + port);
+        client.getProxyConfiguration().getProxies().get(0).getExcludedAddresses().add("127.0.0.1:" + port);
 
         // Try with a proxied host
         ContentResponse response = client.newRequest("localhost", port)
@@ -652,6 +660,17 @@ public class ProxyServletTest
     @Test
     public void testTransparentProxy() throws Exception
     {
+        testTransparentProxyWithPrefix("/proxy");
+    }
+
+    @Test
+    public void testTransparentProxyWithRootContext() throws Exception
+    {
+        testTransparentProxyWithPrefix("/");
+    }
+
+    private void testTransparentProxyWithPrefix(String prefix) throws Exception
+    {
         final String target = "/test";
         prepareServer(new HttpServlet()
         {
@@ -665,13 +684,12 @@ public class ProxyServletTest
         });
 
         String proxyTo = "http://localhost:" + serverConnector.getLocalPort();
-        String prefix = "/proxy";
         ProxyServlet.Transparent proxyServlet = new ProxyServlet.Transparent(proxyTo, prefix);
         prepareProxy(proxyServlet);
 
         // Make the request to the proxy, it should transparently forward to the server
         ContentResponse response = client.newRequest("localhost", proxyConnector.getLocalPort())
-                .path(prefix + target)
+                .path((prefix + target).replaceAll("//", "/"))
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
         Assert.assertEquals(200, response.getStatus());
@@ -866,7 +884,7 @@ public class ProxyServletTest
             }
         });
 
-        ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
+        client.newRequest("localhost", serverConnector.getLocalPort())
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 

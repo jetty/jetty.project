@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,47 +18,67 @@
 
 package org.eclipse.jetty.websocket.common.events;
 
-import java.util.ArrayList;
-import java.util.regex.Pattern;
-
-import org.junit.Assert;
-
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 
+import java.util.regex.Pattern;
+
+import org.eclipse.jetty.toolchain.test.EventQueue;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.junit.Assert;
+
 @SuppressWarnings("serial")
-public class EventCapture extends ArrayList<String>
+public class EventCapture extends EventQueue<String>
 {
+    private static final Logger LOG = Log.getLogger(EventCapture.class);
+    
+    public static class Assertable
+    {
+        private final String event;
+
+        public Assertable(String event)
+        {
+            this.event = event;
+        }
+
+        public void assertEventContains(String expected)
+        {
+            Assert.assertThat("Event",event,containsString(expected));
+        }
+
+        public void assertEventRegex(String regex)
+        {
+            Assert.assertTrue("Event: regex:[" + regex + "] in [" + event + "]",Pattern.matches(regex,event));
+        }
+
+        public void assertEventStartsWith(String expected)
+        {
+            Assert.assertThat("Event",event,startsWith(expected));
+        }
+
+        public void assertEvent(String expected)
+        {
+            Assert.assertThat("Event",event,is(expected));
+        }
+    }
+
     public void add(String format, Object... args)
     {
-        super.add(String.format(format,args));
+        String msg = String.format(format,args);
+        LOG.debug("EVENT: {}",msg);
+        super.offer(msg);
     }
 
-    public void assertEvent(int eventNum, String expected)
+    public Assertable pop()
     {
-        Assert.assertThat("Event[" + eventNum + "]",get(eventNum),is(expected));
-    }
-
-    public void assertEventContains(int eventNum, String expected)
-    {
-        Assert.assertThat("Event[" + eventNum + "]",get(eventNum),containsString(expected));
+        return new Assertable(super.poll());
     }
 
     public void assertEventCount(int expectedCount)
     {
         Assert.assertThat("Event Count",size(),is(expectedCount));
-    }
-
-    public void assertEventRegex(int eventNum, String regex)
-    {
-        String event = get(eventNum);
-        Assert.assertTrue("Event[" + eventNum + "]: regex:[" + regex + "] in [" + event + "]",Pattern.matches(regex,event));
-    }
-
-    public void assertEventStartsWith(int eventNum, String expected)
-    {
-        Assert.assertThat("Event[" + eventNum + "]",get(eventNum),startsWith(expected));
     }
 
     public String q(String str)

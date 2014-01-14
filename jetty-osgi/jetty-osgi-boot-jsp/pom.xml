@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
-    <version>9.0.7-SNAPSHOT</version>
+    <version>9.1.2-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-osgi-boot-jsp</artifactId>
@@ -33,8 +33,8 @@
     </dependency>
     <!-- Orbit Servlet Deps -->
     <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>javax.servlet</artifactId>
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
     </dependency>
     <!-- Orbit JSP Deps -->
     <dependency>
@@ -88,31 +88,32 @@
                 <Bundle-Classpath />
                 <Fragment-Host>org.eclipse.jetty.osgi.boot</Fragment-Host>
                 <Export-Package>!org.eclipse.jetty.osgi.boot.*</Export-Package>
-                <Import-Package>com.sun.el;resolution:=optional,
+                <Import-Package>org.eclipse.jdt.*;resolution:=optional,
+                com.sun.el;resolution:=optional,
  com.sun.el.lang;resolution:=optional,
  com.sun.el.parser;resolution:=optional,
  com.sun.el.util;resolution:=optional,
- javax.el;version="2.2.0";resolution:=optional,
- javax.servlet;version="2.6.0",
- javax.servlet.jsp;version="2.2.0",
- javax.servlet.jsp.el;version="2.2.0",
+ javax.el;version="[3.0,3.1)",
+ javax.servlet;version="[3.1,3.2)",
+ javax.servlet.resources;version="[3.1,3.2)",
+ javax.servlet.jsp.resources;version="[3.1,3.2)",
+ javax.servlet.jsp;version="[2.3,2.4)",
+ javax.servlet.jsp.el;version="[2.3,2.4)",
+ javax.servlet.jsp.tagext;version="[2.3,2.4)",
  javax.servlet.jsp.jstl.core;version="1.2.0";resolution:=optional,
  javax.servlet.jsp.jstl.fmt;version="1.2.0";resolution:=optional,
  javax.servlet.jsp.jstl.sql;version="1.2.0";resolution:=optional,
  javax.servlet.jsp.jstl.tlv;version="1.2.0";resolution:=optional,
- javax.servlet.jsp.resources;version="2.2.0",
- javax.servlet.jsp.tagext;version="2.2.0",
- javax.servlet.resources;version="2.6.0",
- org.apache.jasper;version="2.2.2";resolution:=optional,
- org.apache.jasper.compiler;version="2.2.2";resolution:=optional,
- org.apache.jasper.compiler.tagplugin;version="2.2.2";resolution:=optional,
- org.apache.jasper.runtime;version="2.2.2";resolution:=optional,
- org.apache.jasper.security;version="2.2.2";resolution:=optional,
- org.apache.jasper.servlet;version="2.2.2";resolution:=optional,
- org.apache.jasper.tagplugins.jstl;version="2.2.2";resolution:=optional,
- org.apache.jasper.util;version="2.2.2";resolution:=optional,
- org.apache.jasper.xmlparser;version="2.2.2";resolution:=optional,
- org.glassfish.jsp.api;version="2.2.2";resolution:=optional,
+ org.apache.jasper;version="[2.3.2,2.4)";resolution:=optional,
+ org.apache.jasper.compiler;version="[2.3.2,2.4)";resolution:=optional,
+ org.apache.jasper.compiler.tagplugin;version="[2.3.2,2.4)";resolution:=optional,
+ org.apache.jasper.runtime;version="[2.3.2,2.4)";resolution:=optional,
+ org.apache.jasper.security;version="[2.3.2,2.4)";resolution:=optional,
+ org.apache.jasper.servlet;version="[2.3.2,2.4)";resolution:=optional,
+ org.apache.jasper.tagplugins.jstl;version="[2.3.2,2.4)";resolution:=optional,
+ org.apache.jasper.util;version="[2.3.2,2.4)";resolution:=optional,
+ org.apache.jasper.xmlparser;version="[2.3.2,2.4)";resolution:=optional,
+ org.glassfish.jsp.api;version="[2.3.2,2.4)";resolution:=optional,
  org.apache.taglibs.standard;version="1.2.0";resolution:=optional,
  org.apache.taglibs.standard.extra.spath;version="1.2.0";resolution:=optional,
  org.apache.taglibs.standard.functions;version="1.2.0";resolution:=optional,
@@ -145,7 +146,7 @@
  javax.xml.parser;resolution:=optional
                 </Import-Package>
                 <_nouses>true</_nouses>
-                <DynamicImport-Package>org.apache.jasper.*;version="2.2"</DynamicImport-Package>
+                <DynamicImport-Package>org.apache.jasper.*;version="2.3"</DynamicImport-Package>
               </instructions>
           </configuration>
       </plugin>

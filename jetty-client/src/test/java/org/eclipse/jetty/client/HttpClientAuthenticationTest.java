@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -81,7 +81,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
 
         Constraint constraint = new Constraint();
         constraint.setAuthenticate(true);
-        constraint.setRoles(new String[]{"*"});
+        constraint.setRoles(new String[]{"**"}); //allow any authenticated user
         ConstraintMapping mapping = new ConstraintMapping();
         mapping.setPathSpec("/secure");
         mapping.setConstraint(constraint);
@@ -89,7 +89,6 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         securityHandler.addConstraintMapping(mapping);
         securityHandler.setAuthenticator(authenticator);
         securityHandler.setLoginService(loginService);
-        securityHandler.setStrict(false);
 
         securityHandler.setHandler(handler);
         start(securityHandler);
@@ -116,7 +115,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         AuthenticationStore authenticationStore = client.getAuthenticationStore();
 
         final AtomicReference<CountDownLatch> requests = new AtomicReference<>(new CountDownLatch(1));
-        Request.Listener.Empty requestListener = new Request.Listener.Empty()
+        Request.Listener.Adapter requestListener = new Request.Listener.Adapter()
         {
             @Override
             public void onSuccess(Request request)
@@ -133,12 +132,11 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         Assert.assertEquals(401, response.getStatus());
         Assert.assertTrue(requests.get().await(5, TimeUnit.SECONDS));
         client.getRequestListeners().remove(requestListener);
-        Assert.assertNull(client.getConversation(request.getConversationID(), false));
 
         authenticationStore.addAuthentication(authentication);
 
         requests.set(new CountDownLatch(2));
-        requestListener = new Request.Listener.Empty()
+        requestListener = new Request.Listener.Adapter()
         {
             @Override
             public void onSuccess(Request request)
@@ -157,7 +155,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         client.getRequestListeners().remove(requestListener);
 
         requests.set(new CountDownLatch(1));
-        requestListener = new Request.Listener.Empty()
+        requestListener = new Request.Listener.Adapter()
         {
             @Override
             public void onSuccess(Request request)
@@ -197,7 +195,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         client.getAuthenticationStore().addAuthentication(new BasicAuthentication(uri, realm, "basic", "basic"));
 
         final CountDownLatch requests = new CountDownLatch(3);
-        Request.Listener.Empty requestListener = new Request.Listener.Empty()
+        Request.Listener.Adapter requestListener = new Request.Listener.Adapter()
         {
             @Override
             public void onSuccess(Request request)
@@ -236,7 +234,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         client.getAuthenticationStore().addAuthentication(new BasicAuthentication(uri, realm, "basic", "basic"));
 
         final CountDownLatch requests = new CountDownLatch(3);
-        Request.Listener.Empty requestListener = new Request.Listener.Empty()
+        Request.Listener.Adapter requestListener = new Request.Listener.Adapter()
         {
             @Override
             public void onSuccess(Request request)
@@ -263,7 +261,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         startBasic(new EmptyServerHandler());
 
         final AtomicReference<CountDownLatch> requests = new AtomicReference<>(new CountDownLatch(2));
-        Request.Listener.Empty requestListener = new Request.Listener.Empty()
+        Request.Listener.Adapter requestListener = new Request.Listener.Adapter()
         {
             @Override
             public void onSuccess(Request request)

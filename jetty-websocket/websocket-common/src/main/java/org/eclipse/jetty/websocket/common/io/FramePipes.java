@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.common.io;
 
-import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
@@ -36,7 +35,7 @@ public class FramePipes
         }
 
         @Override
-        public void incomingError(WebSocketException e)
+        public void incomingError(Throwable t)
         {
             /* cannot send exception on */
         }
@@ -60,7 +59,15 @@ public class FramePipes
         @Override
         public void outgoingFrame(Frame frame, WriteCallback callback)
         {
-            this.incoming.incomingFrame(frame);
+            try
+            {
+                this.incoming.incomingFrame(frame);
+                callback.writeSuccess();
+            }
+            catch (Throwable t)
+            {
+                callback.writeFailed(t);
+            }
         }
     }
 

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -37,7 +37,6 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
@@ -46,15 +45,9 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.server.session.HashSessionManager;
-import org.eclipse.jetty.spdy.server.NPNServerConnectionFactory;
-import org.eclipse.jetty.spdy.server.SPDYServerConnectionFactory;
-import org.eclipse.jetty.spdy.server.http.HTTPSPDYServerConnectionFactory;
-import org.eclipse.jetty.spdy.server.http.PushStrategy;
-import org.eclipse.jetty.spdy.server.http.ReferrerPushStrategy;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.Ignore;
@@ -100,7 +93,7 @@ public class TestServer
         httpConnector.setIdleTimeout(30000);
         server.addConnector(httpConnector);
 
-        
+        /*
         // SSL configurations
         SslContextFactory sslContextFactory = new SslContextFactory();
         sslContextFactory.setKeyStorePath(jetty_root + "/jetty-server/src/main/config/etc/keystore");
@@ -135,7 +128,7 @@ public class TestServer
         spdyConnector.setIdleTimeout(15000);
         server.addConnector(spdyConnector);
         
-        
+        */
         
         // Handlers
         HandlerCollection handlers = new HandlerCollection();
@@ -154,7 +147,7 @@ public class TestServer
         // Setup context
         HashLoginService login = new HashLoginService();
         login.setName("Test Realm");
-        login.setConfig(jetty_root + "/tests/test-webapps/test-jetty-webapp/src/main/config/etc/realm.properties");
+        login.setConfig(jetty_root + "/tests/test-webapps/test-jetty-webapp/src/main/config/demo-base/etc/realm.properties");
         server.addBean(login);
 
         File log=File.createTempFile("jetty-yyyy_mm_dd", "log");

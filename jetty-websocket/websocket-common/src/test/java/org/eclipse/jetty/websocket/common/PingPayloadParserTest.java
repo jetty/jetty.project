@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,13 +18,16 @@
 
 package org.eclipse.jetty.websocket.common;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
 
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.common.frames.PingFrame;
+import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
+import org.eclipse.jetty.websocket.common.test.UnitParser;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -47,8 +50,9 @@ public class PingPayloadParserTest
 
         capture.assertNoErrors();
         capture.assertHasFrame(OpCode.PING,1);
-        WebSocketFrame ping = capture.getFrames().get(0);
+        PingFrame ping = (PingFrame)capture.getFrames().poll();
 
-        Assert.assertThat("PingFrame.payload",ping.getPayloadAsUTF8(),is("Hello"));
+        String actual = BufferUtil.toUTF8String(ping.getPayload());
+        Assert.assertThat("PingFrame.payload",actual,is("Hello"));
     }
 }

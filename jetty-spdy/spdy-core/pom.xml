@@ -3,7 +3,7 @@
     <parent>
         <groupId>org.eclipse.jetty.spdy</groupId>
         <artifactId>spdy-parent</artifactId>
-        <version>9.0.7-SNAPSHOT</version>
+        <version>9.1.2-SNAPSHOT</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -14,7 +14,6 @@
         <bundle-symbolic-name>${project.groupId}.core</bundle-symbolic-name>
     </properties>
 
-  <url>http://www.eclipse.org/jetty</url>
     <dependencies>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>

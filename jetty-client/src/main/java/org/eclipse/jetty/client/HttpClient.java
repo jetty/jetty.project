@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,51 +19,45 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
-import java.net.ConnectException;
 import java.net.CookieManager;
 import java.net.CookiePolicy;
 import java.net.CookieStore;
 import java.net.SocketAddress;
-import java.net.SocketException;
 import java.net.URI;
-import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.client.api.AuthenticationStore;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Destination;
-import org.eclipse.jetty.client.api.ProxyConfiguration;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.io.SelectChannelEndPoint;
-import org.eclipse.jetty.io.SelectorManager;
-import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.SocketAddressResolver;
-import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -110,12 +104,14 @@ public class HttpClient extends ContainerLifeCycle
 {
     private static final Logger LOG = Log.getLogger(HttpClient.class);
 
-    private final ConcurrentMap<String, HttpDestination> destinations = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Origin, HttpDestination> destinations = new ConcurrentHashMap<>();
     private final ConcurrentMap<Long, HttpConversation> conversations = new ConcurrentHashMap<>();
     private final List<ProtocolHandler> handlers = new ArrayList<>();
     private final List<Request.Listener> requestListeners = new ArrayList<>();
     private final AuthenticationStore authenticationStore = new HttpAuthenticationStore();
     private final Set<ContentDecoder.Factory> decoderFactories = new ContentDecoderFactorySet();
+    private final ProxyConfiguration proxyConfig = new ProxyConfiguration();
+    private final HttpClientTransport transport;
     private final SslContextFactory sslContextFactory;
     private volatile CookieManager cookieManager;
     private volatile CookieStore cookieStore;
@@ -123,13 +119,12 @@ public class HttpClient extends ContainerLifeCycle
     private volatile ByteBufferPool byteBufferPool;
     private volatile Scheduler scheduler;
     private volatile SocketAddressResolver resolver;
-    private volatile SelectorManager selectorManager;
     private volatile HttpField agentField = new HttpField(HttpHeader.USER_AGENT, "Jetty/" + Jetty.VERSION);
     private volatile boolean followRedirects = true;
     private volatile int maxConnectionsPerDestination = 64;
     private volatile int maxRequestsQueuedPerDestination = 1024;
     private volatile int requestBufferSize = 4096;
-    private volatile int responseBufferSize = 4096;
+    private volatile int responseBufferSize = 16384;
     private volatile int maxRedirects = 8;
     private volatile SocketAddress bindAddress;
     private volatile long connectTimeout = 15000;
@@ -137,7 +132,7 @@ public class HttpClient extends ContainerLifeCycle
     private volatile long idleTimeout;
     private volatile boolean tcpNoDelay = true;
     private volatile boolean dispatchIO = true;
-    private volatile ProxyConfiguration proxyConfig;
+    private volatile boolean strictEventOrdering = false;
     private volatile HttpField encodingField;
 
     /**
@@ -160,7 +155,18 @@ public class HttpClient extends ContainerLifeCycle
      */
     public HttpClient(SslContextFactory sslContextFactory)
     {
+        this(new HttpClientTransportOverHTTP(), sslContextFactory);
+    }
+
+    public HttpClient(HttpClientTransport transport, SslContextFactory sslContextFactory)
+    {
+        this.transport = transport;
         this.sslContextFactory = sslContextFactory;
+    }
+
+    public HttpClientTransport getTransport()
+    {
+        return transport;
     }
 
     /**
@@ -196,11 +202,10 @@ public class HttpClient extends ContainerLifeCycle
             scheduler = new ScheduledExecutorScheduler(name + "-scheduler", false);
         addBean(scheduler);
 
-        resolver = new SocketAddressResolver(executor, scheduler, getAddressResolutionTimeout());
+        addBean(transport);
+        transport.setHttpClient(this);
 
-        selectorManager = newSelectorManager();
-        selectorManager.setConnectTimeout(getConnectTimeout());
-        addBean(selectorManager);
+        resolver = new SocketAddressResolver(executor, scheduler, getAddressResolutionTimeout());
 
         handlers.add(new ContinueProtocolHandler(this));
         handlers.add(new RedirectProtocolHandler(this));
@@ -213,11 +218,6 @@ public class HttpClient extends ContainerLifeCycle
         cookieStore = cookieManager.getCookieStore();
 
         super.doStart();
-    }
-
-    protected SelectorManager newSelectorManager()
-    {
-        return new ClientSelectorManager(getExecutor(), getScheduler());
     }
 
     private CookieManager newCookieManager()
@@ -246,10 +246,10 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * Returns a <em>non</em> thread-safe list of {@link Request.Listener}s that can be modified before
+     * Returns a <em>non</em> thread-safe list of {@link org.eclipse.jetty.client.api.Request.Listener}s that can be modified before
      * performing requests.
      *
-     * @return a list of {@link Request.Listener} that can be used to add and remove listeners
+     * @return a list of {@link org.eclipse.jetty.client.api.Request.Listener} that can be used to add and remove listeners
      */
     public List<Request.Listener> getRequestListeners()
     {
@@ -359,7 +359,7 @@ public class HttpClient extends ContainerLifeCycle
      */
     public Request newRequest(String host, int port)
     {
-        return newRequest(address("http", host, port));
+        return newRequest(new Origin("http", host, port).asString());
     }
 
     /**
@@ -381,15 +381,18 @@ public class HttpClient extends ContainerLifeCycle
      */
     public Request newRequest(URI uri)
     {
-        return new HttpRequest(this, uri);
+        return newHttpRequest(newConversation(), uri);
     }
 
-    protected Request copyRequest(Request oldRequest, URI newURI)
+    protected Request copyRequest(HttpRequest oldRequest, URI newURI)
     {
-        Request newRequest = new HttpRequest(this, oldRequest.getConversationID(), newURI);
-        newRequest.method(oldRequest.method())
+        Request newRequest = newHttpRequest(oldRequest.getConversation(), newURI);
+        newRequest.method(oldRequest.getMethod())
                 .version(oldRequest.getVersion())
-                .content(oldRequest.getContent());
+                .content(oldRequest.getContent())
+                .idleTimeout(oldRequest.getIdleTimeout(), TimeUnit.MILLISECONDS)
+                .timeout(oldRequest.getTimeout(), TimeUnit.MILLISECONDS)
+                .followRedirects(oldRequest.isFollowRedirects());
         for (HttpField header : oldRequest.getHeaders())
         {
             // We have a new URI, so skip the host header if present
@@ -414,11 +417,9 @@ public class HttpClient extends ContainerLifeCycle
         return newRequest;
     }
 
-    protected String address(String scheme, String host, int port)
+    protected HttpRequest newHttpRequest(HttpConversation conversation, URI uri)
     {
-        StringBuilder result = new StringBuilder();
-        URIUtil.appendSchemeHostPort(result, scheme, host, port);
-        return result.toString();
+        return new HttpRequest(this, conversation, uri);
     }
 
     /**
@@ -443,20 +444,20 @@ public class HttpClient extends ContainerLifeCycle
     {
         port = normalizePort(scheme, port);
 
-        String address = address(scheme, host, port);
-        HttpDestination destination = destinations.get(address);
+        Origin origin = new Origin(scheme, host, port);
+        HttpDestination destination = destinations.get(origin);
         if (destination == null)
         {
-            destination = new HttpDestination(this, scheme, host, port);
+            destination = transport.newHttpDestination(origin);
             if (isRunning())
             {
-                HttpDestination existing = destinations.putIfAbsent(address, destination);
+                HttpDestination existing = destinations.putIfAbsent(origin, destination);
                 if (existing != null)
                     destination = existing;
                 else
                     LOG.debug("Created {}", destination);
                 if (!isRunning())
-                    destinations.remove(address);
+                    destinations.remove(origin);
             }
 
         }
@@ -471,7 +472,7 @@ public class HttpClient extends ContainerLifeCycle
         return new ArrayList<Destination>(destinations.values());
     }
 
-    protected void send(final Request request, List<Response.ResponseListener> listeners)
+    protected void send(final HttpRequest request, List<Response.ResponseListener> listeners)
     {
         String scheme = request.getScheme().toLowerCase(Locale.ENGLISH);
         if (!HttpScheme.HTTP.is(scheme) && !HttpScheme.HTTPS.is(scheme))
@@ -483,34 +484,16 @@ public class HttpClient extends ContainerLifeCycle
 
     protected void newConnection(final HttpDestination destination, final Promise<Connection> promise)
     {
-        Destination.Address address = destination.getConnectAddress();
+        Origin.Address address = destination.getConnectAddress();
         resolver.resolve(address.getHost(), address.getPort(), new Promise<SocketAddress>()
         {
             @Override
             public void succeeded(SocketAddress socketAddress)
             {
-                SocketChannel channel = null;
-                try
-                {
-                    channel = SocketChannel.open();
-                    SocketAddress bindAddress = getBindAddress();
-                    if (bindAddress != null)
-                        channel.bind(bindAddress);
-                    configure(channel);
-                    channel.configureBlocking(false);
-                    channel.connect(socketAddress);
-
-                    ConnectionCallback callback = new ConnectionCallback(destination, promise);
-                    selectorManager.connect(channel, callback);
-                }
-                // Must catch all exceptions, since some like
-                // UnresolvedAddressException are not IOExceptions.
-                catch (Throwable x)
-                {
-                    if (channel != null)
-                        close(channel);
-                    promise.failed(x);
-                }
+                Map<String, Object> context = new HashMap<>();
+                context.put(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY, destination);
+                context.put(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY, promise);
+                transport.connect(socketAddress, context);
             }
 
             @Override
@@ -521,42 +504,9 @@ public class HttpClient extends ContainerLifeCycle
         });
     }
 
-    protected void configure(SocketChannel channel) throws SocketException
+    private HttpConversation newConversation()
     {
-        channel.socket().setTcpNoDelay(isTCPNoDelay());
-    }
-
-    private void close(SocketChannel channel)
-    {
-        try
-        {
-            channel.close();
-        }
-        catch (IOException x)
-        {
-            LOG.ignore(x);
-        }
-    }
-
-    protected HttpConversation getConversation(long id, boolean create)
-    {
-        HttpConversation conversation = conversations.get(id);
-        if (conversation == null && create)
-        {
-            conversation = new HttpConversation(this, id);
-            HttpConversation existing = conversations.putIfAbsent(id, conversation);
-            if (existing != null)
-                conversation = existing;
-            else
-                LOG.debug("{} created", conversation);
-        }
-        return conversation;
-    }
-
-    protected void removeConversation(HttpConversation conversation)
-    {
-        conversations.remove(conversation.getID());
-        LOG.debug("{} removed", conversation);
+        return new HttpConversation();
     }
 
     protected List<ProtocolHandler> getProtocolHandlers()
@@ -594,7 +544,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @return the max time a connection can take to connect to destinations
+     * @return the max time, in milliseconds, a connection can take to connect to destinations
      */
     public long getConnectTimeout()
     {
@@ -602,7 +552,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @param connectTimeout the max time a connection can take to connect to destinations
+     * @param connectTimeout the max time, in milliseconds, a connection can take to connect to destinations
      * @see java.net.Socket#connect(SocketAddress, int)
      */
     public void setConnectTimeout(long connectTimeout)
@@ -627,7 +577,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @return the max time a connection can be idle (that is, without traffic of bytes in either direction)
+     * @return the max time, in milliseconds, a connection can be idle (that is, without traffic of bytes in either direction)
      */
     public long getIdleTimeout()
     {
@@ -635,7 +585,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @param idleTimeout the max time a connection can be idle (that is, without traffic of bytes in either direction)
+     * @param idleTimeout the max time, in milliseconds, a connection can be idle (that is, without traffic of bytes in either direction)
      */
     public void setIdleTimeout(long idleTimeout)
     {
@@ -727,11 +677,6 @@ public class HttpClient extends ContainerLifeCycle
     public void setScheduler(Scheduler scheduler)
     {
         this.scheduler = scheduler;
-    }
-
-    protected SelectorManager getSelectorManager()
-    {
-        return selectorManager;
     }
 
     /**
@@ -879,19 +824,46 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * @return whether request events must be strictly ordered
+     */
+    public boolean isStrictEventOrdering()
+    {
+        return strictEventOrdering;
+    }
+
+    /**
+     * Whether request events must be strictly ordered.
+     * <p />
+     * {@link org.eclipse.jetty.client.api.Response.CompleteListener}s may send a second request.
+     * If the second request is for the same destination, there is an inherent race
+     * condition for the use of the connection: the first request may still be associated with the
+     * connection, so the second request cannot use that connection and is forced to open another one.
+     * <p />
+     * From the point of view of connection usage, the connection is reusable just before the "complete"
+     * event, so it would be possible to reuse that connection from {@link org.eclipse.jetty.client.api.Response.CompleteListener}s;
+     * but in this case the second request's events will fire before the "complete" events of the first
+     * request.
+     * <p />
+     * This setting enforces strict event ordering so that a "begin" event of a second request can never
+     * fire before the "complete" event of a first request, but at the expense of an increased usage
+     * of connections.
+     * <p />
+     * When not enforced, a "begin" event of a second request may happen before the "complete" event of
+     * a first request and allow for better usage of connections.
+     *
+     * @param strictEventOrdering whether request events must be strictly ordered
+     */
+    public void setStrictEventOrdering(boolean strictEventOrdering)
+    {
+        this.strictEventOrdering = strictEventOrdering;
+    }
+
+    /**
      * @return the forward proxy configuration
      */
     public ProxyConfiguration getProxyConfiguration()
     {
         return proxyConfig;
-    }
-
-    /**
-     * @param proxyConfig the forward proxy configuration
-     */
-    public void setProxyConfiguration(ProxyConfiguration proxyConfig)
-    {
-        this.proxyConfig = proxyConfig;
     }
 
     protected HttpField getAcceptEncodingField()
@@ -916,128 +888,11 @@ public class HttpClient extends ContainerLifeCycle
         return HttpScheme.HTTPS.is(scheme) ? port == 443 : port == 80;
     }
 
-    protected HttpConnection newHttpConnection(HttpClient httpClient, EndPoint endPoint, HttpDestination destination)
-    {
-        return new HttpConnection(httpClient, endPoint, destination);
-    }
-
-    protected SslConnection newSslConnection(HttpClient httpClient, EndPoint endPoint, SSLEngine engine)
-    {
-        return new SslConnection(httpClient.getByteBufferPool(), httpClient.getExecutor(), endPoint, engine);
-    }
-
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
         dumpThis(out);
         dump(out, indent, getBeans(), destinations.values());
-    }
-
-    protected Connection tunnel(Connection connection)
-    {
-        HttpConnection httpConnection = (HttpConnection)connection;
-        HttpDestination destination = httpConnection.getDestination();
-        SslConnection sslConnection = createSslConnection(destination, httpConnection.getEndPoint());
-        Connection result = (Connection)sslConnection.getDecryptedEndPoint().getConnection();
-        selectorManager.connectionClosed(httpConnection);
-        selectorManager.connectionOpened(sslConnection);
-        LOG.debug("Tunnelled {} over {}", connection, result);
-        return result;
-    }
-
-    private SslConnection createSslConnection(HttpDestination destination, EndPoint endPoint)
-    {
-        SSLEngine engine = sslContextFactory.newSSLEngine(destination.getHost(), destination.getPort());
-        engine.setUseClientMode(true);
-
-        SslConnection sslConnection = newSslConnection(HttpClient.this, endPoint, engine);
-        sslConnection.setRenegotiationAllowed(sslContextFactory.isRenegotiationAllowed());
-        endPoint.setConnection(sslConnection);
-        EndPoint appEndPoint = sslConnection.getDecryptedEndPoint();
-        HttpConnection connection = newHttpConnection(this, appEndPoint, destination);
-        appEndPoint.setConnection(connection);
-
-        return sslConnection;
-    }
-
-    protected class ClientSelectorManager extends SelectorManager
-    {
-        public ClientSelectorManager(Executor executor, Scheduler scheduler)
-        {
-            this(executor, scheduler, 1);
-        }
-
-        public ClientSelectorManager(Executor executor, Scheduler scheduler, int selectors)
-        {
-            super(executor, scheduler, selectors);
-        }
-
-        @Override
-        protected EndPoint newEndPoint(SocketChannel channel, ManagedSelector selector, SelectionKey key)
-        {
-            return new SelectChannelEndPoint(channel, selector, key, getScheduler(), getIdleTimeout());
-        }
-
-        @Override
-        public org.eclipse.jetty.io.Connection newConnection(SocketChannel channel, EndPoint endPoint, Object attachment) throws IOException
-        {
-            ConnectionCallback callback = (ConnectionCallback)attachment;
-            HttpDestination destination = callback.destination;
-
-            SslContextFactory sslContextFactory = getSslContextFactory();
-            if (!destination.isProxied() && HttpScheme.HTTPS.is(destination.getScheme()))
-            {
-                if (sslContextFactory == null)
-                {
-                    IOException failure = new ConnectException("Missing " + SslContextFactory.class.getSimpleName() + " for " + destination.getScheme() + " requests");
-                    callback.failed(failure);
-                    throw failure;
-                }
-                else
-                {
-                    SslConnection sslConnection = createSslConnection(destination, endPoint);
-                    callback.succeeded((Connection)sslConnection.getDecryptedEndPoint().getConnection());
-                    return sslConnection;
-                }
-            }
-            else
-            {
-                HttpConnection connection = newHttpConnection(HttpClient.this, endPoint, destination);
-                callback.succeeded(connection);
-                return connection;
-            }
-        }
-
-        @Override
-        protected void connectionFailed(SocketChannel channel, Throwable ex, Object attachment)
-        {
-            ConnectionCallback callback = (ConnectionCallback)attachment;
-            callback.failed(ex);
-        }
-    }
-
-    private class ConnectionCallback implements Promise<Connection>
-    {
-        private final HttpDestination destination;
-        private final Promise<Connection> promise;
-
-        private ConnectionCallback(HttpDestination destination, Promise<Connection> promise)
-        {
-            this.destination = destination;
-            this.promise = promise;
-        }
-
-        @Override
-        public void succeeded(Connection result)
-        {
-            promise.succeeded(result);
-        }
-
-        @Override
-        public void failed(Throwable x)
-        {
-            promise.failed(x);
-        }
     }
 
     private class ContentDecoderFactorySet implements Set<ContentDecoder.Factory>

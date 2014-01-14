@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,14 +20,15 @@ package org.eclipse.jetty.client;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.ProxyConfiguration;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.BasicAuthentication;
 import org.eclipse.jetty.http.HttpHeader;
@@ -68,7 +69,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
 
         int proxyPort = connector.getLocalPort();
         int serverPort = proxyPort + 1; // Any port will do for these tests - just not the same as the proxy
-        client.setProxyConfiguration(new ProxyConfiguration("localhost", proxyPort));
+        client.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyPort));
 
         ContentResponse response = client.newRequest(serverHost, serverPort)
                 .scheme(scheme)
@@ -83,7 +84,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
     {
         final String user = "foo";
         final String password = "bar";
-        final String credentials = B64Code.encode(user + ":" + password, "ISO-8859-1");
+        final String credentials = B64Code.encode(user + ":" + password, StandardCharsets.ISO_8859_1);
         final String serverHost = "server";
         final String realm = "test_realm";
         final int status = HttpStatus.NO_CONTENT_204;
@@ -115,7 +116,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         String proxyHost = "localhost";
         int proxyPort = connector.getLocalPort();
         int serverPort = proxyPort + 1; // Any port will do for these tests - just not the same as the proxy
-        client.setProxyConfiguration(new ProxyConfiguration(proxyHost, proxyPort));
+        client.getProxyConfiguration().getProxies().add(new HttpProxy(proxyHost, proxyPort));
 
         ContentResponse response1 = client.newRequest(serverHost, serverPort)
                 .scheme(scheme)
@@ -129,7 +130,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         URI uri = URI.create(scheme + "://" + proxyHost + ":" + proxyPort);
         client.getAuthenticationStore().addAuthentication(new BasicAuthentication(uri, realm, user, password));
         final AtomicInteger requests = new AtomicInteger();
-        client.getRequestListeners().add(new Request.Listener.Empty()
+        client.getRequestListeners().add(new Request.Listener.Adapter()
         {
             @Override
             public void onSuccess(Request request)

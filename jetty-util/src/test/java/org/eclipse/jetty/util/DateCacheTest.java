@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -44,14 +44,13 @@ public class DateCacheTest
     {
         //@WAS: Test t = new Test("org.eclipse.jetty.util.DateCache");
         //                            012345678901234567890123456789
-        DateCache dc = new DateCache("EEE, dd MMM yyyy HH:mm:ss zzz ZZZ",Locale.US);
-        dc.setTimeZone(TimeZone.getTimeZone("GMT"));
+        DateCache dc = new DateCache("EEE, dd MMM yyyy HH:mm:ss zzz ZZZ",Locale.US,TimeZone.getTimeZone("GMT"));
 
         Thread.sleep(2000);
 
         long now=System.currentTimeMillis();
         long end=now+3000;
-        String f=dc.format(now);
+        String f=dc.formatNow(now);
         String last=f;
 
         int hits=0;
@@ -60,7 +59,7 @@ public class DateCacheTest
         while (now<end)
         {
             last=f;
-            f=dc.format(now);
+            f=dc.formatNow(now);
             // System.err.printf("%s %s%n",f,last==f);
             if (last==f)
                 hits++;

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -519,6 +519,16 @@ public class StdErrLog extends AbstractLogger
         }
     }
 
+    public void debug(String msg, long arg)
+    {
+        if (isDebugEnabled())
+        {
+            StringBuilder buffer = new StringBuilder(64);
+            format(buffer,":DBUG:",msg,arg);
+            (_stderr==null?System.err:_stderr).println(buffer);
+        }
+    }
+    
     public void debug(Throwable thrown)
     {
         debug("",thrown);
@@ -538,7 +548,7 @@ public class StdErrLog extends AbstractLogger
     {
         long now = System.currentTimeMillis();
         int ms=(int)(now%1000);
-        String d = _dateCache.now();
+        String d = _dateCache.formatNow(now);
         tag(buffer,d,ms,level);
         format(buffer,msg,args);
     }

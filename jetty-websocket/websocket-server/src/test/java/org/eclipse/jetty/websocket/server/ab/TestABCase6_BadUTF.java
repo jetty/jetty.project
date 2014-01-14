@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,18 +18,21 @@
 
 package org.eclipse.jetty.websocket.server.ab;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.common.CloseInfo;
-import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
-import org.eclipse.jetty.websocket.server.helper.Hex;
+import org.eclipse.jetty.websocket.common.frames.TextFrame;
+import org.eclipse.jetty.websocket.common.test.Fuzzer;
+import org.eclipse.jetty.websocket.common.util.Hex;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -154,16 +157,15 @@ public class TestABCase6_BadUTF extends AbstractABCase
     public void assertBadTextPayload() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.TEXT).setPayload(invalid));
+        send.add(new TextFrame().setPayload(ByteBuffer.wrap(invalid)));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.BAD_PAYLOAD).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(StacklessLogging supress = new StacklessLogging(Parser.class))
         {
-            enableStacks(Parser.class,false);
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
@@ -173,7 +175,6 @@ public class TestABCase6_BadUTF extends AbstractABCase
         finally
         {
             fuzzer.close();
-            enableStacks(Parser.class,true);
         }
     }
 }

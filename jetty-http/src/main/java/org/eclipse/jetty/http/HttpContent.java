@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.resource.Resource;
 
 /* ------------------------------------------------------------ */
@@ -98,7 +99,16 @@ public interface HttpContent
         @Override
         public ByteBuffer getDirectBuffer()
         {
-            return null;
+            if (_resource.length()<=0 || _maxBuffer<_resource.length())
+                return null;
+            try
+            {
+                return BufferUtil.toBuffer(_resource,true);
+            }
+            catch(IOException e)
+            {
+                throw new RuntimeException(e);
+            }
         }
         
         /* ------------------------------------------------------------ */
@@ -114,24 +124,9 @@ public interface HttpContent
         {
             if (_resource.length()<=0 || _maxBuffer<_resource.length())
                 return null;
-            int length=(int)_resource.length();
-            byte[] array = new byte[length];
-
-            int offset=0;
-            try (InputStream in=_resource.getInputStream())
+            try
             {
-                do
-                {
-                    int filled=in.read(array,offset,length);
-                    if (filled<0)
-                        break;
-                    length-=filled;
-                    offset+=filled;
-                }
-                while(length>0);
-
-                ByteBuffer buffer = ByteBuffer.wrap(array);
-                return buffer;
+                return BufferUtil.toBuffer(_resource,false);
             }
             catch(IOException e)
             {

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -336,8 +336,15 @@ public class WebAppClassLoader extends URLClassLoader
     {
         URL url= null;
         boolean tried_parent= false;
-        boolean system_class=_context.isSystemClass(name);
-        boolean server_class=_context.isServerClass(name);
+
+        //If the resource is a class name with .class suffix, strip it off before comparison
+        //as the server and system patterns are specified without a .class suffix
+        String tmp = name;
+        if (tmp != null && tmp.endsWith(".class"))
+            tmp = tmp.substring(0, tmp.length()-6);
+      
+        boolean system_class=_context.isSystemClass(tmp);
+        boolean server_class=_context.isServerClass(tmp);
         
         if (system_class && server_class)
             return null;

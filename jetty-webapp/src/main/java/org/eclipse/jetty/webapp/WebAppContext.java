@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -31,7 +31,6 @@ import java.util.EventListener;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 
@@ -41,6 +40,7 @@ import javax.servlet.ServletSecurityElement;
 import javax.servlet.http.HttpSessionActivationListener;
 import javax.servlet.http.HttpSessionAttributeListener;
 import javax.servlet.http.HttpSessionBindingListener;
+import javax.servlet.http.HttpSessionIdListener;
 import javax.servlet.http.HttpSessionListener;
 
 import org.eclipse.jetty.security.ConstraintAware;
@@ -61,7 +61,6 @@ import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -116,7 +115,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         "org.eclipse.jetty.jndi.",          // webapp cannot change naming classes
         "org.eclipse.jetty.jaas.",          // webapp cannot change jaas classes
         "org.eclipse.jetty.websocket.",     // webapp cannot change / replace websocket classes
-        "org.eclipse.jetty.servlet.DefaultServlet" // webapp cannot change default servlets
+        "org.eclipse.jetty.servlet.DefaultServlet", // webapp cannot change default servlets
+        "org.eclipse.jetty.servlets.AsyncGzipFilter" // special case for AsyncGzipFilter
     } ;
 
     // Server classes are classes that are hidden from being
@@ -154,6 +154,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     private String[] _contextWhiteList = null;
 
     private File _tmpDir;
+    private boolean _persistTmpDir = false;
+ 
     private String _war;
     private String _extraClasspath;
     private Throwable _unavailableException;
@@ -655,13 +657,13 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     /* ------------------------------------------------------------ */
     /** Add to the list of Server classes.
-     * @see #setServerClasses(String[])
-     * @see http://www.eclipse.org/jetty/documentation/current/jetty-classloading.html
      * @param classOrPackage A fully qualified class name (eg com.foo.MyClass) 
      * or a qualified package name ending with '.' (eg com.foo.).  If the class 
      * or package has '-' it is excluded from the server classes and order is thus
      * important when added system class patterns. This argument may also be a comma 
      * separated list of classOrPackage patterns.
+     * @see #setServerClasses(String[])
+     * @see <a href="http://www.eclipse.org/jetty/documentation/current/jetty-classloading.html">Jetty Documentation: Classloading</a>
      */
     public void addServerClass(String classOrPackage)
     {
@@ -673,13 +675,13 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     /* ------------------------------------------------------------ */
     /** Prepend to the list of Server classes.
-     * @see #setServerClasses(String[])
-     * @see http://www.eclipse.org/jetty/documentation/current/jetty-classloading.html
      * @param classOrPackage A fully qualified class name (eg com.foo.MyClass) 
      * or a qualified package name ending with '.' (eg com.foo.).  If the class 
      * or package has '-' it is excluded from the server classes and order is thus
      * important when added system class patterns. This argument may also be a comma 
      * separated list of classOrPackage patterns.
+     * @see #setServerClasses(String[])
+     * @see <a href="http://www.eclipse.org/jetty/documentation/current/jetty-classloading.html">Jetty Documentation: Classloading</a>
      */
     public void prependServerClass(String classOrPackage)
     {
@@ -705,13 +707,13 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     /* ------------------------------------------------------------ */
     /** Add to the list of System classes.
-     * @see http://www.eclipse.org/jetty/documentation/current/jetty-classloading.html
-     * @see #setSystemClasses(String[])
      * @param classOrPackage A fully qualified class name (eg com.foo.MyClass) 
      * or a qualified package name ending with '.' (eg com.foo.).  If the class 
      * or package has '-' it is excluded from the system classes and order is thus
      * important when added system class patterns.  This argument may also be a comma 
      * separated list of classOrPackage patterns.
+     * @see #setSystemClasses(String[])
+     * @see <a href="http://www.eclipse.org/jetty/documentation/current/jetty-classloading.html">Jetty Documentation: Classloading</a>
      */
     public void addSystemClass(String classOrPackage)
     {
@@ -724,13 +726,13 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     /* ------------------------------------------------------------ */
     /** Prepend to the list of System classes.
-     * @see #setSystemClasses(String[])
-     * @see http://www.eclipse.org/jetty/documentation/current/jetty-classloading.html
      * @param classOrPackage A fully qualified class name (eg com.foo.MyClass) 
      * or a qualified package name ending with '.' (eg com.foo.).  If the class 
      * or package has '-' it is excluded from the system classes and order is thus
      * important when added system class patterns.This argument may also be a comma 
      * separated list of classOrPackage patterns.
+     * @see #setSystemClasses(String[])
+     * @see <a href="http://www.eclipse.org/jetty/documentation/current/jetty-classloading.html">Jetty Documentation: Classloading</a>
      */
     public void prependSystemClass(String classOrPackage)
     {
@@ -1058,7 +1060,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         if ((listener instanceof HttpSessionActivationListener)
             || (listener instanceof HttpSessionAttributeListener)
             || (listener instanceof HttpSessionBindingListener)
-            || (listener instanceof HttpSessionListener))
+            || (listener instanceof HttpSessionListener)
+            || (listener instanceof HttpSessionIdListener))
         {
             if (_sessionHandler!=null)
                 _sessionHandler.addEventListener(listener);
@@ -1072,7 +1075,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         if ((listener instanceof HttpSessionActivationListener)
             || (listener instanceof HttpSessionAttributeListener)
             || (listener instanceof HttpSessionBindingListener)
-            || (listener instanceof HttpSessionListener))
+            || (listener instanceof HttpSessionListener)
+            || (listener instanceof HttpSessionIdListener))
         {
             if (_sessionHandler!=null)
                 _sessionHandler.removeEventListener(listener);
@@ -1220,7 +1224,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             LOG.warn(e);
         }
         _tmpDir=dir;
-        setAttribute(TEMPDIR,_tmpDir);
+        setAttribute(TEMPDIR,_tmpDir);            
     }
 
     /* ------------------------------------------------------------ */
@@ -1230,6 +1234,27 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         return _tmpDir;
     }
 
+    /**
+     * If true the temp directory for this 
+     * webapp will be kept when the webapp stops. Otherwise,
+     * it will be deleted.
+     * 
+     * @param delete
+     */
+    public void setPersistTempDirectory(boolean persist)
+    {
+        _persistTmpDir = persist;
+    }
+    
+    /**
+     * @return
+     */
+    public boolean isPersistTempDirectory()
+    {
+        return _persistTmpDir;
+    }
+    
+    
     /* ------------------------------------------------------------ */
     /**
      * @param war The war to set as a file name or URL
@@ -1326,7 +1351,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     @Override
     public Set<String> setServletSecurity(Dynamic registration, ServletSecurityElement servletSecurityElement)
     {
-     
         Set<String> unchangedURLMappings = new HashSet<String>();
         //From javadoc for ServletSecurityElement:
         /*
@@ -1361,6 +1385,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
                         List<ConstraintMapping> mappings = ConstraintSecurityHandler.createConstraintsWithMappingsForPath(registration.getName(), pathSpec, servletSecurityElement);
                         for (ConstraintMapping m:mappings)
                             ((ConstraintAware)getSecurityHandler()).addConstraintMapping(m);
+                        ((ConstraintAware)getSecurityHandler()).checkPathsWithUncoveredHttpMethods();
                         getMetaData().setOrigin("constraint.url."+pathSpec, Origin.API);
                         break;
                     }
@@ -1384,6 +1409,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
                         constraintMappings.addAll(freshMappings);
                            
                         ((ConstraintSecurityHandler)getSecurityHandler()).setConstraintMappings(constraintMappings);
+                        ((ConstraintAware)getSecurityHandler()).checkPathsWithUncoveredHttpMethods();
                         break;
                     }
                 }
@@ -1398,6 +1424,32 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     /* ------------------------------------------------------------ */
     public class Context extends ServletContextHandler.Context
     {
+       
+        /* ------------------------------------------------------------ */
+        @Override
+        public void checkListener(Class<? extends EventListener> listener) throws IllegalStateException
+        {
+            try
+            {
+                super.checkListener(listener);
+            }
+            catch (IllegalArgumentException e)
+            {
+                //not one of the standard servlet listeners, check our extended session listener types
+                boolean ok = false;
+                for (Class l:SessionHandler.SESSION_LISTENER_TYPES)
+                {
+                    if (l.isAssignableFrom(listener))
+                    {
+                        ok = true;
+                        break;
+                    }
+                }
+                if (!ok)
+                    throw new IllegalArgumentException("Inappropriate listener type "+listener.getName());
+            }
+        }
+
         /* ------------------------------------------------------------ */
         @Override
         public URL getResource(String path) throws MalformedURLException
@@ -1444,7 +1496,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             }
         }
         
-        
     }
 
     /* ------------------------------------------------------------ */
@@ -1452,5 +1503,4 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     {
         return _metadata;
     }
-
 }

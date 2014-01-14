@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,14 +23,14 @@ import static org.hamcrest.Matchers.*;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
-import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
-import org.eclipse.jetty.websocket.server.blockhead.HttpResponse;
+import org.eclipse.jetty.websocket.common.frames.TextFrame;
+import org.eclipse.jetty.websocket.common.test.BlockheadClient;
+import org.eclipse.jetty.websocket.common.test.HttpResponse;
+import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.server.helper.EchoServlet;
-import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class FrameCompressionExtensionTest
@@ -51,7 +51,6 @@ public class FrameCompressionExtensionTest
     }
 
     @Test
-    @Ignore("Bug 395444")
     public void testDeflateFrameExtension() throws Exception
     {
         BlockheadClient client = new BlockheadClient(server.getServerUri());
@@ -72,7 +71,7 @@ public class FrameCompressionExtensionTest
             String msg = "Hello";
 
             // Client sends first message
-            client.write(WebSocketFrame.text(msg));
+            client.write(new TextFrame().setPayload(msg));
 
             IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,1000);
             WebSocketFrame frame = capture.getFrames().poll();
@@ -81,7 +80,7 @@ public class FrameCompressionExtensionTest
             // Client sends second message
             client.clearCaptured();
             msg = "There";
-            client.write(WebSocketFrame.text(msg));
+            client.write(new TextFrame().setPayload(msg));
 
             capture = client.readFrames(1,TimeUnit.SECONDS,1);
             frame = capture.getFrames().poll();

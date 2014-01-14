@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,6 +29,9 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+
+import org.eclipse.jetty.util.resource.Resource;
 
 
 /* ------------------------------------------------------------------------------- */
@@ -282,6 +285,8 @@ public class BufferUtil
      */
     public static boolean compact(ByteBuffer buffer)
     {
+        if (buffer.position()==0)
+            return false;
         boolean full = buffer.limit() == buffer.capacity();
         buffer.compact().flip();
         return full && buffer.limit() < buffer.capacity();
@@ -454,7 +459,7 @@ public class BufferUtil
      */
     public static String toString(ByteBuffer buffer)
     {
-        return toString(buffer, StringUtil.__ISO_8859_1_CHARSET);
+        return toString(buffer, StandardCharsets.ISO_8859_1);
     }
 
     /* ------------------------------------------------------------ */
@@ -464,7 +469,7 @@ public class BufferUtil
      */
     public static String toUTF8String(ByteBuffer buffer)
     {
-        return toString(buffer, StringUtil.__UTF8_CHARSET);
+        return toString(buffer, StandardCharsets.UTF_8);
     }
 
     /* ------------------------------------------------------------ */
@@ -733,12 +738,12 @@ public class BufferUtil
 
     public static ByteBuffer toBuffer(String s)
     {
-        return ByteBuffer.wrap(s.getBytes(StringUtil.__ISO_8859_1_CHARSET));
+        return ByteBuffer.wrap(s.getBytes(StandardCharsets.ISO_8859_1));
     }
 
     public static ByteBuffer toDirectBuffer(String s)
     {
-        byte[] bytes = s.getBytes(StringUtil.__ISO_8859_1_CHARSET);
+        byte[] bytes = s.getBytes(StandardCharsets.ISO_8859_1);
         ByteBuffer buf = ByteBuffer.allocateDirect(bytes.length);
         buf.put(bytes);
         buf.flip();
@@ -787,12 +792,35 @@ public class BufferUtil
         return ByteBuffer.wrap(array, offset, length);
     }
 
-    public static ByteBuffer toBuffer(File file) throws IOException
+    public static ByteBuffer toMappedBuffer(File file) throws IOException
     {
         try (RandomAccessFile raf = new RandomAccessFile(file, "r"))
         {
             return raf.getChannel().map(MapMode.READ_ONLY, 0, raf.length());
         }
+    }
+
+    public static ByteBuffer toBuffer(Resource resource,boolean direct) throws IOException
+    {
+        int len=(int)resource.length();
+        if (len<0)
+            throw new IllegalArgumentException("invalid resource: "+String.valueOf(resource)+" len="+len);
+        
+        ByteBuffer buffer = direct?BufferUtil.allocateDirect(len):BufferUtil.allocate(len);
+
+        int pos=BufferUtil.flipToFill(buffer);
+        if (resource.getFile()!=null)
+            BufferUtil.readFrom(resource.getFile(),buffer);
+        else
+        {
+            try (InputStream is = resource.getInputStream();)
+            {
+                BufferUtil.readFrom(is,len,buffer);
+            }
+        }
+        BufferUtil.flipToFlush(buffer,pos);
+        
+        return buffer;
     }
 
     public static String toSummaryString(ByteBuffer buffer)

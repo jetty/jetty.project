@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,6 +21,7 @@ package org.eclipse.jetty.client;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.concurrent.TimeUnit;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -82,7 +83,7 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
         Assert.assertEquals(path, request.getPath());
         Assert.assertNull(request.getQuery());
         Fields params = request.getParams();
-        Assert.assertEquals(0, params.size());
+        Assert.assertEquals(0, params.getSize());
         Assert.assertTrue(request.getURI().toString().endsWith(path));
 
         ContentResponse response = request.send();
@@ -118,8 +119,8 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
         Assert.assertEquals(query, request.getQuery());
         Assert.assertTrue(request.getURI().toString().endsWith(pathQuery));
         Fields params = request.getParams();
-        Assert.assertEquals(1, params.size());
-        Assert.assertEquals(value, params.get(name).value());
+        Assert.assertEquals(1, params.getSize());
+        Assert.assertEquals(value, params.get(name).getValue());
 
         ContentResponse response = request.send();
 
@@ -155,8 +156,8 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
         Assert.assertEquals(query, request.getQuery());
         Assert.assertTrue(request.getURI().toString().endsWith(pathQuery));
         Fields params = request.getParams();
-        Assert.assertEquals(1, params.size());
-        Assert.assertEquals(value, params.get(name).value());
+        Assert.assertEquals(1, params.getSize());
+        Assert.assertEquals(value, params.get(name).getValue());
 
         ContentResponse response = request.send();
 
@@ -194,9 +195,9 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
         Assert.assertEquals(query, request.getQuery());
         Assert.assertTrue(request.getURI().toString().endsWith(pathQuery));
         Fields params = request.getParams();
-        Assert.assertEquals(2, params.size());
-        Assert.assertEquals(value1, params.get(name1).value());
-        Assert.assertEquals(value2, params.get(name2).value());
+        Assert.assertEquals(2, params.getSize());
+        Assert.assertEquals(value1, params.get(name1).getValue());
+        Assert.assertEquals(value2, params.get(name2).getValue());
 
         ContentResponse response = request.send();
 
@@ -238,9 +239,9 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
         Assert.assertEquals(query, request.getQuery());
         Assert.assertTrue(request.getURI().toString().endsWith(pathQuery));
         Fields params = request.getParams();
-        Assert.assertEquals(2, params.size());
-        Assert.assertEquals(value1, params.get(name1).value());
-        Assert.assertEquals(value2, params.get(name2).value());
+        Assert.assertEquals(2, params.getSize());
+        Assert.assertEquals(value1, params.get(name1).getValue());
+        Assert.assertEquals(value2, params.get(name2).getValue());
 
         ContentResponse response = request.send();
 
@@ -273,7 +274,7 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
         Assert.assertEquals(query, request.getQuery());
         Assert.assertTrue(request.getURI().toString().endsWith(pathQuery));
         Fields params = request.getParams();
-        Assert.assertEquals(0, params.size());
+        Assert.assertEquals(0, params.getSize());
 
         ContentResponse response = request.send();
 
@@ -306,7 +307,7 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
         Assert.assertEquals(query, request.getQuery());
         Assert.assertTrue(request.getURI().toString().endsWith(pathQuery));
         Fields params = request.getParams();
-        Assert.assertEquals(0, params.size());
+        Assert.assertEquals(0, params.getSize());
 
         ContentResponse response = request.send();
 

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,10 +24,9 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executor;
 
-import org.eclipse.jetty.util.MultiMap;
-import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.UrlEncoded;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -58,8 +57,9 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
     private final URI requestURI;
     private final EventDriver websocket;
     private final LogicalConnection connection;
+    private final Executor executor;
+    private final SessionListener[] sessionListeners;
     private ExtensionFactory extensionFactory;
-    private long maximumMessageSize;
     private String protocolVersion;
     private Map<String, String[]> parameterMap = new HashMap<>();
     private WebSocketRemoteEndpoint remote;
@@ -69,7 +69,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
     private UpgradeRequest upgradeRequest;
     private UpgradeResponse upgradeResponse;
 
-    public WebSocketSession(URI requestURI, EventDriver websocket, LogicalConnection connection)
+    public WebSocketSession(URI requestURI, EventDriver websocket, LogicalConnection connection, SessionListener[] sessionListeners)
     {
         if (requestURI == null)
         {
@@ -79,30 +79,16 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
         this.requestURI = requestURI;
         this.websocket = websocket;
         this.connection = connection;
+        this.sessionListeners = sessionListeners;
+        this.executor = connection.getExecutor();
         this.outgoingHandler = connection;
         this.incomingHandler = websocket;
 
         this.connection.getIOState().addListener(this);
-
-        // Get the parameter map (use the jetty MultiMap to do this right)
-        MultiMap<String> params = new MultiMap<>();
-        String query = requestURI.getQuery();
-        if (StringUtil.isNotBlank(query))
-        {
-            UrlEncoded.decodeTo(query,params,StringUtil.__UTF8_CHARSET,-1);
-        }
-
-        for (String name : params.keySet())
-        {
-            List<String> valueList = params.getValues(name);
-            String valueArr[] = new String[valueList.size()];
-            valueArr = valueList.toArray(valueArr);
-            parameterMap.put(name,valueArr);
-        }
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
         this.close(StatusCode.NORMAL,null);
     }
@@ -130,6 +116,11 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
 
         // notify of harsh disconnect
         notifyClose(StatusCode.NO_CLOSE,"Harsh disconnect");
+    }
+
+    public void dispatch(Runnable runnable)
+    {
+        executor.execute(runnable);
     }
 
     @Override
@@ -187,6 +178,11 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
         return true;
     }
 
+    public ByteBufferPool getBufferPool()
+    {
+        return this.connection.getBufferPool();
+    }
+
     public LogicalConnection getConnection()
     {
         return connection;
@@ -216,12 +212,6 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
     public InetSocketAddress getLocalAddress()
     {
         return connection.getLocalAddress();
-    }
-
-    @Override
-    public long getMaximumMessageSize()
-    {
-        return maximumMessageSize;
     }
 
     @ManagedAttribute(readonly = true)
@@ -291,12 +281,12 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
      * Incoming Errors from Parser
      */
     @Override
-    public void incomingError(WebSocketException e)
+    public void incomingError(Throwable t)
     {
         if (connection.getIOState().isInputAvailable())
         {
             // Forward Errors to User WebSocket Object
-            websocket.incomingError(e);
+            websocket.incomingError(t);
         }
     }
 
@@ -341,21 +331,57 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
         websocket.onClose(new CloseInfo(statusCode,reason));
     }
 
+    public void notifyError(Throwable cause)
+    {
+        incomingError(cause);
+    }
+    
+    @SuppressWarnings("incomplete-switch")
     @Override
     public void onConnectionStateChange(ConnectionState state)
     {
-        if (state == ConnectionState.CLOSED)
+        switch (state)
         {
-            IOState ioState = this.connection.getIOState();
-            // The session only cares about abnormal close, as we need to notify
-            // the endpoint of this close scenario.
-            if (ioState.wasAbnormalClose())
-            {
-                CloseInfo close = ioState.getCloseInfo();
-                LOG.debug("Detected abnormal close: {}",close);
-                // notify local endpoint
-                notifyClose(close.getStatusCode(),close.getReason());
-            }
+            case CLOSING:
+                // notify session listeners
+                for (SessionListener listener : sessionListeners)
+                {
+                    try
+                    {
+                        listener.onSessionClosed(this);
+                    }
+                    catch (Throwable t)
+                    {
+                        LOG.ignore(t);
+                    }
+                }
+                break;
+            case CLOSED:
+                IOState ioState = this.connection.getIOState();
+                // The session only cares about abnormal close, as we need to notify
+                // the endpoint of this close scenario.
+                if (ioState.wasAbnormalClose())
+                {
+                    CloseInfo close = ioState.getCloseInfo();
+                    LOG.debug("Detected abnormal close: {}",close);
+                    // notify local endpoint
+                    notifyClose(close.getStatusCode(),close.getReason());
+                }
+                break;
+            case OPEN:
+                // notify session listeners
+                for (SessionListener listener : sessionListeners)
+                {
+                    try
+                    {
+                        listener.onSessionOpened(this);
+                    }
+                    catch (Throwable t)
+                    {
+                        LOG.ignore(t);
+                    }
+                }
+                break;
         }
     }
 
@@ -402,12 +428,6 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
         connection.setMaxIdleTimeout(ms);
     }
 
-    @Override
-    public void setMaximumMessageSize(long length)
-    {
-        this.maximumMessageSize = length;
-    }
-
     public void setOutgoingHandler(OutgoingFrames outgoing)
     {
         this.outgoingHandler = outgoing;
@@ -422,6 +442,22 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
     {
         this.upgradeRequest = request;
         this.protocolVersion = request.getProtocolVersion();
+        this.parameterMap.clear();
+        if (request.getParameterMap() != null)
+        {
+            for (Map.Entry<String, List<String>> entry : request.getParameterMap().entrySet())
+            {
+                List<String> values = entry.getValue();
+                if (values != null)
+                {
+                    this.parameterMap.put(entry.getKey(),values.toArray(new String[values.size()]));
+                }
+                else
+                {
+                    this.parameterMap.put(entry.getKey(),new String[0]);
+                }
+            }
+        }
     }
 
     public void setUpgradeResponse(UpgradeResponse response)
@@ -432,8 +468,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
     @Override
     public SuspendToken suspend()
     {
-        // TODO Auto-generated method stub
-        return null;
+        return connection;
     }
 
     @Override

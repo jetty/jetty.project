@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,13 +18,17 @@
 
 package org.eclipse.jetty.servlet;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -41,6 +45,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.hamcrest.Matchers;
@@ -48,10 +53,10 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
-import static org.junit.Assert.assertEquals;
 
-
+@RunWith(AdvancedRunner.class)
 public class AsyncServletTest
 {
     protected AsyncServlet _servlet=new AsyncServlet();
@@ -416,7 +421,7 @@ public class AsyncServletTest
         try (Socket socket = new Socket("localhost",port))
         {
             socket.setSoTimeout(1000000);
-            socket.getOutputStream().write(request.getBytes("UTF-8"));
+            socket.getOutputStream().write(request.getBytes(StandardCharsets.UTF_8));
             return IO.toString(socket.getInputStream());
         }
         catch(Exception e)

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -44,26 +44,20 @@ public class SPDYConnection extends AbstractConnection implements Controller, Id
     private volatile ISession session;
     private volatile boolean idle = false;
 
-    public SPDYConnection(EndPoint endPoint, ByteBufferPool bufferPool, Parser parser, Executor executor,
-                          boolean executeOnFillable)
+    public SPDYConnection(EndPoint endPoint, ByteBufferPool bufferPool, Parser parser, Executor executor, boolean dispatchIO)
     {
-        this(endPoint, bufferPool, parser, executor, executeOnFillable, 8192);
+        this(endPoint, bufferPool, parser, executor, dispatchIO, 8192);
     }
 
-    public SPDYConnection(EndPoint endPoint, ByteBufferPool bufferPool, Parser parser, Executor executor,
-                          boolean executeOnFillable, int bufferSize)
+    public SPDYConnection(EndPoint endPoint, ByteBufferPool bufferPool, Parser parser, Executor executor, boolean dispatchIO, int bufferSize)
     {
         // Since SPDY is multiplexed, onFillable() must never block while calling application code. In fact,
         // the SPDY code always dispatches to a new thread when calling application code,
-        // so here we can safely pass false as last parameter, and avoid to dispatch to onFillable(). The IO
-        // operation (read, parse, etc.) will not block and will be fast in almost all cases. Big uploads to a server
-        // however might block the Selector thread for a long time and therefore block other connections to be read.
-        // This might be a good reason to set executeOnFillable to true.
-        //
-        // Due to a jvm bug we've had a Selector thread being stuck at
-        // sun.nio.ch.FileDispatcherImpl.preClose0(Native Method). That's why we now default executeOnFillable to
-        // true even if for most use cases it is faster to not dispatch the IO events.
-        super(endPoint, executor, executeOnFillable);
+        // so here we can safely pass false as last parameter, and avoid to dispatch to onFillable().
+        // The IO operation (read, parse, etc.) will not block and will be fast in almost all cases.
+        // Big uploads to a server, however, might occupy the Selector thread for a long time and
+        // therefore starve other connections, so by default dispatchIO is true.
+        super(endPoint, executor, dispatchIO);
         this.bufferPool = bufferPool;
         this.parser = parser;
         onIdle(true);
@@ -93,7 +87,8 @@ public class SPDYConnection extends AbstractConnection implements Controller, Id
         while (true)
         {
             int filled = fill(endPoint, buffer);
-            LOG.debug("Read {} bytes", filled);
+            if (LOG.isDebugEnabled()) // Avoid boxing of variable 'filled'
+                LOG.debug("Read {} bytes", filled);
             if (filled == 0)
             {
                 return 0;
@@ -126,10 +121,10 @@ public class SPDYConnection extends AbstractConnection implements Controller, Id
     }
 
     @Override
-    public void write(ByteBuffer buffer, final Callback callback)
+    public void write(final Callback callback, ByteBuffer... buffers)
     {
         EndPoint endPoint = getEndPoint();
-        endPoint.write(callback, buffer);
+        endPoint.write(callback, buffers);
     }
 
     @Override

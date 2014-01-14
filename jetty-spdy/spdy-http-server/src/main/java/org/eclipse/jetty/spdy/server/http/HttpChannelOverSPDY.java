@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,8 +19,6 @@
 package org.eclipse.jetty.spdy.server.http;
 
 import java.nio.ByteBuffer;
-import java.util.LinkedList;
-import java.util.Queue;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpMethod;
@@ -33,6 +31,7 @@ import org.eclipse.jetty.server.HttpTransport;
 import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.Stream;
+import org.eclipse.jetty.spdy.http.HTTPSPDYHeader;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.log.Log;
@@ -42,9 +41,9 @@ public class HttpChannelOverSPDY extends HttpChannel<DataInfo>
 {
     private static final Logger LOG = Log.getLogger(HttpChannelOverSPDY.class);
 
-    private final Queue<Runnable> tasks = new LinkedList<>();
     private final Stream stream;
     private boolean dispatched; // Guarded by synchronization on tasks
+    private boolean redispatch; // Guarded by synchronization on tasks
     private boolean headersComplete;
 
     public HttpChannelOverSPDY(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport, HttpInputOverSPDY input, Stream stream)
@@ -60,43 +59,46 @@ public class HttpChannelOverSPDY extends HttpChannel<DataInfo>
         return super.headerComplete();
     }
 
-    private void post(Runnable task)
-    {
-        synchronized (tasks)
-        {
-            LOG.debug("Posting task {}", task);
-            tasks.offer(task);
-            dispatch();
-        }
-    }
-
     private void dispatch()
     {
-        synchronized (tasks)
+        synchronized (this)
         {
             if (dispatched)
-                return;
-
-            final Runnable task = tasks.poll();
-            if (task != null)
+                redispatch=true;
+            else
             {
-                dispatched = true;
-                LOG.debug("Dispatching task {}", task);
-                execute(new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        LOG.debug("Executing task {}", task);
-                        task.run();
-                        LOG.debug("Completing task {}", task);
-                        dispatched = false;
-                        dispatch();
-                    }
-                });
+                LOG.debug("Dispatch {}", this);
+                dispatched=true;
+                execute(this);
             }
         }
     }
+
+    @Override
+    public void run()
+    {
+        boolean execute=true;
+        
+        while(execute)
+        {
+            try
+            {
+                LOG.debug("Executing {}",this);
+                super.run();
+            }
+            finally
+            {
+                LOG.debug("Completing {}", this);
+                synchronized (this)
+                {
+                    dispatched = redispatch;
+                    redispatch=false;
+                    execute=dispatched;
+                }
+            }
+        }
+    }
+    
 
     public void requestStart(final Fields headers, final boolean endRequest)
     {
@@ -114,20 +116,19 @@ public class HttpChannelOverSPDY extends HttpChannel<DataInfo>
 
         if (endRequest)
         {
-            if (headerComplete())
-                post(this);
+            boolean dispatch = headerComplete();
             if (messageComplete())
-                post(this);
+                dispatch=true;
+            if (dispatch)
+                dispatch();
         }
     }
 
     public void requestContent(final DataInfo dataInfo, boolean endRequest)
     {
-        if (!headersComplete)
-        {
-            if (headerComplete())
-                post(this);
-        }
+        boolean dispatch=false;
+        if (!headersComplete && headerComplete())
+            dispatch=true;
 
         LOG.debug("HTTP > {} bytes of content", dataInfo.length());
 
@@ -147,13 +148,13 @@ public class HttpChannelOverSPDY extends HttpChannel<DataInfo>
         LOG.debug("Queuing last={} content {}", endRequest, copyDataInfo);
 
         if (content(copyDataInfo))
-            post(this);
+            dispatch=true;
 
-        if (endRequest)
-        {
-            if (messageComplete())
-                post(this);
-        }
+        if (endRequest && messageComplete())
+            dispatch=true;
+        
+        if (dispatch)
+            dispatch();
     }
 
     private boolean performBeginRequest(Fields headers)
@@ -169,19 +170,19 @@ public class HttpChannelOverSPDY extends HttpChannel<DataInfo>
             return false;
         }
 
-        HttpMethod httpMethod = HttpMethod.fromString(methodHeader.value());
-        HttpVersion httpVersion = HttpVersion.fromString(versionHeader.value());
-        
+        HttpMethod httpMethod = HttpMethod.fromString(methodHeader.getValue());
+        HttpVersion httpVersion = HttpVersion.fromString(versionHeader.getValue());
+
         // TODO should handle URI as byte buffer as some bad clients send WRONG encodings in query string
         // that  we have to deal with
-        ByteBuffer uri = BufferUtil.toBuffer(uriHeader.value());
+        ByteBuffer uri = BufferUtil.toBuffer(uriHeader.getValue());
 
-        LOG.debug("HTTP > {} {} {}", httpMethod, uriHeader.value(), httpVersion);
+        LOG.debug("HTTP > {} {} {}", httpMethod, uriHeader.getValue(), httpVersion);
         startRequest(httpMethod, httpMethod.asString(), uri, httpVersion);
 
         Fields.Field schemeHeader = headers.get(HTTPSPDYHeader.SCHEME.name(version));
         if (schemeHeader != null)
-            getRequest().setScheme(schemeHeader.value());
+            getRequest().setScheme(schemeHeader.getValue());
         return true;
     }
 
@@ -189,7 +190,7 @@ public class HttpChannelOverSPDY extends HttpChannel<DataInfo>
     {
         for (Fields.Field header : headers)
         {
-            String name = header.name();
+            String name = header.getName();
 
             // Skip special SPDY headers, unless it's the "host" header
             HTTPSPDYHeader specialHeader = HTTPSPDYHeader.from(stream.getSession().getVersion(), name);
@@ -214,7 +215,7 @@ public class HttpChannelOverSPDY extends HttpChannel<DataInfo>
                 default:
                 {
                     // Spec says headers must be single valued
-                    String value = header.value();
+                    String value = header.getValue();
                     LOG.debug("HTTP > {}: {}", name, value);
                     parsedHeader(new HttpField(name,value));
                     break;

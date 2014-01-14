@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -36,6 +36,7 @@ public class DeploymentManagerLifeCyclePathTest
     public void testStateTransition_NewToDeployed() throws Exception
     {
         DeploymentManager depman = new DeploymentManager();
+        depman.setContexts(new ContextHandlerCollection());
         depman.setDefaultLifeCycleGoal(null); // no default
         AppLifeCyclePathCollector pathtracker = new AppLifeCyclePathCollector();
         MockAppProvider mockProvider = new MockAppProvider();
@@ -68,6 +69,7 @@ public class DeploymentManagerLifeCyclePathTest
     public void testStateTransition_Receive() throws Exception
     {
         DeploymentManager depman = new DeploymentManager();
+        depman.setContexts(new ContextHandlerCollection());
         depman.setDefaultLifeCycleGoal(null); // no default
         AppLifeCyclePathCollector pathtracker = new AppLifeCyclePathCollector();
         MockAppProvider mockProvider = new MockAppProvider();

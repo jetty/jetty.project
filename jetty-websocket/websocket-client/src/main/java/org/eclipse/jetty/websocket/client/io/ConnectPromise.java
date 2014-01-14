@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -36,6 +36,7 @@ public abstract class ConnectPromise extends FuturePromise<Session> implements R
     private final EventDriver driver;
     private final ClientUpgradeRequest request;
     private final Masker masker;
+    private UpgradeListener upgradeListener;
     private ClientUpgradeResponse response;
 
     public ConnectPromise(WebSocketClient client, EventDriver driver, ClientUpgradeRequest request)
@@ -81,9 +82,19 @@ public abstract class ConnectPromise extends FuturePromise<Session> implements R
         return response;
     }
 
+    public UpgradeListener getUpgradeListener()
+    {
+        return upgradeListener;
+    }
+
     public void setResponse(ClientUpgradeResponse response)
     {
         this.response = response;
+    }
+
+    public void setUpgradeListener(UpgradeListener upgradeListener)
+    {
+        this.upgradeListener = upgradeListener;
     }
 
     public void succeeded(WebSocketSession session)

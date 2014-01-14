@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,6 +27,7 @@ import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.regex.Pattern;
 
@@ -54,18 +55,16 @@ public class WebInfConfiguration extends AbstractConfiguration
      * If set, to a list of URLs, these resources are added to the context
      * resource base as a resource collection.
      */
-    public static final String RESOURCE_URLS = "org.eclipse.jetty.resources";
+    public static final String RESOURCE_DIRS = "org.eclipse.jetty.resources";
+    
 
     protected Resource _preUnpackBaseResource;
+    
+
 
     @Override
     public void preConfigure(final WebAppContext context) throws Exception
     {
-        // Look for a work directory
-        File work = findWorkDirectory(context);
-        if (work != null)
-            makeTempDirectory(work, context, false);
-
         //Make a temp directory for the webapp if one is not already set
         resolveTempDirectory(context);
 
@@ -140,7 +139,7 @@ public class WebInfConfiguration extends AbstractConfiguration
             }
         }
         webInfJarNameMatcher.match(webInfPattern, uris, true); //null is inclusive, no pattern == all jars match
-        
+       
         //No pattern to appy to classes, just add to metadata
         context.getMetaData().setWebInfClassesDirs(findClassDirs(context));
     }
@@ -175,7 +174,7 @@ public class WebInfConfiguration extends AbstractConfiguration
 
         // Look for extra resource
         @SuppressWarnings("unchecked")
-        List<Resource> resources = (List<Resource>)context.getAttribute(RESOURCE_URLS);
+        Set<Resource> resources = (Set<Resource>)context.getAttribute(RESOURCE_DIRS);
         if (resources!=null)
         {
             Resource[] collection=new Resource[resources.size()+1];
@@ -190,20 +189,16 @@ public class WebInfConfiguration extends AbstractConfiguration
     @Override
     public void deconfigure(WebAppContext context) throws Exception
     {
-        // delete temp directory if we had to create it or if it isn't called work
-        Boolean tmpdirConfigured = (Boolean)context.getAttribute(TEMPDIR_CONFIGURED);
-
-        if (context.getTempDirectory()!=null && (tmpdirConfigured == null || !tmpdirConfigured.booleanValue()) && !isTempWorkDirectory(context.getTempDirectory()))
+        //if we're not persisting the temp dir contents delete it
+        if (!context.isPersistTempDirectory())
         {
             IO.delete(context.getTempDirectory());
-            context.setTempDirectory(null);
-
-            //clear out the context attributes for the tmp dir only if we had to
-            //create the tmp dir
-            context.setAttribute(TEMPDIR_CONFIGURED, null);
-            context.setAttribute(WebAppContext.TEMPDIR, null);
         }
-
+        
+        //if it wasn't explicitly configured by the user, then unset it
+        Boolean tmpdirConfigured = (Boolean)context.getAttribute(TEMPDIR_CONFIGURED);
+        if (tmpdirConfigured != null && !tmpdirConfigured) 
+            context.setTempDirectory(null);
 
         //reset the base resource back to what it was before we did any unpacking of resources
         context.setBaseResource(_preUnpackBaseResource);
@@ -236,51 +231,44 @@ public class WebInfConfiguration extends AbstractConfiguration
      * <p>A. Try to use an explicit directory specifically for this webapp:</p>
      * <ol>
      * <li>
-     * Iff an explicit directory is set for this webapp, use it. Do NOT set
-     * delete on exit.
+     * Iff an explicit directory is set for this webapp, use it. Set delete on
+     * exit depends on value of persistTempDirectory.
      * </li>
      * <li>
      * Iff javax.servlet.context.tempdir context attribute is set for
-     * this webapp && exists && writeable, then use it. Do NOT set delete on exit.
+     * this webapp && exists && writeable, then use it. Set delete on exit depends on
+     * value of persistTempDirectory.
      * </li>
      * </ol>
      *
      * <p>B. Create a directory based on global settings. The new directory
-     * will be called "Jetty_"+host+"_"+port+"__"+context+"_"+virtualhost
-     * Work out where to create this directory:
-     * <ol>
-     * <li>
-     * Iff $(jetty.home)/work exists create the directory there. Do NOT
-     * set delete on exit. Do NOT delete contents if dir already exists.
-     * </li>
-     * <li>
-     * Iff WEB-INF/work exists create the directory there. Do NOT set
-     * delete on exit. Do NOT delete contents if dir already exists.
-     * </li>
-     * <li>
-     * Else create dir in $(java.io.tmpdir). Set delete on exit. Delete
-     * contents if dir already exists.
-     * </li>
-     * </ol>
+     * will be called "Jetty-"+host+"-"+port+"__"+context+"-"+virtualhost+"-"+randomdigits+".dir"
+     * </p>
+     * <p>
+     * If the user has specified the context attribute org.eclipse.jetty.webapp.basetempdir, the
+     * directory specified by this attribute will be the parent of the temp dir created. Otherwise,
+     * the parent dir is $(java.io.tmpdir). Set delete on exit depends on value of persistTempDirectory. 
+     * </p>
      */
     public void resolveTempDirectory (WebAppContext context)
+    throws Exception
     {
-        //If a tmp directory is already set, we're done
+        //If a tmp directory is already set we should use it
         File tmpDir = context.getTempDirectory();
-        if (tmpDir != null && tmpDir.isDirectory() && tmpDir.canWrite())
+        if (tmpDir != null)
         {
-            context.setAttribute(TEMPDIR_CONFIGURED, Boolean.TRUE);
-            return; // Already have a suitable tmp dir configured
+            configureTempDirectory(tmpDir, context);
+            context.setAttribute(TEMPDIR_CONFIGURED, Boolean.TRUE); //the tmp dir was set explicitly
+            return;
         }
 
-
-        // No temp directory configured, try to establish one.
-        // First we check the context specific, javax.servlet specified, temp directory attribute
+        // No temp directory configured, try to establish one via the javax.servlet.context.tempdir.
         File servletTmpDir = asFile(context.getAttribute(WebAppContext.TEMPDIR));
-        if (servletTmpDir != null && servletTmpDir.isDirectory() && servletTmpDir.canWrite())
+        if (servletTmpDir != null)
         {
             // Use as tmpDir
             tmpDir = servletTmpDir;
+            configureTempDirectory(tmpDir, context);
             // Ensure Attribute has File object
             context.setAttribute(WebAppContext.TEMPDIR,tmpDir);
             // Set as TempDir in context.
@@ -288,60 +276,38 @@ public class WebInfConfiguration extends AbstractConfiguration
             return;
         }
 
-        try
+        //We need to make a temp dir. Check if the user has set a directory to use instead
+        //of java.io.tmpdir as the parent of the dir
+        File baseTemp = asFile(context.getAttribute(WebAppContext.BASETEMPDIR));
+        if (baseTemp != null && baseTemp.isDirectory() && baseTemp.canWrite())
         {
-            // Put the tmp dir in the work directory if we had one
-            File work =  new File(System.getProperty("jetty.home"),"work");
-            if (work.exists() && work.canWrite() && work.isDirectory())
-            {
-                makeTempDirectory(work, context, false); //make a tmp dir inside work, don't delete if it exists
-            }
-            else
-            {
-                File baseTemp = asFile(context.getAttribute(WebAppContext.BASETEMPDIR));
-                if (baseTemp != null && baseTemp.isDirectory() && baseTemp.canWrite())
-                {
-                    // Use baseTemp directory (allow the funky Jetty_0_0_0_0.. subdirectory logic to kick in
-                    makeTempDirectory(baseTemp,context,false);
-                }
-                else
-                {
-                    makeTempDirectory(new File(System.getProperty("java.io.tmpdir")),context,true); //make a tmpdir, delete if it already exists
-                }
-            }
-        }
-        catch(Exception e)
-        {
-            tmpDir=null;
-            LOG.ignore(e);
+            //Make a temp directory as a child of the given base dir
+            makeTempDirectory(baseTemp,context);
+            return;
         }
 
-        //Third ... Something went wrong trying to make the tmp directory, just make
-        //a jvm managed tmp directory
-        if (context.getTempDirectory() == null)
+        //Look for a directory named "work" in ${jetty.base} and
+        //treat it as parent of a new temp dir (which we will persist)
+        File jettyBase = asFile(System.getProperty("jetty.base"));
+        if (jettyBase != null)
         {
-            try
+            File work = new File (jettyBase, "work");
+            if (work.exists() && work.isDirectory() && work.canWrite())
             {
-                // Last resort
-                tmpDir=File.createTempFile("JettyContext","");
-                if (tmpDir.exists())
-                    IO.delete(tmpDir);
-                tmpDir.mkdir();
-                tmpDir.deleteOnExit();
-                context.setTempDirectory(tmpDir);
-            }
-            catch(IOException e)
-            {
-                tmpDir = null;
-                throw new IllegalStateException("Cannot create tmp dir in "+System.getProperty("java.io.tmpdir")+ " for context "+context,e);
+                context.setPersistTempDirectory(true);
+                makeTempDirectory(work,context);
+                return;
             }
         }
+
+        //Make a temp directory in java.io.tmpdir
+        makeTempDirectory(new File(System.getProperty("java.io.tmpdir")),context);
     }
 
     /**
      * Given an Object, return File reference for object.
      * Typically used to convert anonymous Object from getAttribute() calls to a File object.
-     * @param fileattr the file attribute to analyze and return from (supports type File and type String, all others return null)
+     * @param fileattr the file attribute to analyze and return from (supports type File and type String, all others return null
      * @return the File object, null if null, or null if not a File or String
      */
     private File asFile(Object fileattr)
@@ -363,45 +329,59 @@ public class WebInfConfiguration extends AbstractConfiguration
 
 
 
-    public void makeTempDirectory (File parent, WebAppContext context, boolean deleteExisting)
-    throws IOException
+    public void makeTempDirectory (File parent, WebAppContext context)
+            throws Exception
     {
-        if (parent != null && parent.exists() && parent.canWrite() && parent.isDirectory())
+        if (parent == null || !parent.exists() || !parent.canWrite() || !parent.isDirectory())
+            throw new IllegalStateException("Parent for temp dir not configured correctly: "+(parent==null?"null":"writeable="+parent.canWrite()));
+
+        //Create a name for the webapp     
+        String temp = getCanonicalNameForWebAppTmpDir(context);
+        File tmpDir = null;
+        if (context.isPersistTempDirectory())
         {
-            String temp = getCanonicalNameForWebAppTmpDir(context);
-            File tmpDir = new File(parent,temp);
-
-            if (deleteExisting && tmpDir.exists())
-            {
-                if (!IO.delete(tmpDir))
-                {
-                    if(LOG.isDebugEnabled())LOG.debug("Failed to delete temp dir "+tmpDir);
-                }
-
-                //If we can't delete the existing tmp dir, create a new one
-                if (tmpDir.exists())
-                {
-                    String old=tmpDir.toString();
-                    tmpDir=File.createTempFile(temp+"_","");
-                    if (tmpDir.exists())
-                        IO.delete(tmpDir);
-                    LOG.warn("Can't reuse "+old+", using "+tmpDir);
-                }
-            }
-
-            if (!tmpDir.exists())
-                tmpDir.mkdir();
-
-            //If the parent is not a work directory
-            if (!isTempWorkDirectory(tmpDir))
-            {
-                tmpDir.deleteOnExit();
-            }
-
-            if(LOG.isDebugEnabled())
-                LOG.debug("Set temp dir "+tmpDir);
-            context.setTempDirectory(tmpDir);
+            //if it is to be persisted, make sure it will be the same name
+            //by not using File.createTempFile, which appends random digits
+            tmpDir = new File (parent, temp);
         }
+        else
+        {
+            //ensure file will always be unique by appending random digits
+            tmpDir = File.createTempFile(temp, ".dir", parent);
+            //delete the file that was created
+            tmpDir.delete();
+            //and make a directory of the same name
+            tmpDir.mkdirs();
+        }
+        configureTempDirectory(tmpDir, context);
+
+        if(LOG.isDebugEnabled())
+            LOG.debug("Set temp dir "+tmpDir);
+        context.setTempDirectory(tmpDir);
+    }
+
+    private void configureTempDirectory (File dir, WebAppContext context)
+    {
+        if (dir == null)
+            throw new IllegalArgumentException("Null temp dir");
+
+        //if dir exists and we don't want it persisted, delete it
+        if (dir.exists() && !context.isPersistTempDirectory())
+        {
+            if (!IO.delete(dir))
+                throw new IllegalStateException("Failed to delete temp dir "+dir);
+        }
+
+        //if it doesn't exist make it
+        if (!dir.exists())
+            dir.mkdirs();
+
+        if (!context.isPersistTempDirectory())
+            dir.deleteOnExit();
+
+        //is it useable
+        if (!dir.canWrite() || !dir.isDirectory())   
+            throw new IllegalStateException("Temp dir "+dir+" not useable: writeable="+dir.canWrite()+", dir="+dir.isDirectory());
     }
 
 
@@ -564,45 +544,17 @@ public class WebInfConfiguration extends AbstractConfiguration
     }
 
 
-    public File findWorkDirectory (WebAppContext context) throws IOException
-    {
-        if (context.getBaseResource() != null)
-        {
-            Resource web_inf = context.getWebInf();
-            if (web_inf !=null && web_inf.exists())
-            {
-               return new File(web_inf.getFile(),"work");
-            }
-        }
-        return null;
-    }
-
-
-    /**
-     * Check if the tmpDir itself is called "work", or if the tmpDir
-     * is in a directory called "work".
-     * @return true if File is a temporary or work directory
-     */
-    public boolean isTempWorkDirectory (File tmpDir)
-    {
-        if (tmpDir == null)
-            return false;
-        if (tmpDir.getName().equalsIgnoreCase("work"))
-            return true;
-        File t = tmpDir.getParentFile();
-        if (t == null)
-            return false;
-        return (t.getName().equalsIgnoreCase("work"));
-    }
 
 
     /**
      * Create a canonical name for a webapp temp directory.
      * The form of the name is:
-     *  <code>"Jetty_"+host+"_"+port+"__"+resourceBase+"_"+context+"_"+virtualhost+base36_hashcode_of_whole_string</code>
+     *  <code>"jetty-"+host+"-"+port+"-"+resourceBase+"-_"+context+"-"+virtualhost+"-"+randomdigits+".dir"</code>
      *
      *  host and port uniquely identify the server
      *  context and virtual host uniquely identify the webapp
+     *  randomdigits ensure every tmp directory is unique
+     *  
      * @return the canonical name for the webapp temp directory
      */
     public static String getCanonicalNameForWebAppTmpDir (WebAppContext context)
@@ -695,6 +647,7 @@ public class WebInfConfiguration extends AbstractConfiguration
         }
 
         canonicalName.append("-");
+
         return canonicalName.toString();
     }
 

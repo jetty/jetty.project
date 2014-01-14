@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,8 +22,7 @@ package org.eclipse.jetty.servlets;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringReader;
-import java.io.UnsupportedEncodingException;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Enumeration;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -54,24 +53,10 @@ import javax.servlet.http.HttpServletResponse;
  */
 public abstract class EventSourceServlet extends HttpServlet
 {
-    private static final Charset UTF_8 = Charset.forName("UTF-8");
     private static final byte[] CRLF = new byte[]{'\r', '\n'};
-    private static final byte[] EVENT_FIELD;
-    private static final byte[] DATA_FIELD;
-    private static final byte[] COMMENT_FIELD;
-    static
-    {
-        try
-        {
-            EVENT_FIELD = "event: ".getBytes(UTF_8.name());
-            DATA_FIELD = "data: ".getBytes(UTF_8.name());
-            COMMENT_FIELD = ": ".getBytes(UTF_8.name());
-        }
-        catch (UnsupportedEncodingException x)
-        {
-            throw new RuntimeException(x);
-        }
-    }
+    private static final byte[] EVENT_FIELD = "event: ".getBytes(StandardCharsets.UTF_8);
+    private static final byte[] DATA_FIELD = "data: ".getBytes(StandardCharsets.UTF_8);
+    private static final byte[] COMMENT_FIELD = ": ".getBytes(StandardCharsets.UTF_8);
 
     private ScheduledExecutorService scheduler;
     private int heartBeatPeriod = 10;
@@ -129,7 +114,7 @@ public abstract class EventSourceServlet extends HttpServlet
     protected void respond(HttpServletRequest request, HttpServletResponse response) throws IOException
     {
         response.setStatus(HttpServletResponse.SC_OK);
-        response.setCharacterEncoding(UTF_8.name());
+        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
         response.setContentType("text/event-stream");
         // By adding this header, and not closing the connection,
         // we disable HTTP chunking, and we can use write()+flush()
@@ -164,7 +149,7 @@ public abstract class EventSourceServlet extends HttpServlet
             synchronized (this)
             {
                 output.write(EVENT_FIELD);
-                output.write(name.getBytes(UTF_8.name()));
+                output.write(name.getBytes(StandardCharsets.UTF_8));
                 output.write(CRLF);
                 data(data);
             }
@@ -180,7 +165,7 @@ public abstract class EventSourceServlet extends HttpServlet
                 while ((line = reader.readLine()) != null)
                 {
                     output.write(DATA_FIELD);
-                    output.write(line.getBytes(UTF_8.name()));
+                    output.write(line.getBytes(StandardCharsets.UTF_8));
                     output.write(CRLF);
                 }
                 output.write(CRLF);
@@ -194,7 +179,7 @@ public abstract class EventSourceServlet extends HttpServlet
             synchronized (this)
             {
                 output.write(COMMENT_FIELD);
-                output.write(comment.getBytes(UTF_8.name()));
+                output.write(comment.getBytes(StandardCharsets.UTF_8));
                 output.write(CRLF);
                 output.write(CRLF);
                 flush();

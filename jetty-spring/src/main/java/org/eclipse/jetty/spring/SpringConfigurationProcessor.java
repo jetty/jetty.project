@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,6 +20,7 @@
 package org.eclipse.jetty.spring;
 
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.ServiceLoader;
@@ -80,7 +81,7 @@ public class SpringConfigurationProcessor implements ConfigurationProcessor
                     : new ByteArrayResource(("" +
                     "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
                     "<!DOCTYPE beans PUBLIC \"-//SPRING//DTD BEAN//EN\" \"http://www.springframework.org/dtd/spring-beans.dtd\">" +
-                    config).getBytes("UTF-8"));
+                    config).getBytes(StandardCharsets.UTF_8));
 
             _beanFactory = new DefaultListableBeanFactory()
             {

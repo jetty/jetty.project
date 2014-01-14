@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -109,7 +109,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     @Override
     public void close()
     {
-        super.close();
+        onClose();
     }
 
     @Override
@@ -152,17 +152,17 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     @Override
     public String toString()
     {
-        return String.format("%s@%x{%s<r-l>%s,o=%b,is=%b,os=%b,fi=%s,wf=%s,it=%d}{%s}",
+        return String.format("%s@%x{%s<->%d,%s,%s,%s,%s,%s,%d,%s}",
                 getClass().getSimpleName(),
                 hashCode(),
                 getRemoteAddress(),
-                getLocalAddress(),
-                isOpen(),
-                isInputShutdown(),
-                isOutputShutdown(),
-                _fillInterest,
-                _writeFlusher,
+                getLocalAddress().getPort(),
+                isOpen()?"Open":"CLOSED",
+                isInputShutdown()?"ISHUT":"in",
+                isOutputShutdown()?"OSHUT":"out",
+                _fillInterest.isInterested()?"R":"-",
+                _writeFlusher.isInProgress()?"W":"-",
                 getIdleTimeout(),
-                getConnection());
+                getConnection()==null?null:getConnection().getClass().getSimpleName());
     }
 }

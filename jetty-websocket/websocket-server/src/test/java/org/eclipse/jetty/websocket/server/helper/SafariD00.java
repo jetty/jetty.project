@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,23 +18,23 @@
 
 package org.eclipse.jetty.websocket.server.helper;
 
+import static org.hamcrest.Matchers.*;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.junit.Assert;
-
-import static org.hamcrest.Matchers.is;
 
 public class SafariD00
 {
@@ -91,7 +91,7 @@ public class SafariD00
 
         // System.out.printf("--- Request ---%n%s",req);
 
-        byte reqBytes[] = req.toString().getBytes("UTF-8");
+        byte reqBytes[] = req.toString().getBytes(StandardCharsets.UTF_8);
         byte hixieBytes[] = TypeUtil.fromHexString("e739617916c9daf3");
         byte buf[] = new byte[reqBytes.length + hixieBytes.length];
         System.arraycopy(reqBytes,0,buf,0,reqBytes.length);
@@ -113,6 +113,7 @@ public class SafariD00
         {
             line = br.readLine();
             // System.out.printf("RESP: %s%n",line);
+            Assert.assertThat(line, notNullValue());
             if (line.length() == 0)
             {
                 foundEnd = true;
@@ -140,7 +141,7 @@ public class SafariD00
         for (String msg : msgs)
         {
             buf.put((byte)0x00);
-            buf.put(msg.getBytes("UTF-8"));
+            buf.put(msg.getBytes(StandardCharsets.UTF_8));
             buf.put((byte)0xFF);
         }
 

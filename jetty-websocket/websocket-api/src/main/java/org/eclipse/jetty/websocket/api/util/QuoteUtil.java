@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,8 +18,8 @@
 
 package org.eclipse.jetty.websocket.api.util;
 
-import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
@@ -342,7 +342,6 @@ public class QuoteUtil
      *            the string to possibly quote
      * @param delim
      *            the delimiter characters that will trigger automatic quoting
-     * @throws IOException
      */
     public static void quoteIfNeeded(StringBuilder buf, String str, String delim)
     {
@@ -445,6 +444,59 @@ public class QuoteUtil
             {
                 ret.append(c);
             }
+        }
+        return ret.toString();
+    }
+
+    public static String join(Object[] objs, String delim)
+    {
+        if (objs == null)
+        {
+            return "";
+        }
+        StringBuilder ret = new StringBuilder();
+        int len = objs.length;
+        for (int i = 0; i < len; i++)
+        {
+            if (i > 0)
+            {
+                ret.append(delim);
+            }
+            if (objs[i] instanceof String)
+            {
+                ret.append('"').append(objs[i]).append('"');
+            }
+            else
+            {
+                ret.append(objs[i]);
+            }
+        }
+        return ret.toString();
+    }
+
+    public static String join(Collection<?> objs, String delim)
+    {
+        if (objs == null)
+        {
+            return "";
+        }
+        StringBuilder ret = new StringBuilder();
+        boolean needDelim = false;
+        for (Object obj : objs)
+        {
+            if (needDelim)
+            {
+                ret.append(delim);
+            }
+            if (obj instanceof String)
+            {
+                ret.append('"').append(obj).append('"');
+            }
+            else
+            {
+                ret.append(obj);
+            }
+            needDelim = true;
         }
         return ret.toString();
     }

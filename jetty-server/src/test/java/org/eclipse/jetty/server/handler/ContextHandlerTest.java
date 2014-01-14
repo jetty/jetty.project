@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -399,6 +399,7 @@ public class ContextHandlerTest
     public void testAttributes() throws Exception
     {
         ContextHandler handler = new ContextHandler();
+        handler.setServer(new Server());
         handler.setAttribute("aaa","111");
         assertEquals("111",handler.getServletContext().getAttribute("aaa"));
         assertEquals(null,handler.getAttribute("bbb"));

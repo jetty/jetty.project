@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -133,7 +133,12 @@ public abstract class ScanningAppProvider extends AbstractLifeCycle implements A
         LOG.info("Deployment monitor " + _monitored + " at interval " + _scanInterval);
         List<File> files = new ArrayList<>();
         for (Resource resource:_monitored)
-            files.add(resource.getFile());
+        {
+            if (resource.exists() && resource.getFile().canRead())
+                files.add(resource.getFile());
+            else
+                LOG.warn("Does not exist: "+resource);
+        }
         
         _scanner = new Scanner();
         _scanner.setScanDirs(files);

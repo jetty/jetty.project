@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,6 +29,7 @@ import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.nio.charset.Charset;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -53,17 +54,6 @@ public class IO
 
     /* ------------------------------------------------------------------- */
     public static final int bufferSize = 64*1024;
-    
-    /* ------------------------------------------------------------------- */
-    // TODO get rid of this singleton!
-    private static class Singleton {
-        static final QueuedThreadPool __pool=new QueuedThreadPool();
-        static
-        {
-            try{__pool.start();}
-            catch(Exception e){LOG.warn(e); System.exit(1);}
-        }
-    }
 
     /* ------------------------------------------------------------------- */
     static class Job implements Runnable
@@ -119,46 +109,11 @@ public class IO
     
     /* ------------------------------------------------------------------- */
     /** Copy Stream in to Stream out until EOF or exception.
-     * in own thread
-     */
-    public static void copyThread(InputStream in, OutputStream out)
-    {
-        try{
-            Job job=new Job(in,out);
-            if (!Singleton.__pool.dispatch(job))
-                job.run();
-        }
-        catch(Exception e)
-        {
-            LOG.warn(e);
-        }
-    }
-    
-    /* ------------------------------------------------------------------- */
-    /** Copy Stream in to Stream out until EOF or exception.
      */
     public static void copy(InputStream in, OutputStream out)
          throws IOException
     {
         copy(in,out,-1);
-    }
-    
-    /* ------------------------------------------------------------------- */
-    /** Copy Stream in to Stream out until EOF or exception
-     * in own thread
-     */
-    public static void copyThread(Reader in, Writer out)
-    {
-        try
-        {
-            Job job=new Job(in,out);
-            if (!Singleton.__pool.dispatch(job))
-                job.run();
-        }
-        catch(Exception e)
-        {
-            LOG.warn(e);
-        }
     }
     
     /* ------------------------------------------------------------------- */
@@ -311,7 +266,7 @@ public class IO
     public static String toString(InputStream in)
         throws IOException
     {
-        return toString(in,null);
+        return toString(in,(Charset)null);
     }
     
     /* ------------------------------------------------------------ */
@@ -320,13 +275,21 @@ public class IO
     public static String toString(InputStream in,String encoding)
         throws IOException
     {
+        return toString(in, encoding==null?null:Charset.forName(encoding));
+    }
+
+    /** Read input stream to string.
+     */
+    public static String toString(InputStream in, Charset encoding)
+            throws IOException
+    {
         StringWriter writer=new StringWriter();
         InputStreamReader reader = encoding==null?new InputStreamReader(in):new InputStreamReader(in,encoding);
-        
+
         copy(reader,writer);
         return writer.toString();
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Read input stream to string.
      */

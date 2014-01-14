@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,13 +27,6 @@ import org.eclipse.jetty.util.Callback;
 
 public interface ISession extends Session
 {
-    /**
-     * <p>Initiates the flush of data to the other peer.</p>
-     * <p>Note that the flush may do nothing if, for example, there is nothing to flush, or
-     * if the data to be flushed belong to streams that have their flow-control stalled.</p>
-     */
-    public void flush();
-
     public void control(IStream stream, ControlFrame frame, long timeout, TimeUnit unit, Callback callback);
 
     public void data(IStream stream, DataInfo dataInfo, long timeout, TimeUnit unit, Callback callback);

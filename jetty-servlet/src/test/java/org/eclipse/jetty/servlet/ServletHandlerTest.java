@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -26,25 +26,25 @@ import java.util.EnumSet;
 
 import javax.servlet.DispatcherType;
 
-import org.eclipse.jetty.servlet.Holder.Source;
+import org.eclipse.jetty.servlet.BaseHolder.Source;
 import org.junit.Before;
 import org.junit.Test;
 
 public class ServletHandlerTest
 {
-    FilterHolder fh1 = new FilterHolder(Holder.Source.DESCRIPTOR);
+    FilterHolder fh1 = new FilterHolder(Source.DESCRIPTOR);
     FilterMapping fm1 = new FilterMapping();
     
-    FilterHolder fh2 = new FilterHolder(Holder.Source.DESCRIPTOR);
+    FilterHolder fh2 = new FilterHolder(Source.DESCRIPTOR);
     FilterMapping fm2 = new FilterMapping();
     
-    FilterHolder fh3 = new FilterHolder(Holder.Source.JAVAX_API);
+    FilterHolder fh3 = new FilterHolder(Source.JAVAX_API);
     FilterMapping fm3 = new FilterMapping();
     
-    FilterHolder fh4 = new FilterHolder(Holder.Source.JAVAX_API);
+    FilterHolder fh4 = new FilterHolder(Source.JAVAX_API);
     FilterMapping fm4 = new FilterMapping();
     
-    FilterHolder fh5 = new FilterHolder(Holder.Source.JAVAX_API);
+    FilterHolder fh5 = new FilterHolder(Source.JAVAX_API);
     FilterMapping fm5 = new FilterMapping();
     
     

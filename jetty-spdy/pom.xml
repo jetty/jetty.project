@@ -3,7 +3,7 @@
     <parent>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-project</artifactId>
-        <version>9.0.7-SNAPSHOT</version>
+        <version>9.1.2-SNAPSHOT</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -17,7 +17,9 @@
         <module>spdy-core</module>
         <module>spdy-client</module>
         <module>spdy-server</module>
+        <module>spdy-http-common</module>
         <module>spdy-http-server</module>
+        <module>spdy-http-client-transport</module>
         <module>spdy-example-webapp</module>
     </modules>
 
@@ -74,7 +76,7 @@
                         </goals>
                         <configuration>
                             <instructions>
-                                <Export-Package>org.eclipse.jetty.spdy.*;version="9.0"</Export-Package>
+                                <Export-Package>org.eclipse.jetty.spdy.*;version="9.1"</Export-Package>
                                 <Import-Package>org.eclipse.jetty.*;version="[9.0,10.0)",*</Import-Package>
                                 <_nouses>true</_nouses>
                             </instructions>

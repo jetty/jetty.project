@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,6 +28,7 @@ public class SelectChannelServerTest extends HttpServerTestBase
     @Before
     public void init() throws Exception
     {
-        startServer(new ServerConnector(_server,1,1));
+        // Run this test with 0 acceptors. Other tests already check the acceptors >0
+        startServer(new ServerConnector(_server,0,1));
     }
 }

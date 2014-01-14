@@ -20,7 +20,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-webapps-parent</artifactId>
-    <version>9.0.7-SNAPSHOT</version>
+    <version>9.1.2-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
@@ -98,7 +98,7 @@
             <configuration>
               <instructions>
                 <Bundle-SymbolicName>org.eclipse.jetty.test-jetty-webapp</Bundle-SymbolicName>
-                <Import-Package>javax.servlet.jsp.*;version="2.2.0",javax.servlet.*;version="[2.6,3.0)",org.eclipse.jetty.*;version="9.0",*</Import-Package>
+                <Import-Package>javax.servlet.jsp.*;version="[2.2.0, 3.0)",javax.servlet.*;version="[2.6,3.2)",org.eclipse.jetty.*;version="9.1",*</Import-Package>
                 <Export-Package>!com.acme*</Export-Package>
                 <!-- the test webapp is configured via a jetty xml file
                 in order to add the security handler. -->
@@ -124,6 +124,11 @@
                 <artifactId>jetty-client</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-servlets</artifactId>
+                <version>${project.version}</version>
+            </dependency>
         </dependencies>
         <configuration>
           <stopPort>8087</stopPort>
@@ -147,7 +152,7 @@
           <loginServices>
             <loginService implementation="org.eclipse.jetty.security.HashLoginService">
               <name>Test Realm</name>
-              <config>src/main/config/etc/realm.properties</config>
+              <config>src/main/config/demo-base/etc/realm.properties</config>
             </loginService>
           </loginServices>
         </configuration>
@@ -193,13 +198,8 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-continuation</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>javax.servlet</artifactId>
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -252,6 +252,12 @@
       <groupId>javax.servlet</groupId>
       <artifactId>jstl</artifactId>
       <version>1.2</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>javax.websocket</groupId>
+      <artifactId>javax.websocket-api</artifactId>
+      <version>1.0</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>

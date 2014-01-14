@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,6 +28,7 @@ import java.util.Locale;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.WriteListener;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
 
@@ -111,7 +112,7 @@ public class DeferredAuthentication implements Authentication.Deferred
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.server.Authentication.Deferred#login(java.lang.String, java.lang.String)
+     * @see org.eclipse.jetty.server.Authentication.Deferred#login(String, Object, ServletRequest)
      */
     @Override
     public Authentication login(String username, Object password, ServletRequest request)
@@ -313,6 +314,11 @@ public class DeferredAuthentication implements Authentication.Deferred
         public void setContentLength(int len)
         {
         }
+        
+        public void setContentLengthLong(long len)
+        {
+           
+        }
 
         @Override
         public void setContentType(String type)
@@ -348,6 +354,7 @@ public class DeferredAuthentication implements Authentication.Deferred
 	    return 0;
 	}
 
+
     };
 
     /* ------------------------------------------------------------ */
@@ -355,16 +362,32 @@ public class DeferredAuthentication implements Authentication.Deferred
     /* ------------------------------------------------------------ */
     private static ServletOutputStream __nullOut = new ServletOutputStream()
     {
+        @Override
         public void write(int b) throws IOException
         {
         }
-
+        
+        @Override
         public void print(String s) throws IOException
         {
         }
-
+        
+        @Override
         public void println(String s) throws IOException
         {
+        }
+
+     
+        @Override
+        public void setWriteListener(WriteListener writeListener)
+        {
+            
+        }
+
+        @Override
+        public boolean isReady()
+        {
+            return false;
         }
     };
 

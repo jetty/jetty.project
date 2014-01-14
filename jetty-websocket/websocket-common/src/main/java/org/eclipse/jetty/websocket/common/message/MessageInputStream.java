@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,98 +21,162 @@ package org.eclipse.jetty.websocket.common.message;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.common.events.AnnotatedEventDriver;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.common.LogicalConnection;
 
 /**
- * Support class for reading binary message data as an InputStream.
+ * Support class for reading a (single) WebSocket BINARY message via a InputStream.
+ * <p>
+ * An InputStream that can access a queue of ByteBuffer payloads, along with expected InputStream blocking behavior.
  */
 public class MessageInputStream extends InputStream implements MessageAppender
 {
-    private static final int BUFFER_SIZE = 65535;
+    private static final Logger LOG = Log.getLogger(MessageInputStream.class);
+    // EOF (End of Buffers)
+    private final static ByteBuffer EOF = ByteBuffer.allocate(0).asReadOnlyBuffer();
     /**
-     * Threshold (of bytes) to perform compaction at
+     * Used for controlling read suspend/resume behavior if the queue is full, but the read operations haven't caught up yet.
      */
-    private static final int COMPACT_THRESHOLD = 5;
-    private final AnnotatedEventDriver driver;
-    private final ByteBuffer buf;
-    private int size;
-    private boolean finished;
-    private boolean needsNotification;
-    private int readPosition;
+    @SuppressWarnings("unused")
+    private final LogicalConnection connection;
+    private final BlockingDeque<ByteBuffer> buffers = new LinkedBlockingDeque<>();
+    private AtomicBoolean closed = new AtomicBoolean(false);
+    private ByteBuffer activeBuffer = null;
+    private long timeoutMs = -1;
 
-    public MessageInputStream(AnnotatedEventDriver driver)
+    public MessageInputStream(LogicalConnection connection)
     {
-        this.driver = driver;
-        this.buf = ByteBuffer.allocate(BUFFER_SIZE);
-        BufferUtil.clearToFill(this.buf);
-        size = 0;
-        readPosition = this.buf.position();
-        finished = false;
-        needsNotification = true;
+        this.connection = connection;
+        this.timeoutMs = -1; // disabled
+    }
+    
+    public MessageInputStream(LogicalConnection connection, int timeoutMs)
+    {
+        this.connection = connection;
+        this.timeoutMs = timeoutMs;
     }
 
     @Override
-    public void appendMessage(ByteBuffer payload) throws IOException
+    public void appendFrame(ByteBuffer framePayload, boolean fin) throws IOException
     {
-        if (finished)
+        if (LOG.isDebugEnabled())
         {
-            throw new IOException("Cannot append to finished buffer");
+            LOG.debug("appendMessage(ByteBuffer,{}): {}",fin,BufferUtil.toDetailString(framePayload));
         }
 
-        if (payload == null)
+        // if closed, we should just toss incoming payloads into the bit bucket.
+        if (closed.get())
         {
-            // empty payload is valid
             return;
         }
 
-        driver.getPolicy().assertValidMessageSize(size + payload.remaining());
-        size += payload.remaining();
-
-        synchronized (buf)
+        // Put the payload into the queue
+        try
         {
-            // TODO: grow buffer till max binary message size?
-            // TODO: compact this buffer to fit incoming buffer?
-            // TODO: tell connection to suspend if buffer too full?
-            BufferUtil.put(payload,buf);
+            buffers.put(framePayload);
         }
-
-        if (needsNotification)
+        catch (InterruptedException e)
         {
-            needsNotification = true;
-            this.driver.onInputStream(this);
+            throw new IOException(e);
+        }
+        finally
+        {
+            if (fin)
+            {
+                buffers.offer(EOF);
+            }
         }
     }
 
     @Override
     public void close() throws IOException
     {
-        finished = true;
-        super.close();
+        if (closed.compareAndSet(false,true))
+        {
+            buffers.offer(EOF);
+            super.close();
+        }
+    }
+
+    @Override
+    public synchronized void mark(int readlimit)
+    {
+        /* do nothing */
+    }
+
+    @Override
+    public boolean markSupported()
+    {
+        return false;
     }
 
     @Override
     public void messageComplete()
     {
-        finished = true;
+        LOG.debug("messageComplete()");
+
+        // toss an empty ByteBuffer into queue to let it drain
+        buffers.offer(EOF);
     }
 
     @Override
     public int read() throws IOException
     {
-        synchronized (buf)
+        LOG.debug("read()");
+
+        try
         {
-            byte b = buf.get(readPosition);
-            readPosition++;
-            if (readPosition <= (buf.limit() - COMPACT_THRESHOLD))
+            if (closed.get())
             {
-                int curPos = buf.position();
-                buf.compact();
-                int offsetPos = buf.position() - curPos;
-                readPosition += offsetPos;
+                return -1;
             }
-            return b;
+
+            // grab a fresh buffer
+            while (activeBuffer == null || !activeBuffer.hasRemaining())
+            {
+                if (timeoutMs == -1)
+                {
+                    // infinite take
+                    activeBuffer = buffers.take();
+                }
+                else
+                {
+                    // timeout specific
+                    activeBuffer = buffers.poll(timeoutMs,TimeUnit.MILLISECONDS);
+                    if (activeBuffer == null)
+                    {
+                        throw new IOException(String.format("Read timeout: %,dms expired",timeoutMs));
+                    }
+                }
+                
+                if (activeBuffer == EOF)
+                {
+                    closed.set(true);
+                    return -1;
+                }
+            }
+
+            return activeBuffer.get();
         }
+        catch (InterruptedException e)
+        {
+            LOG.warn(e);
+            closed.set(true);
+            return -1;
+            // throw new IOException(e);
+        }
+    }
+
+    @Override
+    public synchronized void reset() throws IOException
+    {
+        throw new IOException("reset() not supported");
     }
 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -81,15 +81,16 @@ public interface Frame
 
     public ByteBuffer getPayload();
 
+    /**
+     * The original payload length ({@link ByteBuffer#remaining()})
+     * 
+     * @return the original payload length ({@link ByteBuffer#remaining()})
+     */
     public int getPayloadLength();
-
-    public int getPayloadStart();
 
     public Type getType();
 
     public boolean hasPayload();
-
-    public boolean isContinuation();
 
     public boolean isFin();
 
@@ -98,6 +99,7 @@ public interface Frame
      * 
      * @return true if final frame.
      */
+    // FIXME: remove
     public boolean isLast();
 
     public boolean isMasked();
@@ -108,5 +110,4 @@ public interface Frame
 
     public boolean isRsv3();
 
-    public int remaining();
 }

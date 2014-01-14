@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
-    <version>9.0.7-SNAPSHOT</version>
+    <version>9.1.2-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
@@ -35,7 +35,15 @@
           </resource>
         </resources>
 
-        <plugins> 
+        <plugins>
+           <plugin>
+             <groupId>org.apache.maven.plugins</groupId>
+             <artifactId>maven-deploy-plugin</artifactId>
+             <configuration>
+               <!-- DO NOT DEPLOY (or Release) -->
+               <skip>true</skip>
+             </configuration>
+            </plugin> 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId> 
                 <artifactId>maven-jar-plugin</artifactId> 
@@ -96,7 +104,7 @@
  org.xml.sax.helpers,
  *
                         </Import-Package>
-                        <DynamicImport-Package>org.eclipse.jetty.*;version="[9.0,10.0)"</DynamicImport-Package>
+                        <DynamicImport-Package>org.eclipse.jetty.*;version="[9.1,10.0)"</DynamicImport-Package>
                     </instructions>
                 </configuration>
             </plugin>

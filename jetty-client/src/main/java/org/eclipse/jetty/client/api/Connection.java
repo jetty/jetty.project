@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -35,7 +35,7 @@ public interface Connection extends Closeable
     /**
      * Sends a request with an associated response listener.
      * <p />
-     * {@link Request#send(Response.Listener)} will eventually call this method to send the request.
+     * {@link Request#send(Response.CompleteListener)} will eventually call this method to send the request.
      * It is exposed to allow applications to send requests via unpooled connections.
      *
      * @param request the request to send

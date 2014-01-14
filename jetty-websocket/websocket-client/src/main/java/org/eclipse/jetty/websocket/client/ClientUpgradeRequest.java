@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,6 +21,8 @@ package org.eclipse.jetty.websocket.client;
 import java.net.CookieStore;
 import java.net.HttpCookie;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -172,7 +174,7 @@ public class ClientUpgradeRequest extends UpgradeRequest
         // Other headers
         for (String key : getHeaders().keySet())
         {
-            if (FORBIDDEN_HEADERS.contains(key.toLowerCase()))
+            if (FORBIDDEN_HEADERS.contains(key))
             {
                 LOG.warn("Skipping forbidden header - {}",key);
                 continue; // skip
@@ -215,26 +217,28 @@ public class ClientUpgradeRequest extends UpgradeRequest
         super.setRequestURI(uri);
 
         // parse parameter map
-        Map<String, String[]> pmap = new HashMap<>();
+        Map<String, List<String>> pmap = new HashMap<>();
 
         String query = uri.getQuery();
 
         if (StringUtil.isNotBlank(query))
         {
             MultiMap<String> params = new MultiMap<String>();
-            UrlEncoded.decodeTo(uri.getQuery(),params,"UTF-8",MAX_KEYS);
+            UrlEncoded.decodeTo(uri.getQuery(),params,StandardCharsets.UTF_8,MAX_KEYS);
 
             for (String key : params.keySet())
             {
                 List<String> values = params.getValues(key);
                 if (values == null)
                 {
-                    pmap.put(key,new String[0]);
+                    pmap.put(key,new ArrayList<String>());
                 }
                 else
                 {
-                    int len = values.size();
-                    pmap.put(key,values.toArray(new String[len]));
+                    // break link to original
+                    List<String> copy = new ArrayList<>();
+                    copy.addAll(values);
+                    pmap.put(key,copy);
                 }
             }
 

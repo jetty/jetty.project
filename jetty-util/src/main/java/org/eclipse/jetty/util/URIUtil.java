@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,6 +19,7 @@
 package org.eclipse.jetty.util;
 
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 
 
@@ -43,8 +44,14 @@ public class URIUtil
     public static final String HTTPS_COLON="https:";
 
     // Use UTF-8 as per http://www.w3.org/TR/html40/appendix/notes.html#non-ascii-chars
-    public static final Charset __CHARSET=Charset.forName(System.getProperty("org.eclipse.jetty.util.URI.charset",StringUtil.__UTF8));
-    
+    public static final Charset __CHARSET;
+
+    static
+    {
+        String charset = System.getProperty("org.eclipse.jetty.util.URI.charset");
+        __CHARSET = charset == null ? StandardCharsets.UTF_8 : Charset.forName(charset);
+    }
+
     private URIUtil()
     {}
     

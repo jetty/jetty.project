@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,6 +19,7 @@
 package org.eclipse.jetty.security.jaspi.modules;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Set;
 
@@ -41,7 +42,6 @@ import org.eclipse.jetty.security.authentication.LoginCallbackImpl;
 import org.eclipse.jetty.security.jaspi.JaspiMessageInfo;
 import org.eclipse.jetty.security.jaspi.callback.CredentialValidationCallback;
 import org.eclipse.jetty.util.B64Code;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.security.Credential;
 import org.eclipse.jetty.util.security.Password;
 
@@ -119,7 +119,7 @@ public class BaseAuthModule implements ServerAuthModule, ServerAuthContext
     throws IOException, UnsupportedCallbackException
     {
         credentials = credentials.substring(credentials.indexOf(' ')+1);
-        credentials = B64Code.decode(credentials,StringUtil.__ISO_8859_1);
+        credentials = B64Code.decode(credentials, StandardCharsets.ISO_8859_1);
         int i = credentials.indexOf(':');
         String userName = credentials.substring(0,i);
         String password = credentials.substring(i+1);

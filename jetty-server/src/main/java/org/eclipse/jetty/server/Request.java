@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,6 +28,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
 import java.security.Principal;
 import java.util.ArrayList;
@@ -39,6 +40,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncListener;
 import javax.servlet.DispatcherType;
@@ -57,6 +59,7 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import javax.servlet.http.HttpUpgradeHandler;
 import javax.servlet.http.Part;
 
 import org.eclipse.jetty.http.HttpCookie;
@@ -408,12 +411,32 @@ public class Request implements HttpServletRequest
     }
 
     /* ------------------------------------------------------------ */
-    /*
+    /**
+     * Get Request Attribute.
+     * <p>Also supports jetty specific attributes to gain access to Jetty APIs:
+     * <dl>
+     * <dt>org.eclipse.jetty.server.Server</dt><dd>The Jetty Server instance</dd>
+     * <dt>org.eclipse.jetty.server.HttpChannel</dt><dd>The HttpChannel for this request</dd>
+     * <dt>org.eclipse.jetty.server.HttpConnection</dt><dd>The HttpConnection or null if another transport is used</dd>
+     * </dl>
+     * While these attributes may look like security problems, they are exposing nothing that is not already
+     * available via reflection from a Request instance.
+     * </p>
      * @see javax.servlet.ServletRequest#getAttribute(java.lang.String)
      */
     @Override
     public Object getAttribute(String name)
     {
+        if (name.startsWith("org.eclipse.jetty"))
+        {
+            if ("org.eclipse.jetty.server.Server".equals(name))
+                return _channel.getServer();
+            if ("org.eclipse.jetty.server.HttpChannel".equals(name))
+                return _channel;
+            if ("org.eclipse.jetty.server.HttpConnection".equals(name) &&
+                _channel.getHttpTransport() instanceof HttpConnection)
+                return _channel.getHttpTransport();
+        }
         return (_attributes == null)?null:_attributes.getAttribute(name);
     }
 
@@ -497,6 +520,22 @@ public class Request implements HttpServletRequest
 
     /* ------------------------------------------------------------ */
     /*
+     * @see javax.servlet.ServletRequest.getContentLengthLong()
+     */
+    @Override
+    public long getContentLengthLong()
+    {
+        return _fields.getLongField(HttpHeader.CONTENT_LENGTH.toString());
+    }
+
+    /* ------------------------------------------------------------ */
+    public long getContentRead()
+    {
+        return _input.getContentRead();
+    }
+    
+    /* ------------------------------------------------------------ */
+    /*
      * @see javax.servlet.ServletRequest#getContentType()
      */
     @Override
@@ -532,7 +571,12 @@ public class Request implements HttpServletRequest
     public Cookie[] getCookies()
     {
         if (_cookiesExtracted)
-            return _cookies == null?null:_cookies.getCookies();
+        {
+            if (_cookies == null || _cookies.getCookies().length == 0)
+                return null;
+            
+            return _cookies.getCookies();
+        }
 
         _cookiesExtracted = true;
 
@@ -551,7 +595,11 @@ public class Request implements HttpServletRequest
             }
         }
 
-        return _cookies == null?null:_cookies.getCookies();
+        //Javadoc for Request.getCookies() stipulates null for no cookies
+        if (_cookies == null || _cookies.getCookies().length == 0)
+            return null;
+        
+        return _cookies.getCookies();
     }
 
     /* ------------------------------------------------------------ */
@@ -937,6 +985,22 @@ public class Request implements HttpServletRequest
         if (_context == null)
             return null;
         return _context.getRealPath(path);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Access the underlying Remote {@link InetSocketAddress} for this request.
+     * 
+     * @return the remote {@link InetSocketAddress} for this request, or null if the request has no remote (see {@link ServletRequest#getRemoteAddr()} for
+     *         conditions that result in no remote address)
+     */
+    public InetSocketAddress getRemoteInetSocketAddress()
+    {
+        InetSocketAddress remote = _remote;
+        if (remote == null)
+            remote = _channel.getRemoteAddress();
+
+        return remote;
     }
 
     /* ------------------------------------------------------------ */
@@ -1612,9 +1676,7 @@ public class Request implements HttpServletRequest
     /* ------------------------------------------------------------ */
     /*
      * Set a request attribute. if the attribute name is "org.eclipse.jetty.server.server.Request.queryEncoding" then the value is also passed in a call to
-     * {@link #setQueryEncoding}. <p> if the attribute name is "org.eclipse.jetty.server.server.ResponseBuffer", then the response buffer is flushed with @{link
-     * #flushResponseBuffer} <p> if the attribute name is "org.eclipse.jetty.io.EndPoint.maxIdleTime", then the value is passed to the associated {@link
-     * EndPoint#setIdleTimeout}.
+     * {@link #setQueryEncoding}.
      *
      * @see javax.servlet.ServletRequest#setAttribute(java.lang.String, java.lang.Object)
      */
@@ -1623,35 +1685,11 @@ public class Request implements HttpServletRequest
     {
         Object old_value = _attributes == null?null:_attributes.getAttribute(name);
 
-        if (name.startsWith("org.eclipse.jetty."))
-        {
-            if ("org.eclipse.jetty.server.Request.queryEncoding".equals(name))
-                setQueryEncoding(value == null?null:value.toString());
-            else if ("org.eclipse.jetty.server.sendContent".equals(name))
-            {
-                try
-                {
-                    ((HttpOutput)getServletResponse().getOutputStream()).sendContent(value);
-                }
-                catch (IOException e)
-                {
-                    throw new RuntimeException(e);
-                }
-            }
-            else if ("org.eclipse.jetty.server.ResponseBuffer".equals(name))
-            {
-                try
-                {
-                    throw new IOException("not implemented");
-                    //((HttpChannel.Output)getServletResponse().getOutputStream()).sendResponse(byteBuffer);
-                }
-                catch (IOException e)
-                {
-                    throw new RuntimeException(e);
-                }
-            }
-        }
-
+        if ("org.eclipse.jetty.server.Request.queryEncoding".equals(name))
+            setQueryEncoding(value == null?null:value.toString());
+        else if ("org.eclipse.jetty.server.sendContent".equals(name))
+            LOG.warn("Deprecated: org.eclipse.jetty.server.sendContent");
+        
         if (_attributes == null)
             _attributes = new AttributesMap();
         _attributes.setAttribute(name,value);
@@ -1853,7 +1891,7 @@ public class Request implements HttpServletRequest
     /* ------------------------------------------------------------ */
     /**
      * Set the character encoding used for the query string. This call will effect the return of getQueryString and getParamaters. It must be called before any
-     * geParameter methods.
+     * getParameter methods.
      *
      * The request attribute "org.eclipse.jetty.server.server.Request.queryEncoding" may be set as an alternate method of calling setQueryEncoding.
      *
@@ -1885,7 +1923,7 @@ public class Request implements HttpServletRequest
     {
         _remote = addr;
     }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * @param requestedSessionId
@@ -2022,7 +2060,8 @@ public class Request implements HttpServletRequest
         if (_async==null)
             _async=new AsyncContextState(state);
         AsyncContextEvent event = new AsyncContextEvent(_context,_async,state,this,servletRequest,servletResponse);
-        event.setDispatchTarget(getServletContext(),URIUtil.addPaths(getServletPath(),getPathInfo()));
+        event.setDispatchContext(getServletContext());
+        event.setDispatchPath(URIUtil.addPaths(getServletPath(),getPathInfo()));
         state.startAsync(event);
         return _async;
     }
@@ -2080,6 +2119,7 @@ public class Request implements HttpServletRequest
             setAttribute(__MULTIPART_INPUT_STREAM, _multiPartInputStream);
             setAttribute(__MULTIPART_CONTEXT, _context);
             Collection<Part> parts = _multiPartInputStream.getParts(); //causes parsing
+            ByteArrayOutputStream os = null;
             for (Part p:parts)
             {
                 MultiPartInputStreamParser.MultiPart mp = (MultiPartInputStreamParser.MultiPart)p;
@@ -2090,21 +2130,17 @@ public class Request implements HttpServletRequest
                     if (mp.getContentType() != null)
                         charset = MimeTypes.getCharsetFromContentType(mp.getContentType());
 
-                    ByteArrayOutputStream os = null;
-                    InputStream is = mp.getInputStream(); //get the bytes regardless of being in memory or in temp file
-                    try
+                    //get the bytes regardless of being in memory or in temp file
+                    try (InputStream is = mp.getInputStream())
                     {
-                        os = new ByteArrayOutputStream();
+                        if (os == null)
+                            os = new ByteArrayOutputStream();
                         IO.copy(is, os);
-                        String content=new String(os.toByteArray(),charset==null?StringUtil.__UTF8:charset);   
+                        String content=new String(os.toByteArray(),charset==null?StandardCharsets.UTF_8:Charset.forName(charset));
                         getParameter(""); //cause params to be evaluated
                         getParameters().add(mp.getName(), content);
                     }
-                    finally
-                    {
-                        IO.close(os);
-                        IO.close(is);
-                    }
+                    os.reset();
                 }
             }
         }
@@ -2149,7 +2185,7 @@ public class Request implements HttpServletRequest
     {
         // extract parameters from dispatch query
         MultiMap<String> parameters = new MultiMap<>();
-        UrlEncoded.decodeTo(query,parameters, StringUtil.__UTF8_CHARSET,-1); //have to assume UTF-8 because we can't know otherwise
+        UrlEncoded.decodeTo(query,parameters, UrlEncoded.ENCODING,-1); //have to assume ENCODING because we can't know otherwise
 
         boolean merge_old_query = false;
 
@@ -2174,7 +2210,7 @@ public class Request implements HttpServletRequest
                 
                 
                 MultiMap<String> overridden_new_query = new MultiMap<>();
-                UrlEncoded.decodeTo(query,overridden_new_query,StringUtil.__UTF8_CHARSET,-1); //have to assume utf8 as we cannot know otherwise
+                UrlEncoded.decodeTo(query,overridden_new_query,UrlEncoded.ENCODING,-1); //have to assume ENCODING as we cannot know otherwise
 
                 for(String name: overridden_old_query.keySet())
                 {
@@ -2198,5 +2234,33 @@ public class Request implements HttpServletRequest
 
         setParameters(parameters);
         setQueryString(query);
+    }
+
+
+   
+    /** 
+     * @see javax.servlet.http.HttpServletRequest#upgrade(java.lang.Class)
+     */
+    @Override
+    public <T extends HttpUpgradeHandler> T upgrade(Class<T> handlerClass) throws IOException, ServletException
+    {
+        if (getContext() == null)
+            throw new ServletException ("Unable to instantiate "+handlerClass);
+
+        try
+        {
+            //Instantiate an instance and inject it
+            T h = getContext().createInstance(handlerClass);
+            
+            //TODO handle the rest of the upgrade process
+            
+            return h;
+        }
+        catch (Exception e)
+        {
+            if (e instanceof ServletException)
+                throw (ServletException)e;
+            throw new ServletException(e);
+        }
     }
 }

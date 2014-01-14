@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,8 +19,9 @@
 package org.eclipse.jetty.websocket.common;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.Executor;
 
-import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
@@ -56,6 +57,23 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
      * Terminate the connection (no close frame sent)
      */
     void disconnect();
+
+    /**
+     * Get the ByteBufferPool in use by the connection
+     */
+    ByteBufferPool getBufferPool();
+    
+    /**
+     * Get the Executor used by this connection.
+     */
+    Executor getExecutor();
+
+    /**
+     * Get the read/write idle timeout.
+     * 
+     * @return the idle timeout in milliseconds
+     */
+    public long getIdleTimeout();
 
     /**
      * Get the IOState of the connection.
@@ -117,6 +135,9 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
 
     /**
      * Set the maximum number of milliseconds of idleness before the connection is closed/disconnected, (ie no frames are either sent or received)
+     * <p>
+     * This idle timeout cannot be garunteed to take immediate effect for any active read/write actions.
+     * New read/write actions will have this new idle timeout.
      * 
      * @param ms
      *            the number of milliseconds of idle timeout
@@ -143,8 +164,6 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
 
     /**
      * Suspend a the incoming read events on the connection.
-     * 
-     * @return
      */
     SuspendToken suspend();
 }

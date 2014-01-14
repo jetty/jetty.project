@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -31,9 +31,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.Test;
 
@@ -88,41 +88,30 @@ public class PurgeInvalidSessionTest
         try
         {
             HttpClient client = new HttpClient();
-            client.setConnectorType(HttpClient.CONNECTOR_SOCKET);
             client.start();
             try
             {
                 //Create a session
-                ContentExchange exchange = new ContentExchange(true);
-                exchange.setMethod(HttpMethods.GET);
-                exchange.setURL("http://localhost:" + port + contextPath + servletMapping + "?action=create");
-                client.send(exchange);
-                exchange.waitForDone();
-                assertEquals(HttpServletResponse.SC_OK,exchange.getResponseStatus());
-                String sessionCookie = exchange.getResponseFields().getStringField("Set-Cookie");
+                ContentResponse response = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=create");
+                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+                String sessionCookie = response.getHeaders().getStringField("Set-Cookie");
                 assertTrue(sessionCookie != null);
                 // Mangle the cookie, replacing Path with $Path, etc.
                 sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
                 //make a request to invalidate the session
-                exchange = new ContentExchange(true);
-                exchange.setMethod(HttpMethods.GET);
-                exchange.setURL("http://localhost:" + port + contextPath + servletMapping + "?action=invalidate");
-                exchange.getRequestFields().add("Cookie", sessionCookie);
-                client.send(exchange);
-                exchange.waitForDone();
-                assertEquals(HttpServletResponse.SC_OK,exchange.getResponseStatus());
+                Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=invalidate");
+                request.header("Cookie", sessionCookie);
+                response = request.send();
+                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
                 
                 Thread.currentThread().sleep(3*purgeDelay); //sleep long enough for purger to have run
                 
-                //make a request using previous session to test if its still there               
-                exchange = new ContentExchange(true);
-                exchange.setMethod(HttpMethods.GET);
-                exchange.setURL("http://localhost:" + port + contextPath + servletMapping + "?action=test");
-                exchange.getRequestFields().add("Cookie", sessionCookie);
-                client.send(exchange);
-                exchange.waitForDone();
-                assertEquals(HttpServletResponse.SC_OK,exchange.getResponseStatus());
+                //make a request using previous session to test if its still there
+                request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=test");
+                request.header("Cookie", sessionCookie);
+                response = request.send();
+                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
             }
             finally
             {
@@ -156,26 +145,31 @@ public class PurgeInvalidSessionTest
             if ("create".equals(action))
             {
                 HttpSession session = request.getSession(true);
+                session.setAttribute("foo", "bar");
                 assertTrue(session.isNew());
             }
             else if ("invalidate".equals(action))
             {  
                 HttpSession existingSession = request.getSession(false);
                 assertNotNull(existingSession);
+                String id = existingSession.getId();
+                id = (id.indexOf(".") > 0?id.substring(0, id.indexOf(".")):id);
+                DBObject dbSession = _sessions.findOne(new BasicDBObject("id",id)); 
+                assertNotNull(dbSession);
+                
                 existingSession.invalidate();
-                String id = request.getRequestedSessionId();
-                assertNotNull(id);
-                id = id.substring(0, id.indexOf("."));
                 
                 //still in db, just marked as invalid
-                DBObject dbSession = _sessions.findOne(new BasicDBObject("id", id));
-                assertTrue(dbSession != null);
+                dbSession = _sessions.findOne(new BasicDBObject("id", id));       
+                assertNotNull(dbSession);
+                assertTrue(dbSession.containsField(MongoSessionManager.__INVALIDATED));
             }
             else if ("test".equals(action))
             {
                 String id = request.getRequestedSessionId();
                 assertNotNull(id);
-                id = id.substring(0, id.indexOf("."));
+       
+                id = (id.indexOf(".") > 0?id.substring(0, id.indexOf(".")):id);
   
                 HttpSession existingSession = request.getSession(false);
                 assertTrue(existingSession == null);
@@ -186,5 +180,4 @@ public class PurgeInvalidSessionTest
             }
         }
     }
-
 }

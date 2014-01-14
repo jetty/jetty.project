@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -40,6 +40,7 @@ public class ResponseNotifier
         this.client = client;
     }
 
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     public void notifyBegin(List<Response.ResponseListener> listeners, Response response)
     {
         // Optimized to avoid allocations of iterator instances
@@ -63,6 +64,7 @@ public class ResponseNotifier
         }
     }
 
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     public boolean notifyHeader(List<Response.ResponseListener> listeners, Response response, HttpField field)
     {
         boolean result = true;
@@ -89,6 +91,7 @@ public class ResponseNotifier
         }
     }
 
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     public void notifyHeaders(List<Response.ResponseListener> listeners, Response response)
     {
         // Optimized to avoid allocations of iterator instances
@@ -112,14 +115,24 @@ public class ResponseNotifier
         }
     }
 
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     public void notifyContent(List<Response.ResponseListener> listeners, Response response, ByteBuffer buffer)
     {
+        // Slice the buffer to avoid that listeners peek into data they should not look at.
+        buffer = buffer.slice();
+        if (!buffer.hasRemaining())
+            return;
         // Optimized to avoid allocations of iterator instances
         for (int i = 0; i < listeners.size(); ++i)
         {
             Response.ResponseListener listener = listeners.get(i);
             if (listener instanceof Response.ContentListener)
+            {
+                // The buffer was sliced, so we always clear it (position=0, limit=capacity)
+                // before passing it to the listener that may consume it.
+                buffer.clear();
                 notifyContent((Response.ContentListener)listener, response, buffer);
+            }
         }
     }
 
@@ -135,6 +148,7 @@ public class ResponseNotifier
         }
     }
 
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     public void notifySuccess(List<Response.ResponseListener> listeners, Response response)
     {
         // Optimized to avoid allocations of iterator instances
@@ -158,6 +172,7 @@ public class ResponseNotifier
         }
     }
 
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     public void notifyFailure(List<Response.ResponseListener> listeners, Response response, Throwable failure)
     {
         // Optimized to avoid allocations of iterator instances
@@ -181,6 +196,7 @@ public class ResponseNotifier
         }
     }
 
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     public void notifyComplete(List<Response.ResponseListener> listeners, Result result)
     {
         // Optimized to avoid allocations of iterator instances
@@ -221,9 +237,7 @@ public class ResponseNotifier
 
     public void forwardSuccessComplete(List<Response.ResponseListener> listeners, Request request, Response response)
     {
-        HttpConversation conversation = client.getConversation(request.getConversationID(), false);
         forwardSuccess(listeners, response);
-        conversation.complete();
         notifyComplete(listeners, new Result(request, response));
     }
 
@@ -244,9 +258,7 @@ public class ResponseNotifier
 
     public void forwardFailureComplete(List<Response.ResponseListener> listeners, Request request, Throwable requestFailure, Response response, Throwable responseFailure)
     {
-        HttpConversation conversation = client.getConversation(request.getConversationID(), false);
         forwardFailure(listeners, response, responseFailure);
-        conversation.complete();
         notifyComplete(listeners, new Result(request, requestFailure, response, responseFailure));
     }
 }

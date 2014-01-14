@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,12 +18,13 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -38,8 +39,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
-import org.eclipse.jetty.toolchain.test.annotation.Stress;
 import org.eclipse.jetty.toolchain.test.PropertyFlag;
+import org.eclipse.jetty.toolchain.test.annotation.Stress;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -140,7 +141,7 @@ public class AsyncStressTest
                                 "result: "+__paths[p][1]+"\r\n"+
                                 ((l+1<loops)?"":"Connection: close\r\n")+
                                 "\r\n";
-                socket[i].getOutputStream().write(request.getBytes("UTF-8"));
+                socket[i].getOutputStream().write(request.getBytes(StandardCharsets.UTF_8));
                 socket[i].getOutputStream().flush();
             }
             if (l%80==0)
@@ -155,7 +156,7 @@ public class AsyncStressTest
         String[] results=new String[connections];
         for (int i=0;i<connections;i++)
         {
-            results[i]=IO.toString(socket[i].getInputStream(),"UTF-8");
+            results[i]=IO.toString(socket[i].getInputStream(),StandardCharsets.UTF_8);
             if (i%80==0)
                 System.err.println();
             System.err.print('-');

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,11 +22,13 @@ import java.net.URI;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer;
-import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer.ServerConnection;
+import org.eclipse.jetty.websocket.common.test.BlockheadServer;
+import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPool;
+import org.eclipse.jetty.websocket.common.test.BlockheadServer.ServerConnection;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -41,13 +43,16 @@ public class BadNetworkTest
     @Rule
     public TestTracker tt = new TestTracker();
 
+    @Rule
+    public LeakTrackingBufferPool bufferPool = new LeakTrackingBufferPool("Test",new MappedByteBufferPool());
+
     private BlockheadServer server;
     private WebSocketClient client;
 
     @Before
     public void startClient() throws Exception
     {
-        client = new WebSocketClient();
+        client = new WebSocketClient(bufferPool);
         client.getPolicy().setIdleTimeout(250);
         client.start();
     }
@@ -74,7 +79,7 @@ public class BadNetworkTest
     @Test
     public void testAbruptClientClose() throws Exception
     {
-        TrackingSocket wsocket = new TrackingSocket();
+        JettyTrackingSocket wsocket = new JettyTrackingSocket();
 
         URI wsUri = server.getWsUri();
         Future<Session> future = client.connect(wsocket,wsUri);
@@ -103,7 +108,7 @@ public class BadNetworkTest
     @Test
     public void testAbruptServerClose() throws Exception
     {
-        TrackingSocket wsocket = new TrackingSocket();
+        JettyTrackingSocket wsocket = new JettyTrackingSocket();
 
         URI wsUri = server.getWsUri();
         Future<Session> future = client.connect(wsocket,wsUri);

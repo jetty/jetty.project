@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,18 +27,13 @@ import org.eclipse.jetty.util.component.LifeCycle;
 /* ------------------------------------------------------------ */
 /** ThreadPool.
  * 
+ * A specialization of Executor interface that provides reporting methods (eg {@link #getThreads()})
+ * and the option of configuration methods (e.g. @link {@link SizedThreadPool#setMaxThreads(int)}). 
  *
  */
 @ManagedObject("Pool of Threads")
 public interface ThreadPool extends Executor
 {
-    /* ------------------------------------------------------------ */
-    /** 
-     * @deprecated use {@link Executor#execute(Runnable)}
-     */
-    @Deprecated
-    public abstract boolean dispatch(Runnable job);
-
     /* ------------------------------------------------------------ */
     /**
      * Blocks until the thread pool is {@link LifeCycle#stop stopped}.

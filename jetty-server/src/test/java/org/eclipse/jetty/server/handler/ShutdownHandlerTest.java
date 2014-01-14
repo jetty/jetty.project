@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,12 +22,15 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.when;
 
+import java.net.Inet4Address;
+import java.net.InetSocketAddress;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -38,6 +41,7 @@ import org.mockito.MockitoAnnotations;
 
 public class ShutdownHandlerTest
 {
+    @Mock private Request baseRequest;
     @Mock private HttpServletRequest request;
     @Mock private HttpServletResponse response;
 
@@ -86,7 +90,8 @@ public class ShutdownHandlerTest
             }
 
         });
-        shutdownHandler.handle("/shutdown",null,request,response);
+        when(baseRequest.getRemoteInetSocketAddress()).thenReturn(new InetSocketAddress(Inet4Address.getLoopbackAddress(),45454));
+        shutdownHandler.handle("/shutdown",baseRequest,request,response);
         boolean stopped = countDown.await(1000, TimeUnit.MILLISECONDS); //wait up to 1 sec to stop
         assertTrue("Server lifecycle stop listener called", stopped);
         assertEquals("Server should be stopped","STOPPED",server.getState());
@@ -97,7 +102,8 @@ public class ShutdownHandlerTest
     {
         setDefaultExpectations();
         when(request.getParameter("token")).thenReturn("anothertoken");
-        shutdownHandler.handle("/shutdown",null,request,response);
+        when(baseRequest.getRemoteInetSocketAddress()).thenReturn(new InetSocketAddress(Inet4Address.getLoopbackAddress(),45454));
+        shutdownHandler.handle("/shutdown",baseRequest,request,response);
         assertEquals("Server should be running","STARTED",server.getState());
     }
 
@@ -106,7 +112,8 @@ public class ShutdownHandlerTest
      {
          setDefaultExpectations();
          when(request.getRemoteAddr()).thenReturn("192.168.3.3");
-         shutdownHandler.handle("/shutdown",null,request,response);
+         when(baseRequest.getRemoteInetSocketAddress()).thenReturn(new InetSocketAddress(Inet4Address.getByName("192.168.3.3"),45454));
+         shutdownHandler.handle("/shutdown",baseRequest,request,response);
          assertEquals("Server should be running","STARTED",server.getState());
      }
 

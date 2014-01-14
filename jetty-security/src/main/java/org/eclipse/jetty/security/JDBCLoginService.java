@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -261,7 +261,7 @@ public class JDBCLoginService extends MappedLoginService
                                     roles.add(rs2.getString(_roleTableRoleField));
                             }
                         }
-                        return putUser(username, Credential.getCredential(credentials),roles.toArray(new String[roles.size()]));
+                        return putUser(username, credentials, roles.toArray(new String[roles.size()]));
                     }
                 }
             }
@@ -273,6 +273,13 @@ public class JDBCLoginService extends MappedLoginService
         }
         return null;
     }
+    
+    /* ------------------------------------------------------------ */
+    protected UserIdentity putUser (String username, String credentials, String[] roles)
+    {
+        return putUser(username, Credential.getCredential(credentials),roles);
+    }
+    
 
     /**
      * Close an existing connection

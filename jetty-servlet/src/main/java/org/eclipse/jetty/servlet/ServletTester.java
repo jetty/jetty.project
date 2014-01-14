@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -41,6 +41,17 @@ public class ServletTester extends ContainerLifeCycle
     private final Server _server=new Server();
     private final LocalConnector _connector=new LocalConnector(_server);
     private final ServletContextHandler _context;
+    
+    public Server getServer()
+    {
+        return _server;
+    }
+    
+    public LocalConnector getConnector()
+    {
+        return _connector;
+    }
+    
     public void setVirtualHosts(String[] vhosts)
     {
         _context.setVirtualHosts(vhosts);

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -211,10 +211,9 @@ public class StatisticsServlet extends HttpServlet
                 sb.append("      <connections>").append(connectorStats.getConnections()).append("</connections>\n");
                 sb.append("      <connectionsOpen>").append(connectorStats.getConnectionsOpen()).append("</connectionsOpen>\n");
                 sb.append("      <connectionsOpenMax>").append(connectorStats.getConnectionsOpenMax()).append("</connectionsOpenMax>\n");
-                sb.append("      <connectionsDurationTotal>").append(connectorStats.getConnectionsDurationTotal()).append("</connectionsDurationTotal>\n");
-                sb.append("      <connectionsDurationMean>").append(connectorStats.getConnectionsDurationMean()).append("</connectionsDurationMean>\n");
-                sb.append("      <connectionsDurationMax>").append(connectorStats.getConnectionsDurationMax()).append("</connectionsDurationMax>\n");
-                sb.append("      <connectionsDurationStdDev>").append(connectorStats.getConnectionsDurationStdDev()).append("</connectionsDurationStdDev>\n");
+                sb.append("      <connectionsDurationMean>").append(connectorStats.getConnectionDurationMean()).append("</connectionsDurationMean>\n");
+                sb.append("      <connectionsDurationMax>").append(connectorStats.getConnectionDurationMax()).append("</connectionsDurationMax>\n");
+                sb.append("      <connectionsDurationStdDev>").append(connectorStats.getConnectionDurationStdDev()).append("</connectionsDurationStdDev>\n");
                 sb.append("      <messagesIn>").append(connectorStats.getMessagesIn()).append("</messagesIn>\n");
                 sb.append("      <messagesOut>").append(connectorStats.getMessagesIn()).append("</messagesOut>\n");
                 sb.append("      <elapsedMs>").append(connectorStats.getStartedMillis()).append("</elapsedMs>\n");
@@ -266,10 +265,9 @@ public class StatisticsServlet extends HttpServlet
                 sb.append("Total connections: ").append(connectorStats.getConnections()).append("<br />\n");
                 sb.append("Current connections open: ").append(connectorStats.getConnectionsOpen()).append("<br />\n");;
                 sb.append("Max concurrent connections open: ").append(connectorStats.getConnectionsOpenMax()).append("<br />\n");
-                sb.append("Total connections duration: ").append(connectorStats.getConnectionsDurationTotal()).append("<br />\n");
-                sb.append("Mean connection duration: ").append(connectorStats.getConnectionsDurationMean()).append("<br />\n");
-                sb.append("Max connection duration: ").append(connectorStats.getConnectionsDurationMax()).append("<br />\n");
-                sb.append("Connection duration standard deviation: ").append(connectorStats.getConnectionsDurationStdDev()).append("<br />\n");
+                sb.append("Mean connection duration: ").append(connectorStats.getConnectionDurationMean()).append("<br />\n");
+                sb.append("Max connection duration: ").append(connectorStats.getConnectionDurationMax()).append("<br />\n");
+                sb.append("Connection duration standard deviation: ").append(connectorStats.getConnectionDurationStdDev()).append("<br />\n");
                 sb.append("Total messages in: ").append(connectorStats.getMessagesIn()).append("<br />\n");                
                 sb.append("Total messages out: ").append(connectorStats.getMessagesOut()).append("<br />\n");
             }

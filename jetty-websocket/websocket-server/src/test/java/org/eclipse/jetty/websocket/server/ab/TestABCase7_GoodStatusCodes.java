@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,8 +27,9 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.frames.CloseFrame;
+import org.eclipse.jetty.websocket.common.test.Fuzzer;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -87,10 +88,10 @@ public class TestABCase7_GoodStatusCodes extends AbstractABCase
         BufferUtil.flipToFlush(payload,0);
 
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.CLOSE).setPayload(payload.slice()));
+        send.add(new CloseFrame().setPayload(payload.slice()));
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new WebSocketFrame(OpCode.CLOSE).setPayload(payload.slice()));
+        expect.add(new CloseFrame().setPayload(clone(payload)));
 
         Fuzzer fuzzer = new Fuzzer(this);
         try
@@ -114,16 +115,15 @@ public class TestABCase7_GoodStatusCodes extends AbstractABCase
     public void testStatusCodeWithReason() throws Exception
     {
         ByteBuffer payload = ByteBuffer.allocate(256);
-        BufferUtil.clearToFill(payload);
         payload.putChar((char)statusCode);
         payload.put(StringUtil.getBytes("Reason"));
-        BufferUtil.flipToFlush(payload,0);
+        payload.flip();
 
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.CLOSE).setPayload(payload.slice()));
+        send.add(new CloseFrame().setPayload(payload.slice()));
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new WebSocketFrame(OpCode.CLOSE).setPayload(payload.slice()));
+        expect.add(new CloseFrame().setPayload(clone(payload)));
 
         Fuzzer fuzzer = new Fuzzer(this);
         try

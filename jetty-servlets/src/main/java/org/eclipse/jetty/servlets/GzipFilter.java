@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,13 +20,13 @@ package org.eclipse.jetty.servlets;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.regex.Pattern;
 import java.util.zip.Deflater;
-import java.util.zip.DeflaterOutputStream;
 
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -43,6 +43,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.servlets.gzip.AbstractCompressedStream;
 import org.eclipse.jetty.servlets.gzip.CompressedResponseWrapper;
+import org.eclipse.jetty.servlets.gzip.DeflatedOutputStream;
 import org.eclipse.jetty.servlets.gzip.GzipOutputStream;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -142,6 +143,8 @@ public class GzipFilter extends UserAgentFilter
     // non-static, as other GzipFilter instances may have different configurations
     protected final ThreadLocal<Deflater> _deflater = new ThreadLocal<Deflater>();
 
+    protected final static ThreadLocal<byte[]> _buffer= new ThreadLocal<byte[]>();
+
     protected final Set<String> _methods=new HashSet<String>();
     protected Set<String> _excludedAgents;
     protected Set<Pattern> _excludedAgentPatterns;
@@ -191,7 +194,7 @@ public class GzipFilter extends UserAgentFilter
         {
             StringTokenizer tok = new StringTokenizer(tmp,",",false);
             while (tok.hasMoreTokens())
-                _methods.add(tok.nextToken().trim().toUpperCase());
+                _methods.add(tok.nextToken().trim().toUpperCase(Locale.ENGLISH));
         }
         else
             _methods.add(HttpMethod.GET.asString());
@@ -218,14 +221,14 @@ public class GzipFilter extends UserAgentFilter
             {
                 StringTokenizer tok = new StringTokenizer(tmp,",",false);
                 while (tok.hasMoreTokens())
-                    _mimeTypes.add(tok.nextToken());
+                    _mimeTypes.add(tok.nextToken().trim());
             }
         }
         else
         {
             StringTokenizer tok = new StringTokenizer(tmp,",",false);
             while (tok.hasMoreTokens())
-                _mimeTypes.add(tok.nextToken());
+                _mimeTypes.add(tok.nextToken().trim());
         }
         tmp=filterConfig.getInitParameter("excludedAgents");
         if (tmp!=null)
@@ -233,7 +236,7 @@ public class GzipFilter extends UserAgentFilter
             _excludedAgents=new HashSet<String>();
             StringTokenizer tok = new StringTokenizer(tmp,",",false);
             while (tok.hasMoreTokens())
-               _excludedAgents.add(tok.nextToken());
+               _excludedAgents.add(tok.nextToken().trim());
         }
 
         tmp=filterConfig.getInitParameter("excludeAgentPatterns");
@@ -242,7 +245,7 @@ public class GzipFilter extends UserAgentFilter
             _excludedAgentPatterns=new HashSet<Pattern>();
             StringTokenizer tok = new StringTokenizer(tmp,",",false);
             while (tok.hasMoreTokens())
-                _excludedAgentPatterns.add(Pattern.compile(tok.nextToken()));
+                _excludedAgentPatterns.add(Pattern.compile(tok.nextToken().trim()));
         }
 
         tmp=filterConfig.getInitParameter("excludePaths");
@@ -251,7 +254,7 @@ public class GzipFilter extends UserAgentFilter
             _excludedPaths=new HashSet<String>();
             StringTokenizer tok = new StringTokenizer(tmp,",",false);
             while (tok.hasMoreTokens())
-                _excludedPaths.add(tok.nextToken());
+                _excludedPaths.add(tok.nextToken().trim());
         }
 
         tmp=filterConfig.getInitParameter("excludePathPatterns");
@@ -260,7 +263,7 @@ public class GzipFilter extends UserAgentFilter
             _excludedPathPatterns=new HashSet<Pattern>();
             StringTokenizer tok = new StringTokenizer(tmp,",",false);
             while (tok.hasMoreTokens())
-                _excludedPathPatterns.add(Pattern.compile(tok.nextToken()));
+                _excludedPathPatterns.add(Pattern.compile(tok.nextToken().trim()));
         }
         
         tmp=filterConfig.getInitParameter("vary");
@@ -352,7 +355,6 @@ public class GzipFilter extends UserAgentFilter
         {
             if (request.isAsyncStarted())
             {
-                 
                 request.getAsyncContext().addListener(new FinishOnCompleteListener(wrappedResponse));
             }
             else if (exceptional && !response.isCommitted())
@@ -465,9 +467,10 @@ public class GzipFilter extends UserAgentFilter
                 return new AbstractCompressedStream(compressionType,request,this,_vary)
                 {
                     private Deflater _allocatedDeflater;
+                    private byte[] _allocatedBuffer;
 
                     @Override
-                    protected DeflaterOutputStream createStream() throws IOException
+                    protected OutputStream createStream() throws IOException
                     {
                         if (compressionType == null)
                         {
@@ -484,12 +487,21 @@ public class GzipFilter extends UserAgentFilter
                             _allocatedDeflater.reset();
                         }
                         
+                        // acquire buffer
+                        _allocatedBuffer = _buffer.get();
+                        if (_allocatedBuffer==null)
+                            _allocatedBuffer = new byte[_bufferSize];
+                        else
+                        {
+                            _buffer.remove();
+                        }
+                        
                         switch (compressionType)
                         {
                             case GZIP:
-                                return new GzipOutputStream(_response.getOutputStream(),_allocatedDeflater,_bufferSize);
+                                return new GzipOutputStream(_response.getOutputStream(),_allocatedDeflater,_allocatedBuffer);
                             case DEFLATE:
-                                return new DeflaterOutputStream(_response.getOutputStream(),_allocatedDeflater,_bufferSize);
+                                return new DeflatedOutputStream(_response.getOutputStream(),_allocatedDeflater,_allocatedBuffer);
                         }
                         throw new IllegalStateException(compressionType + " not supported");
                     }
@@ -501,6 +513,10 @@ public class GzipFilter extends UserAgentFilter
                         if (_allocatedDeflater != null && _deflater.get() == null)
                         {
                             _deflater.set(_allocatedDeflater);
+                        }
+                        if (_allocatedBuffer != null && _buffer.get() == null)
+                        {
+                            _buffer.set(_allocatedBuffer);
                         }
                     }
                 };

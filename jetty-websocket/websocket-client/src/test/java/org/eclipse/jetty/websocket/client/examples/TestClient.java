@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.client.examples;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.BlockingQueue;
@@ -28,12 +29,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.common.OpCode;
+import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPool;
 
 /**
  * This is not a general purpose websocket client. It's only for testing the websocket server and is hardwired to a specific draft version of the protocol.
@@ -94,6 +96,8 @@ public class TestClient
     private static boolean _verbose = false;
 
     private static final Random __random = new Random();
+
+    private static LeakTrackingBufferPool bufferPool = new LeakTrackingBufferPool("TestClient",new MappedByteBufferPool());
 
     private final String _host;
     private final int _port;
@@ -172,7 +176,7 @@ public class TestClient
         }
 
         TestClient[] client = new TestClient[clients];
-        WebSocketClient wsclient = new WebSocketClient();
+        WebSocketClient wsclient = new WebSocketClient(bufferPool);
         try
         {
             wsclient.start();
@@ -208,7 +212,7 @@ public class TestClient
                         {
                             b.append('A' + __random.nextInt(26));
                         }
-                        data = b.toString().getBytes(StringUtil.__UTF8_CHARSET);
+                        data = b.toString().getBytes(StandardCharsets.UTF_8);
                         break;
                     }
                     case OpCode.BINARY:
@@ -250,6 +254,7 @@ public class TestClient
 
             wsclient.stop();
         }
+        bufferPool.assertNoLeaks();
     }
 
     private static void usage(String[] args)

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -89,7 +89,7 @@ public class Log
                  * configuration of the Log class in situations where access to the System.properties are
                  * either too late or just impossible.
                  */
-                URL testProps = Loader.getResource(Log.class,"jetty-logging.properties",true);
+                URL testProps = Loader.getResource(Log.class,"jetty-logging.properties");
                 if (testProps != null)
                 {
                     InputStream in = null;

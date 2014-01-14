@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -81,13 +81,11 @@ public class BlockingCallback implements Callback
         }
     }
 
-    /** Block until the FutureCallback is done or cancelled and 
-     * after the return leave in the state as if a {@link #reset()} had been
-     * done.
+    /** Block until the Callback has succeeded or failed and 
+     * after the return leave in the state to allow reuse.
      * This is useful for code that wants to repeatable use a FutureCallback to convert
      * an asynchronous API to a blocking API. 
-     * @return
-     * @throws IOException
+     * @throws IOException if exception was caught during blocking, or callback was cancelled 
      */
     public void block() throws IOException
     {

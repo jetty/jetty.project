@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,9 +29,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.annotations.ClassNameResolver;
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelper;
+import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.eclipse.jetty.util.resource.Resource;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.Constants;
@@ -41,11 +43,12 @@ import org.osgi.framework.Constants;
  */
 public class AnnotationParser extends org.eclipse.jetty.annotations.AnnotationParser
 {
-    private Set<URI> _alreadyParsed = new HashSet<URI>();
+    private Set<URI> _alreadyParsed = new ConcurrentHashSet<URI>();
     
-    private Map<URI,Bundle> _uriToBundle = new HashMap<URI, Bundle>();
-    private Map<Bundle,Resource> _resourceToBundle = new HashMap<Bundle,Resource>();
-    private Map<Bundle,URI> _bundleToUri = new HashMap<Bundle, URI>();
+    private ConcurrentHashMap<URI,Bundle> _uriToBundle = new ConcurrentHashMap<URI, Bundle>();
+    private ConcurrentHashMap<Bundle,Resource> _bundleToResource = new ConcurrentHashMap<Bundle,Resource>();
+    private ConcurrentHashMap<Resource, Bundle> _resourceToBundle = new ConcurrentHashMap<Resource, Bundle>();
+    private ConcurrentHashMap<Bundle,URI> _bundleToUri = new ConcurrentHashMap<Bundle, URI>();
     
     /**
      * Keep track of a jetty URI Resource and its associated OSGi bundle.
@@ -58,9 +61,10 @@ public class AnnotationParser extends org.eclipse.jetty.annotations.AnnotationPa
         File bundleFile = BundleFileLocatorHelper.DEFAULT.getBundleInstallLocation(bundle);
         Resource resource = Resource.newResource(bundleFile.toURI());
         URI uri = resource.getURI();
-        _uriToBundle.put(uri,bundle);
-        _bundleToUri.put(bundle,uri);
-        _resourceToBundle.put(bundle,resource);
+        _uriToBundle.putIfAbsent(uri,bundle);
+        _bundleToUri.putIfAbsent(bundle,uri);
+        _bundleToResource.putIfAbsent(bundle,resource);
+        _resourceToBundle.putIfAbsent(resource,bundle);
         return resource;
     }
     protected URI getURI(Bundle bundle)
@@ -69,13 +73,19 @@ public class AnnotationParser extends org.eclipse.jetty.annotations.AnnotationPa
     }
     protected Resource getResource(Bundle bundle)
     {
-        return _resourceToBundle.get(bundle);
+        return _bundleToResource.get(bundle);
     }
+    protected Bundle getBundle (Resource resource)
+    {
+        return _resourceToBundle.get(resource);
+    }
+    
+    
     /**
      * 
      */
     @Override
-    public void parse (URI[] uris, ClassNameResolver resolver)
+    public void parse (Set<? extends Handler> handlers, URI[] uris, ClassNameResolver resolver)
     throws Exception
     {
         for (URI uri : uris)
@@ -89,16 +99,16 @@ public class AnnotationParser extends org.eclipse.jetty.annotations.AnnotationPa
                 }
                 //a jar in WEB-INF/lib or the WEB-INF/classes
                 //use the behavior of the super class for a standard jar.
-                super.parse(new URI[] {uri},resolver);
+                super.parse(handlers, new URI[] {uri},resolver);
             }
             else
             {
-                parse(associatedBundle,resolver);
+                parse(handlers, associatedBundle,resolver);
             }
         }
     }
     
-    protected void parse(Bundle bundle, ClassNameResolver resolver)
+    protected void parse(Set<? extends Handler> handlers, Bundle bundle, ClassNameResolver resolver)
     throws Exception
     {
         URI uri = _bundleToUri.get(bundle);
@@ -190,7 +200,7 @@ public class AnnotationParser extends org.eclipse.jetty.annotations.AnnotationPa
             //transform into a classname to pass to the resolver
             String shortName =  name.replace('/', '.').substring(0,name.length()-6);
             if ((resolver == null)|| (!resolver.isExcluded(shortName) && (!isParsed(shortName) || resolver.shouldOverride(shortName))))
-                scanClass(classUrl.openStream());
+                scanClass(handlers, getResource(bundle), classUrl.openStream());
         }
     }
     

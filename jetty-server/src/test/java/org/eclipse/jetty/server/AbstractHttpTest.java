@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,11 +28,13 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.http.SimpleHttpParser;
 import org.eclipse.jetty.toolchain.test.http.SimpleHttpResponse;
@@ -57,8 +59,9 @@ public abstract class AbstractHttpTest
     public void setUp() throws Exception
     {
         server = new Server();
-        connector = new ServerConnector(server);
+        connector = new ServerConnector(server,null,null,new ArrayByteBufferPool(64,2048,64*1024),1,1,new HttpConnectionFactory());
         connector.setIdleTimeout(10000);
+        
         server.addConnector(connector);
         httpParser = new SimpleHttpParser();
         ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);
@@ -75,7 +78,7 @@ public abstract class AbstractHttpTest
     {
         Socket socket = new Socket("localhost", connector.getLocalPort());
         socket.setSoTimeout((int)connector.getIdleTimeout());
-        BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
         PrintWriter writer = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
         String request = "GET / " + httpVersion + "\r\n";
 

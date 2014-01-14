@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,6 +22,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.http.HttpGenerator.RequestInfo;
 import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
@@ -346,7 +347,7 @@ public class HttpTester
 
             String content_type=get(HttpHeader.CONTENT_TYPE);
             String encoding=MimeTypes.getCharsetFromContentType(content_type);
-            Charset charset=encoding==null?StringUtil.__UTF8_CHARSET:Charset.forName(encoding);
+            Charset charset=encoding==null?StandardCharsets.UTF_8:Charset.forName(encoding);
 
             return new String(bytes,charset);
         }

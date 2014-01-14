@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -87,6 +87,12 @@ public class Slf4jLog extends AbstractLogger
     public void debug(String msg, Object... args)
     {
         _logger.debug(msg, args);
+    }
+    
+    public void debug(String msg, long arg)
+    {
+        if (isDebugEnabled())
+            _logger.debug(msg, new Object[]{new Long(arg)});
     }
 
     public void debug(Throwable thrown)

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
+
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -177,7 +178,7 @@ public class ConnectHandler extends HandlerWrapper
 
     protected SelectorManager newSelectorManager()
     {
-        return new Manager(getExecutor(), getScheduler(), 1);
+        return new ConnectManager(getExecutor(), getScheduler(), 1);
     }
 
     @Override
@@ -429,10 +430,10 @@ public class ConnectHandler extends HandlerWrapper
         dump(out, indent, getBeans(), TypeUtil.asList(getHandlers()));
     }
 
-    protected class Manager extends SelectorManager
+    protected class ConnectManager extends SelectorManager
     {
 
-        private Manager(Executor executor, Scheduler scheduler, int selectors)
+        private ConnectManager(Executor executor, Scheduler scheduler, int selectors)
         {
             super(executor, scheduler, selectors);
         }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -26,14 +26,14 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.common.ByteBufferAssert;
-import org.eclipse.jetty.websocket.common.Generator;
-import org.eclipse.jetty.websocket.common.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.Parser;
-import org.eclipse.jetty.websocket.common.UnitGenerator;
-import org.eclipse.jetty.websocket.common.UnitParser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
+import org.eclipse.jetty.websocket.common.test.ByteBufferAssert;
+import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
+import org.eclipse.jetty.websocket.common.test.UnitGenerator;
+import org.eclipse.jetty.websocket.common.test.UnitParser;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -58,10 +58,9 @@ public class TestABCase1_2
 
         bb.flip();
 
-        WebSocketFrame binaryFrame = WebSocketFrame.binary().setPayload(bb);
+        WebSocketFrame binaryFrame = new BinaryFrame().setPayload(bb);
 
-        Generator generator = new UnitGenerator();
-        ByteBuffer actual = generator.generate(binaryFrame);
+        ByteBuffer actual = UnitGenerator.generate(binaryFrame);
 
 
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
@@ -97,10 +96,9 @@ public class TestABCase1_2
 
         bb.flip();
 
-        WebSocketFrame binaryFrame = WebSocketFrame.binary().setPayload(bb);
+        WebSocketFrame binaryFrame = new BinaryFrame().setPayload(bb);
 
-        Generator generator = new UnitGenerator();
-        ByteBuffer actual = generator.generate(binaryFrame);
+        ByteBuffer actual = UnitGenerator.generate(binaryFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
@@ -140,10 +138,9 @@ public class TestABCase1_2
 
         bb.flip();
 
-        WebSocketFrame binaryFrame = WebSocketFrame.binary().setPayload(bb);
+        WebSocketFrame binaryFrame = new BinaryFrame().setPayload(bb);
 
-        Generator generator = new UnitGenerator();
-        ByteBuffer actual = generator.generate(binaryFrame);
+        ByteBuffer actual = UnitGenerator.generate(binaryFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
@@ -182,10 +179,9 @@ public class TestABCase1_2
         }
 
         bb.flip();
-        WebSocketFrame binaryFrame = WebSocketFrame.binary().setPayload(bb);
+        WebSocketFrame binaryFrame = new BinaryFrame().setPayload(bb);
 
-        Generator generator = new UnitGenerator();
-        ByteBuffer actual = generator.generate(binaryFrame);
+        ByteBuffer actual = UnitGenerator.generate(binaryFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
@@ -226,10 +222,9 @@ public class TestABCase1_2
 
         bb.flip();
 
-        WebSocketFrame binaryFrame = WebSocketFrame.binary().setPayload(bb);
+        WebSocketFrame binaryFrame = new BinaryFrame().setPayload(bb);
 
-        Generator generator = new UnitGenerator();
-        ByteBuffer actual = generator.generate(binaryFrame);
+        ByteBuffer actual = UnitGenerator.generate(binaryFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
@@ -266,10 +261,9 @@ public class TestABCase1_2
 
         bb.flip();
 
-        WebSocketFrame binaryFrame = WebSocketFrame.binary().setPayload(bb);
+        WebSocketFrame binaryFrame = new BinaryFrame().setPayload(bb);
 
-        Generator generator = new UnitGenerator();
-        ByteBuffer actual = generator.generate(binaryFrame);
+        ByteBuffer actual = UnitGenerator.generate(binaryFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(length + 11);
 
@@ -295,10 +289,9 @@ public class TestABCase1_2
     @Test
     public void testGenerateEmptyBinaryCase1_2_1()
     {
-        WebSocketFrame binaryFrame = WebSocketFrame.binary(new byte[] {});
+        WebSocketFrame binaryFrame = new BinaryFrame().setPayload(new byte[] {});
 
-        Generator generator = new UnitGenerator();
-        ByteBuffer actual = generator.generate(binaryFrame);
+        ByteBuffer actual = UnitGenerator.generate(binaryFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(5);
 
@@ -338,7 +331,7 @@ public class TestABCase1_2
         capture.assertNoErrors();
         capture.assertHasFrame(OpCode.BINARY,1);
 
-        Frame pActual = capture.getFrames().get(0);
+        Frame pActual = capture.getFrames().poll();
         Assert.assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(length));
         // Assert.assertEquals("BinaryFrame.payload",length,pActual.getPayloadData().length);
     }
@@ -372,7 +365,7 @@ public class TestABCase1_2
         capture.assertNoErrors();
         capture.assertHasFrame(OpCode.BINARY,1);
 
-        Frame pActual = capture.getFrames().get(0);
+        Frame pActual = capture.getFrames().poll();
         Assert.assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(length));
         // Assert.assertEquals("BinaryFrame.payload",length,pActual.getPayloadData().length);
     }
@@ -406,7 +399,7 @@ public class TestABCase1_2
         capture.assertNoErrors();
         capture.assertHasFrame(OpCode.BINARY,1);
 
-        Frame pActual = capture.getFrames().get(0);
+        Frame pActual = capture.getFrames().poll();
         Assert.assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(length));
         // .assertEquals("BinaryFrame.payload",length,pActual.getPayloadData().length);
     }
@@ -440,7 +433,7 @@ public class TestABCase1_2
         capture.assertNoErrors();
         capture.assertHasFrame(OpCode.BINARY,1);
 
-        Frame pActual = capture.getFrames().get(0);
+        Frame pActual = capture.getFrames().poll();
         Assert.assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(length));
         // Assert.assertEquals("BinaryFrame.payload",length,pActual.getPayloadData().length);
     }
@@ -466,7 +459,7 @@ public class TestABCase1_2
 
         expected.flip();
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
-        policy.setMaxMessageSize(length);
+        policy.setMaxBinaryMessageSize(length);
         Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
@@ -475,7 +468,7 @@ public class TestABCase1_2
         capture.assertNoErrors();
         capture.assertHasFrame(OpCode.BINARY,1);
 
-        Frame pActual = capture.getFrames().get(0);
+        Frame pActual = capture.getFrames().poll();
         Assert.assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(length));
         // Assert.assertEquals("BinaryFrame.payload",length,pActual.getPayloadData().length);
     }
@@ -503,7 +496,7 @@ public class TestABCase1_2
         expected.flip();
 
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
-        policy.setMaxMessageSize(length);
+        policy.setMaxBinaryMessageSize(length);
         Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
@@ -512,7 +505,7 @@ public class TestABCase1_2
         capture.assertNoErrors();
         capture.assertHasFrame(OpCode.BINARY,1);
 
-        Frame pActual = capture.getFrames().get(0);
+        Frame pActual = capture.getFrames().poll();
         Assert.assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(length));
         // Assert.assertEquals("BinaryFrame.payload",length,pActual.getPayloadData().length);
     }
@@ -536,7 +529,7 @@ public class TestABCase1_2
         capture.assertNoErrors();
         capture.assertHasFrame(OpCode.BINARY,1);
 
-        Frame pActual = capture.getFrames().get(0);
+        Frame pActual = capture.getFrames().poll();
         Assert.assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(0));
         // Assert.assertNull("BinaryFrame.payload",pActual.getPayloadData());
     }

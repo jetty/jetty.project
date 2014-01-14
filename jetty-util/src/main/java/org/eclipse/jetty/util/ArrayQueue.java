@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -47,6 +47,12 @@ public class ArrayQueue<E> extends AbstractList<E> implements Queue<E>
     public ArrayQueue()
     {
         this(DEFAULT_CAPACITY, -1);
+    }
+    
+    /* ------------------------------------------------------------ */
+    public ArrayQueue(Object lock)
+    {
+        this(DEFAULT_CAPACITY, -1,lock);
     }
 
     /* ------------------------------------------------------------ */

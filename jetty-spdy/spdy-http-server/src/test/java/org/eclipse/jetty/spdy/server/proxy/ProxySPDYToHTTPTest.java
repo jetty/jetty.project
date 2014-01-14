@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,14 +18,21 @@
 
 package org.eclipse.jetty.spdy.server.proxy;
 
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertThat;
+
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -52,7 +59,7 @@ import org.eclipse.jetty.spdy.api.StringDataInfo;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.spdy.client.SPDYClient;
-import org.eclipse.jetty.spdy.server.http.HTTPSPDYHeader;
+import org.eclipse.jetty.spdy.http.HTTPSPDYHeader;
 import org.eclipse.jetty.spdy.server.http.SPDYTestUtils;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
@@ -68,11 +75,6 @@ import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertThat;
 
 @RunWith(value = Parameterized.class)
 public class ProxySPDYToHTTPTest
@@ -169,7 +171,7 @@ public class ProxySPDYToHTTPTest
 
         InetSocketAddress proxyAddress = startProxy(startServer(new TestServerHandler(header, null)), 30000, 30000);
 
-        Session client = factory.newSPDYClient(version).connect(proxyAddress, null).get(5, TimeUnit.SECONDS);
+        Session client = factory.newSPDYClient(version).connect(proxyAddress, null);
 
         final CountDownLatch replyLatch = new CountDownLatch(1);
 
@@ -197,12 +199,12 @@ public class ProxySPDYToHTTPTest
     @Test
     public void testSYNThenREPLYAndDATA() throws Exception
     {
-        final byte[] data = "0123456789ABCDEF".getBytes("UTF-8");
+        final byte[] data = "0123456789ABCDEF".getBytes(StandardCharsets.UTF_8);
         final String header = "foo";
 
         InetSocketAddress proxyAddress = startProxy(startServer(new TestServerHandler(header, data)), 30000, 30000);
 
-        Session client = factory.newSPDYClient(version).connect(proxyAddress, null).get(5, TimeUnit.SECONDS);
+        Session client = factory.newSPDYClient(version).connect(proxyAddress, null);
 
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
@@ -275,7 +277,7 @@ public class ProxySPDYToHTTPTest
             {
                 resetLatch.countDown();
             }
-        }).get(5, TimeUnit.SECONDS);
+        });
 
         Fields headers = SPDYTestUtils.createHeaders("localhost", proxyAddress.getPort(), version, "GET", "/");
         headers.put("connection", "close");
@@ -309,7 +311,7 @@ public class ProxySPDYToHTTPTest
 
         final CountDownLatch replyLatch = new CountDownLatch(1);
 
-        Session client = factory.newSPDYClient(version).connect(proxyAddress, null).get(5, TimeUnit.SECONDS);
+        Session client = factory.newSPDYClient(version).connect(proxyAddress, null);
         Fields headers = SPDYTestUtils.createHeaders("localhost", proxyAddress.getPort(), version, "GET", "/");
 
         client.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
@@ -317,7 +319,7 @@ public class ProxySPDYToHTTPTest
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
-                assertThat("Status code is 302", replyInfo.getHeaders().get(HTTPSPDYHeader.STATUS.name(version)).value(),
+                assertThat("Status code is 302", replyInfo.getHeaders().get(HTTPSPDYHeader.STATUS.name(version)).getValue(),
                         is("302"));
                 assertThat("Location header has been received", replyInfo.getHeaders().get("Location"), is(notNullValue()));
                 replyLatch.countDown();
@@ -335,7 +337,7 @@ public class ProxySPDYToHTTPTest
 
         InetSocketAddress proxyAddress = startProxy(startServer(new TestServerHandler(header, null)), 30000, 30000);
 
-        Session client = factory.newSPDYClient(version).connect(proxyAddress, null).get(5, TimeUnit.SECONDS);
+        Session client = factory.newSPDYClient(version).connect(proxyAddress, null);
 
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
@@ -383,7 +385,7 @@ public class ProxySPDYToHTTPTest
 
         InetSocketAddress proxyAddress = startProxy(startServer(new TestServerHandler(header, null)), 30000, 30000);
 
-        Session client = factory.newSPDYClient(version).connect(proxyAddress, null).get(5, TimeUnit.SECONDS);
+        Session client = factory.newSPDYClient(version).connect(proxyAddress, null);
 
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
@@ -439,7 +441,7 @@ public class ProxySPDYToHTTPTest
             {
                 goAwayLatch.countDown();
             }
-        }).get(5, TimeUnit.SECONDS);
+        });
 
         Fields headers = SPDYTestUtils.createHeaders("localhost", proxyAddress.getPort(), version, "POST", "/");
         ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);
@@ -470,7 +472,7 @@ public class ProxySPDYToHTTPTest
             }
         }), 30000, timeout);
 
-        Session client = factory.newSPDYClient(version).connect(proxyAddress, null).get(5, TimeUnit.SECONDS);
+        Session client = factory.newSPDYClient(version).connect(proxyAddress, null);
 
         final CountDownLatch replyLatch = new CountDownLatch(1);
 
@@ -484,7 +486,7 @@ public class ProxySPDYToHTTPTest
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
                 Fields headers = replyInfo.getHeaders();
-                assertThat("status is 504", headers.get(HTTPSPDYHeader.STATUS.name(version)).value(), is("504"));
+                assertThat("status is 504", headers.get(HTTPSPDYHeader.STATUS.name(version)).getValue(), is("504"));
                 replyLatch.countDown();
             }
 
@@ -510,7 +512,7 @@ public class ProxySPDYToHTTPTest
             {
                 pingLatch.countDown();
             }
-        }).get(5, TimeUnit.SECONDS);
+        });
 
         client.ping(new PingInfo(5, TimeUnit.SECONDS));
 

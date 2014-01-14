@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.server;
 
 import static org.hamcrest.Matchers.*;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -31,16 +30,16 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
-import org.eclipse.jetty.websocket.common.events.EventDriver;
-import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
-import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
+import org.eclipse.jetty.websocket.common.events.AbstractEventDriver;
+import org.eclipse.jetty.websocket.common.test.BlockheadClient;
+import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.server.helper.RFCSocket;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
@@ -75,7 +74,6 @@ public class WebSocketCloseTest
         {
             errors.add(cause);
         }
-
     }
 
     @SuppressWarnings("serial")
@@ -88,7 +86,7 @@ public class WebSocketCloseTest
         }
 
         @Override
-        public Object createWebSocket(UpgradeRequest req, UpgradeResponse resp)
+        public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp)
         {
             if (req.hasSubProtocol("fastclose"))
             {
@@ -116,14 +114,7 @@ public class WebSocketCloseTest
         public void onWebSocketConnect(Session sess)
         {
             LOG.debug("onWebSocketConnect({})",sess);
-            try
-            {
-                sess.close();
-            }
-            catch (IOException e)
-            {
-                e.printStackTrace(System.err);
-            }
+            sess.close();
         }
     }
 
@@ -209,7 +200,7 @@ public class WebSocketCloseTest
         client.setTimeout(TimeUnit.SECONDS,1);
         try
         {
-            try (StacklessLogging scope = new StacklessLogging(EventDriver.class))
+            try (StacklessLogging scope = new StacklessLogging(AbstractEventDriver.class))
             {
                 client.connect();
                 client.sendStandardRequest();

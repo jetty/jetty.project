@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,11 +18,17 @@
 
 package org.eclipse.jetty.io;
 
+import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.StandardCharsets;
+
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
@@ -38,10 +44,6 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 
 
 public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
@@ -170,7 +172,7 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
         if (debug) System.err.println("\nSay Hello");
 
         // write a message
-        appOut.put("HelloWorld".getBytes("UTF-8"));
+        appOut.put("HelloWorld".getBytes(StandardCharsets.UTF_8));
         appOut.flip();
         SSLEngineResult result =engine.wrap(appOut,sslOut);
         if (debug) System.err.println(result);

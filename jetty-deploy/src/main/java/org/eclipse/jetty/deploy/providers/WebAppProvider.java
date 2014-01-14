@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -282,6 +282,8 @@ public class WebAppProvider extends ScanningAppProvider
             };
 
             xmlc.getIdMap().put("Server", getDeploymentManager().getServer());
+            xmlc.getProperties().put("jetty.home",System.getProperty("jetty.home","."));
+            xmlc.getProperties().put("jetty.base",System.getProperty("jetty.base","."));
             xmlc.getProperties().put("jetty.webapp",file.getCanonicalPath());
             xmlc.getProperties().put("jetty.webapps",file.getParentFile().getCanonicalPath());
 

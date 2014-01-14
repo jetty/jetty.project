@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,10 +25,10 @@ import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
-import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
-import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
-import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
+import org.eclipse.jetty.websocket.common.frames.TextFrame;
+import org.eclipse.jetty.websocket.common.test.BlockheadClient;
+import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.server.helper.SessionServlet;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -68,7 +68,7 @@ public class WebSocketServerSessionTest
             client.sendStandardRequest();
             client.expectUpgradeResponse();
 
-            client.write(WebSocketFrame.text("harsh-disconnect"));
+            client.write(new TextFrame().setPayload("harsh-disconnect"));
 
             client.awaitDisconnect(1,TimeUnit.SECONDS);
         }
@@ -90,10 +90,10 @@ public class WebSocketServerSessionTest
             client.expectUpgradeResponse();
 
             // Ask the server socket for specific parameter map info
-            client.write(WebSocketFrame.text("getParameterMap|snack"));
-            client.write(WebSocketFrame.text("getParameterMap|amount"));
-            client.write(WebSocketFrame.text("getParameterMap|brand"));
-            client.write(WebSocketFrame.text("getParameterMap|cost")); // intentionall invalid
+            client.write(new TextFrame().setPayload("getParameterMap|snack"));
+            client.write(new TextFrame().setPayload("getParameterMap|amount"));
+            client.write(new TextFrame().setPayload("getParameterMap|brand"));
+            client.write(new TextFrame().setPayload("getParameterMap|cost")); // intentionall invalid
 
             // Read frame (hopefully text frame)
             IncomingFramesCapture capture = client.readFrames(4,TimeUnit.MILLISECONDS,500);

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,21 +20,24 @@ package org.eclipse.jetty.client.util;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
 import java.util.Locale;
 
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.api.Response.Listener;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 
 /**
- * <p>Implementation of {@link Response.Listener} that buffers the content up to a maximum length
+ * <p>Implementation of {@link Listener} that buffers the content up to a maximum length
  * specified to the constructors.</p>
  * <p>The content may be retrieved from {@link #onSuccess(Response)} or {@link #onComplete(Result)}
  * via {@link #getContent()} or {@link #getContentAsString()}.</p>
  */
-public abstract class BufferingResponseListener extends Response.Listener.Empty
+public abstract class BufferingResponseListener extends Listener.Adapter
 {
     private final int maxLength;
     private volatile byte[] buffer = new byte[0];
@@ -130,7 +133,7 @@ public abstract class BufferingResponseListener extends Response.Listener.Empty
     {
         String encoding = this.encoding;
         if (encoding == null)
-            encoding = "UTF-8";
+            return getContentAsString(StandardCharsets.UTF_8);
         return getContentAsString(encoding);
     }
 
@@ -149,5 +152,15 @@ public abstract class BufferingResponseListener extends Response.Listener.Empty
         {
             throw new UnsupportedCharsetException(encoding);
         }
+    }
+
+    /**
+     * @param encoding the encoding of the content bytes
+     * @return the content as a string, with the specified encoding
+     * @see #getContentAsString()
+     */
+    public String getContentAsString(Charset encoding)
+    {
+        return new String(getContent(), encoding);
     }
 }

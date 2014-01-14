@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,10 +19,10 @@
 package org.eclipse.jetty.server.handler;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.File;
@@ -332,7 +332,7 @@ public class ContextHandlerGetResourceTest
 
             Resource resource=context.getResource(path);
             assertNotNull(resource);
-            assertEquals(context.getResource("/subdir/TextFile.Long.txt").getURL(),resource.getAlias());
+            assertEquals(context.getResource("/subdir/TextFile.Long.txt").getURI(),resource.getAlias());
             
             URL url=context.getServletContext().getResource(path);
             assertNotNull(url);

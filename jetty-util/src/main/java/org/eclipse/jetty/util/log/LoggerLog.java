@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -151,6 +151,7 @@ public class LoggerLog extends AbstractLogger
         }
     }
 
+    
     public void debug(String msg, Object... args)
     {
         if (!_debug)
@@ -186,6 +187,21 @@ public class LoggerLog extends AbstractLogger
         }
     }
 
+    public void debug(String msg, long value)
+    {
+        if (!_debug)
+            return;
+
+        try
+        {
+            _debugMAA.invoke(_logger, new Object[]{new Long(value)});
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+    }
+    
     public void ignore(Throwable ignored)
     {
         if (Log.isIgnored())

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -31,6 +31,7 @@ import java.util.TreeSet;
 
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.plus.webapp.EnvConfiguration;
+import org.eclipse.jetty.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -110,7 +111,7 @@ public class JettyWebAppContext extends WebAppContext
                 new MetaInfConfiguration(),
                 new FragmentConfiguration(),
                 _envConfig = new EnvConfiguration(),
-                new org.eclipse.jetty.plus.webapp.PlusConfiguration(),
+                new PlusConfiguration(),
                 new AnnotationConfiguration(),
                 new JettyWebXmlConfiguration()
         });

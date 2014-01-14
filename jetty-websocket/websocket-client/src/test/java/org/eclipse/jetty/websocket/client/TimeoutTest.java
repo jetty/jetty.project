@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 
 import java.net.URI;
 import java.util.concurrent.Future;
@@ -27,8 +27,8 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer;
-import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer.ServerConnection;
+import org.eclipse.jetty.websocket.common.test.BlockheadServer;
+import org.eclipse.jetty.websocket.common.test.BlockheadServer.ServerConnection;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -80,7 +80,7 @@ public class TimeoutTest
     @Test
     public void testIdleDetectedByClient() throws Exception
     {
-        TrackingSocket wsocket = new TrackingSocket();
+        JettyTrackingSocket wsocket = new JettyTrackingSocket();
 
         URI wsUri = server.getWsUri();
         client.setMaxIdleTimeout(1000);
@@ -98,14 +98,14 @@ public class TimeoutTest
 
             // Wait for inactivity idle timeout.
             long start = System.currentTimeMillis();
-            wsocket.waitForClose(10,TimeUnit.SECONDS);
+            wsocket.waitForClose(2,TimeUnit.SECONDS);
             long end = System.currentTimeMillis();
             long dur = (end - start);
             // Make sure idle timeout takes less than 5 total seconds
-            Assert.assertThat("Idle Timeout",dur,lessThanOrEqualTo(5000L));
+            Assert.assertThat("Idle Timeout",dur,lessThanOrEqualTo(3000L));
 
-            // Client should see a close event, with status SHUTDOWN
-            wsocket.assertCloseCode(StatusCode.SHUTDOWN);
+            // Client should see a close event, with abnormal status NO_CLOSE
+            wsocket.assertCloseCode(StatusCode.ABNORMAL);
         }
         finally
         {

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -54,7 +54,7 @@ public interface StreamFrameListener extends EventListener
      * <p>Callback invoked when a push syn has been received on a stream.</p>
      *
      * @param stream the push stream just created
-     * @param pushInfo
+     * @param pushInfo the push metadata
      * @return a listener for stream events or null if there is no interest in being notified of stream events
      */
     public StreamFrameListener onPush(Stream stream, PushInfo pushInfo);
@@ -68,6 +68,13 @@ public interface StreamFrameListener extends EventListener
      * @param dataInfo the data metadata
      */
     public void onData(Stream stream, DataInfo dataInfo);
+
+    /**
+     * <p>Callback invoked on errors.</p>
+     * @param stream the stream
+     * @param x the failure
+     */
+    public void onFailure(Stream stream, Throwable x);
 
     /**
      * <p>Empty implementation of {@link StreamFrameListener}</p>
@@ -92,6 +99,11 @@ public interface StreamFrameListener extends EventListener
 
         @Override
         public void onData(Stream stream, DataInfo dataInfo)
+        {
+        }
+
+        @Override
+        public void onFailure(Stream stream, Throwable x)
         {
         }
     }

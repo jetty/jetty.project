@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,6 +24,8 @@ import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
+import org.eclipse.jetty.client.http.HttpDestinationOverHTTP;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.FuturePromise;
@@ -56,9 +58,10 @@ public class HttpClientExplicitConnectionTest extends AbstractHttpClientServerTe
             Assert.assertNotNull(response);
             Assert.assertEquals(200, response.getStatus());
 
-            HttpDestination httpDestination = (HttpDestination)destination;
-            Assert.assertTrue(httpDestination.getActiveConnections().isEmpty());
-            Assert.assertTrue(httpDestination.getIdleConnections().isEmpty());
+            HttpDestinationOverHTTP httpDestination = (HttpDestinationOverHTTP)destination;
+            ConnectionPool connectionPool = httpDestination.getConnectionPool();
+            Assert.assertTrue(connectionPool.getActiveConnections().isEmpty());
+            Assert.assertTrue(connectionPool.getIdleConnections().isEmpty());
         }
     }
 
@@ -84,11 +87,12 @@ public class HttpClientExplicitConnectionTest extends AbstractHttpClientServerTe
         // Give the connection some time to process the remote close
         TimeUnit.SECONDS.sleep(1);
 
-        HttpConnection httpConnection = (HttpConnection)connection;
+        HttpConnectionOverHTTP httpConnection = (HttpConnectionOverHTTP)connection;
         Assert.assertFalse(httpConnection.getEndPoint().isOpen());
 
-        HttpDestination httpDestination = (HttpDestination)destination;
-        Assert.assertTrue(httpDestination.getActiveConnections().isEmpty());
-        Assert.assertTrue(httpDestination.getIdleConnections().isEmpty());
+        HttpDestinationOverHTTP httpDestination = (HttpDestinationOverHTTP)destination;
+        ConnectionPool connectionPool = httpDestination.getConnectionPool();
+        Assert.assertTrue(connectionPool.getActiveConnections().isEmpty());
+        Assert.assertTrue(connectionPool.getIdleConnections().isEmpty());
     }
 }

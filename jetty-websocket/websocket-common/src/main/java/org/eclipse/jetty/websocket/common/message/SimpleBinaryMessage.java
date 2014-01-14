@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,9 +29,9 @@ public class SimpleBinaryMessage implements MessageAppender
 {
     private static final int BUFFER_SIZE = 65535;
     private final EventDriver onEvent;
-    private final ByteArrayOutputStream out;
+    protected final ByteArrayOutputStream out;
     private int size;
-    private boolean finished;
+    protected boolean finished;
 
     public SimpleBinaryMessage(EventDriver onEvent)
     {
@@ -41,7 +41,7 @@ public class SimpleBinaryMessage implements MessageAppender
     }
 
     @Override
-    public void appendMessage(ByteBuffer payload) throws IOException
+    public void appendFrame(ByteBuffer payload, boolean isLast) throws IOException
     {
         if (finished)
         {
@@ -54,7 +54,7 @@ public class SimpleBinaryMessage implements MessageAppender
             return;
         }
 
-        onEvent.getPolicy().assertValidMessageSize(size + payload.remaining());
+        onEvent.getPolicy().assertValidBinaryMessageSize(size + payload.remaining());
         size += payload.remaining();
 
         BufferUtil.writeTo(payload,out);

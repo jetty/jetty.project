@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,6 +29,7 @@ import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -216,6 +217,16 @@ public class MultiPartInputStreamParser
            }
         }
 
+        
+        /** 
+         * @see javax.servlet.http.Part#getSubmittedFileName()
+         */
+        @Override
+        public String getSubmittedFileName()
+        {
+            return getContentDispositionFilename();
+        }
+
         public byte[] getBytes()
         {
             if (_bout!=null)
@@ -301,7 +312,6 @@ public class MultiPartInputStreamParser
 
         /**
          * Get the file, if any, the data has been written to.
-         * @return
          */
         public File getFile ()
         {
@@ -343,8 +353,6 @@ public class MultiPartInputStreamParser
 
     /**
      * Get the already parsed parts.
-     * 
-     * @return
      */
     public Collection<Part> getParsedParts()
     {
@@ -391,7 +399,6 @@ public class MultiPartInputStreamParser
     /**
      * Parse, if necessary, the multipart data and return the list of Parts.
      * 
-     * @return
      * @throws IOException
      * @throws ServletException
      */
@@ -414,7 +421,6 @@ public class MultiPartInputStreamParser
      * Get the named Part.
      * 
      * @param name
-     * @return
      * @throws IOException
      * @throws ServletException
      */
@@ -475,7 +481,7 @@ public class MultiPartInputStreamParser
         }
         
         String boundary="--"+contentTypeBoundary;
-        byte[] byteBoundary=(boundary+"--").getBytes(StringUtil.__ISO_8859_1);
+        byte[] byteBoundary=(boundary+"--").getBytes(StandardCharsets.ISO_8859_1);
 
         // Get first boundary
         String line = null;

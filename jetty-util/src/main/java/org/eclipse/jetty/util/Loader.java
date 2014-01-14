@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -46,79 +46,69 @@ import org.eclipse.jetty.util.resource.Resource;
 public class Loader
 {
     /* ------------------------------------------------------------ */
-    public static URL getResource(Class<?> loadClass,String name, boolean checkParents)
+    public static URL getResource(Class<?> loadClass,String name)
     {
         URL url =null;
-        ClassLoader loader=Thread.currentThread().getContextClassLoader();
-        while (url==null && loader!=null )
-        {
-            url=loader.getResource(name); 
-            loader=(url==null&&checkParents)?loader.getParent():null;
-        }      
+        ClassLoader context_loader=Thread.currentThread().getContextClassLoader();
+        if (context_loader!=null)
+            url=context_loader.getResource(name); 
         
-        loader=loadClass==null?null:loadClass.getClassLoader();
-        while (url==null && loader!=null )
+        if (url==null && loadClass!=null)
         {
-            url=loader.getResource(name); 
-            loader=(url==null&&checkParents)?loader.getParent():null;
-        }       
+            ClassLoader load_loader=loadClass.getClassLoader();
+            if (load_loader!=null && load_loader!=context_loader)
+                url=load_loader.getResource(name);
+        }
 
         if (url==null)
-        {
             url=ClassLoader.getSystemResource(name);
-        }   
 
         return url;
     }
 
     /* ------------------------------------------------------------ */
-    @SuppressWarnings("rawtypes")
-    public static Class loadClass(Class loadClass,String name)
-        throws ClassNotFoundException
-    {
-        return loadClass(loadClass,name,false);
-    }
-    
-    /* ------------------------------------------------------------ */
     /** Load a class.
      * 
      * @param loadClass
      * @param name
-     * @param checkParents If true, try loading directly from parent classloaders.
      * @return Class
      * @throws ClassNotFoundException
      */
     @SuppressWarnings("rawtypes")
-    public static Class loadClass(Class loadClass,String name,boolean checkParents)
+    public static Class loadClass(Class loadClass,String name)
         throws ClassNotFoundException
     {
         ClassNotFoundException ex=null;
         Class<?> c =null;
-        ClassLoader loader=Thread.currentThread().getContextClassLoader();
-        while (c==null && loader!=null )
+        ClassLoader context_loader=Thread.currentThread().getContextClassLoader();
+        if (context_loader!=null )
         {
-            try { c=loader.loadClass(name); }
-            catch (ClassNotFoundException e) {if(ex==null)ex=e;}
-            loader=(c==null&&checkParents)?loader.getParent():null;
-        }      
+            try { c=context_loader.loadClass(name); }
+            catch (ClassNotFoundException e) {ex=e;}
+        }    
         
-        loader=loadClass==null?null:loadClass.getClassLoader();
-        while (c==null && loader!=null )
+        if (c==null && loadClass!=null)
         {
-            try { c=loader.loadClass(name); }
-            catch (ClassNotFoundException e) {if(ex==null)ex=e;}
-            loader=(c==null&&checkParents)?loader.getParent():null;
-        }       
+            ClassLoader load_loader=loadClass.getClassLoader();
+            if (load_loader!=null && load_loader!=context_loader)
+            {
+                try { c=load_loader.loadClass(name); }
+                catch (ClassNotFoundException e) {if(ex==null)ex=e;}
+            }
+        }
 
         if (c==null)
         {
             try { c=Class.forName(name); }
-            catch (ClassNotFoundException e) {if(ex==null)ex=e;}
+            catch (ClassNotFoundException e) 
+            {
+                if(ex!=null)
+                    throw ex;
+                throw e;
+            }
         }   
 
-        if (c!=null)
-            return c;
-        throw ex;
+        return c;
     }
     
     

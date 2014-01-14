@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -38,6 +38,7 @@ import javax.servlet.http.HttpSessionAttributeListener;
 import javax.servlet.http.HttpSessionBindingEvent;
 import javax.servlet.http.HttpSessionContext;
 import javax.servlet.http.HttpSessionEvent;
+import javax.servlet.http.HttpSessionIdListener;
 import javax.servlet.http.HttpSessionListener;
 
 import org.eclipse.jetty.http.HttpCookie;
@@ -107,6 +108,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
 
     protected final List<HttpSessionAttributeListener> _sessionAttributeListeners = new CopyOnWriteArrayList<HttpSessionAttributeListener>();
     protected final List<HttpSessionListener> _sessionListeners= new CopyOnWriteArrayList<HttpSessionListener>();
+    protected final List<HttpSessionIdListener> _sessionIdListeners = new CopyOnWriteArrayList<HttpSessionIdListener>();
 
     protected ClassLoader _loader;
     protected ContextHandler.Context _context;
@@ -191,6 +193,8 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
             _sessionAttributeListeners.add((HttpSessionAttributeListener)listener);
         if (listener instanceof HttpSessionListener)
             _sessionListeners.add((HttpSessionListener)listener);
+        if (listener instanceof HttpSessionIdListener)
+            _sessionIdListeners.add((HttpSessionIdListener)listener);
     }
 
     /* ------------------------------------------------------------ */
@@ -198,6 +202,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     {
         _sessionAttributeListeners.clear();
         _sessionListeners.clear();
+        _sessionIdListeners.clear();
     }
 
     /* ------------------------------------------------------------ */
@@ -222,11 +227,25 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
                 _sessionIdManager=server.getSessionIdManager();
                 if (_sessionIdManager==null)
                 {
-                    _sessionIdManager=new HashSessionIdManager();
-                    server.setSessionIdManager(_sessionIdManager);
+                    //create a default SessionIdManager and set it as the shared
+                    //SessionIdManager for the Server, being careful NOT to use
+                    //the webapp context's classloader, otherwise if the context
+                    //is stopped, the classloader is leaked.
+                    ClassLoader serverLoader = server.getClass().getClassLoader();
+                    try
+                    {
+                        Thread.currentThread().setContextClassLoader(serverLoader);
+                        _sessionIdManager=new HashSessionIdManager();
+                        server.setSessionIdManager(_sessionIdManager);
+                    }
+                    finally
+                    {
+                        Thread.currentThread().setContextClassLoader(_loader);
+                    }
                 }
             }
         }
+        
         if (!_sessionIdManager.isStarted())
             _sessionIdManager.start();
 
@@ -271,7 +290,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     {
         super.doStop();
 
-        invalidateSessions();
+        shutdownSessions();
 
         _loader=null;
     }
@@ -411,7 +430,6 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
 
     /* ------------------------------------------------------------ */
     /**
-     * @return if true, session cookie will be marked as secure only iff
      * HTTPS request. Can be overridden by setting SessionCookieConfig.setSecure(true),
      * in which case the session cookie will be marked as secure on both HTTPS and HTTP.
      */
@@ -731,7 +749,12 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
      */
     public abstract AbstractSession getSession(String idInCluster);
 
-    protected abstract void invalidateSessions() throws Exception;
+    /**
+     * Prepare sessions for session manager shutdown
+     * 
+     * @throws Exception
+     */
+    protected abstract void shutdownSessions() throws Exception;
 
 
     /* ------------------------------------------------------------ */
@@ -779,7 +802,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
      * @param invalidate True if {@link HttpSessionListener#sessionDestroyed(HttpSessionEvent)} and
      * {@link SessionIdManager#invalidateAll(String)} should be called.
      */
-    public void removeSession(AbstractSession session, boolean invalidate)
+    public boolean removeSession(AbstractSession session, boolean invalidate)
     {
         // Remove session from context and global maps
         boolean removed = removeSession(session.getClusterId());
@@ -803,6 +826,8 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
                 }
             }
         }
+        
+        return removed;
     }
 
     /* ------------------------------------------------------------ */
@@ -1005,6 +1030,29 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     public void setCheckingRemoteSessionIdEncoding(boolean remote)
     {
         _checkingRemoteSessionIdEncoding=remote;
+    }
+    
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Tell the HttpSessionIdListeners the id changed.
+     * NOTE: this method must be called LAST in subclass overrides, after the session has been updated
+     * with the new id.
+     * @see org.eclipse.jetty.server.SessionManager#renewSessionId(java.lang.String, java.lang.String, java.lang.String, java.lang.String)
+     */
+    @Override
+    public void renewSessionId(String oldClusterId, String oldNodeId, String newClusterId, String newNodeId)
+    {
+        if (!_sessionIdListeners.isEmpty())
+        {
+            AbstractSession session = getSession(newClusterId);
+            HttpSessionEvent event = new HttpSessionEvent(session);
+            for (HttpSessionIdListener l:_sessionIdListeners)
+            {
+                l.sessionIdChanged(event, oldClusterId);
+            }
+        }
+
     }
 
     /* ------------------------------------------------------------ */

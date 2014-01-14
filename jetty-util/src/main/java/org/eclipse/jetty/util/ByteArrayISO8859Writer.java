@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 
 
 /* ------------------------------------------------------------ */
@@ -211,7 +212,7 @@ public class ByteArrayISO8859Writer extends Writer
         if (_bout==null)
         {
             _bout = new ByteArrayOutputStream2(2*length);
-            _writer = new OutputStreamWriter(_bout,StringUtil.__ISO_8859_1);
+            _writer = new OutputStreamWriter(_bout,StandardCharsets.ISO_8859_1);
         }
         else
             _bout.reset();

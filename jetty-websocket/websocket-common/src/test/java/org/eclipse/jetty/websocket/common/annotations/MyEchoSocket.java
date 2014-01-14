@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,12 +20,12 @@ package org.eclipse.jetty.websocket.common.annotations;
 
 import java.io.IOException;
 
+import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.eclipse.jetty.websocket.api.io.WebSocketBlockingConnection;
 
 /**
  * The most common websocket implementation.
@@ -36,11 +36,11 @@ import org.eclipse.jetty.websocket.api.io.WebSocketBlockingConnection;
 public class MyEchoSocket
 {
     private Session session;
-    private WebSocketBlockingConnection blocking;
+    private RemoteEndpoint remote;
 
-    public WebSocketBlockingConnection getConnection()
+    public RemoteEndpoint getRemote()
     {
-        return blocking;
+        return remote;
     }
 
     @OnWebSocketClose
@@ -53,7 +53,7 @@ public class MyEchoSocket
     public void onConnect(Session session)
     {
         this.session = session;
-        this.blocking = new WebSocketBlockingConnection(session);
+        this.remote = session.getRemote();
     }
 
     @OnWebSocketMessage
@@ -68,7 +68,7 @@ public class MyEchoSocket
 
         try
         {
-            blocking.write(message);
+            remote.sendString(message);
         }
         catch (IOException e)
         {

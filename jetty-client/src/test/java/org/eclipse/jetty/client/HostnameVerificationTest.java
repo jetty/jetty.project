@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -116,12 +116,12 @@ public class HostnameVerificationTest
             // Therefore this test may catch a SSLHandshakeException, or a ClosedChannelException.
             // If it is the former, we verify that its cause is a CertificateException.
 
-            // ExecutionException wraps an EofException that wraps the SSLHandshakeException
-            Throwable cause = x.getCause().getCause();
+            // ExecutionException wraps an SSLHandshakeException
+            Throwable cause = x.getCause();
             if (cause instanceof SSLHandshakeException)
                 assertThat(cause.getCause().getCause(), instanceOf(CertificateException.class));
             else
-                assertThat(cause, instanceOf(ClosedChannelException.class));
+                assertThat(cause.getCause(), instanceOf(ClosedChannelException.class));
         }
     }
 

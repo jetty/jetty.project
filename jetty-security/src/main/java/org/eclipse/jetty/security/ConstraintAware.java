@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -51,4 +51,20 @@ public interface ConstraintAware
      * @param role
      */
     void addRole(String role);
+    
+    /**
+     * See Servlet Spec 31, sec 13.8.4, pg 145
+     * When true, requests with http methods not explicitly covered either by inclusion or omissions
+     * in constraints, will have access denied.
+     * @param deny
+     */
+    void setDenyUncoveredHttpMethods(boolean deny);
+    
+    boolean isDenyUncoveredHttpMethods();
+    
+    /**
+     * See Servlet Spec 31, sec 13.8.4, pg 145
+     * Container must check if there are urls with uncovered http methods
+     */
+    boolean checkPathsWithUncoveredHttpMethods();
 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -44,7 +44,7 @@ public class EchoSocket
 
         // echo the message back.
         ByteBuffer data = ByteBuffer.wrap(buf,offset,len);
-        this.session.getRemote().sendBytesByFuture(data);
+        this.session.getRemote().sendBytes(data,null);
     }
 
     @OnWebSocketConnect
@@ -59,6 +59,6 @@ public class EchoSocket
         LOG.debug("onText({})",message);
 
         // echo the message back.
-        this.session.getRemote().sendStringByFuture(message);
+        this.session.getRemote().sendString(message,null);
     }
 }

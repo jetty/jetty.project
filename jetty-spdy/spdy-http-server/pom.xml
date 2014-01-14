@@ -3,11 +3,11 @@
     <parent>
         <groupId>org.eclipse.jetty.spdy</groupId>
         <artifactId>spdy-parent</artifactId>
-        <version>9.0.7-SNAPSHOT</version>
+        <version>9.1.2-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>spdy-http-server</artifactId>
-    <name>Jetty :: SPDY :: Jetty Server HTTP Layer</name>
+    <name>Jetty :: SPDY :: HTTP Server</name>
 
     <properties>
         <bundle-symbolic-name>${project.groupId}.http.server</bundle-symbolic-name>
@@ -73,8 +73,8 @@
                         </goals>
                         <configuration>
                             <instructions>
-                                <Export-Package>org.eclipse.jetty.spdy.server.http;version="9.0",
-                                    org.eclipse.jetty.spdy.server.proxy;version="9.0"
+                                <Export-Package>org.eclipse.jetty.spdy.server.http;version="9.1",
+                                    org.eclipse.jetty.spdy.server.proxy;version="9.1"
                                 </Export-Package>
                                 <Import-Package>!org.eclipse.jetty.npn,org.eclipse.jetty.*;version="[9.0,10.0)",*
                                 </Import-Package>
@@ -88,6 +88,11 @@
     </build>
 
     <dependencies>
+        <dependency>
+            <groupId>org.eclipse.jetty.spdy</groupId>
+            <artifactId>spdy-http-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.eclipse.jetty.spdy</groupId>
             <artifactId>spdy-server</artifactId>
@@ -119,6 +124,12 @@
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-continuation</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-start</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>

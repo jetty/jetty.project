@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,12 +19,13 @@
 package org.eclipse.jetty.websocket.servlet;
 
 import java.io.IOException;
+import java.util.Iterator;
+import java.util.ServiceLoader;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 
 /**
@@ -32,7 +33,46 @@ import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
  */
 public interface WebSocketServletFactory
 {
+    public static class Loader
+    {
+        private static WebSocketServletFactory INSTANCE;
+
+        public static WebSocketServletFactory create(WebSocketPolicy policy) throws ClassNotFoundException, InstantiationException, IllegalAccessException
+        {
+            return load(policy).createFactory(policy);
+        }
+
+        public static WebSocketServletFactory load(WebSocketPolicy policy) throws ClassNotFoundException, InstantiationException, IllegalAccessException
+        {
+            if (INSTANCE != null)
+            {
+                return INSTANCE;
+            }
+            WebSocketServletFactory baseFactory;
+            Iterator<WebSocketServletFactory> factories = ServiceLoader.load(WebSocketServletFactory.class).iterator();
+
+            if (factories.hasNext())
+            {
+                baseFactory = factories.next();
+            }
+            else
+            {
+                // Load the default class if ServiceLoader mechanism isn't valid in this environment. (such as OSGi)
+                ClassLoader loader = Thread.currentThread().getContextClassLoader();
+                @SuppressWarnings("unchecked")
+                Class<WebSocketServletFactory> wssf = (Class<WebSocketServletFactory>)loader
+                        .loadClass("org.eclipse.jetty.websocket.server.WebSocketServerFactory");
+                baseFactory = wssf.newInstance();
+            }
+
+            INSTANCE = baseFactory;
+            return INSTANCE;
+        }
+    }
+
     public boolean acceptWebSocket(HttpServletRequest request, HttpServletResponse response) throws IOException;
+
+    public boolean acceptWebSocket(WebSocketCreator creator, HttpServletRequest request, HttpServletResponse response) throws IOException;
 
     public void cleanup();
 

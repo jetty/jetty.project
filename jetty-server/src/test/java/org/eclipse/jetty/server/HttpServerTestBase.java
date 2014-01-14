@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,6 +21,7 @@ package org.eclipse.jetty.server;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -35,13 +36,10 @@ import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.net.URI;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.Random;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.servlet.ServletException;
@@ -53,14 +51,13 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.matchers.JUnitMatchers;
 /**
  *
  */
@@ -114,6 +111,26 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                     "\n" +
                     RESPONSE2_CONTENT;
 
+    @Test
+    public void testSimple() throws Exception
+    {
+        configureServer(new HelloWorldHandler());
+
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
+        {
+            OutputStream os = client.getOutputStream();
+
+            os.write("GET / HTTP/1.0\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1));
+            os.flush();
+
+            // Read the response.
+            String response = readResponse(client);
+
+            Assert.assertThat(response, Matchers.containsString("HTTP/1.1 200 OK"));
+            Assert.assertThat(response, Matchers.containsString("Hello world"));
+        }
+    }
+
 
     /*
     * Feed a full header method
@@ -125,6 +142,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
+            client.setSoTimeout(10000);
             ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(true);
             ((StdErrLog)Log.getLogger(HttpConnection.class)).info("expect request is too large, then ISE extra data ...");
             OutputStream os = client.getOutputStream();
@@ -353,17 +371,19 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                     "Connection: close\015\012" +
                     "\015\012").getBytes());
             os.flush();
-            Thread.sleep(PAUSE);
-            os.write(("5\015\012").getBytes());
+            Thread.sleep(1000);
+            os.write(("5").getBytes());
+            Thread.sleep(1000);
+            os.write(("\015\012").getBytes());
             os.flush();
-            Thread.sleep(PAUSE);
+            Thread.sleep(1000);
             os.write(("ABCDE\015\012" +
                     "0;\015\012\015\012").getBytes());
             os.flush();
 
             // Read the response.
             String response = readResponse(client);
-            assertTrue(response.indexOf("200") > 0);
+            assertThat(response,containsString("200"));
         }
     }
 
@@ -453,59 +473,53 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
     }
 
+
     @Test
-    public void testRequest2Fragments() throws Exception
+    @Slow
+    public void testRequest2Sliced2() throws Exception
     {
         configureServer(new EchoHandler());
 
         byte[] bytes = REQUEST2.getBytes();
-        final int pointCount = 2;
-        // TODO random unit tests suck!
-        Random random = new Random(System.currentTimeMillis());
-        for (int i = 0; i < LOOPS; i++)
-        {
-            int[] points = new int[pointCount];
-            StringBuilder message = new StringBuilder();
-
-            message.append("iteration #").append(i + 1);
-
-            // Pick fragment points at random
-            for (int j = 0; j < points.length; ++j)
-                points[j] = random.nextInt(bytes.length);
-
-            // Sort the list
-            Arrays.sort(points);
-
-            try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
-            {
-                OutputStream os = client.getOutputStream();
-
-                writeFragments(bytes, points, message, os);
-
-                // Read the response
-                String response = readResponse(client);
-
-                // Check the response
-                assertEquals("response for " + i + " " + message.toString(), RESPONSE2, response);
-            }
-        }
-    }
-
-    @Test
-    public void testRequest2Iterate() throws Exception
-    {
-        configureServer(new EchoHandler());
-
-        byte[] bytes = REQUEST2.getBytes();
-        for (int i = 0; i < bytes.length; i += 3)
+        int splits = bytes.length-REQUEST2_CONTENT.length()+5;
+        for (int i = 0; i < splits; i += 1)
         {
             int[] points = new int[]{i};
             StringBuilder message = new StringBuilder();
 
             message.append("iteration #").append(i + 1);
 
-            // Sort the list
-            Arrays.sort(points);
+            try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
+            {
+                OutputStream os = client.getOutputStream();
+
+                writeFragments(bytes, points, message, os);
+
+                // Read the response
+                String response = readResponse(client);
+
+                // Check the response
+                assertEquals("response for " + i + " " + message.toString(), RESPONSE2, response);
+                
+                Thread.sleep(10);
+            }
+        }
+    }
+    
+    @Test
+    @Slow
+    public void testRequest2Sliced3() throws Exception
+    {
+        configureServer(new EchoHandler());
+
+        byte[] bytes = REQUEST2.getBytes();
+        int splits = bytes.length-REQUEST2_CONTENT.length()+5;
+        for (int i = 0; i < splits; i += 1)
+        {
+            int[] points = new int[]{i,i+1};
+            StringBuilder message = new StringBuilder();
+
+            message.append("iteration #").append(i + 1);
 
             try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
             {
@@ -518,9 +532,14 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
                 // Check the response
                 assertEquals("response for " + i + " " + message.toString(), RESPONSE2, response);
+                
+                Thread.sleep(10);
             }
         }
     }
+    
+    
+    
 
     @Test
     public void testFlush() throws Exception
@@ -765,8 +784,8 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                     max = len;
             }
 
-            // Check that a direct content buffer was used as a chunk
-            Assert.assertEquals(128 * 1024, max);
+            // Check that biggest chunk was <= buffer size
+            Assert.assertEquals(_connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().getOutputBufferSize() , max);
 
             // read and check the times are < 999ms
             String[] times = in.readLine().split(",");
@@ -966,12 +985,12 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 }
             }
 
-            String in = new String(b, 0, i, "utf-8");
+            String in = new String(b, 0, i, StandardCharsets.UTF_8);
             assertTrue(in.contains("123456789"));
             assertTrue(in.contains("abcdefghZ"));
             assertFalse(in.contains("Wibble"));
 
-            in = new String(b, i, b.length - i, "utf-16");
+            in = new String(b, i, b.length - i, StandardCharsets.UTF_16);
             assertEquals("Wibble\n", in);
         }
     }
@@ -994,33 +1013,28 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                             "\015\012" +
                             "123456789\n" +
 
-                            "HEAD /R1 HTTP/1.1\015\012" +
+                            "HEAD /R2 HTTP/1.1\015\012" +
                             "Host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\015\012" +
                             "content-type: text/plain; charset=utf-8\r\n" +
                             "content-length: 10\r\n" +
                             "\015\012" +
-                            "123456789\n" +
+                            "ABCDEFGHI\n" +
 
-                            "POST /R1 HTTP/1.1\015\012" +
+                            "POST /R3 HTTP/1.1\015\012" +
                             "Host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\015\012" +
                             "content-type: text/plain; charset=utf-8\r\n" +
                             "content-length: 10\r\n" +
                             "Connection: close\015\012" +
                             "\015\012" +
-                            "123456789\n"
+                            "abcdefghi\n"
 
             ).getBytes("iso-8859-1"));
 
 
             String in = IO.toString(is);
-            // System.err.println(in);
-
-            int index = in.indexOf("123456789");
-            assertTrue(index > 0);
-            index = in.indexOf("123456789", index + 1);
-            assertTrue(index > 0);
-            index = in.indexOf("123456789", index + 1);
-            assertTrue(index == -1);
+            Assert.assertThat(in,containsString("123456789"));
+            Assert.assertThat(in,not(containsString("ABCDEFGHI")));
+            Assert.assertThat(in,containsString("abcdefghi"));
         }
     }
 
@@ -1360,7 +1374,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
     }
 
-    private void writeFragments(byte[] bytes, int[] points, StringBuilder message, OutputStream os) throws IOException, InterruptedException
+    protected void writeFragments(byte[] bytes, int[] points, StringBuilder message, OutputStream os) throws IOException, InterruptedException
     {
         int last = 0;
 
@@ -1416,11 +1430,11 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 {
                     for (int i = 0; i < REQS; i++)
                     {
-                        out.write("GET / HTTP/1.1\r\nHost: localhost\r\n".getBytes(StringUtil.__ISO_8859_1));
-                        out.write(("Content-Length: " + bytes.length + "\r\n" + "\r\n").getBytes(StringUtil.__ISO_8859_1));
+                        out.write("GET / HTTP/1.1\r\nHost: localhost\r\n".getBytes(StandardCharsets.ISO_8859_1));
+                        out.write(("Content-Length: " + bytes.length + "\r\n" + "\r\n").getBytes(StandardCharsets.ISO_8859_1));
                         out.write(bytes, 0, bytes.length);
                     }
-                    out.write("GET / HTTP/1.1\r\nHost: last\r\nConnection: close\r\n\r\n".getBytes(StringUtil.__ISO_8859_1));
+                    out.write("GET / HTTP/1.1\r\nHost: last\r\nConnection: close\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1));
                     out.flush();
                 }
                 catch (Exception e)

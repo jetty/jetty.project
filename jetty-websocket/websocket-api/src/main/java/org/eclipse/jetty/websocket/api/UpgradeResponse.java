@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,10 +20,10 @@ package org.eclipse.jetty.websocket.api;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.util.QuoteUtil;
@@ -33,13 +33,13 @@ public class UpgradeResponse
     public static final String SEC_WEBSOCKET_PROTOCOL = "Sec-WebSocket-Protocol";
     private int statusCode;
     private String statusReason;
-    private Map<String, List<String>> headers = new HashMap<>();
+    private Map<String, List<String>> headers = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     private List<ExtensionConfig> extensions = new ArrayList<>();
     private boolean success = false;
 
     public void addHeader(String name, String value)
     {
-        String key = name.toLowerCase();
+        String key = name;
         List<String> values = headers.get(key);
         if (values == null)
         {
@@ -115,7 +115,7 @@ public class UpgradeResponse
 
     public List<String> getHeaders(String name)
     {
-        return headers.get(name.toLowerCase());
+        return headers.get(name);
     }
 
     public int getStatusCode()
@@ -163,8 +163,6 @@ public class UpgradeResponse
     /**
      * Set the list of extensions that are approved for use with this websocket.
      * <p>
-     * This is Advanced usage of the WebSocketCreator to allow for a custom set of negotiated extensions.
-     * <p>
      * Notes:
      * <ul>
      * <li>Per the spec you cannot add extensions that have not been seen in the {@link UpgradeRequest}, just remove entries you don't want to use</li>
@@ -188,7 +186,7 @@ public class UpgradeResponse
     {
         List<String> values = new ArrayList<>();
         values.add(value);
-        headers.put(name.toLowerCase(),values);
+        headers.put(name,values);
     }
 
     public void setStatusCode(int statusCode)

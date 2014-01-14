@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.server;
 
 import static org.hamcrest.Matchers.*;
 
-import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
@@ -38,21 +37,22 @@ import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
-import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
-import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
+import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
+import org.eclipse.jetty.websocket.common.frames.ContinuationFrame;
+import org.eclipse.jetty.websocket.common.frames.TextFrame;
+import org.eclipse.jetty.websocket.common.test.BlockheadClient;
+import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
+import org.eclipse.jetty.websocket.common.test.UnitGenerator;
+import org.eclipse.jetty.websocket.common.util.Hex;
 import org.eclipse.jetty.websocket.server.helper.RFCServlet;
-import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /**
  * Test various <a href="http://tools.ietf.org/html/rfc6455">RFC 6455</a> specified requirements placed on {@link WebSocketServlet}
- * <p>
- * This test serves a different purpose than than the {@link WebSocketMessageRFC6455Test}, and {@link WebSocketParserRFC6455Test} tests.
  */
 @RunWith(AdvancedRunner.class)
 public class WebSocketServletRFCTest
@@ -103,15 +103,15 @@ public class WebSocketServletRFCTest
 
             WebSocketFrame bin;
 
-            bin = WebSocketFrame.binary(buf1).setFin(false);
+            bin = new BinaryFrame().setPayload(buf1).setFin(false);
 
             client.write(bin); // write buf1 (fin=false)
 
-            bin = new WebSocketFrame(OpCode.CONTINUATION).setPayload(buf2).setFin(false);
+            bin = new ContinuationFrame().setPayload(buf2).setFin(false);
 
             client.write(bin); // write buf2 (fin=false)
 
-            bin = new WebSocketFrame(OpCode.CONTINUATION).setPayload(buf3).setFin(true);
+            bin = new ContinuationFrame().setPayload(buf3).setFin(true);
 
             client.write(bin); // write buf3 (fin=true)
 
@@ -179,7 +179,7 @@ public class WebSocketServletRFCTest
 
             // Generate text frame
             String msg = "this is an echo ... cho ... ho ... o";
-            client.write(WebSocketFrame.text(msg));
+            client.write(new TextFrame().setPayload(msg));
 
             // Read frame (hopefully text frame)
             IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
@@ -199,6 +199,9 @@ public class WebSocketServletRFCTest
     @Test
     public void testInternalError() throws Exception
     {
+        // Disable Long Stacks from EventDriver (we know this test will throw an exception)
+        enableStacks(EventDriver.class,false);
+
         BlockheadClient client = new BlockheadClient(server.getServerUri());
         try
         {
@@ -209,7 +212,7 @@ public class WebSocketServletRFCTest
             try (StacklessLogging context = new StacklessLogging(EventDriver.class))
             {
                 // Generate text frame
-                client.write(WebSocketFrame.text("CRASH"));
+                client.write(new TextFrame().setPayload("CRASH"));
 
                 // Read frame (hopefully close frame)
                 IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
@@ -220,6 +223,8 @@ public class WebSocketServletRFCTest
         }
         finally
         {
+            // Reenable Long Stacks from EventDriver
+            enableStacks(EventDriver.class,true);
             client.close();
         }
     }
@@ -253,96 +258,12 @@ public class WebSocketServletRFCTest
 
             // Generate text frame
             String msg = "this is an echo ... cho ... ho ... o";
-            client.write(WebSocketFrame.text(msg));
+            client.write(new TextFrame().setPayload(msg));
 
             // Read frame (hopefully text frame)
             IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
             WebSocketFrame tf = capture.getFrames().poll();
             Assert.assertThat("Text Frame.status code",tf.getPayloadAsUTF8(),is(msg));
-        }
-        finally
-        {
-            client.close();
-        }
-    }
-
-    @Test
-    @Ignore("Should be moved to Fuzzer")
-    public void testMaxBinarySize() throws Exception
-    {
-        BlockheadClient client = new BlockheadClient(server.getServerUri());
-        client.setProtocols("other");
-        try
-        {
-            client.connect();
-            client.sendStandardRequest();
-            client.expectUpgradeResponse();
-
-            // Choose a size for a single frame larger than the
-            // server side policy
-            int dataSize = 1024 * 100;
-            byte buf[] = new byte[dataSize];
-            Arrays.fill(buf,(byte)0x44);
-
-            WebSocketFrame bin = WebSocketFrame.binary(buf).setFin(true);
-            ByteBuffer bb = generator.generate(bin);
-            try
-            {
-                client.writeRaw(bb);
-                Assert.fail("Write should have failed due to terminated connection");
-            }
-            catch (SocketException e)
-            {
-                Assert.assertThat("Exception",e.getMessage(),containsString("Broken pipe"));
-            }
-
-            IncomingFramesCapture capture = client.readFrames(1,TimeUnit.SECONDS,1);
-            WebSocketFrame frame = capture.getFrames().poll();
-            Assert.assertThat("frames[0].opcode",frame.getOpCode(),is(OpCode.CLOSE));
-            CloseInfo close = new CloseInfo(frame);
-            Assert.assertThat("Close Status Code",close.getStatusCode(),is(StatusCode.MESSAGE_TOO_LARGE));
-        }
-        finally
-        {
-            client.close();
-        }
-    }
-
-    @Test
-    @Ignore("Should be moved to Fuzzer")
-    public void testMaxTextSize() throws Exception
-    {
-        BlockheadClient client = new BlockheadClient(server.getServerUri());
-        client.setProtocols("other");
-        try
-        {
-            client.connect();
-            client.sendStandardRequest();
-            client.expectUpgradeResponse();
-
-            // Choose a size for a single frame larger than the
-            // server side policy
-            int dataSize = 1024 * 100;
-            byte buf[] = new byte[dataSize];
-            Arrays.fill(buf,(byte)'z');
-
-            WebSocketFrame text = WebSocketFrame.text().setPayload(buf).setFin(true);
-            ByteBuffer bb = generator.generate(text);
-            try
-            {
-                client.writeRaw(bb);
-                Assert.fail("Write should have failed due to terminated connection");
-            }
-            catch (SocketException e)
-            {
-                Assert.assertThat("Exception",e.getMessage(),containsString("Broken pipe"));
-            }
-
-            IncomingFramesCapture capture = client.readFrames(1,TimeUnit.SECONDS,1);
-            WebSocketFrame frame = capture.getFrames().poll();
-            Assert.assertThat("frames[0].opcode",frame.getOpCode(),is(OpCode.CLOSE));
-            CloseInfo close = new CloseInfo(frame);
-            Assert.assertThat("Close Status Code",close.getStatusCode(),is(StatusCode.MESSAGE_TOO_LARGE));
         }
         finally
         {
@@ -367,9 +288,11 @@ public class WebSocketServletRFCTest
             byte buf[] = new byte[]
             { (byte)0xC2, (byte)0xC3 };
 
-            WebSocketFrame txt = WebSocketFrame.text().setPayload(buf);
-            ByteBuffer bb = generator.generate(txt);
-            client.writeRaw(bb);
+            WebSocketFrame txt = new TextFrame().setPayload(ByteBuffer.wrap(buf));
+            txt.setMask(Hex.asByteArray("11223344"));
+            ByteBuffer bbHeader = generator.generateHeaderBytes(txt);
+            client.writeRaw(bbHeader);
+            client.writeRaw(txt.getPayload());
 
             IncomingFramesCapture capture = client.readFrames(1,TimeUnit.SECONDS,1);
             WebSocketFrame frame = capture.getFrames().poll();
@@ -414,7 +337,7 @@ public class WebSocketServletRFCTest
 
             // Generate text frame
             String msg = "this is an echo ... cho ... ho ... o";
-            client.write(WebSocketFrame.text(msg));
+            client.write(new TextFrame().setPayload(msg));
 
             // Read frame (hopefully text frame)
             IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);

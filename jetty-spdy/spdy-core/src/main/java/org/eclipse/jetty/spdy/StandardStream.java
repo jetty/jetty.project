@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -26,6 +26,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.io.IdleTimeout;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.HeadersInfo;
 import org.eclipse.jetty.spdy.api.PushInfo;
@@ -43,8 +44,9 @@ import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Scheduler;
 
-public class StandardStream implements IStream
+public class StandardStream extends IdleTimeout implements IStream
 {
     private static final Logger LOG = Log.getLogger(Stream.class);
     private final Map<String, Object> attributes = new ConcurrentHashMap<>();
@@ -60,8 +62,9 @@ public class StandardStream implements IStream
     private volatile CloseState closeState = CloseState.OPENED;
     private volatile boolean reset = false;
 
-    public StandardStream(int id, byte priority, ISession session, IStream associatedStream, Promise<Stream> promise)
+    public StandardStream(int id, byte priority, ISession session, IStream associatedStream, Scheduler scheduler, Promise<Stream> promise)
     {
+        super(scheduler);
         this.id = id;
         this.priority = priority;
         this.session = session;
@@ -103,6 +106,29 @@ public class StandardStream implements IStream
     public byte getPriority()
     {
         return priority;
+    }
+
+    @Override
+    protected void onIdleExpired(TimeoutException timeout)
+    {
+        StreamFrameListener listener = this.listener;
+        if (listener != null)
+            listener.onFailure(this, timeout);
+        // The stream is now gone, we must close it to
+        // avoid that its idle timeout is rescheduled.
+        close();
+    }
+
+    private void close()
+    {
+        closeState = CloseState.CLOSED;
+        onClose();
+    }
+
+    @Override
+    public boolean isOpen()
+    {
+        return !isClosed();
     }
 
     @Override
@@ -172,13 +198,13 @@ public class StandardStream implements IStream
                     if (local)
                         throw new IllegalStateException();
                     else
-                        closeState = CloseState.CLOSED;
+                        close();
                     break;
                 }
                 case REMOTELY_CLOSED:
                 {
                     if (local)
-                        closeState = CloseState.CLOSED;
+                        close();
                     else
                         throw new IllegalStateException();
                     break;
@@ -194,6 +220,7 @@ public class StandardStream implements IStream
     @Override
     public void process(ControlFrame frame)
     {
+        notIdle();
         switch (frame.getType())
         {
             case SYN_STREAM:
@@ -228,12 +255,12 @@ public class StandardStream implements IStream
                 throw new IllegalStateException();
             }
         }
-        session.flush();
     }
 
     @Override
     public void process(DataInfo dataInfo)
     {
+        notIdle();
         // TODO: in v3 we need to send a rst instead of just ignoring
         // ignore data frame if this stream is remotelyClosed already
         if (isRemotelyClosed())
@@ -251,7 +278,6 @@ public class StandardStream implements IStream
 
         updateCloseState(dataInfo.isClose(), false);
         notifyOnData(dataInfo);
-        session.flush();
     }
 
     @Override
@@ -349,14 +375,16 @@ public class StandardStream implements IStream
     @Override
     public void push(PushInfo pushInfo, Promise<Stream> promise)
     {
+        notIdle();
         if (isClosed() || isReset())
         {
+            close();
             promise.failed(new StreamException(getId(), StreamStatus.STREAM_ALREADY_CLOSED,
                     "Stream: " + this + " already closed or reset!"));
             return;
         }
         PushSynInfo pushSynInfo = new PushSynInfo(getId(), pushInfo);
-        session.syn(pushSynInfo, null, promise);
+        session.syn(pushSynInfo, null, new StreamPromise(promise));
     }
 
     @Override
@@ -373,12 +401,16 @@ public class StandardStream implements IStream
     @Override
     public void reply(ReplyInfo replyInfo, Callback callback)
     {
+        notIdle();
         if (isUnidirectional())
+        {
+            close();
             throw new IllegalStateException("Protocol violation: cannot send SYN_REPLY frames in unidirectional streams");
+        }
         openState = OpenState.REPLY_SENT;
         updateCloseState(replyInfo.isClose(), true);
         SynReplyFrame frame = new SynReplyFrame(session.getVersion(), replyInfo.getFlags(), getId(), replyInfo.getHeaders());
-        session.control(this, frame, replyInfo.getTimeout(), replyInfo.getUnit(), callback);
+        session.control(this, frame, replyInfo.getTimeout(), replyInfo.getUnit(), new StreamCallback(callback));
     }
 
     @Override
@@ -395,20 +427,21 @@ public class StandardStream implements IStream
     @Override
     public void data(DataInfo dataInfo, Callback callback)
     {
+        notIdle();
         if (!canSend())
         {
-            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR), new Adapter());
+            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR), new StreamCallback());
             throw new IllegalStateException("Protocol violation: cannot send a DATA frame before a SYN_REPLY frame");
         }
         if (isLocallyClosed())
         {
-            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR), new Adapter());
+            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR), new StreamCallback());
             throw new IllegalStateException("Protocol violation: cannot send a DATA frame on a locally closed stream");
         }
 
         // Cannot update the close state here, because the data that we send may
         // be flow controlled, so we need the stream to update the window size.
-        session.data(this, dataInfo, dataInfo.getTimeout(), dataInfo.getUnit(), callback);
+        session.data(this, dataInfo, dataInfo.getTimeout(), dataInfo.getUnit(), new StreamCallback(callback));
     }
 
     @Override
@@ -425,20 +458,21 @@ public class StandardStream implements IStream
     @Override
     public void headers(HeadersInfo headersInfo, Callback callback)
     {
+        notIdle();
         if (!canSend())
         {
-            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR), new Adapter());
+            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR), new StreamCallback());
             throw new IllegalStateException("Protocol violation: cannot send a HEADERS frame before a SYN_REPLY frame");
         }
         if (isLocallyClosed())
         {
-            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR), new Adapter());
+            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR), new StreamCallback());
             throw new IllegalStateException("Protocol violation: cannot send a HEADERS frame on a closed stream");
         }
 
         updateCloseState(headersInfo.isClose(), true);
         HeadersFrame frame = new HeadersFrame(session.getVersion(), headersInfo.getFlags(), getId(), headersInfo.getHeaders());
-        session.control(this, frame, headersInfo.getTimeout(), headersInfo.getUnit(), callback);
+        session.control(this, frame, headersInfo.getTimeout(), headersInfo.getUnit(), new StreamCallback(callback));
     }
 
     @Override
@@ -505,5 +539,56 @@ public class StandardStream implements IStream
     private enum CloseState
     {
         OPENED, LOCALLY_CLOSED, REMOTELY_CLOSED, CLOSED
+    }
+
+    private class StreamCallback implements Callback
+    {
+        private final Callback callback;
+
+        private StreamCallback()
+        {
+            this(new Adapter());
+        }
+
+        private StreamCallback(Callback callback)
+        {
+            this.callback = callback;
+        }
+
+        @Override
+        public void succeeded()
+        {
+            callback.succeeded();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            close();
+            callback.failed(x);
+        }
+    }
+
+    private class StreamPromise implements Promise<Stream>
+    {
+        private final Promise<Stream> promise;
+
+        public StreamPromise(Promise<Stream> promise)
+        {
+            this.promise = promise;
+        }
+
+        @Override
+        public void succeeded(Stream result)
+        {
+            promise.succeeded(result);
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            close();
+            promise.failed(x);
+        }
     }
 }

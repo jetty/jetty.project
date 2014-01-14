@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -143,14 +143,14 @@ public class SelectChannelStatisticsTest
         assertEquals(1, _statistics.getConnectionsOpenMax());
         assertTrue(_statistics.getConnectionsOpen() <= _statistics.getConnectionsOpenMax());
 
-        assertTrue(_statistics.getConnectionsDurationMean() > 0);
-        assertTrue(_statistics.getConnectionsDurationMax() > 0);
-        assertTrue(_statistics.getConnectionsDurationMean() <= _statistics.getConnectionsDurationMax());
+        assertTrue(_statistics.getConnectionDurationMean() > 0);
+        assertTrue(_statistics.getConnectionDurationMax() > 0);
+        assertTrue(_statistics.getConnectionDurationMean() <= _statistics.getConnectionDurationMax());
 
         assertEquals(1, _statistics.getMessagesIn());
-        assertEquals(1.0, _statistics.getConnectionsMessagesInMean(), 0.01);
-        assertEquals(1, _statistics.getConnectionsMessagesInMax());
-        assertTrue(_statistics.getConnectionsMessagesInMean() <= _statistics.getConnectionsMessagesInMax());
+        assertEquals(1.0, _statistics.getMessagesInPerConnectionMean(), 0.01);
+        assertEquals(1, _statistics.getMessagesInPerConnectionMax());
+        assertTrue(_statistics.getMessagesInPerConnectionMean() <= _statistics.getMessagesInPerConnectionMax());
     }
 
     @Test
@@ -169,14 +169,14 @@ public class SelectChannelStatisticsTest
         assertEquals(1, _statistics.getConnectionsOpenMax());
         assertTrue(_statistics.getConnectionsOpen() <= _statistics.getConnectionsOpenMax());
 
-        assertTrue(_statistics.getConnectionsDurationMean() > 0);
-        assertTrue(_statistics.getConnectionsDurationMax() > 0);
-        assertTrue(_statistics.getConnectionsDurationMean() <= _statistics.getConnectionsDurationMax());
+        assertTrue(_statistics.getConnectionDurationMean() > 0);
+        assertTrue(_statistics.getConnectionDurationMax() > 0);
+        assertTrue(_statistics.getConnectionDurationMean() <= _statistics.getConnectionDurationMax());
 
         assertEquals(2, _statistics.getMessagesIn());
-        assertEquals(2.0, _statistics.getConnectionsMessagesInMean(), 0.01);
-        assertEquals(2, _statistics.getConnectionsMessagesInMax());
-        assertTrue(_statistics.getConnectionsMessagesInMean() <= _statistics.getConnectionsMessagesInMax());
+        assertEquals(2.0, _statistics.getMessagesInPerConnectionMean(), 0.01);
+        assertEquals(2, _statistics.getMessagesInPerConnectionMax());
+        assertTrue(_statistics.getMessagesInPerConnectionMean() <= _statistics.getMessagesInPerConnectionMax());
     }
 
     @Test
@@ -203,14 +203,14 @@ public class SelectChannelStatisticsTest
         assertEquals(3, _statistics.getConnectionsOpenMax());
         assertTrue(_statistics.getConnectionsOpen() <= _statistics.getConnectionsOpenMax());
 
-        assertTrue(_statistics.getConnectionsDurationMean() > 0);
-        assertTrue(_statistics.getConnectionsDurationMax() > 0);
-        assertTrue(_statistics.getConnectionsDurationMean() <= _statistics.getConnectionsDurationMax());
+        assertTrue(_statistics.getConnectionDurationMean() > 0);
+        assertTrue(_statistics.getConnectionDurationMax() > 0);
+        assertTrue(_statistics.getConnectionDurationMean() <= _statistics.getConnectionDurationMax());
 
         assertEquals(6, _statistics.getMessagesIn());
-        assertEquals(2.0, _statistics.getConnectionsMessagesInMean(), 0.01);
-        assertEquals(3, _statistics.getConnectionsMessagesInMax());
-        assertTrue(_statistics.getConnectionsMessagesInMean() <= _statistics.getConnectionsMessagesInMax());
+        assertEquals(2.0, _statistics.getMessagesInPerConnectionMean(), 0.01);
+        assertEquals(3, _statistics.getMessagesInPerConnectionMax());
+        assertTrue(_statistics.getMessagesInPerConnectionMean() <= _statistics.getMessagesInPerConnectionMax());
     }
 
     protected void doInit(int count)

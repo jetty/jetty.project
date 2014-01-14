@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,48 +25,160 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Future;
-import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
-import org.eclipse.jetty.io.ssl.SslConnection;
-import org.eclipse.jetty.io.ssl.SslConnection.DecryptedEndPoint;
+import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.spdy.FlowControlStrategy;
 import org.eclipse.jetty.spdy.api.GoAwayInfo;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 
+/**
+ * A {@link SPDYClient} allows applications to connect to one or more SPDY servers,
+ * obtaining {@link Session} objects that can be used to send/receive SPDY frames.
+ * <p/>
+ * {@link SPDYClient} instances are created through a {@link Factory}:
+ * <pre>
+ * SPDYClient.Factory factory = new SPDYClient.Factory();
+ * SPDYClient client = factory.newSPDYClient(SPDY.V3);
+ * </pre>
+ * and then used to connect to the server:
+ * <pre>
+ * FuturePromise&lt;Session&gt; promise = new FuturePromise&lt;&gt;();
+ * client.connect("server.com", null, promise);
+ * Session session = promise.get();
+ * </pre>
+ */
 public class SPDYClient
 {
-    private final SPDYClientConnectionFactory connectionFactory = new SPDYClientConnectionFactory();
-    final short version;
-    final Factory factory;
+    private final short version;
+    private final Factory factory;
     private volatile SocketAddress bindAddress;
     private volatile long idleTimeout = -1;
     private volatile int initialWindowSize;
-    private volatile boolean executeOnFillable;
+    private volatile boolean dispatchIO;
+    private volatile ClientConnectionFactory connectionFactory;
 
     protected SPDYClient(short version, Factory factory)
     {
         this.version = version;
         this.factory = factory;
         setInitialWindowSize(65536);
+        setDispatchIO(true);
+        ClientConnectionFactory connectionFactory = new SPDYClientConnectionFactory();
+        if (factory.sslContextFactory != null)
+            connectionFactory = new SslClientConnectionFactory(factory.getSslContextFactory(), factory.getByteBufferPool(), factory.getExecutor(), new NPNClientConnectionFactory(this, connectionFactory));
+        setClientConnectionFactory(connectionFactory);
+    }
+
+    public short getVersion()
+    {
+        return version;
+    }
+
+    public Factory getFactory()
+    {
+        return factory;
+    }
+
+    /**
+     * Equivalent to:
+     * <pre>
+     * Future&lt;Session&gt; promise = new FuturePromise&lt;&gt;();
+     * connect(address, listener, promise);
+     * </pre>
+     *
+     * @param address  the address to connect to
+     * @param listener the session listener that will be notified of session events
+     * @return a {@link Session} when connected
+     */
+    public Session connect(SocketAddress address, SessionFrameListener listener) throws ExecutionException, InterruptedException
+    {
+        FuturePromise<Session> promise = new FuturePromise<>();
+        connect(address, listener, promise);
+        return promise.get();
+    }
+
+    /**
+     * Equivalent to:
+     * <pre>
+     * connect(address, listener, promise, null);
+     * </pre>
+     *
+     * @param address  the address to connect to
+     * @param listener the session listener that will be notified of session events
+     * @param promise  the promise notified of connection success/failure
+     */
+    public void connect(SocketAddress address, SessionFrameListener listener, Promise<Session> promise)
+    {
+        connect(address, listener, promise, new HashMap<String, Object>());
+    }
+
+    /**
+     * Connects to the given {@code address}, binding the given {@code listener} to session events,
+     * and notified the given {@code promise} of the connect result.
+     * <p/>
+     * If the connect operation is successful, the {@code promise} will be invoked with the {@link Session}
+     * object that applications can use to perform SPDY requests.
+     *
+     * @param address  the address to connect to
+     * @param listener the session listener that will be notified of session events
+     * @param promise  the promise notified of connection success/failure
+     * @param context  a context object passed to the {@link #getClientConnectionFactory() ConnectionFactory}
+     *                 for the creation of the connection
+     */
+    public void connect(final SocketAddress address, final SessionFrameListener listener, final Promise<Session> promise, Map<String, Object> context)
+    {
+        if (!factory.isStarted())
+            throw new IllegalStateException(Factory.class.getSimpleName() + " is not started");
+
+        try
+        {
+            SocketChannel channel = SocketChannel.open();
+            if (bindAddress != null)
+                channel.bind(bindAddress);
+            configure(channel);
+            channel.configureBlocking(false);
+            channel.connect(address);
+
+            context.put(SslClientConnectionFactory.SSL_PEER_HOST_CONTEXT_KEY, ((InetSocketAddress)address).getHostString());
+            context.put(SslClientConnectionFactory.SSL_PEER_PORT_CONTEXT_KEY, ((InetSocketAddress)address).getPort());
+            context.put(SPDYClientConnectionFactory.SPDY_CLIENT_CONTEXT_KEY, this);
+            context.put(SPDYClientConnectionFactory.SPDY_SESSION_LISTENER_CONTEXT_KEY, listener);
+            context.put(SPDYClientConnectionFactory.SPDY_SESSION_PROMISE_CONTEXT_KEY, promise);
+
+            factory.selector.connect(channel, context);
+        }
+        catch (IOException x)
+        {
+            promise.failed(x);
+        }
+    }
+
+    protected void configure(SocketChannel channel) throws IOException
+    {
+        channel.socket().setTcpNoDelay(true);
     }
 
     /**
@@ -85,25 +197,6 @@ public class SPDYClient
     public void setBindAddress(SocketAddress bindAddress)
     {
         this.bindAddress = bindAddress;
-    }
-
-    public Future<Session> connect(InetSocketAddress address, SessionFrameListener listener) throws IOException
-    {
-        if (!factory.isStarted())
-            throw new IllegalStateException(Factory.class.getSimpleName() + " is not started");
-
-        SocketChannel channel = SocketChannel.open();
-        if (bindAddress != null)
-            channel.bind(bindAddress);
-        channel.socket().setTcpNoDelay(true);
-        channel.configureBlocking(false);
-
-        SessionPromise result = new SessionPromise(channel, this, listener);
-
-        channel.connect(address);
-        factory.selector.connect(channel, result);
-
-        return result;
     }
 
     public long getIdleTimeout()
@@ -126,14 +219,24 @@ public class SPDYClient
         this.initialWindowSize = initialWindowSize;
     }
 
-    public boolean isExecuteOnFillable()
+    public boolean isDispatchIO()
     {
-        return executeOnFillable;
+        return dispatchIO;
     }
 
-    public void setExecuteOnFillable(boolean executeOnFillable)
+    public void setDispatchIO(boolean dispatchIO)
     {
-        this.executeOnFillable = executeOnFillable;
+        this.dispatchIO = dispatchIO;
+    }
+
+    public ClientConnectionFactory getClientConnectionFactory()
+    {
+        return connectionFactory;
+    }
+
+    public void setClientConnectionFactory(ClientConnectionFactory connectionFactory)
+    {
+        this.connectionFactory = connectionFactory;
     }
 
     protected String selectProtocol(List<String> serverProtocols)
@@ -147,20 +250,6 @@ public class SPDYClient
         return null;
     }
 
-    public SPDYClientConnectionFactory getConnectionFactory()
-    {
-        return connectionFactory;
-    }
-
-    protected SSLEngine newSSLEngine(SslContextFactory sslContextFactory, SocketChannel channel)
-    {
-        String peerHost = channel.socket().getInetAddress().getHostName();
-        int peerPort = channel.socket().getPort();
-        SSLEngine engine = sslContextFactory.newSSLEngine(peerHost, peerPort);
-        engine.setUseClientMode(true);
-        return engine;
-    }
-
     protected FlowControlStrategy newFlowControlStrategy()
     {
         return FlowControlStrategyFactory.newFlowControlStrategy(version);
@@ -169,13 +258,13 @@ public class SPDYClient
     public static class Factory extends ContainerLifeCycle
     {
         private final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
-        private final ByteBufferPool bufferPool = new MappedByteBufferPool();
         private final Scheduler scheduler;
         private final Executor executor;
+        private final ByteBufferPool bufferPool;
         private final SslContextFactory sslContextFactory;
         private final SelectorManager selector;
         private final long idleTimeout;
-        private long connectTimeout = 15000;
+        private long connectTimeout;
 
         public Factory()
         {
@@ -204,7 +293,13 @@ public class SPDYClient
 
         public Factory(Executor executor, Scheduler scheduler, SslContextFactory sslContextFactory, long idleTimeout)
         {
+            this(executor, scheduler, null, sslContextFactory, idleTimeout);
+        }
+
+        public Factory(Executor executor, Scheduler scheduler, ByteBufferPool bufferPool, SslContextFactory sslContextFactory, long idleTimeout)
+        {
             this.idleTimeout = idleTimeout;
+            setConnectTimeout(15000);
 
             if (executor == null)
                 executor = new QueuedThreadPool();
@@ -215,6 +310,11 @@ public class SPDYClient
                 scheduler = new ScheduledExecutorScheduler();
             this.scheduler = scheduler;
             addBean(scheduler);
+
+            if (bufferPool == null)
+                bufferPool = new MappedByteBufferPool();
+            this.bufferPool = bufferPool;
+            addBean(bufferPool);
 
             this.sslContextFactory = sslContextFactory;
             if (sslContextFactory != null)
@@ -238,6 +338,11 @@ public class SPDYClient
         public Executor getExecutor()
         {
             return executor;
+        }
+
+        public SslContextFactory getSslContextFactory()
+        {
+            return sslContextFactory;
         }
 
         public long getConnectTimeout()
@@ -297,71 +402,32 @@ public class SPDYClient
             @Override
             protected EndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
             {
-                SessionPromise attachment = (SessionPromise)key.attachment();
-
-                long clientIdleTimeout = attachment.client.getIdleTimeout();
+                @SuppressWarnings("unchecked")
+                Map<String, Object> context = (Map<String, Object>)key.attachment();
+                SPDYClient client = (SPDYClient)context.get(SPDYClientConnectionFactory.SPDY_CLIENT_CONTEXT_KEY);
+                long clientIdleTimeout = client.getIdleTimeout();
                 if (clientIdleTimeout < 0)
                     clientIdleTimeout = idleTimeout;
-
                 return new SelectChannelEndPoint(channel, selectSet, key, getScheduler(), clientIdleTimeout);
             }
 
             @Override
-            public Connection newConnection(final SocketChannel channel, EndPoint endPoint, final Object attachment)
+            public Connection newConnection(SocketChannel channel, EndPoint endPoint, Object attachment) throws IOException
             {
-                SessionPromise sessionPromise = (SessionPromise)attachment;
-                final SPDYClient client = sessionPromise.client;
-
+                @SuppressWarnings("unchecked")
+                Map<String, Object> context = (Map<String, Object>)attachment;
                 try
                 {
-                    if (sslContextFactory != null)
-                    {
-                        final SSLEngine engine = client.newSSLEngine(sslContextFactory, channel);
-                        SslConnection sslConnection = new SslConnection(bufferPool, getExecutor(), endPoint, engine);
-                        sslConnection.setRenegotiationAllowed(sslContextFactory.isRenegotiationAllowed());
-                        DecryptedEndPoint sslEndPoint = sslConnection.getDecryptedEndPoint();
-                        NextProtoNegoClientConnection connection = new NextProtoNegoClientConnection(channel, sslEndPoint, attachment, getExecutor(), client);
-                        sslEndPoint.setConnection(connection);
-                        return sslConnection;
-                    }
-
-                    SPDYClientConnectionFactory connectionFactory = new SPDYClientConnectionFactory();
-                    return connectionFactory.newConnection(channel, endPoint, attachment);
+                    SPDYClient client = (SPDYClient)context.get(SPDYClientConnectionFactory.SPDY_CLIENT_CONTEXT_KEY);
+                    return client.getClientConnectionFactory().newConnection(endPoint, context);
                 }
-                catch (RuntimeException x)
+                catch (Throwable x)
                 {
-                    sessionPromise.failed(x);
+                    @SuppressWarnings("unchecked")
+                    Promise<Session> promise = (Promise<Session>)context.get(SPDYClientConnectionFactory.SPDY_SESSION_PROMISE_CONTEXT_KEY);
+                    promise.failed(x);
                     throw x;
                 }
-            }
-        }
-    }
-
-    static class SessionPromise extends FuturePromise<Session>
-    {
-        private final SocketChannel channel;
-        final SPDYClient client;
-        final SessionFrameListener listener;
-
-        private SessionPromise(SocketChannel channel, SPDYClient client, SessionFrameListener listener)
-        {
-            this.channel = channel;
-            this.client = client;
-            this.listener = listener;
-        }
-
-        @Override
-        public boolean cancel(boolean mayInterruptIfRunning)
-        {
-            try
-            {
-                super.cancel(mayInterruptIfRunning);
-                channel.close();
-                return true;
-            }
-            catch (IOException x)
-            {
-                return true;
             }
         }
     }

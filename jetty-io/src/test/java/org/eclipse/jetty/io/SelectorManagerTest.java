@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -26,6 +26,7 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.Callback;
@@ -67,6 +68,7 @@ public class SelectorManagerTest
         client.configureBlocking(false);
         client.connect(address);
 
+        final AtomicBoolean timeoutConnection = new AtomicBoolean();
         final long connectTimeout = 1000;
         SelectorManager selectorManager = new SelectorManager(executor, scheduler)
         {
@@ -81,7 +83,8 @@ public class SelectorManagerTest
             {
                 try
                 {
-                    TimeUnit.MILLISECONDS.sleep(connectTimeout * 2);
+                    if (timeoutConnection.get())
+                        TimeUnit.MILLISECONDS.sleep(connectTimeout * 2);
                     return super.finishConnect(channel);
                 }
                 catch (InterruptedException e)
@@ -113,17 +116,30 @@ public class SelectorManagerTest
 
         try
         {
-            final CountDownLatch latch = new CountDownLatch(1);
+            timeoutConnection.set(true);
+            final CountDownLatch latch1 = new CountDownLatch(1);
             selectorManager.connect(client, new Callback.Adapter()
             {
                 @Override
                 public void failed(Throwable x)
                 {
-                    latch.countDown();
+                    latch1.countDown();
                 }
             });
+            Assert.assertTrue(latch1.await(connectTimeout * 3, TimeUnit.MILLISECONDS));
 
-            Assert.assertTrue(latch.await(connectTimeout * 3, TimeUnit.MILLISECONDS));
+            // Verify that after the failure we can connect successfully
+            timeoutConnection.set(false);
+            final CountDownLatch latch2 = new CountDownLatch(1);
+            selectorManager.connect(client, new Callback.Adapter()
+            {
+                @Override
+                public void failed(Throwable x)
+                {
+                    latch2.countDown();
+                }
+            });
+            Assert.assertTrue(latch2.await(connectTimeout, TimeUnit.MILLISECONDS));
         }
         finally
         {

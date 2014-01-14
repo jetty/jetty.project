@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -1606,7 +1606,7 @@ public class JSON
 
         /**
          * Construct a literal JSON instance for use by
-         * {@link JSON#toString(Object)}. If {@link Log#isDebugEnabled()} is
+         * {@link JSON#toString(Object)}. If {@link Logger#isDebugEnabled()} is
          * true, the JSON will be parsed to check validity
          *
          * @param json

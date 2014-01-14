@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,10 +18,14 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 import java.io.IOException;
 import java.net.ConnectException;
+import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -29,12 +33,15 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeException;
-import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer;
-import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer.ServerConnection;
 import org.eclipse.jetty.websocket.common.AcceptHash;
+import org.eclipse.jetty.websocket.common.test.BlockheadServer;
+import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPool;
+import org.eclipse.jetty.websocket.common.test.BlockheadServer.ServerConnection;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -50,16 +57,23 @@ public class ClientConnectTest
     @Rule
     public TestTracker tt = new TestTracker();
 
+    @Rule
+    public LeakTrackingBufferPool bufferPool = new LeakTrackingBufferPool("Test",new MappedByteBufferPool());
+
     private final int timeout = 500;
     private BlockheadServer server;
     private WebSocketClient client;
 
     @SuppressWarnings("unchecked")
-    private <E extends Throwable> E assertExpectedError(ExecutionException e, TrackingSocket wsocket, Class<E> errorClass) throws IOException
+    private <E extends Throwable> E assertExpectedError(ExecutionException e, JettyTrackingSocket wsocket, Class<E> errorClass) throws IOException
     {
         // Validate thrown cause
         Throwable cause = e.getCause();
-        Assert.assertThat("ExecutionException.cause",cause,instanceOf(errorClass));
+        if(!errorClass.isInstance(cause)) 
+        {
+        	cause.printStackTrace(System.err);
+        	Assert.assertThat("ExecutionException.cause",cause,instanceOf(errorClass));
+        }
 
         // Validate websocket captured cause
         Assert.assertThat("Error Queue Length",wsocket.errorQueue.size(),greaterThanOrEqualTo(1));
@@ -77,7 +91,7 @@ public class ClientConnectTest
     @Before
     public void startClient() throws Exception
     {
-        client = new WebSocketClient();
+        client = new WebSocketClient(bufferPool);
         client.setConnectTimeout(timeout);
         client.start();
     }
@@ -104,7 +118,7 @@ public class ClientConnectTest
     @Test
     public void testBadHandshake() throws Exception
     {
-        TrackingSocket wsocket = new TrackingSocket();
+        JettyTrackingSocket wsocket = new JettyTrackingSocket();
 
         URI wsUri = server.getWsUri();
         Future<Session> future = client.connect(wsocket,wsUri);
@@ -133,7 +147,7 @@ public class ClientConnectTest
     @Test
     public void testBadHandshake_GetOK() throws Exception
     {
-        TrackingSocket wsocket = new TrackingSocket();
+        JettyTrackingSocket wsocket = new JettyTrackingSocket();
 
         URI wsUri = server.getWsUri();
         Future<Session> future = client.connect(wsocket,wsUri);
@@ -162,7 +176,7 @@ public class ClientConnectTest
     @Test
     public void testBadHandshake_GetOK_WithSecWebSocketAccept() throws Exception
     {
-        TrackingSocket wsocket = new TrackingSocket();
+        JettyTrackingSocket wsocket = new JettyTrackingSocket();
 
         URI wsUri = server.getWsUri();
         Future<Session> future = client.connect(wsocket,wsUri);
@@ -198,7 +212,7 @@ public class ClientConnectTest
     @Test
     public void testBadHandshake_SwitchingProtocols_InvalidConnectionHeader() throws Exception
     {
-        TrackingSocket wsocket = new TrackingSocket();
+        JettyTrackingSocket wsocket = new JettyTrackingSocket();
 
         URI wsUri = server.getWsUri();
         Future<Session> future = client.connect(wsocket,wsUri);
@@ -234,7 +248,7 @@ public class ClientConnectTest
     @Test
     public void testBadHandshake_SwitchingProtocols_NoConnectionHeader() throws Exception
     {
-        TrackingSocket wsocket = new TrackingSocket();
+        JettyTrackingSocket wsocket = new JettyTrackingSocket();
 
         URI wsUri = server.getWsUri();
         Future<Session> future = client.connect(wsocket,wsUri);
@@ -270,7 +284,7 @@ public class ClientConnectTest
     @Test
     public void testBadUpgrade() throws Exception
     {
-        TrackingSocket wsocket = new TrackingSocket();
+        JettyTrackingSocket wsocket = new JettyTrackingSocket();
 
         URI wsUri = server.getWsUri();
         Future<Session> future = client.connect(wsocket,wsUri);
@@ -300,7 +314,7 @@ public class ClientConnectTest
     @Ignore("Opened bug 399525")
     public void testConnectionNotAccepted() throws Exception
     {
-        TrackingSocket wsocket = new TrackingSocket();
+        JettyTrackingSocket wsocket = new JettyTrackingSocket();
 
         URI wsUri = server.getWsUri();
         Future<Session> future = client.connect(wsocket,wsUri);
@@ -330,7 +344,7 @@ public class ClientConnectTest
     @Test
     public void testConnectionRefused() throws Exception
     {
-        TrackingSocket wsocket = new TrackingSocket();
+        JettyTrackingSocket wsocket = new JettyTrackingSocket();
 
         // Intentionally bad port with nothing listening on it
         URI wsUri = new URI("ws://127.0.0.1:1");
@@ -351,15 +365,22 @@ public class ClientConnectTest
         }
         catch (ExecutionException e)
         {
-            // Expected path - java.net.ConnectException
-            assertExpectedError(e,wsocket,ConnectException.class);
+        	if(OS.IS_WINDOWS) 
+        	{
+        		// On windows, this is a SocketTimeoutException
+        		assertExpectedError(e, wsocket, SocketTimeoutException.class);
+        	} else
+        	{
+	            // Expected path - java.net.ConnectException
+	            assertExpectedError(e,wsocket,ConnectException.class);
+        	}
         }
     }
 
     @Test(expected = TimeoutException.class)
     public void testConnectionTimeout_Concurrent() throws Exception
     {
-        TrackingSocket wsocket = new TrackingSocket();
+        JettyTrackingSocket wsocket = new JettyTrackingSocket();
 
         URI wsUri = server.getWsUri();
         Future<Session> future = client.connect(wsocket,wsUri);

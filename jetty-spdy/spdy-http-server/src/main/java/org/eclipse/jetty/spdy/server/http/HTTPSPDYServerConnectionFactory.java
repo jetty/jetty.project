@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -39,7 +39,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class HTTPSPDYServerConnectionFactory extends SPDYServerConnectionFactory implements HttpConfiguration.ConnectionFactory
 {
     private static final String CHANNEL_ATTRIBUTE = "org.eclipse.jetty.spdy.server.http.HTTPChannelOverSPDY";
-    private static final Logger logger = Log.getLogger(HTTPSPDYServerConnectionFactory.class);
+    private static final Logger LOG = Log.getLogger(HTTPSPDYServerConnectionFactory.class);
 
     private final PushStrategy pushStrategy;
     private final HttpConfiguration httpConfiguration;
@@ -94,7 +94,7 @@ public class HTTPSPDYServerConnectionFactory extends SPDYServerConnectionFactory
             // can arrive on the same connection, so we need to create an
             // HttpChannel for each SYN in order to run concurrently.
 
-            logger.debug("Received {} on {}", synInfo, stream);
+            LOG.debug("Received {} on {}", synInfo, stream);
 
             Fields headers = synInfo.getHeaders();
             // According to SPDY/3 spec section 3.2.1 user-agents MUST support gzip compression. Firefox omits the
@@ -102,7 +102,7 @@ public class HTTPSPDYServerConnectionFactory extends SPDYServerConnectionFactory
             // if clients have to accept it.
             // So we inject the accept-encoding header here, even if not set by the client. This will enforce SPDY
             // clients to follow the spec and enable gzip compression if GzipFilter or the like is enabled.
-            if (!(headers.get("accept-encoding") != null && headers.get("accept-encoding").value().contains
+            if (!(headers.get("accept-encoding") != null && headers.get("accept-encoding").getValue().contains
                     ("gzip")))
                 headers.add("accept-encoding", "gzip");
             HttpTransportOverSPDY transport = new HttpTransportOverSPDY(connector, httpConfiguration, endPoint,
@@ -136,7 +136,7 @@ public class HTTPSPDYServerConnectionFactory extends SPDYServerConnectionFactory
         @Override
         public void onHeaders(Stream stream, HeadersInfo headersInfo)
         {
-            logger.debug("Received {} on {}", headersInfo, stream);
+            LOG.debug("Received {} on {}", headersInfo, stream);
             HttpChannelOverSPDY channel = (HttpChannelOverSPDY)stream.getAttribute(CHANNEL_ATTRIBUTE);
             channel.requestHeaders(headersInfo.getHeaders(), headersInfo.isClose());
         }
@@ -150,9 +150,15 @@ public class HTTPSPDYServerConnectionFactory extends SPDYServerConnectionFactory
         @Override
         public void onData(Stream stream, final DataInfo dataInfo)
         {
-            logger.debug("Received {} on {}", dataInfo, stream);
+            LOG.debug("Received {} on {}", dataInfo, stream);
             HttpChannelOverSPDY channel = (HttpChannelOverSPDY)stream.getAttribute(CHANNEL_ATTRIBUTE);
             channel.requestContent(dataInfo, dataInfo.isClose());
+        }
+
+        @Override
+        public void onFailure(Stream stream, Throwable x)
+        {
+            LOG.debug(x);
         }
     }
 }

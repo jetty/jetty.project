@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,10 +28,12 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletConfig;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.UnavailableException;
 import javax.servlet.http.HttpServlet;
@@ -47,7 +49,6 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -61,7 +62,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
  * <p/>
  * To facilitate JMX monitoring, the {@link HttpClient} instance is set as context attribute,
  * prefixed with the servlet's name and exposed by the mechanism provided by
- * {@link ContextHandler#MANAGED_ATTRIBUTES}.
+ * {@link ServletContext#setAttribute(String, Object)}.
  * <p/>
  * The following init parameters may be used to configure the servlet:
  * <ul>
@@ -136,6 +137,11 @@ public class ProxyServlet extends HttpServlet
         }
     }
 
+    public String getViaHost()
+    {
+        return _viaHost;
+    }
+
     public long getTimeout()
     {
         return _timeout;
@@ -206,7 +212,8 @@ public class ProxyServlet extends HttpServlet
      * <tr>
      * <td>maxThreads</td>
      * <td>256</td>
-     * <td>The max number of threads of HttpClient's Executor</td>
+     * <td>The max number of threads of HttpClient's Executor.  If not set, or set to the value of "-", then the
+     * Jetty server thread pool will be used.</td>
      * </tr>
      * <tr>
      * <td>maxConnections</td>
@@ -244,26 +251,37 @@ public class ProxyServlet extends HttpServlet
         ServletConfig config = getServletConfig();
 
         HttpClient client = newHttpClient();
+        
         // Redirects must be proxied as is, not followed
         client.setFollowRedirects(false);
 
         // Must not store cookies, otherwise cookies of different clients will mix
         client.setCookieStore(new HttpCookieStore.Empty());
 
+        Executor executor;
         String value = config.getInitParameter("maxThreads");
-        if (value == null)
-            value = "256";
-        QueuedThreadPool executor = new QueuedThreadPool(Integer.parseInt(value));
-        String servletName = config.getServletName();
-        int dot = servletName.lastIndexOf('.');
-        if (dot >= 0)
-            servletName = servletName.substring(dot + 1);
-        executor.setName(servletName);
+        if (value == null || "-".equals(value))
+        {
+            executor = (Executor)getServletContext().getAttribute("org.eclipse.jetty.server.Executor");
+            if (executor==null)
+                throw new IllegalStateException("No server executor for proxy");
+        }
+        else
+        {
+            QueuedThreadPool qtp= new QueuedThreadPool(Integer.parseInt(value));
+            String servletName = config.getServletName();
+            int dot = servletName.lastIndexOf('.');
+            if (dot >= 0)
+                servletName = servletName.substring(dot + 1);
+            qtp.setName(servletName);
+            executor=qtp;
+        }
+        
         client.setExecutor(executor);
 
         value = config.getInitParameter("maxConnections");
         if (value == null)
-            value = "32768";
+            value = "256";
         client.setMaxConnectionsPerDestination(Integer.parseInt(value));
 
         value = config.getInitParameter("idleTimeout");
@@ -376,6 +394,7 @@ public class ProxyServlet extends HttpServlet
                 .version(HttpVersion.fromString(request.getProtocol()));
 
         // Copy headers
+        boolean hasContent = false;
         for (Enumeration<String> headerNames = request.getHeaderNames(); headerNames.hasMoreElements();)
         {
             String headerName = headerNames.nextElement();
@@ -385,8 +404,12 @@ public class ProxyServlet extends HttpServlet
             if (HOP_HEADERS.contains(lowerHeaderName))
                 continue;
 
-            if (_hostHeader!=null && lowerHeaderName.equals("host"))
+            if (_hostHeader != null && HttpHeader.HOST.is(headerName))
                 continue;
+
+            if (request.getContentLength() > 0 || request.getContentType() != null ||
+                    HttpHeader.TRANSFER_ENCODING.is(headerName))
+                hasContent = true;
 
             for (Enumeration<String> headerValues = request.getHeaders(headerName); headerValues.hasMoreElements();)
             {
@@ -401,27 +424,27 @@ public class ProxyServlet extends HttpServlet
             proxyRequest.header(HttpHeader.HOST, _hostHeader);
 
         // Add proxy headers
-        proxyRequest.header(HttpHeader.VIA, "http/1.1 " + _viaHost);
-        proxyRequest.header(HttpHeader.X_FORWARDED_FOR, request.getRemoteAddr());
-        proxyRequest.header(HttpHeader.X_FORWARDED_PROTO, request.getScheme());
-        proxyRequest.header(HttpHeader.X_FORWARDED_HOST, request.getHeader(HttpHeader.HOST.asString()));
-        proxyRequest.header(HttpHeader.X_FORWARDED_SERVER, request.getLocalName());
+        addViaHeader(proxyRequest);
+        addXForwardedHeaders(proxyRequest, request);
 
-        proxyRequest.content(new InputStreamContentProvider(request.getInputStream())
+        if (hasContent)
         {
-            @Override
-            public long getLength()
+            proxyRequest.content(new InputStreamContentProvider(request.getInputStream())
             {
-                return request.getContentLength();
-            }
+                @Override
+                public long getLength()
+                {
+                    return request.getContentLength();
+                }
 
-            @Override
-            protected ByteBuffer onRead(byte[] buffer, int offset, int length)
-            {
-                _log.debug("{} proxying content to upstream: {} bytes", requestId, length);
-                return super.onRead(buffer, offset, length);
-            }
-        });
+                @Override
+                protected ByteBuffer onRead(byte[] buffer, int offset, int length)
+                {
+                    _log.debug("{} proxying content to upstream: {} bytes", requestId, length);
+                    return super.onRead(buffer, offset, length);
+                }
+            });
+        }
 
         final AsyncContext asyncContext = request.startAsync();
         // We do not timeout the continuation, but the proxy request
@@ -465,6 +488,19 @@ public class ProxyServlet extends HttpServlet
 
         proxyRequest.timeout(getTimeout(), TimeUnit.MILLISECONDS);
         proxyRequest.send(new ProxyResponseListener(request, response));
+    }
+
+    protected Request addViaHeader(Request proxyRequest)
+    {
+        return proxyRequest.header(HttpHeader.VIA, "http/1.1 " + getViaHost());
+    }
+
+    protected void addXForwardedHeaders(Request proxyRequest, HttpServletRequest request)
+    {
+        proxyRequest.header(HttpHeader.X_FORWARDED_FOR, request.getRemoteAddr());
+        proxyRequest.header(HttpHeader.X_FORWARDED_PROTO, request.getScheme());
+        proxyRequest.header(HttpHeader.X_FORWARDED_HOST, request.getHeader(HttpHeader.HOST.asString()));
+        proxyRequest.header(HttpHeader.X_FORWARDED_SERVER, request.getLocalName());
     }
 
     protected void onResponseHeaders(HttpServletRequest request, HttpServletResponse response, Response proxyResponse)
@@ -616,7 +652,12 @@ public class ProxyServlet extends HttpServlet
                 return null;
 
             StringBuilder uri = new StringBuilder(_proxyTo);
-            uri.append(path.substring(_prefix.length()));
+            if (_proxyTo.endsWith("/"))
+                uri.setLength(uri.length() - 1);
+            String rest = path.substring(_prefix.length());
+            if (!rest.startsWith("/"))
+                uri.append("/");
+            uri.append(rest);
             String query = request.getQueryString();
             if (query != null)
                 uri.append("?").append(query);
@@ -629,7 +670,7 @@ public class ProxyServlet extends HttpServlet
         }
     }
 
-    private class ProxyResponseListener extends Response.Listener.Empty
+    private class ProxyResponseListener extends Response.Listener.Adapter
     {
         private final HttpServletRequest request;
         private final HttpServletResponse response;

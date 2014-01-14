@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,7 +25,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 
-import org.apache.maven.artifact.Artifact;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -46,7 +45,7 @@ import org.eclipse.jetty.webapp.WebInfConfiguration;
  */
 public class MavenWebInfConfiguration extends WebInfConfiguration
 {
-    private static final Logger LOG = Log.getLogger(WebInfConfiguration.class);
+    private static final Logger LOG = Log.getLogger(MavenWebInfConfiguration.class);
 
     
     protected static int COUNTER = 0; 
@@ -172,26 +171,26 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
                 if (o.getConfig() != null && o.getConfig().isCurrentProject() && _originalResourceBase.exists())
                 {
                     resourceBaseCollection.add(_originalResourceBase); 
-                    LOG.info("Adding virtual project to resource base list");
+                    LOG.debug("Adding virtual project to resource base list");
                     continue;
                 }
 
                 Resource unpacked = unpackOverlay(jwac,o);
                 _unpackedOverlayResources.add(unpacked); //remember the unpacked overlays for later so we can delete the tmp files
                 resourceBaseCollection.add(unpacked); //add in the selectively unpacked overlay in the correct order to the webapps resource base
-                LOG.info("Adding "+unpacked+" to resource base list");
+                LOG.debug("Adding "+unpacked+" to resource base list");
             }
 
             if (!resourceBaseCollection.contains(_originalResourceBase) && _originalResourceBase.exists())
             {
                 if (jwac.getBaseAppFirst())
                 {
-                    LOG.info("Adding virtual project first in resource base list");
+                    LOG.debug("Adding virtual project first in resource base list");
                     resourceBaseCollection.add(0, _originalResourceBase);
                 }
                 else
                 {
-                    LOG.info("Adding virtual project last in resource base list");
+                    LOG.debug("Adding virtual project last in resource base list");
                     resourceBaseCollection.add(_originalResourceBase);
                 }
             }
@@ -279,13 +278,11 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
 
 
 
+
     protected  Resource unpackOverlay (WebAppContext context, Overlay overlay)
     throws IOException
     {
-        LOG.info("Unpacking overlay: " + overlay);
-        
-        //resolve if not already resolved
-        resolveTempDirectory(context);
+        LOG.debug("Unpacking overlay: " + overlay);
         
         if (overlay.getResource() == null)
             return null; //nothing to unpack
@@ -311,7 +308,7 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
         //use top level of unpacked content
         Resource unpackedOverlay = Resource.newResource(dir.getCanonicalPath());
         
-        LOG.info("Unpacked overlay: "+overlay+" to "+unpackedOverlay);
+        LOG.debug("Unpacked overlay: "+overlay+" to "+unpackedOverlay);
         return  unpackedOverlay;
     }
 }

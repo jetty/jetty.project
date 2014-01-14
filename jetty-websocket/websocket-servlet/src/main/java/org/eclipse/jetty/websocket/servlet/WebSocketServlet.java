@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,8 +19,6 @@
 package org.eclipse.jetty.websocket.servlet;
 
 import java.io.IOException;
-import java.util.Iterator;
-import java.util.ServiceLoader;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -29,12 +27,11 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
 /**
  * Abstract Servlet used to bridge the Servlet API to the WebSocket API.
  * <p>
- * To use this servlet, you will be required to register your websockets with the {@link WebSocketServerFactory} so that it can create your websockets under the
+ * To use this servlet, you will be required to register your websockets with the {@link WebSocketServletFactory} so that it can create your websockets under the
  * appropriate conditions.
  * <p>
  * The most basic implementation would be as follows.
@@ -58,7 +55,7 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
  * }
  * </pre>
  * 
- * Note: that only request that conforms to a "WebSocket: Upgrade" handshake request will trigger the {@link WebSocketServerFactory} handling of creating
+ * Note: that only request that conforms to a "WebSocket: Upgrade" handshake request will trigger the {@link WebSocketServletFactory} handling of creating
  * WebSockets.<br>
  * All other requests are treated as normal servlet requests.
  * 
@@ -71,8 +68,11 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
  * <dt>maxIdleTime</dt>
  * <dd>set the time in ms that a websocket may be idle before closing<br>
  * 
- * <dt>maxMessagesSize</dt>
- * <dd>set the size in bytes that a websocket may be accept before closing<br>
+ * <dt>maxTextMessageSize</dt>
+ * <dd>set the size in UTF-8 bytes that a websocket may be accept as a Text Message before closing<br>
+ * 
+ * <dt>maxBinaryMessageSize</dt>
+ * <dd>set the size in bytes that a websocket may be accept as a Binary Message before closing<br>
  * 
  * <dt>inputBufferSize</dt>
  * <dd>set the size in bytes of the buffer used to read raw bytes from the network layer<br>
@@ -107,10 +107,16 @@ public abstract class WebSocketServlet extends HttpServlet
                 policy.setIdleTimeout(Long.parseLong(max));
             }
 
-            max = getInitParameter("maxMessageSize");
+            max = getInitParameter("maxTextMessageSize");
             if (max != null)
             {
-                policy.setMaxMessageSize(Long.parseLong(max));
+                policy.setMaxTextMessageSize(Integer.parseInt(max));
+            }
+
+            max = getInitParameter("maxBinaryMessageSize");
+            if (max != null)
+            {
+                policy.setMaxBinaryMessageSize(Integer.parseInt(max));
             }
 
             max = getInitParameter("inputBufferSize");
@@ -119,24 +125,7 @@ public abstract class WebSocketServlet extends HttpServlet
                 policy.setInputBufferSize(Integer.parseInt(max));
             }
 
-            WebSocketServletFactory baseFactory;
-            Iterator<WebSocketServletFactory> factories = ServiceLoader.load(WebSocketServletFactory.class).iterator();
-
-            if (factories.hasNext())
-            {
-                baseFactory = factories.next();
-            }
-            else
-            {
-                // Load the default class if ServiceLoader mechanism isn't valid in this environment. (such as OSGi)
-                ClassLoader loader = Thread.currentThread().getContextClassLoader();
-                @SuppressWarnings("unchecked")
-                Class<WebSocketServletFactory> wssf = (Class<WebSocketServletFactory>)loader
-                        .loadClass("org.eclipse.jetty.websocket.server.WebSocketServerFactory");
-                baseFactory = wssf.newInstance();
-            }
-
-            factory = baseFactory.createFactory(policy);
+            factory = WebSocketServletFactory.Loader.create(policy);
 
             configure(factory);
 

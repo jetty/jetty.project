@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,39 +24,59 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 
+import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.JarScanner;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.commons.EmptyVisitor;
+import org.objectweb.asm.Opcodes;
+
 
 /**
  * AnnotationParser
  *
- * Use asm to scan classes for annotations. A SAX-style parsing is done, with
- * a handler being able to be registered to handle each annotation type.
+ * Use asm to scan classes for annotations. A SAX-style parsing is done.
+ * Handlers are registered which will be called back when various types of
+ * entity are encountered, eg a class, a method, a field. 
+ * 
+ * Handlers are not called back in any particular order and are assumed
+ * to be order-independent.
+ * 
+ * As a registered Handler will be called back for each annotation discovered
+ * on a class, a method, a field, the Handler should test to see if the annotation
+ * is one that it is interested in.
+ * 
+ * For the servlet spec, we are only interested in annotations on classes, methods and fields,
+ * so the callbacks for handling finding a class, a method a field are themselves
+ * not fully implemented.
  */
 public class AnnotationParser
 {
     private static final Logger LOG = Log.getLogger(AnnotationParser.class);
 
-    protected Set<String> _parsedClassNames = new HashSet<String>();
-    protected List<Handler> _handlers = new ArrayList<Handler>();
+    protected Set<String> _parsedClassNames = new ConcurrentHashSet<String>();
+   
 
+    /**
+     * Convert internal name to simple name
+     * 
+     * @param name
+     * @return
+     */
     public static String normalize (String name)
     {
         if (name==null)
@@ -70,294 +90,356 @@ public class AnnotationParser
 
         return name.replace('/', '.');
     }
-
-
-
-    public abstract class Value
+    
+    /**
+     * Convert internal names to simple names.
+     * 
+     * @param list
+     * @return
+     */
+    public static String[] normalize (String[] list)
     {
-        String _name;
-
-        public Value (String name)
-        {
-            _name = name;
-        }
-
-        public String getName()
-        {
-            return _name;
-        }
-
-        public abstract Object getValue();
-
+        if (list == null)
+            return null;       
+        String[] normalList = new String[list.length];
+        int i=0;
+        for (String s : list)
+            normalList[i++] = normalize(s);
+        return normalList;
     }
 
-
-
-
-    public class SimpleValue extends Value
+    
+    /**
+     * ClassInfo
+     * 
+     * Immutable information gathered by parsing class header.
+     * 
+     */
+    public class ClassInfo 
     {
-        Object _val;
-
-        public SimpleValue(String name)
+        final Resource _containingResource;
+        final String _className;
+        final int _version;
+        final int _access;
+        final String _signature;
+        final String _superName; 
+        final String[] _interfaces;
+        
+        public ClassInfo(Resource resource, String className, int version, int access, String signature, String superName, String[] interfaces)
         {
-            super(name);
+            super();
+            _containingResource = resource;
+            _className = className;
+            _version = version;
+            _access = access;
+            _signature = signature;
+            _superName = superName;
+            _interfaces = interfaces;
         }
 
-        public void setValue(Object val)
+        public String getClassName()
         {
-            _val=val;
+            return _className;
         }
-        @Override
+
+        public int getVersion()
+        {
+            return _version;
+        }
+
+        public int getAccess()
+        {
+            return _access;
+        }
+
+        public String getSignature()
+        {
+            return _signature;
+        }
+
+        public String getSuperName()
+        {
+            return _superName;
+        }
+
+        public String[] getInterfaces()
+        {
+            return _interfaces;
+        }
+
+        public Resource getContainingResource()
+        {
+            return _containingResource;
+        }
+    }
+
+    
+    /**
+     * MethodInfo
+     * 
+     * Immutable information gathered by parsing a method on a class.
+     */
+    public class MethodInfo
+    {
+        final ClassInfo _classInfo;
+        final String _methodName; 
+        final int _access;
+        final String _desc; 
+        final String _signature;
+        final String[] _exceptions;
+        
+        public MethodInfo(ClassInfo classInfo, String methodName, int access, String desc, String signature, String[] exceptions)
+        {
+            super();
+            _classInfo = classInfo;
+            _methodName = methodName;
+            _access = access;
+            _desc = desc;
+            _signature = signature;
+            _exceptions = exceptions;
+        }
+
+        public ClassInfo getClassInfo()
+        {
+            return _classInfo;
+        }
+
+        public String getMethodName()
+        {
+            return _methodName;
+        }
+
+        public int getAccess()
+        {
+            return _access;
+        }
+
+        public String getDesc()
+        {
+            return _desc;
+        }
+
+        public String getSignature()
+        {
+            return _signature;
+        }
+
+        public String[] getExceptions()
+        {
+            return _exceptions;
+        }
+    }
+    
+    
+    
+    /**
+     * FieldInfo
+     *
+     * Immutable information gathered by parsing a field on a class.
+     * 
+     */
+    public class FieldInfo
+    {
+        final ClassInfo _classInfo;
+        final String _fieldName;
+        final int _access;
+        final String _fieldType;
+        final String _signature;
+        final Object _value;
+        
+        public FieldInfo(ClassInfo classInfo, String fieldName, int access, String fieldType, String signature, Object value)
+        {
+            super();
+            _classInfo = classInfo;
+            _fieldName = fieldName;
+            _access = access;
+            _fieldType = fieldType;
+            _signature = signature;
+            _value = value;
+        }
+
+        public ClassInfo getClassInfo()
+        {
+            return _classInfo;
+        }
+
+        public String getFieldName()
+        {
+            return _fieldName;
+        }
+
+        public int getAccess()
+        {
+            return _access;
+        }
+
+        public String getFieldType()
+        {
+            return _fieldType;
+        }
+
+        public String getSignature()
+        {
+            return _signature;
+        }
+
         public Object getValue()
         {
-            return _val;
-        }
-
-        @Override
-        public String toString()
-        {
-            return "("+getName()+":"+_val+")";
+            return _value;
         }
     }
-
-    public class ListValue extends Value
-    {
-        List<Value> _val;
-
-        public ListValue (String name)
-        {
-            super(name);
-            _val = new ArrayList<Value>();
-        }
-
-        @Override
-        public Object getValue()
-        {
-            return _val;
-        }
-
-        public List<Value> getList()
-        {
-            return _val;
-        }
-
-        public void addValue (Value v)
-        {
-            _val.add(v);
-        }
-
-        public int size ()
-        {
-            return _val.size();
-        }
-
-        @Override
-        public String toString()
-        {
-            StringBuffer buff = new StringBuffer();
-            buff.append("(");
-            buff.append(getName());
-            buff.append(":");
-            for (Value n: _val)
-            {
-                buff.append(" "+n.toString());
-            }
-            buff.append(")");
-
-            return buff.toString();
-        }
-    }
-
-
-
+    
+    
     /**
      * Handler
      *
      * Signature for all handlers that respond to parsing class files.
      */
-    public interface Handler
+    public static interface Handler
     {
-       
+        public void handle(ClassInfo classInfo);
+        public void handle(MethodInfo methodInfo);
+        public void handle (FieldInfo fieldInfo);
+        public void handle (ClassInfo info, String annotationName);
+        public void handle (MethodInfo info, String annotationName);
+        public void handle (FieldInfo info, String annotationName);
     }
     
     
     
     /**
-     * DiscoverableAnnotationHandler
+     * AbstractHandler
      *
-     * Processes an annotation when it is discovered on a class.
+     * Convenience base class to provide no-ops for all Handler methods.
+     * 
      */
-    public interface DiscoverableAnnotationHandler extends Handler
+    public static abstract class AbstractHandler implements Handler
     {
-        /**
-         * Process an annotation that was discovered on a class
-         * @param className
-         * @param version
-         * @param access
-         * @param signature
-         * @param superName
-         * @param interfaces
-         * @param annotation
-         * @param values
-         */
-        public void handleClass (String className, int version, int access,
-                                 String signature, String superName, String[] interfaces,
-                                 String annotation, List<Value>values);
 
-        /**
-         * Process an annotation that was discovered on a method
-         * @param className
-         * @param methodName
-         * @param access
-         * @param desc
-         * @param signature
-         * @param exceptions
-         * @param annotation
-         * @param values
-         */
-        public void handleMethod (String className, String methodName, int access,
-                                  String desc, String signature,String[] exceptions,
-                                  String annotation, List<Value>values);
+        @Override
+        public void handle(ClassInfo classInfo)
+        {
+           //no-op
+        }
+
+        @Override
+        public void handle(MethodInfo methodInfo)
+        {
+            // no-op           
+        }
+
+        @Override
+        public void handle(FieldInfo fieldInfo)
+        {
+            // no-op 
+        }
+
+        @Override
+        public void handle(ClassInfo info, String annotationName)
+        {
+            // no-op 
+        }
+
+        @Override
+        public void handle(MethodInfo info, String annotationName)
+        {
+            // no-op            
+        }
+
+        @Override
+        public void handle(FieldInfo info, String annotationName)
+        {
+           // no-op
+        }        
+    }
+
+    
+    
+    /**
+     * MyMethodVisitor
+     * 
+     * ASM Visitor for parsing a method. We are only interested in the annotations on methods.
+     */
+    public class MyMethodVisitor extends MethodVisitor
+    {
+        final MethodInfo _mi;
+        final Set<? extends Handler> _handlers;
+        
+        public MyMethodVisitor(final Set<? extends Handler> handlers,
+                               final ClassInfo classInfo,
+                               final int access,
+                               final String name,
+                               final String methodDesc,
+                               final String signature,
+                               final String[] exceptions)
+        {
+            super(Opcodes.ASM4);
+            _handlers = handlers;
+            _mi = new MethodInfo(classInfo, name, access, methodDesc,signature, exceptions);
+        }
 
         
         /**
-         * Process an annotation that was discovered on a field
-         * @param className
-         * @param fieldName
-         * @param access
-         * @param fieldType
-         * @param signature
-         * @param value
-         * @param annotation
-         * @param values
-         */
-        public void handleField (String className, String fieldName,  int access,
-                                 String fieldType, String signature, Object value,
-                                 String annotation, List<Value>values);
-        
-        
-        /**
-         * Get the name of the annotation processed by this handler. Can be null
+         * We are only interested in finding the annotations on methods.
          * 
-         * @return
+         * @see org.objectweb.asm.MethodVisitor#visitAnnotation(java.lang.String, boolean)
          */
-        public String getAnnotationName();
+        @Override
+        public AnnotationVisitor visitAnnotation(String desc, boolean visible)
+        {
+            String annotationName = normalize(desc);
+            for (Handler h:_handlers)
+                h.handle(_mi, annotationName);
+            return null;
+        }
     }
 
 
     
     /**
-     * ClassHandler
+     * MyFieldVisitor
+     * 
+     * An ASM visitor for parsing Fields. 
+     * We are only interested in visiting annotations on Fields.
      *
-     * Responds to finding a Class
      */
-    public interface ClassHandler extends Handler
-    {
-        public void handle (String className, int version, int access, String signature, String superName, String[] interfaces);
-    }
-
+    public class MyFieldVisitor extends FieldVisitor
+    {   
+        final FieldInfo _fieldInfo;
+        final Set<? extends Handler> _handlers;
+        
     
-    
-    /**
-     * MethodHandler
-     *
-     * Responds to finding a Method
-     */
-    public interface MethodHandler extends Handler
-    {
-        public void handle (String className, String methodName, int access,  String desc, String signature,String[] exceptions);
-    }
-
-    
-    /**
-     * FieldHandler
-     *
-     * Responds to finding a Field
-     */
-    public interface FieldHandler extends Handler
-    {
-        public void handle (String className, String fieldName, int access, String fieldType, String signature, Object value);
-    }
-
-    
-    
-    /**
-     * MyAnnotationVisitor
-     *
-     * ASM Visitor for Annotations
-     */
-    public class MyAnnotationVisitor implements AnnotationVisitor
-    {
-        List<Value> _annotationValues;
-        String _annotationName;
-
-        public MyAnnotationVisitor (String annotationName, List<Value> values)
+        public MyFieldVisitor(final Set<? extends Handler> handlers,
+                              final ClassInfo classInfo,
+                              final int access,
+                              final String fieldName,
+                              final String fieldType,
+                              final String signature,
+                              final Object value)
         {
-            _annotationValues = values;
-            _annotationName = annotationName;
+            super(Opcodes.ASM4);
+            _handlers = handlers;
+            _fieldInfo = new FieldInfo(classInfo, fieldName, access, fieldType, signature, value);
         }
 
-        public List<Value> getAnnotationValues()
-        {
-            return _annotationValues;
-        }
 
         /**
-         * Visit a single-valued (name,value) pair for this annotation
-         * @see org.objectweb.asm.AnnotationVisitor#visit(java.lang.String, java.lang.Object)
+         * Parse an annotation found on a Field.
+         * 
+         * @see org.objectweb.asm.FieldVisitor#visitAnnotation(java.lang.String, boolean)
          */
         @Override
-        public void visit(String aname, Object avalue)
+        public AnnotationVisitor visitAnnotation(String desc, boolean visible)
         {
-           SimpleValue v = new SimpleValue(aname);
-           v.setValue(avalue);
-           _annotationValues.add(v);
-        }
+            String annotationName = normalize(desc);
+            for (Handler h : _handlers)
+               h.handle(_fieldInfo, annotationName);
 
-        /**
-         * Visit a (name,value) pair whose value is another Annotation
-         * @see org.objectweb.asm.AnnotationVisitor#visitAnnotation(java.lang.String, java.lang.String)
-         */
-        @Override
-        public AnnotationVisitor visitAnnotation(String name, String desc)
-        {
-            String s = normalize(desc);
-            ListValue v = new ListValue(s);
-            _annotationValues.add(v);
-            MyAnnotationVisitor visitor = new MyAnnotationVisitor(s, v.getList());
-            return visitor;
-        }
-
-        /**
-         * Visit an array valued (name, value) pair for this annotation
-         * @see org.objectweb.asm.AnnotationVisitor#visitArray(java.lang.String)
-         */
-        @Override
-        public AnnotationVisitor visitArray(String name)
-        {
-            ListValue v = new ListValue(name);
-            _annotationValues.add(v);
-            MyAnnotationVisitor visitor = new MyAnnotationVisitor(null, v.getList());
-            return visitor;
-        }
-
-        /**
-         * Visit a enum-valued (name,value) pair for this annotation
-         * @see org.objectweb.asm.AnnotationVisitor#visitEnum(java.lang.String, java.lang.String, java.lang.String)
-         */
-        @Override
-        public void visitEnum(String name, String desc, String value)
-        {
-            //TODO
-        }
-
-        @Override
-        public void visitEnd()
-        {
+            return null;
         }
     }
 
-
+  
 
 
     /**
@@ -365,77 +447,59 @@ public class AnnotationParser
      *
      * ASM visitor for a class.
      */
-    public class MyClassVisitor extends EmptyVisitor
+    public class MyClassVisitor extends ClassVisitor
     {
-        String _className;
-        int _access;
-        String _signature;
-        String _superName;
-        String[] _interfaces;
-        int _version;
+
+        final Resource _containingResource;
+        final Set<? extends Handler> _handlers;
+        ClassInfo _ci;
+        
+        public MyClassVisitor(Set<? extends Handler> handlers, Resource containingResource)
+        {
+            super(Opcodes.ASM4);
+            _handlers = handlers;
+            _containingResource = containingResource;
+        }
 
 
         @Override
-        public void visit (int version,
+        public void visit (final int version,
                            final int access,
                            final String name,
                            final String signature,
                            final String superName,
                            final String[] interfaces)
-        {
-            _className = normalize(name);
-            _access = access;
-            _signature = signature;
-            _superName = superName;
-            _interfaces = interfaces;
-            _version = version;
+        {           
+            _ci = new ClassInfo(_containingResource, normalize(name), version, access, signature, normalize(superName), normalize(interfaces));
+            
+            _parsedClassNames.add(_ci.getClassName());                 
 
-            _parsedClassNames.add(_className);
-            //call all registered ClassHandlers
-            String[] normalizedInterfaces = null;
-            if (interfaces!= null)
-            {
-                normalizedInterfaces = new String[interfaces.length];
-                int i=0;
-                for (String s : interfaces)
-                    normalizedInterfaces[i++] = normalize(s);
-            }
-
-            for (Handler h : AnnotationParser.this._handlers)
-            {
-                if (h instanceof ClassHandler)
-                {
-                    ((ClassHandler)h).handle(_className, _version, _access, _signature, normalize(_superName), normalizedInterfaces);
-                }
-            }
+            for (Handler h:_handlers)
+               h.handle(_ci);
         }
+        
 
+        /**
+         * Visit an annotation on a Class
+         * 
+         * @see org.objectweb.asm.ClassVisitor#visitAnnotation(java.lang.String, boolean)
+         */
         @Override
         public AnnotationVisitor visitAnnotation (String desc, boolean visible)
         {
-            MyAnnotationVisitor visitor = new MyAnnotationVisitor(normalize(desc), new ArrayList<Value>())
-            {
-                @Override
-                public void visitEnd()
-                {
-                    super.visitEnd();
+            String annotationName = normalize(desc);
+            for (Handler h : _handlers)
+                h.handle(_ci, annotationName);
 
-                    //call all AnnotationHandlers with classname, annotation name + values
-                    for (Handler h : AnnotationParser.this._handlers)
-                    {
-                        if (h instanceof DiscoverableAnnotationHandler)
-                        {
-                            DiscoverableAnnotationHandler dah = (DiscoverableAnnotationHandler)h;
-                            if (_annotationName.equalsIgnoreCase(dah.getAnnotationName()))
-                                dah.handleClass(_className, _version, _access, _signature, _superName, _interfaces, _annotationName, _annotationValues);
-                        }
-                    }
-                }
-            };
-
-            return visitor;
+            return null;
         }
 
+
+        /**
+         * Visit a method to extract its annotations
+         * 
+         * @see org.objectweb.asm.ClassVisitor#visitMethod(int, java.lang.String, java.lang.String, java.lang.String, java.lang.String[])
+         */
         @Override
         public MethodVisitor visitMethod (final int access,
                                           final String name,
@@ -444,35 +508,14 @@ public class AnnotationParser
                                           final String[] exceptions)
         {
 
-            return new EmptyVisitor ()
-            {
-                @Override
-                public AnnotationVisitor visitAnnotation(String desc, boolean visible)
-                {
-                    MyAnnotationVisitor visitor = new MyAnnotationVisitor (normalize(desc), new ArrayList<Value>())
-                    {
-                        @Override
-                        public void visitEnd()
-                        {
-                            super.visitEnd();
-                            //call all AnnotationHandlers with classname, method, annotation name + values
-                            for (Handler h : AnnotationParser.this._handlers)
-                            {
-                                if (h instanceof DiscoverableAnnotationHandler)
-                                {
-                                    DiscoverableAnnotationHandler dah = (DiscoverableAnnotationHandler)h;
-                                    if (_annotationName.equalsIgnoreCase(dah.getAnnotationName()))
-                                        dah.handleMethod(_className, name, access, methodDesc, signature, exceptions, _annotationName, _annotationValues);
-                                }
-                            }
-                        }
-                    };
-
-                    return visitor;
-                }
-            };
+            return new MyMethodVisitor(_handlers, _ci, access, name, methodDesc, signature, exceptions);
         }
 
+        /**
+         * Visit a field to extract its annotations
+         * 
+         * @see org.objectweb.asm.ClassVisitor#visitField(int, java.lang.String, java.lang.String, java.lang.String, java.lang.Object)
+         */
         @Override
         public FieldVisitor visitField (final int access,
                                         final String fieldName,
@@ -480,153 +523,15 @@ public class AnnotationParser
                                         final String signature,
                                         final Object value)
         {
-
-            return new EmptyVisitor ()
-            {
-                @Override
-                public AnnotationVisitor visitAnnotation(String desc, boolean visible)
-                {
-                    MyAnnotationVisitor visitor = new MyAnnotationVisitor(normalize(desc), new ArrayList<Value>())
-                    {
-                        @Override
-                        public void visitEnd()
-                        {
-                            super.visitEnd();
-                            for (Handler h : AnnotationParser.this._handlers)
-                            {
-                                if (h instanceof DiscoverableAnnotationHandler)
-                                {
-                                    DiscoverableAnnotationHandler dah = (DiscoverableAnnotationHandler)h;
-                                    if (_annotationName.equalsIgnoreCase(dah.getAnnotationName()))
-                                        dah.handleField(_className, fieldName, access, fieldType, signature, value, _annotationName, _annotationValues);
-                                }
-                            }
-                        }
-                    };
-                    return visitor;
-                }
-            };
+            return new MyFieldVisitor(_handlers, _ci, access, fieldName, fieldType, signature, value);
         }
     }
 
-
-    /**
-     * Register a handler that will be called back when the named annotation is
-     * encountered on a class.
-     *
-     * @deprecated see registerHandler(Handler)
-     * @param annotationName
-     * @param handler
-     */
-    @Deprecated
-    public void registerAnnotationHandler (String annotationName, DiscoverableAnnotationHandler handler)
-    {
-        _handlers.add(handler);
-    }
-
-    
-    /**
-     * @deprecated
-     * @param annotationName
-     * @return
-     */
-    @Deprecated
-    public List<DiscoverableAnnotationHandler> getAnnotationHandlers(String annotationName)
-    {
-        List<DiscoverableAnnotationHandler> handlers = new ArrayList<DiscoverableAnnotationHandler>();
-        for (Handler h:_handlers)
-        {
-            if (h instanceof DiscoverableAnnotationHandler)
-            {
-                DiscoverableAnnotationHandler dah = (DiscoverableAnnotationHandler)h;
-                if (annotationName.equals(dah.getAnnotationName()))
-                    handlers.add(dah);
-            }
-        }
  
-        return handlers;
-    }
-
-    /**
-     * @deprecated
-     * @return
-     */
-    @Deprecated
-    public List<DiscoverableAnnotationHandler> getAnnotationHandlers()
-    {
-        List<DiscoverableAnnotationHandler> allAnnotationHandlers = new ArrayList<DiscoverableAnnotationHandler>();
-        for (Handler h:_handlers)
-        {
-            if (h instanceof DiscoverableAnnotationHandler)
-            allAnnotationHandlers.add((DiscoverableAnnotationHandler)h);
-        }
-        return allAnnotationHandlers;
-    }
-
-    /**
-     * @deprecated see registerHandler(Handler)
-     * @param handler
-     */
-    @Deprecated
-    public void registerClassHandler (ClassHandler handler)
-    {
-        _handlers.add(handler);
-    }
-    
-    
-    
-    /**
-     * Add a particular handler
-     * 
-     * @param h
-     */
-    public void registerHandler(Handler h)
-    {
-        if (h == null)
-            return;
-        
-        _handlers.add(h);
-    }
-    
-    
-    /**
-     * Add a list of handlers
-     * 
-     * @param handlers
-     */
-    public void registerHandlers(List<? extends Handler> handlers)
-    {
-        if (handlers == null)
-            return;
-        _handlers.addAll(handlers);
-    }
-    
-    
-    /**
-     * Remove a particular handler
-     * 
-     * @param h
-     * @return
-     */
-    public boolean deregisterHandler(Handler h)
-    {
-        return _handlers.remove(h);
-    }
-    
-    
-    /**
-     * Remove all registered handlers
-     */
-    public void clearHandlers()
-    {
-        _handlers.clear();
-    }
-    
 
     /**
      * True if the class has already been processed, false otherwise
      * @param className
-     * @return
      */
     public boolean isParsed (String className)
     {
@@ -642,7 +547,7 @@ public class AnnotationParser
      * @param resolver
      * @throws Exception
      */
-    public void parse (String className, ClassNameResolver resolver)
+    public void parse (Set<? extends Handler> handlers, String className, ClassNameResolver resolver)
     throws Exception
     {
         if (className == null)
@@ -653,11 +558,11 @@ public class AnnotationParser
             if (!isParsed(className) || resolver.shouldOverride(className))
             {
                 className = className.replace('.', '/')+".class";
-                URL resource = Loader.getResource(this.getClass(), className, false);
+                URL resource = Loader.getResource(this.getClass(), className);
                 if (resource!= null)
                 {
                     Resource r = Resource.newResource(resource);
-                    scanClass(r.getInputStream());
+                    scanClass(handlers, null, r.getInputStream());
                 }
             }
         }
@@ -673,7 +578,7 @@ public class AnnotationParser
      * @param visitSuperClasses
      * @throws Exception
      */
-    public void parse (Class<?> clazz, ClassNameResolver resolver, boolean visitSuperClasses)
+    public void parse (Set<? extends Handler> handlers, Class<?> clazz, ClassNameResolver resolver, boolean visitSuperClasses)
     throws Exception
     {
         Class<?> cz = clazz;
@@ -684,14 +589,15 @@ public class AnnotationParser
                 if (!isParsed(cz.getName()) || resolver.shouldOverride(cz.getName()))
                 {
                     String nameAsResource = cz.getName().replace('.', '/')+".class";
-                    URL resource = Loader.getResource(this.getClass(), nameAsResource, false);
+                    URL resource = Loader.getResource(this.getClass(), nameAsResource);
                     if (resource!= null)
                     {
                         Resource r = Resource.newResource(resource);
-                        scanClass(r.getInputStream());
+                        scanClass(handlers, null, r.getInputStream());
                     }
                 }
             }
+
             if (visitSuperClasses)
                 cz = cz.getSuperclass();
             else
@@ -708,13 +614,13 @@ public class AnnotationParser
      * @param resolver
      * @throws Exception
      */
-    public void parse (String[] classNames, ClassNameResolver resolver)
+    public void parse (Set<? extends Handler> handlers, String[] classNames, ClassNameResolver resolver)
     throws Exception
     {
         if (classNames == null)
             return;
 
-        parse(Arrays.asList(classNames), resolver);
+        parse(handlers, Arrays.asList(classNames), resolver);
     }
 
     
@@ -725,22 +631,32 @@ public class AnnotationParser
      * @param resolver
      * @throws Exception
      */
-    public void parse (List<String> classNames, ClassNameResolver resolver)
+    public void parse (Set<? extends Handler> handlers, List<String> classNames, ClassNameResolver resolver)
     throws Exception
     {
+        MultiException me = new MultiException();
+        
         for (String s:classNames)
         {
-            if ((resolver == null) || (!resolver.isExcluded(s) &&  (!isParsed(s) || resolver.shouldOverride(s))))
+            try
             {
-                s = s.replace('.', '/')+".class";
-                URL resource = Loader.getResource(this.getClass(), s, false);
-                if (resource!= null)
+                if ((resolver == null) || (!resolver.isExcluded(s) &&  (!isParsed(s) || resolver.shouldOverride(s))))
                 {
-                    Resource r = Resource.newResource(resource);
-                    scanClass(r.getInputStream());
+                    s = s.replace('.', '/')+".class";
+                    URL resource = Loader.getResource(this.getClass(), s);
+                    if (resource!= null)
+                    {
+                        Resource r = Resource.newResource(resource);
+                        scanClass(handlers, null, r.getInputStream());
+                    }
                 }
             }
+            catch (Exception e)
+            {
+                me.add(new RuntimeException("Error scanning class "+s, e));
+            }
         }
+        me.ifExceptionThrow();
     }
 
     
@@ -751,7 +667,7 @@ public class AnnotationParser
      * @param resolver
      * @throws Exception
      */
-    public void parseDir (Resource dir, ClassNameResolver resolver)
+    protected void parseDir (Set<? extends Handler> handlers, Resource dir, ClassNameResolver resolver)
     throws Exception
     {
         //skip dirs whose name start with . (ie hidden)
@@ -760,40 +676,43 @@ public class AnnotationParser
 
         if (LOG.isDebugEnabled()) {LOG.debug("Scanning dir {}", dir);};
 
+        MultiException me = new MultiException();
+        
         String[] files=dir.list();
         for (int f=0;files!=null && f<files.length;f++)
         {
-            try
+            Resource res = dir.addPath(files[f]);
+            if (res.isDirectory())
+                parseDir(handlers, res, resolver);
+            else
             {
-                Resource res = dir.addPath(files[f]);
-                if (res.isDirectory())
-                    parseDir(res, resolver);
-                else
+                //we've already verified the directories, so just verify the class file name
+                File file = res.getFile();
+                if (isValidClassFileName((file==null?null:file.getName())))
                 {
-                    //we've already verified the directories, so just verify the class file name
-                    File file = res.getFile();
-                    if (isValidClassFileName((file==null?null:file.getName())))
+                    try
                     {
                         String name = res.getName();
                         if ((resolver == null)|| (!resolver.isExcluded(name) && (!isParsed(name) || resolver.shouldOverride(name))))
                         {
                             Resource r = Resource.newResource(res.getURL());
                             if (LOG.isDebugEnabled()) {LOG.debug("Scanning class {}", r);};
-                            scanClass(r.getInputStream());
+                            scanClass(handlers, dir, r.getInputStream());
                         }
-
-                    }
-                    else
+                    }                  
+                    catch (Exception ex)
                     {
-                       if (LOG.isDebugEnabled()) LOG.debug("Skipping scan on invalid file {}", res);
+                        me.add(new RuntimeException("Error scanning file "+files[f],ex));
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                LOG.warn(Log.EXCEPTION,ex);
+                else
+                {
+                   if (LOG.isDebugEnabled()) LOG.debug("Skipping scan on invalid file {}", res);
+                }
             }
         }
+
+        me.ifExceptionThrow();
     }
 
 
@@ -807,7 +726,7 @@ public class AnnotationParser
      * @param resolver
      * @throws Exception
      */
-    public void parse (ClassLoader loader, boolean visitParents, boolean nullInclusive, final ClassNameResolver resolver)
+    public void parse (final Set<? extends Handler> handlers, ClassLoader loader, boolean visitParents, boolean nullInclusive, final ClassNameResolver resolver)
     throws Exception
     {
         if (loader==null)
@@ -816,6 +735,8 @@ public class AnnotationParser
         if (!(loader instanceof URLClassLoader))
             return; //can't extract classes?
 
+        final MultiException me = new MultiException();
+        
         JarScanner scanner = new JarScanner()
         {
             @Override
@@ -823,17 +744,18 @@ public class AnnotationParser
             {
                 try
                 {
-                    parseJarEntry(jarUri, entry, resolver);
+                    parseJarEntry(handlers, Resource.newResource(jarUri), entry, resolver);
                 }
                 catch (Exception e)
                 {
-                    LOG.warn("Problem parsing jar entry: {}", entry.getName());
+                    me.add(new RuntimeException("Error parsing entry "+entry.getName()+" from jar "+ jarUri, e));
                 }
             }
 
         };
 
         scanner.scan(null, loader, nullInclusive, visitParents);
+        me.ifExceptionThrow();
     }
 
 
@@ -844,24 +766,26 @@ public class AnnotationParser
      * @param resolver
      * @throws Exception
      */
-    public void parse (URI[] uris, final ClassNameResolver resolver)
+    public void parse (final Set<? extends Handler> handlers, final URI[] uris, final ClassNameResolver resolver)
     throws Exception
     {
         if (uris==null)
             return;
 
+        MultiException me = new MultiException();
+        
         for (URI uri:uris)
         {
             try
             {
-                parse(uri, resolver);
+                parse(handlers, uri, resolver);
             }
             catch (Exception e)
             {
-                LOG.warn("Problem parsing classes from {}", uri);
+                me.add(new RuntimeException("Problem parsing classes from "+ uri, e));
             }
         }
-
+        me.ifExceptionThrow();
     }
 
     /**
@@ -870,15 +794,13 @@ public class AnnotationParser
      * @param resolver
      * @throws Exception
      */
-    public void parse (URI uri, final ClassNameResolver resolver)
+    public void parse (final Set<? extends Handler> handlers, URI uri, final ClassNameResolver resolver)
     throws Exception
     {
         if (uri == null)
             return;
 
-        parse (Resource.newResource(uri), resolver);
-        
-     
+        parse (handlers, Resource.newResource(uri), resolver);
     }
 
     
@@ -888,7 +810,7 @@ public class AnnotationParser
      * @param resolver
      * @throws Exception
      */
-    public void parse (Resource r, final ClassNameResolver resolver)
+    public void parse (final Set<? extends Handler> handlers, Resource r, final ClassNameResolver resolver)
     throws Exception
     {
         if (r == null)
@@ -896,26 +818,28 @@ public class AnnotationParser
         
         if (r.exists() && r.isDirectory())
         {
-            parseDir(r, resolver);
+            parseDir(handlers, r, resolver);
             return;
         }
 
         String fullname = r.toString();
         if (fullname.endsWith(".jar"))
         {
-            parseJar(r, resolver);
+            parseJar(handlers, r, resolver);
             return;
         }
 
         if (fullname.endsWith(".class"))
         {
-            scanClass(r.getInputStream());
+            scanClass(handlers, null, r.getInputStream());
             return;
         }
         
         if (LOG.isDebugEnabled()) LOG.warn("Resource not scannable for classes: {}", r);
     }
 
+    
+  
 
     /**
      * Parse a resource that is a jar file.
@@ -924,37 +848,76 @@ public class AnnotationParser
      * @param resolver
      * @throws Exception
      */
-    public void parseJar (Resource jarResource,  final ClassNameResolver resolver)
+    protected void parseJar (Set<? extends Handler> handlers, Resource jarResource,  final ClassNameResolver resolver)
     throws Exception
     {
         if (jarResource == null)
             return;
-        
-        URI uri = jarResource.getURI();
+       
         if (jarResource.toString().endsWith(".jar"))
         {
             if (LOG.isDebugEnabled()) {LOG.debug("Scanning jar {}", jarResource);};
-            
-            //treat it as a jar that we need to open and scan all entries from             
-            InputStream in = jarResource.getInputStream();
+
+            //treat it as a jar that we need to open and scan all entries from  
+            //TODO alternative impl
+            /*
+            long start = System.nanoTime();
+            Collection<Resource> resources = Resource.newResource("jar:"+jarResource+"!/").getAllResources();
+            System.err.println(jarResource+String.valueOf(resources.size())+" resources listed in "+ ((TimeUnit.MILLISECONDS.convert(System.nanoTime()-start, TimeUnit.NANOSECONDS))));
+            for (Resource r:resources)
+            {
+                //skip directories
+                if (r.isDirectory())
+                    continue;
+
+                String name = r.getName();
+                name = name.substring(name.indexOf("!/")+2);
+
+                //check file is a valid class file name
+                if (isValidClassFileName(name) && isValidClassFilePath(name))
+                {
+                    String shortName =  name.replace('/', '.').substring(0,name.length()-6);
+
+                    if ((resolver == null)
+                            ||
+                        (!resolver.isExcluded(shortName) && (!isParsed(shortName) || resolver.shouldOverride(shortName))))
+                    {
+                        if (LOG.isDebugEnabled()) {LOG.debug("Scanning class from jar {}", r);};
+                        scanClass(handlers, jarResource, r.getInputStream());
+                    }
+                }
+            }
+            */
+
+           InputStream in = jarResource.getInputStream();
             if (in==null)
                 return;
 
+            MultiException me = new MultiException();
+            
             JarInputStream jar_in = new JarInputStream(in);
             try
             { 
                 JarEntry entry = jar_in.getNextJarEntry();
                 while (entry!=null)
                 {      
-                    parseJarEntry(uri, entry, resolver);
+                    try
+                    {
+                        parseJarEntry(handlers, jarResource, entry, resolver);                        
+                    }
+                    catch (Exception e)
+                    {
+                        me.add(new RuntimeException("Error scanning entry "+entry.getName()+" from jar "+jarResource, e));
+                    }
                     entry = jar_in.getNextJarEntry();
                 }
             }
             finally
             {
                 jar_in.close();
-            } 
-        }   
+            }
+            me.ifExceptionThrow();
+        }        
     }
 
     /**
@@ -964,7 +927,7 @@ public class AnnotationParser
      * @param resolver
      * @throws Exception
      */
-    protected void parseJarEntry (URI jar, JarEntry entry, final ClassNameResolver resolver)
+    protected void parseJarEntry (Set<? extends Handler> handlers, Resource jar, JarEntry entry, final ClassNameResolver resolver)
     throws Exception
     {
         if (jar == null || entry == null)
@@ -985,9 +948,9 @@ public class AnnotationParser
                     ||
                 (!resolver.isExcluded(shortName) && (!isParsed(shortName) || resolver.shouldOverride(shortName))))
             {
-                Resource clazz = Resource.newResource("jar:"+jar+"!/"+name);
+                Resource clazz = Resource.newResource("jar:"+jar.getURI()+"!/"+name);
                 if (LOG.isDebugEnabled()) {LOG.debug("Scanning class from jar {}", clazz);};
-                scanClass(clazz.getInputStream());
+                scanClass(handlers, jar, clazz.getInputStream());
             }
         }
     }
@@ -997,14 +960,15 @@ public class AnnotationParser
     /**
      * Use ASM on a class
      * 
+     * @param containingResource the dir or jar that the class is contained within, can be null if not known
      * @param is
      * @throws IOException
      */
-    protected void scanClass (InputStream is)
+    protected void scanClass (Set<? extends Handler> handlers, Resource containingResource, InputStream is)
     throws IOException
     {
         ClassReader reader = new ClassReader(is);
-        reader.accept(new MyClassVisitor(), ClassReader.SKIP_CODE|ClassReader.SKIP_DEBUG|ClassReader.SKIP_FRAMES);
+        reader.accept(new MyClassVisitor(handlers, containingResource), ClassReader.SKIP_CODE|ClassReader.SKIP_DEBUG|ClassReader.SKIP_FRAMES);
     }
     
     /**

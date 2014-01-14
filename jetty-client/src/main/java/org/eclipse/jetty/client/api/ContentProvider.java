@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,18 +18,27 @@
 
 package org.eclipse.jetty.client.api;
 
+import java.io.Closeable;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.util.Iterator;
 
 import org.eclipse.jetty.client.util.ByteBufferContentProvider;
 import org.eclipse.jetty.client.util.PathContentProvider;
 
 /**
- * {@link ContentProvider} provides a repeatable source of request content.
+ * {@link ContentProvider} provides a source of request content.
  * <p />
- * Implementations should return a new "view" over the same content every time {@link #iterator()} is invoked.
+ * Implementations should return an {@link Iterator} over the request content.
+ * If the request content comes from a source that needs to be closed (for
+ * example, an {@link InputStream}), then the iterator implementation class
+ * must implement {@link Closeable} and will be closed when the request is
+ * completed (either successfully or failed).
  * <p />
  * Applications should rely on utility classes such as {@link ByteBufferContentProvider}
  * or {@link PathContentProvider}.
+ * <p />
+ *
  */
 public interface ContentProvider extends Iterable<ByteBuffer>
 {

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,11 +23,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 
+import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 
@@ -50,35 +50,36 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
     public ErrorPageErrorHandler()
     {}
 
+    /* ------------------------------------------------------------ */
     @Override
     public String getErrorPage(HttpServletRequest request)
     {
         String error_page= null;
-        Class<?> exClass= (Class<?>)request.getAttribute(RequestDispatcher.ERROR_EXCEPTION_TYPE);
 
-        if (ServletException.class.equals(exClass))
+        Throwable th= (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
+
+        // Walk the cause hierarchy
+        while (error_page == null && th != null )
         {
+            Class<?> exClass=th.getClass();
             error_page= (String)_errorPages.get(exClass.getName());
-            if (error_page == null)
+
+            // walk the inheritance hierarchy
+            while (error_page == null)
             {
-                Throwable th= (Throwable)request.getAttribute(RequestDispatcher.ERROR_EXCEPTION);
-                while (th instanceof ServletException)
-                    th= ((ServletException)th).getRootCause();
-                if (th != null)
-                    exClass= th.getClass();
+                exClass= exClass.getSuperclass();
+                if (exClass==null)
+                    break;
+                error_page= (String)_errorPages.get(exClass.getName());
             }
-        }
 
-        while (error_page == null && exClass != null )
-        {
-            error_page= (String)_errorPages.get(exClass.getName());
-            exClass= exClass.getSuperclass();
+            th=(th instanceof ServletException)?((ServletException)th).getRootCause():null;
         }
 
         if (error_page == null)
         {
             // look for an exact code match
-            Integer code=(Integer)request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
+            Integer code=(Integer)request.getAttribute(Dispatcher.ERROR_STATUS_CODE);
             if (code!=null)
             {
                 error_page= (String)_errorPages.get(Integer.toString(code));
@@ -100,14 +101,13 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
             }
         }
 
-        //try new servlet 3.0 global error page
+        //try servlet 3.x global error page
         if (error_page == null)
-        {
             error_page = _errorPages.get(GLOBAL_ERROR_PAGE);
-        }
-
+        
         return error_page;
     }
+
 
     /* ------------------------------------------------------------ */
     /**

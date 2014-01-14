@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,9 +21,13 @@ package org.eclipse.jetty.websocket.common;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-import org.eclipse.jetty.websocket.common.Generator;
-import org.eclipse.jetty.websocket.common.OpCode;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
+import org.eclipse.jetty.websocket.common.frames.ContinuationFrame;
+import org.eclipse.jetty.websocket.common.frames.PingFrame;
+import org.eclipse.jetty.websocket.common.frames.PongFrame;
+import org.eclipse.jetty.websocket.common.frames.TextFrame;
+import org.eclipse.jetty.websocket.common.test.ByteBufferAssert;
+import org.eclipse.jetty.websocket.common.test.UnitGenerator;
 import org.junit.Test;
 
 public class RFC6455ExamplesGeneratorTest
@@ -33,13 +37,11 @@ public class RFC6455ExamplesGeneratorTest
     @Test
     public void testFragmentedUnmaskedTextMessage()
     {
-        WebSocketFrame text1 = WebSocketFrame.text("Hel").setFin(false);
-        WebSocketFrame text2 = new WebSocketFrame(OpCode.CONTINUATION).setPayload("lo");
+        WebSocketFrame text1 = new TextFrame().setPayload("Hel").setFin(false);
+        WebSocketFrame text2 = new ContinuationFrame().setPayload("lo");
 
-        Generator generator = new UnitGenerator();
-
-        ByteBuffer actual1 = generator.generate(text1);
-        ByteBuffer actual2 = generator.generate(text2);
+        ByteBuffer actual1 = UnitGenerator.generate(text1);
+        ByteBuffer actual2 = UnitGenerator.generate(text2);
 
         ByteBuffer expected1 = ByteBuffer.allocate(5);
 
@@ -61,14 +63,11 @@ public class RFC6455ExamplesGeneratorTest
     @Test
     public void testSingleMaskedPongRequest()
     {
-        WebSocketFrame pong = new WebSocketFrame(OpCode.PONG);
-        pong.setPayload("Hello");
+        PongFrame pong = new PongFrame().setPayload("Hello");
         pong.setMask(new byte[]
                 { 0x37, (byte)0xfa, 0x21, 0x3d });
 
-        Generator gen = new UnitGenerator();
-
-        ByteBuffer actual = gen.generate(pong);
+        ByteBuffer actual = UnitGenerator.generate(pong);
 
         ByteBuffer expected = ByteBuffer.allocate(11);
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
@@ -83,12 +82,11 @@ public class RFC6455ExamplesGeneratorTest
     @Test
     public void testSingleMaskedTextMessage()
     {
-        WebSocketFrame text = WebSocketFrame.text("Hello");
+        WebSocketFrame text = new TextFrame().setPayload("Hello");
         text.setMask(new byte[]
                 { 0x37, (byte)0xfa, 0x21, 0x3d });
 
-        Generator gen = new UnitGenerator();
-        ByteBuffer actual = gen.generate(text);
+        ByteBuffer actual = UnitGenerator.generate(text);
 
         ByteBuffer expected = ByteBuffer.allocate(11);
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
@@ -105,14 +103,12 @@ public class RFC6455ExamplesGeneratorTest
     {
         int dataSize = 256;
 
-        WebSocketFrame binary = WebSocketFrame.binary();
+        BinaryFrame binary = new BinaryFrame();
         byte payload[] = new byte[dataSize];
         Arrays.fill(payload,(byte)0x44);
-        binary.setPayload(payload);
+        binary.setPayload(ByteBuffer.wrap(payload));
 
-        Generator gen = new UnitGenerator();
-
-        ByteBuffer actual = gen.generate(binary);
+        ByteBuffer actual = UnitGenerator.generate(binary);
 
         ByteBuffer expected = ByteBuffer.allocate(dataSize + FUDGE);
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
@@ -136,14 +132,12 @@ public class RFC6455ExamplesGeneratorTest
     {
         int dataSize = 1024 * 64;
 
-        WebSocketFrame binary = WebSocketFrame.binary();
+        BinaryFrame binary = new BinaryFrame();
         byte payload[] = new byte[dataSize];
         Arrays.fill(payload,(byte)0x44);
-        binary.setPayload(payload);
+        binary.setPayload(ByteBuffer.wrap(payload));
 
-        Generator gen = new UnitGenerator();
-
-        ByteBuffer actual = gen.generate(binary);
+        ByteBuffer actual = UnitGenerator.generate(binary);
 
         ByteBuffer expected = ByteBuffer.allocate(dataSize + 10);
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
@@ -166,10 +160,9 @@ public class RFC6455ExamplesGeneratorTest
     @Test
     public void testSingleUnmaskedPingRequest() throws Exception
     {
-        WebSocketFrame ping = new WebSocketFrame(OpCode.PING).setPayload("Hello");
+        PingFrame ping = new PingFrame().setPayload("Hello");
 
-        Generator gen = new UnitGenerator();
-        ByteBuffer actual = gen.generate(ping);
+        ByteBuffer actual = UnitGenerator.generate(ping);
 
         ByteBuffer expected = ByteBuffer.allocate(10);
         expected.put(new byte[]
@@ -182,11 +175,9 @@ public class RFC6455ExamplesGeneratorTest
     @Test
     public void testSingleUnmaskedTextMessage()
     {
-        WebSocketFrame text = WebSocketFrame.text("Hello");
+        WebSocketFrame text = new TextFrame().setPayload("Hello");
 
-        Generator generator = new UnitGenerator();
-
-        ByteBuffer actual = generator.generate(text);
+        ByteBuffer actual = UnitGenerator.generate(text);
 
         ByteBuffer expected = ByteBuffer.allocate(10);
 

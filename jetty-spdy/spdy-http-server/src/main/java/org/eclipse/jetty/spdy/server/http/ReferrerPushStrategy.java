@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.spdy.api.Stream;
+import org.eclipse.jetty.spdy.http.HTTPSPDYHeader;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -40,23 +41,23 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * <p>A SPDY push strategy that auto-populates push metadata based on referrer URLs.<p>A typical request for a main
  * resource such as {@code index.html} is immediately followed by a number of requests for associated resources.
- * Associated resource requests will have a {@code Referer} HTTP header that points to {@code index.html}, which is
- * used to link the associated resource to the main resource.<p>However, also following a hyperlink generates a
- * HTTP request with a {@code Referer} HTTP header that points to {@code index.html}; therefore a proper value for
- * {@link #setReferrerPushPeriod(int)} has to be set. If the referrerPushPeriod for a main resource has elapsed,
- * no more associated resources will be added for that main resource.<p>This class distinguishes associated main
- * resources by their URL path suffix and content type. CSS stylesheets, images and JavaScript files have
- * recognizable URL path suffixes that are classified as associated resources. The suffix regexs can be configured by
- * constructor argument</p>
+ * Associated resource requests will have a {@code Referer} HTTP header that points to {@code index.html}, which is used
+ * to link the associated resource to the main resource.<p>However, also following a hyperlink generates a HTTP request
+ * with a {@code Referer} HTTP header that points to {@code index.html}; therefore a proper value for {@link
+ * #setReferrerPushPeriod(int)} has to be set. If the referrerPushPeriod for a main resource has elapsed, no more
+ * associated resources will be added for that main resource.<p>This class distinguishes associated main resources by
+ * their URL path suffix and content type. CSS stylesheets, images and JavaScript files have recognizable URL path
+ * suffixes that are classified as associated resources. The suffix regexs can be configured by constructor argument</p>
  * <p>When CSS stylesheets refer to images, the CSS image request will have the CSS stylesheet as referrer. This
  * implementation will push also the CSS image.<p>The push metadata built by this implementation is limited by the
- * number of pages of the application itself, and by the {@link #setMaxAssociatedResources(int)} max associated resources}
- * parameter. This parameter limits the number of associated resources per each main resource, so that if a main
- * resource has hundreds of associated resources, only up to the number specified by this parameter will be pushed.
+ * number of pages of the application itself, and by the {@link #setMaxAssociatedResources(int)} max associated
+ * resources} parameter. This parameter limits the number of associated resources per each main resource, so that if a
+ * main resource has hundreds of associated resources, only up to the number specified by this parameter will be
+ * pushed.
  */
 public class ReferrerPushStrategy implements PushStrategy
 {
-    private static final Logger logger = Log.getLogger(ReferrerPushStrategy.class);
+    private static final Logger LOG = Log.getLogger(ReferrerPushStrategy.class);
     private final ConcurrentMap<String, MainResource> mainResources = new ConcurrentHashMap<>();
     private final Set<Pattern> pushRegexps = new HashSet<>();
     private final Set<String> pushContentTypes = new HashSet<>();
@@ -159,14 +160,14 @@ public class ReferrerPushStrategy implements PushStrategy
         Set<String> result = Collections.<String>emptySet();
         short version = stream.getSession().getVersion();
         if (!isIfModifiedSinceHeaderPresent(requestHeaders) && isValidMethod(requestHeaders.get(HTTPSPDYHeader.METHOD
-                .name(version)).value()) && !isUserAgentBlacklisted(requestHeaders))
+                .name(version)).getValue()) && !isUserAgentBlacklisted(requestHeaders))
         {
-            String scheme = requestHeaders.get(HTTPSPDYHeader.SCHEME.name(version)).value();
-            String host = requestHeaders.get(HTTPSPDYHeader.HOST.name(version)).value();
+            String scheme = requestHeaders.get(HTTPSPDYHeader.SCHEME.name(version)).getValue();
+            String host = requestHeaders.get(HTTPSPDYHeader.HOST.name(version)).getValue();
             String origin = scheme + "://" + host;
-            String url = requestHeaders.get(HTTPSPDYHeader.URI.name(version)).value();
+            String url = requestHeaders.get(HTTPSPDYHeader.URI.name(version)).getValue();
             String absoluteURL = origin + url;
-            logger.debug("Applying push strategy for {}", absoluteURL);
+            LOG.debug("Applying push strategy for {}", absoluteURL);
             if (isMainResource(url, responseHeaders))
             {
                 MainResource mainResource = getOrCreateMainResource(absoluteURL);
@@ -177,7 +178,7 @@ public class ReferrerPushStrategy implements PushStrategy
                 Fields.Field referrerHeader = requestHeaders.get("referer");
                 if (referrerHeader != null)
                 {
-                    String referrer = referrerHeader.value();
+                    String referrer = referrerHeader.getValue();
                     MainResource mainResource = mainResources.get(referrer);
                     if (mainResource == null)
                         mainResource = getOrCreateMainResource(referrer);
@@ -189,7 +190,7 @@ public class ReferrerPushStrategy implements PushStrategy
                         result = getPushResources(absoluteURL);
                 }
             }
-            logger.debug("Pushing {} resources for {}: {}", result.size(), absoluteURL, result);
+            LOG.debug("Pushing {} resources for {}: {}", result.size(), absoluteURL, result);
         }
         return result;
     }
@@ -207,7 +208,7 @@ public class ReferrerPushStrategy implements PushStrategy
         MainResource mainResource = mainResources.get(absoluteURL);
         if (mainResource == null)
         {
-            logger.debug("Creating new main resource for {}", absoluteURL);
+            LOG.debug("Creating new main resource for {}", absoluteURL);
             MainResource value = new MainResource(absoluteURL);
             mainResource = mainResources.putIfAbsent(absoluteURL, value);
             if (mainResource == null)
@@ -236,7 +237,7 @@ public class ReferrerPushStrategy implements PushStrategy
         Fields.Field userAgentHeader = headers.get("user-agent");
         if (userAgentHeader != null)
             for (Pattern userAgentPattern : userAgentBlacklist)
-                if (userAgentPattern.matcher(userAgentHeader.value()).matches())
+                if (userAgentPattern.matcher(userAgentHeader.getValue()).matches())
                     return true;
         return false;
     }
@@ -251,7 +252,7 @@ public class ReferrerPushStrategy implements PushStrategy
                 if (header == null)
                     return true;
 
-                String contentType = header.value().toLowerCase(Locale.ENGLISH);
+                String contentType = header.getValue().toLowerCase(Locale.ENGLISH);
                 for (String pushContentType : pushContentTypes)
                     if (contentType.startsWith(pushContentType))
                         return true;
@@ -282,7 +283,7 @@ public class ReferrerPushStrategy implements PushStrategy
             long delay = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - firstResourceAdded.get());
             if (!referrer.startsWith(origin) && !isPushOriginAllowed(origin))
             {
-                logger.debug("Skipped store of push metadata {} for {}: Origin: {} doesn't match or origin not allowed",
+                LOG.debug("Skipped store of push metadata {} for {}: Origin: {} doesn't match or origin not allowed",
                         url, name, origin);
                 return false;
             }
@@ -292,17 +293,18 @@ public class ReferrerPushStrategy implements PushStrategy
             // although in rare cases few more resources will be stored
             if (resources.size() >= maxAssociatedResources)
             {
-                logger.debug("Skipped store of push metadata {} for {}: max associated resources ({}) reached",
+                LOG.debug("Skipped store of push metadata {} for {}: max associated resources ({}) reached",
                         url, name, maxAssociatedResources);
                 return false;
             }
             if (delay > referrerPushPeriod)
             {
-                logger.debug("Delay: {}ms longer than referrerPushPeriod: {}ms. Not adding resource: {} for: {}", delay, referrerPushPeriod, url, name);
+                LOG.debug("Delay: {}ms longer than referrerPushPeriod ({}ms). Not adding resource: {} for: {}", delay,
+                        referrerPushPeriod, url, name);
                 return false;
             }
 
-            logger.debug("Adding resource: {} for: {} with delay: {}ms.", url, name, delay);
+            LOG.debug("Adding: {} to: {} with delay: {}ms.", url, this, delay);
             resources.add(url);
             return true;
         }
@@ -314,7 +316,12 @@ public class ReferrerPushStrategy implements PushStrategy
 
         public String toString()
         {
-            return "MainResource: " + name + " associated resources:" + resources.size();
+            return String.format("%s@%x{name=%s,resources=%s}",
+                    getClass().getSimpleName(),
+                    hashCode(),
+                    name,
+                    resources
+            );
         }
 
         private boolean isPushOriginAllowed(String origin)

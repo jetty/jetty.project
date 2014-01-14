@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,8 +18,11 @@
 
 package org.eclipse.jetty.spdy.server.proxy;
 
+import static junit.framework.Assert.fail;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -61,10 +64,6 @@ import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-
-import static junit.framework.Assert.fail;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
 @RunWith(value = Parameterized.class)
 public class ProxySPDYToSPDYLoadTest
@@ -150,16 +149,10 @@ public class ProxySPDYToSPDYLoadTest
     @After
     public void destroy() throws Exception
     {
-        if (server != null)
-        {
-            server.stop();
-            server.join();
-        }
-        if (proxy != null)
-        {
-            proxy.stop();
-            proxy.join();
-        }
+        server.stop();
+        server.join();
+        proxy.stop();
+        proxy.join();
         factory.stop();
     }
 
@@ -203,13 +196,13 @@ public class ProxySPDYToSPDYLoadTest
             {
                 try
                 {
-                    Session client = factory.newSPDYClient(version).connect(proxyAddress, null).get(5, TimeUnit.SECONDS);
+                    Session client = factory.newSPDYClient(version).connect(proxyAddress, null);
                     for (int i = 0; i < requestsPerClient; i++)
                     {
                         sendSingleClientRequest(proxyAddress, client, serverIdentificationString, serverHost);
                     }
                 }
-                catch (InterruptedException | ExecutionException | TimeoutException | IOException e)
+                catch (InterruptedException | ExecutionException | TimeoutException e)
                 {
                     fail();
                     e.printStackTrace();
@@ -237,8 +230,8 @@ public class ProxySPDYToSPDYLoadTest
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
                 Fields headers = replyInfo.getHeaders();
-                assertThat("uuid matches expected uuid", headers.get(UUID_HEADER_NAME).value(), is(uuid));
-                assertThat("response comes from the given server", headers.get(SERVER_ID_HEADER).value(),
+                assertThat("uuid matches expected uuid", headers.get(UUID_HEADER_NAME).getValue(), is(uuid));
+                assertThat("response comes from the given server", headers.get(SERVER_ID_HEADER).getValue(),
                         is(serverIdentificationString));
                 replyLatch.countDown();
             }
@@ -271,7 +264,7 @@ public class ProxySPDYToSPDYLoadTest
         }
 
         @Override
-        public StreamFrameListener onSyn (Stream stream, SynInfo synInfo)
+        public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
         {
             Fields requestHeaders = synInfo.getHeaders();
             Assert.assertNotNull(requestHeaders.get("via"));
@@ -279,7 +272,7 @@ public class ProxySPDYToSPDYLoadTest
             Assert.assertNotNull(uuidHeader);
 
             Fields responseHeaders = new Fields();
-            responseHeaders.put(UUID_HEADER_NAME, uuidHeader.value());
+            responseHeaders.put(UUID_HEADER_NAME, uuidHeader.getValue());
             responseHeaders.put(SERVER_ID_HEADER, serverId);
             stream.reply(new ReplyInfo(responseHeaders, false), new Callback.Adapter());
             return new StreamFrameListener.Adapter()
