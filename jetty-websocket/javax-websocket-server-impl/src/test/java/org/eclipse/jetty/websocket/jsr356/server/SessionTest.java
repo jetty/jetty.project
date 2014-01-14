@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.servlet.DefaultServlet;
@@ -102,6 +103,7 @@ public class SessionTest
     public LeakTrackingBufferPool bufferPool = new LeakTrackingBufferPool("Test",new MappedByteBufferPool());
 
     private final Case testcase;
+    private final static AtomicInteger ID = new AtomicInteger(0);
     private WSServer server;
     private URI serverUri;
 
@@ -113,7 +115,7 @@ public class SessionTest
     @Before
     public void startServer() throws Exception
     {
-        server = new WSServer(MavenTestingUtils.getTargetTestingDir(SessionTest.class.getSimpleName()),"app");
+        server = new WSServer(MavenTestingUtils.getTargetTestingDir(SessionTest.class.getSimpleName() + "-" + ID.incrementAndGet()),"app");
         server.copyWebInf("empty-web.xml");
         server.copyClass(SessionInfoSocket.class);
         server.copyClass(SessionAltConfig.class);
