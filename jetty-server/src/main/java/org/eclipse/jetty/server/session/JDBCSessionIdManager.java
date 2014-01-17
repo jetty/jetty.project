@@ -299,7 +299,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
             if (_dbAdaptor == null)
                 throw new IllegalStateException ("No DBAdaptor");
             String longType = _dbAdaptor.getLongType();
-            return "alter table "+getTableName()+" add "+longType+" not null default "+MAX_INTERVAL_NOT_SET;
+            return "alter table "+getTableName()+" add "+getMaxIntervalColumn()+" "+longType+" not null default "+MAX_INTERVAL_NOT_SET;
         }
         
         private void checkNotNull(String s)
