@@ -42,6 +42,7 @@ import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.junit.Configuration;
 import org.ops4j.pax.exam.junit.JUnit4TestRunner;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 
 /**
@@ -70,6 +71,10 @@ public class TestJettyOSGiBootWithJsp
         options.add(CoreOptions.junitBundles());
         options.addAll(configureJettyHomeAndPort("jetty-selector.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*"));
+        options.add(CoreOptions.systemPackages("com.sun.org.apache.xalan.internal.res","com.sun.org.apache.xml.internal.utils",
+                                               "com.sun.org.apache.xml.internal.utils", "com.sun.org.apache.xpath.internal",
+                                               "com.sun.org.apache.xpath.internal.jaxp", "com.sun.org.apache.xpath.internal.objects"));
+     
         options.addAll(TestJettyOSGiBootCore.coreJettyDependencies());
 
         String logLevel = "WARN";
@@ -139,7 +144,7 @@ public class TestJettyOSGiBootWithJsp
         //jetty jsp bundles
         res.add(mavenBundle().groupId("javax.servlet.jsp").artifactId("javax.servlet.jsp-api").versionAsInProject());
         res.add(mavenBundle().groupId("org.eclipse.jetty.orbit").artifactId("javax.servlet.jsp.jstl").versionAsInProject());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.orbit").artifactId("org.apache.taglibs.standard.glassfish").versionAsInProject());
+        res.add(mavenBundle().groupId("org.glassfish.web").artifactId("javax.servlet.jsp.jstl").versionAsInProject());
         res.add(mavenBundle().groupId("org.glassfish").artifactId("javax.el").versionAsInProject());
         res.add(mavenBundle().groupId("org.eclipse.jetty.orbit").artifactId("org.eclipse.jdt.core").versionAsInProject());
         res.add(mavenBundle().groupId("org.eclipse.jetty.toolchain").artifactId("jetty-jsp-fragment").versionAsInProject().noStart());
@@ -155,7 +160,7 @@ public class TestJettyOSGiBootWithJsp
     @Test
     public void assertAllBundlesActiveOrResolved()
     {
-        TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
+        TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);        
     }
 
     // at the moment can't run httpservice with jsp at the same time.
@@ -166,6 +171,7 @@ public class TestJettyOSGiBootWithJsp
     {
         TestOSGiUtil.testHttpServiceGreetings(bundleContext, "http", TestJettyOSGiBootCore.DEFAULT_JETTY_HTTP_PORT);
     }
+
 
     @Test
     public void testJspDump() throws Exception

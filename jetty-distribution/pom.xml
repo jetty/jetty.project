@@ -440,10 +440,37 @@
             </goals>
             <configuration>
               <includeGroupIds>org.eclipse.jetty.orbit,org.glassfish.web, org.glassfish, javax.el, javax.servlet.jsp, org.eclipse.jetty.toolchain</includeGroupIds>
-              <includeArtifactIds>javax.servlet.jsp.jstl,org.apache.taglibs.standard.glassfish,org.eclipse.jdt.core, javax.servlet.jsp-api, javax.servlet.jsp, jetty-jsp-jdt, javax.el-api, javax.el</includeArtifactIds>
+              <includeArtifactIds>org.eclipse.jdt.core, javax.servlet.jsp-api, javax.servlet.jsp, jetty-jsp-jdt, javax.el-api, javax.el</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/jsp</outputDirectory>
             </configuration>
+          </execution>
+          <execution>
+           <id>copy-jstl-api</id>
+           <phase>generate-resources</phase>
+           <goals>
+             <goal>copy-dependencies</goal>
+           </goals>
+           <configuration>
+              <includeGroupIds>org.eclipse.jetty.orbit</includeGroupIds>
+              <includeArtifactIds>javax.servlet.jsp.jstl</includeArtifactIds>
+              <prependGroupId>true</prependGroupId>
+              <includeTypes>jar</includeTypes>
+              <outputDirectory>${assembly-directory}/lib/jsp</outputDirectory>
+           </configuration>
+          </execution>
+          <execution>
+           <id>copy-jstl-impl</id>
+           <phase>generate-resources</phase>
+           <goals>
+             <goal>copy-dependencies</goal>
+           </goals>
+           <configuration>
+              <includeGroupIds>org.glassfish.web</includeGroupIds>
+              <includeArtifactIds>javax.servlet.jsp.jstl</includeArtifactIds>
+              <includeTypes>jar</includeTypes>
+              <outputDirectory>${assembly-directory}/lib/jsp</outputDirectory>
+           </configuration>
           </execution>
           <execution>
             <id>copy-jaspi-deps</id>
@@ -571,9 +598,10 @@
       <groupId>org.eclipse.jetty.orbit</groupId>
       <artifactId>javax.security.auth.message</artifactId>
     </dependency>
+
     <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>org.apache.taglibs.standard.glassfish</artifactId>
+      <groupId>org.glassfish.web</groupId>
+      <artifactId>javax.servlet.jsp.jstl</artifactId>
     </dependency>
 
     <dependency>

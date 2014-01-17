@@ -531,17 +531,30 @@
 
     <!-- JSTL Impl -->
     <dependency>
-       <groupId>org.eclipse.jetty.orbit</groupId>
-       <artifactId>org.apache.taglibs.standard.glassfish</artifactId>
-       <version>1.2.0.v201112081803</version>
+       <groupId>org.glassfish.web</groupId>
+       <artifactId>javax.servlet.jsp.jstl</artifactId>
+       <version>1.2.2</version>
       <exclusions>
         <exclusion>
-          <groupId>org.eclipse.jetty.orbit</groupId>
-          <artifactId>javax.servlet</artifactId>
+          <groupId>javax.servlet.jsp.jstl</groupId>
+          <artifactId>jstl-api</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>javax.servlet</groupId>
+          <artifactId>servlet-api</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>javax.servlet.jsp</groupId>
+          <artifactId>jsp-api</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>javax.el</groupId>
+          <artifactId>el-api</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
 
+     <!-- JSTL API -->
       <dependency>
         <groupId>org.eclipse.jetty.orbit</groupId>
         <artifactId>javax.servlet.jsp.jstl</artifactId>
