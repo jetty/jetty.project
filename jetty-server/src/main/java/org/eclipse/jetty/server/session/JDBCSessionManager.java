@@ -95,49 +95,49 @@ public class JDBCSessionManager extends AbstractSessionManager
         /**
          * If dirty, session needs to be (re)persisted
          */
-        private boolean _dirty=false;
+        protected boolean _dirty=false;
         
         
         /**
          * Time in msec since the epoch that a session cookie was set for this session
          */
-        private long _cookieSet;
+        protected long _cookieSet;
         
         
         /**
          * Time in msec since the epoch that the session will expire
          */
-        private long _expiryTime;
+        protected long _expiryTime;
         
         
         /**
          * Time in msec since the epoch that the session was last persisted
          */
-        private long _lastSaved;
+        protected long _lastSaved;
         
         
         /**
          * Unique identifier of the last node to host the session
          */
-        private String _lastNode;
+        protected String _lastNode;
         
         
         /**
          * Virtual host for context (used to help distinguish 2 sessions with same id on different contexts)
          */
-        private String _virtualHost;
+        protected String _virtualHost;
         
         
         /**
          * Unique row in db for session
          */
-        private String _rowId;
+        protected String _rowId;
         
         
         /**
          * Mangled context name (used to help distinguish 2 sessions with same id on different contexts)
          */
-        private String _canonicalContext;
+        protected String _canonicalContext;
         
    
         /**
@@ -246,7 +246,8 @@ public class JDBCSessionManager extends AbstractSessionManager
         @Override
         public void setAttribute (String name, Object value)
         {
-            _dirty = (updateAttribute(name, value) || _dirty);
+            updateAttribute(name, value);
+            _dirty = true;
         }
 
         @Override
@@ -769,6 +770,20 @@ public class JDBCSessionManager extends AbstractSessionManager
     {
         return new Session(request);
     }
+    
+    
+    /**
+     * @param sessionId
+     * @param rowId
+     * @param created
+     * @param accessed
+     * @param maxInterval
+     * @return
+     */
+    protected AbstractSession newSession (String sessionId, String rowId, long created, long accessed, long maxInterval)
+    {
+        return new Session(sessionId, rowId, created, accessed, maxInterval);
+    }
 
     /* ------------------------------------------------------------ */
     /** Remove session from manager
@@ -892,7 +907,7 @@ public class JDBCSessionManager extends AbstractSessionManager
                         {
                             maxInterval = getMaxInactiveInterval(); //if value not saved for maxInactiveInterval, use current value from sessionmanager
                         }
-                        session = new Session(id, result.getString(_sessionTableSchema.getRowIdColumn()), 
+                        session = (Session)newSession(id, result.getString(_sessionTableSchema.getRowIdColumn()), 
                                                   result.getLong(_sessionTableSchema.getCreateTimeColumn()), 
                                                   result.getLong(_sessionTableSchema.getAccessTimeColumn()), 
                                                   maxInterval);
