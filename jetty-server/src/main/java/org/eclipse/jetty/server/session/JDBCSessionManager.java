@@ -495,6 +495,7 @@ public class JDBCSessionManager extends AbstractSessionManager
                             " interval="+(_saveIntervalSec * 1000L));
                 else
                     LOG.debug("getSession("+idInCluster+"): in session map, "+
+                            " hashcode="+memSession.hashCode()+
                             " now="+now+
                             " lastSaved="+(memSession==null?0:memSession._lastSaved)+
                             " interval="+(_saveIntervalSec * 1000L)+
@@ -566,7 +567,11 @@ public class JDBCSessionManager extends AbstractSessionManager
 
                 }
                 else
+                {
+                    //the session loaded from the db and the one in memory are the same, so keep using the one in memory
+                    session = memSession;
                     LOG.debug("getSession({}): Session not stale {}", idInCluster,session);
+                }
             }
             else
             {
@@ -1100,7 +1105,7 @@ public class JDBCSessionManager extends AbstractSessionManager
             data.setLastSaved(now);
         }
         if (LOG.isDebugEnabled())
-            LOG.debug("Updated access time session id="+data.getId());
+            LOG.debug("Updated access time session id="+data.getId()+" with lastsaved="+data.getLastSaved());
     }
 
 
