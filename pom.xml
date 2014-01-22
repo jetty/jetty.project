@@ -665,14 +665,12 @@
     > mvn -N site:sshdeploy     (for ssh users w/passphrase and ssh-agent)
    -->
   <profiles>
-<!--
     <profile>
       <id>eclipse-release</id>
       <modules>
         <module>aggregates/jetty-all</module>
       </modules>
     </profile>
--->
     <profile>
       <id>ci</id>
       <modules>
