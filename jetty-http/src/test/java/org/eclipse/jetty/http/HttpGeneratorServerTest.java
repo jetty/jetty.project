@@ -18,6 +18,15 @@
 
 package org.eclipse.jetty.http;
 
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
+import org.eclipse.jetty.util.BufferUtil;
+import org.junit.Assert;
+import org.junit.Test;
+
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.either;
 import static org.hamcrest.Matchers.equalTo;
@@ -27,14 +36,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
-import org.eclipse.jetty.util.BufferUtil;
-import org.junit.Test;
 
 public class HttpGeneratorServerTest
 {
@@ -365,8 +366,7 @@ public class HttpGeneratorServerTest
 
         HttpGenerator gen = new HttpGenerator();
 
-        HttpGenerator.Result
-                result = gen.generateResponse(null, null, null, null, true);
+        HttpGenerator.Result result = gen.generateResponse(null, null, null, null, true);
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
@@ -399,8 +399,7 @@ public class HttpGeneratorServerTest
 
         HttpGenerator gen = new HttpGenerator();
 
-        HttpGenerator.Result
-                result = gen.generateResponse(null, null, null, null, true);
+        HttpGenerator.Result result = gen.generateResponse(null, null, null, null, true);
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
@@ -495,9 +494,7 @@ public class HttpGeneratorServerTest
         ByteBuffer content1 = BufferUtil.toBuffer("The quick brown fox jumped over the lazy dog. ");
         HttpGenerator gen = new HttpGenerator();
 
-        HttpGenerator.Result
-
-                result = gen.generateResponse(null, null, null, content0, false);
+        HttpGenerator.Result result = gen.generateResponse(null, null, null, content0, false);
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
@@ -540,15 +537,12 @@ public class HttpGeneratorServerTest
     @Test
     public void test100ThenResponseWithContent() throws Exception
     {
-
         ByteBuffer header = BufferUtil.allocate(4096);
         ByteBuffer content0 = BufferUtil.toBuffer("Hello World! ");
         ByteBuffer content1 = BufferUtil.toBuffer("The quick brown fox jumped over the lazy dog. ");
         HttpGenerator gen = new HttpGenerator();
 
-        HttpGenerator.Result
-
-                result = gen.generateResponse(HttpGenerator.CONTINUE_100_INFO, null, null, null, false);
+        HttpGenerator.Result result = gen.generateResponse(HttpGenerator.CONTINUE_100_INFO, null, null, null, false);
         assertEquals(HttpGenerator.Result.NEED_HEADER, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
@@ -562,7 +556,6 @@ public class HttpGeneratorServerTest
         assertEquals(HttpGenerator.State.START, gen.getState());
 
         assertThat(out, containsString("HTTP/1.1 100 Continue"));
-
 
         result = gen.generateResponse(null, null, null, content0, false);
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
@@ -602,5 +595,23 @@ public class HttpGeneratorServerTest
         assertThat(out, not(containsString("chunked")));
         assertThat(out, containsString("Content-Length: 59"));
         assertThat(out, containsString("\r\n\r\nHello World! The quick brown fox jumped over the lazy dog. "));
+    }
+
+    @Test
+    public void testConnectionKeepAliveWithAdditionalCustomValue() throws Exception
+    {
+        HttpGenerator generator = new HttpGenerator();
+
+        HttpFields fields = new HttpFields();
+        fields.put(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE);
+        String customValue = "test";
+        fields.add(HttpHeader.CONNECTION, customValue);
+        ResponseInfo info = new ResponseInfo(HttpVersion.HTTP_1_0, fields, -1, 200, "OK", false);
+        ByteBuffer header = BufferUtil.allocate(4096);
+        HttpGenerator.Result result = generator.generateResponse(info, header, null, null, true);
+        Assert.assertSame(HttpGenerator.Result.FLUSH, result);
+        String headers = BufferUtil.toString(header);
+        Assert.assertTrue(headers.contains(HttpHeaderValue.KEEP_ALIVE.asString()));
+        Assert.assertTrue(headers.contains(customValue));
     }
 }

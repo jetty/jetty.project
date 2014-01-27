@@ -825,7 +825,7 @@ public class HttpGenerator
                     header.put(CONNECTION_KEEP_ALIVE);
                 else
                 {
-                    header.put(CONNECTION_KEEP_ALIVE,0,CONNECTION_CLOSE.length-2);
+                    header.put(CONNECTION_KEEP_ALIVE,0,CONNECTION_KEEP_ALIVE.length-2);
                     header.put((byte)',');
                     header.put(StringUtil.getBytes(connection.toString()));
                     header.put(CRLF);
@@ -833,7 +833,7 @@ public class HttpGenerator
             }
             else if (connection!=null)
             {
-                header.put(CONNECTION_);
+                header.put(HttpHeader.CONNECTION.getBytesColonSpace());
                 header.put(StringUtil.getBytes(connection.toString()));
                 header.put(CRLF);
             }
@@ -872,7 +872,6 @@ public class HttpGenerator
     private static final byte[] CONTENT_LENGTH_0 = StringUtil.getBytes("Content-Length: 0\015\012");
     private static final byte[] CONNECTION_KEEP_ALIVE = StringUtil.getBytes("Connection: keep-alive\015\012");
     private static final byte[] CONNECTION_CLOSE = StringUtil.getBytes("Connection: close\015\012");
-    private static final byte[] CONNECTION_ = StringUtil.getBytes("Connection: ");
     private static final byte[] HTTP_1_1_SPACE = StringUtil.getBytes(HttpVersion.HTTP_1_1+" ");
     private static final byte[] CRLF = StringUtil.getBytes("\015\012");
     private static final byte[] TRANSFER_ENCODING_CHUNKED = StringUtil.getBytes("Transfer-Encoding: chunked\015\012");
