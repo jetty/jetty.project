@@ -76,7 +76,7 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
         fillInterested();
     }
 
-    protected boolean isClosed()
+    public boolean isClosed()
     {
         return closed.get();
     }

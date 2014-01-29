@@ -48,6 +48,7 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Destination;
@@ -58,12 +59,16 @@ import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
 import org.eclipse.jetty.client.http.HttpDestinationOverHTTP;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.BytesContentProvider;
+import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
+import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
@@ -1072,5 +1077,83 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 .send();
 
         Assert.assertEquals(200, response.getStatus());
+    }
+
+    @Test
+    public void testHTTP10WithKeepAliveAndContentLength() throws Exception
+    {
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                // Send the headers at this point, then write the content
+                byte[] content = "TEST".getBytes("UTF-8");
+                response.setContentLength(content.length);
+                response.flushBuffer();
+                response.getOutputStream().write(content);
+            }
+        });
+
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .version(HttpVersion.HTTP_1_0)
+                .header(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString())
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertTrue(response.getHeaders().contains(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString()));
+    }
+
+    @Test
+    public void testHTTP10WithKeepAliveAndNoContentLength() throws Exception
+    {
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                // Send the headers at this point, then write the content
+                response.flushBuffer();
+                response.getOutputStream().print("TEST");
+            }
+        });
+
+        FuturePromise<Connection> promise = new FuturePromise<>();
+        Destination destination = client.getDestination(scheme, "localhost", connector.getLocalPort());
+        destination.newConnection(promise);
+        try (Connection connection = promise.get(5, TimeUnit.SECONDS))
+        {
+            long timeout = 5000;
+            Request request = client.newRequest(destination.getHost(), destination.getPort())
+                    .scheme(destination.getScheme())
+                    .version(HttpVersion.HTTP_1_0)
+                    .header(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString())
+                    .timeout(timeout, TimeUnit.MILLISECONDS);
+
+            FutureResponseListener listener = new FutureResponseListener(request);
+            connection.send(request, listener);
+            ContentResponse response = listener.get(2 * timeout, TimeUnit.MILLISECONDS);
+
+            Assert.assertEquals(200, response.getStatus());
+            Assert.assertTrue(((HttpConnectionOverHTTP)connection).isClosed());
+        }
+    }
+
+    @Test
+    public void testHTTP10WithKeepAliveAndNoContent() throws Exception
+    {
+        start(new EmptyServerHandler());
+
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .version(HttpVersion.HTTP_1_0)
+                .header(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString())
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertTrue(response.getHeaders().contains(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString()));
     }
 }

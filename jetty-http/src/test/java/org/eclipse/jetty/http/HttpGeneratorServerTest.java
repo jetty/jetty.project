@@ -294,7 +294,7 @@ public class HttpGeneratorServerTest
                             assertEquals(t, tr[r]._body, this._content);
 
                         if (v == 10)
-                            assertTrue(t, gen.isPersistent() || tr[r]._contentLength >= 0 || c == 2 || c == 0);
+                            assertTrue(t, gen.isPersistent() || tr[r]._contentLength >= 0 || c == 2 || c == 1 || c == 0);
                         else
                             assertTrue(t, gen.isPersistent() || c == 2 || c == 3);
 
