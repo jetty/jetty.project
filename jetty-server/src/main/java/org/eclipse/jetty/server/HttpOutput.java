@@ -680,20 +680,39 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             Throwable th=_onError;
             _onError=null;
-            _writeListener.onError(th);
+            _writeListener.onError(new IOException(th));
             close();
         }
-        if (_state.get()==OutputState.READY)
+        switch(_state.get())
         {
-            try
-            {
-                _writeListener.onWritePossible();
-            }
-            catch (Throwable e)
-            {
-                _writeListener.onError(e);
-                close();
-            }
+            case READY:
+                try
+                {
+                    _writeListener.onWritePossible();
+                }
+                catch (Throwable e)
+                {
+                    _writeListener.onError(e);
+                    close();
+                }
+                break;
+                
+            case CLOSED:
+                try
+                {
+                    // even though a write is not possible, because a close has 
+                    // occurred, we need to call onWritePossible to tell async
+                    // producer that the last write completed.
+                    _writeListener.onWritePossible();
+                }
+                catch (Throwable e)
+                {
+                    _writeListener.onError(e);
+                }
+                break;
+                
+            default:
+                    
         }
     }
     
@@ -722,7 +741,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                             break;
 
                         case CLOSED:
-                            _onError=new EofException("Closed");
+                            _channel.getState().onWritePossible();
                             break;
 
                         default:
