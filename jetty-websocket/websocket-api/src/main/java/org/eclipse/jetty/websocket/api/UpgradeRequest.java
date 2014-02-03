@@ -262,7 +262,8 @@ public class UpgradeRequest
 
     public void setCookies(List<HttpCookie> cookies)
     {
-        this.cookies = cookies;
+        this.cookies.clear();
+        this.cookies.addAll(cookies);
     }
 
     public void setExtensions(List<ExtensionConfig> configs)

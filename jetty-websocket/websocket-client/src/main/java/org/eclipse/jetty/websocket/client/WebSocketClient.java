@@ -264,7 +264,7 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
         }
 
         super.doStop();
-        LOG.info("Stopped {}",this);
+        LOG.debug("Stopped {}",this);
     }
 
     /**
