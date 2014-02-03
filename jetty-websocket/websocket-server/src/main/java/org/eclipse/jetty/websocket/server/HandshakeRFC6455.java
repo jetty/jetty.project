@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.server;
 
 import java.io.IOException;
-
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
@@ -65,5 +64,6 @@ public class HandshakeRFC6455 implements WebSocketHandshake
         }
 
         response.setStatus(HttpServletResponse.SC_SWITCHING_PROTOCOLS);
+        response.complete();
     }
 }

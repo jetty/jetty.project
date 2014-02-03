@@ -27,6 +27,7 @@ import javax.websocket.ClientEndpointConfig;
 import javax.websocket.ContainerProvider;
 import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
+import javax.websocket.HandshakeResponse;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
@@ -104,6 +105,62 @@ public class CookiesTest
             public void beforeRequest(Map<String, List<String>> headers)
             {
                 headers.put("Cookie", Collections.singletonList(cookieString));
+            }
+        });
+        ClientEndpointConfig config = builder.build();
+
+        Endpoint endPoint = new Endpoint()
+        {
+            @Override
+            public void onOpen(Session session, EndpointConfig config)
+            {
+            }
+        };
+
+        Session session = container.connectToServer(endPoint, config, URI.create("ws://localhost:" + connector.getLocalPort()));
+        session.close();
+    }
+
+    @Test
+    public void testCookiesAreSentToClient() throws Exception
+    {
+        final String cookieName = "name";
+        final String cookieValue = "value";
+        final String cookieDomain = "domain";
+        final String cookiePath = "/path";
+        startServer(new EchoHandler()
+        {
+            @Override
+            public Object createWebSocket(ServletUpgradeRequest request, ServletUpgradeResponse response)
+            {
+                String cookieString = cookieName + "=" + cookieValue + ";Domain=" + cookieDomain + ";Path=" + cookiePath;
+                response.getHeaders().put("Set-Cookie", Collections.singletonList(cookieString));
+                return super.createWebSocket(request, response);
+            }
+        });
+
+        WebSocketContainer container = ContainerProvider.getWebSocketContainer();
+
+        ClientEndpointConfig.Builder builder = ClientEndpointConfig.Builder.create();
+        builder.configurator(new ClientEndpointConfig.Configurator()
+        {
+            @Override
+            public void afterResponse(HandshakeResponse response)
+            {
+                Map<String, List<String>> headers = response.getHeaders();
+                // Test case insensitivity
+                Assert.assertTrue(headers.containsKey("set-cookie"));
+                List<String> values = headers.get("Set-Cookie");
+                Assert.assertNotNull(values);
+                Assert.assertEquals(1, values.size());
+
+                List<HttpCookie> cookies = HttpCookie.parse(values.get(0));
+                Assert.assertEquals(1, cookies.size());
+                HttpCookie cookie = cookies.get(0);
+                Assert.assertEquals(cookieName, cookie.getName());
+                Assert.assertEquals(cookieValue, cookie.getValue());
+                Assert.assertEquals(cookieDomain, cookie.getDomain());
+                Assert.assertEquals(cookiePath, cookie.getPath());
             }
         });
         ClientEndpointConfig config = builder.build();

@@ -32,7 +32,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.Executor;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -187,7 +186,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
             if (websocketPojo == null)
             {
                 // no creation, sorry
-                response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+                sockresp.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE, "Endpoint Creation Failed");
                 return false;
             }
 
