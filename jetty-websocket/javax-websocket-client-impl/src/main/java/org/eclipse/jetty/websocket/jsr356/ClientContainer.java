@@ -30,7 +30,6 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
-
 import javax.websocket.ClientEndpoint;
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.DeploymentException;
@@ -187,6 +186,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     @Override
     protected void doStop() throws Exception
     {
+        ShutdownThread.deregister(this);
         endpointClientMetadataCache.clear();
         super.doStop();
     }
