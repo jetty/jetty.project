@@ -1,0 +1,16 @@
+# The XMLs we expect (order is important)
+
+# The LIBs we expect (order is irrelevant)
+
+# The Properties we expect (order is irrelevant)
+PROP|jetty.port=9090
+PROP|jetty.keystore=etc/keystore
+PROP|jetty.keystore.password=friendly
+PROP|jetty.keymanager.password=icecream
+PROP|jetty.truststore=etc/keystore
+PROP|jetty.truststore.password=sundae
+PROP|java.version=1.7.0_01
+
+# The Downloads
+
+# The Bootlib

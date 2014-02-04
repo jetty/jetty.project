@@ -572,7 +572,7 @@ public class Main
 
         args.setAllModules(modules);
         List<Module> activeModules = modules.resolveEnabled();
-
+        
         // 7) Lib & XML Expansion / Resolution
         args.expandModules(baseHome,activeModules);
 

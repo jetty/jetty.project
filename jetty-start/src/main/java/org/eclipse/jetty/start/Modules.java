@@ -39,6 +39,13 @@ import java.util.regex.Pattern;
 public class Modules implements Iterable<Module>
 {
     private Map<String, Module> modules = new HashMap<>();
+    /*
+     * modules that may appear in the resolved graph but are undefined in the module system
+     * 
+     * ex: modules/npn/npn-1.7.0_01.mod (property expansion resolves to non-existent file)
+     */
+    private Set<String> missingModules = new HashSet<String>();
+    
     private int maxDepth = -1;
 
     private Set<String> asNameSet(Set<Module> moduleSet)
@@ -110,7 +117,7 @@ public class Modules implements Iterable<Module>
 
                 if (parent == null)
                 {
-                    System.err.printf("WARNING: module not found [%s]%n",parentName);
+                    StartLog.debug("module not found [%s]%n",parentName);
                 }
                 else
                 {
@@ -124,7 +131,7 @@ public class Modules implements Iterable<Module>
                 Module optional = get(optionalParentName);
                 if (optional == null)
                 {
-                    System.err.printf("WARNING: module not found [%s]%n",optionalParentName);
+                    StartLog.debug("optional module not found [%s]%n",optionalParentName);
                 }
                 else if (optional.isEnabled())
                 {
@@ -285,12 +292,12 @@ public class Modules implements Iterable<Module>
         }
     }
 
-    private void findParents(Module module, Set<Module> ret)
+    private void findParents(Module module, Map<String, Module> ret)
     {
-        ret.add(module);
+        ret.put(module.getName(), module);
         for (Module parent : module.getParentEdges())
         {
-            ret.add(parent);
+            ret.put(parent.getName(), parent);
             findParents(parent,ret);
         }
     }
@@ -370,7 +377,7 @@ public class Modules implements Iterable<Module>
         }
 
         // load missing post-expanded dependent modules
-        boolean done = false;
+        boolean done = false;     
         while (!done)
         {
             done = true;
@@ -380,7 +387,7 @@ public class Modules implements Iterable<Module>
             {
                 for (String parent : m.getParentNames())
                 {
-                    if (modules.containsKey(parent))
+                    if (modules.containsKey(parent) || missingModules.contains(parent))
                     {
                         continue; // found. skip it.
                     }
@@ -392,8 +399,16 @@ public class Modules implements Iterable<Module>
             for (String missingParent : missingParents)
             {
                 File file = basehome.getFile("modules/" + missingParent + ".mod");
-                Module module = registerModule(basehome,args,file);
-                updateParentReferencesTo(module);
+                if ( FS.canReadFile(file) )
+                {
+                    Module module = registerModule(basehome,args,file);
+                    updateParentReferencesTo(module);
+                }
+                else
+                {
+                    StartLog.debug("Missing module definition: [ Mod: %s | File: %s]", missingParent, file);
+                    missingModules.add(missingParent);
+                }
             }
         }
     }
@@ -425,7 +440,7 @@ public class Modules implements Iterable<Module>
      */
     public List<Module> resolveEnabled()
     {
-        Set<Module> active = new HashSet<Module>();
+        Map<String, Module> active = new HashMap<String,Module>();
 
         for (Module module : modules.values())
         {
@@ -435,18 +450,37 @@ public class Modules implements Iterable<Module>
             }
         }
 
+        /*
+         * check against the missing modules
+         * 
+         * Ex: npn should match anything under npn/
+         */
+        for ( String missing : missingModules )
+        {
+            for (String activeModule: active.keySet())
+            {                
+                if ( missing.startsWith(activeModule) )
+                {
+                    StartLog.warn("** Unable to continue, required dependency missing. [%s]", missing);
+                    StartLog.warn("** As configured, Jetty is unable to start due to a missing enabled module dependency.");
+                    StartLog.warn("** This may be due to a transitive dependency akin to spdy on npn, which resolves based on the JDK in use.");
+                    return Collections.emptyList();
+                }
+            }
+        }
+        
         List<Module> ordered = new ArrayList<>();
-        ordered.addAll(active);
+        ordered.addAll(active.values());
         Collections.sort(ordered,new Module.DepthComparator());
         return ordered;
     }
 
     public Set<String> resolveParentModulesOf(String moduleName)
     {
-        Set<Module> ret = new HashSet<>();
+        Map<String,Module> ret = new HashMap<>();
         Module module = get(moduleName);
         findParents(module,ret);
-        return asNameSet(ret);
+        return ret.keySet();
     }
 
     private String toIndent(int depth)
