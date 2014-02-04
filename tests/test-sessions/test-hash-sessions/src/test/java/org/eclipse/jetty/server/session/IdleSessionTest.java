@@ -38,6 +38,8 @@ import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.Test;
 
 
@@ -49,6 +51,7 @@ import org.junit.Test;
  */
 public class IdleSessionTest
 {
+    
     public class IdleHashTestServer extends HashTestServer
     {
         private int _idlePeriod;
@@ -108,7 +111,8 @@ public class IdleSessionTest
         int inactivePeriod = 200;
         int scavengePeriod = 3;
         int idlePeriod = 5;
-
+        ((StdErrLog)Log.getLogger(org.eclipse.jetty.server.session.HashedSession.class)).setHideStacks(true);
+        System.setProperty("org.eclipse.jetty.STACKS", "false");
         File storeDir = new File (System.getProperty("java.io.tmpdir"), "idle-test");
         storeDir.deleteOnExit();
 
@@ -135,10 +139,10 @@ public class IdleSessionTest
             sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
             //and wait until the session should be idled out
-            pause(scavengePeriod * 2);
+            pause(idlePeriod * 2);
 
             //check that the file exists
-            checkSessionIdled(storeDir);
+            checkSessionIdled(storeDir, getSessionId(sessionCookie));
 
             //make another request to de-idle the session
             Request request = client.newRequest(url + "?action=test");
@@ -149,6 +153,23 @@ public class IdleSessionTest
             //check session de-idled
             checkSessionDeIdled(storeDir);
 
+            //wait again for the session to be idled
+            pause(idlePeriod * 2);
+            
+            //check that it is
+            checkSessionIdled(storeDir, getSessionId(sessionCookie));
+            
+          
+            //delete the file
+            File idleFile = getIdleFile(storeDir, getSessionId(sessionCookie));
+            assertTrue(idleFile.exists());
+            assertTrue(idleFile.delete());
+            
+            //make a request
+            request = client.newRequest(url + "?action=testfail");
+            request.getHeaders().add("Cookie", sessionCookie);
+            response2 = request.send();
+            assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
         }
         finally
         {
@@ -158,13 +179,14 @@ public class IdleSessionTest
     }
 
 
-    public void checkSessionIdled (File sessionDir)
+    public void checkSessionIdled (File sessionDir, String sessionId)
     {
         assertNotNull(sessionDir);
         assertTrue(sessionDir.exists());
         String[] files = sessionDir.list();
         assertNotNull(files);
         assertEquals(1, files.length);
+        assertEquals(sessionId, files[0]);
     }
 
 
@@ -176,7 +198,23 @@ public class IdleSessionTest
         assertNotNull(files);
         assertEquals(0, files.length);
     }
+    
+    public File getIdleFile (File sessionDir, String sessionId)
+    {
+        assertNotNull(sessionDir);
+        assertTrue(sessionDir.exists());
+        String[] files = sessionDir.list();
+        assertNotNull(files);      
+        return new File(sessionDir, files[0]);
+    }
 
+    public String getSessionId (String sessionCookie)
+    {
+        assertNotNull(sessionCookie);
+        String sessionId = sessionCookie.substring(11);
+        sessionId = sessionId.substring(0, sessionId.indexOf(';'));
+        return sessionId;
+    }
 
     public static class TestServlet extends HttpServlet
     {
@@ -200,6 +238,11 @@ public class IdleSessionTest
                 assertTrue(originalId.equals(session.getId()));
                 assertEquals("test", session.getAttribute("test"));
                 assertTrue(!((HashedSession)session).isIdled());
+            }
+            else if ("testfail".equals(action))
+            {
+                HttpSession session = request.getSession(false);
+                assertTrue(session == null);
             }
         }
     }

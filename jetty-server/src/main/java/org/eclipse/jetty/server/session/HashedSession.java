@@ -50,6 +50,12 @@ public class HashedSession extends AbstractSession
      * due to serialization failures that are most likely caused by user
      * data stored in the session that is not serializable. */
     private transient boolean _saveFailed = false;
+    
+    /**
+     * True if an attempt has been made to de-idle a session and it failed. Once
+     * true, the session will not be attempted to be de-idled again.
+     */
+    private transient boolean _deIdleFailed = false;
 
     /* ------------------------------------------------------------- */
     protected HashedSession(HashSessionManager hashSessionManager, HttpServletRequest request)
@@ -68,7 +74,7 @@ public class HashedSession extends AbstractSession
     /* ------------------------------------------------------------- */
     protected void checkValid()
     {
-        if (_hashSessionManager._idleSavePeriodMs!=0)
+        if (!_deIdleFailed && _hashSessionManager._idleSavePeriodMs!=0)
             deIdle();
         super.checkValid();
     }
@@ -196,7 +202,7 @@ public class HashedSession extends AbstractSession
     /* ------------------------------------------------------------ */
     public synchronized void deIdle()
     {
-        if (isIdled())
+        if (isIdled() && !_deIdleFailed)
         {
             // Access now to prevent race with idling period
             access(System.currentTimeMillis());
@@ -225,6 +231,7 @@ public class HashedSession extends AbstractSession
             }
             catch (Exception e)
             {
+                deIdleFailed();
                 LOG.warn("Problem de-idling session " + super.getId(), e);
                 if (fis != null) IO.close(fis);//Must ensure closed before invalidate
                 invalidate();
@@ -265,4 +272,15 @@ public class HashedSession extends AbstractSession
         _saveFailed = true;
     }
 
+    /* ------------------------------------------------------------ */
+    public synchronized void deIdleFailed()
+    {
+        _deIdleFailed = true;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public synchronized boolean isDeIdleFailed()
+    {
+        return _deIdleFailed;
+    }
 }
