@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,7 +28,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -39,11 +35,13 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.io.NetworkTrafficListener;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.server.nio.NetworkTrafficSelectChannelConnector;
 import org.eclipse.jetty.util.BufferUtil;
 import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 @Ignore
 public class NetworkTrafficListenerTest
@@ -51,13 +49,13 @@ public class NetworkTrafficListenerTest
     private static final byte END_OF_CONTENT = '~';
 
     private Server server;
-    private NetworkTrafficSelectChannelConnector connector;
+    private NetworkTrafficServerConnector connector;
 
     public void initConnector(Handler handler) throws Exception
     {
         server = new Server();
 
-        connector = new NetworkTrafficSelectChannelConnector(server);
+        connector = new NetworkTrafficServerConnector(server);
         connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendDateHeader(false);
         connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendServerVersion(false);
         server.addConnector(connector);
@@ -121,9 +119,9 @@ public class NetworkTrafficListenerTest
             }
         });
 
-        final AtomicReference<String> incomingData = new AtomicReference<String>();
+        final AtomicReference<String> incomingData = new AtomicReference<>();
         final CountDownLatch incomingLatch = new CountDownLatch(1);
-        final AtomicReference<String> outgoingData = new AtomicReference<String>("");
+        final AtomicReference<String> outgoingData = new AtomicReference<>("");
         final CountDownLatch outgoingLatch = new CountDownLatch(1);
         connector.addNetworkTrafficListener(new NetworkTrafficListener.Adapter()
         {
@@ -186,9 +184,9 @@ public class NetworkTrafficListenerTest
             }
         });
 
-        final AtomicReference<String> incomingData = new AtomicReference<String>();
+        final AtomicReference<String> incomingData = new AtomicReference<>();
         final CountDownLatch incomingLatch = new CountDownLatch(1);
-        final AtomicReference<String> outgoingData = new AtomicReference<String>("");
+        final AtomicReference<String> outgoingData = new AtomicReference<>("");
         final CountDownLatch outgoingLatch = new CountDownLatch(2);
         connector.addNetworkTrafficListener(new NetworkTrafficListener.Adapter()
         {
@@ -253,9 +251,9 @@ public class NetworkTrafficListenerTest
             }
         });
 
-        final AtomicReference<String> incomingData = new AtomicReference<String>();
+        final AtomicReference<String> incomingData = new AtomicReference<>();
         final CountDownLatch incomingLatch = new CountDownLatch(1);
-        final AtomicReference<String> outgoingData = new AtomicReference<String>("");
+        final AtomicReference<String> outgoingData = new AtomicReference<>("");
         final CountDownLatch outgoingLatch = new CountDownLatch(4);
         connector.addNetworkTrafficListener(new NetworkTrafficListener.Adapter()
         {
@@ -319,9 +317,9 @@ public class NetworkTrafficListenerTest
             }
         });
 
-        final AtomicReference<String> incomingData = new AtomicReference<String>();
+        final AtomicReference<String> incomingData = new AtomicReference<>();
         final CountDownLatch incomingLatch = new CountDownLatch(1);
-        final AtomicReference<String> outgoingData = new AtomicReference<String>("");
+        final AtomicReference<String> outgoingData = new AtomicReference<>("");
         final CountDownLatch outgoingLatch = new CountDownLatch(1);
         connector.addNetworkTrafficListener(new NetworkTrafficListener.Adapter()
         {
@@ -393,8 +391,8 @@ public class NetworkTrafficListenerTest
             }
         });
 
-        final AtomicReference<String> incomingData = new AtomicReference<String>("");
-        final AtomicReference<String> outgoingData = new AtomicReference<String>("");
+        final AtomicReference<String> incomingData = new AtomicReference<>("");
+        final AtomicReference<String> outgoingData = new AtomicReference<>("");
         final CountDownLatch outgoingLatch = new CountDownLatch(1);
         connector.addNetworkTrafficListener(new NetworkTrafficListener.Adapter()
         {
