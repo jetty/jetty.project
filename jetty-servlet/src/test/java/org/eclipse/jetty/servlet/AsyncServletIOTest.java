@@ -32,10 +32,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.AsyncContext;
+import javax.servlet.AsyncEvent;
+import javax.servlet.AsyncListener;
 import javax.servlet.ReadListener;
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
+import javax.servlet.ServletResponse;
 import javax.servlet.WriteListener;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -55,7 +58,9 @@ import org.junit.Test;
 // TODO need  these on SPDY as well!
 public class AsyncServletIOTest 
 {    
-    protected AsyncIOServlet _servlet=new AsyncIOServlet();
+    protected AsyncIOServlet _servlet0=new AsyncIOServlet();
+    protected AsyncIOServlet2 _servlet2=new AsyncIOServlet2();
+    
     protected int _port;
 
     protected Server _server = new Server();
@@ -74,9 +79,16 @@ public class AsyncServletIOTest
         context.setContextPath("/ctx");
         _server.setHandler(context);
         _servletHandler=context.getServletHandler();
-        ServletHolder holder=new ServletHolder(_servlet);
+        
+        
+        ServletHolder holder=new ServletHolder(_servlet0);
         holder.setAsyncSupported(true);
         _servletHandler.addServletWithMapping(holder,"/path/*");
+        
+        ServletHolder holder2=new ServletHolder(_servlet2);
+        holder.setAsyncSupported(true);
+        _servletHandler.addServletWithMapping(holder2,"/path2/*");
+        
         _server.start();
         _port=_connector.getLocalPort();
 
@@ -145,6 +157,56 @@ public class AsyncServletIOTest
     {
         process("Hello!!!\r\n",10);
     }
+    
+
+    @Test
+    public void testAsync2() throws Exception
+    {
+        StringBuilder request = new StringBuilder(512);
+        request.append("GET /ctx/path2/info HTTP/1.1\r\n")
+        .append("Host: localhost\r\n")
+        .append("Connection: close\r\n")
+        .append("\r\n");
+        
+        int port=_port;
+        List<String> list = new ArrayList<>();
+        try (Socket socket = new Socket("localhost",port);)
+        {
+            socket.setSoTimeout(1000000);
+            OutputStream out = socket.getOutputStream();
+            out.write(request.toString().getBytes("ISO-8859-1"));
+            
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()),102400);
+            
+            // response line
+            String line = in.readLine();
+            // System.err.println("resp: "+line);
+            Assert.assertThat(line,Matchers.startsWith("HTTP/1.1 200 OK"));
+            
+            // Skip headers
+            while (line!=null)
+            {
+                line = in.readLine();
+                // System.err.println("line: "+line);
+                if (line.length()==0)
+                    break;
+            }
+
+            // Get body slowly
+            while (true)
+            {
+                line = in.readLine();
+                // System.err.println("body: "+line);
+                if (line==null)
+                    break;
+                list.add(line);
+            }
+        }
+
+        Assert.assertEquals(list.get(0),"data");
+        Assert.assertEquals(_servlet2.completed.get(),1);
+    }
+
     
     
     protected void assertContains(String content,String response)
@@ -298,7 +360,7 @@ public class AsyncServletIOTest
                             throw new IllegalStateException();
                         
                         // System.err.println("ODA");
-                        while (in.isReady())
+                        while (in.isReady() && !in.isFinished())
                         {
                             _oda.incrementAndGet();
                             int len=in.read(_buf);
@@ -374,4 +436,85 @@ public class AsyncServletIOTest
             });
         }
     }
+    
+    
+
+    public class AsyncIOServlet2 extends HttpServlet
+    {
+        public AtomicInteger completed = new AtomicInteger(0);
+        
+        @Override
+        public void doGet(final HttpServletRequest request, final HttpServletResponse response) throws IOException
+        {
+            new SampleAsycListener(request,response);
+        }
+
+        class SampleAsycListener implements WriteListener, AsyncListener
+        {
+            final ServletResponse response;
+            final ServletOutputStream servletOutputStream;
+            final AsyncContext asyncContext;
+
+            SampleAsycListener(HttpServletRequest request,HttpServletResponse response) throws IOException
+            {
+                asyncContext = request.startAsync();
+                asyncContext.setTimeout(10000L);
+                asyncContext.addListener(this);
+                servletOutputStream = response.getOutputStream();
+                servletOutputStream.setWriteListener(this);
+                this.response=response;
+            }
+
+            volatile boolean written=false;
+            @Override
+            public void onWritePossible() throws IOException
+            {
+                if (!written)
+                {
+                    written=true;
+                    response.setContentLength(5);
+                    servletOutputStream.write("data\n".getBytes());
+                }
+               
+                if (servletOutputStream.isReady())
+                {
+                    asyncContext.complete();
+                }
+            }
+
+            @Override
+            public void onError(final Throwable t)
+            {
+                t.printStackTrace();
+                asyncContext.complete();
+            }
+
+            @Override
+            public void onComplete(final AsyncEvent event) throws IOException
+            {
+                completed.incrementAndGet();
+            }
+
+            @Override
+            public void onTimeout(final AsyncEvent event) throws IOException
+            {
+                asyncContext.complete();
+            }
+
+            @Override
+            public void onError(final AsyncEvent event) throws IOException
+            {
+                asyncContext.complete();
+            }
+
+            @Override
+            public void onStartAsync(AsyncEvent event) throws IOException
+            {
+
+            }
+
+        }
+    }
+    
+    
 }

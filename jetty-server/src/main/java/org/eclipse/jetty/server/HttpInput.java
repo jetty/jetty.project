@@ -313,7 +313,9 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
         boolean finished;
         synchronized (lock())
         {
-            if (_listener == null)
+            if (_contentState.isEOF())
+                return true;
+            if (_listener == null )
                 return true;
             if (available() > 0)
                 return true;
