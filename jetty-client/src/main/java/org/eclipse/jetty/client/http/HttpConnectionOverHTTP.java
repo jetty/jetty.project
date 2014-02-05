@@ -120,7 +120,7 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
     @Override
     public void close()
     {
-        if (closed.compareAndSet(false, true))
+        if (softClose())
         {
             getHttpDestination().close(this);
             getEndPoint().shutdownOutput();
@@ -128,6 +128,11 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
             getEndPoint().close();
             LOG.debug("{} closed", this);
         }
+    }
+
+    public boolean softClose()
+    {
+        return closed.compareAndSet(false, true);
     }
 
     @Override
