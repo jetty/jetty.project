@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.servlet;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -28,9 +26,10 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -55,14 +54,14 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+
 // TODO need  these on SPDY as well!
 public class AsyncServletIOTest 
 {    
     protected AsyncIOServlet _servlet0=new AsyncIOServlet();
     protected AsyncIOServlet2 _servlet2=new AsyncIOServlet2();
-    
     protected int _port;
-
     protected Server _server = new Server();
     protected ServletHandler _servletHandler;
     protected ServerConnector _connector;
@@ -75,7 +74,7 @@ public class AsyncServletIOTest
         _connector = new ServerConnector(_server,new HttpConnectionFactory(http_config));
         
         _server.setConnectors(new Connector[]{ _connector });
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SECURITY|ServletContextHandler.NO_SESSIONS);
+        ServletContextHandler context = new ServletContextHandler();
         context.setContextPath("/ctx");
         _server.setHandler(context);
         _servletHandler=context.getServletHandler();
@@ -157,7 +156,6 @@ public class AsyncServletIOTest
     {
         process("Hello!!!\r\n",10);
     }
-    
 
     @Test
     public void testAsync2() throws Exception
@@ -170,7 +168,7 @@ public class AsyncServletIOTest
         
         int port=_port;
         List<String> list = new ArrayList<>();
-        try (Socket socket = new Socket("localhost",port);)
+        try (Socket socket = new Socket("localhost",port))
         {
             socket.setSoTimeout(1000000);
             OutputStream out = socket.getOutputStream();
@@ -204,19 +202,7 @@ public class AsyncServletIOTest
         }
 
         Assert.assertEquals(list.get(0),"data");
-        Assert.assertEquals(_servlet2.completed.get(),1);
-    }
-
-    
-    
-    protected void assertContains(String content,String response)
-    {
-        Assert.assertThat(response,Matchers.containsString(content));
-    }
-    
-    protected void assertNotContains(String content,String response)
-    {
-        Assert.assertThat(response,Matchers.not(Matchers.containsString(content)));
+        Assert.assertTrue(_servlet2.completed.await(5, TimeUnit.SECONDS));
     }
 
     public synchronized List<String> process(String content,int... writes) throws Exception
@@ -245,14 +231,14 @@ public class AsyncServletIOTest
         .append("Connection: close\r\n");
         
         if (content!=null)
-            request.append("Content-Length: "+content.length+"\r\n")
+            request.append("Content-Length: ").append(content.length).append("\r\n")
             .append("Content-Type: text/plain\r\n");
         
         request.append("\r\n");
         
         int port=_port;
         List<String> list = new ArrayList<>();
-        try (Socket socket = new Socket("localhost",port);)
+        try (Socket socket = new Socket("localhost",port))
         {
             socket.setSoTimeout(1000000);
             OutputStream out = socket.getOutputStream();
@@ -328,9 +314,9 @@ public class AsyncServletIOTest
         private static final long serialVersionUID = -8161977157098646562L;
         
         public AsyncIOServlet()
-        {}
+        {
+        }
         
-        /* ------------------------------------------------------------ */
         @Override
         public void doGet(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
         {
@@ -436,12 +422,10 @@ public class AsyncServletIOTest
             });
         }
     }
-    
-    
 
     public class AsyncIOServlet2 extends HttpServlet
     {
-        public AtomicInteger completed = new AtomicInteger(0);
+        public CountDownLatch completed = new CountDownLatch(1);
         
         @Override
         public void doGet(final HttpServletRequest request, final HttpServletResponse response) throws IOException
@@ -454,6 +438,7 @@ public class AsyncServletIOTest
             final ServletResponse response;
             final ServletOutputStream servletOutputStream;
             final AsyncContext asyncContext;
+            volatile boolean written=false;
 
             SampleAsycListener(HttpServletRequest request,HttpServletResponse response) throws IOException
             {
@@ -465,7 +450,6 @@ public class AsyncServletIOTest
                 this.response=response;
             }
 
-            volatile boolean written=false;
             @Override
             public void onWritePossible() throws IOException
             {
@@ -492,7 +476,7 @@ public class AsyncServletIOTest
             @Override
             public void onComplete(final AsyncEvent event) throws IOException
             {
-                completed.incrementAndGet();
+                completed.countDown();
             }
 
             @Override
@@ -512,9 +496,6 @@ public class AsyncServletIOTest
             {
 
             }
-
         }
     }
-    
-    
 }
