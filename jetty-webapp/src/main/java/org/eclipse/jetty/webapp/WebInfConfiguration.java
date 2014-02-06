@@ -397,6 +397,9 @@ public class WebInfConfiguration extends AbstractConfiguration
                 web_app = context.newResource(war);
             else
                 web_app=context.getBaseResource();
+            
+            if (web_app == null)
+                throw new IllegalStateException("No resourceBase or war set for context");
 
             // Accept aliases for WAR files
             if (web_app.getAlias() != null)
@@ -603,7 +606,7 @@ public class WebInfConfiguration extends AbstractConfiguration
             if (resource == null)
             {
                 if (context.getWar()==null || context.getWar().length()==0)
-                    resource=context.newResource(context.getResourceBase());
+                   throw new IllegalStateException("No resourceBase or war set for context");
 
                 // Set dir or WAR
                 resource = context.newResource(context.getWar());
@@ -621,7 +624,8 @@ public class WebInfConfiguration extends AbstractConfiguration
         }
         catch (Exception e)
         {
-            LOG.warn("Can't generate resourceBase as part of webapp tmp dir name", e);
+            LOG.warn("Can't generate resourceBase as part of webapp tmp dir name: " + e);
+            LOG.debug(e);
         }
 
         //Context name
