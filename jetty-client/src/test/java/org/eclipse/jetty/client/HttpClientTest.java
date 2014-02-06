@@ -1137,6 +1137,10 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             ContentResponse response = listener.get(2 * timeout, TimeUnit.MILLISECONDS);
 
             Assert.assertEquals(200, response.getStatus());
+            // The parser notifies end-of-content and therefore the CompleteListener
+            // before closing the connection, so we need to wait before checking
+            // that the connection is closed to avoid races.
+            Thread.sleep(1000);
             Assert.assertTrue(((HttpConnectionOverHTTP)connection).isClosed());
         }
     }
