@@ -79,7 +79,7 @@ public class MessageInputStream extends InputStream implements MessageAppender
             int capacity = framePayload.remaining();
             // TODO: the copy buffer should be pooled too, but no buffer pool available from here.
             ByteBuffer copy = framePayload.isDirect() ? ByteBuffer.allocateDirect(capacity) : ByteBuffer.allocate(capacity);
-            copy.put(framePayload);
+            copy.put(framePayload).flip();
             buffers.put(copy);
         }
         catch (InterruptedException e)
