@@ -59,6 +59,8 @@ public class LeakTrackingByteBufferPool extends ContainerLifeCycle implements By
     @Override
     public void release(ByteBuffer buffer)
     {
+        if (buffer == null)
+            return;
         if (!leakDetector.released(buffer))
             LOG.warn("ByteBuffer {}@{} released but not acquired", buffer, System.identityHashCode(buffer));
         delegate.release(buffer);
