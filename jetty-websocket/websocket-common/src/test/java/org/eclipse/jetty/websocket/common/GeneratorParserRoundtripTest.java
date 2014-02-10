@@ -18,27 +18,30 @@
 
 package org.eclipse.jetty.websocket.common;
 
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
+import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPool;
 import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class GeneratorParserRoundtripTest
 {
+    @Rule
+    public LeakTrackingBufferPool bufferPool = new LeakTrackingBufferPool("Test",new MappedByteBufferPool());
+    
     @Test
     public void testParserAndGenerator() throws Exception
     {
         WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
-        ByteBufferPool bufferPool = new MappedByteBufferPool();
         Generator gen = new Generator(policy,bufferPool);
         Parser parser = new Parser(policy,bufferPool);
         IncomingFramesCapture capture = new IncomingFramesCapture();
@@ -77,7 +80,6 @@ public class GeneratorParserRoundtripTest
     @Test
     public void testParserAndGeneratorMasked() throws Exception
     {
-        ByteBufferPool bufferPool = new MappedByteBufferPool();
         Generator gen = new Generator(WebSocketPolicy.newClientPolicy(),bufferPool);
         Parser parser = new Parser(WebSocketPolicy.newServerPolicy(),bufferPool);
         IncomingFramesCapture capture = new IncomingFramesCapture();

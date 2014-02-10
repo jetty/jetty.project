@@ -32,7 +32,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.Executor;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -96,6 +95,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     private final String supportedVersions;
     private final WebSocketPolicy defaultPolicy;
     private final EventDriverFactory eventDriverFactory;
+    private final ByteBufferPool bufferPool;
     private final WebSocketExtensionFactory extensionFactory;
     private List<SessionFactory> sessionFactories;
     private Set<WebSocketSession> openSessions = new CopyOnWriteArraySet<>();
@@ -111,6 +111,11 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     {
         this(policy,new MappedByteBufferPool());
     }
+    
+    public WebSocketServerFactory(ByteBufferPool bufferPool)
+    {
+        this(WebSocketPolicy.newServerPolicy(),bufferPool);
+    }
 
     public WebSocketServerFactory(WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
@@ -121,7 +126,8 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
 
         this.defaultPolicy = policy;
         this.eventDriverFactory = new EventDriverFactory(defaultPolicy);
-        this.extensionFactory = new WebSocketExtensionFactory(defaultPolicy,bufferPool);
+        this.bufferPool = bufferPool;
+        this.extensionFactory = new WebSocketExtensionFactory(defaultPolicy,this.bufferPool);
         this.sessionFactories = new ArrayList<>();
         this.sessionFactories.add(new WebSocketSessionFactory(this));
         this.creator = this;
@@ -180,7 +186,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
             if (websocketPojo == null)
             {
                 // no creation, sorry
-                response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+                sockresp.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE, "Endpoint Creation Failed");
                 return false;
             }
 
@@ -228,7 +234,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     @Override
     public WebSocketServletFactory createFactory(WebSocketPolicy policy)
     {
-        return new WebSocketServerFactory(policy);
+        return new WebSocketServerFactory(policy,bufferPool);
     }
 
     private WebSocketSession createSession(URI requestURI, EventDriver websocket, LogicalConnection connection)

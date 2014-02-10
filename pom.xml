@@ -531,17 +531,30 @@
 
     <!-- JSTL Impl -->
     <dependency>
-       <groupId>org.eclipse.jetty.orbit</groupId>
-       <artifactId>org.apache.taglibs.standard.glassfish</artifactId>
-       <version>1.2.0.v201112081803</version>
+       <groupId>org.glassfish.web</groupId>
+       <artifactId>javax.servlet.jsp.jstl</artifactId>
+       <version>1.2.2</version>
       <exclusions>
         <exclusion>
-          <groupId>org.eclipse.jetty.orbit</groupId>
-          <artifactId>javax.servlet</artifactId>
+          <groupId>javax.servlet.jsp.jstl</groupId>
+          <artifactId>jstl-api</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>javax.servlet</groupId>
+          <artifactId>servlet-api</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>javax.servlet.jsp</groupId>
+          <artifactId>jsp-api</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>javax.el</groupId>
+          <artifactId>el-api</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
 
+     <!-- JSTL API -->
       <dependency>
         <groupId>org.eclipse.jetty.orbit</groupId>
         <artifactId>javax.servlet.jsp.jstl</artifactId>
@@ -589,7 +602,7 @@
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
         <artifactId>jetty-test-helper</artifactId>
-        <version>2.5</version>
+        <version>2.7</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
@@ -652,14 +665,12 @@
     > mvn -N site:sshdeploy     (for ssh users w/passphrase and ssh-agent)
    -->
   <profiles>
-<!--
     <profile>
       <id>eclipse-release</id>
       <modules>
         <module>aggregates/jetty-all</module>
       </modules>
     </profile>
--->
     <profile>
       <id>ci</id>
       <modules>
@@ -902,6 +913,18 @@
                 <property>
                     <name>java.version</name>
                     <value>1.7.0_45</value>
+                </property>
+            </activation>
+            <properties>
+                <npn.version>1.1.6.v20130911</npn.version>
+            </properties>
+        </profile>
+        <profile>
+           <id>7u51</id>
+            <activation>
+                <property>
+                    <name>java.version</name>
+                    <value>1.7.0_51</value>
                 </property>
             </activation>
             <properties>

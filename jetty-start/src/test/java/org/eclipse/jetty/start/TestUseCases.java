@@ -62,9 +62,22 @@ public class TestUseCases
     }
 
     @Test
+    public void testWithMissingNpnVersion() throws Exception
+    {
+        assertUseCase("home","base.missing.npn.version","assert-missing-npn-version.txt","java.version=1.7.0_01");
+    }
+    
+    @Test
     public void testWithSpdy() throws Exception
     {
         assertUseCase("home","base.enable.spdy","assert-enable-spdy.txt","java.version=1.7.0_21");
+    }
+    
+    @Test
+    public void testWithSpdyBadNpnVersion() throws Exception
+    {
+        //StartLog.enableDebug(); 
+        assertUseCase("home","base.enable.spdy.bad.npn.version","assert-enable-spdy-bad-npn-version.txt","java.version=1.7.0_01");
     }
 
     @Test

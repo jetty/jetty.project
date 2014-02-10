@@ -348,7 +348,7 @@ public class HttpOutputTest
         assertThat(response,containsString("Content-Length"));
         assertThat(response,containsString("400\tThis is a big file"));
     }
-    
+
     @Test
     public void testWriteLargeKnown() throws Exception
     {
@@ -546,6 +546,22 @@ public class HttpOutputTest
         assertThat(response,Matchers.not(containsString("Content-Length")));
         assertThat(response,containsString("400\tThis is a big file"));
     }
+
+    @Test
+    public void testAsyncWriteSimpleKnown() throws Exception
+    {
+        final Resource big = Resource.newClassPathResource("simple/simple.txt");
+        
+        _handler._async=true;
+        _handler._writeLengthIfKnown=true;
+        _handler._content=BufferUtil.toBuffer(big,false);
+        _handler._arrayBuffer=new byte[4000];
+        
+        String response=_connector.getResponses("GET / HTTP/1.0\nHost: localhost:80\n\n");
+        assertThat(response,containsString("HTTP/1.1 200 OK"));
+        assertThat(response,containsString("Content-Length: 11"));
+        assertThat(response,containsString("simple text"));
+    }
     
     static class ContentHandler extends AbstractHandler
     {
@@ -664,7 +680,6 @@ public class HttpOutputTest
                                 BufferUtil.flipToFlush(_byteBuffer,0);
                                 out.write(_byteBuffer);
                             }
-                            Assert.assertFalse(out.isReady());
                         }
 
                         @Override

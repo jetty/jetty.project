@@ -27,6 +27,7 @@ import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
@@ -179,9 +180,12 @@ public class HttpProxy extends ProxyConfiguration.Proxy
                     HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
                     HttpClient client = destination.getHttpClient();
                     ClientConnectionFactory sslConnectionFactory = new SslClientConnectionFactory(client.getSslContextFactory(), client.getByteBufferPool(), client.getExecutor(), connectionFactory);
-                    org.eclipse.jetty.io.Connection oldConnection = endPoint.getConnection();
+                    HttpConnectionOverHTTP oldConnection = (HttpConnectionOverHTTP)endPoint.getConnection();
                     org.eclipse.jetty.io.Connection newConnection = sslConnectionFactory.newConnection(endPoint, context);
                     Helper.replaceConnection(oldConnection, newConnection);
+                    // Avoid setting fill interest in the old Connection,
+                    // without closing the underlying EndPoint.
+                    oldConnection.softClose();
                     LOG.debug("HTTP tunnel established: {} over {}", oldConnection, newConnection);
                 }
                 catch (Throwable x)

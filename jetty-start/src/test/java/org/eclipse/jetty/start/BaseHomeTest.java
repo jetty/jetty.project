@@ -18,10 +18,7 @@
 
 package org.eclipse.jetty.start;
 
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.startsWith;
+import static org.hamcrest.Matchers.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -43,6 +40,15 @@ public class BaseHomeTest
             actual.add(hb.toShortForm(file));
         }
         Assert.assertThat(message + ": " + Main.join(actual,", "),actual,containsInAnyOrder(expected.toArray()));
+    }
+
+    private void toOsSeparators(List<String> expected)
+    {
+        for (int i = 0; i < expected.size(); i++)
+        {
+            String fixed = FS.separators(expected.get(i));
+            expected.set(i,fixed);
+        }
     }
 
     @Test
@@ -76,6 +82,7 @@ public class BaseHomeTest
         expected.add("${jetty.home}/start.d/jsp.ini");
         expected.add("${jetty.home}/start.d/logging.ini");
         expected.add("${jetty.home}/start.d/ssl.ini");
+        toOsSeparators(expected);
 
         assertFileList(hb,"Files found",expected,files);
     }
@@ -95,6 +102,7 @@ public class BaseHomeTest
         expected.add("${jetty.home}/start.d/jsp.ini");
         expected.add("${jetty.home}/start.d/logging.ini");
         expected.add("${jetty.home}/start.d/ssl.ini");
+        toOsSeparators(expected);
 
         assertFileList(hb,"Files found",expected,files);
     }
@@ -115,6 +123,7 @@ public class BaseHomeTest
         expected.add("${jetty.base}/start.d/logging.ini");
         expected.add("${jetty.home}/start.d/ssl.ini");
         expected.add("${jetty.base}/start.d/myapp.ini");
+        toOsSeparators(expected);
 
         assertFileList(hb,"Files found",expected,files);
     }

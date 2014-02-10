@@ -94,6 +94,11 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
     {
         this(null,executor);
     }
+    
+    public WebSocketClient(ByteBufferPool bufferPool)
+    {
+        this(null,null,bufferPool);
+    }
 
     public WebSocketClient(SslContextFactory sslContextFactory)
     {
@@ -102,10 +107,15 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
 
     public WebSocketClient(SslContextFactory sslContextFactory, Executor executor)
     {
+        this(sslContextFactory,executor,new MappedByteBufferPool());
+    }
+    
+    public WebSocketClient(SslContextFactory sslContextFactory, Executor executor, ByteBufferPool bufferPool)
+    {
         this.executor = executor;
         this.sslContextFactory = sslContextFactory;
         this.policy = WebSocketPolicy.newClientPolicy();
-        this.bufferPool = new MappedByteBufferPool();
+        this.bufferPool = bufferPool;
         this.extensionRegistry = new WebSocketExtensionFactory(policy,bufferPool);
         this.masker = new RandomMasker();
         this.eventDriverFactory = new EventDriverFactory(policy);
@@ -254,7 +264,7 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
         }
 
         super.doStop();
-        LOG.info("Stopped {}",this);
+        LOG.debug("Stopped {}",this);
     }
 
     /**

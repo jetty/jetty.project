@@ -24,10 +24,10 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.eclipse.jetty.util.B64Code;
@@ -44,15 +44,17 @@ import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
  */
 public class ClientUpgradeRequest extends UpgradeRequest
 {
-    private final static Logger LOG = Log.getLogger(ClientUpgradeRequest.class);
-    private final static int MAX_KEYS = -1; // maximum number of parameter keys to decode
+    private static final Logger LOG = Log.getLogger(ClientUpgradeRequest.class);
+    private static final int MAX_KEYS = -1; // maximum number of parameter keys to decode
     private static final Set<String> FORBIDDEN_HEADERS;
 
     static
     {
-        // headers not allowed to be set in ClientUpgradeRequest.headers
-        FORBIDDEN_HEADERS = new HashSet<>();
+        // Headers not allowed to be set in ClientUpgradeRequest.headers.
+        FORBIDDEN_HEADERS = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+        // Cookies are handled explicitly, avoid to add them twice.
         FORBIDDEN_HEADERS.add("cookie");
+        // Headers that cannot be set by applications.
         FORBIDDEN_HEADERS.add("upgrade");
         FORBIDDEN_HEADERS.add("host");
         FORBIDDEN_HEADERS.add("connection");
@@ -176,7 +178,7 @@ public class ClientUpgradeRequest extends UpgradeRequest
         {
             if (FORBIDDEN_HEADERS.contains(key))
             {
-                LOG.warn("Skipping forbidden header - {}",key);
+                LOG.debug("Skipping forbidden header - {}",key);
                 continue; // skip
             }
             request.append(key).append(": ");

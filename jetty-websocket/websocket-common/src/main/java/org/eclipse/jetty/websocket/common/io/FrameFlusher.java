@@ -358,16 +358,9 @@ public class FrameFlusher
                 headerBuffer = null;
             }
 
-            if (!frame.hasPayload())
-            {
-                return;
-            }
-
             if (frame instanceof DataFrame)
             {
-                // TODO null payload within frame
-                DataFrame data = (DataFrame)frame;
-                data.releaseBuffer();
+                ((DataFrame)frame).reset();
             }
         }
 

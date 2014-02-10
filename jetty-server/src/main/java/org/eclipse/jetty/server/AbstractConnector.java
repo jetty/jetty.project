@@ -189,9 +189,10 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         for (ConnectionFactory factory:factories)
             addConnectionFactory(factory);
 
-        if (acceptors<0)
-            acceptors=Math.max(1,(Runtime.getRuntime().availableProcessors()) / 2);
-        if (acceptors > 2 * Runtime.getRuntime().availableProcessors())
+        int cores = Runtime.getRuntime().availableProcessors();
+        if (acceptors < 0)
+            acceptors = 1 + cores / 16;
+        if (acceptors > 2 * cores)
             LOG.warn("Acceptors should be <= 2*availableProcessors: " + this);
         _acceptors = new Thread[acceptors];
     }

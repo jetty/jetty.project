@@ -319,7 +319,7 @@ public class ServletHandler extends ScopedHandler
     }
 
     /* ------------------------------------------------------------ */
-    IdentityService getIdentityService()
+    protected IdentityService getIdentityService()
     {
         return _identityService;
     }
@@ -647,7 +647,7 @@ public class ServletHandler extends ScopedHandler
     }
 
     /* ------------------------------------------------------------ */
-    private FilterChain getFilterChain(Request baseRequest, String pathInContext, ServletHolder servletHolder)
+    protected FilterChain getFilterChain(Request baseRequest, String pathInContext, ServletHolder servletHolder)
     {
         String key=pathInContext==null?servletHolder.getName():pathInContext;
         int dispatch = FilterMapping.dispatch(baseRequest.getDispatcherType());
@@ -735,7 +735,7 @@ public class ServletHandler extends ScopedHandler
     }
 
     /* ------------------------------------------------------------ */
-    private void invalidateChainsCache()
+    protected void invalidateChainsCache()
     {
         if (_chainLRU[FilterMapping.REQUEST]!=null)
         {

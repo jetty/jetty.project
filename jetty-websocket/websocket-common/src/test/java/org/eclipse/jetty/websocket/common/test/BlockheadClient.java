@@ -133,6 +133,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames, Connecti
         LOG.debug("WebSocket URI: {}",destWebsocketURI);
         LOG.debug("     HTTP URI: {}",destHttpURI);
 
+        // This is a blockhead client, no point tracking leaks on this object.
         this.bufferPool = new MappedByteBufferPool(8192);
         this.generator = new Generator(policy,bufferPool);
         this.parser = new Parser(policy,bufferPool);

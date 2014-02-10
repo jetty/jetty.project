@@ -56,37 +56,42 @@ import org.eclipse.jetty.websocket.common.frames.TextFrame;
  */
 public abstract class WebSocketFrame implements Frame
 {
-    public static WebSocketFrame copy(Frame copy)
+    public static WebSocketFrame copy(Frame original)
     {
-        WebSocketFrame frame = null;
-        switch (copy.getOpCode())
+        WebSocketFrame copy;
+        switch (original.getOpCode())
         {
             case OpCode.BINARY:
-                frame = new BinaryFrame();
+                copy = new BinaryFrame();
                 break;
             case OpCode.TEXT:
-                frame = new TextFrame();
+                copy = new TextFrame();
                 break;
             case OpCode.CLOSE:
-                frame = new CloseFrame();
+                copy = new CloseFrame();
                 break;
             case OpCode.CONTINUATION:
-                frame = new ContinuationFrame();
+                copy = new ContinuationFrame();
                 break;
             case OpCode.PING:
-                frame = new PingFrame();
+                copy = new PingFrame();
                 break;
             case OpCode.PONG:
-                frame = new PongFrame();
+                copy = new PongFrame();
                 break;
             default:
-                throw new IllegalArgumentException("Cannot copy frame with opcode " + copy.getOpCode() + " - " + copy);
+                throw new IllegalArgumentException("Cannot copy frame with opcode " + original.getOpCode() + " - " + original);
         }
 
-        frame.copyHeaders(copy);
-        frame.setPayload(copy.getPayload());
-
-        return frame;
+        copy.copyHeaders(original);
+        ByteBuffer payload = original.getPayload();
+        if (payload != null)
+        {
+            ByteBuffer payloadCopy = ByteBuffer.allocate(payload.remaining());
+            payloadCopy.put(payload.slice()).flip();
+            copy.setPayload(payloadCopy);
+        }
+        return copy;
     }
 
     /**
@@ -122,12 +127,6 @@ public abstract class WebSocketFrame implements Frame
     }
 
     public abstract void assertValid();
-
-    protected void copy(WebSocketFrame copy, ByteBuffer payload)
-    {
-        copyHeaders(copy);
-        setPayload(payload);
-    }
 
     protected void copyHeaders(Frame frame)
     {
@@ -348,13 +347,7 @@ public abstract class WebSocketFrame implements Frame
      */
     public WebSocketFrame setPayload(ByteBuffer buf)
     {
-        if (buf == null)
-        {
-            data = null;
-            return this;
-        }
-
-        data = buf.slice();
+        data = buf;
         return this;
     }
 

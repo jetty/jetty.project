@@ -208,7 +208,7 @@ public class ServerConnector extends AbstractNetworkConnector
         @Name("factories") ConnectionFactory... factories)
     {
         super(server,executor,scheduler,bufferPool,acceptors,factories);
-        _manager = new ServerConnectorManager(getExecutor(), getScheduler(), selectors >= 0 ? selectors : Runtime.getRuntime().availableProcessors());
+        _manager = new ServerConnectorManager(getExecutor(), getScheduler(), selectors > 0 ? selectors : Runtime.getRuntime().availableProcessors());
         addBean(_manager, true);
     }
 

@@ -21,6 +21,8 @@ package org.eclipse.jetty.server.handler;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
@@ -2258,11 +2260,46 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
        }
 
 
-        @Override
-        public ClassLoader getClassLoader()
-        {
-            AccessController.checkPermission(new RuntimePermission("getClassLoader"));
-            return _classLoader;
+       @Override
+       public ClassLoader getClassLoader()
+       {
+           if (!_enabled)
+               throw new UnsupportedOperationException();
+           
+           //no security manager just return the classloader
+           if (System.getSecurityManager() == null)
+               return _classLoader;
+           else
+           {
+               //check to see if the classloader of the caller is the same as the context
+               //classloader, or a parent of it
+               try
+               {
+                   Class reflect = Loader.loadClass(getClass(), "sun.reflect.Reflection");
+                   Method getCallerClass = reflect.getMethod("getCallerClass", Integer.TYPE);
+                   Class caller = (Class)getCallerClass.invoke(null, 2);
+
+                   boolean ok = false;
+                   ClassLoader callerLoader = caller.getClassLoader();
+                   while (!ok && callerLoader != null)
+                   {
+                       if (callerLoader == _classLoader) 
+                           ok = true;
+                       else
+                           callerLoader = callerLoader.getParent();    
+                   }
+
+                   if (ok)
+                       return _classLoader;
+               }
+               catch (Exception e)      
+               {
+                   LOG.warn("Unable to check classloader of caller",e);
+               }
+              
+               AccessController.checkPermission(new RuntimePermission("getClassLoader"));
+               return _classLoader;
+           }
         }
 
         @Override

@@ -143,6 +143,7 @@ public class MessageOutputStream extends OutputStream
             // block success
             frameCount++;
             frame.setIsContinuation();
+            BufferUtil.flipToFill(buffer);
         }
         catch (IOException e)
         {

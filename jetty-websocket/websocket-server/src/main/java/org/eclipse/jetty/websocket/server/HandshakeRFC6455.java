@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.server;
 
 import java.io.IOException;
-
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
@@ -50,11 +49,6 @@ public class HandshakeRFC6455 implements WebSocketHandshake
         response.addHeader("Connection","Upgrade");
         response.addHeader("Sec-WebSocket-Accept",AcceptHash.hashKey(key));
 
-        if (response.getAcceptedSubProtocol() != null)
-        {
-            response.addHeader("Sec-WebSocket-Protocol",response.getAcceptedSubProtocol());
-        }
-
         if (response.getExtensions() != null)
         {
             String value = ExtensionConfig.toHeaderValue(response.getExtensions());
@@ -65,5 +59,6 @@ public class HandshakeRFC6455 implements WebSocketHandshake
         }
 
         response.setStatus(HttpServletResponse.SC_SWITCHING_PROTOCOLS);
+        response.complete();
     }
 }

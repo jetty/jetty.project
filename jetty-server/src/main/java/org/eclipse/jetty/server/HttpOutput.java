@@ -63,13 +63,15 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private volatile Throwable _onError;
 
     /*
-    ACTION             OPEN       ASYNC      READY      PENDING       UNREADY
-    -------------------------------------------------------------------------------
-    setWriteListener() READY->owp ise        ise        ise           ise
-    write()            OPEN       ise        PENDING    wpe           wpe
-    flush()            OPEN       ise        PENDING    wpe           wpe
-    isReady()          OPEN:true  READY:true READY:true UNREADY:false UNREADY:false
-    write completed    -          -          -          ASYNC         READY->owp
+    ACTION             OPEN       ASYNC      READY      PENDING       UNREADY       CLOSED
+    -----------------------------------------------------------------------------------------------------
+    setWriteListener() READY->owp ise        ise        ise           ise           ise
+    write()            OPEN       ise        PENDING    wpe           wpe           eof
+    flush()            OPEN       ise        PENDING    wpe           wpe           eof
+    close()            CLOSED     CLOSED     CLOSED     CLOSED        wpe           CLOSED
+    isReady()          OPEN:true  READY:true READY:true UNREADY:false UNREADY:false CLOSED:true
+    write completed    -          -          -          ASYNC         READY->owp    -
+    
     */
     enum OutputState { OPEN, ASYNC, READY, PENDING, UNREADY, CLOSED }
     private final AtomicReference<OutputState> _state=new AtomicReference<>(OutputState.OPEN);
@@ -131,48 +133,66 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     @Override
     public void close()
     {
-        OutputState state=_state.get();
-        while(state!=OutputState.CLOSED)
+        loop: while(true)
         {
-            if (_state.compareAndSet(state,OutputState.CLOSED))
+            OutputState state=_state.get();
+            switch (state)
             {
-                try
-                {
-                    write(BufferUtil.hasContent(_aggregate)?_aggregate:BufferUtil.EMPTY_BUFFER,!_channel.getResponse().isIncluding());
-                }
-                catch(IOException e)
-                {
-                    LOG.debug(e);
-                    _channel.failed();
-                }
-                releaseBuffer();
-                return;
+                case CLOSED:
+                    break loop;
+                    
+                case UNREADY:
+                    throw new WritePendingException(); // TODO ?
+                    
+                default:
+                    if (_state.compareAndSet(state,OutputState.CLOSED))
+                    {
+                        try
+                        {
+                            write(BufferUtil.hasContent(_aggregate)?_aggregate:BufferUtil.EMPTY_BUFFER,!_channel.getResponse().isIncluding());
+                        }
+                        catch(IOException e)
+                        {
+                            LOG.debug(e);
+                            _channel.failed();
+                        }
+                        releaseBuffer();
+                        return;
+                    }
             }
-            state=_state.get();
         }
     }
 
     /* Called to indicated that the output is already closed and the state needs to be updated to match */
     void closed()
     {
-        OutputState state=_state.get();
-        while(state!=OutputState.CLOSED)
+        loop: while(true)
         {
-            if (_state.compareAndSet(state,OutputState.CLOSED))
+            OutputState state=_state.get();
+            switch (state)
             {
-                try
-                {
-                    _channel.getResponse().closeOutput();
-                }
-                catch(IOException e)
-                {
-                    LOG.debug(e);
-                    _channel.failed();
-                }
-                releaseBuffer();
-                return;
+                case CLOSED:
+                    break loop;
+                    
+                case UNREADY:
+                    throw new WritePendingException(); // TODO ?
+                    
+                default:
+                    if (_state.compareAndSet(state,OutputState.CLOSED))
+                    {
+                        try
+                        {
+                            _channel.getResponse().closeOutput();
+                        }
+                        catch(IOException e)
+                        {
+                            LOG.debug(e);
+                            _channel.failed();
+                        }
+                        releaseBuffer();
+                        return;
+                    }
             }
-            state=_state.get();
         }
     }
 
@@ -667,8 +687,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     return false;
                 case UNREADY:
                     return false;
+                    
                 case CLOSED:
-                    return false;
+                    return true;
             }
         }
     }
@@ -680,23 +701,49 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             Throwable th=_onError;
             _onError=null;
-            _writeListener.onError(th);
+            _writeListener.onError(new IOException(th));
             close();
         }
-        if (_state.get()==OutputState.READY)
+        
+        switch(_state.get())
         {
-            try
-            {
-                _writeListener.onWritePossible();
-            }
-            catch (Throwable e)
-            {
-                _writeListener.onError(e);
-                close();
-            }
+            case READY:
+                try
+                {
+                    _writeListener.onWritePossible();
+                }
+                catch (Throwable e)
+                {
+                    _writeListener.onError(e);
+                    close();
+                }
+                break;
+                
+            case CLOSED:
+                try
+                {
+                    new Throwable().printStackTrace();
+                    // even though a write is not possible, because a close has 
+                    // occurred, we need to call onWritePossible to tell async
+                    // producer that the last write completed.
+                    _writeListener.onWritePossible();
+                }
+                catch (Throwable e)
+                {
+                    _writeListener.onError(e);
+                }
+                break;
+                
+            default:
+                    
         }
     }
     
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x{%s}",this.getClass().getSimpleName(),hashCode(),_state.get());
+    }
     
     private abstract class AsyncICB extends IteratingCallback
     {
@@ -722,7 +769,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                             break;
 
                         case CLOSED:
-                            _onError=new EofException("Closed");
                             break;
 
                         default:

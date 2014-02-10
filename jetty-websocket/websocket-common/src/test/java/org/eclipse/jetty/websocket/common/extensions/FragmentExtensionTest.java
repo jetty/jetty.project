@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.common.extensions;
 
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -40,12 +40,17 @@ import org.eclipse.jetty.websocket.common.frames.PingFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.ByteBufferAssert;
 import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
+import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPool;
 import org.eclipse.jetty.websocket.common.test.OutgoingFramesCapture;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class FragmentExtensionTest
 {
+    @Rule
+    public LeakTrackingBufferPool bufferPool = new LeakTrackingBufferPool("Test",new MappedByteBufferPool());
+
     /**
      * Verify that incoming frames are passed thru without modification
      */
@@ -55,7 +60,7 @@ public class FragmentExtensionTest
         IncomingFramesCapture capture = new IncomingFramesCapture();
 
         FragmentExtension ext = new FragmentExtension();
-        ext.setBufferPool(new MappedByteBufferPool());
+        ext.setBufferPool(bufferPool);
         ext.setPolicy(WebSocketPolicy.newClientPolicy());
         ExtensionConfig config = ExtensionConfig.parse("fragment;maxLength=4");
         ext.setConfig(config);
@@ -107,7 +112,7 @@ public class FragmentExtensionTest
         IncomingFramesCapture capture = new IncomingFramesCapture();
 
         FragmentExtension ext = new FragmentExtension();
-        ext.setBufferPool(new MappedByteBufferPool());
+        ext.setBufferPool(bufferPool);
         ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("fragment;maxLength=4");
         ext.setConfig(config);
@@ -142,7 +147,7 @@ public class FragmentExtensionTest
         OutgoingFramesCapture capture = new OutgoingFramesCapture();
 
         FragmentExtension ext = new FragmentExtension();
-        ext.setBufferPool(new MappedByteBufferPool());
+        ext.setBufferPool(bufferPool);
         ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("fragment;maxLength=20");
         ext.setConfig(config);
@@ -173,7 +178,7 @@ public class FragmentExtensionTest
 
         expectedFrames.add(new TextFrame().setPayload("-- Albert Einstein").setFin(true));
 
-        capture.dump();
+        // capture.dump();
 
         int len = expectedFrames.size();
         capture.assertFrameCount(len);
@@ -186,8 +191,8 @@ public class FragmentExtensionTest
             WebSocketFrame actualFrame = frames.get(i);
             WebSocketFrame expectedFrame = expectedFrames.get(i);
 
-            System.out.printf("actual: %s%n",actualFrame);
-            System.out.printf("expect: %s%n",expectedFrame);
+            // System.out.printf("actual: %s%n",actualFrame);
+            // System.out.printf("expect: %s%n",expectedFrame);
 
             // Validate Frame
             Assert.assertThat(prefix + ".opcode",actualFrame.getOpCode(),is(expectedFrame.getOpCode()));
@@ -214,7 +219,7 @@ public class FragmentExtensionTest
         OutgoingFramesCapture capture = new OutgoingFramesCapture();
 
         FragmentExtension ext = new FragmentExtension();
-        ext.setBufferPool(new MappedByteBufferPool());
+        ext.setBufferPool(bufferPool);
         ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("fragment");
         ext.setConfig(config);
@@ -278,7 +283,7 @@ public class FragmentExtensionTest
         OutgoingFramesCapture capture = new OutgoingFramesCapture();
 
         FragmentExtension ext = new FragmentExtension();
-        ext.setBufferPool(new MappedByteBufferPool());
+        ext.setBufferPool(bufferPool);
         ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("fragment;maxLength=4");
         ext.setConfig(config);

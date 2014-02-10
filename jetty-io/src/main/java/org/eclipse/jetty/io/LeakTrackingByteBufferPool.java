@@ -37,6 +37,7 @@ public class LeakTrackingByteBufferPool extends ContainerLifeCycle implements By
             LeakTrackingByteBufferPool.this.leaked(leakInfo);
         }
     };
+    
     private final ByteBufferPool delegate;
 
     public LeakTrackingByteBufferPool(ByteBufferPool delegate)
@@ -51,20 +52,22 @@ public class LeakTrackingByteBufferPool extends ContainerLifeCycle implements By
     {
         ByteBuffer buffer = delegate.acquire(size, direct);
         if (!leakDetector.acquired(buffer))
-            LOG.info("ByteBuffer {}@{} not tracked", buffer, System.identityHashCode(buffer));
+            LOG.warn("ByteBuffer {}@{} not tracked", buffer, System.identityHashCode(buffer));
         return buffer;
     }
 
     @Override
     public void release(ByteBuffer buffer)
     {
+        if (buffer == null)
+            return;
         if (!leakDetector.released(buffer))
-            LOG.info("ByteBuffer {}@{} released but not acquired", buffer, System.identityHashCode(buffer));
+            LOG.warn("ByteBuffer {}@{} released but not acquired", buffer, System.identityHashCode(buffer));
         delegate.release(buffer);
     }
 
-    protected void leaked(LeakDetector.LeakInfo leakInfo)
+    protected void leaked(LeakDetector<ByteBuffer>.LeakInfo leakInfo)
     {
-        LOG.info("ByteBuffer " + leakInfo.getResourceDescription() + " leaked at:", leakInfo.getStackFrames());
+        LOG.warn("ByteBuffer " + leakInfo.getResourceDescription() + " leaked at:", leakInfo.getStackFrames());
     }
 }

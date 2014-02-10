@@ -24,6 +24,7 @@ import static org.hamcrest.Matchers.is;
 
 import java.util.Arrays;
 
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -33,6 +34,7 @@ import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
 import org.eclipse.jetty.websocket.common.io.FramePipes;
 import org.eclipse.jetty.websocket.common.io.LocalWebSocketSession;
+import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPool;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -49,6 +51,9 @@ public class MessageOutputStreamTest
 
     @Rule
     public TestName testname = new TestName();
+
+    @Rule
+    public LeakTrackingBufferPool bufferPool = new LeakTrackingBufferPool("Test",new MappedByteBufferPool());
 
     private WebSocketPolicy policy;
     private TrackingSocket socket;
@@ -77,7 +82,7 @@ public class MessageOutputStreamTest
         socket = new TrackingSocket("remote");
         OutgoingFrames socketPipe = FramePipes.to(factory.wrap(socket));
 
-        session = new LocalWebSocketSession(testname,driver);
+        session = new LocalWebSocketSession(testname,driver,bufferPool);
 
         session.setPolicy(policy);
         // talk to our remote socket

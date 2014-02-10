@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.client.http;
 
-import java.util.Enumeration;
-
 import org.eclipse.jetty.client.HttpChannel;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.api.Result;
@@ -79,28 +77,13 @@ public class HttpChannelOverHTTP extends HttpChannel
     public void exchangeTerminated(Result result)
     {
         super.exchangeTerminated(result);
-
-        if (result.isSucceeded())
-        {
-            HttpFields responseHeaders = result.getResponse().getHeaders();
-            Enumeration<String> values = responseHeaders.getValues(HttpHeader.CONNECTION.asString(), ",");
-            if (values != null)
-            {
-                while (values.hasMoreElements())
-                {
-                    if (HttpHeaderValue.CLOSE.asString().equalsIgnoreCase(values.nextElement()))
-                    {
-                        connection.close();
-                        return;
-                    }
-                }
-            }
-            connection.release();
-        }
-        else
-        {
+        boolean close = result.isFailed();
+        HttpFields responseHeaders = result.getResponse().getHeaders();
+        close |= responseHeaders.contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
+        if (close)
             connection.close();
-        }
+        else
+            connection.release();
     }
 
     @Override

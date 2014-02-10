@@ -27,8 +27,10 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.common.io.LocalWebSocketConnection;
+import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPool;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -39,10 +41,13 @@ public class MessageInputStreamTest
     @Rule
     public TestName testname = new TestName();
 
+    @Rule
+    public LeakTrackingBufferPool bufferPool = new LeakTrackingBufferPool("Test",new MappedByteBufferPool());
+
     @Test(timeout=10000)
     public void testBasicAppendRead() throws IOException
     {
-        LocalWebSocketConnection conn = new LocalWebSocketConnection(testname);
+        LocalWebSocketConnection conn = new LocalWebSocketConnection(testname,bufferPool);
 
         try (MessageInputStream stream = new MessageInputStream(conn))
         {
@@ -65,7 +70,7 @@ public class MessageInputStreamTest
     @Test(timeout=5000)
     public void testBlockOnRead() throws Exception
     {
-        LocalWebSocketConnection conn = new LocalWebSocketConnection(testname);
+        LocalWebSocketConnection conn = new LocalWebSocketConnection(testname,bufferPool);
 
         try (MessageInputStream stream = new MessageInputStream(conn))
         {
@@ -116,7 +121,7 @@ public class MessageInputStreamTest
     @Test(timeout=10000)
     public void testBlockOnReadInitial() throws IOException
     {
-        LocalWebSocketConnection conn = new LocalWebSocketConnection(testname);
+        LocalWebSocketConnection conn = new LocalWebSocketConnection(testname,bufferPool);
 
         try (MessageInputStream stream = new MessageInputStream(conn))
         {
@@ -155,7 +160,7 @@ public class MessageInputStreamTest
     @Test(timeout=10000)
     public void testReadByteNoBuffersClosed() throws IOException
     {
-        LocalWebSocketConnection conn = new LocalWebSocketConnection(testname);
+        LocalWebSocketConnection conn = new LocalWebSocketConnection(testname,bufferPool);
 
         try (MessageInputStream stream = new MessageInputStream(conn))
         {

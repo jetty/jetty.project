@@ -25,11 +25,15 @@ import static org.hamcrest.Matchers.startsWith;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.toolchain.test.EventQueue;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.junit.Assert;
 
 @SuppressWarnings("serial")
 public class EventCapture extends EventQueue<String>
 {
+    private static final Logger LOG = Log.getLogger(EventCapture.class);
+    
     public static class Assertable
     {
         private final String event;
@@ -63,7 +67,7 @@ public class EventCapture extends EventQueue<String>
     public void add(String format, Object... args)
     {
         String msg = String.format(format,args);
-        System.err.printf("### EVENT: %s%n",msg);
+        LOG.debug("EVENT: {}",msg);
         super.offer(msg);
     }
 

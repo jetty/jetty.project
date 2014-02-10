@@ -20,7 +20,7 @@ package org.eclipse.jetty.websocket.servlet;
 
 import java.io.IOException;
 import java.util.List;
-
+import java.util.Map;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
@@ -31,26 +31,24 @@ import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
  */
 public class ServletUpgradeResponse extends UpgradeResponse
 {
-    private HttpServletResponse resp;
+    private HttpServletResponse response;
     private boolean extensionsNegotiated = false;
     private boolean subprotocolNegotiated = false;
 
-    public ServletUpgradeResponse(HttpServletResponse resp)
+    public ServletUpgradeResponse(HttpServletResponse response)
     {
-        super();
-        this.resp = resp;
-    }
-
-    @Override
-    public void addHeader(String name, String value)
-    {
-        this.resp.addHeader(name,value);
+        this.response = response;
     }
 
     @Override
     public int getStatusCode()
     {
-        return this.resp.getStatus();
+        return response.getStatus();
+    }
+
+    public void setStatus(int status)
+    {
+        response.setStatus(status);
     }
 
     @Override
@@ -61,7 +59,7 @@ public class ServletUpgradeResponse extends UpgradeResponse
 
     public boolean isCommitted()
     {
-        return this.resp.isCommitted();
+        return response.isCommitted();
     }
 
     public boolean isExtensionsNegotiated()
@@ -77,14 +75,16 @@ public class ServletUpgradeResponse extends UpgradeResponse
     public void sendError(int statusCode, String message) throws IOException
     {
         setSuccess(false);
-        this.resp.sendError(statusCode,message);
+        complete();
+        response.sendError(statusCode, message);
     }
 
     @Override
     public void sendForbidden(String message) throws IOException
     {
         setSuccess(false);
-        resp.sendError(HttpServletResponse.SC_FORBIDDEN,message);
+        complete();
+        response.sendError(HttpServletResponse.SC_FORBIDDEN, message);
     }
 
     @Override
@@ -101,15 +101,15 @@ public class ServletUpgradeResponse extends UpgradeResponse
         extensionsNegotiated = true;
     }
 
-    @Override
-    public void setHeader(String name, String value)
+    public void complete()
     {
-        this.resp.setHeader(name,value);
+        // Transfer all headers to the real HTTP response
+       for (Map.Entry<String, List<String>> entry : getHeaders().entrySet())
+       {
+           for (String value : entry.getValue())
+           {
+               response.addHeader(entry.getKey(), value);
+           }
+       }
     }
-
-    public void setStatus(int status)
-    {
-        this.resp.setStatus(status);
-    }
-
 }

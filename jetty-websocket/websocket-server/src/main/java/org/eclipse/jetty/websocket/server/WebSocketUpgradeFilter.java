@@ -31,6 +31,8 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -77,7 +79,12 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
 
     public WebSocketUpgradeFilter(WebSocketPolicy policy)
     {
-        factory = new WebSocketServerFactory(policy);
+        this(policy, new MappedByteBufferPool());
+    }
+    
+    public WebSocketUpgradeFilter(WebSocketPolicy policy, ByteBufferPool bufferPool)
+    {
+        factory = new WebSocketServerFactory(policy,bufferPool);
         addBean(factory,true);
     }
 

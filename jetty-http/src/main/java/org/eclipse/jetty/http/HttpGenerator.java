@@ -105,7 +105,6 @@ public class HttpGenerator
         _persistent = null;
         _contentPrepared = 0;
         _needCRLF = false;
-        _noContent=false;
     }
 
     /* ------------------------------------------------------------ */
@@ -744,13 +743,14 @@ public class HttpGenerator
                 }
                 else
                 {
-                    // No idea, so we must assume that a body is coming
-                    _endOfContent = (!isPersistent() || _info.getHttpVersion().ordinal() < HttpVersion.HTTP_1_1.ordinal() ) ? EndOfContent.EOF_CONTENT : EndOfContent.CHUNKED_CONTENT;
-                    if (response!=null && _endOfContent==EndOfContent.EOF_CONTENT)
-                    {
-                        _endOfContent=EndOfContent.NO_CONTENT;
-                        _noContent=true;
-                    }
+                    // No idea, so we must assume that a body is coming.
+                    _endOfContent = EndOfContent.CHUNKED_CONTENT;
+                    // HTTP 1.0 does not understand chunked content, so we must use EOF content.
+                    // For a request with HTTP 1.0 & Connection: keep-alive
+                    // we *must* close the connection, otherwise the client
+                    // has no way to detect the end of the content.
+                    if (!isPersistent() || _info.getHttpVersion().ordinal() < HttpVersion.HTTP_1_1.ordinal())
+                        _endOfContent = EndOfContent.EOF_CONTENT;
                 }
                 break;
 
@@ -825,7 +825,7 @@ public class HttpGenerator
                     header.put(CONNECTION_KEEP_ALIVE);
                 else
                 {
-                    header.put(CONNECTION_KEEP_ALIVE,0,CONNECTION_CLOSE.length-2);
+                    header.put(CONNECTION_KEEP_ALIVE,0,CONNECTION_KEEP_ALIVE.length-2);
                     header.put((byte)',');
                     header.put(StringUtil.getBytes(connection.toString()));
                     header.put(CRLF);
@@ -833,7 +833,7 @@ public class HttpGenerator
             }
             else if (connection!=null)
             {
-                header.put(CONNECTION_);
+                header.put(HttpHeader.CONNECTION.getBytesColonSpace());
                 header.put(StringUtil.getBytes(connection.toString()));
                 header.put(CRLF);
             }
@@ -872,7 +872,6 @@ public class HttpGenerator
     private static final byte[] CONTENT_LENGTH_0 = StringUtil.getBytes("Content-Length: 0\015\012");
     private static final byte[] CONNECTION_KEEP_ALIVE = StringUtil.getBytes("Connection: keep-alive\015\012");
     private static final byte[] CONNECTION_CLOSE = StringUtil.getBytes("Connection: close\015\012");
-    private static final byte[] CONNECTION_ = StringUtil.getBytes("Connection: ");
     private static final byte[] HTTP_1_1_SPACE = StringUtil.getBytes(HttpVersion.HTTP_1_1+" ");
     private static final byte[] CRLF = StringUtil.getBytes("\015\012");
     private static final byte[] TRANSFER_ENCODING_CHUNKED = StringUtil.getBytes("Transfer-Encoding: chunked\015\012");

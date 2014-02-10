@@ -22,7 +22,6 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
@@ -49,22 +48,22 @@ public class LocalWebSocketConnection implements LogicalConnection, IncomingFram
     private IncomingFrames incoming;
     private IOState ioState = new IOState();
 
-    public LocalWebSocketConnection()
+    public LocalWebSocketConnection(ByteBufferPool bufferPool)
     {
-        this("anon");
+        this("anon",bufferPool);
     }
 
-    public LocalWebSocketConnection(String id)
+    public LocalWebSocketConnection(String id, ByteBufferPool bufferPool)
     {
         this.id = id;
-        this.bufferPool = new MappedByteBufferPool();
+        this.bufferPool = bufferPool;
         this.executor = new ExecutorThreadPool();
         this.ioState.addListener(this);
     }
 
-    public LocalWebSocketConnection(TestName testname)
+    public LocalWebSocketConnection(TestName testname, ByteBufferPool bufferPool)
     {
-        this(testname.getMethodName());
+        this(testname.getMethodName(),bufferPool);
     }
     
     @Override

@@ -58,7 +58,7 @@ public class DirtyAttributeTest
     public static int SCAVENGE = 1;
 
     @Test
-    public void testDiryWrite() throws Exception
+    public void testDirtyWrite() throws Exception
     {
         AbstractTestServer server = new JdbcTestServer(0,INACTIVE,SCAVENGE);
         
@@ -98,8 +98,8 @@ public class DirtyAttributeTest
                 request.header("Cookie", sessionCookie);
                 response = request.send();
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
-                A_VALUE.assertPassivatesEquals(1);
-                A_VALUE.assertActivatesEquals(1);
+                A_VALUE.assertPassivatesEquals(2);
+                A_VALUE.assertActivatesEquals(2);
                 A_VALUE.assertBindsEquals(1);
                 A_VALUE.assertUnbindsEquals(0);
                 

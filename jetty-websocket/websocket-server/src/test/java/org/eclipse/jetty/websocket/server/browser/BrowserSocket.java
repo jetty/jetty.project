@@ -76,7 +76,6 @@ public class BrowserSocket
     private static final Logger LOG = Log.getLogger(BrowserSocket.class);
 
     private Session session;
-    private RemoteEndpoint remote;
     private final String userAgent;
     private final String requestedExtensions;
 
@@ -91,7 +90,6 @@ public class BrowserSocket
     {
         LOG.info("Connect [{}]",session);
         this.session = session;
-        this.remote = session.getRemote();
     }
 
     @OnWebSocketClose
@@ -162,7 +160,7 @@ public class BrowserSocket
                     // Setup threads
                     for (int n = 0; n < threadCount; n++)
                     {
-                        threads[n] = new Thread(new WriteMany(remote,size,count),"WriteMany[" + n + "]");
+                        threads[n] = new Thread(new WriteMany(session.getRemote(),size,count),"WriteMany[" + n + "]");
                     }
 
                     // Execute threads
@@ -220,14 +218,14 @@ public class BrowserSocket
             return;
         }
 
-        if (session.isOpen() == false)
+        if (!session.isOpen())
         {
             LOG.debug("Not open");
             return;
         }
 
         // Async write
-        remote.sendString(message,null);
+        session.getRemote().sendString(message, null);
     }
 
     private void writeMessage(String format, Object... args)
