@@ -67,8 +67,7 @@ public class Parser
     private int cursor = 0;
     // Frame
     private WebSocketFrame frame;
-    private Frame priorDataFrame;
-    private byte lastDataOpcode;
+    private boolean priorDataFrame;
     // payload specific
     private ByteBuffer payload;
     private int payloadLength;
@@ -186,7 +185,7 @@ public class Parser
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("{} Notify {}",policy.getBehavior(),incomingFramesHandler);
+            LOG.debug("{} Notify {}",policy.getBehavior(),getIncomingFramesHandler());
         }
 
         if (policy.getBehavior() == WebSocketBehavior.SERVER)
@@ -201,14 +200,15 @@ public class Parser
              * But we can't trust the client at this point, so Jetty opts to close
              * the connection as a Protocol error.
              */
-            if (f.isMasked() == false)
+            if (!f.isMasked())
             {
                 throw new ProtocolException("Client MUST mask all frames (RFC-6455: Section 5.1)");
             }
-        } else if(policy.getBehavior() == WebSocketBehavior.CLIENT)
+        }
+        else if(policy.getBehavior() == WebSocketBehavior.CLIENT)
         {
             // Required by RFC-6455 / Section 5.1
-            if (f.isMasked() == true)
+            if (f.isMasked())
             {
                 throw new ProtocolException("Server MUST NOT mask any frames (RFC-6455: Section 5.1)");
             }
@@ -258,28 +258,34 @@ public class Parser
             {
                 LOG.debug("{} Parsed Frame: {}",policy.getBehavior(),frame);
                 notifyFrame(frame);
-                if (frame.isDataFrame() && frame.isFin())
+                if (frame.isDataFrame())
                 {
-                    priorDataFrame = null;
+                    priorDataFrame = !frame.isFin();
                 }
-                else
-                {
-                    priorDataFrame = frame;
-                }
+                reset();
             }
         }
         catch (WebSocketException e)
         {
             buffer.position(buffer.limit()); // consume remaining
-            this.payload = null; // reset
+            reset();
             notifyWebSocketException(e);
         }
         catch (Throwable t)
         {
             buffer.position(buffer.limit()); // consume remaining
-            this.payload = null; // reset
+            reset();
             notifyWebSocketException(new WebSocketException(t));
         }
+    }
+
+    private void reset()
+    {
+        if (frame != null)
+            frame.reset();
+        frame = null;
+        bufferPool.release(payload);
+        payload = null;
     }
 
     /**
@@ -295,11 +301,6 @@ public class Parser
      */
     private boolean parseFrame(ByteBuffer buffer)
     {
-        if (buffer.remaining() <= 0)
-        {
-            return false;
-        }
-
         LOG.debug("{} Parsing {} bytes",policy.getBehavior(),buffer.remaining());
         while (buffer.hasRemaining())
         {
@@ -307,21 +308,15 @@ public class Parser
             {
                 case START:
                 {
-                    if ((frame != null) && (frame.isFin()))
-                    {
-                        frame.reset();
-                    }
-                    
                     // peek at byte
                     byte b = buffer.get();
                     boolean fin = ((b & 0x80) != 0);
                     
-                    byte opc = (byte)(b & 0x0F);
-                    byte opcode = opc;
+                    byte opcode = (byte)(b & 0x0F);
 
                     if (!OpCode.isKnown(opcode))
                     {
-                        throw new ProtocolException("Unknown opcode: " + opc);
+                        throw new ProtocolException("Unknown opcode: " + opcode);
                     }
                     
                     if (LOG.isDebugEnabled())
@@ -335,36 +330,32 @@ public class Parser
                     }
 
                     // base framing flags
-                    switch(opcode) 
+                    switch(opcode)
                     {
                         case OpCode.TEXT:
                             frame = new TextFrame();
-                            lastDataOpcode = opcode;
                             // data validation
-                            if ((priorDataFrame != null) && (!priorDataFrame.isFin()))
+                            if (priorDataFrame)
                             {
                                 throw new ProtocolException("Unexpected " + OpCode.name(opcode) + " frame, was expecting CONTINUATION");
                             }
                             break;
                         case OpCode.BINARY:
                             frame = new BinaryFrame();
-                            lastDataOpcode = opcode;
                             // data validation
-                            if ((priorDataFrame != null) && (!priorDataFrame.isFin()))
+                            if (priorDataFrame)
                             {
                                 throw new ProtocolException("Unexpected " + OpCode.name(opcode) + " frame, was expecting CONTINUATION");
                             }
                             break;
                         case OpCode.CONTINUATION:
                             frame = new ContinuationFrame();
-                            lastDataOpcode = opcode;
                             // continuation validation
-                            if (priorDataFrame == null)
+                            if (!priorDataFrame)
                             {
                                 throw new ProtocolException("CONTINUATION frame without prior !FIN");
                             }
                             // Be careful to use the original opcode
-                            opcode = lastDataOpcode;
                             break;
                         case OpCode.CLOSE:
                             frame = new CloseFrame();
@@ -601,11 +592,14 @@ public class Parser
             // Create a small window of the incoming buffer to work with.
             // this should only show the payload itself, and not any more
             // bytes that could belong to the start of the next frame.
-            ByteBuffer window = buffer.slice();
             int bytesExpected = payloadLength - payload.position();
             int bytesAvailable = buffer.remaining();
-            int windowBytes = Math.min(bytesAvailable,bytesExpected);
-            window.limit(window.position() + windowBytes);
+            int windowBytes = Math.min(bytesAvailable, bytesExpected);
+            int limit = buffer.limit();
+            buffer.limit(buffer.position() + windowBytes);
+            ByteBuffer window = buffer.slice();
+            buffer.limit(limit);
+            buffer.position(buffer.position() + window.remaining());
 
             if (LOG.isDebugEnabled())
             {
@@ -613,15 +607,14 @@ public class Parser
             }
 
             maskProcessor.process(window);
-            int len = BufferUtil.put(window,payload);
 
-            buffer.position(buffer.position() + len); // update incoming buffer position
+            // Copy the payload.
+            payload.put(window);
 
             if (payload.position() >= payloadLength)
             {
-                BufferUtil.flipToFlush(payload,0);
+                BufferUtil.flipToFlush(payload, 0);
                 frame.setPayload(payload);
-                this.payload = null;
                 return true;
             }
         }

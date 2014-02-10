@@ -122,15 +122,9 @@ public abstract class ControlFrame extends WebSocketFrame
     @Override
     public WebSocketFrame setPayload(ByteBuffer buf)
     {
-        if (buf == null)
+        if (buf != null && buf.remaining() > MAX_CONTROL_PAYLOAD)
         {
-            data = null;
-            return this;
-        }
-
-        if (buf.remaining() > ControlFrame.MAX_CONTROL_PAYLOAD)
-        {
-            throw new ProtocolException("Control Payloads can not exceed 125 bytes in length.");
+            throw new ProtocolException("Control Payloads can not exceed " + MAX_CONTROL_PAYLOAD + " bytes in length.");
         }
         return super.setPayload(buf);
     }

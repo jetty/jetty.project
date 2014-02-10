@@ -78,13 +78,20 @@ public class DataFrame extends WebSocketFrame
         return true;
     }
 
-    public void releaseBuffer()
+    public void reset()
     {
+        // TODO: this is rather ugly.
+        // The ByteBufferPool is set only from extensions that
+        // compress the payload. It would be better to wrap the
+        // callback associated with this DataFrame into one that
+        // releases the buffer and then call the nested callback,
+        // rather than null-checking whether the pool exists and
+        // if so then release the buffer.
         if (pool!=null)
         {
             pool.release(this.data);
-            this.data=null;
         }
+        super.reset();
     }
 
     /**
