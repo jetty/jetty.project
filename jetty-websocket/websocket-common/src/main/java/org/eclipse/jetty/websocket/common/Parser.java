@@ -547,11 +547,13 @@ public class Parser
                 
                 case PAYLOAD:
                 {
+                    frame.assertValid();
                     if (parsePayload(buffer))
                     {
                         // special check for close
                         if (frame.getOpCode() == OpCode.CLOSE)
                         {
+                            // TODO: yuck. Don't create an object to do validation checks!
                             new CloseInfo(frame);
                         }
                         state = State.START;
@@ -582,17 +584,11 @@ public class Parser
 
         if (buffer.hasRemaining())
         {
-            if (payload == null)
-            {
-                frame.assertValid();
-                payload = bufferPool.acquire(payloadLength,false);
-                BufferUtil.clearToFill(payload);
-            }
-
             // Create a small window of the incoming buffer to work with.
             // this should only show the payload itself, and not any more
             // bytes that could belong to the start of the next frame.
-            int bytesExpected = payloadLength - payload.position();
+            int bytesSoFar = payload == null ? 0 : payload.position();
+            int bytesExpected = payloadLength - bytesSoFar;
             int bytesAvailable = buffer.remaining();
             int windowBytes = Math.min(bytesAvailable, bytesExpected);
             int limit = buffer.limit();
@@ -608,14 +604,28 @@ public class Parser
 
             maskProcessor.process(window);
 
-            // Copy the payload.
-            payload.put(window);
-
-            if (payload.position() >= payloadLength)
+            if (window.remaining() == payloadLength)
             {
-                BufferUtil.flipToFlush(payload, 0);
-                frame.setPayload(payload);
+                // We have the whole content, no need to copy.
+                frame.setPayload(window);
                 return true;
+            }
+            else
+            {
+                if (payload == null)
+                {
+                    payload = bufferPool.acquire(payloadLength,false);
+                    BufferUtil.clearToFill(payload);
+                }
+                // Copy the payload.
+                payload.put(window);
+
+                if (payload.position() == payloadLength)
+                {
+                    BufferUtil.flipToFlush(payload, 0);
+                    frame.setPayload(payload);
+                    return true;
+                }
             }
         }
         return false;
