@@ -49,11 +49,6 @@ public class HandshakeRFC6455 implements WebSocketHandshake
         response.addHeader("Connection","Upgrade");
         response.addHeader("Sec-WebSocket-Accept",AcceptHash.hashKey(key));
 
-        if (response.getAcceptedSubProtocol() != null)
-        {
-            response.addHeader("Sec-WebSocket-Protocol",response.getAcceptedSubProtocol());
-        }
-
         if (response.getExtensions() != null)
         {
             String value = ExtensionConfig.toHeaderValue(response.getExtensions());

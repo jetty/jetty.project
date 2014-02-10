@@ -55,8 +55,8 @@ public class BrowserDebugTool implements WebSocketCreator
         try
         {
             BrowserDebugTool tool = new BrowserDebugTool();
-            tool.setupServer(port);
-            tool.runForever();
+            tool.prepare(port);
+            tool.start();
         }
         catch (Throwable t)
         {
@@ -65,6 +65,7 @@ public class BrowserDebugTool implements WebSocketCreator
     }
 
     private Server server;
+    private ServerConnector connector;
 
     @Override
     public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp)
@@ -84,21 +85,24 @@ public class BrowserDebugTool implements WebSocketCreator
         String rexts = req.getHeader("Sec-WebSocket-Extensions");
         LOG.debug("User-Agent: {}", ua);
         LOG.debug("Sec-WebSocket-Extensions: {}", rexts);
-        BrowserSocket socket = new BrowserSocket(ua,rexts);
-        return socket;
+        return new BrowserSocket(ua,rexts);
     }
 
-    private void runForever() throws Exception
+    public void start() throws Exception
     {
         server.start();
-        LOG.info("Server available.");
-        server.join();
+        LOG.info("Server available on port {}", getPort());
     }
 
-    private void setupServer(int port)
+    public void stop() throws Exception
+    {
+        server.stop();
+    }
+
+    public void prepare(int port)
     {
         server = new Server();
-        ServerConnector connector = new ServerConnector(server);
+        connector = new ServerConnector(server);
         connector.setPort(port);
         server.addConnector(connector);
 
@@ -127,5 +131,10 @@ public class BrowserDebugTool implements WebSocketCreator
         wsHandler.setHandler(rHandler);
 
         LOG.info("{} setup on port {}",this.getClass().getName(),port);
+    }
+
+    public int getPort()
+    {
+        return connector.getLocalPort();
     }
 }
