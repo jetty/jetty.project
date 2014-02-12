@@ -46,14 +46,6 @@ import org.eclipse.jetty.util.log.Logger;
  * <p><h4>Usage</h4>
  * <pre>
  */
-/*
-* </pre>
-*
-* @see
-*
-*
-* @version 1.0
-*/
 public class javaRootURLContext implements Context
 {
     private static Logger __log = NamingUtil.__log;
@@ -81,7 +73,7 @@ public class javaRootURLContext implements Context
                                            ContextFactory.class.getName(),
                                            (String)null);
 
-            //bind special object factory at comp
+            // bind special object factory at comp
             __nameRoot.bind ("comp", ref);
         }
         catch (Exception e)
@@ -102,7 +94,6 @@ public class javaRootURLContext implements Context
     {
         _env = env;
     }
-
 
     public Object lookup(Name name)
         throws NamingException
