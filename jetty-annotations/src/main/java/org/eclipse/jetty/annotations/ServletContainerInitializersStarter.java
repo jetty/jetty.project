@@ -59,14 +59,9 @@ public class ServletContainerInitializersStarter extends AbstractLifeCycle imple
         List<ContainerInitializer> initializers = (List<ContainerInitializer>)_context.getAttribute(AnnotationConfiguration.CONTAINER_INITIALIZERS);
         if (initializers == null)
             return;
-
-       ConcurrentHashMap<String, ConcurrentHashSet<String>> map = ( ConcurrentHashMap<String, ConcurrentHashSet<String>>)_context.getAttribute(AnnotationConfiguration.CLASS_INHERITANCE_MAP);
         
         for (ContainerInitializer i : initializers)
         {
-            configureHandlesTypes(_context, i, map);
-
-            //instantiate ServletContainerInitializers, call doStart
             try
             {
                 if (LOG.isDebugEnabled())
@@ -80,82 +75,6 @@ public class ServletContainerInitializersStarter extends AbstractLifeCycle imple
             }
         }
     }
-  
-
-    private void configureHandlesTypes (WebAppContext context, ContainerInitializer initializer, ConcurrentHashMap<String, ConcurrentHashSet<String>> classMap)
-    {
-        doHandlesTypesAnnotations(context, initializer, classMap);
-        doHandlesTypesClasses(context, initializer, classMap);
-    }
-    
-    private void doHandlesTypesAnnotations(WebAppContext context, ContainerInitializer initializer, ConcurrentHashMap<String, ConcurrentHashSet<String>> classMap)
-    {
-        if (initializer == null)
-            return;
-        if (context == null)
-            throw new IllegalArgumentException("WebAppContext null");
-        
-        //We have already found the classes that directly have an annotation that was in the HandlesTypes
-        //annotation of the ServletContainerInitializer. For each of those classes, walk the inheritance
-        //hierarchy to find classes that extend or implement them.
-        Set<String> annotatedClassNames = initializer.getAnnotatedTypeNames();
-        if (annotatedClassNames != null && !annotatedClassNames.isEmpty())
-        {
-            if (classMap == null)
-                throw new IllegalStateException ("No class hierarchy");
-
-            for (String name : annotatedClassNames)
-            {
-                //add the class that has the annotation
-                initializer.addApplicableTypeName(name);
-
-                //find and add the classes that inherit the annotation               
-                addInheritedTypes(classMap, initializer, (ConcurrentHashSet<String>)classMap.get(name));
-            }
-        }
-    }
-
-    
-
-    private void doHandlesTypesClasses (WebAppContext context, ContainerInitializer initializer, ConcurrentHashMap<String, ConcurrentHashSet<String>> classMap)
-    {
-        if (initializer == null)
-            return;
-        if (context == null)
-            throw new IllegalArgumentException("WebAppContext null");
-
-        //Now we need to look at the HandlesTypes classes that were not annotations. We need to
-        //find all classes that extend or implement them.
-        if (initializer.getInterestedTypes() != null)
-        {
-            if (classMap == null)
-                throw new IllegalStateException ("No class hierarchy");
-
-            for (Class c : initializer.getInterestedTypes())
-            {
-                if (!c.isAnnotation())
-                {
-                    //find and add the classes that implement or extend the class.
-                    //but not including the class itself
-                    addInheritedTypes(classMap, initializer, (ConcurrentHashSet<String>)classMap.get(c.getName()));
-                }
-            }
-        }
-    }
     
     
-    private void addInheritedTypes (ConcurrentHashMap<String, ConcurrentHashSet<String>> classMap, ContainerInitializer initializer, ConcurrentHashSet<String> names)
-    {
-        if (names == null || names.isEmpty())
-            return;
-     
-        for (String s : names)
-        {
-            //add the name of the class
-            initializer.addApplicableTypeName(s);
-
-            //walk the hierarchy and find all types that extend or implement the class
-            addInheritedTypes(classMap, initializer, (ConcurrentHashSet<String>)classMap.get(s));
-        }
-    }
 }

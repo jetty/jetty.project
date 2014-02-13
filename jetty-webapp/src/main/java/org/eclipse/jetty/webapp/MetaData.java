@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.webapp;
 
+import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -69,14 +70,27 @@ public class MetaData
 
     public static class OriginInfo
     {
-        protected String name;
-        protected Origin origin;
-        protected Descriptor descriptor;
+        private final String name;
+        private final Origin origin;
+        private final Descriptor descriptor;
+        private final Annotation annotation;
+        private final Class<?> annotated;
 
+        public OriginInfo (String n, Annotation a,Class<?> ac)
+        {
+            name=n;
+            origin=Origin.Annotation;
+            descriptor=null;
+            annotation=a;
+            annotated=ac;
+        }
+        
         public OriginInfo (String n, Descriptor d)
         {
             name = n;
             descriptor = d;
+            annotation=null;
+            annotated=null;
             if (d == null)
                 throw new IllegalArgumentException("No descriptor");
             if (d instanceof FragmentDescriptor)
@@ -89,16 +103,13 @@ public class MetaData
                 origin = Origin.WebXml;
         }
 
-        public OriginInfo (String n)
+        public OriginInfo(String n)
         {
             name = n;
-            origin = Origin.Annotation;
-        }
-
-        public OriginInfo(String n, Origin o)
-        {
-            name = n;
-            origin = o;
+            origin = Origin.API;
+            annotation=null;
+            descriptor=null;
+            annotated=null;
         }
 
         public String getName()
@@ -114,6 +125,15 @@ public class MetaData
         public Descriptor getDescriptor()
         {
             return descriptor;
+        }
+        
+        public String toString()
+        {
+            if (descriptor!=null)
+                return descriptor.toString();
+            if (annotation!=null)
+                return "@"+annotation.annotationType().getSimpleName()+" on "+annotated.getName();
+            return origin.toString();
         }
     }
 
@@ -171,8 +191,6 @@ public class MetaData
         _webXmlRoot = new WebDescriptor(webXml);
         _webXmlRoot.parse();
         _metaDataComplete=_webXmlRoot.getMetaDataComplete() == MetaDataComplete.True;
-
-
 
         if (_webXmlRoot.isOrdered())
         {
@@ -526,6 +544,14 @@ public class MetaData
         return x.getOriginType();
     }
 
+    public OriginInfo getOriginInfo (String name)
+    {
+        OriginInfo x =  _origins.get(name);
+        if (x == null)
+            return null;
+
+        return x;
+    }
 
     public Descriptor getOriginDescriptor (String name)
     {
@@ -541,21 +567,21 @@ public class MetaData
         _origins.put(name, x);
     }
 
-    public void setOrigin (String name)
+    public void setOrigin (String name, Annotation annotation, Class<?> annotated)
     {
         if (name == null)
             return;
 
-        OriginInfo x = new OriginInfo (name, Origin.Annotation);
+        OriginInfo x = new OriginInfo (name, annotation, annotated);
         _origins.put(name, x);
     }
     
-    public void setOrigin(String name, Origin origin)
+    public void setOriginAPI(String name)
     {
         if (name == null)
             return;
        
-        OriginInfo x = new OriginInfo (name, origin);
+        OriginInfo x = new OriginInfo (name);
         _origins.put(name, x);
     }
 
@@ -603,5 +629,10 @@ public class MetaData
     public void setAllowDuplicateFragmentNames(boolean allowDuplicateFragmentNames)
     {
         this.allowDuplicateFragmentNames = allowDuplicateFragmentNames;
+    }
+
+    public Map<String,OriginInfo> getOrigins()
+    {
+        return Collections.unmodifiableMap(_origins);
     }
 }

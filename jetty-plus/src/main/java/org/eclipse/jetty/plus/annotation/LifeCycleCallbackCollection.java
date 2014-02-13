@@ -19,6 +19,8 @@
 package org.eclipse.jetty.plus.annotation;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -136,4 +138,51 @@ public class LifeCycleCallbackCollection
         for (int i=0;i<callbacks.size();i++)
             ((LifeCycleCallback)callbacks.get(i)).callback(o);
     }
+    
+    /**
+     * Generate a read-only view of the post-construct callbacks
+     * @return
+     */
+    public Map<String, List<LifeCycleCallback>> getPostConstructCallbackMap()
+    {
+        return Collections.unmodifiableMap(postConstructCallbacksMap);
+    }
+    
+    /**
+     * Generate a read-only view of the pre-destroy callbacks
+     * @return
+     */
+    public Map<String, List<LifeCycleCallback>> getPreDestroyCallbackMap()
+    {
+        return Collections.unmodifiableMap(preDestroyCallbacksMap);
+    }
+    
+    /**
+     * Amalgamate all post-construct callbacks and return a read only list
+     * @return
+     */
+    public Collection<LifeCycleCallback> getPostConstructCallbacks()
+    {
+        List<LifeCycleCallback> list = new ArrayList<LifeCycleCallback>();
+        for (String s:postConstructCallbacksMap.keySet())
+        {
+            list.addAll(postConstructCallbacksMap.get(s));
+        }
+        return Collections.unmodifiableCollection(list);
+    }
+    
+    /**
+     * Amalgamate all pre-destroy callbacks and return a read only list
+     * @return
+     */
+    public Collection<LifeCycleCallback> getPreDestroyCallbacks()
+    {
+        List<LifeCycleCallback> list = new ArrayList<LifeCycleCallback>();
+        for (String s:preDestroyCallbacksMap.keySet())
+        {
+            list.addAll(preDestroyCallbacksMap.get(s));
+        }
+        return Collections.unmodifiableCollection(list);
+    }
+    
 }

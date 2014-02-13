@@ -243,12 +243,6 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     }
 
     /* ------------------------------------------------------------ */
-    public Map<String, String> getRoleMap()
-    {
-        return _roleMap == null? NO_MAPPED_ROLES : _roleMap;
-    }
-
-    /* ------------------------------------------------------------ */
     /**
      * @return Returns the forcedPath.
      */

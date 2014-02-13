@@ -20,6 +20,7 @@ package org.eclipse.jetty.util.log;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.management.ManagementFactory;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.security.AccessController;
@@ -178,6 +179,9 @@ public class Log
             // Unable to load specified Logger implementation, default to standard logging.
             initStandardLogging(e);
         }
+        
+        if (LOG!=null)
+            LOG.info(String.format("Logging initialized @%dms",ManagementFactory.getRuntimeMXBean().getUptime()));
 
         return LOG != null;
     }

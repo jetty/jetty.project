@@ -1386,7 +1386,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
                         for (ConstraintMapping m:mappings)
                             ((ConstraintAware)getSecurityHandler()).addConstraintMapping(m);
                         ((ConstraintAware)getSecurityHandler()).checkPathsWithUncoveredHttpMethods();
-                        getMetaData().setOrigin("constraint.url."+pathSpec, Origin.API);
+                        getMetaData().setOriginAPI("constraint.url."+pathSpec);
                         break;
                     }
                     case WebXml:

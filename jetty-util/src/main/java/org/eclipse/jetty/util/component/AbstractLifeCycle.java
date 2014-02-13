@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.util.component;
 
+import java.lang.management.ManagementFactory;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -27,14 +28,12 @@ import org.eclipse.jetty.util.log.Logger;
 
 /**
  * Basic implementation of the life cycle interface for components.
- *
- *
  */
 @ManagedObject("Abstract Implementation of LifeCycle")
 public abstract class AbstractLifeCycle implements LifeCycle
 {
     private static final Logger LOG = Log.getLogger(AbstractLifeCycle.class);
-
+    
     public static final String STOPPED="STOPPED";
     public static final String FAILED="FAILED";
     public static final String STARTING="STARTING";
@@ -174,7 +173,9 @@ public abstract class AbstractLifeCycle implements LifeCycle
     private void setStarted()
     {
         _state = __STARTED;
-        LOG.debug(STARTED+" {}",this);
+        if (LOG.isDebugEnabled())
+            
+        LOG.debug(STARTED+" @{}ms {}",ManagementFactory.getRuntimeMXBean().getUptime(),this);
         for (Listener listener : _listeners)
             listener.lifeCycleStarted(this);
     }

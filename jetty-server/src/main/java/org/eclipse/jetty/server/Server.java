@@ -19,6 +19,7 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -345,6 +346,8 @@ public class Server extends HandlerWrapper implements Attributes
             dumpStdErr();
 
         mex.ifExceptionThrow();
+
+        LOG.info(String.format("Started @%dms",ManagementFactory.getRuntimeMXBean().getUptime()));
     }
 
     @Override

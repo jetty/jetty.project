@@ -18,15 +18,22 @@
 
 package org.eclipse.jetty.plus.annotation;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.servlet.ServletContainerInitializer;
 
 import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -36,17 +43,41 @@ public class ContainerInitializer
     private static final Logger LOG = Log.getLogger(ContainerInitializer.class);
     
     final protected ServletContainerInitializer _target;
-    final protected Class[] _interestedTypes;
-    protected Set<String> _applicableTypeNames = new ConcurrentHashSet<String>();
-    protected Set<String> _annotatedTypeNames = new ConcurrentHashSet<String>();
+    final protected Class<?>[] _interestedTypes;
+    final protected Set<String> _applicableTypeNames = new ConcurrentHashSet<String>();
+    final protected Set<String> _annotatedTypeNames = new ConcurrentHashSet<String>();
 
 
-    public ContainerInitializer (ServletContainerInitializer target, Class[] classes)
+    public ContainerInitializer (ServletContainerInitializer target, Class<?>[] classes)
     {
         _target = target;
         _interestedTypes = classes;
     }
-
+    
+    public ContainerInitializer (ClassLoader loader, String toString)
+    {
+    	Matcher m = Pattern.compile("ContainerInitializer\\{(.*),interested=(.*),applicable=(.*),annotated=(.*)\\}").matcher(toString);
+    	if (!m.matches())
+    		throw new IllegalArgumentException(toString);
+    	
+    	try
+    	{
+    		_target = (ServletContainerInitializer)loader.loadClass(m.group(1)).newInstance();
+    		String[] interested = StringUtil.arrayFromString(m.group(2));
+    		_interestedTypes = new Class<?>[interested.length];
+    		for (int i=0;i<interested.length;i++)
+    			_interestedTypes[i]=loader.loadClass(interested[i]);
+    		for (String s:StringUtil.arrayFromString(m.group(3)))
+    			_applicableTypeNames.add(s);
+    		for (String s:StringUtil.arrayFromString(m.group(4)))
+    			_annotatedTypeNames.add(s);
+    	}
+    	catch(Exception e)
+    	{
+    		throw new IllegalArgumentException(toString, e);
+    	}
+    }
+    
     public ServletContainerInitializer getTarget ()
     {
         return _target;
@@ -114,6 +145,64 @@ public class ContainerInitializer
                 context.getServletContext().setExtendedListenerTypes(false);
                 Thread.currentThread().setContextClassLoader(oldLoader);
             }
+        }
+    }
+    
+    public String toString()
+    {
+    	List<String> interested = new ArrayList<>(_interestedTypes.length);
+    	for (Class<?> c : _interestedTypes)
+    		interested.add(c.getName());
+    	return String.format("ContainerInitializer{%s,interested=%s,applicable=%s,annotated=%s}",_target.getClass().getName(),interested,_applicableTypeNames,_annotatedTypeNames);
+    }
+
+    public void resolveClasses(WebAppContext context, Map<String, Set<String>> classMap) 
+    {
+        //We have already found the classes that directly have an annotation that was in the HandlesTypes
+        //annotation of the ServletContainerInitializer. For each of those classes, walk the inheritance
+        //hierarchy to find classes that extend or implement them.
+        Set<String> annotatedClassNames = getAnnotatedTypeNames();
+        if (annotatedClassNames != null && !annotatedClassNames.isEmpty())
+        {
+            for (String name : annotatedClassNames)
+            {
+                //add the class that has the annotation
+                addApplicableTypeName(name);
+
+                //find and add the classes that inherit the annotation               
+                addInheritedTypes(classMap, (Set<String>)classMap.get(name));
+            }
+        }
+
+
+        //Now we need to look at the HandlesTypes classes that were not annotations. We need to
+        //find all classes that extend or implement them.
+        if (getInterestedTypes() != null)
+        {
+            for (Class<?> c : getInterestedTypes())
+            {
+                if (!c.isAnnotation())
+                {
+                    //find and add the classes that implement or extend the class.
+                    //but not including the class itself
+                    addInheritedTypes(classMap, (Set<String>)classMap.get(c.getName()));
+                }
+            }
+        }
+    }
+
+    private void addInheritedTypes(Map<String, Set<String>> classMap,Set<String> names)
+    {
+        if (names == null || names.isEmpty())
+            return;
+
+        for (String s : names)
+        {
+            //add the name of the class
+            addApplicableTypeName(s);
+
+            //walk the hierarchy and find all types that extend or implement the class
+            addInheritedTypes(classMap, (Set<String>)classMap.get(s));
         }
     }
 }
