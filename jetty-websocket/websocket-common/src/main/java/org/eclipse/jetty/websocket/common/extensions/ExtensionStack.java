@@ -22,7 +22,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Queue;
 
+import org.eclipse.jetty.util.ConcurrentArrayQueue;
+import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -47,6 +50,8 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
 {
     private static final Logger LOG = Log.getLogger(ExtensionStack.class);
 
+    private final Queue<FrameEntry> entries = new ConcurrentArrayQueue<>();
+    private final IteratingCallback flusher = new Flusher();
     private final ExtensionFactory factory;
     private List<Extension> extensions;
     private IncomingFrames nextIncoming;
@@ -270,7 +275,10 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
     @Override
     public void outgoingFrame(Frame frame, WriteCallback callback)
     {
-        nextOutgoing.outgoingFrame(frame,callback);
+        FrameEntry entry = new FrameEntry(frame, callback);
+        LOG.debug("Queuing {}", entry);
+        entries.offer(entry);
+        flusher.iterate();
     }
 
     public void setNextIncoming(IncomingFrames nextIncoming)
@@ -330,5 +338,92 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
         s.append(",outgoing=").append((this.nextOutgoing == null)?"<null>":this.nextOutgoing.getClass().getName());
         s.append("]");
         return s.toString();
+    }
+
+    private static class FrameEntry
+    {
+        private final Frame frame;
+        private final WriteCallback callback;
+
+        private FrameEntry(Frame frame, WriteCallback callback)
+        {
+            this.frame = frame;
+            this.callback = callback;
+        }
+
+        @Override
+        public String toString()
+        {
+            return frame.toString();
+        }
+    }
+
+    private class Flusher extends IteratingCallback implements WriteCallback
+    {
+        private FrameEntry current;
+
+        @Override
+        protected Action process() throws Exception
+        {
+            current = entries.poll();
+            LOG.debug("Processing {}", current);
+            if (current == null)
+                return Action.IDLE;
+            nextOutgoing.outgoingFrame(current.frame, this);
+            return Action.SCHEDULED;
+        }
+
+        @Override
+        protected void completed()
+        {
+            // This IteratingCallback never completes.
+        }
+
+        @Override
+        public void writeSuccess()
+        {
+            // Notify first then call succeeded(), otherwise
+            // write callbacks may be invoked out of order.
+            notifyCallbackSuccess(current.callback);
+            succeeded();
+        }
+
+        @Override
+        public void writeFailed(Throwable x)
+        {
+            // Notify first, the call succeeded() to drain the queue.
+            // We don't want to call failed(x) because that will put
+            // this flusher into a final state that cannot be exited,
+            // and the failure of a frame may not mean that the whole
+            // connection is now invalid.
+            notifyCallbackFailure(current.callback, x);
+            succeeded();
+        }
+
+        private void notifyCallbackSuccess(WriteCallback callback)
+        {
+            try
+            {
+                if (callback != null)
+                    callback.writeSuccess();
+            }
+            catch (Throwable x)
+            {
+                LOG.debug("Exception while notifying success of callback " + callback, x);
+            }
+        }
+
+        private void notifyCallbackFailure(WriteCallback callback, Throwable failure)
+        {
+            try
+            {
+                if (callback != null)
+                    callback.writeFailed(failure);
+            }
+            catch (Throwable x)
+            {
+                LOG.debug("Exception while notifying failure of callback " + callback, x);
+            }
+        }
     }
 }
