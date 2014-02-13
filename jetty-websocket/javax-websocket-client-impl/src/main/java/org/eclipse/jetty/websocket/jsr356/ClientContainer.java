@@ -99,7 +99,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
 
         client = new WebSocketClient(executor);
         client.setEventDriverFactory(new JsrEventDriverFactory(client.getPolicy()));
-        client.setSessionFactory(new JsrSessionFactory(this,this));
+        client.setSessionFactory(new JsrSessionFactory(this,this,client));
         addBean(client);
 
         ShutdownThread.register(this);

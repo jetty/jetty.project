@@ -31,18 +31,15 @@ import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
 
 public class WebSocketServerConnection extends AbstractWebSocketConnection
 {
-    private final WebSocketServerFactory factory;
     private final AtomicBoolean opened = new AtomicBoolean(false);
 
-    public WebSocketServerConnection(EndPoint endp, Executor executor, Scheduler scheduler, WebSocketPolicy policy, ByteBufferPool bufferPool,
-            WebSocketServerFactory factory)
+    public WebSocketServerConnection(EndPoint endp, Executor executor, Scheduler scheduler, WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
         super(endp,executor,scheduler,policy,bufferPool);
         if (policy.getIdleTimeout() > 0)
         {
             endp.setIdleTimeout(policy.getIdleTimeout());
         }
-        this.factory = factory;
     }
 
     @Override
@@ -58,19 +55,12 @@ public class WebSocketServerConnection extends AbstractWebSocketConnection
     }
 
     @Override
-    public void onClose()
-    {
-        super.onClose();
-        factory.sessionClosed(getSession());
-    }
-
-    @Override
     public void onOpen()
     {
         boolean beenOpened = opened.getAndSet(true);
         if (!beenOpened)
         {
-            factory.sessionOpened(getSession());
+            getSession().open();
         }
         super.onOpen();
     }

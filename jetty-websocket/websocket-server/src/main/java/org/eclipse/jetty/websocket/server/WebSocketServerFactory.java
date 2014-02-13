@@ -91,7 +91,6 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
      * Have the factory maintain 1 and only 1 scheduler. All connections share this scheduler.
      */
     private final Scheduler scheduler = new ScheduledExecutorScheduler();
-    private final Queue<WebSocketSession> sessions = new ConcurrentLinkedQueue<>();
     private final String supportedVersions;
     private final WebSocketPolicy defaultPolicy;
     private final EventDriverFactory eventDriverFactory;
@@ -224,11 +223,11 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
 
     protected void closeAllConnections()
     {
-        for (WebSocketSession session : sessions)
+        for (WebSocketSession session : openSessions)
         {
             session.close();
         }
-        sessions.clear();
+        openSessions.clear();
     }
 
     @Override
@@ -423,27 +422,6 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         registeredSocketClasses.add(websocketPojo);
     }
 
-    public boolean sessionClosed(WebSocketSession session)
-    {
-        return isRunning() && sessions.remove(session);
-    }
-
-    public boolean sessionOpened(WebSocketSession session)
-    {
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("Session Opened: {}",session);
-        }
-        if (!isRunning())
-        {
-            LOG.warn("Factory is not running");
-            return false;
-        }
-        boolean ret = sessions.offer(session);
-        session.open();
-        return ret;
-    }
-
     @Override
     public void setCreator(WebSocketCreator creator)
     {
@@ -536,7 +514,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
             EndPoint endp = http.getEndPoint();
             Executor executor = http.getConnector().getExecutor();
             ByteBufferPool bufferPool = http.getConnector().getByteBufferPool();
-            WebSocketServerConnection wsConnection = new WebSocketServerConnection(endp,executor,scheduler,driver.getPolicy(),bufferPool,this);
+            WebSocketServerConnection wsConnection = new WebSocketServerConnection(endp,executor,scheduler,driver.getPolicy(),bufferPool);
             connection = wsConnection;
 
             extensionStack.setPolicy(driver.getPolicy());
