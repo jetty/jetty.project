@@ -62,8 +62,8 @@ public class NamingContext implements Context, Cloneable, Dumpable
     private final static Logger __log=NamingUtil.__log;
     private final static List<Binding> __empty = Collections.emptyList();
     public static final String DEEP_BINDING = "org.eclipse.jetty.jndi.deepBinding";
-    public static final String LOCK_PROPERTY = "org.eclipse.jndi.lock";
-    public static final String UNLOCK_PROPERTY = "org.eclipse.jndi.unlock";
+    public static final String LOCK_PROPERTY = "org.eclipse.jetty.jndi.lock";
+    public static final String UNLOCK_PROPERTY = "org.eclipse.jetty.jndi.unlock";
 
     protected final Hashtable<String,Object> _env = new Hashtable<String,Object>();
     private boolean _supportDeepBinding = false;
