@@ -70,6 +70,8 @@ public class Response implements HttpServletResponse
     private static final Logger LOG = Log.getLogger(Response.class);    
     private static final String __COOKIE_DELIM="\",;\\ \t";
     private final static String __01Jan1970_COOKIE = DateGenerator.formatCookieDate(0).trim();
+    private final static int __MIN_BUFFER_SIZE = 1;
+    
 
     // Cookie building buffer. Reduce garbage for cookie using applications
     private static final ThreadLocal<StringBuilder> __cookieBuilder = new ThreadLocal<StringBuilder>()
@@ -1197,6 +1199,8 @@ public class Response implements HttpServletResponse
     {
         if (isCommitted() || getContentCount() > 0)
             throw new IllegalStateException("Committed or content written");
+        if (size <= 0)
+            size = __MIN_BUFFER_SIZE;
         _out.setBufferSize(size);
     }
 
