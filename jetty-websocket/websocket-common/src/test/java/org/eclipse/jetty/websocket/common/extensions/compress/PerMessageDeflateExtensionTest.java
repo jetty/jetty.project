@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.common.extensions.compress;
 
-import static org.hamcrest.Matchers.*;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -45,6 +43,8 @@ import org.eclipse.jetty.websocket.common.test.OutgoingFramesCapture;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.is;
 
 /**
  * Client side behavioral tests for permessage-deflate extension.
