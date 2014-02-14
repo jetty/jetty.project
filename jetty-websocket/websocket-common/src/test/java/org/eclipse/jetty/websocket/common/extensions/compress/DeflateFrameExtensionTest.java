@@ -18,29 +18,34 @@
 
 package org.eclipse.jetty.websocket.common.extensions.compress;
 
-import static org.hamcrest.Matchers.*;
-
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
 import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
+import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.extensions.AbstractExtensionTest;
 import org.eclipse.jetty.websocket.common.extensions.ExtensionTool.Tester;
+import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.ByteBufferAssert;
 import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
@@ -50,6 +55,10 @@ import org.eclipse.jetty.websocket.common.test.UnitParser;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
 
 public class DeflateFrameExtensionTest extends AbstractExtensionTest
 {
@@ -119,9 +128,9 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         ext.setNextOutgoingFrames(capture);
 
         Frame frame = new TextFrame().setPayload(text);
-        ext.outgoingFrame(frame,null);
+        ext.outgoingFrame(frame, null);
 
-        capture.assertBytes(0,expectedHex);
+        capture.assertBytes(0, expectedHex);
     }
 
     @Test
@@ -371,5 +380,63 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
     public void testServerGeneratedThere() throws IOException
     {
         assertOutgoing("There","c1070ac9482d4a0500");
+    }
+
+    @Test
+    public void testCompressAndDecompressBigPayload() throws Exception
+    {
+        byte[] input = new byte[1024 * 1024];
+        // Make them not compressible.
+        new Random().nextBytes(input);
+
+        DeflateFrameExtension clientExtension = new DeflateFrameExtension();
+        clientExtension.setBufferPool(bufferPool);
+        clientExtension.setPolicy(WebSocketPolicy.newClientPolicy());
+        clientExtension.setConfig(ExtensionConfig.parse("deflate-frame"));
+
+        final DeflateFrameExtension serverExtension = new DeflateFrameExtension();
+        serverExtension.setBufferPool(bufferPool);
+        serverExtension.setPolicy(WebSocketPolicy.newServerPolicy());
+        serverExtension.setConfig(ExtensionConfig.parse("deflate-frame"));
+
+        // Chain the next element to decompress.
+        clientExtension.setNextOutgoingFrames(new OutgoingFrames()
+        {
+            @Override
+            public void outgoingFrame(Frame frame, WriteCallback callback)
+            {
+                serverExtension.incomingFrame(frame);
+                callback.writeSuccess();
+            }
+        });
+
+        final ByteArrayOutputStream result = new ByteArrayOutputStream(input.length);
+        serverExtension.setNextIncomingFrames(new IncomingFrames()
+        {
+            @Override
+            public void incomingFrame(Frame frame)
+            {
+                try
+                {
+                    result.write(BufferUtil.toArray(frame.getPayload()));
+                }
+                catch (IOException x)
+                {
+                    throw new RuntimeIOException(x);
+                }
+            }
+
+            @Override
+            public void incomingError(Throwable t)
+            {
+            }
+        });
+
+        BinaryFrame frame = new BinaryFrame();
+        frame.setPayload(input);
+        frame.setFin(true);
+        clientExtension.outgoingFrame(frame, null);
+
+        Assert.assertArrayEquals(input, result.toByteArray());
     }
 }

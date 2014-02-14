@@ -144,7 +144,7 @@ public class PerMessageDeflateExtension extends AbstractExtension
                 }
                 if (len > 0)
                 {
-                    accumulator.addBuffer(outbuf,0,len);
+                    accumulator.addChunk(outbuf, 0, len);
                 }
             }
             catch (DataFormatException e)
@@ -154,9 +154,18 @@ public class PerMessageDeflateExtension extends AbstractExtension
             }
         }
 
-        // Forward on the frame
-        out.setPayload(accumulator.getByteBuffer(getBufferPool()));
-        nextIncomingFrame(out);
+        ByteBuffer buffer = getBufferPool().acquire(accumulator.getLength(), false);
+        try
+        {
+            BufferUtil.flipToFill(buffer);
+            accumulator.transferTo(buffer);
+            out.setPayload(buffer);
+            nextIncomingFrame(out);
+        }
+        finally
+        {
+            getBufferPool().release(buffer);
+        }
     }
 
     /**
