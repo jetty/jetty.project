@@ -35,7 +35,6 @@ import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.OpCode;
-import org.eclipse.jetty.websocket.common.frames.DataFrame;
 
 /**
  * Interface for working with bytes destined for {@link EndPoint#write(Callback, ByteBuffer...)}
@@ -356,11 +355,6 @@ public class FrameFlusher
             {
                 generator.getBufferPool().release(headerBuffer);
                 headerBuffer = null;
-            }
-
-            if (frame instanceof DataFrame)
-            {
-                ((DataFrame)frame).reset();
             }
         }
 
