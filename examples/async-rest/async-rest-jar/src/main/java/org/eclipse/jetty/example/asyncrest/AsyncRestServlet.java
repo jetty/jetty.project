@@ -97,7 +97,7 @@ public class AsyncRestServlet extends AbstractRestServlet
             async.setTimeout(30000);
 
             // extract keywords to search for
-            String[] keywords=request.getParameter(ITEMS_PARAM).split(",");
+            String[] keywords=sanitize(request.getParameter(ITEMS_PARAM)).split(",");
             final AtomicInteger outstanding=new AtomicInteger(keywords.length);
 
             // Send request each keyword
@@ -146,7 +146,7 @@ public class AsyncRestServlet extends AbstractRestServlet
         long generate=now-start;
         long thread=initial+generate;
 
-        out.print("<b>Asynchronous: "+request.getParameter(ITEMS_PARAM)+"</b><br/>");
+        out.print("<b>Asynchronous: "+sanitize(request.getParameter(ITEMS_PARAM))+"</b><br/>");
         out.print("Total Time: "+ms(total)+"ms<br/>");
 
         out.print("Thread held (<span class='red'>red</span>): "+ms(thread)+"ms (" + ms(initial) + " initial + " + ms(generate) + " generate )<br/>");
@@ -162,7 +162,7 @@ public class AsyncRestServlet extends AbstractRestServlet
         out.println("</body></html>");
         out.close();
     }
-
+    
     private abstract class AsyncRestRequest extends Response.Listener.Adapter
     {
         final Utf8StringBuilder _content = new Utf8StringBuilder();
