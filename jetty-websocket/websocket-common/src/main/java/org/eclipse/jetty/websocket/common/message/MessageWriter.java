@@ -118,7 +118,7 @@ public class MessageWriter extends Writer
 
         try
         {
-            outgoing.outgoingFrame(frame,blocker);
+            outgoing.outgoingFrame(frame,blocker,OutgoingFrames.FlushMode.FLUSH);
             // block on write
             blocker.block();
             // write success

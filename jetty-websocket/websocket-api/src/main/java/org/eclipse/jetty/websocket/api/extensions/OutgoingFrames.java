@@ -21,21 +21,41 @@ package org.eclipse.jetty.websocket.api.extensions;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 
 /**
- * Interface for dealing with frames outgoing to the network (eventually)
+ * Interface for dealing with frames outgoing to (eventually) the network layer.
  */
 public interface OutgoingFrames
 {
     /**
-     * A frame, and optional callback, intended for the network.
-     * <p>
-     * Note: the frame can undergo many transformations in the various layers and extensions present in the implementation.
-     * <p>
-     * If you are implementing a mutation, you are obliged to handle the incoming WriteCallback appropriately.
-     * 
-     * @param frame
-     *            the frame to eventually write to the network.
-     * @param callback
-     *            the optional callback to use for success/failure of the network write operation. Can be null.
+     * A frame, and optional callback, intended for the network layer.
+     * <p/>
+     * Note: the frame can undergo many transformations in the various
+     * layers and extensions present in the implementation.
+     * <p/>
+     * If you are implementing a mutation, you are obliged to handle
+     * the incoming WriteCallback appropriately.
+     *
+     * @param frame     the frame to eventually write to the network layer.
+     * @param callback  the callback to notify when the frame is written.
+     * @param flushMode the flush mode required by the sender.
      */
-    void outgoingFrame(Frame frame, WriteCallback callback);
+    void outgoingFrame(Frame frame, WriteCallback callback, FlushMode flushMode);
+
+    /**
+     * The possible flush modes when invoking {@link #outgoingFrame(Frame, org.eclipse.jetty.websocket.api.WriteCallback, org.eclipse.jetty.websocket.api.extensions.OutgoingFrames.FlushMode)}.
+     */
+    public enum FlushMode
+    {
+        /**
+         * Implementers of {@link #outgoingFrame(Frame, org.eclipse.jetty.websocket.api.WriteCallback, org.eclipse.jetty.websocket.api.extensions.OutgoingFrames.FlushMode)}
+         * are free to decide whether to flush or not the given frame
+         * to the network layer.
+         */
+        AUTO,
+
+        /**
+         * Implementers of {@link #outgoingFrame(Frame, org.eclipse.jetty.websocket.api.WriteCallback, org.eclipse.jetty.websocket.api.extensions.OutgoingFrames.FlushMode)}
+         * must flush the given frame to the network layer.
+         */
+        FLUSH
+    }
 }

@@ -162,10 +162,10 @@ public abstract class AbstractExtension extends ContainerLifeCycle implements Ex
         this.nextIncoming.incomingFrame(frame);
     }
 
-    protected void nextOutgoingFrame(Frame frame, WriteCallback callback)
+    protected void nextOutgoingFrame(Frame frame, WriteCallback callback, FlushMode flushMode)
     {
         log.debug("nextOutgoingFrame({})",frame);
-        this.nextOutgoing.outgoingFrame(frame,callback);
+        this.nextOutgoing.outgoingFrame(frame,callback,flushMode);
     }
 
     public void setBufferPool(ByteBufferPool bufferPool)

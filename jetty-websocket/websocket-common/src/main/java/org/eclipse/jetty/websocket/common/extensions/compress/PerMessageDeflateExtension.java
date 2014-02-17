@@ -92,14 +92,14 @@ public class PerMessageDeflateExtension extends CompressExtension
     }
 
     @Override
-    protected void nextOutgoingFrame(Frame frame, WriteCallback callback)
+    protected void nextOutgoingFrame(Frame frame, WriteCallback callback, FlushMode flushMode)
     {
         if (frame.isFin() && !outgoingContextTakeover)
         {
             LOG.debug("Outgoing Context Reset");
             getDeflater().reset();
         }
-        super.nextOutgoingFrame(frame, callback);
+        super.nextOutgoingFrame(frame, callback, flushMode);
     }
 
     @Override

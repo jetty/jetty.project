@@ -29,6 +29,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.extensions.AbstractExtensionTest;
@@ -48,17 +49,17 @@ import static org.hamcrest.Matchers.is;
 
 /**
  * Client side behavioral tests for permessage-deflate extension.
- * <p>
+ * <p/>
  * See: http://tools.ietf.org/html/draft-ietf-hybi-permessage-compression-15
  */
 public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 {
     @Rule
-    public LeakTrackingBufferPool bufferPool = new LeakTrackingBufferPool("Test",new MappedByteBufferPool());
-    
+    public LeakTrackingBufferPool bufferPool = new LeakTrackingBufferPool("Test", new MappedByteBufferPool());
+
     /**
      * Decode payload example as seen in draft-ietf-hybi-permessage-compression-15.
-     * <p>
+     * <p/>
      * Section 8.2.3.4: Using a DEFLATE Block with BFINAL Set to 1
      */
     @Test
@@ -71,14 +72,14 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         tester.parseIncomingHex(// 1 message
                 "0xc1 0x08", // header
                 "0xf3 0x48 0xcd 0xc9 0xc9 0x07 0x00 0x00" // example payload 
-                );
+        );
 
         tester.assertHasFrames("Hello");
     }
 
     /**
      * Decode payload example as seen in draft-ietf-hybi-permessage-compression-15.
-     * <p>
+     * <p/>
      * Section 8.2.3.3: Using a DEFLATE Block with No Compression
      */
     @Test
@@ -90,14 +91,14 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
         tester.parseIncomingHex(// 1 message / no compression
                 "0xc1 0x0b 0x00 0x05 0x00 0xfa 0xff 0x48 0x65 0x6c 0x6c 0x6f 0x00" // example frame
-                );
+        );
 
         tester.assertHasFrames("Hello");
     }
 
     /**
      * Decode payload example as seen in draft-ietf-hybi-permessage-compression-15.
-     * <p>
+     * <p/>
      * Section 8.2.3.1: A message compressed using 1 compressed DEFLATE block
      */
     @Test
@@ -109,14 +110,14 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
         tester.parseIncomingHex(//basic, 1 block, compressed with 0 compression level (aka, uncompressed).
                 "0xc1 0x07 0xf2 0x48 0xcd 0xc9 0xc9 0x07 0x00" // example frame
-                );
+        );
 
         tester.assertHasFrames("Hello");
     }
 
     /**
      * Decode payload example as seen in draft-ietf-hybi-permessage-compression-15.
-     * <p>
+     * <p/>
      * Section 8.2.3.1: A message compressed using 1 compressed DEFLATE block (with fragmentation)
      */
     @Test
@@ -139,7 +140,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
     /**
      * Decode payload example as seen in draft-ietf-hybi-permessage-compression-15.
-     * <p>
+     * <p/>
      * Section 8.2.3.2: Sharing LZ77 Sliding Window
      */
     @Test
@@ -157,12 +158,12 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
                 "0xc1 0x07", // (HEADER added for this test)
                 "0xf2 0x48 0xcd 0xc9 0xc9 0x07 0x00");
 
-        tester.assertHasFrames("Hello","Hello");
+        tester.assertHasFrames("Hello", "Hello");
     }
 
     /**
      * Decode payload example as seen in draft-ietf-hybi-permessage-compression-15.
-     * <p>
+     * <p/>
      * Section 8.2.3.2: Sharing LZ77 Sliding Window
      */
     @Test
@@ -179,14 +180,14 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
                 // message 2
                 "0xc1 0x05", // (HEADER added for this test)
                 "0xf2 0x00 0x11 0x00 0x00"
-                );
+        );
 
-        tester.assertHasFrames("Hello","Hello");
+        tester.assertHasFrames("Hello", "Hello");
     }
 
     /**
      * Decode payload example as seen in draft-ietf-hybi-permessage-compression-15.
-     * <p>
+     * <p/>
      * Section 8.2.3.5: Two DEFLATE Blocks in 1 Message
      */
     @Test
@@ -199,7 +200,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         tester.parseIncomingHex(// 1 message, 1 frame, 2 deflate blocks
                 "0xc1 0x0d", // (HEADER added for this test)
                 "0xf2 0x48 0x05 0x00 0x00 0x00 0xff 0xff 0xca 0xc9 0xc9 0x07 0x00"
-                );
+        );
 
         tester.assertHasFrames("Hello");
     }
@@ -227,18 +228,18 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         ext.incomingFrame(ping);
 
         capture.assertFrameCount(1);
-        capture.assertHasFrame(OpCode.PING,1);
+        capture.assertHasFrame(OpCode.PING, 1);
         WebSocketFrame actual = capture.getFrames().poll();
 
-        Assert.assertThat("Frame.opcode",actual.getOpCode(),is(OpCode.PING));
-        Assert.assertThat("Frame.fin",actual.isFin(),is(true));
-        Assert.assertThat("Frame.rsv1",actual.isRsv1(),is(false));
-        Assert.assertThat("Frame.rsv2",actual.isRsv2(),is(false));
-        Assert.assertThat("Frame.rsv3",actual.isRsv3(),is(false));
+        Assert.assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.PING));
+        Assert.assertThat("Frame.fin", actual.isFin(), is(true));
+        Assert.assertThat("Frame.rsv1", actual.isRsv1(), is(false));
+        Assert.assertThat("Frame.rsv2", actual.isRsv2(), is(false));
+        Assert.assertThat("Frame.rsv3", actual.isRsv3(), is(false));
 
-        ByteBuffer expected = BufferUtil.toBuffer(payload,StandardCharsets.UTF_8);
-        Assert.assertThat("Frame.payloadLength",actual.getPayloadLength(),is(expected.remaining()));
-        ByteBufferAssert.assertEquals("Frame.payload",expected,actual.getPayload().slice());
+        ByteBuffer expected = BufferUtil.toBuffer(payload, StandardCharsets.UTF_8);
+        Assert.assertThat("Frame.payloadLength", actual.getPayloadLength(), is(expected.remaining()));
+        ByteBufferAssert.assertEquals("Frame.payload", expected, actual.getPayload().slice());
     }
 
     /**
@@ -275,7 +276,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
         int len = quote.size();
         capture.assertFrameCount(len);
-        capture.assertHasFrame(OpCode.TEXT,len);
+        capture.assertHasFrame(OpCode.TEXT, len);
 
         String prefix;
         int i = 0;
@@ -283,15 +284,15 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         {
             prefix = "Frame[" + i + "]";
 
-            Assert.assertThat(prefix + ".opcode",actual.getOpCode(),is(OpCode.TEXT));
-            Assert.assertThat(prefix + ".fin",actual.isFin(),is(true));
-            Assert.assertThat(prefix + ".rsv1",actual.isRsv1(),is(false));
-            Assert.assertThat(prefix + ".rsv2",actual.isRsv2(),is(false));
-            Assert.assertThat(prefix + ".rsv3",actual.isRsv3(),is(false));
+            Assert.assertThat(prefix + ".opcode", actual.getOpCode(), is(OpCode.TEXT));
+            Assert.assertThat(prefix + ".fin", actual.isFin(), is(true));
+            Assert.assertThat(prefix + ".rsv1", actual.isRsv1(), is(false));
+            Assert.assertThat(prefix + ".rsv2", actual.isRsv2(), is(false));
+            Assert.assertThat(prefix + ".rsv3", actual.isRsv3(), is(false));
 
-            ByteBuffer expected = BufferUtil.toBuffer(quote.get(i),StandardCharsets.UTF_8);
-            Assert.assertThat(prefix + ".payloadLength",actual.getPayloadLength(),is(expected.remaining()));
-            ByteBufferAssert.assertEquals(prefix + ".payload",expected,actual.getPayload().slice());
+            ByteBuffer expected = BufferUtil.toBuffer(quote.get(i), StandardCharsets.UTF_8);
+            Assert.assertThat(prefix + ".payloadLength", actual.getPayloadLength(), is(expected.remaining()));
+            ByteBufferAssert.assertEquals(prefix + ".payload", expected, actual.getPayload().slice());
             i++;
         }
     }
@@ -317,22 +318,22 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         String payload = "Are you there?";
         Frame ping = new PingFrame().setPayload(payload);
 
-        ext.outgoingFrame(ping,null);
+        ext.outgoingFrame(ping, null, OutgoingFrames.FlushMode.FLUSH);
 
         capture.assertFrameCount(1);
-        capture.assertHasFrame(OpCode.PING,1);
+        capture.assertHasFrame(OpCode.PING, 1);
 
         WebSocketFrame actual = capture.getFrames().getFirst();
 
-        Assert.assertThat("Frame.opcode",actual.getOpCode(),is(OpCode.PING));
-        Assert.assertThat("Frame.fin",actual.isFin(),is(true));
-        Assert.assertThat("Frame.rsv1",actual.isRsv1(),is(false));
-        Assert.assertThat("Frame.rsv2",actual.isRsv2(),is(false));
-        Assert.assertThat("Frame.rsv3",actual.isRsv3(),is(false));
+        Assert.assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.PING));
+        Assert.assertThat("Frame.fin", actual.isFin(), is(true));
+        Assert.assertThat("Frame.rsv1", actual.isRsv1(), is(false));
+        Assert.assertThat("Frame.rsv2", actual.isRsv2(), is(false));
+        Assert.assertThat("Frame.rsv3", actual.isRsv3(), is(false));
 
-        ByteBuffer expected = BufferUtil.toBuffer(payload,StandardCharsets.UTF_8);
-        Assert.assertThat("Frame.payloadLength",actual.getPayloadLength(),is(expected.remaining()));
-        ByteBufferAssert.assertEquals("Frame.payload",expected,actual.getPayload().slice());
+        ByteBuffer expected = BufferUtil.toBuffer(payload, StandardCharsets.UTF_8);
+        Assert.assertThat("Frame.payloadLength", actual.getPayloadLength(), is(expected.remaining()));
+        ByteBufferAssert.assertEquals("Frame.payload", expected, actual.getPayload().slice());
     }
 
     @Test
@@ -350,7 +351,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
                 "c1 0b 0a c8 c8 c9 2f 4a  0c 01 62 00 00" // PhloraTora
         );
 
-        tester.assertHasFrames("ToraTora","AtoraFlora","PhloraTora");
+        tester.assertHasFrames("ToraTora", "AtoraFlora", "PhloraTora");
     }
 
     @Test
@@ -368,7 +369,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
                 "c1 04 02 61 00 00" // tora 3
         );
 
-        tester.assertHasFrames("tora","tora","tora");
+        tester.assertHasFrames("tora", "tora", "tora");
     }
 
     @Test
@@ -386,7 +387,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
                 "c1 8b e2 3e 05 53 e8 f6  cd 9a cd 74 09 52 80 3e 05" // PhloraTora
         );
 
-        tester.assertHasFrames("ToraTora","AtoraFlora","PhloraTora");
+        tester.assertHasFrames("ToraTora", "AtoraFlora", "PhloraTora");
     }
 
     @Test
@@ -404,6 +405,6 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
                 "c1 84 53 ad a5 34 51 cc  a5 34" // tora 3
         );
 
-        tester.assertHasFrames("tora","tora","tora");
+        tester.assertHasFrames("tora", "tora", "tora");
     }
 }

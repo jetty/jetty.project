@@ -126,7 +126,7 @@ public class DummyConnection implements LogicalConnection
     }
 
     @Override
-    public void outgoingFrame(Frame frame, WriteCallback callback)
+    public void outgoingFrame(Frame frame, WriteCallback callback, FlushMode flushMode)
     {
         callback.writeSuccess();
     }

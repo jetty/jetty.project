@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.common;
 
-import static org.hamcrest.Matchers.containsString;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -31,6 +29,8 @@ import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
+
+import static org.hamcrest.Matchers.containsString;
 
 public class WebSocketRemoteEndpointTest
 {

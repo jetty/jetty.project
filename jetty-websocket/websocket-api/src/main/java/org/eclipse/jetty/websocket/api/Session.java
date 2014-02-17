@@ -175,4 +175,9 @@ public interface Session extends Closeable
      * @return the suspend token suitable for resuming the reading of data on the connection.
      */
     SuspendToken suspend();
+
+    /**
+     * @return true if this session is batching network data, false if it flushes it immediately.
+     */
+    boolean isBatching();
 }

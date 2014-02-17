@@ -52,7 +52,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
         STREAMING,
         PARTIAL_TEXT,
         PARTIAL_BINARY
-    };
+    }
     
     private static final WriteCallback NOOP_CALLBACK = new WriteCallback()
     {
@@ -284,17 +284,16 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /** unchecked send
-     * @param frame
-     * @param callback
-     */
     public void uncheckedSendFrame(WebSocketFrame frame, WriteCallback callback)
     {
         try
         {
             connection.getIOState().assertOutputOpen();
-            outgoing.outgoingFrame(frame,callback);
+            OutgoingFrames.FlushMode flushMode = OutgoingFrames.FlushMode.FLUSH;
+            WebSocketSession session = connection.getSession();
+            if (session != null && session.isBatching())
+                flushMode = OutgoingFrames.FlushMode.AUTO;
+            outgoing.outgoingFrame(frame,callback,flushMode);
         }
         catch (IOException e)
         {

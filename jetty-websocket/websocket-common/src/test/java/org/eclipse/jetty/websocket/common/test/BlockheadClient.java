@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.common.test;
 
-import static org.hamcrest.Matchers.*;
-
 import java.io.Closeable;
 import java.io.EOFException;
 import java.io.IOException;
@@ -68,6 +66,10 @@ import org.eclipse.jetty.websocket.common.io.IOState;
 import org.eclipse.jetty.websocket.common.io.IOState.ConnectionStateListener;
 import org.eclipse.jetty.websocket.common.io.http.HttpResponseHeaderParser;
 import org.junit.Assert;
+
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 /**
  * A simple websocket client for performing unit tests with.
@@ -465,7 +467,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames, Connecti
     }
 
     @Override
-    public void outgoingFrame(Frame frame, WriteCallback callback)
+    public void outgoingFrame(Frame frame, WriteCallback callback, FlushMode flushMode)
     {
         ByteBuffer headerBuf = generator.generateHeaderBytes(frame);
         if (LOG.isDebugEnabled())
@@ -710,7 +712,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames, Connecti
         {
             frame.setMask(clientmask);
         }
-        extensionStack.outgoingFrame(frame,null);
+        extensionStack.outgoingFrame(frame,null,FlushMode.FLUSH);
     }
 
     public void writeRaw(ByteBuffer buf) throws IOException

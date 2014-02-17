@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
@@ -55,7 +56,8 @@ import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.io.IOState.ConnectionStateListener;
 
 /**
- * Provides the implementation of {@link LogicalConnection} within the framework of the new {@link Connection} framework of jetty-io
+ * Provides the implementation of {@link LogicalConnection} within the
+ * framework of the new {@link Connection} framework of {@code jetty-io}.
  */
 public abstract class AbstractWebSocketConnection extends AbstractConnection implements LogicalConnection, ConnectionStateListener
 {
@@ -379,7 +381,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                 {
                     // Fire out a close frame, indicating abnormal shutdown, then disconnect
                     CloseInfo abnormal = new CloseInfo(StatusCode.SHUTDOWN,"Abnormal Close - " + ioState.getCloseInfo().getReason());
-                    outgoingFrame(abnormal.asFrame(),new OnDisconnectCallback());
+                    outgoingFrame(abnormal.asFrame(),new OnDisconnectCallback(),FlushMode.FLUSH);
                 }
                 else
                 {
@@ -390,7 +392,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             case CLOSING:
                 CloseInfo close = ioState.getCloseInfo();
                 // append close frame
-                outgoingFrame(close.asFrame(),new OnDisconnectCallback());
+                outgoingFrame(close.asFrame(),new OnDisconnectCallback(),FlushMode.FLUSH);
             default:
                 break;
         }
@@ -463,14 +465,14 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
      * Frame from API, User, or Internal implementation destined for network.
      */
     @Override
-    public void outgoingFrame(Frame frame, WriteCallback callback)
+    public void outgoingFrame(Frame frame, WriteCallback callback, FlushMode flushMode)
     {
         if (LOG.isDebugEnabled())
         {
             LOG.debug("outgoingFrame({}, {})",frame,callback);
         }
 
-        flusher.enqueue(frame,callback);
+        flusher.enqueue(frame,callback,flushMode);
     }
 
     private int read(ByteBuffer buffer)

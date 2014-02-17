@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
 import javax.websocket.CloseReason;
 import javax.websocket.EndpointConfig;
 import javax.websocket.Extension;
@@ -72,8 +71,9 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
     private Map<String, String> pathParameters = new HashMap<>();
     private JsrAsyncRemote asyncRemote;
     private JsrBasicRemote basicRemote;
+    private volatile boolean batching;
 
-    public JsrSession(URI requestURI, EventDriver websocket, LogicalConnection connection, ClientContainer container, String id, SessionListener[] sessionListeners)
+    public JsrSession(URI requestURI, EventDriver websocket, LogicalConnection connection, ClientContainer container, String id, SessionListener... sessionListeners)
     {
         super(requestURI,websocket,connection,sessionListeners);
         if (!(websocket instanceof AbstractJsrEventDriver))
@@ -373,5 +373,16 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
             }
             messageHandlerSet.add(wrapper.getHandler());
         }
+    }
+
+    @Override
+    public boolean isBatching()
+    {
+        return batching;
+    }
+
+    public void setBatching(boolean batching)
+    {
+        this.batching = batching;
     }
 }

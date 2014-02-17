@@ -28,11 +28,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.ArrayQueue;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.OpCode;
 
@@ -131,10 +133,10 @@ public class FrameFlusher
         }
     }
 
-    public void enqueue(Frame frame, WriteCallback callback)
+    public void enqueue(Frame frame, WriteCallback callback, OutgoingFrames.FlushMode flushMode)
     {
         Objects.requireNonNull(frame);
-        FrameEntry entry = new FrameEntry(frame,callback);
+        FrameEntry entry = new FrameEntry(frame,callback,flushMode);
         LOG.debug("enqueue({})",entry);
         Throwable failure=null;
         synchronized (lock)
@@ -292,14 +294,16 @@ public class FrameFlusher
     {
         protected final AtomicBoolean failed = new AtomicBoolean(false);
         protected final Frame frame;
+        private final OutgoingFrames.FlushMode flushMode;
         protected final WriteCallback callback;
         /** holds reference to header ByteBuffer, as it needs to be released on success/failure */
         private ByteBuffer headerBuffer;
 
-        public FrameEntry(Frame frame, WriteCallback callback)
+        public FrameEntry(Frame frame, WriteCallback callback, OutgoingFrames.FlushMode flushMode)
         {
             this.frame = frame;
             this.callback = callback;
+            this.flushMode = flushMode;
         }
 
         public ByteBuffer getHeaderBytes()

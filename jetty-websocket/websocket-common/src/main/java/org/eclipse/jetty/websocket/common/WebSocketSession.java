@@ -57,8 +57,9 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
     private final URI requestURI;
     private final EventDriver websocket;
     private final LogicalConnection connection;
-    private final Executor executor;
+    private final boolean batching;
     private final SessionListener[] sessionListeners;
+    private final Executor executor;
     private ExtensionFactory extensionFactory;
     private String protocolVersion;
     private Map<String, String[]> parameterMap = new HashMap<>();
@@ -69,7 +70,12 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
     private UpgradeRequest upgradeRequest;
     private UpgradeResponse upgradeResponse;
 
-    public WebSocketSession(URI requestURI, EventDriver websocket, LogicalConnection connection, SessionListener[] sessionListeners)
+    public WebSocketSession(URI requestURI, EventDriver websocket, LogicalConnection connection, SessionListener... sessionListeners)
+    {
+        this(requestURI, websocket, connection, true, sessionListeners);
+    }
+
+    public WebSocketSession(URI requestURI, EventDriver websocket, LogicalConnection connection, boolean batching, SessionListener... sessionListeners)
     {
         if (requestURI == null)
         {
@@ -79,6 +85,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
         this.requestURI = requestURI;
         this.websocket = websocket;
         this.connection = connection;
+        this.batching = batching;
         this.sessionListeners = sessionListeners;
         this.executor = connection.getExecutor();
         this.outgoingHandler = connection;
@@ -469,6 +476,12 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
     public SuspendToken suspend()
     {
         return connection;
+    }
+
+    @Override
+    public boolean isBatching()
+    {
+        return batching;
     }
 
     @Override

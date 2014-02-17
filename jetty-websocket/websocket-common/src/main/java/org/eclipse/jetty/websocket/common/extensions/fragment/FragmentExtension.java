@@ -57,17 +57,17 @@ public class FragmentExtension extends AbstractExtension
     }
 
     @Override
-    public void outgoingFrame(Frame frame, WriteCallback callback)
+    public void outgoingFrame(Frame frame, WriteCallback callback, FlushMode flushMode)
     {
         ByteBuffer payload = frame.getPayload();
         int length = payload != null ? payload.remaining() : 0;
         if (OpCode.isControlFrame(frame.getOpCode()) || maxLength <= 0 || length <= maxLength)
         {
-            nextOutgoingFrame(frame, callback);
+            nextOutgoingFrame(frame, callback, flushMode);
             return;
         }
 
-        FrameEntry entry = new FrameEntry(frame, callback);
+        FrameEntry entry = new FrameEntry(frame, callback, flushMode);
         LOG.debug("Queuing {}", entry);
         entries.offer(entry);
         flusher.iterate();
@@ -84,11 +84,13 @@ public class FragmentExtension extends AbstractExtension
     {
         private final Frame frame;
         private final WriteCallback callback;
+        private final FlushMode flushMode;
 
-        private FrameEntry(Frame frame, WriteCallback callback)
+        private FrameEntry(Frame frame, WriteCallback callback, FlushMode flushMode)
         {
             this.frame = frame;
             this.callback = callback;
+            this.flushMode = flushMode;
         }
 
         @Override
@@ -143,7 +145,7 @@ public class FragmentExtension extends AbstractExtension
             LOG.debug("Fragmented {}->{}", frame, fragment);
             payload.position(newLimit);
 
-            nextOutgoingFrame(fragment, this);
+            nextOutgoingFrame(fragment, this, entry.flushMode);
         }
 
         @Override

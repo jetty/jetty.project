@@ -273,9 +273,9 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
     }
 
     @Override
-    public void outgoingFrame(Frame frame, WriteCallback callback)
+    public void outgoingFrame(Frame frame, WriteCallback callback, FlushMode flushMode)
     {
-        FrameEntry entry = new FrameEntry(frame, callback);
+        FrameEntry entry = new FrameEntry(frame, callback, flushMode);
         LOG.debug("Queuing {}", entry);
         entries.offer(entry);
         flusher.iterate();
@@ -344,11 +344,13 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
     {
         private final Frame frame;
         private final WriteCallback callback;
+        private final FlushMode flushMode;
 
-        private FrameEntry(Frame frame, WriteCallback callback)
+        private FrameEntry(Frame frame, WriteCallback callback, FlushMode flushMode)
         {
             this.frame = frame;
             this.callback = callback;
+            this.flushMode = flushMode;
         }
 
         @Override
@@ -369,7 +371,7 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
             LOG.debug("Processing {}", current);
             if (current == null)
                 return Action.IDLE;
-            nextOutgoing.outgoingFrame(current.frame, this);
+            nextOutgoing.outgoingFrame(current.frame, this, current.flushMode);
             return Action.SCHEDULED;
         }
 

@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
@@ -96,26 +95,16 @@ public class WebSocketClientConnection extends AbstractWebSocketConnection
     }
 
     /**
-     * Overrride to set masker
+     * Override to set the masker.
      */
     @Override
-    public void outgoingFrame(Frame frame, WriteCallback callback)
+    public void outgoingFrame(Frame frame, WriteCallback callback, FlushMode flushMode)
     {
         if (frame instanceof WebSocketFrame)
         {
-            if (masker == null)
-            {
-                ProtocolException ex = new ProtocolException("Must set a Masker");
-                LOG.warn(ex);
-                if (callback != null)
-                {
-                    callback.writeFailed(ex);
-                }
-                return;
-            }
             masker.setMask((WebSocketFrame)frame);
         }
-        super.outgoingFrame(frame,callback);
+        super.outgoingFrame(frame,callback, flushMode);
     }
 
     @Override

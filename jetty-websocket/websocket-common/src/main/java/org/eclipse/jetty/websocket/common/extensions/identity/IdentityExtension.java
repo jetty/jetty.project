@@ -56,10 +56,10 @@ public class IdentityExtension extends AbstractExtension
     }
 
     @Override
-    public void outgoingFrame(Frame frame, WriteCallback callback)
+    public void outgoingFrame(Frame frame, WriteCallback callback, FlushMode flushMode)
     {
         // pass through
-        nextOutgoingFrame(frame,callback);
+        nextOutgoingFrame(frame,callback, flushMode);
     }
 
     @Override

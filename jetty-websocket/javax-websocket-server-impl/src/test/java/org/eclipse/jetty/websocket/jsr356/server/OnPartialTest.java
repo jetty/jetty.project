@@ -18,17 +18,13 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import static org.hamcrest.Matchers.*;
-
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.common.SessionListener;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
@@ -44,6 +40,9 @@ import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
+
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 public class OnPartialTest
 {
@@ -80,7 +79,7 @@ public class OnPartialTest
         DummyConnection connection = new DummyConnection();
         ClientContainer container = new ClientContainer();
         @SuppressWarnings("resource")
-        JsrSession session = new JsrSession(requestURI,driver,connection,container,id,new SessionListener[0]);
+        JsrSession session = new JsrSession(requestURI,driver,connection,container,id);
         session.setPolicy(policy);
         session.open();
         return driver;

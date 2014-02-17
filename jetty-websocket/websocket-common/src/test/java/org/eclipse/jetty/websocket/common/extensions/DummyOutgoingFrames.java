@@ -44,7 +44,7 @@ public class DummyOutgoingFrames implements OutgoingFrames
     }
 
     @Override
-    public void outgoingFrame(Frame frame, WriteCallback callback)
+    public void outgoingFrame(Frame frame, WriteCallback callback, FlushMode flushMode)
     {
         LOG.debug("outgoingFrame({},{})",frame,callback);
         if (callback != null)
