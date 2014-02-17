@@ -442,6 +442,13 @@ public class HttpParser
                 break;
             else if (ch<0)
                 throw new BadMessage();
+            
+            // count this white space as a header byte to avoid DOS
+            if (_maxHeaderBytes>0 && ++_headerBytes>_maxHeaderBytes)
+            {
+                LOG.warn("padding is too large >"+_maxHeaderBytes);
+                throw new BadMessage(HttpStatus.BAD_REQUEST_400);
+            }
         }
         return false;
     }
