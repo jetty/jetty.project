@@ -36,6 +36,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.log.Log;
@@ -242,6 +243,25 @@ public class GzipHandler extends HandlerWrapper
     public void setMinGzipSize(int minGzipSize)
     {
         _minGzipSize = minGzipSize;
+    }
+    
+    /* ------------------------------------------------------------ */
+    @Override
+    protected void doStart() throws Exception
+    {
+        if (_mimeTypes.size()==0)
+        {
+            for (String type:MimeTypes.getKnownMimeTypes())
+            {
+                if (type.startsWith("image/")||
+                    type.startsWith("audio/")||
+                    type.startsWith("video/"))
+                    _mimeTypes.add(type);
+                _mimeTypes.add("application/compress");
+                _mimeTypes.add("application/zip");
+                _mimeTypes.add("application/gzip");
+            }
+        }
     }
 
     /* ------------------------------------------------------------ */
