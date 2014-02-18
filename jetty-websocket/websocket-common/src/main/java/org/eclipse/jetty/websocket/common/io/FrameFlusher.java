@@ -241,6 +241,7 @@ public class FrameFlusher
             return Action.SCHEDULED;
         }
 
+        @SuppressWarnings("ForLoopReplaceableByForEach")
         private void flush()
         {
             if (!BufferUtil.isEmpty(aggregate))
@@ -252,8 +253,10 @@ public class FrameFlusher
                     LOG.debug("{} flushing aggregate {}", FrameFlusher.this, aggregate);
             }
 
-            for (FrameEntry entry : entries)
+            // Do not allocate the iterator here.
+            for (int i = 0; i < entries.size(); ++i)
             {
+                FrameEntry entry = entries.get(i);
                 // Skip "synthetic" frames used for flushing.
                 if (entry.frame == FLUSH_FRAME)
                     continue;
@@ -269,6 +272,7 @@ public class FrameFlusher
             buffers.clear();
         }
 
+        @SuppressWarnings("ForLoopReplaceableByForEach")
         private void batch()
         {
             if (aggregate == null)
@@ -280,8 +284,10 @@ public class FrameFlusher
                 releaseAggregate = false;
             }
 
-            for (FrameEntry entry : entries)
+            // Do not allocate the iterator here.
+            for (int i = 0; i < entries.size(); ++i)
             {
+                FrameEntry entry = entries.get(i);
                 // TODO: would be better to generate the header bytes directly into the aggregate buffer.
                 ByteBuffer header = entry.getHeaderBytes();
                 aggregate.put(header);
@@ -295,11 +301,14 @@ public class FrameFlusher
             succeeded();
         }
 
+        @SuppressWarnings("ForLoopReplaceableByForEach")
         @Override
         public void succeeded()
         {
-            for (FrameEntry entry : entries)
+            // Do not allocate the iterator here.
+            for (int i = 0; i < entries.size(); ++i)
             {
+                FrameEntry entry = entries.get(i);
                 notifyCallbackSuccess(entry.callback);
                 entry.release();
             }
