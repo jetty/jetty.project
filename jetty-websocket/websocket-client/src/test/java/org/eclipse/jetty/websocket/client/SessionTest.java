@@ -23,6 +23,7 @@ import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
@@ -85,7 +86,7 @@ public class SessionTest
 
             RemoteEndpoint remote = cliSock.getSession().getRemote();
             remote.sendStringByFuture("Hello World!");
-            if (remote.isBatching())
+            if (remote.getBatchMode() == BatchMode.ON)
                 remote.flush();
             srvSock.echoMessage(1,TimeUnit.MILLISECONDS,500);
             // wait for response from server

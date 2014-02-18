@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.server.examples;
 import java.io.IOException;
 
 import org.eclipse.jetty.io.RuntimeIOException;
+import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 
@@ -42,7 +43,7 @@ public class MyEchoSocket extends WebSocketAdapter
             // echo the data back
             RemoteEndpoint remote = getRemote();
             remote.sendString(message);
-            if (remote.isBatching())
+            if (remote.getBatchMode() == BatchMode.ON)
                 remote.flush();
         }
         catch (IOException e)

@@ -47,6 +47,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
@@ -231,7 +232,7 @@ public class BlockheadServer
         }
 
         @Override
-        public void outgoingFrame(Frame frame, WriteCallback callback, FlushMode flushMode)
+        public void outgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode)
         {
             ByteBuffer headerBuf = generator.generateHeaderBytes(frame);
             if (LOG.isDebugEnabled())
@@ -561,7 +562,7 @@ public class BlockheadServer
         public void write(Frame frame) throws IOException
         {
             LOG.debug("write(Frame->{}) to {}",frame,outgoing);
-            outgoing.outgoingFrame(frame,null,FlushMode.SEND);
+            outgoing.outgoingFrame(frame,null, BatchMode.OFF);
         }
 
         public void write(int b) throws IOException

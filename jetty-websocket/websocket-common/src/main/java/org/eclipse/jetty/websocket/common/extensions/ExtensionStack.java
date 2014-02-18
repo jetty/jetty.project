@@ -31,6 +31,7 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Extension;
@@ -273,9 +274,9 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
     }
 
     @Override
-    public void outgoingFrame(Frame frame, WriteCallback callback, FlushMode flushMode)
+    public void outgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode)
     {
-        FrameEntry entry = new FrameEntry(frame, callback, flushMode);
+        FrameEntry entry = new FrameEntry(frame, callback, batchMode);
         LOG.debug("Queuing {}", entry);
         entries.offer(entry);
         flusher.iterate();
@@ -344,13 +345,13 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
     {
         private final Frame frame;
         private final WriteCallback callback;
-        private final FlushMode flushMode;
+        private final BatchMode batchMode;
 
-        private FrameEntry(Frame frame, WriteCallback callback, FlushMode flushMode)
+        private FrameEntry(Frame frame, WriteCallback callback, BatchMode batchMode)
         {
             this.frame = frame;
             this.callback = callback;
-            this.flushMode = flushMode;
+            this.batchMode = batchMode;
         }
 
         @Override
@@ -371,7 +372,7 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
             LOG.debug("Processing {}", current);
             if (current == null)
                 return Action.IDLE;
-            nextOutgoing.outgoingFrame(current.frame, this, current.flushMode);
+            nextOutgoing.outgoingFrame(current.frame, this, current.batchMode);
             return Action.SCHEDULED;
         }
 

@@ -24,6 +24,7 @@ import java.util.Map;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
@@ -118,7 +119,7 @@ public class SessionSocket
     {
         RemoteEndpoint remote = session.getRemote();
         remote.sendString(text, null);
-        if (remote.isBatching())
+        if (remote.getBatchMode() == BatchMode.ON)
             remote.flush();
     }
 }

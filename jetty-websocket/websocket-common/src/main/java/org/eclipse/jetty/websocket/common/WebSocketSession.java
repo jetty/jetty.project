@@ -33,6 +33,7 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.CloseStatus;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
@@ -399,7 +400,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
         connection.getIOState().onConnected();
 
         // Connect remote
-        remote = new WebSocketRemoteEndpoint(connection, outgoingHandler, getBatchingDefault());
+        remote = new WebSocketRemoteEndpoint(connection, outgoingHandler, getBatchMode());
 
         // Open WebSocket
         websocket.openSession(this);
@@ -473,9 +474,9 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
     /**
      * @return the default (initial) value for the batching mode.
      */
-    public boolean getBatchingDefault()
+    public BatchMode getBatchMode()
     {
-        return true;
+        return BatchMode.AUTO;
     }
 
     @Override

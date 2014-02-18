@@ -29,6 +29,7 @@ import javax.websocket.SendHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.common.WebSocketRemoteEndpoint;
 import org.eclipse.jetty.websocket.common.io.FutureWriteCallback;
 import org.eclipse.jetty.websocket.common.message.MessageOutputStream;
@@ -85,13 +86,15 @@ public abstract class AbstractJsrRemote implements RemoteEndpoint
     @Override
     public boolean getBatchingAllowed()
     {
-        return jettyRemote.isBatching();
+        return jettyRemote.getBatchMode() == BatchMode.ON;
     }
 
     @Override
     public void setBatchingAllowed(boolean allowed) throws IOException
     {
-        jettyRemote.setBatching(allowed);
+        if (jettyRemote.getBatchMode() == BatchMode.ON && !allowed)
+            jettyRemote.flush();
+        jettyRemote.setBatchMode(allowed ? BatchMode.ON : BatchMode.OFF);
     }
 
     @SuppressWarnings(

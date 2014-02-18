@@ -123,16 +123,15 @@ public interface RemoteEndpoint
     void sendString(String text, WriteCallback callback);
 
     /**
-     * @return whether the implementation is allowed to batch messages.
+     * @return the batch mode with which messages are sent.
      * @see #flush()
      */
-    boolean isBatching();
-
+    BatchMode getBatchMode();
 
     /**
      * Flushes messages that may have been batched by the implementation.
      * @throws IOException if the flush fails
-     * @see #isBatching()
+     * @see #getBatchMode()
      */
     void flush() throws IOException;
 }

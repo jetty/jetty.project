@@ -26,6 +26,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.BlockingWriteCallback;
@@ -118,7 +119,7 @@ public class MessageWriter extends Writer
 
         try
         {
-            outgoing.outgoingFrame(frame,blocker,OutgoingFrames.FlushMode.SEND);
+            outgoing.outgoingFrame(frame,blocker, BatchMode.OFF);
             // block on write
             blocker.block();
             // write success

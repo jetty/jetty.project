@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
@@ -92,14 +93,14 @@ public class PerMessageDeflateExtension extends CompressExtension
     }
 
     @Override
-    protected void nextOutgoingFrame(Frame frame, WriteCallback callback, FlushMode flushMode)
+    protected void nextOutgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode)
     {
         if (frame.isFin() && !outgoingContextTakeover)
         {
             LOG.debug("Outgoing Context Reset");
             getDeflater().reset();
         }
-        super.nextOutgoingFrame(frame, callback, flushMode);
+        super.nextOutgoingFrame(frame, callback, batchMode);
     }
 
     @Override

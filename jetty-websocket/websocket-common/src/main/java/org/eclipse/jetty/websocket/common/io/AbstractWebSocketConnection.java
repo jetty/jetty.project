@@ -39,6 +39,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.CloseException;
 import org.eclipse.jetty.websocket.api.CloseStatus;
 import org.eclipse.jetty.websocket.api.StatusCode;
@@ -376,7 +377,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                 {
                     // Fire out a close frame, indicating abnormal shutdown, then disconnect
                     CloseInfo abnormal = new CloseInfo(StatusCode.SHUTDOWN,"Abnormal Close - " + ioState.getCloseInfo().getReason());
-                    outgoingFrame(abnormal.asFrame(),new OnDisconnectCallback(),FlushMode.SEND);
+                    outgoingFrame(abnormal.asFrame(),new OnDisconnectCallback(), BatchMode.OFF);
                 }
                 else
                 {
@@ -387,7 +388,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             case CLOSING:
                 CloseInfo close = ioState.getCloseInfo();
                 // append close frame
-                outgoingFrame(close.asFrame(),new OnDisconnectCallback(),FlushMode.SEND);
+                outgoingFrame(close.asFrame(),new OnDisconnectCallback(), BatchMode.OFF);
             default:
                 break;
         }
@@ -460,14 +461,14 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
      * Frame from API, User, or Internal implementation destined for network.
      */
     @Override
-    public void outgoingFrame(Frame frame, WriteCallback callback, FlushMode flushMode)
+    public void outgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode)
     {
         if (LOG.isDebugEnabled())
         {
             LOG.debug("outgoingFrame({}, {})",frame,callback);
         }
 
-        flusher.enqueue(frame,callback,flushMode);
+        flusher.enqueue(frame,callback, batchMode);
     }
 
     private int read(ByteBuffer buffer)

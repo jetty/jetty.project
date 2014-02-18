@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
@@ -79,14 +80,14 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
     private final OutgoingFrames outgoing;
     private final AtomicInteger msgState = new AtomicInteger();
     private final BlockingWriteCallback blocker = new BlockingWriteCallback();
-    private volatile boolean batching;
+    private volatile BatchMode batchMode;
 
     public WebSocketRemoteEndpoint(LogicalConnection connection, OutgoingFrames outgoing)
     {
-        this(connection, outgoing, true);
+        this(connection, outgoing, BatchMode.AUTO);
     }
 
-    public WebSocketRemoteEndpoint(LogicalConnection connection, OutgoingFrames outgoing, boolean batching)
+    public WebSocketRemoteEndpoint(LogicalConnection connection, OutgoingFrames outgoing, BatchMode batchMode)
     {
         if (connection == null)
         {
@@ -94,7 +95,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
         }
         this.connection = connection;
         this.outgoing = outgoing;
-        this.batching = batching;
+        this.batchMode = batchMode;
     }
 
     private void blockingWrite(WebSocketFrame frame) throws IOException
@@ -292,11 +293,11 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
     {
         try
         {
-            OutgoingFrames.FlushMode flushMode = OutgoingFrames.FlushMode.SEND;
-            if (frame.isDataFrame() && isBatching())
-                flushMode = OutgoingFrames.FlushMode.AUTO;
+            BatchMode batchMode = BatchMode.OFF;
+            if (frame.isDataFrame())
+                batchMode = getBatchMode();
             connection.getIOState().assertOutputOpen();
-            outgoing.outgoingFrame(frame, callback, flushMode);
+            outgoing.outgoingFrame(frame, callback, batchMode);
         }
         catch (IOException e)
         {
@@ -426,17 +427,17 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
     }
 
     @Override
-    public boolean isBatching()
+    public BatchMode getBatchMode()
     {
-        return batching;
+        return batchMode;
     }
 
     // Only the JSR needs to have this method exposed.
     // In the Jetty implementation the batching is set
     // at the moment of opening the session.
-    public void setBatching(boolean batching)
+    public void setBatchMode(BatchMode batchMode)
     {
-        this.batching = batching;
+        this.batchMode = batchMode;
     }
 
     public void flush() throws IOException
@@ -456,6 +457,6 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
     @Override
     public String toString()
     {
-        return String.format("%s@%x[batching=%b]", getClass().getSimpleName(), hashCode(), isBatching());
+        return String.format("%s@%x[batching=%b]", getClass().getSimpleName(), hashCode(), getBatchMode());
     }
 }

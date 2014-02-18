@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.toolchain.test.TestTracker;
+import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
@@ -87,7 +88,7 @@ public class WebSocketOverSSLTest
             String msg = "this is an echo ... cho ... ho ... o";
             RemoteEndpoint remote = session.getRemote();
             remote.sendString(msg);
-            if (remote.isBatching())
+            if (remote.getBatchMode() == BatchMode.ON)
                 remote.flush();
 
             // Read frame (hopefully text frame)
@@ -128,7 +129,7 @@ public class WebSocketOverSSLTest
             // Generate text frame
             RemoteEndpoint remote = session.getRemote();
             remote.sendString("session.isSecure");
-            if (remote.isBatching())
+            if (remote.getBatchMode() == BatchMode.ON)
                 remote.flush();
 
             // Read frame (hopefully text frame)
@@ -169,7 +170,7 @@ public class WebSocketOverSSLTest
             // Generate text frame
             RemoteEndpoint remote = session.getRemote();
             remote.sendString("session.upgradeRequest.requestURI");
-            if (remote.isBatching())
+            if (remote.getBatchMode() == BatchMode.ON)
                 remote.flush();
 
             // Read frame (hopefully text frame)

@@ -31,6 +31,7 @@ import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BadPayloadException;
+import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.OpCode;
@@ -138,7 +139,7 @@ public abstract class CompressExtension extends AbstractExtension
     }
 
     @Override
-    public void outgoingFrame(Frame frame, WriteCallback callback, FlushMode flushMode)
+    public void outgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode)
     {
         // We use a queue and an IteratingCallback to handle concurrency.
         // We must compress and write atomically, otherwise the compression
@@ -150,7 +151,7 @@ public abstract class CompressExtension extends AbstractExtension
             return;
         }
 
-        FrameEntry entry = new FrameEntry(frame, callback, flushMode);
+        FrameEntry entry = new FrameEntry(frame, callback, batchMode);
         LOG.debug("Queuing {}", entry);
         entries.offer(entry);
         flusher.iterate();
@@ -192,13 +193,13 @@ public abstract class CompressExtension extends AbstractExtension
     {
         private final Frame frame;
         private final WriteCallback callback;
-        private final FlushMode flushMode;
+        private final BatchMode batchMode;
 
-        private FrameEntry(Frame frame, WriteCallback callback, FlushMode flushMode)
+        private FrameEntry(Frame frame, WriteCallback callback, BatchMode batchMode)
         {
             this.frame = frame;
             this.callback = callback;
-            this.flushMode = flushMode;
+            this.batchMode = batchMode;
         }
 
         @Override
@@ -235,10 +236,10 @@ public abstract class CompressExtension extends AbstractExtension
         private void deflate(FrameEntry entry)
         {
             Frame frame = entry.frame;
-            FlushMode flushMode = entry.flushMode;
+            BatchMode batchMode = entry.batchMode;
             if (OpCode.isControlFrame(frame.getOpCode()) || !frame.hasPayload())
             {
-                nextOutgoingFrame(frame, this, flushMode);
+                nextOutgoingFrame(frame, this, batchMode);
                 return;
             }
 
@@ -311,7 +312,7 @@ public abstract class CompressExtension extends AbstractExtension
             boolean fin = frame.isFin() && finished;
             chunk.setFin(fin);
 
-            nextOutgoingFrame(chunk, this, entry.flushMode);
+            nextOutgoingFrame(chunk, this, entry.batchMode);
         }
 
         @Override

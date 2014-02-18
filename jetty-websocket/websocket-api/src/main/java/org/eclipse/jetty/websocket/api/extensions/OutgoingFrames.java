@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.api.extensions;
 
+import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 
 /**
@@ -36,26 +37,8 @@ public interface OutgoingFrames
      *
      * @param frame     the frame to eventually write to the network layer.
      * @param callback  the callback to notify when the frame is written.
-     * @param flushMode the flush mode required by the sender.
+     * @param batchMode the batch mode requested by the sender.
      */
-    void outgoingFrame(Frame frame, WriteCallback callback, FlushMode flushMode);
+    void outgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode);
 
-    /**
-     * The possible flush modes when invoking {@link #outgoingFrame(Frame, WriteCallback, OutgoingFrames.FlushMode)}.
-     */
-    public enum FlushMode
-    {
-        /**
-         * Implementers of {@link #outgoingFrame(Frame, WriteCallback, OutgoingFrames.FlushMode)}
-         * are free to decide whether to flush or not the given frame
-         * to the network layer.
-         */
-        AUTO,
-
-        /**
-         * Implementers of {@link #outgoingFrame(Frame, WriteCallback, OutgoingFrames.FlushMode)}
-         * must send the given frame to the network layer.
-         */
-        SEND
-    }
 }

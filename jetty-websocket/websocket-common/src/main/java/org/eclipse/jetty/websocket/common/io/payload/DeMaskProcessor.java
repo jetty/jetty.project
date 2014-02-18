@@ -59,12 +59,15 @@ public class DeMaskProcessor implements PayloadProcessor
         maskOffset = offset;
     }
 
-    public void reset(byte mask[])
+    public void reset(byte[] mask)
     {
         this.maskBytes = mask;
         int maskInt = 0;
-        for (byte maskByte : maskBytes)
-            maskInt = (maskInt << 8) + (maskByte & 0xFF);
+        if (mask != null)
+        {
+            for (byte maskByte : mask)
+                maskInt = (maskInt << 8) + (maskByte & 0xFF);
+        }
         this.maskInt = maskInt;
         this.maskOffset = 0;
     }

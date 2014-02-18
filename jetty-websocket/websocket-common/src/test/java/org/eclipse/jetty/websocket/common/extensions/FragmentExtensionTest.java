@@ -27,10 +27,10 @@ import java.util.List;
 
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.extensions.fragment.FragmentExtension;
@@ -165,7 +165,7 @@ public class FragmentExtensionTest
         for (String section : quote)
         {
             Frame frame = new TextFrame().setPayload(section);
-            ext.outgoingFrame(frame, null, OutgoingFrames.FlushMode.SEND);
+            ext.outgoingFrame(frame, null, BatchMode.OFF);
         }
 
         // Expected Frames
@@ -237,7 +237,7 @@ public class FragmentExtensionTest
         for (String section : quote)
         {
             Frame frame = new TextFrame().setPayload(section);
-            ext.outgoingFrame(frame, null, OutgoingFrames.FlushMode.SEND);
+            ext.outgoingFrame(frame, null, BatchMode.OFF);
         }
 
         // Expected Frames
@@ -294,7 +294,7 @@ public class FragmentExtensionTest
         String payload = "Are you there?";
         Frame ping = new PingFrame().setPayload(payload);
 
-        ext.outgoingFrame(ping, null, OutgoingFrames.FlushMode.SEND);
+        ext.outgoingFrame(ping, null, BatchMode.OFF);
 
         capture.assertFrameCount(1);
         capture.assertHasFrame(OpCode.PING, 1);

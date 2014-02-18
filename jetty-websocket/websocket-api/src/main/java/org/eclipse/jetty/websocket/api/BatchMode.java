@@ -16,34 +16,35 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common.extensions.compress;
+package org.eclipse.jetty.websocket.api;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.eclipse.jetty.websocket.api.BatchMode;
-import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
-import org.eclipse.jetty.websocket.common.util.Hex;
 
-public class CapturedHexPayloads implements OutgoingFrames
+/**
+ * The possible batch modes when invoking {@link OutgoingFrames#outgoingFrame(Frame, WriteCallback, BatchMode)}.
+ */
+public enum BatchMode
 {
-    private List<String> captured = new ArrayList<>();
+    /**
+     * Implementers are free to decide whether to send or not frames
+     * to the network layer.
+     */
+    AUTO,
 
-    @Override
-    public void outgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode)
-    {
-        String hexPayload = Hex.asHex(frame.getPayload());
-        captured.add(hexPayload);
-        if (callback != null)
-        {
-            callback.writeSuccess();
-        }
-    }
+    /**
+     * Implementers must batch frames.
+     */
+    ON,
 
-    public List<String> getCaptured()
+    /**
+     * Implementers must send frames to the network layer.
+     */
+    OFF;
+
+    public static BatchMode max(BatchMode one, BatchMode two)
     {
-        return captured;
+        // Return the BatchMode that has the higher priority, where AUTO < ON < OFF.
+        return one.ordinal() < two.ordinal() ? two : one;
     }
 }

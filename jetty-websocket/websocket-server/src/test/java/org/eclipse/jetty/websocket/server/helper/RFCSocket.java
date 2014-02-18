@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
@@ -45,7 +46,7 @@ public class RFCSocket
         ByteBuffer data = ByteBuffer.wrap(buf,offset,len);
         RemoteEndpoint remote = session.getRemote();
         remote.sendBytes(data, null);
-        if (remote.isBatching())
+        if (remote.getBatchMode() == BatchMode.ON)
             remote.flush();
     }
 
@@ -69,7 +70,7 @@ public class RFCSocket
         // echo the message back.
         RemoteEndpoint remote = session.getRemote();
         remote.sendString(message, null);
-        if (remote.isBatching())
+        if (remote.getBatchMode() == BatchMode.ON)
             remote.flush();
     }
 }

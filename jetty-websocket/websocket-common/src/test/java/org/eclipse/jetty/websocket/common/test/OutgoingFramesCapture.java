@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.common.test;
 import java.util.LinkedList;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
@@ -85,7 +86,7 @@ public class OutgoingFramesCapture implements OutgoingFrames
     }
 
     @Override
-    public void outgoingFrame(Frame frame, WriteCallback callback, FlushMode flushMode)
+    public void outgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode)
     {
         frames.add(WebSocketFrame.copy(frame));
         if (callback != null)

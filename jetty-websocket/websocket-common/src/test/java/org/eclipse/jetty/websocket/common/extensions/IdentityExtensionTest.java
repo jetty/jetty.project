@@ -23,9 +23,9 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.extensions.Extension;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.extensions.identity.IdentityExtension;
@@ -81,7 +81,7 @@ public class IdentityExtensionTest
         ext.setNextOutgoingFrames(capture);
 
         Frame frame = new TextFrame().setPayload("hello");
-        ext.outgoingFrame(frame, null, OutgoingFrames.FlushMode.SEND);
+        ext.outgoingFrame(frame, null, BatchMode.OFF);
 
         capture.assertFrameCount(1);
         capture.assertHasFrame(OpCode.TEXT, 1);

@@ -24,6 +24,7 @@ import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 
@@ -41,7 +42,7 @@ public class JettyEchoSocket extends WebSocketAdapter
         {
             RemoteEndpoint remote = getRemote();
             remote.sendBytes(BufferUtil.toBuffer(payload, offset, len), null);
-            if (remote.isBatching())
+            if (remote.getBatchMode() == BatchMode.ON)
                 remote.flush();
         }
         catch (IOException x)
@@ -63,7 +64,7 @@ public class JettyEchoSocket extends WebSocketAdapter
         {
             RemoteEndpoint remote = getRemote();
             remote.sendString(message, null);
-            if (remote.isBatching())
+            if (remote.getBatchMode() == BatchMode.ON)
                 remote.flush();
         }
         catch (IOException x)

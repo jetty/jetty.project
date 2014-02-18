@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
@@ -98,13 +99,13 @@ public class WebSocketClientConnection extends AbstractWebSocketConnection
      * Override to set the masker.
      */
     @Override
-    public void outgoingFrame(Frame frame, WriteCallback callback, FlushMode flushMode)
+    public void outgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode)
     {
         if (frame instanceof WebSocketFrame)
         {
             masker.setMask((WebSocketFrame)frame);
         }
-        super.outgoingFrame(frame,callback, flushMode);
+        super.outgoingFrame(frame,callback, batchMode);
     }
 
     @Override
