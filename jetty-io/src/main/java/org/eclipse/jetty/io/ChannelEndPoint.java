@@ -181,7 +181,8 @@ public class ChannelEndPoint extends AbstractEndPoint
                     }
                 }
             }
-            LOG.debug("flushed {} {}", flushed, this);
+            if (LOG.isDebugEnabled())
+                LOG.debug("flushed {} {}", flushed, this);
         }
         catch (IOException e)
         {
