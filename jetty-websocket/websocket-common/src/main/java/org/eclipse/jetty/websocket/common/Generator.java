@@ -58,7 +58,7 @@ public class Generator
     /**
      * The overhead (maximum) for a framing header. Assuming a maximum sized payload with masking key.
      */
-    public static final int OVERHEAD = 28;
+    public static final int MAX_HEADER_LENGTH = 28;
 
     private final WebSocketBehavior behavior;
     private final ByteBufferPool bufferPool;
@@ -196,7 +196,7 @@ public class Generator
         // we need a framing header
         assertFrameValid(frame);
 
-        ByteBuffer buffer = bufferPool.acquire(OVERHEAD,true);
+        ByteBuffer buffer = bufferPool.acquire(MAX_HEADER_LENGTH,true);
         BufferUtil.clearToFill(buffer);
 
         /*

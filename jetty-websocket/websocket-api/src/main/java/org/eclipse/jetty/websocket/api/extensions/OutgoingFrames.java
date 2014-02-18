@@ -41,21 +41,21 @@ public interface OutgoingFrames
     void outgoingFrame(Frame frame, WriteCallback callback, FlushMode flushMode);
 
     /**
-     * The possible flush modes when invoking {@link #outgoingFrame(Frame, org.eclipse.jetty.websocket.api.WriteCallback, org.eclipse.jetty.websocket.api.extensions.OutgoingFrames.FlushMode)}.
+     * The possible flush modes when invoking {@link #outgoingFrame(Frame, WriteCallback, OutgoingFrames.FlushMode)}.
      */
     public enum FlushMode
     {
         /**
-         * Implementers of {@link #outgoingFrame(Frame, org.eclipse.jetty.websocket.api.WriteCallback, org.eclipse.jetty.websocket.api.extensions.OutgoingFrames.FlushMode)}
+         * Implementers of {@link #outgoingFrame(Frame, WriteCallback, OutgoingFrames.FlushMode)}
          * are free to decide whether to flush or not the given frame
          * to the network layer.
          */
         AUTO,
 
         /**
-         * Implementers of {@link #outgoingFrame(Frame, org.eclipse.jetty.websocket.api.WriteCallback, org.eclipse.jetty.websocket.api.extensions.OutgoingFrames.FlushMode)}
-         * must flush the given frame to the network layer.
+         * Implementers of {@link #outgoingFrame(Frame, WriteCallback, OutgoingFrames.FlushMode)}
+         * must send the given frame to the network layer.
          */
-        FLUSH
+        SEND
     }
 }

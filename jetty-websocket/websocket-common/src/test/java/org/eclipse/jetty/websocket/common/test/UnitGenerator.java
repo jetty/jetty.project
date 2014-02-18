@@ -61,7 +61,7 @@ public class UnitGenerator extends Generator
         int buflen = 0;
         for (Frame f : frames)
         {
-            buflen += f.getPayloadLength() + Generator.OVERHEAD;
+            buflen += f.getPayloadLength() + Generator.MAX_HEADER_LENGTH;
         }
         ByteBuffer completeBuf = ByteBuffer.allocate(buflen);
         BufferUtil.clearToFill(completeBuf);
@@ -96,7 +96,7 @@ public class UnitGenerator extends Generator
         int buflen = 0;
         for (Frame f : frames)
         {
-            buflen += f.getPayloadLength() + Generator.OVERHEAD;
+            buflen += f.getPayloadLength() + Generator.MAX_HEADER_LENGTH;
         }
         ByteBuffer completeBuf = ByteBuffer.allocate(buflen);
         BufferUtil.clearToFill(completeBuf);

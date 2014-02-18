@@ -81,7 +81,7 @@ public class IdentityExtensionTest
         ext.setNextOutgoingFrames(capture);
 
         Frame frame = new TextFrame().setPayload("hello");
-        ext.outgoingFrame(frame, null, OutgoingFrames.FlushMode.FLUSH);
+        ext.outgoingFrame(frame, null, OutgoingFrames.FlushMode.SEND);
 
         capture.assertFrameCount(1);
         capture.assertHasFrame(OpCode.TEXT, 1);

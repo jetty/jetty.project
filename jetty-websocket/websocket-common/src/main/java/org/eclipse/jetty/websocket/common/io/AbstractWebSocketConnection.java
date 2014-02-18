@@ -63,9 +63,9 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
 {
     private class Flusher extends FrameFlusher
     {
-        private Flusher(Generator generator, EndPoint endpoint)
+        private Flusher(ByteBufferPool bufferPool, Generator generator, EndPoint endpoint)
         {
-            super(generator,endpoint);
+            super(bufferPool, generator, endpoint, getPolicy().getMaxBinaryMessageBufferSize(), 8);
         }
 
         @Override
@@ -151,7 +151,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     /**
      * Minimum size of a buffer is the determined to be what would be the maximum framing header size (not including payload)
      */
-    private static final int MIN_BUFFER_SIZE = Generator.OVERHEAD;
+    private static final int MIN_BUFFER_SIZE = Generator.MAX_HEADER_LENGTH;
 
     private final ByteBufferPool bufferPool;
     private final Scheduler scheduler;
@@ -178,7 +178,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         this.suspendToken = new AtomicBoolean(false);
         this.ioState = new IOState();
         this.ioState.addListener(this);
-        this.flusher = new Flusher(generator,endp);
+        this.flusher = new Flusher(bufferPool,generator,endp);
         this.setInputBufferSize(policy.getInputBufferSize());
         this.setMaxIdleTimeout(policy.getIdleTimeout());
     }
@@ -261,11 +261,6 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     {
         stats.countFillInterestedEvents.incrementAndGet();
         super.fillInterested();
-    }
-
-    public void flush()
-    {
-        flusher.flush();
     }
 
     @Override
@@ -381,7 +376,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                 {
                     // Fire out a close frame, indicating abnormal shutdown, then disconnect
                     CloseInfo abnormal = new CloseInfo(StatusCode.SHUTDOWN,"Abnormal Close - " + ioState.getCloseInfo().getReason());
-                    outgoingFrame(abnormal.asFrame(),new OnDisconnectCallback(),FlushMode.FLUSH);
+                    outgoingFrame(abnormal.asFrame(),new OnDisconnectCallback(),FlushMode.SEND);
                 }
                 else
                 {
@@ -392,7 +387,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             case CLOSING:
                 CloseInfo close = ioState.getCloseInfo();
                 // append close frame
-                outgoingFrame(close.asFrame(),new OnDisconnectCallback(),FlushMode.FLUSH);
+                outgoingFrame(close.asFrame(),new OnDisconnectCallback(),FlushMode.SEND);
             default:
                 break;
         }

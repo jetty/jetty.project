@@ -71,11 +71,10 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
     private Map<String, String> pathParameters = new HashMap<>();
     private JsrAsyncRemote asyncRemote;
     private JsrBasicRemote basicRemote;
-    private volatile boolean batching;
 
     public JsrSession(URI requestURI, EventDriver websocket, LogicalConnection connection, ClientContainer container, String id, SessionListener... sessionListeners)
     {
-        super(requestURI,websocket,connection,sessionListeners);
+        super(requestURI, websocket, connection, sessionListeners);
         if (!(websocket instanceof AbstractJsrEventDriver))
         {
             throw new IllegalArgumentException("Cannot use, not a JSR WebSocket: " + websocket);
@@ -90,13 +89,12 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
         this.messageHandlerFactory = new MessageHandlerFactory();
         this.wrappers = new MessageHandlerWrapper[MessageType.values().length];
         this.messageHandlerSet = new HashSet<>();
-
     }
 
     @Override
     public void addMessageHandler(MessageHandler handler) throws IllegalStateException
     {
-        Objects.requireNonNull(handler,"MessageHandler cannot be null");
+        Objects.requireNonNull(handler, "MessageHandler cannot be null");
 
         synchronized (wrappers)
         {
@@ -376,13 +374,8 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
     }
 
     @Override
-    public boolean isBatching()
+    public boolean getBatchingDefault()
     {
-        return batching;
-    }
-
-    public void setBatching(boolean batching)
-    {
-        this.batching = batching;
+        return false;
     }
 }

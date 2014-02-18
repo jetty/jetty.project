@@ -561,7 +561,7 @@ public class BlockheadServer
         public void write(Frame frame) throws IOException
         {
             LOG.debug("write(Frame->{}) to {}",frame,outgoing);
-            outgoing.outgoingFrame(frame,null,FlushMode.FLUSH);
+            outgoing.outgoingFrame(frame,null,FlushMode.SEND);
         }
 
         public void write(int b) throws IOException

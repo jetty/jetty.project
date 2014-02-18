@@ -127,7 +127,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         ext.setNextOutgoingFrames(capture);
 
         Frame frame = new TextFrame().setPayload(text);
-        ext.outgoingFrame(frame, null, OutgoingFrames.FlushMode.FLUSH);
+        ext.outgoingFrame(frame, null, OutgoingFrames.FlushMode.SEND);
 
         capture.assertBytes(0, expectedHex);
     }
@@ -234,9 +234,9 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         init(ext);
         ext.setNextOutgoingFrames(capture);
 
-        ext.outgoingFrame(new TextFrame().setPayload("time:"), null, OutgoingFrames.FlushMode.FLUSH);
-        ext.outgoingFrame(new TextFrame().setPayload("time:"), null, OutgoingFrames.FlushMode.FLUSH);
-        ext.outgoingFrame(new TextFrame().setPayload("time:"), null, OutgoingFrames.FlushMode.FLUSH);
+        ext.outgoingFrame(new TextFrame().setPayload("time:"), null, OutgoingFrames.FlushMode.SEND);
+        ext.outgoingFrame(new TextFrame().setPayload("time:"), null, OutgoingFrames.FlushMode.SEND);
+        ext.outgoingFrame(new TextFrame().setPayload("time:"), null, OutgoingFrames.FlushMode.SEND);
 
         List<String> actual = capture.getCaptured();
 
@@ -308,8 +308,8 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         OutgoingNetworkBytesCapture capture = new OutgoingNetworkBytesCapture(generator);
         ext.setNextOutgoingFrames(capture);
 
-        ext.outgoingFrame(new TextFrame().setPayload("Hello"), null, OutgoingFrames.FlushMode.FLUSH);
-        ext.outgoingFrame(new TextFrame().setPayload("There"), null, OutgoingFrames.FlushMode.FLUSH);
+        ext.outgoingFrame(new TextFrame().setPayload("Hello"), null, OutgoingFrames.FlushMode.SEND);
+        ext.outgoingFrame(new TextFrame().setPayload("There"), null, OutgoingFrames.FlushMode.SEND);
 
         capture.assertBytes(0, "c107f248cdc9c90700");
     }
@@ -430,7 +430,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         BinaryFrame frame = new BinaryFrame();
         frame.setPayload(input);
         frame.setFin(true);
-        clientExtension.outgoingFrame(frame, null, OutgoingFrames.FlushMode.FLUSH);
+        clientExtension.outgoingFrame(frame, null, OutgoingFrames.FlushMode.SEND);
 
         Assert.assertArrayEquals(input, result.toByteArray());
     }

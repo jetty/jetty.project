@@ -137,7 +137,7 @@ public class MessageOutputStream extends OutputStream
 
         try
         {
-            outgoing.outgoingFrame(frame,blocker,OutgoingFrames.FlushMode.FLUSH);
+            outgoing.outgoingFrame(frame,blocker,OutgoingFrames.FlushMode.SEND);
             // block on write
             blocker.block();
             // block success

@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import static org.hamcrest.Matchers.is;
-
 import java.net.URI;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -35,6 +33,8 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.is;
 
 public class SlowClientTest
 {
@@ -79,24 +79,23 @@ public class SlowClientTest
         client.getPolicy().setIdleTimeout(60000);
 
         URI wsUri = server.getWsUri();
-        Future<Session> future = client.connect(tsocket,wsUri);
+        Future<Session> future = client.connect(tsocket, wsUri);
 
         ServerConnection sconnection = server.accept();
         sconnection.setSoTimeout(60000);
         sconnection.upgrade();
 
         // Confirm connected
-        future.get(500,TimeUnit.MILLISECONDS);
-        tsocket.waitForConnected(500,TimeUnit.MILLISECONDS);
+        future.get(500, TimeUnit.MILLISECONDS);
+        tsocket.waitForConnected(500, TimeUnit.MILLISECONDS);
+
+        int messageCount = 10;
 
         // Setup server read thread
-        ServerReadThread reader = new ServerReadThread(sconnection);
-        reader.setExpectedMessageCount(Integer.MAX_VALUE); // keep reading till I tell you to stop
+        ServerReadThread reader = new ServerReadThread(sconnection, messageCount);
         reader.start();
 
         // Have client write slowly.
-        int messageCount = 1000;
-
         ClientWriteThread writer = new ClientWriteThread(tsocket.getSession());
         writer.setMessageCount(messageCount);
         writer.setMessage("Hello");
@@ -104,13 +103,15 @@ public class SlowClientTest
         writer.start();
         writer.join();
 
+        reader.waitForExpectedMessageCount(1, TimeUnit.MINUTES);
+
         // Verify receive
-        Assert.assertThat("Frame Receive Count",reader.getFrameCount(),is(messageCount));
+        Assert.assertThat("Frame Receive Count", reader.getFrameCount(), is(messageCount));
 
         // Close
-        tsocket.getSession().close(StatusCode.NORMAL,"Done");
+        tsocket.getSession().close(StatusCode.NORMAL, "Done");
 
-        Assert.assertTrue("Client Socket Closed",tsocket.closeLatch.await(3,TimeUnit.MINUTES));
+        Assert.assertTrue("Client Socket Closed", tsocket.closeLatch.await(3, TimeUnit.MINUTES));
         tsocket.assertCloseCode(StatusCode.NORMAL);
 
         reader.cancel(); // stop reading

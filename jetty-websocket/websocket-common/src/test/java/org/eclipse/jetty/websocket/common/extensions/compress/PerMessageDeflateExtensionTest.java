@@ -318,7 +318,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         String payload = "Are you there?";
         Frame ping = new PingFrame().setPayload(payload);
 
-        ext.outgoingFrame(ping, null, OutgoingFrames.FlushMode.FLUSH);
+        ext.outgoingFrame(ping, null, OutgoingFrames.FlushMode.SEND);
 
         capture.assertFrameCount(1);
         capture.assertHasFrame(OpCode.PING, 1);

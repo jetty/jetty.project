@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import static org.hamcrest.Matchers.*;
-
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
@@ -31,6 +29,8 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.is;
 
 public class FirefoxTest
 {
@@ -52,8 +52,7 @@ public class FirefoxTest
     @Test
     public void testConnectionKeepAlive() throws Exception
     {
-        BlockheadClient client = new BlockheadClient(server.getServerUri());
-        try
+        try (BlockheadClient client = new BlockheadClient(server.getServerUri()))
         {
             // Odd Connection Header value seen in Firefox
             client.setConnectionValue("keep-alive, Upgrade");
@@ -66,13 +65,9 @@ public class FirefoxTest
             client.write(new TextFrame().setPayload(msg));
 
             // Read frame (hopefully text frame)
-            IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
+            IncomingFramesCapture capture = client.readFrames(1, TimeUnit.MILLISECONDS, 500);
             WebSocketFrame tf = capture.getFrames().poll();
-            Assert.assertThat("Text Frame.status code",tf.getPayloadAsUTF8(),is(msg));
-        }
-        finally
-        {
-            client.close();
+            Assert.assertThat("Text Frame.status code", tf.getPayloadAsUTF8(), is(msg));
         }
     }
 }

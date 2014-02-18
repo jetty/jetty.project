@@ -712,7 +712,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames, Connecti
         {
             frame.setMask(clientmask);
         }
-        extensionStack.outgoingFrame(frame,null,FlushMode.FLUSH);
+        extensionStack.outgoingFrame(frame,null,FlushMode.SEND);
     }
 
     public void writeRaw(ByteBuffer buf) throws IOException

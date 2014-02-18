@@ -43,7 +43,7 @@ public class FramePipes
         @Override
         public void incomingFrame(Frame frame)
         {
-            this.outgoing.outgoingFrame(frame,null,OutgoingFrames.FlushMode.FLUSH);
+            this.outgoing.outgoingFrame(frame,null,OutgoingFrames.FlushMode.SEND);
         }
     }
 

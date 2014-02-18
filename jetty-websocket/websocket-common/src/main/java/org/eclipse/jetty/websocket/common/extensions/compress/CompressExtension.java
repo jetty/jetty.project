@@ -156,6 +156,32 @@ public abstract class CompressExtension extends AbstractExtension
         flusher.iterate();
     }
 
+    protected void notifyCallbackSuccess(WriteCallback callback)
+    {
+        try
+        {
+            if (callback != null)
+                callback.writeSuccess();
+        }
+        catch (Throwable x)
+        {
+            LOG.debug("Exception while notifying success of callback " + callback, x);
+        }
+    }
+
+    protected void notifyCallbackFailure(WriteCallback callback, Throwable failure)
+    {
+        try
+        {
+            if (callback != null)
+                callback.writeFailed(failure);
+        }
+        catch (Throwable x)
+        {
+            LOG.debug("Exception while notifying failure of callback " + callback, x);
+        }
+    }
+
     @Override
     public String toString()
     {
@@ -210,16 +236,8 @@ public abstract class CompressExtension extends AbstractExtension
         {
             Frame frame = entry.frame;
             FlushMode flushMode = entry.flushMode;
-            if (OpCode.isControlFrame(frame.getOpCode()))
+            if (OpCode.isControlFrame(frame.getOpCode()) || !frame.hasPayload())
             {
-                // Skip, cannot compress control frames.
-                nextOutgoingFrame(frame, this, flushMode);
-                return;
-            }
-
-            if (!frame.hasPayload())
-            {
-                // Pass through, nothing to do
                 nextOutgoingFrame(frame, this, flushMode);
                 return;
             }
@@ -321,32 +339,6 @@ public abstract class CompressExtension extends AbstractExtension
             FrameEntry entry;
             while ((entry = entries.poll()) != null)
                 notifyCallbackFailure(entry.callback, x);
-        }
-    }
-
-    protected void notifyCallbackSuccess(WriteCallback callback)
-    {
-        try
-        {
-            if (callback != null)
-                callback.writeSuccess();
-        }
-        catch (Throwable x)
-        {
-            LOG.debug("Exception while notifying success of callback " + callback, x);
-        }
-    }
-
-    protected void notifyCallbackFailure(WriteCallback callback, Throwable failure)
-    {
-        try
-        {
-            if (callback != null)
-                callback.writeFailed(failure);
-        }
-        catch (Throwable x)
-        {
-            LOG.debug("Exception while notifying failure of callback " + callback, x);
         }
     }
 }
