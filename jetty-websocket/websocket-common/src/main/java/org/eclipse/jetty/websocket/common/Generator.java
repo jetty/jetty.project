@@ -284,7 +284,9 @@ public class Generator
         {
             byte[] mask = frame.getMask();
             buffer.put(mask);
-            int maskInt = ByteBuffer.wrap(mask).getInt();
+            int maskInt = 0;
+            for (byte maskByte : mask)
+                maskInt = (maskInt << 8) + (maskByte & 0xFF);
 
             // perform data masking here
             ByteBuffer payload = frame.getPayload();
