@@ -452,4 +452,10 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
             unlockMsg(MsgType.ASYNC);
         }
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x[batching=%b]", getClass().getSimpleName(), hashCode(), isBatching());
+    }
 }
