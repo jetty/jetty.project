@@ -470,14 +470,14 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
     @Override
     public void onSessionClosed(WebSocketSession session)
     {
-        LOG.info("Session Closed: {}",session);
+        LOG.debug("Session Closed: {}",session);
         removeBean(session);
     }
 
     @Override
     public void onSessionOpened(WebSocketSession session)
     {
-        LOG.info("Session Opened: {}",session);
+        LOG.debug("Session Opened: {}",session);
     }
 
     public void setAsyncWriteTimeout(long ms)
