@@ -365,13 +365,16 @@ public class MongoSessionManager extends NoSqlSessionManager
         // followed by bindings and then activation.
         session.willPassivate();
         try
-        {
-            session.clearAttributes();
-            
-            DBObject attrs = (DBObject)getNestedValue(o,getContextKey());         
-            
-            if (attrs != null)
+        {     
+            DBObject attrs = (DBObject)getNestedValue(o,getContextKey());    
+            //if disk version now has no attributes, get rid of them
+            if (attrs == null || attrs.keySet().size() == 0)
             {
+                session.clearAttributes();
+            }
+            else
+            {
+                //iterate over the names of the attributes on the disk version, updating the value
                 for (String name : attrs.keySet())
                 {
                     //skip special metadata field which is not one of the session attributes
@@ -381,23 +384,25 @@ public class MongoSessionManager extends NoSqlSessionManager
                     String attr = decodeName(name);
                     Object value = decodeValue(attrs.get(name));
 
-                    if (attrs.keySet().contains(name))
-                    {
+                    //session does not already contain this attribute, so bind it
+                    if (session.getAttribute(attr) == null)
+                    { 
                         session.doPutOrRemove(attr,value);
                         session.bindValue(attr,value);
                     }
-                    else
+                    else //session already contains this attribute, update its value
                     {
                         session.doPutOrRemove(attr,value);
                     }
+
                 }
                 // cleanup, remove values from session, that don't exist in data anymore:
-                for (String name : session.getNames())
+                for (String str : session.getNames())
                 {
-                    if (!attrs.keySet().contains(name))
+                    if (!attrs.keySet().contains(str))
                     {
-                        session.doPutOrRemove(name,null);
-                        session.unbindValue(name,session.getAttribute(name));
+                        session.doPutOrRemove(str,null);
+                        session.unbindValue(str,session.getAttribute(str));
                     }
                 }
             }
