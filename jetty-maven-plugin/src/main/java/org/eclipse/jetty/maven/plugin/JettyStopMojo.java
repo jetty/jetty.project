@@ -85,7 +85,7 @@ public class JettyStopMojo extends AbstractMojo
                 s.setSoTimeout(stopWait * 1000);
                 s.getInputStream();
 
-                System.err.printf("Waiting %d seconds for jetty to stop%n",stopWait);
+                getLog().info("Waiting "+stopWait+" seconds for jetty to stop");
                 LineNumberReader lin = new LineNumberReader(new InputStreamReader(s.getInputStream()));
                 String response;
                 boolean stopped = false;
@@ -94,7 +94,7 @@ public class JettyStopMojo extends AbstractMojo
                     if ("Stopped".equals(response))
                     {
                         stopped = true;
-                        System.err.println("Server reports itself as Stopped");
+                        getLog().info("Server reports itself as stopped");
                     }                
                 }
             }
