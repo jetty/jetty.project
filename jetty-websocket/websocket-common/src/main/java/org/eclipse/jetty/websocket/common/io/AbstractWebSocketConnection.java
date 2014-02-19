@@ -36,6 +36,8 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -60,7 +62,7 @@ import org.eclipse.jetty.websocket.common.io.IOState.ConnectionStateListener;
  * Provides the implementation of {@link LogicalConnection} within the
  * framework of the new {@link Connection} framework of {@code jetty-io}.
  */
-public abstract class AbstractWebSocketConnection extends AbstractConnection implements LogicalConnection, ConnectionStateListener
+public abstract class AbstractWebSocketConnection extends AbstractConnection implements LogicalConnection, ConnectionStateListener, Dumpable
 {
     private class Flusher extends FrameFlusher
     {
@@ -566,9 +568,21 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     }
 
     @Override
+    public String dump()
+    {
+        return ContainerLifeCycle.dump(this);
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        out.append(toString()).append(System.lineSeparator());
+    }
+
+    @Override
     public String toString()
     {
-        return String.format("%s{g=%s,p=%s}",super.toString(),generator,parser);
+        return String.format("%s{f=%s,g=%s,p=%s}",super.toString(),flusher,generator,parser);
     }
 
 }

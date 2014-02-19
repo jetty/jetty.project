@@ -563,4 +563,11 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
     {
         this.sessionFactory = sessionFactory;
     }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        dumpThis(out);
+        dump(out, indent, getOpenSessions());
+    }
 }

@@ -110,13 +110,13 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
         IncomingFrames websocket = getLastIncoming();
         OutgoingFrames network = getLastOutgoing();
 
-        out.append(indent).append(" +- Stack\n");
-        out.append(indent).append("    +- Network  : ").append(network.toString()).append('\n');
+        out.append(indent).append(" +- Stack").append(System.lineSeparator());
+        out.append(indent).append("     +- Network  : ").append(network.toString()).append(System.lineSeparator());
         for (Extension ext : extensions)
         {
-            out.append(indent).append("    +- Extension: ").append(ext.toString()).append('\n');
+            out.append(indent).append("     +- Extension: ").append(ext.toString()).append(System.lineSeparator());
         }
-        out.append(indent).append("    +- Websocket: ").append(websocket.toString()).append('\n');
+        out.append(indent).append("     +- Websocket: ").append(websocket.toString()).append(System.lineSeparator());
     }
 
     @ManagedAttribute(name = "Extension List", readonly = true)
@@ -308,7 +308,8 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
     {
         StringBuilder s = new StringBuilder();
         s.append("ExtensionStack[");
-        s.append("extensions=");
+        s.append("queueSize=").append(entries.size());
+        s.append(",extensions=");
         if (extensions == null)
         {
             s.append("<null>");

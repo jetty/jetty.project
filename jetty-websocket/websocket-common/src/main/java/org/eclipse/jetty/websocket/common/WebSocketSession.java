@@ -126,7 +126,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        super.dump(out, indent);
+        dumpThis(out);
         out.append(indent).append(" +- incomingHandler : ");
         if (incomingHandler instanceof Dumpable)
         {
@@ -134,7 +134,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
         }
         else
         {
-            out.append(incomingHandler.toString()).append('\n');
+            out.append(incomingHandler.toString()).append(System.lineSeparator());
         }
 
         out.append(indent).append(" +- outgoingHandler : ");
@@ -144,7 +144,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
         }
         else
         {
-            out.append(outgoingHandler.toString()).append('\n');
+            out.append(outgoingHandler.toString()).append(System.lineSeparator());
         }
     }
 
