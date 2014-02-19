@@ -83,8 +83,9 @@ public class BrowserDebugTool implements WebSocketCreator
 
         String ua = req.getHeader("User-Agent");
         String rexts = req.getHeader("Sec-WebSocket-Extensions");
+        
         LOG.debug("User-Agent: {}", ua);
-        LOG.debug("Sec-WebSocket-Extensions: {}", rexts);
+        LOG.debug("Sec-WebSocket-Extensions (Request) : {}", rexts);
         return new BrowserSocket(ua,rexts);
     }
 
@@ -112,6 +113,10 @@ public class BrowserDebugTool implements WebSocketCreator
             public void configure(WebSocketServletFactory factory)
             {
                 LOG.debug("Configuring WebSocketServerFactory ...");
+
+                // factory.getExtensionFactory().unregister("deflate-frame");
+                // factory.getExtensionFactory().unregister("permessage-deflate");
+                // factory.getExtensionFactory().unregister("x-webkit-deflate-frame");
 
                 // Setup the desired Socket to use for all incoming upgrade requests
                 factory.setCreator(BrowserDebugTool.this);

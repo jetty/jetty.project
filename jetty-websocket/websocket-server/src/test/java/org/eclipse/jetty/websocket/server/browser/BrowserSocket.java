@@ -135,8 +135,10 @@ public class BrowserSocket
                     }
                     else
                     {
-                        writeMessage("Client Sec-WebSocket-Extensions: " + this.requestedExtensions);
+                        writeMessage("Client requested Sec-WebSocket-Extensions: " + this.requestedExtensions);
+                        writeMessage("Negotiated Sec-WebSocket-Extensions: " + session.getUpgradeResponse().getHeader("Sec-WebSocket-Extensions"));
                     }
+
                     break;
                 }
                 case "many":
@@ -225,7 +227,7 @@ public class BrowserSocket
         }
 
         // Async write
-        session.getRemote().sendString(message, null);
+        session.getRemote().sendString(message,null);
     }
 
     private void writeMessage(String format, Object... args)
