@@ -311,7 +311,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
             shutdownInput();
         if (_ishut)
             return -1;
-        int filled=BufferUtil.flipPutFlip(_in,buffer);
+        int filled=BufferUtil.append(buffer,_in);
         if (filled>0)
             notIdle();
         return filled;
@@ -342,12 +342,12 @@ public class ByteArrayEndPoint extends AbstractEndPoint
                     if (b.remaining()>BufferUtil.space(_out))
                     {
                         ByteBuffer n = BufferUtil.allocate(_out.capacity()+b.remaining()*2);
-                        BufferUtil.flipPutFlip(_out,n);
+                        BufferUtil.append(n,_out);
                         _out=n;
                     }
                 }
 
-                if (BufferUtil.flipPutFlip(b,_out)>0)
+                if (BufferUtil.append(_out,b)>0)
                     idle=false;
 
                 if (BufferUtil.hasContent(b))

@@ -469,7 +469,7 @@ public class SslConnection extends AbstractConnection
             {
                 // Do we already have some decrypted data?
                 if (BufferUtil.hasContent(_decryptedInput))
-                    return BufferUtil.flipPutFlip(_decryptedInput, buffer);
+                    return BufferUtil.append(buffer,_decryptedInput);
 
                 // We will need a network buffer
                 if (_encryptedInput == null)
@@ -574,7 +574,7 @@ public class SslConnection extends AbstractConnection
                                 {
                                     if (app_in == buffer)
                                         return unwrapResult.bytesProduced();
-                                    return BufferUtil.flipPutFlip(_decryptedInput, buffer);
+                                    return BufferUtil.append(buffer,_decryptedInput);
                                 }
 
                                 switch (handshakeStatus)

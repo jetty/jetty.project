@@ -162,7 +162,7 @@ public class SelectChannelEndPointTest
                     }
 
                     // Copy to the out buffer
-                    if (BufferUtil.hasContent(_in) && BufferUtil.flipPutFlip(_in, _out) > 0)
+                    if (BufferUtil.hasContent(_in) && BufferUtil.append(_out, _in) > 0)
                         progress = true;
 
                     // Blocking writes

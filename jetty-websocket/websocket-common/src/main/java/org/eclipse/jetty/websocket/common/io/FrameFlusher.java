@@ -184,13 +184,12 @@ public class FrameFlusher
         private final List<FrameEntry> entries = new ArrayList<>(maxGather);
         private final List<ByteBuffer> buffers = new ArrayList<>(maxGather * 2 + 1);
         private ByteBuffer aggregate;
-        private boolean releaseAggregate;
         private BatchMode batchMode;
 
         @Override
         protected Action process() throws Exception
         {
-            int space = aggregate == null ? bufferSize : aggregate.remaining();
+            int space = aggregate == null ? bufferSize : BufferUtil.space(aggregate);
             BatchMode currentBatchMode = BatchMode.AUTO;
             synchronized (lock)
             {
@@ -224,18 +223,17 @@ public class FrameFlusher
 
             if (entries.isEmpty())
             {
-                // Nothing more to do, release the aggregate buffer if we need to.
-                // Releasing it here rather than in succeeded() allows for its reuse.
-                if (releaseAggregate)
-                {
-                    bufferPool.release(aggregate);
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("{} released aggregate buffer {}", FrameFlusher.this, aggregate);
-                    aggregate = null;
-                }
-
                 if (batchMode != BatchMode.AUTO)
+                {
+                    // Nothing more to do, release the aggregate buffer if we need to.
+                    // Releasing it here rather than in succeeded() allows for its reuse.
+                    if (aggregate!=null && BufferUtil.isEmpty(aggregate))
+                    {    
+                        bufferPool.release(aggregate);
+                        aggregate = null;
+                    }
                     return Action.IDLE;
+                }
 
                 LOG.debug("{} auto flushing", FrameFlusher.this);
                 return flush();
@@ -246,14 +244,11 @@ public class FrameFlusher
             return currentBatchMode == BatchMode.OFF ? flush() : batch();
         }
 
-        @SuppressWarnings("ForLoopReplaceableByForEach")
         private Action flush()
         {
             if (!BufferUtil.isEmpty(aggregate))
             {
-                BufferUtil.flipToFlush(aggregate, 0);
                 buffers.add(aggregate);
-                releaseAggregate = true;
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} flushing aggregate {}", FrameFlusher.this, aggregate);
             }
@@ -275,36 +270,39 @@ public class FrameFlusher
                 LOG.debug("{} flushing {} frames: {}", FrameFlusher.this, entries.size(), entries);
 
             if (buffers.isEmpty())
+            {
+                if (aggregate!=null && BufferUtil.isEmpty(aggregate))
+                {
+                    bufferPool.release(aggregate);
+                    aggregate = null;
+                }
                 return Action.IDLE;
+            }
 
             endpoint.write(this, buffers.toArray(new ByteBuffer[buffers.size()]));
             buffers.clear();
             return Action.SCHEDULED;
         }
 
-        @SuppressWarnings("ForLoopReplaceableByForEach")
         private Action batch()
         {
             if (aggregate == null)
             {
                 aggregate = bufferPool.acquire(bufferSize, true);
-                BufferUtil.flipToFill(aggregate);
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} acquired aggregate buffer {}", FrameFlusher.this, aggregate);
-                releaseAggregate = false;
             }
 
             // Do not allocate the iterator here.
             for (int i = 0; i < entries.size(); ++i)
             {
                 FrameEntry entry = entries.get(i);
-                // TODO: would be better to generate the header bytes directly into the aggregate buffer.
-                ByteBuffer header = entry.getHeaderBytes();
-                aggregate.put(header);
+                
+                entry.genHeaderBytes(aggregate);
 
                 ByteBuffer payload = entry.frame.getPayload();
                 if (BufferUtil.hasContent(payload))
-                    aggregate.put(payload);
+                    BufferUtil.append(aggregate,payload);
             }
             if (LOG.isDebugEnabled())
                 LOG.debug("{} aggregated {} frames: {}", FrameFlusher.this, entries.size(), entries);
@@ -312,7 +310,6 @@ public class FrameFlusher
             return Action.SCHEDULED;
         }
 
-        @SuppressWarnings("ForLoopReplaceableByForEach")
         @Override
         public void succeeded()
         {
@@ -324,10 +321,6 @@ public class FrameFlusher
                 entry.release();
             }
             entries.clear();
-
-            // Do not release the aggregate yet, in case there are more frames to process.
-            if (releaseAggregate)
-                BufferUtil.clearToFill(aggregate);
 
             super.succeeded();
         }
@@ -371,6 +364,11 @@ public class FrameFlusher
         {
             return headerBuffer = generator.generateHeaderBytes(frame);
         }
+        
+        private void genHeaderBytes(ByteBuffer buffer)
+        {
+            generator.generateHeaderBytes(frame,buffer);
+        }
 
         private void release()
         {
@@ -381,6 +379,7 @@ public class FrameFlusher
             }
         }
 
+        @Override
         public String toString()
         {
             return String.format("%s[%s,%s,%s,%s]", getClass().getSimpleName(), frame, callback, batchMode, failure);
