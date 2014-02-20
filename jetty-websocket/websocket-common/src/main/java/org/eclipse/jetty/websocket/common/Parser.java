@@ -239,7 +239,7 @@ public class Parser
         incomingFramesHandler.incomingError(e);
     }
 
-    public synchronized void parse(ByteBuffer buffer)
+    public void parse(ByteBuffer buffer)
     {
         if (buffer.remaining() <= 0)
         {
