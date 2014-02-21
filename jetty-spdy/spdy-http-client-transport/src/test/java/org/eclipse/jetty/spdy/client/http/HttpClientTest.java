@@ -188,6 +188,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     {
         final String paramName = "a";
         final String paramValue = "\u20AC";
+        final String encodedParamValue = URLEncoder.encode(paramValue, "UTF-8");
         start(new AbstractHandler()
         {
             @Override
@@ -204,7 +205,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             }
         });
 
-        URI uri = URI.create(scheme + "://localhost:" + connector.getLocalPort() + "/path?" + paramName + "=" + paramValue);
+        URI uri = URI.create(scheme + "://localhost:" + connector.getLocalPort() + "/path?" + paramName + "=" + encodedParamValue);
         ContentResponse response = client.newRequest(uri)
                 .method(HttpMethod.PUT)
                 .timeout(5, TimeUnit.SECONDS)
