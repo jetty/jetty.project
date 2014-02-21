@@ -240,7 +240,6 @@ public class FrameFlusher
             return currentBatchMode == BatchMode.OFF ? flush() : batch();
         }
 
-        @SuppressWarnings("ForLoopReplaceableByForEach")
         private Action flush()
         {
             if (!BufferUtil.isEmpty(aggregate))
@@ -279,7 +278,6 @@ public class FrameFlusher
             return Action.SCHEDULED;
         }
 
-        @SuppressWarnings("ForLoopReplaceableByForEach")
         private Action batch()
         {
             if (aggregate == null)
@@ -322,7 +320,6 @@ public class FrameFlusher
             super.succeeded();
         }
 
-        @SuppressWarnings("ForLoopReplaceableByForEach")
         private void succeedEntries()
         {
             // Do not allocate the iterator here.
