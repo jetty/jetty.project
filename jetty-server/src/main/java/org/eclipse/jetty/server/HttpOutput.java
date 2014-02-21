@@ -163,7 +163,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
     }
 
-    /* Called to indicated that the output is already closed and the state needs to be updated to match */
+    /* Called to indicated that the output is already closed (write with last==true performed) and the state needs to be updated to match */
     void closed()
     {
         loop: while(true)
@@ -894,19 +894,25 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             
             // all content written, but if we have not yet signal completion, we
             // need to do so
-            if (_complete)
+            if (_complete && !_completed)
             {
-                if (!_completed)
-                {
-                    _completed=true;
-                    write(BufferUtil.EMPTY_BUFFER, _complete, this);
-                    return Action.SCHEDULED;
-                }
-                closed();
+                _completed=true;
+                write(BufferUtil.EMPTY_BUFFER, _complete, this);
+                return Action.SCHEDULED;
             }
 
             return Action.SUCCEEDED;
         }
+
+        @Override
+        protected void completed()
+        {
+            super.completed();
+            if (_complete)
+                closed();
+        }
+        
+        
     }
 
 
