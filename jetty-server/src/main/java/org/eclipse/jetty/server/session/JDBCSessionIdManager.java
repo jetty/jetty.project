@@ -909,7 +909,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         try
         {     
             connection = getConnection();
-            connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+            connection.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
             connection.setAutoCommit(false);
 
             statement = connection.prepareStatement(_selectExpiredSessions);
