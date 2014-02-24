@@ -39,183 +39,177 @@ import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
 public class MessageOutputStream extends OutputStream
 {
     private static final Logger LOG = Log.getLogger(MessageOutputStream.class);
+
     private final OutgoingFrames outgoing;
     private final ByteBufferPool bufferPool;
     private final BlockingWriteCallback blocker;
-    private long frameCount = 0;
+    private long frameCount;
     private BinaryFrame frame;
     private ByteBuffer buffer;
     private WriteCallback callback;
-    private boolean closed = false;
+    private boolean closed;
+
+    public MessageOutputStream(WebSocketSession session)
+    {
+        this(session.getOutgoingHandler(), session.getPolicy().getMaxBinaryMessageBufferSize(), session.getBufferPool());
+    }
 
     public MessageOutputStream(OutgoingFrames outgoing, int bufferSize, ByteBufferPool bufferPool)
     {
         this.outgoing = outgoing;
         this.bufferPool = bufferPool;
         this.blocker = new BlockingWriteCallback();
-        this.buffer = bufferPool.acquire(bufferSize,true);
+        this.buffer = bufferPool.acquire(bufferSize, true);
         BufferUtil.flipToFill(buffer);
         this.frame = new BinaryFrame();
     }
 
-    public MessageOutputStream(WebSocketSession session)
+    @Override
+    public void write(byte[] bytes, int off, int len) throws IOException
     {
-        this(session.getOutgoingHandler(),session.getPolicy().getMaxBinaryMessageBufferSize(),session.getBufferPool());
-    }
-
-    private void assertNotClosed() throws IOException
-    {
-        if (closed)
+        try
         {
-            IOException e = new IOException("Stream is closed");
-            notifyFailure(e);
-            throw e;
+            send(bytes, off, len);
+        }
+        catch (Throwable x)
+        {
+            // Notify without holding locks.
+            notifyFailure(x);
+            throw x;
         }
     }
 
     @Override
-    public synchronized void close() throws IOException
+    public void write(int b) throws IOException
     {
-        assertNotClosed();
-        LOG.debug("close()");
-
-        // finish sending whatever in the buffer with FIN=true
-        flush(true);
-
-        // close stream
-        LOG.debug("Sent Frame Count: {}",frameCount);
-        closed = true;
         try
         {
-            if (callback != null)
-            {
-                callback.writeSuccess();
-            }
-            super.close();
+            send(new byte[]{(byte)b}, 0, 1);
+        }
+        catch (Throwable x)
+        {
+            // Notify without holding locks.
+            notifyFailure(x);
+            throw x;
+        }
+    }
+
+    @Override
+    public void flush() throws IOException
+    {
+        try
+        {
+            flush(false);
+        }
+        catch (Throwable x)
+        {
+            // Notify without holding locks.
+            notifyFailure(x);
+            throw x;
+        }
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+        try
+        {
+            flush(true);
             bufferPool.release(buffer);
-            LOG.debug("closed");
+            LOG.debug("Stream closed, {} frames sent", frameCount);
+            // Notify without holding locks.
+            notifySuccess();
         }
-        catch (IOException e)
+        catch (Throwable x)
         {
-            notifyFailure(e);
-            throw e;
-        }
-    }
-
-    @Override
-    public synchronized void flush() throws IOException
-    {
-        LOG.debug("flush()");
-        assertNotClosed();
-
-        // flush whatever is in the buffer with FIN=false
-        flush(false);
-        try
-        {
-            super.flush();
-            LOG.debug("flushed");
-        }
-        catch (IOException e)
-        {
-            notifyFailure(e);
-            throw e;
+            // Notify without holding locks.
+            notifyFailure(x);
+            throw x;
         }
     }
 
-    /**
-     * Flush whatever is in the buffer.
-     * 
-     * @param fin
-     *            fin flag
-     * @throws IOException
-     */
-    private synchronized void flush(boolean fin) throws IOException
+    private void flush(boolean fin) throws IOException
     {
-        BufferUtil.flipToFlush(buffer,0);
-        LOG.debug("flush({}): {}",fin,BufferUtil.toDetailString(buffer));
-        frame.setPayload(buffer);
-        frame.setFin(fin);
-
-        try
+        synchronized (this)
         {
-            outgoing.outgoingFrame(frame,blocker, BatchMode.OFF);
-            // block on write
+            if (closed)
+                throw new IOException("Stream is closed");
+
+            closed = fin;
+
+            BufferUtil.flipToFlush(buffer, 0);
+            LOG.debug("flush({}): {}", fin, BufferUtil.toDetailString(buffer));
+            frame.setPayload(buffer);
+            frame.setFin(fin);
+
+            outgoing.outgoingFrame(frame, blocker, BatchMode.OFF);
             blocker.block();
-            // block success
-            frameCount++;
+
+            ++frameCount;
+            // Any flush after the first will be a CONTINUATION frame.
             frame.setIsContinuation();
+
             BufferUtil.flipToFill(buffer);
         }
-        catch (IOException e)
-        {
-            notifyFailure(e);
-            throw e;
-        }
     }
 
-    private void notifyFailure(IOException e)
+    private void send(byte[] bytes, int offset, int length) throws IOException
     {
-        if (callback != null)
+        synchronized (this)
         {
-            callback.writeFailed(e);
+            if (closed)
+                throw new IOException("Stream is closed");
+
+            while (length > 0)
+            {
+                // There may be no space available, we want
+                // to handle correctly when space == 0.
+                int space = buffer.remaining();
+                int size = Math.min(space, length);
+                buffer.put(bytes, offset, size);
+                offset += size;
+                length -= size;
+                if (length > 0)
+                {
+                    // If we could not write everything, it means
+                    // that the buffer was full, so flush it.
+                    flush(false);
+                }
+            }
         }
     }
 
     public void setCallback(WriteCallback callback)
     {
-        this.callback = callback;
-    }
-
-    @Override
-    public synchronized void write(byte[] b) throws IOException
-    {
-        try
+        synchronized (this)
         {
-            this.write(b,0,b.length);
-        }
-        catch (IOException e)
-        {
-            notifyFailure(e);
-            throw e;
+            this.callback = callback;
         }
     }
 
-    @Override
-    public synchronized void write(byte[] b, int off, int len) throws IOException
+    private void notifySuccess()
     {
-        LOG.debug("write(byte[{}], {}, {})",b.length,off,len);
-        int left = len; // bytes left to write
-        int offset = off; // offset within provided array
-        while (left > 0)
+        WriteCallback callback;
+        synchronized (this)
         {
-            if (LOG.isDebugEnabled())
-            {
-                LOG.debug("buffer: {}",BufferUtil.toDetailString(buffer));
-            }
-            int space = buffer.remaining();
-            assert (space > 0);
-            int size = Math.min(space,left);
-            buffer.put(b,offset,size);
-            assert (size > 0);
-            left -= size; // decrement bytes left
-            if (left > 0)
-            {
-                flush(false);
-            }
-            offset += size; // increment offset
+            callback = this.callback;
+        }
+        if (callback != null)
+        {
+            callback.writeSuccess();
         }
     }
 
-    @Override
-    public synchronized void write(int b) throws IOException
+    private void notifyFailure(Throwable failure)
     {
-        assertNotClosed();
-
-        // buffer up to limit, flush once buffer reached.
-        buffer.put((byte)b);
-        if (buffer.remaining() <= 0)
+        WriteCallback callback;
+        synchronized (this)
         {
-            flush(false);
+            callback = this.callback;
+        }
+        if (callback != null)
+        {
+            callback.writeFailed(failure);
         }
     }
 }

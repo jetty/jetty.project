@@ -23,7 +23,6 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.nio.ByteBuffer;
 import java.util.Map;
-
 import javax.websocket.CloseReason;
 import javax.websocket.DecodeException;
 
@@ -103,7 +102,7 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver implements E
             if (activeMessage == null)
             {
                 LOG.debug("Binary Message InputStream");
-                final MessageInputStream stream = new MessageInputStream(session.getConnection());
+                final MessageInputStream stream = new MessageInputStream();
                 activeMessage = stream;
 
                 // Always dispatch streaming read to another thread.
@@ -311,7 +310,7 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver implements E
             {
                 LOG.debug("Text Message Writer");
 
-                final MessageReader stream = new MessageReader(new MessageInputStream(session.getConnection()));
+                final MessageReader stream = new MessageReader(new MessageInputStream());
                 activeMessage = stream;
 
                 // Always dispatch streaming read to another thread.

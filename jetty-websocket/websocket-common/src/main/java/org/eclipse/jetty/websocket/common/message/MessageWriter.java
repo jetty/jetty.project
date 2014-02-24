@@ -35,165 +35,185 @@ import org.eclipse.jetty.websocket.common.frames.TextFrame;
 
 /**
  * Support for writing a single WebSocket TEXT message via a {@link Writer}
- * <p>
+ * <p/>
  * Note: Per WebSocket spec, all WebSocket TEXT messages must be encoded in UTF-8
  */
 public class MessageWriter extends Writer
 {
     private static final Logger LOG = Log.getLogger(MessageWriter.class);
+
     private final OutgoingFrames outgoing;
     private final ByteBufferPool bufferPool;
     private final BlockingWriteCallback blocker;
-    private long frameCount = 0;
+    private long frameCount;
     private TextFrame frame;
     private ByteBuffer buffer;
     private Utf8CharBuffer utf;
     private WriteCallback callback;
-    private boolean closed = false;
+    private boolean closed;
+
+    public MessageWriter(WebSocketSession session)
+    {
+        this(session.getOutgoingHandler(), session.getPolicy().getMaxTextMessageBufferSize(), session.getBufferPool());
+    }
 
     public MessageWriter(OutgoingFrames outgoing, int bufferSize, ByteBufferPool bufferPool)
     {
         this.outgoing = outgoing;
         this.bufferPool = bufferPool;
         this.blocker = new BlockingWriteCallback();
-        this.buffer = bufferPool.acquire(bufferSize,true);
+        this.buffer = bufferPool.acquire(bufferSize, true);
         BufferUtil.flipToFill(buffer);
-        this.utf = Utf8CharBuffer.wrap(buffer);
         this.frame = new TextFrame();
-    }
-
-    public MessageWriter(WebSocketSession session)
-    {
-        this(session.getOutgoingHandler(),session.getPolicy().getMaxTextMessageBufferSize(),session.getBufferPool());
-    }
-
-    private void assertNotClosed() throws IOException
-    {
-        if (closed)
-        {
-            IOException e = new IOException("Stream is closed");
-            notifyFailure(e);
-            throw e;
-        }
+        this.utf = Utf8CharBuffer.wrap(buffer);
     }
 
     @Override
-    public synchronized void close() throws IOException
-    {
-        assertNotClosed();
-
-        // finish sending whatever in the buffer with FIN=true
-        flush(true);
-
-        // close stream
-        closed = true;
-        if (callback != null)
-        {
-            callback.writeSuccess();
-        }
-        bufferPool.release(buffer);
-        LOG.debug("closed (frame count={})",frameCount);
-    }
-
-    @Override
-    public void flush() throws IOException
-    {
-        assertNotClosed();
-
-        // flush whatever is in the buffer with FIN=false
-        flush(false);
-    }
-
-    /**
-     * Flush whatever is in the buffer.
-     * 
-     * @param fin
-     *            fin flag
-     * @throws IOException
-     */
-    private synchronized void flush(boolean fin) throws IOException
-    {
-        ByteBuffer data = utf.getByteBuffer();
-        frame.setPayload(data);
-        frame.setFin(fin);
-
-        try
-        {
-            outgoing.outgoingFrame(frame,blocker, BatchMode.OFF);
-            // block on write
-            blocker.block();
-            // write success
-            // clear utf buffer
-            utf.clear();
-            frameCount++;
-            frame.setIsContinuation();
-        }
-        catch (IOException e)
-        {
-            notifyFailure(e);
-            throw e;
-        }
-    }
-
-    private void notifyFailure(IOException e)
-    {
-        if (callback != null)
-        {
-            callback.writeFailed(e);
-        }
-    }
-
-    public void setCallback(WriteCallback callback)
-    {
-        this.callback = callback;
-    }
-
-    @Override
-    public void write(char[] cbuf) throws IOException
+    public void write(char[] chars, int off, int len) throws IOException
     {
         try
         {
-            this.write(cbuf,0,cbuf.length);
+            send(chars, off, len);
         }
-        catch (IOException e)
+        catch (Throwable x)
         {
-            notifyFailure(e);
-            throw e;
-        }
-    }
-
-    @Override
-    public void write(char[] cbuf, int off, int len) throws IOException
-    {
-        assertNotClosed();
-        int left = len; // bytes left to write
-        int offset = off; // offset within provided array
-        while (left > 0)
-        {
-            int space = utf.remaining();
-            int size = Math.min(space,left);
-            assert (space > 0);
-            assert (size > 0);
-            utf.append(cbuf,offset,size); // append with utf logic
-            left -= size; // decrement char left
-            if (left > 0)
-            {
-                flush(false);
-            }
-            offset += size; // increment offset
+            // Notify without holding locks.
+            notifyFailure(x);
+            throw x;
         }
     }
 
     @Override
     public void write(int c) throws IOException
     {
-        assertNotClosed();
+        try
+        {
+            send(new char[]{(char)c}, 0, 1);
+        }
+        catch (Throwable x)
+        {
+            // Notify without holding locks.
+            notifyFailure(x);
+            throw x;
+        }
+    }
 
-        // buffer up to limit, flush once buffer reached.
-        utf.append(c); // append with utf logic
-        if (utf.remaining() <= 0)
+    @Override
+    public void flush() throws IOException
+    {
+        try
         {
             flush(false);
+        }
+        catch (Throwable x)
+        {
+            // Notify without holding locks.
+            notifyFailure(x);
+            throw x;
+        }
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+        try
+        {
+            flush(true);
+            bufferPool.release(buffer);
+            LOG.debug("Stream closed, {} frames sent", frameCount);
+            // Notify without holding locks.
+            notifySuccess();
+        }
+        catch (Throwable x)
+        {
+            // Notify without holding locks.
+            notifyFailure(x);
+            throw x;
+        }
+    }
+
+    private void flush(boolean fin) throws IOException
+    {
+        synchronized (this)
+        {
+            if (closed)
+                throw new IOException("Stream is closed");
+
+            closed = fin;
+
+            ByteBuffer data = utf.getByteBuffer();
+            LOG.debug("flush({}): {}", fin, BufferUtil.toDetailString(buffer));
+            frame.setPayload(data);
+            frame.setFin(fin);
+
+            outgoing.outgoingFrame(frame, blocker, BatchMode.OFF);
+            blocker.block();
+
+            ++frameCount;
+            // Any flush after the first will be a CONTINUATION frame.
+            frame.setIsContinuation();
+
+            utf.clear();
+        }
+    }
+
+    private void send(char[] chars, int offset, int length) throws IOException
+    {
+        synchronized (this)
+        {
+            if (closed)
+                throw new IOException("Stream is closed");
+
+            while (length > 0)
+            {
+                // There may be no space available, we want
+                // to handle correctly when space == 0.
+                int space = utf.remaining();
+                int size = Math.min(space, length);
+                utf.append(chars, offset, size);
+                offset += size;
+                length -= size;
+                if (length > 0)
+                {
+                    // If we could not write everything, it means
+                    // that the buffer was full, so flush it.
+                    flush(false);
+                }
+            }
+        }
+    }
+
+    public void setCallback(WriteCallback callback)
+    {
+        synchronized (this)
+        {
+            this.callback = callback;
+        }
+    }
+
+    private void notifySuccess()
+    {
+        WriteCallback callback;
+        synchronized (this)
+        {
+            callback = this.callback;
+        }
+        if (callback != null)
+        {
+            callback.writeSuccess();
+        }
+    }
+
+    private void notifyFailure(Throwable failure)
+    {
+        WriteCallback callback;
+        synchronized (this)
+        {
+            callback = this.callback;
+        }
+        if (callback != null)
+        {
+            callback.writeFailed(failure);
         }
     }
 }

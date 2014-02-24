@@ -29,30 +29,28 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.common.LogicalConnection;
 
 /**
  * Support class for reading a (single) WebSocket BINARY message via a InputStream.
- * <p>
+ * <p/>
  * An InputStream that can access a queue of ByteBuffer payloads, along with expected InputStream blocking behavior.
  */
 public class MessageInputStream extends InputStream implements MessageAppender
 {
     private static final Logger LOG = Log.getLogger(MessageInputStream.class);
-    // EOF (End of Buffers)
-    private final static ByteBuffer EOF = ByteBuffer.allocate(0).asReadOnlyBuffer();
+    private static final ByteBuffer EOF = ByteBuffer.allocate(0).asReadOnlyBuffer();
 
     private final BlockingDeque<ByteBuffer> buffers = new LinkedBlockingDeque<>();
     private AtomicBoolean closed = new AtomicBoolean(false);
     private final long timeoutMs;
     private ByteBuffer activeBuffer = null;
 
-    public MessageInputStream(LogicalConnection connection)
+    public MessageInputStream()
     {
-        this(connection, -1);
+        this(-1);
     }
-    
-    public MessageInputStream(LogicalConnection connection, int timeoutMs)
+
+    public MessageInputStream(int timeoutMs)
     {
         this.timeoutMs = timeoutMs;
     }
@@ -61,9 +59,7 @@ public class MessageInputStream extends InputStream implements MessageAppender
     public void appendFrame(ByteBuffer framePayload, boolean fin) throws IOException
     {
         if (LOG.isDebugEnabled())
-        {
-            LOG.debug("appendMessage(ByteBuffer,{}): {}",fin,BufferUtil.toDetailString(framePayload));
-        }
+            LOG.debug("Appending {} chunk: {}", fin ? "final" : "non-final", BufferUtil.toDetailString(framePayload));
 
         // If closed, we should just toss incoming payloads into the bit bucket.
         if (closed.get())
@@ -98,7 +94,7 @@ public class MessageInputStream extends InputStream implements MessageAppender
     @Override
     public void close() throws IOException
     {
-        if (closed.compareAndSet(false,true))
+        if (closed.compareAndSet(false, true))
         {
             buffers.offer(EOF);
             super.close();
@@ -106,9 +102,9 @@ public class MessageInputStream extends InputStream implements MessageAppender
     }
 
     @Override
-    public synchronized void mark(int readlimit)
+    public void mark(int readlimit)
     {
-        /* do nothing */
+        // Not supported.
     }
 
     @Override
@@ -120,62 +116,64 @@ public class MessageInputStream extends InputStream implements MessageAppender
     @Override
     public void messageComplete()
     {
-        LOG.debug("messageComplete()");
-
-        // toss an empty ByteBuffer into queue to let it drain
+        LOG.debug("Message completed");
         buffers.offer(EOF);
     }
 
     @Override
     public int read() throws IOException
     {
-        LOG.debug("read()");
-
         try
         {
             if (closed.get())
             {
+                LOG.debug("Stream closed");
                 return -1;
             }
 
             // grab a fresh buffer
             while (activeBuffer == null || !activeBuffer.hasRemaining())
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Waiting {} ms to read", timeoutMs);
                 if (timeoutMs < 0)
                 {
-                    // infinite take
+                    // Wait forever until a buffer is available.
                     activeBuffer = buffers.take();
                 }
                 else
                 {
-                    // timeout specific
-                    activeBuffer = buffers.poll(timeoutMs,TimeUnit.MILLISECONDS);
+                    // Wait at most for the given timeout.
+                    activeBuffer = buffers.poll(timeoutMs, TimeUnit.MILLISECONDS);
                     if (activeBuffer == null)
                     {
-                        throw new IOException(String.format("Read timeout: %,dms expired",timeoutMs));
+                        throw new IOException(String.format("Read timeout: %,dms expired", timeoutMs));
                     }
                 }
-                
+
                 if (activeBuffer == EOF)
                 {
+                    LOG.debug("Reached EOF");
+                    // Be sure that this stream cannot be reused.
                     closed.set(true);
+                    // Removed buffers that may have remained in the queue.
+                    buffers.clear();
                     return -1;
                 }
             }
 
-            return activeBuffer.get();
+            return activeBuffer.get() & 0xFF;
         }
-        catch (InterruptedException e)
+        catch (InterruptedException x)
         {
-            LOG.warn(e);
+            LOG.debug("Interrupted while waiting to read", x);
             closed.set(true);
             return -1;
-            // throw new IOException(e);
         }
     }
 
     @Override
-    public synchronized void reset() throws IOException
+    public void reset() throws IOException
     {
         throw new IOException("reset() not supported");
     }

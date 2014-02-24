@@ -23,7 +23,6 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.nio.ByteBuffer;
 import java.util.Map;
-
 import javax.websocket.CloseReason;
 import javax.websocket.Endpoint;
 import javax.websocket.MessageHandler;
@@ -86,7 +85,7 @@ public class JsrEndpointEventDriver extends AbstractJsrEventDriver implements Ev
             }
             else if (wrapper.wantsStreams())
             {
-                final MessageInputStream stream = new MessageInputStream(session.getConnection());
+                final MessageInputStream stream = new MessageInputStream();
                 activeMessage = stream;
                 dispatch(new Runnable()
                 {
@@ -181,7 +180,7 @@ public class JsrEndpointEventDriver extends AbstractJsrEventDriver implements Ev
             }
             else if (wrapper.wantsStreams())
             {
-                final MessageReader stream = new MessageReader(new MessageInputStream(session.getConnection()));
+                final MessageReader stream = new MessageReader(new MessageInputStream());
                 activeMessage = stream;
 
                 dispatch(new Runnable()
