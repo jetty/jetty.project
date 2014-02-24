@@ -156,8 +156,9 @@ public class XmlAppendable
         }
     }
     
-    public Stack<String> getOpenTags()
+    public void literal(String xml) throws IOException
     {
-        return (Stack<String>)_tags.clone();
+        _out.append(xml);
     }
+
 }
