@@ -900,7 +900,6 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
      * @throws Exception
      */
     private void cleanExpiredSessions ()
-    throws Exception
     {
         Connection connection = null;
         PreparedStatement statement = null;
@@ -946,8 +945,14 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         catch (Exception e)
         {
             if (connection != null)
-                connection.rollback();
-            throw e;
+            {
+                try 
+                { 
+                    LOG.warn("Rolling back clean of expired sessions", e);
+                    connection.rollback();
+                }
+                catch (Exception x) { LOG.warn("Rollback of expired sessions failed", x);}
+            }
         }
         finally
         {
