@@ -34,16 +34,16 @@ import org.eclipse.jetty.websocket.api.util.QuoteUtil;
 public class UpgradeRequest
 {
     private URI requestURI;
-    private List<String> subProtocols = new ArrayList<>();
-    private List<ExtensionConfig> extensions = new ArrayList<>();
-    private List<HttpCookie> cookies = new ArrayList<>();
+    private List<String> subProtocols = new ArrayList<>(1);
+    private List<ExtensionConfig> extensions = new ArrayList<>(1);
+    private List<HttpCookie> cookies = new ArrayList<>(1);
     private Map<String, List<String>> headers = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-    private Map<String, List<String>> parameters = new HashMap<>();
+    private Map<String, List<String>> parameters = new HashMap<>(1);
     private Object session;
     private String httpVersion;
     private String method;
     private String host;
-    private boolean secure = false;
+    private boolean secure;
 
     protected UpgradeRequest()
     {
@@ -57,16 +57,12 @@ public class UpgradeRequest
 
     public UpgradeRequest(URI requestURI)
     {
-        this();
         setRequestURI(requestURI);
     }
 
     public void addExtensions(ExtensionConfig... configs)
     {
-        for (ExtensionConfig config : configs)
-        {
-            extensions.add(config);
-        }
+        Collections.addAll(extensions, configs);
     }
 
     public void addExtensions(String... configs)
@@ -357,10 +353,7 @@ public class UpgradeRequest
      */
     public void setSubProtocols(String... protocols)
     {
-        this.subProtocols.clear();
-        for (String protocol : protocols)
-        {
-            this.subProtocols.add(protocol);
-        }
+        subProtocols.clear();
+        Collections.addAll(subProtocols, protocols);
     }
 }

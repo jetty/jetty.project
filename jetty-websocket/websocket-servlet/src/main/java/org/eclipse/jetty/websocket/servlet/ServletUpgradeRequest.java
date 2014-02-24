@@ -31,7 +31,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
@@ -45,148 +44,140 @@ import org.eclipse.jetty.websocket.api.util.WSURI;
  */
 public class ServletUpgradeRequest extends UpgradeRequest
 {
-    private final HttpServletRequest req;
+    private final UpgradeHttpServletRequest request;
 
-    public ServletUpgradeRequest(HttpServletRequest request) throws URISyntaxException
+    public ServletUpgradeRequest(HttpServletRequest httpRequest) throws URISyntaxException
     {
-        super(WSURI.toWebsocket(request.getRequestURL(),request.getQueryString()));
-        this.req = new PostUpgradedHttpServletRequest(request);
+        super(WSURI.toWebsocket(httpRequest.getRequestURL(), httpRequest.getQueryString()));
+        this.request = new UpgradeHttpServletRequest(httpRequest);
 
-        // Copy Request Line Details
-        setMethod(request.getMethod());
-        setHttpVersion(request.getProtocol());
-
-        // Copy parameters
-        Map<String, List<String>> pmap = new HashMap<>();
-        if (request.getParameterMap() != null)
+        // Parse protocols.
+        Enumeration<String> requestProtocols = request.getHeaders("Sec-WebSocket-Protocol");
+        if (requestProtocols != null)
         {
-            for (Map.Entry<String, String[]> entry : request.getParameterMap().entrySet())
+            List<String> protocols = new ArrayList<>(2);
+            while (requestProtocols.hasMoreElements())
             {
-                pmap.put(entry.getKey(),Arrays.asList(entry.getValue()));
+                String candidate = requestProtocols.nextElement();
+                Collections.addAll(protocols, parseProtocols(candidate));
             }
-        }
-        super.setParameterMap(pmap);
-
-        // Copy Cookies
-        Cookie rcookies[] = request.getCookies();
-        if (rcookies != null)
-        {
-            List<HttpCookie> cookies = new ArrayList<>();
-            for (Cookie rcookie : rcookies)
-            {
-                HttpCookie hcookie = new HttpCookie(rcookie.getName(),rcookie.getValue());
-                // no point handling domain/path/expires/secure/httponly on client request cookies
-                cookies.add(hcookie);
-            }
-            super.setCookies(cookies);
+            setSubProtocols(protocols);
         }
 
-        // Copy Headers
-        Enumeration<String> headerNames = request.getHeaderNames();
-        while (headerNames.hasMoreElements())
-        {
-            String name = headerNames.nextElement();
-            List<String> values = Collections.list(request.getHeaders(name));
-            setHeader(name,values);
-        }
-
-        // Parse Sub Protocols
-        Enumeration<String> protocols = request.getHeaders("Sec-WebSocket-Protocol");
-        List<String> subProtocols = new ArrayList<>();
-        String protocol = null;
-        while ((protocol == null) && (protocols != null) && protocols.hasMoreElements())
-        {
-            String candidate = protocols.nextElement();
-            for (String p : parseProtocols(candidate))
-            {
-                subProtocols.add(p);
-            }
-        }
-        setSubProtocols(subProtocols);
-
-        // Parse Extension Configurations
+        // Parse extensions.
         Enumeration<String> e = request.getHeaders("Sec-WebSocket-Extensions");
         setExtensions(ExtensionConfig.parseEnum(e));
+
+        // Copy cookies.
+        Cookie[] requestCookies = request.getCookies();
+        if (requestCookies != null)
+        {
+            List<HttpCookie> cookies = new ArrayList<>();
+            for (Cookie requestCookie : requestCookies)
+            {
+                HttpCookie cookie = new HttpCookie(requestCookie.getName(), requestCookie.getValue());
+                // No point handling domain/path/expires/secure/httponly on client request cookies
+                cookies.add(cookie);
+            }
+            setCookies(cookies);
+        }
+
+        setHeaders(request.getHeaders());
+
+        // Copy parameters.
+        Map<String, String[]> requestParams = request.getParameterMap();
+        if (requestParams != null)
+        {
+            Map<String, List<String>> params = new HashMap<>(requestParams.size());
+            for (Map.Entry<String, String[]> entry : requestParams.entrySet())
+                params.put(entry.getKey(), Arrays.asList(entry.getValue()));
+            setParameterMap(params);
+        }
+
+        setSession(request.getSession(false));
+
+        setHttpVersion(request.getProtocol());
+        setMethod(request.getMethod());
     }
 
     public X509Certificate[] getCertificates()
     {
-        return (X509Certificate[])req.getAttribute("javax.servlet.request.X509Certificate");
+        return (X509Certificate[])request.getAttribute("javax.servlet.request.X509Certificate");
     }
-    
+
     /**
      * Return the underlying HttpServletRequest that existed at Upgrade time.
-     * <p>
+     * <p/>
      * Note: many features of the HttpServletRequest are invalid when upgraded,
      * especially ones that deal with body content, streams, readers, and responses.
-     * 
+     *
      * @return a limited version of the underlying HttpServletRequest
      */
     public HttpServletRequest getHttpServletRequest()
     {
-        return req;
+        return request;
     }
 
     /**
      * Equivalent to {@link HttpServletRequest#getLocalAddr()}
-     * 
+     *
      * @return the local address
      */
     public String getLocalAddress()
     {
-        return req.getLocalAddr();
+        return request.getLocalAddr();
     }
 
     /**
      * Equivalent to {@link HttpServletRequest#getLocalName()}
-     * 
+     *
      * @return the local host name
      */
     public String getLocalHostName()
     {
-        return req.getLocalName();
+        return request.getLocalName();
     }
 
     /**
      * Equivalent to {@link HttpServletRequest#getLocalPort()}
-     * 
+     *
      * @return the local port
      */
     public int getLocalPort()
     {
-        return req.getLocalPort();
-    }
-    
-    /**
-     * Equivalent to {@link HttpServletRequest#getLocale()}
-     * 
-     * @return the preferred <code>Locale</code> for the client
-     */
-    public Locale getLocale() 
-    {
-        return req.getLocale();
-    }
-    
-    /**
-     * Equivalent to {@link HttpServletRequest#getLocales()}
-     * 
-     * @return an Enumeration of preferred Locale objects
-     */
-    public Enumeration<Locale> getLocales()
-    {
-        return req.getLocales();
+        return request.getLocalPort();
     }
 
     /**
      * Return a {@link InetSocketAddress} for the local socket.
-     * <p>
+     * <p/>
      * Warning: this can cause a DNS lookup
-     * 
+     *
      * @return the local socket address
      */
     public InetSocketAddress getLocalSocketAddress()
     {
-        return new InetSocketAddress(req.getLocalAddr(),req.getLocalPort());
+        return new InetSocketAddress(getLocalAddress(), getLocalPort());
+    }
+
+    /**
+     * Equivalent to {@link HttpServletRequest#getLocale()}
+     *
+     * @return the preferred <code>Locale</code> for the client
+     */
+    public Locale getLocale()
+    {
+        return request.getLocale();
+    }
+
+    /**
+     * Equivalent to {@link HttpServletRequest#getLocales()}
+     *
+     * @return an Enumeration of preferred Locale objects
+     */
+    public Enumeration<Locale> getLocales()
+    {
+        return request.getLocales();
     }
 
     /**
@@ -195,136 +186,118 @@ public class ServletUpgradeRequest extends UpgradeRequest
     @Deprecated
     public Principal getPrincipal()
     {
-        return req.getUserPrincipal();
+        return getUserPrincipal();
     }
-    
+
     /**
      * Equivalent to {@link HttpServletRequest#getUserPrincipal()}
      */
     public Principal getUserPrincipal()
     {
-        return req.getUserPrincipal();
+        return request.getUserPrincipal();
     }
 
     /**
      * Equivalent to {@link HttpServletRequest#getRemoteAddr()}
-     * 
+     *
      * @return the remote address
      */
     public String getRemoteAddress()
     {
-        return req.getRemoteAddr();
+        return request.getRemoteAddr();
     }
 
     /**
      * Equivalent to {@link HttpServletRequest#getRemoteHost()}
-     * 
+     *
      * @return the remote host name
      */
     public String getRemoteHostName()
     {
-        return req.getRemoteHost();
+        return request.getRemoteHost();
     }
 
     /**
      * Equivalent to {@link HttpServletRequest#getRemotePort()}
-     * 
+     *
      * @return the remote port
      */
     public int getRemotePort()
     {
-        return req.getRemotePort();
+        return request.getRemotePort();
     }
 
     /**
      * Return a {@link InetSocketAddress} for the remote socket.
-     * <p>
+     * <p/>
      * Warning: this can cause a DNS lookup
-     * 
+     *
      * @return the remote socket address
      */
     public InetSocketAddress getRemoteSocketAddress()
     {
-        return new InetSocketAddress(req.getRemoteAddr(),req.getRemotePort());
+        return new InetSocketAddress(getRemoteAddress(), getRemotePort());
     }
 
     public Map<String, Object> getServletAttributes()
     {
-        Map<String, Object> attributes = new HashMap<String, Object>();
-
-        for (String name : Collections.list(req.getAttributeNames()))
-        {
-            attributes.put(name,req.getAttribute(name));
-        }
-
-        return attributes;
+        return request.getAttributes();
     }
 
     public Map<String, List<String>> getServletParameters()
     {
-        Map<String, List<String>> parameters = new HashMap<String, List<String>>();
-
-        for (String name : Collections.list(req.getParameterNames()))
-        {
-            parameters.put(name,Collections.unmodifiableList(Arrays.asList(req.getParameterValues(name))));
-        }
-
-        return parameters;
+        return getParameterMap();
     }
 
     /**
      * Return the HttpSession if it exists.
-     * <p>
-     * Note: this is equivalent to {@link HttpServletRequest#getSession()} and will not create a new HttpSession.
+     * <p/>
+     * Note: this is equivalent to {@link HttpServletRequest#getSession(boolean)}
+     * and will not create a new HttpSession.
      */
     @Override
     public HttpSession getSession()
     {
-        return this.req.getSession(false);
+        return request.getSession(false);
     }
 
-    protected String[] parseProtocols(String protocol)
+    public void setServletAttribute(String name, Object value)
     {
-        if (protocol == null)
-        {
-            return new String[] {};
-        }
-        protocol = protocol.trim();
-        if ((protocol == null) || (protocol.length() == 0))
-        {
-            return new String[] {};
-        }
-        String[] passed = protocol.split("\\s*,\\s*");
-        String[] protocols = new String[passed.length];
-        System.arraycopy(passed,0,protocols,0,passed.length);
-        return protocols;
-    }
-
-    public void setServletAttribute(String name, Object o)
-    {
-        this.req.setAttribute(name,o);
+        request.setAttribute(name, value);
     }
 
     public Object getServletAttribute(String name)
     {
-        return req.getAttribute(name);
+        return request.getAttribute(name);
     }
 
     public boolean isUserInRole(String role)
     {
-        return req.isUserInRole(role);
+        return request.isUserInRole(role);
     }
 
     public String getRequestPath()
     {
-        // Since this can be called from a filter, we need to be smart about determining the target request path
-        String contextPath = req.getContextPath();
-        String requestPath = req.getRequestURI();
+        // Since this can be called from a filter, we need to be smart about determining the target request path.
+        String contextPath = request.getContextPath();
+        String requestPath = request.getRequestURI();
         if (requestPath.startsWith(contextPath))
-        {
             requestPath = requestPath.substring(contextPath.length());
-        }
-
         return requestPath;
+    }
+
+    private String[] parseProtocols(String protocol)
+    {
+        if (protocol == null)
+            return new String[0];
+        protocol = protocol.trim();
+        if (protocol.length() == 0)
+            return new String[0];
+        return protocol.split("\\s*,\\s*");
+    }
+
+    public void complete()
+    {
+        request.complete();
     }
 }
