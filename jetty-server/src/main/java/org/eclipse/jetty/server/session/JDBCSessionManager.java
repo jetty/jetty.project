@@ -534,7 +534,11 @@ public class JDBCSessionManager extends AbstractSessionManager
 
                     }
                     else
+                    {
+                       //the session loaded from the db and the one in memory are the same, so keep using the one in memory
+                       session = memSession;
                        LOG.debug("getSession({}): Session not stale {}", idInCluster,session);
+                    }
                 }
                 else
                 {
