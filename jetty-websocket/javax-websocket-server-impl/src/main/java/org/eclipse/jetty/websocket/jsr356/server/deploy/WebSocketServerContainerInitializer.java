@@ -33,6 +33,7 @@ import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
@@ -45,16 +46,6 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
     public static final String ENABLE_KEY = "org.eclipse.jetty.websocket.jsr356";
     private static final Logger LOG = Log.getLogger(WebSocketServerContainerInitializer.class);
 
-    public static boolean isJSR356EnabledOnContext(ServletContext context)
-    {
-        Object enable = context.getAttribute(ENABLE_KEY);
-        if (enable instanceof Boolean)
-        {
-            return ((Boolean)enable).booleanValue();
-        }
-
-        return true;
-    }
 
     public static ServerContainer configureContext(ServletContextHandler context)
     {
@@ -77,9 +68,22 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
     @Override
     public void onStartup(Set<Class<?>> c, ServletContext context) throws ServletException
     {
-        if (!isJSR356EnabledOnContext(context))
+        Object enable = context.getAttribute(ENABLE_KEY);
+        
+        // Disable if explicitly disabled
+        if (TypeUtil.isFalse(enable))
         {
-            LOG.info("JSR-356 support disabled via attribute on context {} - {}",context.getContextPath(),context);
+            if (c.isEmpty())
+                LOG.debug("JSR-356 support disabled via attribute on context {} - {}",context.getContextPath(),context);
+            else
+                LOG.warn("JSR-356 support disabled via attribute on context {} - {}",context.getContextPath(),context);
+            return;
+        }
+        
+        // Disabled if not explicitly enabled and there are no discovered annotations or interfaces
+        if (!TypeUtil.isTrue(enable) && c.isEmpty())
+        {
+            LOG.debug("No JSR-356 annotations or interfaces discovered. JSR-356 support disabled",context.getContextPath(),context);
             return;
         }
 
@@ -87,12 +91,12 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
 
         if (handler == null)
         {
-            throw new ServletException("Not running on Jetty, JSR support disabled");
+            throw new ServletException("Not running on Jetty, JSR-356 support disabled");
         }
 
         if (!(handler instanceof ServletContextHandler))
         {
-            throw new ServletException("Not running in Jetty ServletContextHandler, JSR support disabled");
+            throw new ServletException("Not running in Jetty ServletContextHandler, JSR-356 support disabled");
         }
 
         ServletContextHandler jettyContext = (ServletContextHandler)handler;
@@ -126,7 +130,7 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
             LOG.debug("Found ServerApplicationConfig: {}",clazz);
             try
             {
-                ServerApplicationConfig config = (ServerApplicationConfig)clazz.newInstance();
+                ServerApplicationConfig config = clazz.newInstance();
 
                 Set<ServerEndpointConfig> seconfigs = config.getEndpointConfigs(discoveredExtendedEndpoints);
                 if (seconfigs != null)

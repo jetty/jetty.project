@@ -616,4 +616,32 @@ public class TypeUtil
         }
         throw new NoSuchMethodException("<init>");
     }
+
+    /* ------------------------------------------------------------ */
+    /** 
+     * @param o Object to test for true
+     * @return True if passed object is not null and is either a Boolean with value true or evaluates to a string that evaluates to true.
+     */
+    public static boolean isTrue(Object o)
+    {
+        if (o==null)
+            return false;
+        if (o instanceof Boolean)
+            return ((Boolean)o).booleanValue();
+        return Boolean.parseBoolean(o.toString());
+    }
+
+    /* ------------------------------------------------------------ */
+    /** 
+     * @param o Object to test for false
+     * @return True if passed object is not null and is either a Boolean with value false or evaluates to a string that evaluates to false.
+     */
+    public static boolean isFalse(Object o)
+    {
+        if (o==null)
+            return false;
+        if (o instanceof Boolean)
+            return !((Boolean)o).booleanValue();
+        return Boolean.parseBoolean(o.toString());
+    }
 }
