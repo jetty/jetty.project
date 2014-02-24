@@ -468,7 +468,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
     @Override
     public SuspendToken suspend()
     {
-        return connection;
+        return connection.suspend();
     }
 
     /**
