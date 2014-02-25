@@ -207,9 +207,21 @@ public class HttpRequest implements Request
     @Override
     public Request param(String name, String value)
     {
+        return param(name, value, false);
+    }
+
+    private Request param(String name, String value, boolean fromQuery)
+    {
         params.add(name, value);
-        this.query = buildQuery();
-        this.uri = null;
+        if (!fromQuery)
+        {
+            // If we have an existing query string, preserve it and append the new parameter.
+            if (query != null)
+                query += "&" + name + "=" + urlEncode(value);
+            else
+                query = buildQuery();
+            uri = null;
+        }
         return this;
     }
 
@@ -640,6 +652,9 @@ public class HttpRequest implements Request
 
     private String urlEncode(String value)
     {
+        if (value == null)
+            return "";
+
         String encoding = "UTF-8";
         try
         {
@@ -663,7 +678,7 @@ public class HttpRequest implements Request
                     String name = parts[0];
                     if (name.trim().length() == 0)
                         continue;
-                    param(name, parts.length < 2 ? "" : urlDecode(parts[1]));
+                    param(name, parts.length < 2 ? "" : urlDecode(parts[1]), true);
                 }
             }
         }

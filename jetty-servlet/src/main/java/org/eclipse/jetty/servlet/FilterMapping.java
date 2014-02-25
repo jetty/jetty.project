@@ -130,6 +130,18 @@ public class FilterMapping implements Dumpable
     }
 
     /* ------------------------------------------------------------ */
+    public boolean appliesTo(DispatcherType t)
+    {
+        return appliesTo(dispatch(t));
+    }
+    
+    /* ------------------------------------------------------------ */
+    public boolean isDefaultDispatches()
+    {
+        return _dispatches==0;
+    }
+    
+    /* ------------------------------------------------------------ */
     /**
      * @return Returns the filterName.
      */

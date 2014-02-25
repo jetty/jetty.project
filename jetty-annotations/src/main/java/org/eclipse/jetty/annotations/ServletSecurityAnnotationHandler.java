@@ -102,7 +102,7 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
        {
            for (String url : sm.getPathSpecs())
            {
-               _context.getMetaData().setOrigin("constraint.url."+url, Origin.Annotation);
+               _context.getMetaData().setOrigin("constraint.url."+url,servletSecurity,clazz);
                constraintMappings.addAll(ConstraintSecurityHandler.createConstraintsWithMappingsForPath(clazz.getName(), url, securityElement));
            }
        }

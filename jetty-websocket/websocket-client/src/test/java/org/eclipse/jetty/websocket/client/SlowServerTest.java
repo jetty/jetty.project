@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import static org.hamcrest.Matchers.is;
-
 import java.net.URI;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -36,6 +34,8 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.is;
 
 public class SlowServerTest
 {
@@ -91,11 +91,10 @@ public class SlowServerTest
         future.get(500,TimeUnit.MILLISECONDS);
         tsocket.waitForConnected(500,TimeUnit.MILLISECONDS);
 
-        int messageCount = 10; // TODO: increase to 1000
+        int messageCount = 10;
 
         // Setup slow server read thread
-        ServerReadThread reader = new ServerReadThread(sconnection);
-        reader.setExpectedMessageCount(messageCount);
+        ServerReadThread reader = new ServerReadThread(sconnection, messageCount);
         reader.setSlowness(100); // slow it down
         reader.start();
 

@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.common.test;
 
-import static org.hamcrest.Matchers.*;
-
 import java.io.Closeable;
 import java.io.EOFException;
 import java.io.IOException;
@@ -48,6 +46,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
@@ -68,6 +67,10 @@ import org.eclipse.jetty.websocket.common.io.IOState;
 import org.eclipse.jetty.websocket.common.io.IOState.ConnectionStateListener;
 import org.eclipse.jetty.websocket.common.io.http.HttpResponseHeaderParser;
 import org.junit.Assert;
+
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 /**
  * A simple websocket client for performing unit tests with.
@@ -465,7 +468,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames, Connecti
     }
 
     @Override
-    public void outgoingFrame(Frame frame, WriteCallback callback)
+    public void outgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode)
     {
         ByteBuffer headerBuf = generator.generateHeaderBytes(frame);
         if (LOG.isDebugEnabled())
@@ -710,7 +713,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames, Connecti
         {
             frame.setMask(clientmask);
         }
-        extensionStack.outgoingFrame(frame,null);
+        extensionStack.outgoingFrame(frame,null, BatchMode.OFF);
     }
 
     public void writeRaw(ByteBuffer buf) throws IOException

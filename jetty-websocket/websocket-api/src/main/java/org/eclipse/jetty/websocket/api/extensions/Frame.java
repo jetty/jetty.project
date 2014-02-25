@@ -68,6 +68,11 @@ public interface Frame
             return (opcode == TEXT.getOpCode()) | (opcode == BINARY.getOpCode());
         }
 
+        public boolean isContinuation()
+        {
+            return opcode == CONTINUATION.getOpCode();
+        }
+
         @Override
         public String toString()
         {

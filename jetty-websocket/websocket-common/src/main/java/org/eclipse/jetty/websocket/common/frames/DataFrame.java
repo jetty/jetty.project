@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.common.frames;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
@@ -28,8 +27,6 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
  */
 public class DataFrame extends WebSocketFrame
 {
-    private ByteBufferPool pool;
-
     protected DataFrame(byte opcode)
     {
         super(opcode);
@@ -78,35 +75,11 @@ public class DataFrame extends WebSocketFrame
         return true;
     }
 
-    public void reset()
-    {
-        // TODO: this is rather ugly.
-        // The ByteBufferPool is set only from extensions that
-        // compress the payload. It would be better to wrap the
-        // callback associated with this DataFrame into one that
-        // releases the buffer and then call the nested callback,
-        // rather than null-checking whether the pool exists and
-        // if so then release the buffer.
-        if (pool!=null)
-        {
-            pool.release(this.data);
-        }
-        super.reset();
-    }
-
     /**
      * Set the data frame to continuation mode
      */
     public void setIsContinuation()
     {
         setOpCode(OpCode.CONTINUATION);
-    }
-
-    /**
-     * Sets the buffer pool used for the payload
-     */
-    public void setBufferPool(ByteBufferPool pool)
-    {
-        this.pool = pool;
     }
 }

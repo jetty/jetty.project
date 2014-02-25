@@ -70,7 +70,7 @@ public class MultiPartConfigAnnotationHandler extends AbstractIntrospectableAnno
             //let the annotation override it
             if (d == null)
             {
-                metaData.setOrigin(holder.getName()+".servlet.multipart-config");
+                metaData.setOrigin(holder.getName()+".servlet.multipart-config",multi,clazz);
                 holder.getRegistration().setMultipartConfig(new MultipartConfigElement(multi));
             }
         }

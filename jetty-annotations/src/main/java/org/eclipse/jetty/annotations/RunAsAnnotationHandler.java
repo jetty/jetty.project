@@ -64,7 +64,7 @@ public class RunAsAnnotationHandler extends AbstractIntrospectableAnnotationHand
                     //let the annotation override it
                     if (d == null)
                     {
-                        metaData.setOrigin(holder.getName()+".servlet.run-as");
+                        metaData.setOrigin(holder.getName()+".servlet.run-as",runAs,clazz);
                         org.eclipse.jetty.plus.annotation.RunAs ra = new org.eclipse.jetty.plus.annotation.RunAs();
                         ra.setTargetClassName(clazz.getCanonicalName());
                         ra.setRoleName(role);

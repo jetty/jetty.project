@@ -304,11 +304,22 @@ public class AnnotationTest extends HttpServlet
             out.println("@Resource(name=\"minAmount\")");
             out.println("private Double minAmount;");
             out.println("</pre>");
-            out.println("<p><b>Result: "+envResult+": "+(maxAmount.compareTo(new Double(55))==0?" <span class=\"pass\">PASS":" <span class=\"fail\">FAIL")+"</span></b>");     
+            if (maxAmount==null)
+                out.println("<p><b>Result: "+envResult+":  <span class=\"fail\">FAIL");
+            else
+                out.println("<p><b>Result: "+envResult+": "+(maxAmount.compareTo(new Double(55))==0?" <span class=\"pass\">PASS":" <span class=\"fail\">FAIL")+"</span></b>");     
             out.println("<br/><b>JNDI Lookup Result: "+envLookupResult+"</b>");
-            out.println("<br/><b>Result: "+envResult2+": "+(minAmount.compareTo(new Double("0.99"))==0?" <span class=\"pass\">PASS":" <span class=\"fail\">FAIL")+"</span></b>");     
+
+            if (minAmount==null)
+                out.println("<p><b>Result: "+envResult2+":  <span class=\"fail\">FAIL");
+            else
+                out.println("<br/><b>Result: "+envResult2+": "+(minAmount.compareTo(new Double("0.99"))==0?" <span class=\"pass\">PASS":" <span class=\"fail\">FAIL")+"</span></b>");     
             out.println("<br/><b>JNDI Lookup Result: "+envLookupResult2+"</b>");
-            out.println("<br/><b>Result: "+envResult3+": "+(avgAmount.compareTo(new Double("1.25"))==0?" <span class=\"pass\">PASS":" <span class=\"fail\">FAIL")+"</span></b>");     
+
+            if (avgAmount==null)
+                out.println("<p><b>Result: "+envResult3+":  <span class=\"fail\">FAIL");
+            else
+                out.println("<br/><b>Result: "+envResult3+": "+(avgAmount.compareTo(new Double("1.25"))==0?" <span class=\"pass\">PASS":" <span class=\"fail\">FAIL")+"</span></b>");     
             out.println("<br/><b>JNDI Lookup Result: "+envLookupResult3+"</b></p>");     
             
             out.println("<h2>@Resource Injection for UserTransaction </h2>");

@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
 import javax.websocket.CloseReason;
 import javax.websocket.EndpointConfig;
 import javax.websocket.Extension;
@@ -41,6 +40,7 @@ import javax.websocket.WebSocketContainer;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.common.SessionListener;
@@ -73,9 +73,9 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
     private JsrAsyncRemote asyncRemote;
     private JsrBasicRemote basicRemote;
 
-    public JsrSession(URI requestURI, EventDriver websocket, LogicalConnection connection, ClientContainer container, String id, SessionListener[] sessionListeners)
+    public JsrSession(URI requestURI, EventDriver websocket, LogicalConnection connection, ClientContainer container, String id, SessionListener... sessionListeners)
     {
-        super(requestURI,websocket,connection,sessionListeners);
+        super(requestURI, websocket, connection, sessionListeners);
         if (!(websocket instanceof AbstractJsrEventDriver))
         {
             throw new IllegalArgumentException("Cannot use, not a JSR WebSocket: " + websocket);
@@ -90,13 +90,12 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
         this.messageHandlerFactory = new MessageHandlerFactory();
         this.wrappers = new MessageHandlerWrapper[MessageType.values().length];
         this.messageHandlerSet = new HashSet<>();
-
     }
 
     @Override
     public void addMessageHandler(MessageHandler handler) throws IllegalStateException
     {
-        Objects.requireNonNull(handler,"MessageHandler cannot be null");
+        Objects.requireNonNull(handler, "MessageHandler cannot be null");
 
         synchronized (wrappers)
         {
@@ -373,5 +372,12 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
             }
             messageHandlerSet.add(wrapper.getHandler());
         }
+    }
+
+    @Override
+    public BatchMode getBatchMode()
+    {
+        // JSR 356 specification mandates default batch mode to be off.
+        return BatchMode.OFF;
     }
 }

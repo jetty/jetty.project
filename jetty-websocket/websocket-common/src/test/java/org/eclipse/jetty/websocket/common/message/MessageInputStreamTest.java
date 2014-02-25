@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.common.message;
 
-import static org.hamcrest.Matchers.*;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -36,6 +34,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 
+import static org.hamcrest.Matchers.is;
+
 public class MessageInputStreamTest
 {
     @Rule
@@ -49,7 +49,7 @@ public class MessageInputStreamTest
     {
         LocalWebSocketConnection conn = new LocalWebSocketConnection(testname,bufferPool);
 
-        try (MessageInputStream stream = new MessageInputStream(conn))
+        try (MessageInputStream stream = new MessageInputStream())
         {
             // Append a single message (simple, short)
             ByteBuffer payload = BufferUtil.toBuffer("Hello World",StandardCharsets.UTF_8);
@@ -72,7 +72,7 @@ public class MessageInputStreamTest
     {
         LocalWebSocketConnection conn = new LocalWebSocketConnection(testname,bufferPool);
 
-        try (MessageInputStream stream = new MessageInputStream(conn))
+        try (MessageInputStream stream = new MessageInputStream())
         {
             final AtomicBoolean hadError = new AtomicBoolean(false);
             final CountDownLatch startLatch = new CountDownLatch(1);
@@ -123,7 +123,7 @@ public class MessageInputStreamTest
     {
         LocalWebSocketConnection conn = new LocalWebSocketConnection(testname,bufferPool);
 
-        try (MessageInputStream stream = new MessageInputStream(conn))
+        try (MessageInputStream stream = new MessageInputStream())
         {
             final AtomicBoolean hadError = new AtomicBoolean(false);
 
@@ -162,7 +162,7 @@ public class MessageInputStreamTest
     {
         LocalWebSocketConnection conn = new LocalWebSocketConnection(testname,bufferPool);
 
-        try (MessageInputStream stream = new MessageInputStream(conn))
+        try (MessageInputStream stream = new MessageInputStream())
         {
             final AtomicBoolean hadError = new AtomicBoolean(false);
 

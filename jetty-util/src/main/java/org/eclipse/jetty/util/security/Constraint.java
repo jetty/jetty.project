@@ -121,6 +121,12 @@ public class Constraint implements Cloneable, Serializable
     }
 
     /* ------------------------------------------------------------ */
+    public String getName()
+    {
+        return _name;
+    }
+
+    /* ------------------------------------------------------------ */
     public void setRoles(String[] roles)
     {
         _roles = roles;

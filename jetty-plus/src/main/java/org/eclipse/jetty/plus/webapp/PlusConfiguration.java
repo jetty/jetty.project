@@ -109,7 +109,7 @@ public class PlusConfiguration extends AbstractConfiguration
             _key = new Integer(random.nextInt());
             Context context = new InitialContext();
             Context compCtx = (Context)context.lookup("java:comp");
-            compCtx.addToEnvironment("org.eclipse.jndi.lock", _key);
+            compCtx.addToEnvironment("org.eclipse.jetty.jndi.lock", _key);
         }
         finally
         {
@@ -129,7 +129,7 @@ public class PlusConfiguration extends AbstractConfiguration
             {
                 Context context = new InitialContext();
                 Context compCtx = (Context)context.lookup("java:comp");
-                compCtx.addToEnvironment("org.eclipse.jndi.unlock", _key);
+                compCtx.addToEnvironment("org.eclipse.jetty.jndi.unlock", _key);
             }
             finally
             {

@@ -22,12 +22,16 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Queue;
 
+import org.eclipse.jetty.util.ConcurrentArrayQueue;
+import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Extension;
@@ -47,6 +51,8 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
 {
     private static final Logger LOG = Log.getLogger(ExtensionStack.class);
 
+    private final Queue<FrameEntry> entries = new ConcurrentArrayQueue<>();
+    private final IteratingCallback flusher = new Flusher();
     private final ExtensionFactory factory;
     private List<Extension> extensions;
     private IncomingFrames nextIncoming;
@@ -76,20 +82,20 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
         // Wire up Extensions
         if ((extensions != null) && (extensions.size() > 0))
         {
-            ListIterator<Extension> eiter = extensions.listIterator();
+            ListIterator<Extension> exts = extensions.listIterator();
 
             // Connect outgoings
-            while (eiter.hasNext())
+            while (exts.hasNext())
             {
-                Extension ext = eiter.next();
+                Extension ext = exts.next();
                 ext.setNextOutgoingFrames(nextOutgoing);
                 nextOutgoing = ext;
             }
 
             // Connect incomings
-            while (eiter.hasPrevious())
+            while (exts.hasPrevious())
             {
-                Extension ext = eiter.previous();
+                Extension ext = exts.previous();
                 ext.setNextIncomingFrames(nextIncoming);
                 nextIncoming = ext;
             }
@@ -104,13 +110,13 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
         IncomingFrames websocket = getLastIncoming();
         OutgoingFrames network = getLastOutgoing();
 
-        out.append(indent).append(" +- Stack\n");
-        out.append(indent).append("    +- Network  : ").append(network.toString()).append('\n');
+        out.append(indent).append(" +- Stack").append(System.lineSeparator());
+        out.append(indent).append("     +- Network  : ").append(network.toString()).append(System.lineSeparator());
         for (Extension ext : extensions)
         {
-            out.append(indent).append("    +- Extension: ").append(ext.toString()).append('\n');
+            out.append(indent).append("     +- Extension: ").append(ext.toString()).append(System.lineSeparator());
         }
-        out.append(indent).append("    +- Websocket: ").append(websocket.toString()).append('\n');
+        out.append(indent).append("     +- Websocket: ").append(websocket.toString()).append(System.lineSeparator());
     }
 
     @ManagedAttribute(name = "Extension List", readonly = true)
@@ -247,6 +253,8 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
 
             // Add Extension
             extensions.add(ext);
+            addBean(ext);
+
             LOG.debug("Adding Extension: {}",config);
 
             // Record RSV Claims
@@ -263,14 +271,15 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
                 rsvClaims[2] = ext.getName();
             }
         }
-
-        addBean(extensions);
     }
 
     @Override
-    public void outgoingFrame(Frame frame, WriteCallback callback)
+    public void outgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode)
     {
-        nextOutgoing.outgoingFrame(frame,callback);
+        FrameEntry entry = new FrameEntry(frame, callback, batchMode);
+        LOG.debug("Queuing {}", entry);
+        entries.offer(entry);
+        flusher.iterate();
     }
 
     public void setNextIncoming(IncomingFrames nextIncoming)
@@ -299,7 +308,8 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
     {
         StringBuilder s = new StringBuilder();
         s.append("ExtensionStack[");
-        s.append("extensions=");
+        s.append("queueSize=").append(entries.size());
+        s.append(",extensions=");
         if (extensions == null)
         {
             s.append("<null>");
@@ -330,5 +340,94 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
         s.append(",outgoing=").append((this.nextOutgoing == null)?"<null>":this.nextOutgoing.getClass().getName());
         s.append("]");
         return s.toString();
+    }
+
+    private static class FrameEntry
+    {
+        private final Frame frame;
+        private final WriteCallback callback;
+        private final BatchMode batchMode;
+
+        private FrameEntry(Frame frame, WriteCallback callback, BatchMode batchMode)
+        {
+            this.frame = frame;
+            this.callback = callback;
+            this.batchMode = batchMode;
+        }
+
+        @Override
+        public String toString()
+        {
+            return frame.toString();
+        }
+    }
+
+    private class Flusher extends IteratingCallback implements WriteCallback
+    {
+        private FrameEntry current;
+
+        @Override
+        protected Action process() throws Exception
+        {
+            current = entries.poll();
+            LOG.debug("Processing {}", current);
+            if (current == null)
+                return Action.IDLE;
+            nextOutgoing.outgoingFrame(current.frame, this, current.batchMode);
+            return Action.SCHEDULED;
+        }
+
+        @Override
+        protected void completed()
+        {
+            // This IteratingCallback never completes.
+        }
+
+        @Override
+        public void writeSuccess()
+        {
+            // Notify first then call succeeded(), otherwise
+            // write callbacks may be invoked out of order.
+            notifyCallbackSuccess(current.callback);
+            succeeded();
+        }
+
+        @Override
+        public void writeFailed(Throwable x)
+        {
+            // Notify first, the call succeeded() to drain the queue.
+            // We don't want to call failed(x) because that will put
+            // this flusher into a final state that cannot be exited,
+            // and the failure of a frame may not mean that the whole
+            // connection is now invalid.
+            notifyCallbackFailure(current.callback, x);
+            succeeded();
+        }
+
+        private void notifyCallbackSuccess(WriteCallback callback)
+        {
+            try
+            {
+                if (callback != null)
+                    callback.writeSuccess();
+            }
+            catch (Throwable x)
+            {
+                LOG.debug("Exception while notifying success of callback " + callback, x);
+            }
+        }
+
+        private void notifyCallbackFailure(WriteCallback callback, Throwable failure)
+        {
+            try
+            {
+                if (callback != null)
+                    callback.writeFailed(failure);
+            }
+            catch (Throwable x)
+            {
+                LOG.debug("Exception while notifying failure of callback " + callback, x);
+            }
+        }
     }
 }

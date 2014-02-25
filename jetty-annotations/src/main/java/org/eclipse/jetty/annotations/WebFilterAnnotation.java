@@ -104,15 +104,15 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
             holder.setName(name);
 
             holder.setHeldClass(clazz);
-            metaData.setOrigin(name+".filter.filter-class");
+            metaData.setOrigin(name+".filter.filter-class",filterAnnotation,clazz);
 
             holder.setDisplayName(filterAnnotation.displayName());
-            metaData.setOrigin(name+".filter.display-name");
+            metaData.setOrigin(name+".filter.display-name",filterAnnotation,clazz);
 
             for (WebInitParam ip:  filterAnnotation.initParams())
             {
                 holder.setInitParameter(ip.name(), ip.value());
-                metaData.setOrigin(name+".filter.init-param."+ip.name());
+                metaData.setOrigin(name+".filter.init-param."+ip.name(),ip,clazz);
             }
 
             FilterMapping mapping = new FilterMapping();
@@ -120,12 +120,12 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
 
             if (urlPatterns.length > 0)
             {
-                ArrayList paths = new ArrayList();
+                ArrayList<String> paths = new ArrayList<String>();
                 for (String s:urlPatterns)
                 {
                     paths.add(Util.normalizePattern(s));
                 }
-                mapping.setPathSpecs((String[])paths.toArray(new String[paths.size()]));
+                mapping.setPathSpecs(paths.toArray(new String[paths.size()]));
             }
 
             if (filterAnnotation.servletNames().length > 0)
@@ -135,7 +135,7 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
                 {
                     names.add(s);
                 }
-                mapping.setServletNames((String[])names.toArray(new String[names.size()]));
+                mapping.setServletNames(names.toArray(new String[names.size()]));
             }
 
             EnumSet<DispatcherType> dispatcherSet = EnumSet.noneOf(DispatcherType.class);
@@ -144,10 +144,10 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
                 dispatcherSet.add(d);
             }
             mapping.setDispatcherTypes(dispatcherSet);
-            metaData.setOrigin(name+".filter.mappings");
+            metaData.setOrigin(name+".filter.mappings",filterAnnotation,clazz);
 
             holder.setAsyncSupported(filterAnnotation.asyncSupported());
-            metaData.setOrigin(name+".filter.async-supported");
+            metaData.setOrigin(name+".filter.async-supported",filterAnnotation,clazz);
 
             _context.getServletHandler().addFilter(holder);
             _context.getServletHandler().addFilterMapping(mapping);
@@ -165,7 +165,7 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
                 if (metaData.getOrigin(name+".filter.init-param."+ip.name())==Origin.NotSet)
                 {
                     holder.setInitParameter(ip.name(), ip.value());
-                    metaData.setOrigin(name+".filter.init-param."+ip.name());
+                    metaData.setOrigin(name+".filter.init-param."+ip.name(),ip,clazz);
                 }
             }
 
@@ -191,12 +191,12 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
 
                 if (urlPatterns.length > 0)
                 {
-                    ArrayList paths = new ArrayList();
+                    ArrayList<String> paths = new ArrayList<String>();
                     for (String s:urlPatterns)
                     {
                         paths.add(Util.normalizePattern(s));
                     }
-                    mapping.setPathSpecs((String[])paths.toArray(new String[paths.size()]));
+                    mapping.setPathSpecs(paths.toArray(new String[paths.size()]));
                 }
                 if (filterAnnotation.servletNames().length > 0)
                 {
@@ -205,7 +205,7 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
                     {
                         names.add(s);
                     }
-                    mapping.setServletNames((String[])names.toArray(new String[names.size()]));
+                    mapping.setServletNames(names.toArray(new String[names.size()]));
                 }
 
                 EnumSet<DispatcherType> dispatcherSet = EnumSet.noneOf(DispatcherType.class);
@@ -215,7 +215,7 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
                 }
                 mapping.setDispatcherTypes(dispatcherSet);
                 _context.getServletHandler().addFilterMapping(mapping);
-                metaData.setOrigin(name+".filter.mappings");
+                metaData.setOrigin(name+".filter.mappings",filterAnnotation,clazz);
             }
         }
     }

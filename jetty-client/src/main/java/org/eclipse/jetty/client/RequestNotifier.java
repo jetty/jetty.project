@@ -36,7 +36,6 @@ public class RequestNotifier
         this.client = client;
     }
 
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     public void notifyQueued(Request request)
     {
         // Optimized to avoid allocations of iterator instances
@@ -67,7 +66,6 @@ public class RequestNotifier
         }
     }
 
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     public void notifyBegin(Request request)
     {
         // Optimized to avoid allocations of iterator instances
@@ -98,7 +96,6 @@ public class RequestNotifier
         }
     }
 
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     public void notifyHeaders(Request request)
     {
         // Optimized to avoid allocations of iterator instances
@@ -129,7 +126,6 @@ public class RequestNotifier
         }
     }
 
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     public void notifyCommit(Request request)
     {
         // Optimized to avoid allocations of iterator instances
@@ -160,7 +156,6 @@ public class RequestNotifier
         }
     }
 
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     public void notifyContent(Request request, ByteBuffer content)
     {
         // Slice the buffer to avoid that listeners peek into data they should not look at.
@@ -203,7 +198,6 @@ public class RequestNotifier
         }
     }
 
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     public void notifySuccess(Request request)
     {
         // Optimized to avoid allocations of iterator instances
@@ -234,7 +228,6 @@ public class RequestNotifier
         }
     }
 
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     public void notifyFailure(Request request, Throwable failure)
     {
         // Optimized to avoid allocations of iterator instances

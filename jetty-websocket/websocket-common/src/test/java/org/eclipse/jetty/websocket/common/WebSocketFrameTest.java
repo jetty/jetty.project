@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.common;
 
-import static org.hamcrest.Matchers.*;
-
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.MappedByteBufferPool;
@@ -37,6 +35,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import static org.hamcrest.Matchers.is;
+
 public class WebSocketFrameTest
 {
     @Rule
@@ -47,7 +47,7 @@ public class WebSocketFrameTest
 
     private ByteBuffer generateWholeFrame(Generator generator, Frame frame)
     {
-        ByteBuffer buf = ByteBuffer.allocate(frame.getPayloadLength() + Generator.OVERHEAD);
+        ByteBuffer buf = ByteBuffer.allocate(frame.getPayloadLength() + Generator.MAX_HEADER_LENGTH);
         generator.generateWholeFrame(frame,buf);
         BufferUtil.flipToFlush(buf,0);
         return buf;

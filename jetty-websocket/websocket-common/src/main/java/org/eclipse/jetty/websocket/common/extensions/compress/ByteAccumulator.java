@@ -22,43 +22,27 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.MessageTooLargeException;
 
 public class ByteAccumulator
 {
-    private static class Buf
-    {
-        public Buf(byte[] buffer, int offset, int length)
-        {
-            this.buffer = buffer;
-            this.offset = offset;
-            this.length = length;
-        }
-
-        byte[] buffer;
-        int offset;
-        int length;
-    }
-
+    private final List<Chunk> chunks = new ArrayList<>();
     private final int maxSize;
     private int length = 0;
-    private List<Buf> buffers;
 
     public ByteAccumulator(int maxOverallBufferSize)
     {
         this.maxSize = maxOverallBufferSize;
-        this.buffers = new ArrayList<>();
     }
 
-    public void addBuffer(byte buf[], int offset, int length)
+    public void addChunk(byte buf[], int offset, int length)
     {
         if (this.length + length > maxSize)
         {
             throw new MessageTooLargeException("Frame is too large");
         }
-        buffers.add(new Buf(buf,offset,length));
+        chunks.add(new Chunk(buf, offset, length));
         this.length += length;
     }
 
@@ -67,17 +51,29 @@ public class ByteAccumulator
         return length;
     }
 
-    public ByteBuffer getByteBuffer(ByteBufferPool pool)
+    public void transferTo(ByteBuffer buffer)
     {
-        ByteBuffer ret = pool.acquire(length,false);
-        BufferUtil.clearToFill(ret);
-
-        for (Buf buf : buffers)
+        if (buffer.remaining() < length)
+            throw new IllegalArgumentException();
+        int position = buffer.position();
+        for (Chunk chunk : chunks)
         {
-            ret.put(buf.buffer, buf.offset, buf.length);
+            buffer.put(chunk.buffer, chunk.offset, chunk.length);
         }
+        BufferUtil.flipToFlush(buffer, position);
+    }
 
-        BufferUtil.flipToFlush(ret,0);
-        return ret;
+    private static class Chunk
+    {
+        private final byte[] buffer;
+        private final int offset;
+        private final int length;
+
+        private Chunk(byte[] buffer, int offset, int length)
+        {
+            this.buffer = buffer;
+            this.offset = offset;
+            this.length = length;
+        }
     }
 }

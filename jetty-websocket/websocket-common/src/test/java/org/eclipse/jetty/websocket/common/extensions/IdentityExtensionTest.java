@@ -18,13 +18,12 @@
 
 package org.eclipse.jetty.websocket.common.extensions;
 
-import static org.hamcrest.Matchers.is;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.extensions.Extension;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.OpCode;
@@ -36,6 +35,8 @@ import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.test.OutgoingFramesCapture;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.is;
 
 public class IdentityExtensionTest
 {
@@ -54,18 +55,18 @@ public class IdentityExtensionTest
         ext.incomingFrame(frame);
 
         capture.assertFrameCount(1);
-        capture.assertHasFrame(OpCode.TEXT,1);
+        capture.assertHasFrame(OpCode.TEXT, 1);
         WebSocketFrame actual = capture.getFrames().poll();
 
-        Assert.assertThat("Frame.opcode",actual.getOpCode(),is(OpCode.TEXT));
-        Assert.assertThat("Frame.fin",actual.isFin(),is(true));
-        Assert.assertThat("Frame.rsv1",actual.isRsv1(),is(false));
-        Assert.assertThat("Frame.rsv2",actual.isRsv2(),is(false));
-        Assert.assertThat("Frame.rsv3",actual.isRsv3(),is(false));
+        Assert.assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.TEXT));
+        Assert.assertThat("Frame.fin", actual.isFin(), is(true));
+        Assert.assertThat("Frame.rsv1", actual.isRsv1(), is(false));
+        Assert.assertThat("Frame.rsv2", actual.isRsv2(), is(false));
+        Assert.assertThat("Frame.rsv3", actual.isRsv3(), is(false));
 
-        ByteBuffer expected = BufferUtil.toBuffer("hello",StandardCharsets.UTF_8);
-        Assert.assertThat("Frame.payloadLength",actual.getPayloadLength(),is(expected.remaining()));
-        ByteBufferAssert.assertEquals("Frame.payload",expected,actual.getPayload().slice());
+        ByteBuffer expected = BufferUtil.toBuffer("hello", StandardCharsets.UTF_8);
+        Assert.assertThat("Frame.payloadLength", actual.getPayloadLength(), is(expected.remaining()));
+        ByteBufferAssert.assertEquals("Frame.payload", expected, actual.getPayload().slice());
     }
 
     /**
@@ -80,21 +81,21 @@ public class IdentityExtensionTest
         ext.setNextOutgoingFrames(capture);
 
         Frame frame = new TextFrame().setPayload("hello");
-        ext.outgoingFrame(frame,null);
+        ext.outgoingFrame(frame, null, BatchMode.OFF);
 
         capture.assertFrameCount(1);
-        capture.assertHasFrame(OpCode.TEXT,1);
+        capture.assertHasFrame(OpCode.TEXT, 1);
 
         WebSocketFrame actual = capture.getFrames().getFirst();
 
-        Assert.assertThat("Frame.opcode",actual.getOpCode(),is(OpCode.TEXT));
-        Assert.assertThat("Frame.fin",actual.isFin(),is(true));
-        Assert.assertThat("Frame.rsv1",actual.isRsv1(),is(false));
-        Assert.assertThat("Frame.rsv2",actual.isRsv2(),is(false));
-        Assert.assertThat("Frame.rsv3",actual.isRsv3(),is(false));
+        Assert.assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.TEXT));
+        Assert.assertThat("Frame.fin", actual.isFin(), is(true));
+        Assert.assertThat("Frame.rsv1", actual.isRsv1(), is(false));
+        Assert.assertThat("Frame.rsv2", actual.isRsv2(), is(false));
+        Assert.assertThat("Frame.rsv3", actual.isRsv3(), is(false));
 
-        ByteBuffer expected = BufferUtil.toBuffer("hello",StandardCharsets.UTF_8);
-        Assert.assertThat("Frame.payloadLength",actual.getPayloadLength(),is(expected.remaining()));
-        ByteBufferAssert.assertEquals("Frame.payload",expected,actual.getPayload().slice());
+        ByteBuffer expected = BufferUtil.toBuffer("hello", StandardCharsets.UTF_8);
+        Assert.assertThat("Frame.payloadLength", actual.getPayloadLength(), is(expected.remaining()));
+        ByteBufferAssert.assertEquals("Frame.payload", expected, actual.getPayload().slice());
     }
 }

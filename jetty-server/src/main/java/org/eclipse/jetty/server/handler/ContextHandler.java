@@ -1604,6 +1604,19 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             encoding = _localeEncodingMap.get(locale.getLanguage());
         return encoding;
     }
+    
+    /* ------------------------------------------------------------ */
+    /** 
+     * Get all of the locale encodings
+     * 
+     * @return a map of all the locale encodings: key is name of the locale and value is the char encoding
+     */
+    public Map<String,String> getLocaleEncodings()
+    {
+        if (_localeEncodingMap == null)
+            return null;
+        return Collections.unmodifiableMap(_localeEncodingMap);
+    }
 
     /* ------------------------------------------------------------ */
     /*

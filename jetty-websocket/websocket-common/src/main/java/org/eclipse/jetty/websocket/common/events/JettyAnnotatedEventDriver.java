@@ -79,7 +79,7 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
         {
             if (events.onBinary.isStreaming())
             {
-                activeMessage = new MessageInputStream(session.getConnection());
+                activeMessage = new MessageInputStream();
                 final MessageAppender msg = activeMessage;
                 dispatch(new Runnable()
                 {
@@ -181,7 +181,7 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
         {
             if (events.onText.isStreaming())
             {
-                activeMessage = new MessageReader(new MessageInputStream(session.getConnection()));
+                activeMessage = new MessageReader(new MessageInputStream());
                 final MessageAppender msg = activeMessage;
                 dispatch(new Runnable()
                 {

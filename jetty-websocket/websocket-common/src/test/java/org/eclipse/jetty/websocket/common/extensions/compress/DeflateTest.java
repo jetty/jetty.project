@@ -33,33 +33,29 @@ public class DeflateTest
     public String deflate(String inputHex, Deflater deflater, int flushMode)
     {
         byte uncompressed[] = Hex.asByteArray(inputHex);
+        deflater.reset();
         deflater.setInput(uncompressed,0,uncompressed.length);
-        deflater.finish();
+        if (flushMode != Deflater.SYNC_FLUSH)
+            deflater.finish();
 
         ByteBuffer out = ByteBuffer.allocate(bufSize);
         byte buf[] = new byte[64];
-        while (!deflater.finished())
-        {
-            int len = deflater.deflate(buf,0,buf.length,flushMode);
-            out.put(buf,0,len);
-        }
+
+        int len = deflater.deflate(buf,0,buf.length,flushMode);
+        out.put(buf,0,len);
 
         out.flip();
         return Hex.asHex(out);
     }
 
     @Test
-    @Ignore("just noisy")
+    @Ignore("noisy")
     public void deflateAllTypes()
     {
-        int levels[] = new int[]
-        { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-        boolean nowraps[] = new boolean[]
-        { true, false };
-        int strategies[] = new int[]
-        { Deflater.DEFAULT_STRATEGY, Deflater.FILTERED, Deflater.HUFFMAN_ONLY };
-        int flushmodes[] = new int[]
-        { Deflater.NO_FLUSH, Deflater.SYNC_FLUSH, Deflater.FULL_FLUSH };
+        int levels[] = new int[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+        boolean nowraps[] = new boolean[] { true, false };
+        int strategies[] = new int[] { Deflater.DEFAULT_STRATEGY, Deflater.FILTERED, Deflater.HUFFMAN_ONLY };
+        int flushmodes[] = new int[] { Deflater.NO_FLUSH, Deflater.SYNC_FLUSH, Deflater.FULL_FLUSH };
 
         String inputHex = Hex.asHex(StringUtil.getUtf8Bytes("time:"));
         for (int level : levels)

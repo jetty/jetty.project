@@ -180,7 +180,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
                         injections.add(injection);
 
                         //TODO - an @Resource is equivalent to a resource-ref, resource-env-ref, message-destination
-                        metaData.setOrigin("resource-ref."+name+".injection");
+                        metaData.setOrigin("resource-ref."+name+".injection",resource,clazz);
                     }
                     else if (!Util.isEnvEntryType(type))
                     {
@@ -334,7 +334,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
                         injection.setMappingName(mappedName);
                         injections.add(injection);
                         //TODO - an @Resource is equivalent to a resource-ref, resource-env-ref, message-destination
-                        metaData.setOrigin("resource-ref."+name+".injection");
+                        metaData.setOrigin("resource-ref."+name+".injection",resource,clazz);
                     }
                     else if (!Util.isEnvEntryType(paramType))
                     {

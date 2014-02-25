@@ -34,7 +34,7 @@ public class SimpleTextMessage implements MessageAppender
     public SimpleTextMessage(EventDriver onEvent)
     {
         this.onEvent = onEvent;
-        this.utf = new Utf8StringBuilder();
+        this.utf = new Utf8StringBuilder(1024);
         size = 0;
         finished = false;
     }

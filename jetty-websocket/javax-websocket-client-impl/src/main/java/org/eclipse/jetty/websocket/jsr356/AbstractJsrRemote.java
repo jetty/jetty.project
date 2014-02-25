@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.jsr356;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Future;
-
 import javax.websocket.EncodeException;
 import javax.websocket.Encoder;
 import javax.websocket.RemoteEndpoint;
@@ -30,6 +29,7 @@ import javax.websocket.SendHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.common.WebSocketRemoteEndpoint;
 import org.eclipse.jetty.websocket.common.io.FutureWriteCallback;
 import org.eclipse.jetty.websocket.common.message.MessageOutputStream;
@@ -80,24 +80,31 @@ public abstract class AbstractJsrRemote implements RemoteEndpoint
     @Override
     public void flushBatch() throws IOException
     {
-        // TODO Auto-generated method stub
+        jettyRemote.flush();
     }
 
     @Override
     public boolean getBatchingAllowed()
     {
-        // TODO Auto-generated method stub
-        return false;
+        return jettyRemote.getBatchMode() == BatchMode.ON;
+    }
+
+    @Override
+    public void setBatchingAllowed(boolean allowed) throws IOException
+    {
+        if (jettyRemote.getBatchMode() == BatchMode.ON && !allowed)
+            jettyRemote.flush();
+        jettyRemote.setBatchMode(allowed ? BatchMode.ON : BatchMode.OFF);
     }
 
     @SuppressWarnings(
-    { "rawtypes", "unchecked" })
+            {"rawtypes", "unchecked"})
     public Future<Void> sendObjectViaFuture(Object data)
     {
         assertMessageNotNull(data);
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("sendObject({})",data);
+            LOG.debug("sendObject({})", data);
         }
 
         Encoder encoder = encoders.getEncoderFor(data.getClass());
@@ -108,15 +115,15 @@ public abstract class AbstractJsrRemote implements RemoteEndpoint
 
         if (encoder instanceof Encoder.Text)
         {
-            Encoder.Text etxt = (Encoder.Text)encoder;
+            Encoder.Text text = (Encoder.Text)encoder;
             try
             {
-                String msg = etxt.encode(data);
+                String msg = text.encode(data);
                 return jettyRemote.sendStringByFuture(msg);
             }
             catch (EncodeException e)
             {
-                return new EncodeFailedFuture(data,etxt,Encoder.Text.class,e);
+                return new EncodeFailedFuture(data, text, Encoder.Text.class, e);
             }
         }
         else if (encoder instanceof Encoder.TextStream)
@@ -126,12 +133,12 @@ public abstract class AbstractJsrRemote implements RemoteEndpoint
             try (MessageWriter writer = new MessageWriter(session))
             {
                 writer.setCallback(callback);
-                etxt.encode(data,writer);
+                etxt.encode(data, writer);
                 return callback;
             }
             catch (EncodeException | IOException e)
             {
-                return new EncodeFailedFuture(data,etxt,Encoder.Text.class,e);
+                return new EncodeFailedFuture(data, etxt, Encoder.Text.class, e);
             }
         }
         else if (encoder instanceof Encoder.Binary)
@@ -144,7 +151,7 @@ public abstract class AbstractJsrRemote implements RemoteEndpoint
             }
             catch (EncodeException e)
             {
-                return new EncodeFailedFuture(data,ebin,Encoder.Binary.class,e);
+                return new EncodeFailedFuture(data, ebin, Encoder.Binary.class, e);
             }
         }
         else if (encoder instanceof Encoder.BinaryStream)
@@ -154,12 +161,12 @@ public abstract class AbstractJsrRemote implements RemoteEndpoint
             try (MessageOutputStream out = new MessageOutputStream(session))
             {
                 out.setCallback(callback);
-                ebin.encode(data,out);
+                ebin.encode(data, out);
                 return callback;
             }
             catch (EncodeException | IOException e)
             {
-                return new EncodeFailedFuture(data,ebin,Encoder.Binary.class,e);
+                return new EncodeFailedFuture(data, ebin, Encoder.Binary.class, e);
             }
         }
 
@@ -171,7 +178,7 @@ public abstract class AbstractJsrRemote implements RemoteEndpoint
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("sendPing({})",BufferUtil.toDetailString(data));
+            LOG.debug("sendPing({})", BufferUtil.toDetailString(data));
         }
         jettyRemote.sendPing(data);
     }
@@ -181,14 +188,8 @@ public abstract class AbstractJsrRemote implements RemoteEndpoint
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("sendPong({})",BufferUtil.toDetailString(data));
+            LOG.debug("sendPong({})", BufferUtil.toDetailString(data));
         }
         jettyRemote.sendPong(data);
-    }
-
-    @Override
-    public void setBatchingAllowed(boolean allowed) throws IOException
-    {
-        // TODO Auto-generated method stub
     }
 }

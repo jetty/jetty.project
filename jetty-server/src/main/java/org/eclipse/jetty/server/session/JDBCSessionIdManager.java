@@ -1411,7 +1411,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         String[] ids = expiredIds.toArray(new String[expiredIds.size()]);
         try (Connection con = getConnection())
         {
-            con.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+            con.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
             con.setAutoCommit(false);
 
             int start = 0;

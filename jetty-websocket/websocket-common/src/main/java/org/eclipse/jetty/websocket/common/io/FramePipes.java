@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.common.io;
 
+import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
@@ -43,7 +44,7 @@ public class FramePipes
         @Override
         public void incomingFrame(Frame frame)
         {
-            this.outgoing.outgoingFrame(frame,null);
+            this.outgoing.outgoingFrame(frame,null, BatchMode.OFF);
         }
     }
 
@@ -57,7 +58,7 @@ public class FramePipes
         }
 
         @Override
-        public void outgoingFrame(Frame frame, WriteCallback callback)
+        public void outgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode)
         {
             try
             {

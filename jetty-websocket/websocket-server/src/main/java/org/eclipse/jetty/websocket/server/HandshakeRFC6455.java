@@ -58,6 +58,8 @@ public class HandshakeRFC6455 implements WebSocketHandshake
             }
         }
 
+        request.complete();
+
         response.setStatus(HttpServletResponse.SC_SWITCHING_PROTOCOLS);
         response.complete();
     }

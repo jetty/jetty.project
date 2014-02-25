@@ -54,6 +54,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.xml.XmlParser;
+import org.eclipse.jetty.xml.XmlParser.Node;
 
 /**
  * StandardDescriptorProcessor
@@ -157,6 +158,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 }
                 break;
             }
+            default:
+                LOG.warn(new Throwable()); // TODO throw ISE?
         }
         if (LOG.isDebugEnabled())
             LOG.debug("ContextParam: " + name + "=" + value);
@@ -244,18 +247,17 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         throw new IllegalStateException("Mismatching init-param "+pname+"="+pvalue+" in "+descriptor.getResource());
                     break;
                 }
+                default:
+                    LOG.warn(new Throwable()); // TODO throw ISE?
             }
         }
 
         String servlet_class = node.getString("servlet-class", false, true);
 
-        // Handle JSP
-        String jspServletClass=null;
 
         //Handle the default jsp servlet instance
         if (id != null && id.equals("jsp"))
         {
-            jspServletClass = servlet_class;
             try
             {
                 Loader.loadClass(this.getClass(), servlet_class);
@@ -272,7 +274,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             catch (ClassNotFoundException e)
             {
                 LOG.info("NO JSP Support for {}, did not find {}", context.getContextPath(), servlet_class);
-                jspServletClass = servlet_class = "org.eclipse.jetty.servlet.NoJspServlet";
+                servlet_class = "org.eclipse.jetty.servlet.NoJspServlet";
             }
         }
 
@@ -309,6 +311,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         throw new IllegalStateException("Conflicting servlet-class "+servlet_class+" in "+descriptor.getResource());
                     break;
                 }
+                default:
+                    LOG.warn(new Throwable()); // TODO throw ISE?
             }
         }
 
@@ -374,10 +378,12 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         throw new IllegalStateException("Conflicting load-on-startup value in "+descriptor.getResource());
                     break;
                 }
+                default:
+                    LOG.warn(new Throwable()); // TODO throw ISE?
             }
         }
 
-        Iterator sRefsIter = node.iterator("security-role-ref");
+        Iterator<Node> sRefsIter = node.iterator("security-role-ref");
         while (sRefsIter.hasNext())
         {
             XmlParser.Node securityRef = (XmlParser.Node) sRefsIter.next();
@@ -413,6 +419,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                             throw new IllegalStateException("Conflicting role-link for role-name "+roleName+" for servlet "+servlet_name+" in "+descriptor.getResource());
                         break;
                     }
+                    default:
+                        LOG.warn(new Throwable()); // TODO throw ISE?
                 }
             }
             else
@@ -457,6 +465,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                             throw new IllegalStateException("Conflicting run-as role "+roleName+" for servlet "+servlet_name+" in "+descriptor.getResource());
                         break;
                     }
+                    default:
+                        LOG.warn(new Throwable()); // TODO throw ISE?
                 }
             }
         }
@@ -493,6 +503,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         throw new IllegalStateException("Conflicting async-supported="+async+" for servlet "+servlet_name+" in "+descriptor.getResource());
                     break;
                 }
+                default:
+                    LOG.warn(new Throwable()); // TODO throw ISE?
             }
         }
 
@@ -528,6 +540,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         throw new IllegalStateException("Conflicting value of servlet enabled for servlet "+servlet_name+" in "+descriptor.getResource());
                     break;
                 }
+                default:
+                    LOG.warn(new Throwable()); // TODO throw ISE?
             }
         }
 
@@ -585,6 +599,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         throw new IllegalStateException("Conflicting multipart-config location for servlet "+servlet_name+" in "+descriptor.getResource());
                     break;
                 }
+                default:
+                    LOG.warn(new Throwable()); // TODO throw ISE?
             }
         }
     }
@@ -632,6 +648,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 addServletMapping(servlet_name, node, context, descriptor);
                 break;
             }
+            default:
+                LOG.warn(new Throwable()); // TODO throw ISE?
         }
     }
 
@@ -653,7 +671,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         //Servlet Spec 3.0
         // <tracking-mode>
         // this is additive across web-fragments
-        Iterator iter = node.iterator("tracking-mode");
+        Iterator<Node> iter = node.iterator("tracking-mode");
         if (iter.hasNext())
         { 
             Set<SessionTrackingMode> modes = null;
@@ -679,7 +697,9 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         modes = new HashSet<SessionTrackingMode>(context.getSessionHandler().getSessionManager().getEffectiveSessionTrackingModes());
                     context.getMetaData().setOrigin("session.tracking-mode", descriptor);
                     break;
-                }       
+                }    
+                default:
+                    LOG.warn(new Throwable()); // TODO throw ISE?   
             }
             
             while (iter.hasNext())
@@ -729,6 +749,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                             throw new IllegalStateException("Conflicting cookie-config name "+name+" in "+descriptor.getResource());
                         break;
                     }
+                    default:
+                        LOG.warn(new Throwable()); // TODO throw ISE?
                 }
             }
 
@@ -764,6 +786,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                             throw new IllegalStateException("Conflicting cookie-config domain "+domain+" in "+descriptor.getResource());
                         break;
                     }
+                    default:
+                        LOG.warn(new Throwable()); // TODO throw ISE?
                 }
             }
 
@@ -799,6 +823,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                             throw new IllegalStateException("Conflicting cookie-config path "+path+" in "+descriptor.getResource());
                         break;
                     }
+                    default:
+                        LOG.warn(new Throwable()); // TODO throw ISE?
                 }
             }
 
@@ -834,6 +860,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                             throw new IllegalStateException("Conflicting cookie-config comment "+comment+" in "+descriptor.getResource());
                         break;
                     }
+                    default:
+                        LOG.warn(new Throwable()); // TODO throw ISE?
                 }
             }
 
@@ -870,6 +898,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                             throw new IllegalStateException("Conflicting cookie-config http-only "+httpOnly+" in "+descriptor.getResource());
                         break;
                     }
+                    default:
+                        LOG.warn(new Throwable()); // TODO throw ISE?
                 }
             }
 
@@ -906,6 +936,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                             throw new IllegalStateException("Conflicting cookie-config secure "+secure+" in "+descriptor.getResource());
                         break;
                     }
+                    default:
+                        LOG.warn(new Throwable()); // TODO throw ISE?
                 }
             }
 
@@ -942,6 +974,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                             throw new IllegalStateException("Conflicting cookie-config max-age "+maxAge+" in "+descriptor.getResource());
                         break;
                     }
+                    default:
+                        LOG.warn(new Throwable()); // TODO throw ISE?
                 }
             }
         }
@@ -990,6 +1024,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         throw new IllegalStateException("Conflicting mime-type "+mimeType+" for extension "+extension+" in "+descriptor.getResource());
                     break;
                 }
+                default:
+                    LOG.warn(new Throwable()); // TODO throw ISE?
             }
         }
     }
@@ -1038,6 +1074,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 addWelcomeFiles(context,node);
                 break;
             }
+            default:
+                LOG.warn(new Throwable()); // TODO throw ISE?
         }
     }
 
@@ -1085,6 +1123,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                             throw new IllegalStateException("Conflicting loacle-encoding mapping for locale "+locale+" in "+descriptor.getResource());
                         break;
                     }
+                    default:
+                        LOG.warn(new Throwable()); // TODO throw ISE?
                 }
             }
         }
@@ -1150,6 +1190,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     throw new IllegalStateException("Conflicting error-code or exception-type "+error+" in "+descriptor.getResource());
                 break;
             }
+            default:
+                LOG.warn(new Throwable()); // TODO throw ISE?
         }
 
     }
@@ -1422,18 +1464,18 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     //remember origin so we can process ServletRegistration.Dynamic.setServletSecurityElement() correctly
                     context.getMetaData().setOrigin("constraint.url."+url, descriptor);
                     
-                    Iterator<XmlParser.Node> iter3 = collection.iterator("http-method");
-                    Iterator<XmlParser.Node> iter4 = collection.iterator("http-method-omission");
+                    Iterator<XmlParser.Node> methods = collection.iterator("http-method");
+                    Iterator<XmlParser.Node> ommissions = collection.iterator("http-method-omission");
                    
-                    if (iter3.hasNext())
+                    if (methods.hasNext())
                     {
-                        if (iter4.hasNext())
+                        if (ommissions.hasNext())
                             throw new IllegalStateException ("web-resource-collection cannot contain both http-method and http-method-omission");
                         
                         //configure all the http-method elements for each url
-                        while (iter3.hasNext())
+                        while (methods.hasNext())
                         {
-                            String method = ((XmlParser.Node) iter3.next()).toString(false, true);
+                            String method = ((XmlParser.Node) methods.next()).toString(false, true);
                             ConstraintMapping mapping = new ConstraintMapping();
                             mapping.setMethod(method);
                             mapping.setPathSpec(url);
@@ -1441,12 +1483,13 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                             ((ConstraintAware)context.getSecurityHandler()).addConstraintMapping(mapping);
                         }
                     }
-                    else if (iter4.hasNext())
+                    else if (ommissions.hasNext())
                     {
                         //configure all the http-method-omission elements for each url
-                        while (iter4.hasNext())
+                        // TODO use the array
+                        while (ommissions.hasNext())
                         {
-                            String method = ((XmlParser.Node)iter4.next()).toString(false, true);
+                            String method = ((XmlParser.Node)ommissions.next()).toString(false, true);
                             ConstraintMapping mapping = new ConstraintMapping();
                             mapping.setMethodOmissions(new String[]{method});
                             mapping.setPathSpec(url);
@@ -1514,6 +1557,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         throw new IllegalStateException("Conflicting auth-method value in "+descriptor.getResource());
                     break;
                 }
+                default:
+                    LOG.warn(new Throwable()); // TODO throw ISE?
             }
 
             //handle realm-name merge
@@ -1547,9 +1592,11 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         throw new IllegalStateException("Conflicting realm-name value in "+descriptor.getResource());
                     break;
                 }
+                default:
+                    LOG.warn(new Throwable()); // TODO throw ISE?
             }
 
-            if (Constraint.__FORM_AUTH.equals(context.getSecurityHandler().getAuthMethod()))
+            if (Constraint.__FORM_AUTH.equalsIgnoreCase(context.getSecurityHandler().getAuthMethod()))
             {
                 XmlParser.Node formConfig = node.get("form-login-config");
                 if (formConfig != null)
@@ -1592,6 +1639,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                                 throw new IllegalStateException("Conflicting form-login-page value in "+descriptor.getResource());
                             break;
                         }
+                        default:
+                            LOG.warn(new Throwable()); // TODO throw ISE?
                     }
 
                     //handle form-error-page
@@ -1623,6 +1672,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                                 throw new IllegalStateException("Conflicting form-error-page value in "+descriptor.getResource());
                             break;
                         }
+                        default:
+                            LOG.warn(new Throwable()); // TODO throw ISE?
                     }
                 }
                 else
@@ -1696,6 +1747,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         throw new IllegalStateException("Conflicting filter-class for filter "+name+" in "+descriptor.getResource());
                     break;
                 }
+                default:
+                    LOG.warn(new Throwable()); // TODO throw ISE?
             }
         }
 
@@ -1735,6 +1788,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         throw new IllegalStateException("Mismatching init-param "+pname+"="+pvalue+" in "+descriptor.getResource());
                     break;
                 }
+                default:
+                    LOG.warn(new Throwable()); // TODO throw ISE?
             }
         }
 
@@ -1772,6 +1827,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         throw new IllegalStateException("Conflicting async-supported="+async+" for filter "+name+" in "+descriptor.getResource());
                     break;
                 }
+                default:
+                    LOG.warn(new Throwable()); // TODO throw ISE?
             }
         }
     }
@@ -1814,6 +1871,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 addFilterMapping(filter_name, node, context, descriptor);
                 break;
             }
+            default:
+                LOG.warn(new Throwable()); // TODO throw ISE?
         }
     }
 

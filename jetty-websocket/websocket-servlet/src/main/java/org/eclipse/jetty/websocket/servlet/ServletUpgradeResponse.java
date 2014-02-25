@@ -75,16 +75,18 @@ public class ServletUpgradeResponse extends UpgradeResponse
     public void sendError(int statusCode, String message) throws IOException
     {
         setSuccess(false);
-        complete();
+        commitHeaders();
         response.sendError(statusCode, message);
+        response = null;
     }
 
     @Override
     public void sendForbidden(String message) throws IOException
     {
         setSuccess(false);
-        complete();
+        commitHeaders();
         response.sendError(HttpServletResponse.SC_FORBIDDEN, message);
+        response = null;
     }
 
     @Override
@@ -103,13 +105,19 @@ public class ServletUpgradeResponse extends UpgradeResponse
 
     public void complete()
     {
+        commitHeaders();
+        response = null;
+    }
+
+    private void commitHeaders()
+    {
         // Transfer all headers to the real HTTP response
-       for (Map.Entry<String, List<String>> entry : getHeaders().entrySet())
-       {
-           for (String value : entry.getValue())
-           {
-               response.addHeader(entry.getKey(), value);
-           }
-       }
+        for (Map.Entry<String, List<String>> entry : getHeaders().entrySet())
+        {
+            for (String value : entry.getValue())
+            {
+                response.addHeader(entry.getKey(), value);
+            }
+        }
     }
 }

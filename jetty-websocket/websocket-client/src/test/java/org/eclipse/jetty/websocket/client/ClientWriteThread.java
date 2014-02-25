@@ -18,14 +18,13 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 
@@ -79,10 +78,13 @@ public class ClientWriteThread extends Thread
                     TimeUnit.MILLISECONDS.sleep(slowness);
                 }
             }
+            if (remote.getBatchMode() == BatchMode.ON)
+                remote.flush();
             // block on write of last message
-            lastMessage.get(2,TimeUnit.MINUTES); // block on write
+            if (lastMessage != null)
+                lastMessage.get(2,TimeUnit.MINUTES); // block on write
         }
-        catch (InterruptedException | ExecutionException | TimeoutException e)
+        catch (Exception e)
         {
             LOG.warn(e);
         }

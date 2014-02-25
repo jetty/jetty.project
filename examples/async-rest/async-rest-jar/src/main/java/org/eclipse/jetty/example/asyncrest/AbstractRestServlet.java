@@ -66,6 +66,14 @@ public class AbstractRestServlet extends HttpServlet
         else
             _appid = servletConfig.getInitParameter(APPID_PARAM);
     }
+
+
+    public static String sanitize(String s)
+    {
+        if (s==null)
+            return null;
+        return s.replace("<","?").replace("&","?").replace("\n","?");
+    }
     
     protected String restURL(String item) 
     {

@@ -121,4 +121,17 @@ public interface RemoteEndpoint
      *            callback to notify of success or failure of the write operation
      */
     void sendString(String text, WriteCallback callback);
+
+    /**
+     * @return the batch mode with which messages are sent.
+     * @see #flush()
+     */
+    BatchMode getBatchMode();
+
+    /**
+     * Flushes messages that may have been batched by the implementation.
+     * @throws IOException if the flush fails
+     * @see #getBatchMode()
+     */
+    void flush() throws IOException;
 }

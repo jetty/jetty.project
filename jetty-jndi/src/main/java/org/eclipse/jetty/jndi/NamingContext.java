@@ -55,17 +55,18 @@ import org.eclipse.jetty.util.log.Logger;
  *
  * <p><h4>Notes</h4>
  * <p>All Names are expected to be Compound, not Composite.
- *
- *
  */
+@SuppressWarnings("unchecked")
 public class NamingContext implements Context, Cloneable, Dumpable
 {
     private final static Logger __log=NamingUtil.__log;
     private final static List<Binding> __empty = Collections.emptyList();
-    public static final String LOCK_PROPERTY = "org.eclipse.jndi.lock";
-    public static final String UNLOCK_PROPERTY = "org.eclipse.jndi.unlock";
+    public static final String DEEP_BINDING = "org.eclipse.jetty.jndi.deepBinding";
+    public static final String LOCK_PROPERTY = "org.eclipse.jetty.jndi.lock";
+    public static final String UNLOCK_PROPERTY = "org.eclipse.jetty.jndi.unlock";
 
     protected final Hashtable<String,Object> _env = new Hashtable<String,Object>();
+    private boolean _supportDeepBinding = false;
     protected Map<String,Binding> _bindings = new HashMap<String,Binding>();
 
     protected NamingContext _parent = null;
@@ -110,13 +111,31 @@ public class NamingContext implements Context, Cloneable, Dumpable
                          NameParser parser)
     {
         if (env != null)
+        {
             _env.putAll(env);
+            // look for deep binding support in _env
+            Object support = _env.get(DEEP_BINDING);
+            if (support == null)
+                _supportDeepBinding = false;
+            else
+                _supportDeepBinding = support != null?Boolean.parseBoolean(support.toString()):false;
+        }
+        else
+        {
+            // no env?  likely this is a root context (java or local) that
+            // was created without an _env.  Look for a system property.
+            String value = System.getProperty(DEEP_BINDING,"false");
+            _supportDeepBinding = Boolean.parseBoolean(value);
+            // put what we discovered into the _env for later sub-contexts
+            // to utilize.
+            _env.put(DEEP_BINDING,_supportDeepBinding);
+        }
         _name = name;
         _parent = parent;
         _parser = parser;
+        if(__log.isDebugEnabled())
+            __log.debug("supportDeepBinding={}",_supportDeepBinding);
     }
-
-
 
 
     /*------------------------------------------------*/
@@ -170,10 +189,13 @@ public class NamingContext implements Context, Cloneable, Dumpable
     }
 
 
-    public void setEnv (Hashtable<String,Object> env)
+    public final void setEnv (Hashtable<String,Object> env)
     {
         _env.clear();
+        if(env == null)
+            return;
         _env.putAll(env);
+        _supportDeepBinding = _env.containsKey(DEEP_BINDING);
     }
 
 
@@ -240,8 +262,19 @@ public class NamingContext implements Context, Cloneable, Dumpable
             {
 
                 Binding  binding = getBinding (firstComponent);
-                if (binding == null)
-                    throw new NameNotFoundException (firstComponent+ " is not bound");
+                if (binding == null) {
+                    if (_supportDeepBinding)
+                    {
+                        Name subname = _parser.parse(firstComponent);
+                        Context subctx = new NamingContext((Hashtable)_env.clone(),firstComponent,this,_parser);
+                        addBinding(subname,subctx);
+                        binding = getBinding(subname);
+                    }
+                    else
+                    {
+                        throw new NameNotFoundException(firstComponent + " is not bound");
+                    }
+                }
 
                 ctx = binding.getObject();
 
@@ -1248,8 +1281,15 @@ public class NamingContext implements Context, Cloneable, Dumpable
 
         if (binding!=null)
         {
-            if (_bindings.containsKey(key))
+            if (_bindings.containsKey(key)) {
+                if(_supportDeepBinding) {
+                    // quietly return (no exception)
+                    // this is jndi spec breaking, but is added to support broken
+                    // jndi users like openejb.
+                    return;
+                }
                 throw new NameAlreadyBoundException(name.toString());
+            }
             _bindings.put(key,binding);
         }
     }
@@ -1406,5 +1446,29 @@ public class NamingContext implements Context, Cloneable, Dumpable
     public boolean removeListener(Listener listener)
     {
         return _listeners.remove(listener);
+    }
+    
+    @Override
+    public String toString()
+    {
+        StringBuilder buf = new StringBuilder();
+        buf.append(this.getClass().getName()).append('@').append(Integer.toHexString(this.hashCode()));
+        buf.append("[name=").append(this._name);
+        buf.append(",parent=");
+        if (this._parent != null)
+        {
+            buf.append(this._parent.getClass().getName()).append('@').append(Integer.toHexString(this._parent.hashCode()));
+        }
+        buf.append(",bindings");
+        if (this._bindings == null)
+        {
+            buf.append("=<null>");
+        }
+        else
+        {
+            buf.append(".size=").append(this._bindings.size());
+        }
+        buf.append(']');
+        return buf.toString();
     }
 }

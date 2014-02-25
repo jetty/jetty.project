@@ -45,7 +45,7 @@ public class SerialRestServlet extends AbstractRestServlet
         long start = System.nanoTime();
         
 
-        String[] keywords=request.getParameter(ITEMS_PARAM).split(",");
+        String[] keywords=sanitize(request.getParameter(ITEMS_PARAM)).split(",");
         Queue<Map<String,String>> results = new LinkedList<Map<String,String>>();
         
         // make all requests serially
@@ -78,7 +78,7 @@ public class SerialRestServlet extends AbstractRestServlet
         long now = System.nanoTime();
         long total=now-start;
 
-        out.print("<b>Blocking: "+request.getParameter(ITEMS_PARAM)+"</b><br/>");
+        out.print("<b>Blocking: "+sanitize(request.getParameter(ITEMS_PARAM))+"</b><br/>");
         out.print("Total Time: "+ms(total)+"ms<br/>");
         out.print("Thread held (<span class='red'>red</span>): "+ms(total)+"ms<br/>");
         

@@ -28,6 +28,7 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
@@ -36,7 +37,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.junit.Assert;
-
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.resource.Resource;
@@ -546,6 +546,23 @@ public class HttpOutputTest
         assertThat(response,Matchers.not(containsString("Content-Length")));
         assertThat(response,containsString("400\tThis is a big file"));
     }
+    
+    @Test
+    public void testAsyncWriteBufferLargeHEAD() throws Exception
+    {
+        final Resource big = Resource.newClassPathResource("simple/big.txt");
+        _handler._writeLengthIfKnown=false;
+        _handler._content=BufferUtil.toBuffer(big,false);
+        _handler._byteBuffer=BufferUtil.allocate(8192);
+        _handler._async=true;
+        
+        int start=_handler._owp.get();
+        String response=_connector.getResponses("HEAD / HTTP/1.0\nHost: localhost:80\n\n");
+        assertThat(_handler._owp.get()-start,Matchers.greaterThan(0));
+        assertThat(response,containsString("HTTP/1.1 200 OK"));
+        assertThat(response,Matchers.not(containsString("Content-Length")));
+        assertThat(response,Matchers.not(containsString("400\tThis is a big file")));
+    }
 
     @Test
     public void testAsyncWriteSimpleKnown() throws Exception
@@ -562,9 +579,28 @@ public class HttpOutputTest
         assertThat(response,containsString("Content-Length: 11"));
         assertThat(response,containsString("simple text"));
     }
+
+    @Test
+    public void testAsyncWriteSimpleKnownHEAD() throws Exception
+    {
+        final Resource big = Resource.newClassPathResource("simple/simple.txt");
+        
+        _handler._async=true;
+        _handler._writeLengthIfKnown=true;
+        _handler._content=BufferUtil.toBuffer(big,false);
+        _handler._arrayBuffer=new byte[4000];
+
+        int start=_handler._owp.get();
+        String response=_connector.getResponses("HEAD / HTTP/1.0\nHost: localhost:80\n\n");
+        assertThat(_handler._owp.get()-start,Matchers.equalTo(1));
+        assertThat(response,containsString("HTTP/1.1 200 OK"));
+        assertThat(response,containsString("Content-Length: 11"));
+        assertThat(response,Matchers.not(containsString("simple text")));
+    }
     
     static class ContentHandler extends AbstractHandler
     {
+        AtomicInteger _owp = new AtomicInteger();
         boolean _writeLengthIfKnown=true;
         boolean _async;
         ByteBuffer _byteBuffer;
@@ -609,6 +645,8 @@ public class HttpOutputTest
                         @Override
                         public void onWritePossible() throws IOException
                         {
+                            _owp.incrementAndGet();
+                            
                             while (out.isReady())
                             {
                                 Assert.assertTrue(out.isReady());
@@ -666,6 +704,8 @@ public class HttpOutputTest
                         @Override
                         public void onWritePossible() throws IOException
                         {
+                            _owp.incrementAndGet();
+                            
                             while (out.isReady())
                             {
                                 Assert.assertTrue(out.isReady());
@@ -693,7 +733,6 @@ public class HttpOutputTest
                     return;  
                 }
                 
-                
                 while(BufferUtil.hasContent(_content))
                 {
                     BufferUtil.clearToFill(_byteBuffer);
@@ -714,10 +753,7 @@ public class HttpOutputTest
                 _content=null;
                 return;
             }
-            
-            
         }
-        
     }
 }
 

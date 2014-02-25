@@ -438,9 +438,20 @@ public class AnnotationConfiguration extends AbstractConfiguration
        createServletContainerInitializerAnnotationHandlers(context, getNonExcludedInitializers(context));
 
        if (!_discoverableAnnotationHandlers.isEmpty() || _classInheritanceHandler != null || !_containerInitializerAnnotationHandlers.isEmpty())
-           scanForAnnotations(context);      
+           scanForAnnotations(context);   
+       
+       // Resolve container initializers
+       List<ContainerInitializer> initializers = 
+    		   (List<ContainerInitializer>)context.getAttribute(AnnotationConfiguration.CONTAINER_INITIALIZERS);
+       if (initializers != null && initializers.size()>0)
+       {
+           Map<String, Set<String>> map = ( Map<String, Set<String>>) context.getAttribute(AnnotationConfiguration.CLASS_INHERITANCE_MAP);
+           if (map == null)
+               throw new IllegalStateException ("No class hierarchy");
+           for (ContainerInitializer i : initializers)
+        	   i.resolveClasses(context,map);
+       }
     }
-
 
 
     /** 
@@ -449,7 +460,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
     @Override
     public void postConfigure(WebAppContext context) throws Exception
     {
-        ConcurrentHashMap<String, ConcurrentHashSet<String>> classMap = (ConcurrentHashMap<String, ConcurrentHashSet<String>>)context.getAttribute(CLASS_INHERITANCE_MAP);
+        ConcurrentHashMap<String, ConcurrentHashSet<String>> classMap = (ClassInheritanceMap)context.getAttribute(CLASS_INHERITANCE_MAP);
         List<ContainerInitializer> initializers = (List<ContainerInitializer>)context.getAttribute(CONTAINER_INITIALIZERS);
         
         context.removeAttribute(CLASS_INHERITANCE_MAP);
@@ -655,7 +666,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
             if (annotation != null)
             {    
                 //There is a HandlesTypes annotation on the on the ServletContainerInitializer
-                Class[] classes = annotation.value();
+                Class<?>[] classes = annotation.value();
                 if (classes != null)
                 {
                     initializer = new ContainerInitializer(service, classes);
@@ -665,12 +676,12 @@ public class AnnotationConfiguration extends AbstractConfiguration
                     if (context.getAttribute(CLASS_INHERITANCE_MAP) == null)
                     {
                         //MultiMap<String> map = new MultiMap<>();
-                        ConcurrentHashMap<String, ConcurrentHashSet<String>> map = new ConcurrentHashMap<String, ConcurrentHashSet<String>>();
+                        ConcurrentHashMap<String, ConcurrentHashSet<String>> map = new ClassInheritanceMap();
                         context.setAttribute(CLASS_INHERITANCE_MAP, map);
                         _classInheritanceHandler = new ClassInheritanceHandler(map);
                     }
 
-                    for (Class c: classes)
+                    for (Class<?> c: classes)
                     {
                         //The value of one of the HandlesTypes classes is actually an Annotation itself so
                         //register a handler for it
@@ -1044,4 +1055,16 @@ public class AnnotationConfiguration extends AbstractConfiguration
     {
         return (d!=null && d.getMetaDataComplete() == MetaDataComplete.True);
     }
+
+    public static class ClassInheritanceMap extends ConcurrentHashMap<String, ConcurrentHashSet<String>>
+    {
+        
+        @Override
+        public String toString()
+        {
+            return String.format("ClassInheritanceMap@%x{size=%d}",hashCode(),size());
+        }
+    }
 }
+
+

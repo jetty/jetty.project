@@ -18,13 +18,13 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import static org.hamcrest.Matchers.*;
-
 import java.net.URI;
 import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.websocket.api.BatchMode;
+import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer;
@@ -33,6 +33,9 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 public class SessionTest
 {
@@ -81,7 +84,10 @@ public class SessionTest
 
             Assert.assertThat("client.connectionManager.sessions.size",client.getConnectionManager().getSessions().size(),is(1));
 
-            cliSock.getSession().getRemote().sendStringByFuture("Hello World!");
+            RemoteEndpoint remote = cliSock.getSession().getRemote();
+            remote.sendStringByFuture("Hello World!");
+            if (remote.getBatchMode() == BatchMode.ON)
+                remote.flush();
             srvSock.echoMessage(1,TimeUnit.MILLISECONDS,500);
             // wait for response from server
             cliSock.waitForMessage(500,TimeUnit.MILLISECONDS);

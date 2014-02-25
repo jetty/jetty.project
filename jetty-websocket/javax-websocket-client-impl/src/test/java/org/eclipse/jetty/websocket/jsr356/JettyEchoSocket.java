@@ -18,9 +18,14 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
+import java.io.IOException;
+
+import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.BatchMode;
+import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 
 /**
@@ -33,7 +38,17 @@ public class JettyEchoSocket extends WebSocketAdapter
     @Override
     public void onWebSocketBinary(byte[] payload, int offset, int len)
     {
-        getRemote().sendBytes(BufferUtil.toBuffer(payload,offset,len),null);
+        try
+        {
+            RemoteEndpoint remote = getRemote();
+            remote.sendBytes(BufferUtil.toBuffer(payload, offset, len), null);
+            if (remote.getBatchMode() == BatchMode.ON)
+                remote.flush();
+        }
+        catch (IOException x)
+        {
+            throw new RuntimeIOException(x);
+        }
     }
 
     @Override
@@ -45,6 +60,16 @@ public class JettyEchoSocket extends WebSocketAdapter
     @Override
     public void onWebSocketText(String message)
     {
-        getRemote().sendString(message,null);
+        try
+        {
+            RemoteEndpoint remote = getRemote();
+            remote.sendString(message, null);
+            if (remote.getBatchMode() == BatchMode.ON)
+                remote.flush();
+        }
+        catch (IOException x)
+        {
+            throw new RuntimeIOException(x);
+        }
     }
 }

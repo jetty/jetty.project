@@ -97,10 +97,8 @@ public class Parser
     private void assertSanePayloadLength(long len)
     {
         if (LOG.isDebugEnabled())
-        {
             LOG.debug("Payload Length: {} - {}",len,this);
-        }
-        
+
         // Since we use ByteBuffer so often, having lengths over Integer.MAX_VALUE is really impossible.
         if (len > Integer.MAX_VALUE)
         {
@@ -184,9 +182,7 @@ public class Parser
     protected void notifyFrame(final Frame f)
     {
         if (LOG.isDebugEnabled())
-        {
             LOG.debug("{} Notify {}",policy.getBehavior(),getIncomingFramesHandler());
-        }
 
         if (policy.getBehavior() == WebSocketBehavior.SERVER)
         {
@@ -243,7 +239,7 @@ public class Parser
         incomingFramesHandler.incomingError(e);
     }
 
-    public synchronized void parse(ByteBuffer buffer)
+    public void parse(ByteBuffer buffer)
     {
         if (buffer.remaining() <= 0)
         {
@@ -256,7 +252,8 @@ public class Parser
             // parse through all the frames in the buffer
             while (parseFrame(buffer))
             {
-                LOG.debug("{} Parsed Frame: {}",policy.getBehavior(),frame);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} Parsed Frame: {}",policy.getBehavior(),frame);
                 notifyFrame(frame);
                 if (frame.isDataFrame())
                 {
@@ -301,7 +298,8 @@ public class Parser
      */
     private boolean parseFrame(ByteBuffer buffer)
     {
-        LOG.debug("{} Parsing {} bytes",policy.getBehavior(),buffer.remaining());
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} Parsing {} bytes",policy.getBehavior(),buffer.remaining());
         while (buffer.hasRemaining())
         {
             switch (state)
@@ -320,14 +318,12 @@ public class Parser
                     }
                     
                     if (LOG.isDebugEnabled())
-                    {
                         LOG.debug("OpCode {}, fin={} rsv={}{}{}",
                                 OpCode.name(opcode),
                                 fin,
                                 (isRsv1InUse()?'1':'.'),
                                 (isRsv2InUse()?'1':'.'),
                                 (isRsv3InUse()?'1':'.'));
-                    }
 
                     // base framing flags
                     switch(opcode)
@@ -419,9 +415,7 @@ public class Parser
                     else
                     {
                         if (LOG.isDebugEnabled())
-                        {
                             LOG.debug("OpCode {}, fin={} rsv=000",OpCode.name(opcode),fin);
-                        }
                     }
                     
                     state = State.PAYLOAD_LEN;
@@ -598,9 +592,7 @@ public class Parser
             buffer.position(buffer.position() + window.remaining());
 
             if (LOG.isDebugEnabled())
-            {
                 LOG.debug("Window: {}",BufferUtil.toDetailString(window));
-            }
 
             maskProcessor.process(window);
 

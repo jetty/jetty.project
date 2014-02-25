@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
@@ -37,6 +38,7 @@ import org.eclipse.jetty.websocket.common.frames.DataFrame;
 import org.eclipse.jetty.websocket.common.frames.PingFrame;
 import org.eclipse.jetty.websocket.common.frames.PongFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
+import org.eclipse.jetty.websocket.common.io.FrameFlusher;
 import org.eclipse.jetty.websocket.common.io.FutureWriteCallback;
 
 /**
@@ -44,23 +46,22 @@ import org.eclipse.jetty.websocket.common.io.FutureWriteCallback;
  */
 public class WebSocketRemoteEndpoint implements RemoteEndpoint
 {
-    /** Message Type*/
-    private enum MsgType 
+    private enum MsgType
     {
         BLOCKING,
         ASYNC,
         STREAMING,
         PARTIAL_TEXT,
         PARTIAL_BINARY
-    };
-    
+    }
+
     private static final WriteCallback NOOP_CALLBACK = new WriteCallback()
     {
         @Override
         public void writeSuccess()
         {
         }
-        
+
         @Override
         public void writeFailed(Throwable x)
         {
@@ -68,21 +69,25 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
     };
 
     private static final Logger LOG = Log.getLogger(WebSocketRemoteEndpoint.class);
-    public final LogicalConnection connection;
-    public final OutgoingFrames outgoing;
-    /** JSR-356 blocking send behaviour message and Type sanity to support partial send properly */
 
-    private final static int ASYNC_MASK =       0x0000FFFF;
-    private final static int BLOCK_MASK =       0x00010000;
-    private final static int STREAM_MASK =      0x00020000;
-    private final static int PARTIAL_TEXT_MASK= 0x00040000;
-    private final static int PARTIAL_BINARY_MASK= 0x00080000;
-    
+    private final static int ASYNC_MASK = 0x0000FFFF;
+    private final static int BLOCK_MASK = 0x00010000;
+    private final static int STREAM_MASK = 0x00020000;
+    private final static int PARTIAL_TEXT_MASK = 0x00040000;
+    private final static int PARTIAL_BINARY_MASK = 0x00080000;
+
+    private final LogicalConnection connection;
+    private final OutgoingFrames outgoing;
     private final AtomicInteger msgState = new AtomicInteger();
-    
     private final BlockingWriteCallback blocker = new BlockingWriteCallback();
+    private volatile BatchMode batchMode;
 
     public WebSocketRemoteEndpoint(LogicalConnection connection, OutgoingFrames outgoing)
+    {
+        this(connection, outgoing, BatchMode.AUTO);
+    }
+
+    public WebSocketRemoteEndpoint(LogicalConnection connection, OutgoingFrames outgoing, BatchMode batchMode)
     {
         if (connection == null)
         {
@@ -90,11 +95,12 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
         }
         this.connection = connection;
         this.outgoing = outgoing;
+        this.batchMode = batchMode;
     }
 
     private void blockingWrite(WebSocketFrame frame) throws IOException
     {
-        uncheckedSendFrame(frame,blocker);
+        uncheckedSendFrame(frame, blocker);
         blocker.block();
     }
 
@@ -106,107 +112,107 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
         // Blocking -> Pending!! ; Async -> STREAMING ; Partial -> Pending!!    ; Stream -> STREAMING
         // Blocking -> Pending!! ; Async -> Pending!! ; Partial -> PARTIAL_TEXT ; Stream -> Pending!!
         // Blocking -> Pending!! ; Async -> Pending!! ; Partial -> PARTIAL_BIN  ; Stream -> Pending!!
-        
-        while(true)
+
+        while (true)
         {
             int state = msgState.get();
-            
+
             switch (type)
             {
                 case BLOCKING:
-                    if ((state&(PARTIAL_BINARY_MASK+PARTIAL_TEXT_MASK))!=0)
-                        throw new IllegalStateException(String.format("Partial message pending %x for %s",state,type));
-                    if ((state&BLOCK_MASK)!=0)
-                        throw new IllegalStateException(String.format("Blocking message pending %x for %s",state,type));
-                    if (msgState.compareAndSet(state,state|BLOCK_MASK))
-                        return state==0;
+                    if ((state & (PARTIAL_BINARY_MASK + PARTIAL_TEXT_MASK)) != 0)
+                        throw new IllegalStateException(String.format("Partial message pending %x for %s", state, type));
+                    if ((state & BLOCK_MASK) != 0)
+                        throw new IllegalStateException(String.format("Blocking message pending %x for %s", state, type));
+                    if (msgState.compareAndSet(state, state | BLOCK_MASK))
+                        return state == 0;
                     break;
-                    
+
                 case ASYNC:
-                    if ((state&(PARTIAL_BINARY_MASK+PARTIAL_TEXT_MASK))!=0)
-                        throw new IllegalStateException(String.format("Partial message pending %x for %s",state,type));
-                    if ((state&ASYNC_MASK)==ASYNC_MASK)
-                        throw new IllegalStateException(String.format("Too many async sends: %x",state));
-                    if (msgState.compareAndSet(state,state+1))
-                        return state==0;
+                    if ((state & (PARTIAL_BINARY_MASK + PARTIAL_TEXT_MASK)) != 0)
+                        throw new IllegalStateException(String.format("Partial message pending %x for %s", state, type));
+                    if ((state & ASYNC_MASK) == ASYNC_MASK)
+                        throw new IllegalStateException(String.format("Too many async sends: %x", state));
+                    if (msgState.compareAndSet(state, state + 1))
+                        return state == 0;
                     break;
-                    
+
                 case STREAMING:
-                    if ((state&(PARTIAL_BINARY_MASK+PARTIAL_TEXT_MASK))!=0)
-                        throw new IllegalStateException(String.format("Partial message pending %x for %s",state,type));
-                    if ((state&STREAM_MASK)!=0)
-                        throw new IllegalStateException(String.format("Already streaming %x for %s",state,type));
-                    if (msgState.compareAndSet(state,state|STREAM_MASK))
-                        return state==0;
+                    if ((state & (PARTIAL_BINARY_MASK + PARTIAL_TEXT_MASK)) != 0)
+                        throw new IllegalStateException(String.format("Partial message pending %x for %s", state, type));
+                    if ((state & STREAM_MASK) != 0)
+                        throw new IllegalStateException(String.format("Already streaming %x for %s", state, type));
+                    if (msgState.compareAndSet(state, state | STREAM_MASK))
+                        return state == 0;
                     break;
-                
+
                 case PARTIAL_BINARY:
-                    if (state==PARTIAL_BINARY_MASK)
+                    if (state == PARTIAL_BINARY_MASK)
                         return false;
-                    if (state==0)
+                    if (state == 0)
                     {
-                        if (msgState.compareAndSet(0,state|PARTIAL_BINARY_MASK))
+                        if (msgState.compareAndSet(0, state | PARTIAL_BINARY_MASK))
                             return true;
                     }
-                    throw new IllegalStateException(String.format("Cannot send %s in state %x",type,state));
-                    
+                    throw new IllegalStateException(String.format("Cannot send %s in state %x", type, state));
+
                 case PARTIAL_TEXT:
-                    if (state==PARTIAL_TEXT_MASK)
+                    if (state == PARTIAL_TEXT_MASK)
                         return false;
-                    if (state==0)
+                    if (state == 0)
                     {
-                        if (msgState.compareAndSet(0,state|PARTIAL_TEXT_MASK))
+                        if (msgState.compareAndSet(0, state | PARTIAL_TEXT_MASK))
                             return true;
                     }
-                    throw new IllegalStateException(String.format("Cannot send %s in state %x",type,state));
+                    throw new IllegalStateException(String.format("Cannot send %s in state %x", type, state));
             }
         }
     }
 
     private void unlockMsg(MsgType type)
     {
-        while(true)
+        while (true)
         {
             int state = msgState.get();
-            
+
             switch (type)
             {
                 case BLOCKING:
-                    if ((state&BLOCK_MASK)==0)
-                        throw new IllegalStateException(String.format("Not Blocking in state %x",state));
-                    if (msgState.compareAndSet(state,state&~BLOCK_MASK))
+                    if ((state & BLOCK_MASK) == 0)
+                        throw new IllegalStateException(String.format("Not Blocking in state %x", state));
+                    if (msgState.compareAndSet(state, state & ~BLOCK_MASK))
                         return;
                     break;
-                    
+
                 case ASYNC:
-                    if ((state&ASYNC_MASK)==0)
-                        throw new IllegalStateException(String.format("Not Async in %x",state));
-                    if (msgState.compareAndSet(state,state-1))
+                    if ((state & ASYNC_MASK) == 0)
+                        throw new IllegalStateException(String.format("Not Async in %x", state));
+                    if (msgState.compareAndSet(state, state - 1))
                         return;
                     break;
-                    
+
                 case STREAMING:
-                    if ((state&STREAM_MASK)==0)
-                        throw new IllegalStateException(String.format("Not Streaming in state %x",state));
-                    if (msgState.compareAndSet(state,state&~STREAM_MASK))
+                    if ((state & STREAM_MASK) == 0)
+                        throw new IllegalStateException(String.format("Not Streaming in state %x", state));
+                    if (msgState.compareAndSet(state, state & ~STREAM_MASK))
                         return;
                     break;
-                
+
                 case PARTIAL_BINARY:
-                    if (msgState.compareAndSet(PARTIAL_BINARY_MASK,0))
+                    if (msgState.compareAndSet(PARTIAL_BINARY_MASK, 0))
                         return;
-                    throw new IllegalStateException(String.format("Not Partial Binary in state %x",state));
-                    
+                    throw new IllegalStateException(String.format("Not Partial Binary in state %x", state));
+
                 case PARTIAL_TEXT:
-                    if (msgState.compareAndSet(PARTIAL_TEXT_MASK,0))
+                    if (msgState.compareAndSet(PARTIAL_TEXT_MASK, 0))
                         return;
-                    throw new IllegalStateException(String.format("Not Partial Text in state %x",state));
-                    
+                    throw new IllegalStateException(String.format("Not Partial Text in state %x", state));
+
             }
         }
     }
-    
-    
+
+
     public InetSocketAddress getInetSocketAddress()
     {
         return connection.getRemoteAddress();
@@ -214,15 +220,14 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
 
     /**
      * Internal
-     * 
-     * @param frame
-     *            the frame to write
+     *
+     * @param frame the frame to write
      * @return the future for the network write of the frame
      */
     private Future<Void> sendAsyncFrame(WebSocketFrame frame)
     {
         FutureWriteCallback future = new FutureWriteCallback();
-        uncheckedSendFrame(frame,future);
+        uncheckedSendFrame(frame, future);
         return future;
     }
 
@@ -238,7 +243,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
             connection.getIOState().assertOutputOpen();
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("sendBytes with {}",BufferUtil.toDetailString(data));
+                LOG.debug("sendBytes with {}", BufferUtil.toDetailString(data));
             }
             blockingWrite(new BinaryFrame().setPayload(data));
         }
@@ -256,7 +261,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
         {
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("sendBytesByFuture with {}",BufferUtil.toDetailString(data));
+                LOG.debug("sendBytesByFuture with {}", BufferUtil.toDetailString(data));
             }
             return sendAsyncFrame(new BinaryFrame().setPayload(data));
         }
@@ -274,9 +279,9 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
         {
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("sendBytes({}, {})",BufferUtil.toDetailString(data),callback);
+                LOG.debug("sendBytes({}, {})", BufferUtil.toDetailString(data), callback);
             }
-            uncheckedSendFrame(new BinaryFrame().setPayload(data),callback==null?NOOP_CALLBACK:callback);
+            uncheckedSendFrame(new BinaryFrame().setPayload(data), callback == null ? NOOP_CALLBACK : callback);
         }
         finally
         {
@@ -284,17 +289,15 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /** unchecked send
-     * @param frame
-     * @param callback
-     */
     public void uncheckedSendFrame(WebSocketFrame frame, WriteCallback callback)
     {
         try
         {
+            BatchMode batchMode = BatchMode.OFF;
+            if (frame.isDataFrame())
+                batchMode = getBatchMode();
             connection.getIOState().assertOutputOpen();
-            outgoing.outgoingFrame(frame,callback);
+            outgoing.outgoingFrame(frame, callback, batchMode);
         }
         catch (IOException e)
         {
@@ -305,14 +308,14 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
     @Override
     public void sendPartialBytes(ByteBuffer fragment, boolean isLast) throws IOException
     {
-        boolean first=lockMsg(MsgType.PARTIAL_BINARY);
+        boolean first = lockMsg(MsgType.PARTIAL_BINARY);
         try
         {
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("sendPartialBytes({}, {})",BufferUtil.toDetailString(fragment),isLast);
+                LOG.debug("sendPartialBytes({}, {})", BufferUtil.toDetailString(fragment), isLast);
             }
-            DataFrame frame = first?new BinaryFrame():new ContinuationFrame();
+            DataFrame frame = first ? new BinaryFrame() : new ContinuationFrame();
             frame.setPayload(fragment);
             frame.setFin(isLast);
             blockingWrite(frame);
@@ -327,15 +330,15 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
     @Override
     public void sendPartialString(String fragment, boolean isLast) throws IOException
     {
-        boolean first=lockMsg(MsgType.PARTIAL_TEXT);
+        boolean first = lockMsg(MsgType.PARTIAL_TEXT);
         try
         {
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("sendPartialString({}, {})",fragment,isLast);
+                LOG.debug("sendPartialString({}, {})", fragment, isLast);
             }
-            DataFrame frame = first?new TextFrame():new ContinuationFrame();
-            frame.setPayload(BufferUtil.toBuffer(fragment,StandardCharsets.UTF_8));
+            DataFrame frame = first ? new TextFrame() : new ContinuationFrame();
+            frame.setPayload(BufferUtil.toBuffer(fragment, StandardCharsets.UTF_8));
             frame.setFin(isLast);
             blockingWrite(frame);
         }
@@ -351,7 +354,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("sendPing with {}",BufferUtil.toDetailString(applicationData));
+            LOG.debug("sendPing with {}", BufferUtil.toDetailString(applicationData));
         }
         sendAsyncFrame(new PingFrame().setPayload(applicationData));
     }
@@ -361,7 +364,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("sendPong with {}",BufferUtil.toDetailString(applicationData));
+            LOG.debug("sendPong with {}", BufferUtil.toDetailString(applicationData));
         }
         sendAsyncFrame(new PongFrame().setPayload(applicationData));
     }
@@ -375,7 +378,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
             WebSocketFrame frame = new TextFrame().setPayload(text);
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("sendString with {}",BufferUtil.toDetailString(frame.getPayload()));
+                LOG.debug("sendString with {}", BufferUtil.toDetailString(frame.getPayload()));
             }
             blockingWrite(frame);
         }
@@ -394,9 +397,9 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
             TextFrame frame = new TextFrame().setPayload(text);
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("sendStringByFuture with {}",BufferUtil.toDetailString(frame.getPayload()));
+                LOG.debug("sendStringByFuture with {}", BufferUtil.toDetailString(frame.getPayload()));
             }
-            return sendAsyncFrame(frame);  
+            return sendAsyncFrame(frame);
         }
         finally
         {
@@ -413,13 +416,47 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
             TextFrame frame = new TextFrame().setPayload(text);
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("sendString({},{})",BufferUtil.toDetailString(frame.getPayload()),callback);
+                LOG.debug("sendString({},{})", BufferUtil.toDetailString(frame.getPayload()), callback);
             }
-            uncheckedSendFrame(frame,callback==null?NOOP_CALLBACK:callback);
+            uncheckedSendFrame(frame, callback == null ? NOOP_CALLBACK : callback);
         }
         finally
         {
             unlockMsg(MsgType.ASYNC);
         }
+    }
+
+    @Override
+    public BatchMode getBatchMode()
+    {
+        return batchMode;
+    }
+
+    // Only the JSR needs to have this method exposed.
+    // In the Jetty implementation the batching is set
+    // at the moment of opening the session.
+    public void setBatchMode(BatchMode batchMode)
+    {
+        this.batchMode = batchMode;
+    }
+
+    public void flush() throws IOException
+    {
+        lockMsg(MsgType.ASYNC);
+        try
+        {
+            uncheckedSendFrame(FrameFlusher.FLUSH_FRAME, blocker);
+            blocker.block();
+        }
+        finally
+        {
+            unlockMsg(MsgType.ASYNC);
+        }
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x[batching=%b]", getClass().getSimpleName(), hashCode(), getBatchMode());
     }
 }

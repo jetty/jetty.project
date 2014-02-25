@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.common.test;
 
-import static org.hamcrest.Matchers.*;
-
 import java.io.IOException;
 import java.net.SocketException;
 import java.nio.ByteBuffer;
@@ -40,6 +38,9 @@ import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.io.IOState;
 import org.junit.Assert;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 
 /**
  * Fuzzing utility for the AB tests.
@@ -103,7 +104,7 @@ public class Fuzzer
         int buflen = 0;
         for (Frame f : send)
         {
-            buflen += f.getPayloadLength() + Generator.OVERHEAD;
+            buflen += f.getPayloadLength() + Generator.MAX_HEADER_LENGTH;
         }
         ByteBuffer buf = ByteBuffer.allocate(buflen);
 
@@ -260,7 +261,7 @@ public class Fuzzer
             int buflen = 0;
             for (Frame f : send)
             {
-                buflen += f.getPayloadLength() + Generator.OVERHEAD;
+                buflen += f.getPayloadLength() + Generator.MAX_HEADER_LENGTH;
             }
             ByteBuffer buf = ByteBuffer.allocate(buflen);
 
@@ -295,7 +296,7 @@ public class Fuzzer
             {
                 f.setMask(MASK); // make sure we have mask set
                 // Using lax generator, generate and send
-                ByteBuffer fullframe = ByteBuffer.allocate(f.getPayloadLength() + Generator.OVERHEAD);
+                ByteBuffer fullframe = ByteBuffer.allocate(f.getPayloadLength() + Generator.MAX_HEADER_LENGTH);
                 BufferUtil.clearToFill(fullframe);
                 generator.generateWholeFrame(f,fullframe);
                 BufferUtil.flipToFlush(fullframe,0);

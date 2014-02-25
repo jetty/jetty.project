@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import static org.hamcrest.Matchers.*;
-
 import java.net.URI;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -27,6 +25,8 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.toolchain.test.TestTracker;
+import org.eclipse.jetty.websocket.api.BatchMode;
+import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPool;
@@ -37,6 +37,8 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.is;
 
 public class WebSocketOverSSLTest
 {
@@ -84,7 +86,10 @@ public class WebSocketOverSSLTest
 
             // Generate text frame
             String msg = "this is an echo ... cho ... ho ... o";
-            session.getRemote().sendString(msg);
+            RemoteEndpoint remote = session.getRemote();
+            remote.sendString(msg);
+            if (remote.getBatchMode() == BatchMode.ON)
+                remote.flush();
 
             // Read frame (hopefully text frame)
             clientSocket.messages.awaitEventCount(1,500,TimeUnit.MILLISECONDS);
@@ -122,7 +127,10 @@ public class WebSocketOverSSLTest
             Session session = fut.get(5,TimeUnit.SECONDS);
 
             // Generate text frame
-            session.getRemote().sendString("session.isSecure");
+            RemoteEndpoint remote = session.getRemote();
+            remote.sendString("session.isSecure");
+            if (remote.getBatchMode() == BatchMode.ON)
+                remote.flush();
 
             // Read frame (hopefully text frame)
             clientSocket.messages.awaitEventCount(1,500,TimeUnit.MILLISECONDS);
@@ -160,7 +168,10 @@ public class WebSocketOverSSLTest
             Session session = fut.get(5,TimeUnit.SECONDS);
 
             // Generate text frame
-            session.getRemote().sendString("session.upgradeRequest.requestURI");
+            RemoteEndpoint remote = session.getRemote();
+            remote.sendString("session.upgradeRequest.requestURI");
+            if (remote.getBatchMode() == BatchMode.ON)
+                remote.flush();
 
             // Read frame (hopefully text frame)
             clientSocket.messages.awaitEventCount(1,500,TimeUnit.MILLISECONDS);

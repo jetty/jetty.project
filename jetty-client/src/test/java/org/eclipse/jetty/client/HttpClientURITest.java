@@ -21,7 +21,6 @@ package org.eclipse.jetty.client;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -339,4 +338,97 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
 
         Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
     }
+
+    @Test
+    public void testRawQueryIsPreservedInURI() throws Exception
+    {
+        final String name = "a";
+        final String rawValue = "Hello%20World";
+        final String rawQuery = name + "=" + rawValue;
+        final String value = "Hello World";
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                Assert.assertEquals(rawQuery, request.getQueryString());
+                Assert.assertEquals(value, request.getParameter(name));
+            }
+        });
+
+        String uri = scheme + "://localhost:" + connector.getLocalPort() + "/path?" + rawQuery;
+        Request request = client.newRequest(uri)
+                .timeout(5, TimeUnit.SECONDS);
+        Assert.assertEquals(rawQuery, request.getQuery());
+
+        ContentResponse response = request.send();
+
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+    }
+
+    @Test
+    public void testRawQueryIsPreservedInPath() throws Exception
+    {
+        final String name = "a";
+        final String rawValue = "Hello%20World";
+        final String rawQuery = name + "=" + rawValue;
+        final String value = "Hello World";
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                Assert.assertEquals(rawQuery, request.getQueryString());
+                Assert.assertEquals(value, request.getParameter(name));
+            }
+        });
+
+        Request request = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .path("/path?" + rawQuery)
+                .timeout(5, TimeUnit.SECONDS);
+        Assert.assertEquals(rawQuery, request.getQuery());
+
+        ContentResponse response = request.send();
+
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+    }
+
+    @Test
+    public void testRawQueryIsPreservedWithParam() throws Exception
+    {
+        final String name1 = "a";
+        final String name2 = "b";
+        final String rawValue1 = "Hello%20World";
+        final String rawQuery1 = name1 + "=" + rawValue1;
+        final String value1 = "Hello World";
+        final String value2 = "alfa omega";
+        final String encodedQuery2 = name2 + "=" + URLEncoder.encode(value2, "UTF-8");
+        final String query = rawQuery1 + "&" + encodedQuery2;
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                Assert.assertEquals(query, request.getQueryString());
+                Assert.assertEquals(value1, request.getParameter(name1));
+                Assert.assertEquals(value2, request.getParameter(name2));
+            }
+        });
+
+        Request request = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .path("/path?" + rawQuery1)
+                .param(name2, value2)
+                .timeout(5, TimeUnit.SECONDS);
+        Assert.assertEquals(query, request.getQuery());
+
+        ContentResponse response = request.send();
+
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+    }
+
 }

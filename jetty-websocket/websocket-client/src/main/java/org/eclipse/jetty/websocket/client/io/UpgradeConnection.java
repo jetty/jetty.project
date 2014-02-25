@@ -259,6 +259,9 @@ public class UpgradeConnection extends AbstractConnection
         session.setOutgoingHandler(extensionStack);
         extensionStack.setNextOutgoing(connection);
 
+        session.addBean(extensionStack);
+        connectPromise.getClient().addBean(session);
+
         // Now swap out the connection
         endp.setConnection(connection);
         connection.onOpen();

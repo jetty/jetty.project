@@ -20,6 +20,7 @@ package org.eclipse.jetty.webapp;
 
 import java.net.URL;
 
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlParser;
 
@@ -43,7 +44,8 @@ public abstract class Descriptor
     
     protected void redirect(XmlParser parser, String resource, URL source)
     {
-        if (source != null) parser.redirectEntity(resource, source);
+        if (source != null) 
+            parser.redirectEntity(resource, source);
     }
     
     

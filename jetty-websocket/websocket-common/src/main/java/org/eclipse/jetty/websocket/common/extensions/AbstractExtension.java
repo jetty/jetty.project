@@ -26,6 +26,7 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Extension;
@@ -162,10 +163,10 @@ public abstract class AbstractExtension extends ContainerLifeCycle implements Ex
         this.nextIncoming.incomingFrame(frame);
     }
 
-    protected void nextOutgoingFrame(Frame frame, WriteCallback callback)
+    protected void nextOutgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode)
     {
         log.debug("nextOutgoingFrame({})",frame);
-        this.nextOutgoing.outgoingFrame(frame,callback);
+        this.nextOutgoing.outgoingFrame(frame,callback, batchMode);
     }
 
     public void setBufferPool(ByteBufferPool bufferPool)

@@ -23,11 +23,10 @@ import java.net.CookieStore;
 import java.net.SocketAddress;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 
@@ -75,7 +74,6 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
     private boolean daemon = false;
     private EventDriverFactory eventDriverFactory;
     private SessionFactory sessionFactory;
-    private Set<WebSocketSession> openSessions = new CopyOnWriteArraySet<>();
     private ByteBufferPool bufferPool;
     private Executor executor;
     private Scheduler scheduler;
@@ -374,7 +372,7 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
 
     public Set<WebSocketSession> getOpenSessions()
     {
-        return Collections.unmodifiableSet(this.openSessions);
+        return new HashSet<>(getBeans(WebSocketSession.class));
     }
 
     public WebSocketPolicy getPolicy()
@@ -472,15 +470,14 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
     @Override
     public void onSessionClosed(WebSocketSession session)
     {
-        LOG.info("Session Closed: {}",session);
-        this.openSessions.remove(session);
+        LOG.debug("Session Closed: {}",session);
+        removeBean(session);
     }
 
     @Override
     public void onSessionOpened(WebSocketSession session)
     {
-        LOG.info("Session Opened: {}",session);
-        this.openSessions.add(session);
+        LOG.debug("Session Opened: {}",session);
     }
 
     public void setAsyncWriteTimeout(long ms)
@@ -565,5 +562,12 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
     public void setSessionFactory(SessionFactory sessionFactory)
     {
         this.sessionFactory = sessionFactory;
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        dumpThis(out);
+        dump(out, indent, getOpenSessions());
     }
 }

@@ -40,7 +40,6 @@ public class ResponseNotifier
         this.client = client;
     }
 
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     public void notifyBegin(List<Response.ResponseListener> listeners, Response response)
     {
         // Optimized to avoid allocations of iterator instances
@@ -64,7 +63,6 @@ public class ResponseNotifier
         }
     }
 
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     public boolean notifyHeader(List<Response.ResponseListener> listeners, Response response, HttpField field)
     {
         boolean result = true;
@@ -91,7 +89,6 @@ public class ResponseNotifier
         }
     }
 
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     public void notifyHeaders(List<Response.ResponseListener> listeners, Response response)
     {
         // Optimized to avoid allocations of iterator instances
@@ -115,7 +112,6 @@ public class ResponseNotifier
         }
     }
 
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     public void notifyContent(List<Response.ResponseListener> listeners, Response response, ByteBuffer buffer)
     {
         // Slice the buffer to avoid that listeners peek into data they should not look at.
@@ -148,7 +144,6 @@ public class ResponseNotifier
         }
     }
 
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     public void notifySuccess(List<Response.ResponseListener> listeners, Response response)
     {
         // Optimized to avoid allocations of iterator instances
@@ -172,7 +167,6 @@ public class ResponseNotifier
         }
     }
 
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     public void notifyFailure(List<Response.ResponseListener> listeners, Response response, Throwable failure)
     {
         // Optimized to avoid allocations of iterator instances
@@ -196,7 +190,6 @@ public class ResponseNotifier
         }
     }
 
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     public void notifyComplete(List<Response.ResponseListener> listeners, Result result)
     {
         // Optimized to avoid allocations of iterator instances

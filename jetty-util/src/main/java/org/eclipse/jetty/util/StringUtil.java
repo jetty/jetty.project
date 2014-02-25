@@ -719,4 +719,17 @@ public class StringUtil
         return str.substring(0,maxSize);
     }
 
+    public static String[] arrayFromString(String s) 
+    {
+        if (s==null)
+            return new String[]{};
+
+        if (!s.startsWith("[") || !s.endsWith("]"))
+            throw new IllegalArgumentException();
+        if (s.length()==2)
+            return new String[]{};
+
+        return s.substring(1,s.length()-1).split(" *, *");
+    }
+
 }

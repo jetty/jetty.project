@@ -339,23 +339,20 @@ public class BufferUtil
      * @param from Buffer to take bytes from in flush mode
      * @param to   Buffer to put bytes to in flush mode. The buffer is flipToFill before the put and flipToFlush after.
      * @return number of bytes moved
+     * @deprecated use {@link #append(ByteBuffer, ByteBuffer)}
      */
     public static int flipPutFlip(ByteBuffer from, ByteBuffer to)
     {
-        int pos = flipToFill(to);
-        try
-        {
-            return put(from, to);
-        }
-        finally
-        {
-            flipToFlush(to, pos);
-        }
+        return append(to,from);
     }
 
     /* ------------------------------------------------------------ */
     /** Append bytes to a buffer.
-     * 
+     * @param to Buffer is flush mode
+     * @param b bytes to append
+     * @param off offset into byte
+     * @param len length to append
+     * @throws BufferOverflowException
      */
     public static void append(ByteBuffer to, byte[] b, int off, int len) throws BufferOverflowException
     {
@@ -372,6 +369,8 @@ public class BufferUtil
 
     /* ------------------------------------------------------------ */
     /** Appends a byte to a buffer
+     * @param to Buffer is flush mode
+     * @param b byte to append
      */
     public static void append(ByteBuffer to, byte b)
     {
@@ -387,8 +386,30 @@ public class BufferUtil
     }
 
     /* ------------------------------------------------------------ */
+    /** Appends a byte to a buffer
+     * @param to Buffer is flush mode
+     * @param b bytes to append
+     */
+    public static int append(ByteBuffer to, ByteBuffer b)
+    {
+        int pos = flipToFill(to);
+        try
+        {
+            return put(b, to);
+        }
+        finally
+        {
+            flipToFlush(to, pos);
+        }
+    }
+
+    /* ------------------------------------------------------------ */
     /**
      * Like append, but does not throw {@link BufferOverflowException}
+     * @param to Buffer is flush mode
+     * @param b bytes to fill
+     * @param off offset into byte
+     * @param len length to fill
      */
     public static int fill(ByteBuffer to, byte[] b, int off, int len)
     {

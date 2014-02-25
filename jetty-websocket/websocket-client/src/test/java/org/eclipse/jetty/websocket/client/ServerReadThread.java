@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import static org.hamcrest.Matchers.*;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Queue;
@@ -37,6 +35,8 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer.ServerConnection;
 import org.junit.Assert;
 
+import static org.hamcrest.Matchers.is;
+
 public class ServerReadThread extends Thread
 {
     private static final int BUFFER_SIZE = 8192;
@@ -44,13 +44,13 @@ public class ServerReadThread extends Thread
     private final ServerConnection conn;
     private boolean active = true;
     private int slowness = -1; // disabled is default
-    private AtomicInteger frameCount = new AtomicInteger();
-    private CountDownLatch expectedMessageCount;
+    private final AtomicInteger frameCount = new AtomicInteger();
+    private final CountDownLatch expectedMessageCount;
 
-    public ServerReadThread(ServerConnection conn)
+    public ServerReadThread(ServerConnection conn, int expectedMessages)
     {
         this.conn = conn;
-        this.expectedMessageCount = new CountDownLatch(1);
+        this.expectedMessageCount = new CountDownLatch(expectedMessages);
     }
 
     public void cancel()
@@ -75,14 +75,12 @@ public class ServerReadThread extends Thread
         ByteBuffer buf = bufferPool.acquire(BUFFER_SIZE,false);
         BufferUtil.clearToFill(buf);
 
-        int len = 0;
-
         try
         {
             while (active)
             {
                 BufferUtil.clearToFill(buf);
-                len = conn.read(buf);
+                int len = conn.read(buf);
 
                 if (len > 0)
                 {
@@ -108,7 +106,7 @@ public class ServerReadThread extends Thread
                 }
                 if (slowness > 0)
                 {
-                    TimeUnit.MILLISECONDS.sleep(slowness);
+                    TimeUnit.MILLISECONDS.sleep(getSlowness());
                 }
             }
         }
@@ -120,11 +118,6 @@ public class ServerReadThread extends Thread
         {
             bufferPool.release(buf);
         }
-    }
-
-    public void setExpectedMessageCount(int expectedMessageCount)
-    {
-        this.expectedMessageCount = new CountDownLatch(expectedMessageCount);
     }
 
     public void setSlowness(int slowness)

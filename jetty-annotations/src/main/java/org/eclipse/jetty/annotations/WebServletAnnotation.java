@@ -20,6 +20,7 @@ package org.eclipse.jetty.annotations;
 
 import java.util.ArrayList;
 
+import javax.servlet.Servlet;
 import javax.servlet.annotation.WebInitParam;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -62,7 +63,7 @@ public class WebServletAnnotation extends DiscoveredAnnotation
     public void apply()
     {
         //TODO check this algorithm with new rules for applying descriptors and annotations in order
-        Class clazz = getTargetClass();
+        Class<? extends Servlet> clazz = (Class<? extends Servlet>)getTargetClass();
 
         if (clazz == null)
         {
@@ -127,22 +128,22 @@ public class WebServletAnnotation extends DiscoveredAnnotation
             //or another annotation (which would be impossible).
             holder = _context.getServletHandler().newServletHolder(Holder.Source.ANNOTATION);
             holder.setHeldClass(clazz);
-            metaData.setOrigin(servletName+".servlet.servlet-class");
+            metaData.setOrigin(servletName+".servlet.servlet-class",annotation,clazz);
 
             holder.setName(servletName);
             holder.setDisplayName(annotation.displayName());
-            metaData.setOrigin(servletName+".servlet.display-name");
+            metaData.setOrigin(servletName+".servlet.display-name",annotation,clazz);
 
             holder.setInitOrder(annotation.loadOnStartup());
-            metaData.setOrigin(servletName+".servlet.load-on-startup");
+            metaData.setOrigin(servletName+".servlet.load-on-startup",annotation,clazz);
 
             holder.setAsyncSupported(annotation.asyncSupported());
-            metaData.setOrigin(servletName+".servlet.async-supported");
+            metaData.setOrigin(servletName+".servlet.async-supported",annotation,clazz);
 
             for (WebInitParam ip:annotation.initParams())
             {
                 holder.setInitParameter(ip.name(), ip.value());
-                metaData.setOrigin(servletName+".servlet.init-param."+ip.name());
+                metaData.setOrigin(servletName+".servlet.init-param."+ip.name(),ip,clazz);
             }
 
             _context.getServletHandler().addServlet(holder);
@@ -150,7 +151,7 @@ public class WebServletAnnotation extends DiscoveredAnnotation
             mapping.setServletName(holder.getName());
             mapping.setPathSpecs( LazyList.toStringArray(urlPatternList));
             _context.getServletHandler().addServletMapping(mapping);
-            metaData.setOrigin(servletName+".servlet.mappings");
+            metaData.setOrigin(servletName+".servlet.mappings",annotation,clazz);
         }
         else
         {
@@ -170,7 +171,7 @@ public class WebServletAnnotation extends DiscoveredAnnotation
                 if (metaData.getOrigin(servletName+".servlet.init-param."+ip.name())==Origin.NotSet)
                 {
                     holder.setInitParameter(ip.name(), ip.value());
-                    metaData.setOrigin(servletName+".servlet.init-param."+ip.name());
+                    metaData.setOrigin(servletName+".servlet.init-param."+ip.name(),ip,clazz);
                 }
             }
 

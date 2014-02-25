@@ -18,10 +18,13 @@
 
 package org.eclipse.jetty.websocket.server.examples.echo;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.BatchMode;
+import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
@@ -35,24 +38,30 @@ public class BigEchoSocket
     private static final Logger LOG = Log.getLogger(BigEchoSocket.class);
 
     @OnWebSocketMessage
-    public void onBinary(Session session, byte buf[], int offset, int length)
+    public void onBinary(Session session, byte buf[], int offset, int length) throws IOException
     {
         if (!session.isOpen())
         {
             LOG.warn("Session is closed");
             return;
         }
-        session.getRemote().sendBytes(ByteBuffer.wrap(buf,offset,length),null);
+        RemoteEndpoint remote = session.getRemote();
+        remote.sendBytes(ByteBuffer.wrap(buf, offset, length), null);
+        if (remote.getBatchMode() == BatchMode.ON)
+            remote.flush();
     }
 
     @OnWebSocketMessage
-    public void onText(Session session, String message)
+    public void onText(Session session, String message) throws IOException
     {
         if (!session.isOpen())
         {
             LOG.warn("Session is closed");
             return;
         }
-        session.getRemote().sendString(message,null);
+        RemoteEndpoint remote = session.getRemote();
+        remote.sendString(message, null);
+        if (remote.getBatchMode() == BatchMode.ON)
+            remote.flush();
     }
 }

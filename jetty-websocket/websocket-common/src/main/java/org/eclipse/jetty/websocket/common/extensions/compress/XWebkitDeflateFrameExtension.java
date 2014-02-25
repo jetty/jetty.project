@@ -29,10 +29,4 @@ public class XWebkitDeflateFrameExtension extends DeflateFrameExtension
     {
         return "x-webkit-deflate-frame";
     }
-
-    @Override
-    public String toString()
-    {
-        return this.getClass().getSimpleName() + "[]";
-    }
 }

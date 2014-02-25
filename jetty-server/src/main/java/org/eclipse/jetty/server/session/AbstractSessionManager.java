@@ -880,107 +880,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
 
     /* ------------------------------------------------------------ */
     private SessionCookieConfig _cookieConfig =
-        new SessionCookieConfig()
-        {
-            @Override
-            public String getComment()
-            {
-                return _sessionComment;
-            }
-
-            @Override
-            public String getDomain()
-            {
-                return _sessionDomain;
-            }
-
-            @Override
-            public int getMaxAge()
-            {
-                return _maxCookieAge;
-            }
-
-            @Override
-            public String getName()
-            {
-                return _sessionCookie;
-            }
-
-            @Override
-            public String getPath()
-            {
-                return _sessionPath;
-            }
-
-            @Override
-            public boolean isHttpOnly()
-            {
-                return _httpOnly;
-            }
-
-            @Override
-            public boolean isSecure()
-            {
-                return _secureCookies;
-            }
-
-            @Override
-            public void setComment(String comment)
-            {  
-                if (_context != null && _context.getContextHandler().isAvailable())
-                    throw new IllegalStateException("CookieConfig cannot be set after ServletContext is started");
-                _sessionComment = comment;
-            }
-
-            @Override
-            public void setDomain(String domain)
-            {
-                if (_context != null && _context.getContextHandler().isAvailable())
-                    throw new IllegalStateException("CookieConfig cannot be set after ServletContext is started");
-                _sessionDomain=domain;
-            }
-
-            @Override
-            public void setHttpOnly(boolean httpOnly)
-            {   
-                if (_context != null && _context.getContextHandler().isAvailable())
-                    throw new IllegalStateException("CookieConfig cannot be set after ServletContext is started");
-                _httpOnly=httpOnly;
-            }
-
-            @Override
-            public void setMaxAge(int maxAge)
-            {               
-                if (_context != null && _context.getContextHandler().isAvailable())
-                    throw new IllegalStateException("CookieConfig cannot be set after ServletContext is started");
-                _maxCookieAge=maxAge;
-            }
-
-            @Override
-            public void setName(String name)
-            {  
-                    if (_context != null && _context.getContextHandler().isAvailable())
-                        throw new IllegalStateException("CookieConfig cannot be set after ServletContext is started");
-                _sessionCookie=name;
-            }
-
-            @Override
-            public void setPath(String path)
-            {
-                if (_context != null && _context.getContextHandler().isAvailable())
-                    throw new IllegalStateException("CookieConfig cannot be set after ServletContext is started"); 
-                _sessionPath=path;
-            }
-
-            @Override
-            public void setSecure(boolean secure)
-            {
-                if (_context != null && _context.getContextHandler().isAvailable())
-                    throw new IllegalStateException("CookieConfig cannot be set after ServletContext is started");
-                _secureCookies=secure;
-            }
-
-        };
+        new CookieConfig();
 
 
     /* ------------------------------------------------------------ */
@@ -1053,6 +953,112 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
             }
         }
 
+    }
+
+    /**
+     * CookieConfig
+     * 
+     * Implementation of the javax.servlet.SessionCookieConfig.
+     */
+    public final class CookieConfig implements SessionCookieConfig
+    {
+        @Override
+        public String getComment()
+        {
+            return _sessionComment;
+        }
+
+        @Override
+        public String getDomain()
+        {
+            return _sessionDomain;
+        }
+
+        @Override
+        public int getMaxAge()
+        {
+            return _maxCookieAge;
+        }
+
+        @Override
+        public String getName()
+        {
+            return _sessionCookie;
+        }
+
+        @Override
+        public String getPath()
+        {
+            return _sessionPath;
+        }
+
+        @Override
+        public boolean isHttpOnly()
+        {
+            return _httpOnly;
+        }
+
+        @Override
+        public boolean isSecure()
+        {
+            return _secureCookies;
+        }
+
+        @Override
+        public void setComment(String comment)
+        {  
+            if (_context != null && _context.getContextHandler().isAvailable())
+                throw new IllegalStateException("CookieConfig cannot be set after ServletContext is started");
+            _sessionComment = comment;
+        }
+
+        @Override
+        public void setDomain(String domain)
+        {
+            if (_context != null && _context.getContextHandler().isAvailable())
+                throw new IllegalStateException("CookieConfig cannot be set after ServletContext is started");
+            _sessionDomain=domain;
+        }
+
+        @Override
+        public void setHttpOnly(boolean httpOnly)
+        {   
+            if (_context != null && _context.getContextHandler().isAvailable())
+                throw new IllegalStateException("CookieConfig cannot be set after ServletContext is started");
+            _httpOnly=httpOnly;
+        }
+
+        @Override
+        public void setMaxAge(int maxAge)
+        {               
+            if (_context != null && _context.getContextHandler().isAvailable())
+                throw new IllegalStateException("CookieConfig cannot be set after ServletContext is started");
+            _maxCookieAge=maxAge;
+        }
+
+        @Override
+        public void setName(String name)
+        {  
+                if (_context != null && _context.getContextHandler().isAvailable())
+                    throw new IllegalStateException("CookieConfig cannot be set after ServletContext is started");
+            _sessionCookie=name;
+        }
+
+        @Override
+        public void setPath(String path)
+        {
+            if (_context != null && _context.getContextHandler().isAvailable())
+                throw new IllegalStateException("CookieConfig cannot be set after ServletContext is started"); 
+            _sessionPath=path;
+        }
+
+        @Override
+        public void setSecure(boolean secure)
+        {
+            if (_context != null && _context.getContextHandler().isAvailable())
+                throw new IllegalStateException("CookieConfig cannot be set after ServletContext is started");
+            _secureCookies=secure;
+        }
     }
 
     /* ------------------------------------------------------------ */

@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.common.extensions.compress;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
@@ -31,7 +32,7 @@ public class CapturedHexPayloads implements OutgoingFrames
     private List<String> captured = new ArrayList<>();
 
     @Override
-    public void outgoingFrame(Frame frame, WriteCallback callback)
+    public void outgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode)
     {
         String hexPayload = Hex.asHex(frame.getPayload());
         captured.add(hexPayload);

@@ -18,8 +18,8 @@
 
 package org.eclipse.jetty.util;
 
-import junit.framework.Assert;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 public class TypeUtilTest
@@ -90,4 +90,33 @@ public class TypeUtilTest
         Assert.assertEquals("123456789ABCDEF0",b.toString());
     }
 
+    @Test
+    public void testIsTrue() throws Exception
+    {
+        Assert.assertTrue(TypeUtil.isTrue(Boolean.TRUE));
+        Assert.assertTrue(TypeUtil.isTrue(true));
+        Assert.assertTrue(TypeUtil.isTrue("true"));
+        Assert.assertTrue(TypeUtil.isTrue(new Object(){@Override public String toString(){return "true";}}));
+        
+        Assert.assertFalse(TypeUtil.isTrue(Boolean.FALSE));
+        Assert.assertFalse(TypeUtil.isTrue(false));
+        Assert.assertFalse(TypeUtil.isTrue("false"));
+        Assert.assertFalse(TypeUtil.isTrue("blargle"));
+        Assert.assertFalse(TypeUtil.isTrue(new Object(){@Override public String toString(){return "false";}}));
+    }
+
+    @Test
+    public void testIsFalse() throws Exception
+    {
+        Assert.assertTrue(TypeUtil.isFalse(Boolean.FALSE));
+        Assert.assertTrue(TypeUtil.isFalse(false));
+        Assert.assertTrue(TypeUtil.isFalse("false"));
+        Assert.assertTrue(TypeUtil.isFalse(new Object(){@Override public String toString(){return "false";}}));
+        
+        Assert.assertFalse(TypeUtil.isFalse(Boolean.TRUE));
+        Assert.assertFalse(TypeUtil.isFalse(true));
+        Assert.assertFalse(TypeUtil.isFalse("true"));
+        Assert.assertFalse(TypeUtil.isFalse("blargle"));
+        Assert.assertFalse(TypeUtil.isFalse(new Object(){@Override public String toString(){return "true";}}));
+    }
 }

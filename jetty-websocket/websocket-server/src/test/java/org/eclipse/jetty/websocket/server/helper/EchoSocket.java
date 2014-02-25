@@ -18,10 +18,13 @@
 
 package org.eclipse.jetty.websocket.server.helper;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.BatchMode;
+import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
@@ -38,13 +41,16 @@ public class EchoSocket
     private Session session;
 
     @OnWebSocketMessage
-    public void onBinary(byte buf[], int offset, int len)
+    public void onBinary(byte buf[], int offset, int len) throws IOException
     {
         LOG.debug("onBinary(byte[{}],{},{})",buf.length,offset,len);
 
         // echo the message back.
         ByteBuffer data = ByteBuffer.wrap(buf,offset,len);
-        this.session.getRemote().sendBytes(data,null);
+        RemoteEndpoint remote = this.session.getRemote();
+        remote.sendBytes(data, null);
+        if (remote.getBatchMode() == BatchMode.ON)
+            remote.flush();
     }
 
     @OnWebSocketConnect
@@ -54,11 +60,14 @@ public class EchoSocket
     }
 
     @OnWebSocketMessage
-    public void onText(String message)
+    public void onText(String message) throws IOException
     {
         LOG.debug("onText({})",message);
 
         // echo the message back.
-        this.session.getRemote().sendString(message,null);
+        RemoteEndpoint remote = session.getRemote();
+        remote.sendString(message, null);
+        if (remote.getBatchMode() == BatchMode.ON)
+            remote.flush();
     }
 }

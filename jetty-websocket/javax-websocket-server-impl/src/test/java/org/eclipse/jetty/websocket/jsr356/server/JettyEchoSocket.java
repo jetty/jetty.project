@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
+import java.io.IOException;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -25,6 +26,7 @@ import java.util.concurrent.TimeoutException;
 import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
@@ -74,10 +76,10 @@ public class JettyEchoSocket
     }
 
     @OnWebSocketMessage
-    public void onMessage(String msg)
+    public void onMessage(String msg) throws IOException
     {
         incomingMessages.add(msg);
-        remote.sendString(msg,null);
+        sendMessage(msg);
     }
 
     @OnWebSocketConnect
@@ -88,8 +90,10 @@ public class JettyEchoSocket
         this.remote = session.getRemote();
     }
 
-    public void sendMessage(String msg)
+    public void sendMessage(String msg) throws IOException
     {
         remote.sendStringByFuture(msg);
+        if (remote.getBatchMode() == BatchMode.ON)
+            remote.flush();
     }
 }

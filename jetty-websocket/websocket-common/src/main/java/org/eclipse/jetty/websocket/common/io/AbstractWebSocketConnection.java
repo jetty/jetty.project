@@ -32,12 +32,16 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.CloseException;
 import org.eclipse.jetty.websocket.api.CloseStatus;
 import org.eclipse.jetty.websocket.api.StatusCode;
@@ -55,15 +59,16 @@ import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.io.IOState.ConnectionStateListener;
 
 /**
- * Provides the implementation of {@link LogicalConnection} within the framework of the new {@link Connection} framework of jetty-io
+ * Provides the implementation of {@link LogicalConnection} within the
+ * framework of the new {@link Connection} framework of {@code jetty-io}.
  */
-public abstract class AbstractWebSocketConnection extends AbstractConnection implements LogicalConnection, ConnectionStateListener
+public abstract class AbstractWebSocketConnection extends AbstractConnection implements LogicalConnection, ConnectionStateListener, Dumpable
 {
     private class Flusher extends FrameFlusher
     {
-        private Flusher(Generator generator, EndPoint endpoint)
+        private Flusher(ByteBufferPool bufferPool, Generator generator, EndPoint endpoint)
         {
-            super(generator,endpoint);
+            super(bufferPool, generator, endpoint, getPolicy().getMaxBinaryMessageBufferSize(), 8);
         }
 
         @Override
@@ -149,7 +154,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     /**
      * Minimum size of a buffer is the determined to be what would be the maximum framing header size (not including payload)
      */
-    private static final int MIN_BUFFER_SIZE = Generator.OVERHEAD;
+    private static final int MIN_BUFFER_SIZE = Generator.MAX_HEADER_LENGTH;
 
     private final ByteBufferPool bufferPool;
     private final Scheduler scheduler;
@@ -176,7 +181,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         this.suspendToken = new AtomicBoolean(false);
         this.ioState = new IOState();
         this.ioState.addListener(this);
-        this.flusher = new Flusher(generator,endp);
+        this.flusher = new Flusher(bufferPool,generator,endp);
         this.setInputBufferSize(policy.getInputBufferSize());
         this.setMaxIdleTimeout(policy.getIdleTimeout());
     }
@@ -259,11 +264,6 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     {
         stats.countFillInterestedEvents.incrementAndGet();
         super.fillInterested();
-    }
-
-    public void flush()
-    {
-        flusher.flush();
     }
 
     @Override
@@ -379,7 +379,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                 {
                     // Fire out a close frame, indicating abnormal shutdown, then disconnect
                     CloseInfo abnormal = new CloseInfo(StatusCode.SHUTDOWN,"Abnormal Close - " + ioState.getCloseInfo().getReason());
-                    outgoingFrame(abnormal.asFrame(),new OnDisconnectCallback());
+                    outgoingFrame(abnormal.asFrame(),new OnDisconnectCallback(), BatchMode.OFF);
                 }
                 else
                 {
@@ -390,7 +390,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             case CLOSING:
                 CloseInfo close = ioState.getCloseInfo();
                 // append close frame
-                outgoingFrame(close.asFrame(),new OnDisconnectCallback());
+                outgoingFrame(close.asFrame(),new OnDisconnectCallback(), BatchMode.OFF);
             default:
                 break;
         }
@@ -463,14 +463,14 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
      * Frame from API, User, or Internal implementation destined for network.
      */
     @Override
-    public void outgoingFrame(Frame frame, WriteCallback callback)
+    public void outgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode)
     {
         if (LOG.isDebugEnabled())
         {
             LOG.debug("outgoingFrame({}, {})",frame,callback);
         }
 
-        flusher.enqueue(frame,callback);
+        flusher.enqueue(frame,callback, batchMode);
     }
 
     private int read(ByteBuffer buffer)
@@ -568,9 +568,21 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     }
 
     @Override
+    public String dump()
+    {
+        return ContainerLifeCycle.dump(this);
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        out.append(toString()).append(System.lineSeparator());
+    }
+
+    @Override
     public String toString()
     {
-        return String.format("%s{g=%s,p=%s}",super.toString(),generator,parser);
+        return String.format("%s{f=%s,g=%s,p=%s}",super.toString(),flusher,generator,parser);
     }
 
 }

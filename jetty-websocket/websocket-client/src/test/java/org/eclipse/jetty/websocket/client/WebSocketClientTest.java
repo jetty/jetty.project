@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.Arrays;
@@ -33,6 +28,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.websocket.api.BatchMode;
+import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
@@ -44,6 +41,11 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 
 @RunWith(AdvancedRunner.class)
 public class WebSocketClientTest
@@ -118,7 +120,10 @@ public class WebSocketClientTest
 
             Assert.assertThat("client.connectionManager.sessions.size",client.getConnectionManager().getSessions().size(),is(1));
 
-            cliSock.getSession().getRemote().sendStringByFuture("Hello World!");
+            RemoteEndpoint remote = cliSock.getSession().getRemote();
+            remote.sendStringByFuture("Hello World!");
+            if (remote.getBatchMode() == BatchMode.ON)
+                remote.flush();
             srvSock.echoMessage(1,TimeUnit.MILLISECONDS,500);
             // wait for response from server
             cliSock.waitForMessage(500,TimeUnit.MILLISECONDS);

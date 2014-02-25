@@ -58,7 +58,7 @@ public class Generator
     /**
      * The overhead (maximum) for a framing header. Assuming a maximum sized payload with masking key.
      */
-    public static final int OVERHEAD = 28;
+    public static final int MAX_HEADER_LENGTH = 28;
 
     private final WebSocketBehavior behavior;
     private final ByteBufferPool bufferPool;
@@ -193,12 +193,18 @@ public class Generator
 
     public ByteBuffer generateHeaderBytes(Frame frame)
     {
+        ByteBuffer buffer = bufferPool.acquire(MAX_HEADER_LENGTH,true);
+        generateHeaderBytes(frame,buffer);
+        return buffer;
+    }
+
+    public void generateHeaderBytes(Frame frame, ByteBuffer buffer)
+    {
+        int p=BufferUtil.flipToFill(buffer);
+        
         // we need a framing header
         assertFrameValid(frame);
-
-        ByteBuffer buffer = bufferPool.acquire(OVERHEAD,true);
-        BufferUtil.clearToFill(buffer);
-
+        
         /*
          * start the generation process
          */
@@ -284,7 +290,9 @@ public class Generator
         {
             byte[] mask = frame.getMask();
             buffer.put(mask);
-            int maskInt = ByteBuffer.wrap(mask).getInt();
+            int maskInt = 0;
+            for (byte maskByte : mask)
+                maskInt = (maskInt << 8) + (maskByte & 0xFF);
 
             // perform data masking here
             ByteBuffer payload = frame.getPayload();
@@ -311,8 +319,7 @@ public class Generator
             }
         }
 
-        BufferUtil.flipToFlush(buffer,0);
-        return buffer;
+        BufferUtil.flipToFlush(buffer,p);
     }
 
     /**
