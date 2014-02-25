@@ -642,6 +642,6 @@ public class TypeUtil
             return false;
         if (o instanceof Boolean)
             return !((Boolean)o).booleanValue();
-        return Boolean.parseBoolean(o.toString());
+        return "false".equalsIgnoreCase(o.toString());
     }
 }
