@@ -18,33 +18,12 @@
 
 package org.eclipse.jetty.runner;
 
-import java.io.IOException;
-import java.io.PrintStream;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
-import org.eclipse.jetty.server.AbstractConnector;
-import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.ConnectorStatistics;
-import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.NCSARequestLog;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.ShutdownMonitor;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.server.handler.RequestLogHandler;
-import org.eclipse.jetty.server.handler.StatisticsHandler;
+import org.eclipse.jetty.server.*;
+import org.eclipse.jetty.server.handler.*;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -57,13 +36,21 @@ import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
+import java.io.IOException;
+import java.io.PrintStream;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 
 
 /**
  * Runner
  *
  * Combine jetty classes into a single executable jar and run webapps based on the args to it.
- * 
+ *
  */
 public class Runner
 {
@@ -94,21 +81,21 @@ public class Runner
     protected String _statsPropFile;
 
 
-    
+
     /**
      * Classpath
      *
      *
      */
-    public class Classpath 
+    public class Classpath
     {
-        private  List<URL> _classpath = new ArrayList<URL>();
-        
-        public void addJars (Resource lib) throws MalformedURLException, IOException
+        private  List<URL> _classpath = new ArrayList<>();
+
+        public void addJars (Resource lib) throws IOException
         {
             if (lib == null || !lib.exists())
                 throw new IllegalStateException ("No such lib: "+lib);
-            
+
             String[] list = lib.list();
             if (list==null)
                 return;
@@ -118,7 +105,7 @@ public class Runner
                 if (".".equals(path) || "..".equals(path))
                     continue;
 
-                try(Resource item = lib.addPath(path);)
+                try(Resource item = lib.addPath(path))
                 {
                     if (item.isDirectory())
                         addJars(item);
@@ -134,27 +121,27 @@ public class Runner
                 }
             }
         }
-        
-        
+
+
         public void addPath (Resource path)
         {
             if (path == null || !path.exists())
                 throw new IllegalStateException ("No such path: "+path);
             _classpath.add(path.getURL());
         }
-        
-        
+
+
         public URL[] asArray ()
         {
             return _classpath.toArray(new URL[_classpath.size()]);
         }
     }
-    
-    
-    
+
+
+
 
     /**
-     * 
+     *
      */
     public Runner()
     {
@@ -164,7 +151,7 @@ public class Runner
 
     /**
      * Generate helpful usage message and exit
-     * 
+     *
      * @param error
      */
     public void usage(String error)
@@ -186,11 +173,11 @@ public class Runner
         System.err.println(" --stats [unsecure|realm.properties] - enable stats gathering servlet context");
         System.err.println(" [--config file]*n                   - each tuple specifies the name of a jetty xml config file to apply (in the order defined)");
         System.err.println("Context opts:");
-        System.err.println(" [[--path /path] context]*n          - WAR file, web app dir or context xml file, optionally with a context path");                     
+        System.err.println(" [[--path /path] context]*n          - WAR file, web app dir or context xml file, optionally with a context path");
         System.exit(1);
     }
 
-    
+
     /**
      * Generate version message and exit
      */
@@ -199,12 +186,12 @@ public class Runner
         System.err.println("org.eclipse.jetty.runner.Runner: "+Server.getVersion());
         System.exit(1);
     }
-    
-    
-    
+
+
+
     /**
      * Configure a jetty instance and deploy the webapps presented as args
-     * 
+     *
      * @param args
      * @throws Exception
      */
@@ -215,7 +202,7 @@ public class Runner
         {
             if ("--lib".equals(args[i]))
             {
-                try(Resource lib = Resource.newResource(args[++i]);)
+                try(Resource lib = Resource.newResource(args[++i]))
                 {
                     if (!lib.exists() || !lib.isDirectory())
                         usage("No such lib directory "+lib);
@@ -224,7 +211,7 @@ public class Runner
             }
             else if ("--jar".equals(args[i]))
             {
-                try(Resource jar = Resource.newResource(args[++i]);)
+                try(Resource jar = Resource.newResource(args[++i]))
                 {
                     if (!jar.exists() || jar.isDirectory())
                         usage("No such jar "+jar);
@@ -233,7 +220,7 @@ public class Runner
             }
             else if ("--classes".equals(args[i]))
             {
-                try(Resource classes = Resource.newResource(args[++i]);)
+                try(Resource classes = Resource.newResource(args[++i]))
                 {
                     if (!classes.exists() || !classes.isDirectory())
                         usage("No such classes directory "+classes);
@@ -260,204 +247,207 @@ public class Runner
 
         for (int i=0;i<args.length;i++)
         {
-            if ("--port".equals(args[i]))
-                port=Integer.parseInt(args[++i]);
-            else if ("--host".equals(args[i]))
-                host=args[++i];
-            else if ("--stop-port".equals(args[i]))
-                stopPort=Integer.parseInt(args[++i]);
-            else if ("--stop-key".equals(args[i]))
-                stopKey=args[++i];
-            else if ("--log".equals(args[i]))
-                _logFile=args[++i];
-            else if ("--out".equals(args[i]))
+            switch (args[i]) 
             {
-                String outFile=args[++i];
-                PrintStream out = new PrintStream(new RolloverFileOutputStream(outFile,true,-1));
-                LOG.info("Redirecting stderr/stdout to "+outFile);
-                System.setErr(out);
-                System.setOut(out);
-            }
-            else if ("--path".equals(args[i]))
-            {
-                contextPath=args[++i];
-                contextPathSet=true;
-            }
-            else if ("--config".equals(args[i]))
-            {
-                if (_configFiles == null)
-                    _configFiles = new ArrayList<String>();
-                _configFiles.add(args[++i]);
-            }
-            else if ("--lib".equals(args[i]))
-            {
-                ++i;//skip
-            }
-            else if ("--jar".equals(args[i]))
-            {
-                ++i; //skip
-            }
-            else if ("--classes".equals(args[i]))
-            {
-                ++i;//skip
-            }
-            else if ("--stats".equals( args[i]))
-            {
-                _enableStats = true;
-                _statsPropFile = args[++i];
-                _statsPropFile = ("unsecure".equalsIgnoreCase(_statsPropFile)?null:_statsPropFile);
-            }
-            else // process contexts
-            {
-                if (!runnerServerInitialized) // log handlers not registered, server maybe not created, etc
-                {
-                    if (_server == null) // server not initialized yet
-                    {
-                        // build the server
-                        _server = new Server();
-                    }
+                case "--port":
+                    port = Integer.parseInt(args[++i]);
+                    break;
+                case "--host":
+                    host = args[++i];
+                    break;
+                case "--stop-port":
+                    stopPort = Integer.parseInt(args[++i]);
+                    break;
+                case "--stop-key":
+                    stopKey = args[++i];
+                    break;
+                case "--log":
+                    _logFile = args[++i];
+                    break;
+                case "--out":
+                    String outFile = args[++i];
+                    PrintStream out = new PrintStream(new RolloverFileOutputStream(outFile, true, -1));
+                    LOG.info("Redirecting stderr/stdout to " + outFile);
+                    System.setErr(out);
+                    System.setOut(out);
+                    break;
+                case "--path":
+                    contextPath = args[++i];
+                    contextPathSet = true;
+                    break;
+                case "--config":
+                    if (_configFiles == null)
+                        _configFiles = new ArrayList<>();
+                    _configFiles.add(args[++i]);
+                    break;
+                case "--lib":
+                    ++i;//skip
 
-                    //apply jetty config files if there are any
-                    if (_configFiles != null)
+                    break;
+                case "--jar":
+                    ++i; //skip
+
+                    break;
+                case "--classes":
+                    ++i;//skip
+
+                    break;
+                case "--stats":
+                    _enableStats = true;
+                    _statsPropFile = args[++i];
+                    _statsPropFile = ("unsecure".equalsIgnoreCase(_statsPropFile) ? null : _statsPropFile);
+                    break;
+                default:
+// process contexts
+
+                    if (!runnerServerInitialized) // log handlers not registered, server maybe not created, etc
                     {
-                        for (String cfg:_configFiles)
+                        if (_server == null) // server not initialized yet
                         {
-                            try (Resource resource=Resource.newResource(cfg))
+                            // build the server
+                            _server = new Server();
+                        }
+
+                        //apply jetty config files if there are any
+                        if (_configFiles != null) 
+                        {
+                            for (String cfg : _configFiles) 
                             {
-                                XmlConfiguration xmlConfiguration = new XmlConfiguration(resource.getURL());
-                                xmlConfiguration.configure(_server);
+                                try (Resource resource = Resource.newResource(cfg)) {
+                                    XmlConfiguration xmlConfiguration = new XmlConfiguration(resource.getURL());
+                                    xmlConfiguration.configure(_server);
+                                }
                             }
                         }
-                    }
 
-                    //check that everything got configured, and if not, make the handlers
-                    HandlerCollection handlers = (HandlerCollection) _server.getChildHandlerByClass(HandlerCollection.class);
-                    if (handlers == null)
-                    {
-                        handlers = new HandlerCollection();
-                        _server.setHandler(handlers);
-                    }
-                    
-                    //check if contexts already configured
-                    _contexts = (ContextHandlerCollection) handlers.getChildHandlerByClass(ContextHandlerCollection.class);
-                    if (_contexts == null)
-                    {
-                        _contexts = new ContextHandlerCollection();
-                        prependHandler(_contexts, handlers);
-                    }
-                    
-                  
-                    if (_enableStats)
-                    {
-                        //if no stats handler already configured
-                        if (handlers.getChildHandlerByClass(StatisticsHandler.class) == null)
+                        //check that everything got configured, and if not, make the handlers
+                        HandlerCollection handlers = (HandlerCollection) _server.getChildHandlerByClass(HandlerCollection.class);
+                        if (handlers == null) 
                         {
-                            StatisticsHandler statsHandler = new StatisticsHandler();
-                            
-                            
-                            Handler oldHandler = _server.getHandler();
-                            statsHandler.setHandler(oldHandler);
-                            _server.setHandler(statsHandler);
-                         
-                            
-                            ServletContextHandler statsContext = new ServletContextHandler(_contexts, "/stats");
-                            statsContext.addServlet(new ServletHolder(new StatisticsServlet()), "/");
-                            statsContext.setSessionHandler(new SessionHandler());
-                            if (_statsPropFile != null)
-                            {
-                                HashLoginService loginService = new HashLoginService("StatsRealm", _statsPropFile);
-                                Constraint constraint = new Constraint();
-                                constraint.setName("Admin Only");
-                                constraint.setRoles(new String[]{"admin"});
-                                constraint.setAuthenticate(true);
+                            handlers = new HandlerCollection();
+                            _server.setHandler(handlers);
+                        }
 
-                                ConstraintMapping cm = new ConstraintMapping();
-                                cm.setConstraint(constraint);
-                                cm.setPathSpec("/*");
+                        //check if contexts already configured
+                        _contexts = (ContextHandlerCollection) handlers.getChildHandlerByClass(ContextHandlerCollection.class);
+                        if (_contexts == null) 
+                        {
+                            _contexts = new ContextHandlerCollection();
+                            prependHandler(_contexts, handlers);
+                        }
 
-                                ConstraintSecurityHandler securityHandler = new ConstraintSecurityHandler();
-                                securityHandler.setLoginService(loginService);
-                                securityHandler.setConstraintMappings(Collections.singletonList(cm));
-                                securityHandler.setAuthenticator(new BasicAuthenticator());
-                                statsContext.setSecurityHandler(securityHandler);
+
+                        if (_enableStats) 
+                        {
+                            //if no stats handler already configured
+                            if (handlers.getChildHandlerByClass(StatisticsHandler.class) == null) {
+                                StatisticsHandler statsHandler = new StatisticsHandler();
+
+
+                                Handler oldHandler = _server.getHandler();
+                                statsHandler.setHandler(oldHandler);
+                                _server.setHandler(statsHandler);
+
+
+                                ServletContextHandler statsContext = new ServletContextHandler(_contexts, "/stats");
+                                statsContext.addServlet(new ServletHolder(new StatisticsServlet()), "/");
+                                statsContext.setSessionHandler(new SessionHandler());
+                                if (_statsPropFile != null) 
+                                {
+                                    HashLoginService loginService = new HashLoginService("StatsRealm", _statsPropFile);
+                                    Constraint constraint = new Constraint();
+                                    constraint.setName("Admin Only");
+                                    constraint.setRoles(new String[]{"admin"});
+                                    constraint.setAuthenticate(true);
+
+                                    ConstraintMapping cm = new ConstraintMapping();
+                                    cm.setConstraint(constraint);
+                                    cm.setPathSpec("/*");
+
+                                    ConstraintSecurityHandler securityHandler = new ConstraintSecurityHandler();
+                                    securityHandler.setLoginService(loginService);
+                                    securityHandler.setConstraintMappings(Collections.singletonList(cm));
+                                    securityHandler.setAuthenticator(new BasicAuthenticator());
+                                    statsContext.setSecurityHandler(securityHandler);
+                                }
                             }
                         }
-                    }
-                   
-                    //ensure a DefaultHandler is present
-                    if (handlers.getChildHandlerByClass(DefaultHandler.class) == null)
-                    {
-                        handlers.addHandler(new DefaultHandler());
-                    }
-                  
-                    //ensure a log handler is present
-                    _logHandler = (RequestLogHandler)handlers.getChildHandlerByClass( RequestLogHandler.class );
-                    if ( _logHandler == null )
-                    {
-                        _logHandler = new RequestLogHandler();
-                        handlers.addHandler( _logHandler );
-                    }
-                    
 
-                    //check a connector is configured to listen on
-                    Connector[] connectors = _server.getConnectors();
-                    if (connectors == null || connectors.length == 0)
-                    {
-                        ServerConnector connector = new ServerConnector(_server);
-                        connector.setPort(port);
-                        if (host != null)
-                        connector.setHost(host);
-                        _server.addConnector(connector);
-                        if (_enableStats)
-                            connector.addBean(new ConnectorStatistics());
-                    }
-                    else
-                    {
-                        if (_enableStats)
+                        //ensure a DefaultHandler is present
+                        if (handlers.getChildHandlerByClass(DefaultHandler.class) == null) 
                         {
-                            for (int j=0; j<connectors.length; j++)
+                            handlers.addHandler(new DefaultHandler());
+                        }
+
+                        //ensure a log handler is present
+                        _logHandler = (RequestLogHandler) handlers.getChildHandlerByClass(RequestLogHandler.class);
+                        if (_logHandler == null) 
+                        {
+                            _logHandler = new RequestLogHandler();
+                            handlers.addHandler(_logHandler);
+                        }
+
+
+                        //check a connector is configured to listen on
+                        Connector[] connectors = _server.getConnectors();
+                        if (connectors == null || connectors.length == 0) 
+                        {
+                            ServerConnector connector = new ServerConnector(_server);
+                            connector.setPort(port);
+                            if (host != null)
+                                connector.setHost(host);
+                            _server.addConnector(connector);
+                            if (_enableStats)
+                                connector.addBean(new ConnectorStatistics());
+                        } 
+                        else 
+                        {
+                            if (_enableStats) 
                             {
-                                ((AbstractConnector)connectors[j]).addBean(new ConnectorStatistics());
+                                for (Connector connector : connectors) 
+                                {
+                                    ((AbstractConnector) connector).addBean(new ConnectorStatistics());
+                                }
                             }
                         }
+
+                        runnerServerInitialized = true;
                     }
 
-                    runnerServerInitialized = true;
-                }
-
-                // Create a context
-                try(Resource ctx = Resource.newResource(args[i]);)
-                {
-                    if (!ctx.exists())
-                        usage("Context '"+ctx+"' does not exist");
-
-                    if (contextPathSet && !(contextPath.startsWith("/")))
-                        contextPath = "/"+contextPath;
-
-                    // Configure the context
-                    if (!ctx.isDirectory() && ctx.toString().toLowerCase().endsWith(".xml"))
+                    // Create a context
+                    try (Resource ctx = Resource.newResource(args[i])) 
                     {
-                        // It is a context config file
-                        XmlConfiguration xmlConfiguration=new XmlConfiguration(ctx.getURL());
-                        xmlConfiguration.getIdMap().put("Server",_server);
-                        ContextHandler handler=(ContextHandler)xmlConfiguration.configure();
-                        if (contextPathSet)
-                            handler.setContextPath(contextPath);
-                        _contexts.addHandler(handler);                   
-                        handler.setAttribute("org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern", __containerIncludeJarPattern); 
+                        if (!ctx.exists())
+                            usage("Context '" + ctx + "' does not exist");
+
+                        if (contextPathSet && !(contextPath.startsWith("/")))
+                            contextPath = "/" + contextPath;
+
+                        // Configure the context
+                        if (!ctx.isDirectory() && ctx.toString().toLowerCase().endsWith(".xml")) 
+                        {
+                            // It is a context config file
+                            XmlConfiguration xmlConfiguration = new XmlConfiguration(ctx.getURL());
+                            xmlConfiguration.getIdMap().put("Server", _server);
+                            ContextHandler handler = (ContextHandler) xmlConfiguration.configure();
+                            if (contextPathSet)
+                                handler.setContextPath(contextPath);
+                            _contexts.addHandler(handler);
+                            handler.setAttribute("org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern", __containerIncludeJarPattern);
+                        }
+                        else 
+                        {
+                            // assume it is a WAR file
+                            WebAppContext webapp = new WebAppContext(_contexts, ctx.toString(), contextPath);
+                            webapp.setConfigurationClasses(__plusConfigurationClasses);
+                            webapp.setAttribute("org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
+                                    __containerIncludeJarPattern);
+                        }
                     }
-                    else
-                    {
-                        // assume it is a WAR file
-                        WebAppContext webapp = new WebAppContext(_contexts,ctx.toString(),contextPath);
-                        webapp.setConfigurationClasses(__plusConfigurationClasses);
-                        webapp.setAttribute("org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
-                            __containerIncludeJarPattern);
-                    }
-                }
-                //reset
-                contextPathSet = false;
-                contextPath = __defaultContextPath;
+                    //reset
+                    contextPathSet = false;
+                    contextPath = __defaultContextPath;
+                    break;
             }
         }
 
@@ -470,11 +460,11 @@ public class Runner
             case 1:
                 usage("Must specify --stop-key when --stop-port is specified");
                 break;
-                
+
             case 2:
                 usage("Must specify --stop-port when --stop-key is specified");
                 break;
-                
+
             case 3:
                 ShutdownMonitor monitor = ShutdownMonitor.getInstance();
                 monitor.setPort(stopPort);
@@ -490,8 +480,8 @@ public class Runner
             _logHandler.setRequestLog(requestLog);
         }
     }
-    
-    
+
+
     /**
      * @param handler
      * @param handlers
@@ -500,7 +490,7 @@ public class Runner
     {
         if (handler == null || handlers == null)
             return;
-        
+
        Handler[] existing = handlers.getChildHandlers();
        Handler[] children = new Handler[existing.length + 1];
        children[0] = handler;
@@ -508,8 +498,8 @@ public class Runner
        handlers.setHandlers(children);
     }
 
-    
-    
+
+
 
     /**
      * @throws Exception
@@ -527,7 +517,7 @@ public class Runner
     protected void initClassLoader()
     {
         URL[] paths = _classpath.asArray();
-             
+
         if (_classLoader==null && paths !=null && paths.length > 0)
         {
             ClassLoader context=Thread.currentThread().getContextClassLoader();
