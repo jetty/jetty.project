@@ -44,6 +44,7 @@
             <configuration>
               <instructions>
                 <Import-Package>javax.servlet.*;version="[2.6.0,3.2)",*</Import-Package>
+                <Require-Capability>osgi.serviceloader; filter:="(osgi.serviceloader=javax.servlet.ServletContainerInitializer)";cardinality:=multiple, osgi.extender; filter:="(osgi.extender=osgi.serviceloader.processor)"</Require-Capability>
               </instructions>
             </configuration>
           </execution>

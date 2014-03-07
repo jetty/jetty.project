@@ -63,6 +63,8 @@
                       <instructions>
                         <Bundle-Description>javax.websocket.server Implementation</Bundle-Description>
                         <Export-Package>org.eclipse.jetty.websocket.jsr356.server.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"</Export-Package>
+                        <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"</Require-Capability>
+                        <Provide-Capability>osgi.serviceloader; osgi.serviceloader=javax.servlet.ServletContainerInitializer</Provide-Capability>
                       </instructions>
                   </configuration>
               </execution>

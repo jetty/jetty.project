@@ -793,15 +793,23 @@ public class AnnotationConfiguration extends AbstractConfiguration
         
         //We use the ServiceLoader mechanism to find the ServletContainerInitializer classes to inspect
         long start = 0;
-        if (LOG.isDebugEnabled())
-            start = System.nanoTime();
-        ServiceLoader<ServletContainerInitializer> loadedInitializers = ServiceLoader.load(ServletContainerInitializer.class, context.getClassLoader());
+
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
+        ServiceLoader<ServletContainerInitializer> loadedInitializers = null;
+        try
+        {        
+            if (LOG.isDebugEnabled())
+                start = System.nanoTime();
+            Thread.currentThread().setContextClassLoader(context.getClassLoader());
+            loadedInitializers = ServiceLoader.load(ServletContainerInitializer.class);
+        }
+        finally
+        {
+            Thread.currentThread().setContextClassLoader(old);
+        }
+        
         if (LOG.isDebugEnabled())
             LOG.debug("Service loaders found in {}ms", (TimeUnit.MILLISECONDS.convert((System.nanoTime()-start), TimeUnit.NANOSECONDS)));
-        
-        //no ServletContainerInitializers found
-        if (loadedInitializers == null)
-            return Collections.emptyList();
 
         ServletContainerInitializerOrdering initializerOrdering = getInitializerOrdering(context);
        
