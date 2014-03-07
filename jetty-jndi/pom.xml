@@ -91,6 +91,12 @@
       <artifactId>javax.mail.glassfish</artifactId>
       <version>1.4.1.v201005082020</version>
       <scope>provided</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>org.eclipse.jetty.orbit</groupId>
+          <artifactId>javax.activation</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
   </dependencies>
 </project>
