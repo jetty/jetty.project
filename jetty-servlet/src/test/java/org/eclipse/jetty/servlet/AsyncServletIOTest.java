@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -172,7 +173,7 @@ public class AsyncServletIOTest
         {
             socket.setSoTimeout(1000000);
             OutputStream out = socket.getOutputStream();
-            out.write(request.toString().getBytes("ISO-8859-1"));
+            out.write(request.toString().getBytes(StandardCharsets.ISO_8859_1));
             
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()),102400);
             
@@ -207,7 +208,7 @@ public class AsyncServletIOTest
 
     public synchronized List<String> process(String content,int... writes) throws Exception
     {
-        return process(content.getBytes("ISO-8859-1"),writes);
+        return process(content.getBytes(StandardCharsets.ISO_8859_1),writes);
     }
 
     public synchronized List<String> process(int... writes) throws Exception
@@ -242,7 +243,7 @@ public class AsyncServletIOTest
         {
             socket.setSoTimeout(1000000);
             OutputStream out = socket.getOutputStream();
-            out.write(request.toString().getBytes("ISO-8859-1"));
+            out.write(request.toString().getBytes(StandardCharsets.ISO_8859_1));
 
             if (content!=null && content.length>0)
             {

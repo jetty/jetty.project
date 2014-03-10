@@ -99,7 +99,7 @@ public class AsyncServletTest
     public void tearDown() throws Exception
     {
         assertEquals(_expectedLogs,_log.size());
-        Assert.assertThat(_log.get(0),Matchers.containsString(_expectedCode));
+        Assert.assertThat(_log.get(0), Matchers.containsString(_expectedCode));
         _server.stop();
     }
 
@@ -379,12 +379,12 @@ public class AsyncServletTest
         try (Socket socket = new Socket("localhost",_port))
         {
             socket.setSoTimeout(10000);
-            socket.getOutputStream().write(header.getBytes("ISO-8859-1"));
+            socket.getOutputStream().write(header.getBytes(StandardCharsets.ISO_8859_1));
             Thread.sleep(500);
-            socket.getOutputStream().write(body.getBytes("ISO-8859-1"),0,2);
+            socket.getOutputStream().write(body.getBytes(StandardCharsets.ISO_8859_1),0,2);
             Thread.sleep(500);
-            socket.getOutputStream().write(body.getBytes("ISO-8859-1"),2,8);
-            socket.getOutputStream().write(close.getBytes("ISO-8859-1"));
+            socket.getOutputStream().write(body.getBytes(StandardCharsets.ISO_8859_1),2,8);
+            socket.getOutputStream().write(close.getBytes(StandardCharsets.ISO_8859_1));
 
             String response = IO.toString(socket.getInputStream());
             assertEquals("HTTP/1.1 200 OK",response.substring(0,15));
@@ -434,7 +434,7 @@ public class AsyncServletTest
 
     protected void assertContains(String content,String response)
     {
-        Assert.assertThat(response,Matchers.containsString(content));
+        Assert.assertThat(response, Matchers.containsString(content));
     }
 
     protected void assertNotContains(String content,String response)

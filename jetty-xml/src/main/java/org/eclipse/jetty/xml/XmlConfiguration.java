@@ -95,7 +95,7 @@ public class XmlConfiguration
     private synchronized static XmlParser initParser()
     {
         XmlParser parser = new XmlParser();
-        URL config60 = Loader.getResource(XmlConfiguration.class,"org/eclipse/jetty/xml/configure_6_0.dtd");
+        URL config60 = Loader.getResource(XmlConfiguration.class, "org/eclipse/jetty/xml/configure_6_0.dtd");
         URL config76 = Loader.getResource(XmlConfiguration.class,"org/eclipse/jetty/xml/configure_7_6.dtd");
         URL config90 = Loader.getResource(XmlConfiguration.class,"org/eclipse/jetty/xml/configure_9_0.dtd");
         parser.redirectEntity("configure.dtd",config90);
@@ -150,7 +150,7 @@ public class XmlConfiguration
      */
     public XmlConfiguration(String configuration) throws SAXException, IOException
     {
-        configuration = "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"http://eclipse.org/jetty/configure.dtd\">"
+        configuration = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"http://eclipse.org/jetty/configure.dtd\">"
                 + configuration;
         InputSource source = new InputSource(new StringReader(configuration));
         synchronized (__parser)

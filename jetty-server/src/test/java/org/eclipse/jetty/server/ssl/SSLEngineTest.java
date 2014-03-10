@@ -69,14 +69,14 @@ public class SSLEngineTest
 {
     // Useful constants
     private static final String HELLO_WORLD="Hello world. The quick brown fox jumped over the lazy dog. How now brown cow. The rain in spain falls mainly on the plain.\n";
-    private static final String JETTY_VERSION=Server.getVersion();
+    private static final String JETTY_VERSION= Server.getVersion();
     private static final String PROTOCOL_VERSION="2.0";
 
     /** The request. */
     private static final String REQUEST0_HEADER="POST /r0 HTTP/1.1\n"+"Host: localhost\n"+"Content-Type: text/xml\n"+"Content-Length: ";
     private static final String REQUEST1_HEADER="POST /r1 HTTP/1.1\n"+"Host: localhost\n"+"Content-Type: text/xml\n"+"Connection: close\n"+"Content-Length: ";
     private static final String REQUEST_CONTENT=
-        "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n"+
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"+
         "<requests xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n"+
         "        xsi:noNamespaceSchemaLocation=\"commander.xsd\" version=\""+PROTOCOL_VERSION+"\">\n"+
         "</requests>";
@@ -145,7 +145,7 @@ public class SSLEngineTest
 
         String response = IO.toString(client.getInputStream());
 
-        assertThat(response,Matchers.containsString("200 OK"));
+        assertThat(response, Matchers.containsString("200 OK"));
         assertThat(response,Matchers.containsString(HELLO_WORLD));
     }
 

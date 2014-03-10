@@ -40,7 +40,7 @@ public class XmlAppendable
     {
         _out=out;
         _indent=indent;
-        _out.append("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n");
+        _out.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
     }
 
     public XmlAppendable open(String tag, Map<String,String> attributes) throws IOException

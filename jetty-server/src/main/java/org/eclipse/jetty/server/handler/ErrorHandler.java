@@ -30,7 +30,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
@@ -140,7 +139,7 @@ public class ErrorHandler extends AbstractHandler
     protected void writeErrorPageHead(HttpServletRequest request, Writer writer, int code, String message)
         throws IOException
         {
-        writer.write("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=ISO-8859-1\"/>\n");
+        writer.write("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"/>\n");
         writer.write("<title>Error ");
         writer.write(Integer.toString(code));
 
@@ -213,7 +212,7 @@ public class ErrorHandler extends AbstractHandler
         if (reason==null)
             reason=HttpStatus.getMessage(status);
         fields.put(HttpHeader.CONTENT_TYPE,MimeTypes.Type.TEXT_HTML_8859_1.asString());
-        return BufferUtil.toBuffer("<h1>Bad Message "+status+"</h1><pre>reason: "+reason+"</pre>");
+        return BufferUtil.toBuffer("<h1>Bad Message " + status + "</h1><pre>reason: " + reason + "</pre>");
     }    
     
     /* ------------------------------------------------------------ */

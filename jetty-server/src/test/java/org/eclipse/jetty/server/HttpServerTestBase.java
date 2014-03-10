@@ -58,13 +58,14 @@ import org.eclipse.jetty.util.log.StdErrLog;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
+
 /**
  *
  */
 public abstract class HttpServerTestBase extends HttpServerTestFixture
 {
     private static final String REQUEST1_HEADER = "POST / HTTP/1.0\n" + "Host: localhost\n" + "Content-Type: text/xml; charset=utf-8\n" + "Connection: close\n" + "Content-Length: ";
-    private static final String REQUEST1_CONTENT = "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n"
+    private static final String REQUEST1_CONTENT = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
             + "<nimbus xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" + "        xsi:noNamespaceSchemaLocation=\"nimbus.xsd\" version=\"1.0\">\n"
             + "</nimbus>";
     private static final String REQUEST1 = REQUEST1_HEADER + REQUEST1_CONTENT.getBytes().length + "\n\n" + REQUEST1_CONTENT;
@@ -82,7 +83,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                     "Content-Type: text/xml; charset=ISO-8859-1\n" +
                     "Content-Length: ";
     protected static final String REQUEST2_CONTENT =
-            "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" +
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
                     "<nimbus xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +
                     "        xsi:noNamespaceSchemaLocation=\"nimbus.xsd\" version=\"1.0\">\n" +
                     "    <request requestId=\"1\">\n" +
@@ -94,7 +95,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     protected static final String REQUEST2 = REQUEST2_HEADER + REQUEST2_CONTENT.getBytes().length + "\n\n" + REQUEST2_CONTENT;
 
     protected static final String RESPONSE2_CONTENT =
-            "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" +
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
                     "<nimbus xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +
                     "        xsi:noNamespaceSchemaLocation=\"nimbus.xsd\" version=\"1.0\">\n" +
                     "    <request requestId=\"1\">\n" +
@@ -144,7 +145,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         {
             client.setSoTimeout(10000);
             ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(true);
-            ((StdErrLog)Log.getLogger(HttpConnection.class)).info("expect request is too large, then ISE extra data ...");
+            ((StdErrLog) Log.getLogger(HttpConnection.class)).info("expect request is too large, then ISE extra data ...");
             OutputStream os = client.getOutputStream();
 
             byte[] buffer = new byte[64 * 1024];
@@ -926,7 +927,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                             "host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
                             "content-type: text/plain; charset=utf-8\r\n" +
                             "content-length: 10\r\n" +
-                            "\r\n").getBytes("iso-8859-1"));
+                            "\r\n").getBytes(StandardCharsets.ISO_8859_1));
 
             os.write((
                     "123456789\n"
@@ -938,7 +939,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                             "content-type: text/plain; charset=utf-8\r\n" +
                             "content-length: 10\r\n" +
                             "\r\n"
-            ).getBytes("iso-8859-1"));
+            ).getBytes(StandardCharsets.ISO_8859_1));
 
             os.write((
                     "abcdefghZ\n"
@@ -953,7 +954,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                             "content-length: " + contentB.length + "\r\n" +
                             "connection: close\r\n" +
                             "\r\n"
-            ).getBytes("iso-8859-1"));
+            ).getBytes(StandardCharsets.ISO_8859_1));
             os.write(contentB);
 
             os.flush();
@@ -1028,7 +1029,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                             "\015\012" +
                             "abcdefghi\n"
 
-            ).getBytes("iso-8859-1"));
+            ).getBytes(StandardCharsets.ISO_8859_1));
 
 
             String in = IO.toString(is);
@@ -1053,7 +1054,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                             "host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
                             "content-type: text/plain; charset=utf-8\r\n" +
                             "content-length: 10\r\n" +
-                            "\r\n").getBytes("iso-8859-1"));
+                            "\r\n").getBytes(StandardCharsets.ISO_8859_1));
 
             os.write((
                     "123456789\n"
@@ -1065,14 +1066,14 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                             "content-type: text/plain; charset=utf-8\r\n" +
                             "content-length: 10\r\n" +
                             "\r\n"
-            ).getBytes("iso-8859-1"));
+            ).getBytes(StandardCharsets.ISO_8859_1));
 
             os.write((
                     "abcdefghi\n"
-            ).getBytes("utf-8"));
+            ).getBytes(StandardCharsets.UTF_8));
 
             String content = "Wibble";
-            byte[] contentB = content.getBytes("utf-16");
+            byte[] contentB = content.getBytes(StandardCharsets.UTF_16);
             os.write((
                     "POST /echo?charset=utf-8 HTTP/1.1\r\n" +
                             "host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
@@ -1080,7 +1081,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                             "content-length: " + contentB.length + "\r\n" +
                             "connection: close\r\n" +
                             "\r\n"
-            ).getBytes("iso-8859-1"));
+            ).getBytes(StandardCharsets.ISO_8859_1));
             os.write(contentB);
 
             os.flush();
