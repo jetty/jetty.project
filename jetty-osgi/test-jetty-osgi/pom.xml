@@ -66,6 +66,13 @@
       <version>${exam.version}</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+     <groupId>org.apache.aries.spifly</groupId>
+      <artifactId>org.apache.aries.spifly.dynamic.bundle</artifactId>
+      <version>1.0.0</version>
+     <scope>test</scope>
+    </dependency>
+    
 
     <!-- Don't use the native container for now. Observed limitations:
     - single test with a single configuration
@@ -149,13 +156,17 @@
       <scope>test</scope>
     </dependency>
 -->
-    <!-- Orbit Servlet Deps -->
     <dependency>
       <groupId>javax.servlet</groupId>
       <artifactId>javax.servlet-api</artifactId>
       <scope>test</scope>
     </dependency>
-    <!-- Orbit JSP Deps -->
+    <dependency>
+      <groupId>org.apache.geronimo.specs</groupId>
+      <artifactId>geronimo-jta_1.1_spec</artifactId>
+      <version>1.1.1</version>
+      <scope>test</scope>
+    </dependency>
     <!-- OSGi Deps -->
     <dependency>
       <groupId>org.eclipse.jetty.osgi</groupId>
@@ -182,6 +193,11 @@
       <scope>provided</scope>
     </dependency>
     <!-- Jetty Deps -->
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-annotations</artifactId>
+      <scope>runtime</scope>
+    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-webapp</artifactId>
@@ -271,8 +287,18 @@
       <artifactId>javax.websocket-api</artifactId>
       <scope>runtime</scope>
     </dependency>
-
-
+    <dependency>
+      <groupId>org.eclipse.jetty.websocket</groupId>
+      <artifactId>javax-websocket-server-impl</artifactId>
+      <version>${project.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.websocket</groupId>
+      <artifactId>javax-websocket-client-impl</artifactId>
+      <version>${project.version}</version>
+      <scope>runtime</scope>
+    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.spdy</groupId>
       <artifactId>spdy-core</artifactId>

@@ -44,6 +44,7 @@ import org.ops4j.pax.exam.junit.Configuration;
 import org.ops4j.pax.exam.junit.JUnit4TestRunner;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceReference;
 
 /**
  * Pax-Exam to make sure the jetty-osgi-boot can be started along with the
@@ -70,7 +71,7 @@ public class TestJettyOSGiBootWithJsp
 
         options.add(CoreOptions.junitBundles());
         options.addAll(configureJettyHomeAndPort("jetty-selector.xml"));
-        options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*"));
+        options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*", "javax.activation.*"));
         options.add(CoreOptions.systemPackages("com.sun.org.apache.xalan.internal.res","com.sun.org.apache.xml.internal.utils",
                                                "com.sun.org.apache.xml.internal.utils", "com.sun.org.apache.xpath.internal",
                                                "com.sun.org.apache.xpath.internal.jaxp", "com.sun.org.apache.xpath.internal.objects"));
@@ -90,7 +91,7 @@ public class TestJettyOSGiBootWithJsp
                                                  // this is how you set the default log level when using pax logging
                                                  // (logProfile)
                                                  systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(logLevel),
-                                                 systemProperty("org.eclipse.jetty.LEVEL").value(logLevel))));
+                                                 systemProperty("org.eclipse.jetty.annotations.LEVEL").value(logLevel))));
      
         options.addAll(jspDependencies());
 
@@ -156,11 +157,11 @@ public class TestJettyOSGiBootWithJsp
         return res;
     }
 
-   
+
     @Test
     public void assertAllBundlesActiveOrResolved()
     {
-        TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);        
+        TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
     }
 
     // at the moment can't run httpservice with jsp at the same time.
@@ -172,7 +173,7 @@ public class TestJettyOSGiBootWithJsp
         TestOSGiUtil.testHttpServiceGreetings(bundleContext, "http", TestJettyOSGiBootCore.DEFAULT_JETTY_HTTP_PORT);
     }
 
-
+ 
     @Test
     public void testJspDump() throws Exception
     {
@@ -185,6 +186,7 @@ public class TestJettyOSGiBootWithJsp
 
             String content = new String(response.getContent());
             assertTrue(content.contains("<tr><th>ServletPath:</th><td>/jsp/dump.jsp</td></tr>"));
+           
         }
         finally
         {
