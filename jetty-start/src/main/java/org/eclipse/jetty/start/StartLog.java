@@ -140,6 +140,9 @@ public class StartLog
                 // Output about error is lost in majority of cases.
                 throw new UsageException(UsageException.ERR_LOGGING,new IOException("Unable to write to: " + startLog.getAbsolutePath()));
             }
+            
+            System.out.println("Logging to " + logfile);
+            
             PrintStream logger = new PrintStream(new FileOutputStream(startLog,false));
             System.setOut(logger);
             System.setErr(logger);
