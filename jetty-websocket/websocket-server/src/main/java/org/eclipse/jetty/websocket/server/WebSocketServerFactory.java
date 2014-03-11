@@ -164,9 +164,12 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
                 return false;
             }
 
+            // Get the original HTTPConnection
+            HttpConnection connection = (HttpConnection)request.getAttribute("org.eclipse.jetty.server.HttpConnection");
+            
             // Send the upgrade
             EventDriver driver = eventDriverFactory.wrap(websocketPojo);
-            return upgrade(sockreq, sockresp, driver);
+            return upgrade(connection, sockreq, sockresp, driver);
         }
         catch (URISyntaxException e)
         {
@@ -407,12 +410,13 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
      * This method will not normally return, but will instead throw a UpgradeConnectionException, to exit HTTP handling and initiate WebSocket handling of the
      * connection.
      *
+     * @param http     the raw http connection
      * @param request  The request to upgrade
      * @param response The response to upgrade
      * @param driver   The websocket handler implementation to use
      * @throws IOException
      */
-    public boolean upgrade(ServletUpgradeRequest request, ServletUpgradeResponse response, EventDriver driver) throws IOException
+    private boolean upgrade(HttpConnection http, ServletUpgradeRequest request, ServletUpgradeResponse response, EventDriver driver) throws IOException
     {
         if (!"websocket".equalsIgnoreCase(request.getHeader("Upgrade")))
         {
@@ -477,11 +481,12 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
             extensionStack.negotiate(request.getExtensions());
         }
 
-        // Create connection
-        HttpConnection http = HttpConnection.getCurrentConnection();
+        // Get original HTTP connection
         EndPoint endp = http.getEndPoint();
         Executor executor = http.getConnector().getExecutor();
         ByteBufferPool bufferPool = http.getConnector().getByteBufferPool();
+        
+        // Setup websocket connection
         WebSocketServerConnection wsConnection = new WebSocketServerConnection(endp, executor, scheduler, driver.getPolicy(), bufferPool);
 
         extensionStack.setPolicy(driver.getPolicy());
@@ -526,7 +531,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
             throw new IOException("Unable to start Extension Stack", e);
         }
 
-        // Tell jetty about the new connection
+        // Tell jetty about the new upgraded connection
         request.setServletAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE, wsConnection);
 
         // Process (version specific) handshake response
