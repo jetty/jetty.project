@@ -139,7 +139,7 @@ public class AsyncServletIOTest
     @Test
     public void testBigWrites() throws Exception
     {
-        process(102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400);
+        process(102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400);
         Assert.assertThat("On Write Possible",_owp.get(),greaterThan(1));
     }
 
@@ -283,7 +283,7 @@ public class AsyncServletIOTest
                     break;
                 LOG.debug("body:  "+brief(line));
                 list.add(line);
-                Thread.sleep(150);
+                Thread.sleep(50);
             }
         }
         
