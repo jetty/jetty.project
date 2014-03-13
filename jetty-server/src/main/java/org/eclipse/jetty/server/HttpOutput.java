@@ -35,6 +35,7 @@ import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.BlockingCallback;
 import org.eclipse.jetty.util.SharedBlockingCallback;
+import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
@@ -116,17 +117,17 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         return _channel.getResponse().isAllContentWritten(_written);
     }
 
-    protected BlockingCallback acquireWriteBlockingCallback() throws IOException
+    protected Blocker acquireWriteBlockingCallback() throws IOException
     {
-        _writeblock.acquire();
-        return _writeblock;
+        return _writeblock.acquire();
     }
     
     protected void write(ByteBuffer content, boolean complete) throws IOException
     {
-        _writeblock.acquire();
-        write(content,complete,_writeblock);
-        _writeblock.block();
+        try (Blocker blocker=_writeblock.acquire())
+        {        
+            write(content,complete,blocker);
+        }
     }
     
     protected void write(ByteBuffer content, boolean complete, Callback callback)
@@ -439,9 +440,10 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     // Check if all written or full
                     if (complete || BufferUtil.isFull(_aggregate))
                     {
-                        _writeblock.acquire();
-                        write(_aggregate, complete, _writeblock);
-                        _writeblock.block();
+                        try(Blocker blocker=_writeblock.acquire())
+                        {
+                            write(_aggregate, complete, blocker);
+                        }
                         if (complete)
                             closed();
                     }
@@ -497,9 +499,10 @@ public class HttpOutput extends ServletOutputStream implements Runnable
      */
     public void sendContent(ByteBuffer content) throws IOException
     {
-        _writeblock.acquire();
-        write(content,true,_writeblock);
-        _writeblock.block();
+        try(Blocker blocker=_writeblock.acquire())
+        {
+            write(content,true,blocker);
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -509,9 +512,10 @@ public class HttpOutput extends ServletOutputStream implements Runnable
      */
     public void sendContent(InputStream in) throws IOException
     {
-        _writeblock.acquire();
-        new InputStreamWritingCB(in,_writeblock).iterate();
-        _writeblock.block();
+        try(Blocker blocker=_writeblock.acquire())
+        {
+            new InputStreamWritingCB(in,blocker).iterate();
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -521,9 +525,10 @@ public class HttpOutput extends ServletOutputStream implements Runnable
      */
     public void sendContent(ReadableByteChannel in) throws IOException
     {
-        _writeblock.acquire();
-        new ReadableByteChannelWritingCB(in,_writeblock).iterate();
-        _writeblock.block();
+        try(Blocker blocker=_writeblock.acquire())
+        {
+            new ReadableByteChannelWritingCB(in,blocker).iterate();
+        }
     }
 
 
@@ -534,9 +539,10 @@ public class HttpOutput extends ServletOutputStream implements Runnable
      */
     public void sendContent(HttpContent content) throws IOException
     {
-        _writeblock.acquire();
-        sendContent(content,_writeblock);
-        _writeblock.block();
+        try(Blocker blocker=_writeblock.acquire())
+        {
+            sendContent(content,blocker);
+        }
     }
 
     /* ------------------------------------------------------------ */

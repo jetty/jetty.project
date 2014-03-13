@@ -32,6 +32,7 @@ import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
+import org.eclipse.jetty.websocket.common.BlockingWriteCallback.WriteBlocker;
 import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.common.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.common.frames.DataFrame;
@@ -100,9 +101,10 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
 
     private void blockingWrite(WebSocketFrame frame) throws IOException
     {
-        blocker.acquire();
-        uncheckedSendFrame(frame, blocker);
-        blocker.block();
+        try(WriteBlocker b=blocker.acquireWriteBlocker())
+        {
+            uncheckedSendFrame(frame, b);
+        }
     }
 
     private boolean lockMsg(MsgType type)
@@ -441,14 +443,13 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
         this.batchMode = batchMode;
     }
 
+    @Override
     public void flush() throws IOException
     {
         lockMsg(MsgType.ASYNC);
-        try
+        try (WriteBlocker b = blocker.acquireWriteBlocker())
         {
-            blocker.acquire();
-            uncheckedSendFrame(FrameFlusher.FLUSH_FRAME, blocker);
-            blocker.block();
+            uncheckedSendFrame(FrameFlusher.FLUSH_FRAME, b);
         }
         finally
         {

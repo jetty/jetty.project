@@ -26,30 +26,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 /* ------------------------------------------------------------ */
 /**
- * A Callback for simple reusable conversion of an 
- * asynchronous API to blocking.
- * <p>
- * To avoid late redundant calls to {@link #succeeded()} or {@link #failed(Throwable)} from
- * interfering with later reuses of this class, the callback context is used to hold pass a phase indicated
- * and only a single callback per phase is allowed.
- * <p>
- * A typical usage pattern is:
- * <pre>
- * public class MyClass
- * {
- *     BlockingCallback cb = new BlockingCallback();
- *     
- *     public void blockingMethod(Object args) throws Exception
- *     {
- *         asyncMethod(args,cb);
- *         cb.block();
- *     }
- *     
- *     public <C>void asyncMethod(Object args, Callback callback)
- *     {
- *         ...
- *     }
- *  }
+ * TODO
  */
 public class BlockingCallback implements Callback
 {
