@@ -12,6 +12,10 @@
     <artifactId>fcgi-proxy</artifactId>
     <name>Jetty :: FastCGI :: Proxy</name>
 
+    <properties>
+        <bundle-symbolic-name>${project.groupId}.proxy</bundle-symbolic-name>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>javax.servlet</groupId>

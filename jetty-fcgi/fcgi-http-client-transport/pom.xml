@@ -12,6 +12,10 @@
     <artifactId>fcgi-http-client-transport</artifactId>
     <name>Jetty :: FastCGI :: HTTP Client Transport</name>
 
+    <properties>
+        <bundle-symbolic-name>${project.groupId}.client.http</bundle-symbolic-name>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.eclipse.jetty.fcgi</groupId>

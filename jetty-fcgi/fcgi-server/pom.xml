@@ -12,6 +12,10 @@
     <artifactId>fcgi-server</artifactId>
     <name>Jetty :: FastCGI :: Server</name>
 
+    <properties>
+        <bundle-symbolic-name>${project.groupId}.server</bundle-symbolic-name>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.eclipse.jetty.fcgi</groupId>
