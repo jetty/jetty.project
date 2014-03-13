@@ -537,7 +537,7 @@ public class HttpChannelState
     {
         Scheduler scheduler = _channel.getScheduler();
         if (scheduler!=null && _timeoutMs>0)
-            _event.setTimeoutTask(scheduler.schedule(new AsyncTimeout(),_timeoutMs,TimeUnit.MILLISECONDS));
+            _event.setTimeoutTask(scheduler.schedule(_event,_timeoutMs,TimeUnit.MILLISECONDS));
     }
 
     protected void cancelTimeout()
@@ -691,13 +691,4 @@ public class HttpChannelState
             _channel.execute(_channel);
     }
     
-    public class AsyncTimeout implements Runnable
-    {
-        @Override
-        public void run()
-        {
-            HttpChannelState.this.expired();
-        }
-    }
-
 }

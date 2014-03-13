@@ -581,13 +581,7 @@ public class Response implements HttpServletResponse
             code!=SC_PARTIAL_CONTENT &&
             code>=SC_OK)
         {
-
-            ErrorHandler error_handler = null;
-            ContextHandler.Context context = request.getContext();
-            if (context!=null)
-                error_handler=context.getContextHandler().getErrorHandler();
-            if (error_handler==null)
-                error_handler = _channel.getServer().getBean(ErrorHandler.class);
+            ErrorHandler error_handler = ErrorHandler.getErrorHandler(_channel.getServer(),request.getContext()==null?null:request.getContext().getContextHandler());
             if (error_handler!=null)
             {
                 request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE,new Integer(code));

@@ -29,14 +29,14 @@ import javax.servlet.ServletResponse;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.util.thread.Scheduler;
 
-public class AsyncContextEvent extends AsyncEvent
+public class AsyncContextEvent extends AsyncEvent implements Runnable
 {
     final private Context _context;
     final private AsyncContextState _asyncContext;
-    volatile HttpChannelState _state;
+    private volatile HttpChannelState _state;
     private ServletContext _dispatchContext;
     private String _dispatchPath;
-    private Scheduler.Task _timeoutTask;
+    private volatile Scheduler.Task _timeoutTask;
     private Throwable _throwable;
 
     public AsyncContextEvent(Context context,AsyncContextState asyncContext, HttpChannelState state, Request baseRequest, ServletRequest request, ServletResponse response)
@@ -143,12 +143,22 @@ public class AsyncContextEvent extends AsyncEvent
     
     public void completed()
     {
+        _timeoutTask=null;
         _asyncContext.reset();
     }
 
     public HttpChannelState getHttpChannelState()
     {
         return _state;
+    }
+
+    @Override
+    public void run()
+    {
+        Scheduler.Task task=_timeoutTask;
+        _timeoutTask=null;
+        if (task!=null)
+            _state.expired();
     }
 
 }

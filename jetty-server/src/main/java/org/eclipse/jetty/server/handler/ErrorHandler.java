@@ -36,6 +36,7 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ByteArrayISO8859Writer;
 import org.eclipse.jetty.util.log.Log;
@@ -303,5 +304,16 @@ public class ErrorHandler extends AbstractHandler
     public interface ErrorPageMapper
     {
         String getErrorPage(HttpServletRequest request);
+    }
+
+    /* ------------------------------------------------------------ */
+    public static ErrorHandler getErrorHandler(Server server, ContextHandler context)
+    {
+        ErrorHandler error_handler=null;
+        if (context!=null)
+            error_handler=context.getErrorHandler();
+        if (error_handler==null && server!=null)
+            error_handler = server.getBean(ErrorHandler.class);
+        return error_handler;
     }
 }

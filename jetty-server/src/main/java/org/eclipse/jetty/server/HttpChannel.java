@@ -307,7 +307,8 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
 
                             _response.setStatusWithReason(500,reason);
 
-                            ErrorHandler eh = _state.getContextHandler().getErrorHandler();
+                            
+                            ErrorHandler eh = ErrorHandler.getErrorHandler(getServer(),_state.getContextHandler());                                
                             if (eh instanceof ErrorHandler.ErrorPageMapper)
                             {
                                 String error_page=((ErrorHandler.ErrorPageMapper)eh).getErrorPage((HttpServletRequest)_state.getAsyncContextEvent().getSuppliedRequest());
