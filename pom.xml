@@ -414,6 +414,7 @@
     <module>jetty-servlet</module>
     <module>jetty-webapp</module>
     <module>jetty-spdy</module>
+    <module>jetty-fcgi</module>
     <module>jetty-websocket</module>
     <module>jetty-servlets</module>
     <module>jetty-util-ajax</module>

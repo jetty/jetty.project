@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.eclipse.jetty.fcgi</groupId>
         <artifactId>fcgi-parent</artifactId>
-        <version>1.0.1</version>
+        <version>9.1.4-SNAPSHOT</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -21,7 +21,7 @@
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-client</artifactId>
-            <version>${jetty-version}</version>
+            <version>${project.version}</version>
         </dependency>
 
         <dependency>
@@ -33,10 +33,6 @@
         <dependency>
             <groupId>org.eclipse.jetty.toolchain</groupId>
             <artifactId>jetty-test-helper</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
         </dependency>
     </dependencies>
 
