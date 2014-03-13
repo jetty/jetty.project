@@ -21,16 +21,16 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.BlockingCallback;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 public class HttpInputOverHTTP extends HttpInput<ByteBuffer> implements Callback
 {
     private static final Logger LOG = Log.getLogger(HttpInputOverHTTP.class);
-    private final BlockingCallback _readBlocker = new BlockingCallback();
+    private final SharedBlockingCallback _readBlocker = new SharedBlockingCallback();
     private final HttpConnection _httpConnection;
     private ByteBuffer _content;
 
@@ -57,6 +57,7 @@ public class HttpInputOverHTTP extends HttpInput<ByteBuffer> implements Callback
     {
         while(true)
         {
+            _readBlocker.acquire();
             _httpConnection.fillInterested(_readBlocker);
             LOG.debug("{} block readable on {}",this,_readBlocker);
             _readBlocker.block();

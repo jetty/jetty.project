@@ -18,11 +18,14 @@
 
 package org.eclipse.jetty.websocket.common;
 
-import org.eclipse.jetty.util.BlockingCallback;
+import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 
-public class BlockingWriteCallback extends BlockingCallback implements WriteCallback
+public class BlockingWriteCallback extends SharedBlockingCallback implements WriteCallback
 {
+    public BlockingWriteCallback()
+    {}
+    
     @Override
     public void writeFailed(Throwable x)
     {

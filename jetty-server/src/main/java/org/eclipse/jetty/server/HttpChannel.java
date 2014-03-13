@@ -728,7 +728,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
 
     protected boolean sendResponse(ResponseInfo info, ByteBuffer content, boolean complete) throws IOException
     {
-        BlockingCallback writeBlock = _response.getHttpOutput().getWriteBlockingCallback();
+        BlockingCallback writeBlock = _response.getHttpOutput().acquireWriteBlockingCallback();
         boolean committing=sendResponse(info,content,complete,writeBlock);
         writeBlock.block();
         return committing;

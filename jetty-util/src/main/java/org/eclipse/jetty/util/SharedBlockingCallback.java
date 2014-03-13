@@ -21,8 +21,10 @@ package org.eclipse.jetty.util;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 /* ------------------------------------------------------------ */
 /**
@@ -51,32 +53,87 @@ import java.util.concurrent.atomic.AtomicReference;
  *     }
  *  }
  */
-public class BlockingCallback implements Callback
+public class SharedBlockingCallback extends BlockingCallback
 {
+    private static Throwable IDLE=new Throwable()
+    {
+        @Override
+        public String toString() { return "IDLE"; }
+    };
+    
     private static Throwable SUCCEEDED=new Throwable()
     {
         @Override
         public String toString() { return "SUCCEEDED"; }
     };
     
-    private final CountDownLatch _latch = new CountDownLatch(1);
-    private final AtomicReference<Throwable> _state = new AtomicReference<>();
+
+    final ReentrantLock _lock = new ReentrantLock();
+    Condition _idle = _lock.newCondition();
+    Condition _complete = _lock.newCondition();
+    Throwable _state = IDLE;
     
-    public BlockingCallback()
+    
+    public SharedBlockingCallback()
     {}
 
+    public void acquire() throws IOException
+    {
+        _lock.lock();
+        try
+        {
+            while (_state!=IDLE)
+                _idle.await();
+            _state=null;
+        }
+        catch (final InterruptedException e)
+        {
+            throw new InterruptedIOException(){{initCause(e);}};
+        }
+        finally
+        {
+            _lock.unlock();
+        }
+    }
+    
     @Override
     public void succeeded()
     {
-        if (_state.compareAndSet(null,SUCCEEDED))
-            _latch.countDown();
+        _lock.lock();
+        try
+        {
+            if (_state==null)
+            {
+                _state=SUCCEEDED;
+                _complete.signalAll();
+            }
+            else if (_state==IDLE)
+                throw new IllegalStateException("IDLE");      
+        }
+        finally
+        {
+            _lock.unlock();
+        }
     }
 
     @Override
     public void failed(Throwable cause)
     {
-        if (_state.compareAndSet(null,cause))
-            _latch.countDown();
+        _lock.lock();
+        try
+        {
+            if (_state==null)
+            {
+                _state=cause;
+                _complete.signalAll();
+            }
+            else if (_state==IDLE)
+                throw new IllegalStateException("IDLE");       
+        }
+        finally
+        {
+            _lock.unlock();
+        }
     }
 
     /** Block until the Callback has succeeded or failed and 
@@ -85,19 +142,24 @@ public class BlockingCallback implements Callback
      * an asynchronous API to a blocking API. 
      * @throws IOException if exception was caught during blocking, or callback was cancelled 
      */
+    @Override
     public void block() throws IOException
     {
+        _lock.lock();
         try
         {
-            _latch.await();
-            Throwable state=_state.get();
-            if (state==SUCCEEDED)
+            while (_state==null)
+                _complete.await();
+            
+            if (_state==SUCCEEDED)
                 return;
-            if (state instanceof IOException)
-                throw (IOException) state;
-            if (state instanceof CancellationException)
-                throw (CancellationException) state;
-            throw new IOException(state);
+            if (_state==IDLE)
+                throw new IllegalStateException("IDLE");
+            if (_state instanceof IOException)
+                throw (IOException) _state;
+            if (_state instanceof CancellationException)
+                throw (CancellationException) _state;
+            throw new IOException(_state);
         }
         catch (final InterruptedException e)
         {
@@ -105,7 +167,9 @@ public class BlockingCallback implements Callback
         }
         finally
         {
-            _state.set(null);
+            _state=IDLE;
+            _idle.signalAll();
+            _lock.unlock();
         }
     }
     
@@ -113,7 +177,15 @@ public class BlockingCallback implements Callback
     @Override
     public String toString()
     {
-        return String.format("%s@%x{%s}",BlockingCallback.class.getSimpleName(),hashCode(),_state.get());
+        _lock.lock();
+        try
+        {
+            return String.format("%s@%x{%s}",SharedBlockingCallback.class.getSimpleName(),hashCode(),_state); 
+        }
+        finally
+        {
+            _lock.unlock();
+        }
     }
 
 }

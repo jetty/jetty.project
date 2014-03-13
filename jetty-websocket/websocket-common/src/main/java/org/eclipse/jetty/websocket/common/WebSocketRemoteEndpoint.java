@@ -100,6 +100,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
 
     private void blockingWrite(WebSocketFrame frame) throws IOException
     {
+        blocker.acquire();
         uncheckedSendFrame(frame, blocker);
         blocker.block();
     }
@@ -445,6 +446,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
         lockMsg(MsgType.ASYNC);
         try
         {
+            blocker.acquire();
             uncheckedSendFrame(FrameFlusher.FLUSH_FRAME, blocker);
             blocker.block();
         }

@@ -32,16 +32,19 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
-public class BlockingCallbackTest
+public class SharedBlockingCallbackTest
 {
-    public BlockingCallbackTest()
+    final SharedBlockingCallback fcb= new SharedBlockingCallback();
+    
+    public SharedBlockingCallbackTest()
     {
     }
+    
     
     @Test
     public void testDone() throws Exception
     {
-        final BlockingCallback fcb= new BlockingCallback();
+        fcb.acquire();
         fcb.succeeded();
         long start=System.currentTimeMillis();
         fcb.block();
@@ -51,7 +54,7 @@ public class BlockingCallbackTest
     @Test
     public void testGetDone() throws Exception
     {
-        final BlockingCallback fcb= new BlockingCallback();
+        fcb.acquire();
         final CountDownLatch latch = new CountDownLatch(1);
         
         new Thread(new Runnable()
@@ -75,7 +78,7 @@ public class BlockingCallbackTest
     @Test
     public void testFailed() throws Exception
     {
-        final BlockingCallback fcb= new BlockingCallback();
+        fcb.acquire();
         Exception ex=new Exception("FAILED");
         fcb.failed(ex);
         
@@ -95,7 +98,7 @@ public class BlockingCallbackTest
     @Test
     public void testGetFailed() throws Exception
     {
-        final BlockingCallback fcb= new BlockingCallback();
+        fcb.acquire();
         final Exception ex=new Exception("FAILED");
         final CountDownLatch latch = new CountDownLatch(1);
         
@@ -124,6 +127,42 @@ public class BlockingCallbackTest
         Assert.assertThat(System.currentTimeMillis()-start,Matchers.greaterThan(10L)); 
         Assert.assertThat(System.currentTimeMillis()-start,Matchers.lessThan(1000L));
     }
+
+
+    @Test
+    public void testAcquireBlocked() throws Exception
+    {
+        final CountDownLatch latch = new CountDownLatch(1);
         
-    
+        new Thread(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    fcb.acquire();
+                    latch.countDown();
+                    TimeUnit.MILLISECONDS.sleep(100);
+                    fcb.succeeded();
+                    fcb.block();
+                }
+                catch(Exception e)
+                {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+        
+        
+        latch.await();
+        long start=System.currentTimeMillis();
+        fcb.acquire();
+        Assert.assertThat(System.currentTimeMillis()-start,Matchers.greaterThan(10L)); 
+        Assert.assertThat(System.currentTimeMillis()-start,Matchers.lessThan(500L)); 
+
+        fcb.succeeded();
+        fcb.block();
+        Assert.assertThat(System.currentTimeMillis()-start,Matchers.lessThan(600L));   
+    }
 }

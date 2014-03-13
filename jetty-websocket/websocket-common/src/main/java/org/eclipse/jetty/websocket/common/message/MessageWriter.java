@@ -146,6 +146,7 @@ public class MessageWriter extends Writer
             frame.setPayload(data);
             frame.setFin(fin);
 
+            blocker.acquire();
             outgoing.outgoingFrame(frame, blocker, BatchMode.OFF);
             blocker.block();
 
