@@ -443,7 +443,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     @Override
     public void putValue(java.lang.String name, java.lang.Object value) throws IllegalStateException
     {
-        setAttribute(name,value);
+        changeAttribute(name,value);
     }
 
     /* ------------------------------------------------------------ */
@@ -481,10 +481,16 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     @Override
     public void setAttribute(String name, Object value)
     {
-        updateAttribute(name,value);
+        changeAttribute(name,value);
     }
     
     /* ------------------------------------------------------------ */
+    /**
+     * @param name
+     * @param value
+     * @deprecated use changeAttribute(String,Object) instead
+     * @return
+     */
     protected boolean updateAttribute (String name, Object value)
     {
         Object old=null;
@@ -505,6 +511,53 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
             return true;
         }
         return false;
+    }
+    
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Either set (perhaps replace) or remove the value of the attribute
+     * in the session. The appropriate session attribute listeners are
+     * also called.
+     * 
+     * @param name
+     * @param value
+     * @return
+     */
+    protected Object changeAttribute (String name, Object value)
+    {
+        Object old=null;
+        synchronized (this)
+        {
+            checkValid();
+            old=doPutOrRemove(name,value);
+        }
+
+        callSessionAttributeListeners(name, value, old);
+
+        return old;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Call binding and attribute listeners based on the new and old
+     * values of the attribute.
+     * 
+     * @param name name of the attribute
+     * @param newValue  new value of the attribute
+     * @param oldValue previous value of the attribute
+     */
+    protected void callSessionAttributeListeners (String name, Object newValue, Object oldValue)
+    {
+        if (newValue==null || !newValue.equals(oldValue))
+        {
+            if (oldValue!=null)
+                unbindValue(name,oldValue);
+            if (newValue!=null)
+                bindValue(name,newValue);
+
+            _manager.doSessionAttributeListeners(this,name,oldValue,newValue);
+        }
     }
 
     /* ------------------------------------------------------------ */

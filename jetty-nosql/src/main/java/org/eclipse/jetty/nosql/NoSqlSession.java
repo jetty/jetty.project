@@ -77,7 +77,11 @@ public class NoSqlSession extends AbstractSession
     @Override
     public void setAttribute(String name, Object value)
     {
-        if ( updateAttribute(name,value) )
+        Object old = changeAttribute(name,value);
+        if (value == null && old == null)
+            return; //not dirty, no change
+        
+        if (value==null || !value.equals(old))
         {
             if (_dirty==null)
             {
@@ -96,30 +100,7 @@ public class NoSqlSession extends AbstractSession
         super.timeout();
     }
 
-    /*
-     * a boolean version of the setAttribute method that lets us manage the _dirty set
-     */
-    protected boolean updateAttribute (String name, Object value)
-    {
-        Object old=null;
-        synchronized (this)
-        {
-            checkValid();
-            old=doPutOrRemove(name,value);
-        }
 
-        if (value==null || !value.equals(old))
-        {
-            if (old!=null)
-                unbindValue(name,old);
-            if (value!=null)
-                bindValue(name,value);
-
-            _manager.doSessionAttributeListeners(this,name,old,value);
-            return true;
-        }
-        return false;
-    }
     
     /* ------------------------------------------------------------ */
     @Override

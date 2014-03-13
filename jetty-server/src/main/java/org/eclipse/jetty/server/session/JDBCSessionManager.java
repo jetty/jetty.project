@@ -246,15 +246,19 @@ public class JDBCSessionManager extends AbstractSessionManager
         @Override
         public void setAttribute (String name, Object value)
         {
-            updateAttribute(name, value);
+            Object old = changeAttribute(name, value);
+            if (value == null && old == null)
+                return; //if same as remove attribute but attribute was already removed, no change
+            
             _dirty = true;
         }
 
         @Override
         public void removeAttribute (String name)
         {
-            super.removeAttribute(name);
-            _dirty=true;
+            Object old = changeAttribute(name, null);
+            if (old != null) //only dirty if there was a previous value
+                _dirty=true;
         }
 
         @Override
