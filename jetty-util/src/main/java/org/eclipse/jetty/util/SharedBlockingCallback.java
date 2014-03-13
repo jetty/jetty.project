@@ -18,174 +18,203 @@
 
 package org.eclipse.jetty.util;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
+
 /* ------------------------------------------------------------ */
-/**
- * A Callback for simple reusable conversion of an 
- * asynchronous API to blocking.
- * <p>
- * To avoid late redundant calls to {@link #succeeded()} or {@link #failed(Throwable)} from
- * interfering with later reuses of this class, the callback context is used to hold pass a phase indicated
- * and only a single callback per phase is allowed.
- * <p>
+/** Provides a reusable BlockingCallback.
  * A typical usage pattern is:
  * <pre>
- * public class MyClass
+ * void someBlockingCall(Object... args) throws IOException
  * {
- *     BlockingCallback cb = new BlockingCallback();
- *     
- *     public void blockingMethod(Object args) throws Exception
- *     {
- *         asyncMethod(args,cb);
- *         cb.block();
- *     }
- *     
- *     public <C>void asyncMethod(Object args, Callback callback)
- *     {
- *         ...
- *     }
- *  }
+ *   try(Blocker blocker=sharedBlockingCallback.acquire())
+ *   {
+ *     someAsyncCall(args,blocker);
+ *   }
+ *   catch(Throwable e)
+ *   {
+ *     blocker.fail(e);
+ *   }
+ * }
+ * </pre>
  */
-public class SharedBlockingCallback extends BlockingCallback
+public class SharedBlockingCallback
 {
-    private static Throwable IDLE=new Throwable()
+    private static Throwable IDLE = new Throwable()
     {
         @Override
-        public String toString() { return "IDLE"; }
+        public String toString()
+        {
+            return "IDLE";
+        }
     };
-    
-    private static Throwable SUCCEEDED=new Throwable()
-    {
-        @Override
-        public String toString() { return "SUCCEEDED"; }
-    };
-    
 
-    final ReentrantLock _lock = new ReentrantLock();
-    Condition _idle = _lock.newCondition();
-    Condition _complete = _lock.newCondition();
-    Throwable _state = IDLE;
-    
+    private static Throwable SUCCEEDED = new Throwable()
+    {
+        @Override
+        public String toString()
+        {
+            return "SUCCEEDED";
+        }
+    };
+
+    final Blocker _blocker;
     
     public SharedBlockingCallback()
-    {}
-
-    public void acquire() throws IOException
     {
-        _lock.lock();
+        this(new Blocker());
+    }
+    
+    protected SharedBlockingCallback(Blocker blocker)
+    {
+        _blocker=blocker;
+    }
+    
+    public Blocker acquire() throws IOException
+    {
+        _blocker._lock.lock();
         try
         {
-            while (_state!=IDLE)
-                _idle.await();
-            _state=null;
+            while (_blocker._state != IDLE)
+                _blocker._idle.await();
+            _blocker._state = null;
         }
         catch (final InterruptedException e)
         {
-            throw new InterruptedIOException(){{initCause(e);}};
+            throw new InterruptedIOException()
+            {
+                {
+                    initCause(e);
+                }
+            };
         }
         finally
         {
-            _lock.unlock();
+            _blocker._lock.unlock();
         }
+        return _blocker;
     }
+
     
-    @Override
-    public void succeeded()
-    {
-        _lock.lock();
-        try
-        {
-            if (_state==null)
-            {
-                _state=SUCCEEDED;
-                _complete.signalAll();
-            }
-            else if (_state==IDLE)
-                throw new IllegalStateException("IDLE");      
-        }
-        finally
-        {
-            _lock.unlock();
-        }
-    }
-
-    @Override
-    public void failed(Throwable cause)
-    {
-        _lock.lock();
-        try
-        {
-            if (_state==null)
-            {
-                _state=cause;
-                _complete.signalAll();
-            }
-            else if (_state==IDLE)
-                throw new IllegalStateException("IDLE");       
-        }
-        finally
-        {
-            _lock.unlock();
-        }
-    }
-
-    /** Block until the Callback has succeeded or failed and 
-     * after the return leave in the state to allow reuse.
-     * This is useful for code that wants to repeatable use a FutureCallback to convert
-     * an asynchronous API to a blocking API. 
-     * @throws IOException if exception was caught during blocking, or callback was cancelled 
+    /* ------------------------------------------------------------ */
+    /** A Closeable Callback.
+     * Uses the auto close mechanism to block until the collback is complete.
      */
-    @Override
-    public void block() throws IOException
+    public static class Blocker implements Callback, Closeable
     {
-        _lock.lock();
-        try
-        {
-            while (_state==null)
-                _complete.await();
-            
-            if (_state==SUCCEEDED)
-                return;
-            if (_state==IDLE)
-                throw new IllegalStateException("IDLE");
-            if (_state instanceof IOException)
-                throw (IOException) _state;
-            if (_state instanceof CancellationException)
-                throw (CancellationException) _state;
-            throw new IOException(_state);
-        }
-        catch (final InterruptedException e)
-        {
-            throw new InterruptedIOException(){{initCause(e);}};
-        }
-        finally
-        {
-            _state=IDLE;
-            _idle.signalAll();
-            _lock.unlock();
-        }
-    }
-    
-    
-    @Override
-    public String toString()
-    {
-        _lock.lock();
-        try
-        {
-            return String.format("%s@%x{%s}",SharedBlockingCallback.class.getSimpleName(),hashCode(),_state); 
-        }
-        finally
-        {
-            _lock.unlock();
-        }
-    }
+        final ReentrantLock _lock = new ReentrantLock();
+        final Condition _idle = _lock.newCondition();
+        final Condition _complete = _lock.newCondition();
+        Throwable _state = IDLE;
 
+        public Blocker()
+        {
+        }
+
+        @Override
+        public void succeeded()
+        {
+            _lock.lock();
+            try
+            {
+                if (_state == null)
+                {
+                    _state = SUCCEEDED;
+                    _complete.signalAll();
+                }
+                else if (_state == IDLE)
+                    throw new IllegalStateException("IDLE");
+            }
+            finally
+            {
+                _lock.unlock();
+            }
+        }
+
+        @Override
+        public void failed(Throwable cause)
+        {
+            _lock.lock();
+            try
+            {
+                if (_state == null)
+                {
+                    _state = cause;
+                    _complete.signalAll();
+                }
+                else if (_state == IDLE)
+                    throw new IllegalStateException("IDLE");
+            }
+            finally
+            {
+                _lock.unlock();
+            }
+        }
+
+        /**
+         * Block until the Callback has succeeded or failed and after the return leave in the state to allow reuse. This is useful for code that wants to
+         * repeatable use a FutureCallback to convert an asynchronous API to a blocking API.
+         * 
+         * @throws IOException
+         *             if exception was caught during blocking, or callback was cancelled
+         */
+        @Override
+        public void close() throws IOException
+        {
+            _lock.lock();
+            try
+            {
+                while (_state == null)
+                    _complete.await();
+
+                if (_state == SUCCEEDED)
+                    return;
+                if (_state == IDLE)
+                    throw new IllegalStateException("IDLE");
+                if (_state instanceof IOException)
+                    throw (IOException)_state;
+                if (_state instanceof CancellationException)
+                    throw (CancellationException)_state;
+                if (_state instanceof RuntimeException)
+                    throw (RuntimeException)_state;
+                if (_state instanceof Error)
+                    throw (Error)_state;
+                throw new IOException(_state);
+            }
+            catch (final InterruptedException e)
+            {
+                throw new InterruptedIOException()
+                {
+                    {
+                        initCause(e);
+                    }
+                };
+            }
+            finally
+            {
+                _state = IDLE;
+                _idle.signalAll();
+                _lock.unlock();
+            }
+        }
+
+        @Override
+        public String toString()
+        {
+            _lock.lock();
+            try
+            {
+                return String.format("%s@%x{%s}",SharedBlockingCallback.class.getSimpleName(),hashCode(),_state);
+            }
+            finally
+            {
+                _lock.unlock();
+            }
+        }
+    }
 }

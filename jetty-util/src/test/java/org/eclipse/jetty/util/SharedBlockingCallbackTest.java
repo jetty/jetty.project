@@ -19,22 +19,17 @@
 package org.eclipse.jetty.util;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
 
 public class SharedBlockingCallbackTest
 {
-    final SharedBlockingCallback fcb= new SharedBlockingCallback();
+    final SharedBlockingCallback sbcb= new SharedBlockingCallback();
     
     public SharedBlockingCallbackTest()
     {
@@ -43,34 +38,38 @@ public class SharedBlockingCallbackTest
     
     @Test
     public void testDone() throws Exception
-    {
-        fcb.acquire();
-        fcb.succeeded();
-        long start=System.currentTimeMillis();
-        fcb.block();
+    { 
+        long start;
+        try (Blocker blocker=sbcb.acquire())
+        {
+            blocker.succeeded();
+            start=System.currentTimeMillis();
+        }
         Assert.assertThat(System.currentTimeMillis()-start,Matchers.lessThan(500L));     
     }
     
     @Test
     public void testGetDone() throws Exception
     {
-        fcb.acquire();
-        final CountDownLatch latch = new CountDownLatch(1);
-        
-        new Thread(new Runnable()
+        long start;
+        try (final Blocker blocker=sbcb.acquire())
         {
-            @Override
-            public void run()
+            final CountDownLatch latch = new CountDownLatch(1);
+
+            new Thread(new Runnable()
             {
-                latch.countDown();
-                try{TimeUnit.MILLISECONDS.sleep(100);}catch(Exception e){e.printStackTrace();}
-                fcb.succeeded();
-            }
-        }).start();
-        
-        latch.await();
-        long start=System.currentTimeMillis();
-        fcb.block();
+                @Override
+                public void run()
+                {
+                    latch.countDown();
+                    try{TimeUnit.MILLISECONDS.sleep(100);}catch(Exception e){e.printStackTrace();}
+                    blocker.succeeded();
+                }
+            }).start();
+
+            latch.await();
+            start=System.currentTimeMillis();
+        }
         Assert.assertThat(System.currentTimeMillis()-start,Matchers.greaterThan(10L)); 
         Assert.assertThat(System.currentTimeMillis()-start,Matchers.lessThan(1000L)); 
     }
@@ -78,18 +77,19 @@ public class SharedBlockingCallbackTest
     @Test
     public void testFailed() throws Exception
     {
-        fcb.acquire();
-        Exception ex=new Exception("FAILED");
-        fcb.failed(ex);
-        
-        long start=System.currentTimeMillis();
+        final Exception ex = new Exception("FAILED");
+        long start=Long.MIN_VALUE;
         try
         {
-            fcb.block();
+            try (final Blocker blocker=sbcb.acquire())
+            {
+                blocker.failed(ex);
+            }
             Assert.fail();
         }
         catch(IOException ee)
         {
+            start=System.currentTimeMillis();
             Assert.assertEquals(ex,ee.getCause());
         }
         Assert.assertThat(System.currentTimeMillis()-start,Matchers.lessThan(100L));     
@@ -98,26 +98,29 @@ public class SharedBlockingCallbackTest
     @Test
     public void testGetFailed() throws Exception
     {
-        fcb.acquire();
-        final Exception ex=new Exception("FAILED");
+        final Exception ex = new Exception("FAILED");
+        long start=Long.MIN_VALUE;
         final CountDownLatch latch = new CountDownLatch(1);
-        
-        new Thread(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                latch.countDown();
-                try{TimeUnit.MILLISECONDS.sleep(100);}catch(Exception e){e.printStackTrace();}
-                fcb.failed(ex);
-            }
-        }).start();
-        
-        latch.await();
-        long start=System.currentTimeMillis();
+
         try
         {
-            fcb.block();
+            try (final Blocker blocker=sbcb.acquire())
+            {
+
+                new Thread(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        latch.countDown();
+                        try{TimeUnit.MILLISECONDS.sleep(100);}catch(Exception e){e.printStackTrace();}
+                        blocker.failed(ex);
+                    }
+                }).start();
+
+                latch.await();
+                start=System.currentTimeMillis();
+            }
             Assert.fail();
         }
         catch(IOException ee)
@@ -141,11 +144,12 @@ public class SharedBlockingCallbackTest
             {
                 try
                 {
-                    fcb.acquire();
-                    latch.countDown();
-                    TimeUnit.MILLISECONDS.sleep(100);
-                    fcb.succeeded();
-                    fcb.block();
+                    try (Blocker blocker=sbcb.acquire())
+                    {
+                        latch.countDown();
+                        TimeUnit.MILLISECONDS.sleep(100);
+                        blocker.succeeded();
+                    }
                 }
                 catch(Exception e)
                 {
@@ -157,12 +161,13 @@ public class SharedBlockingCallbackTest
         
         latch.await();
         long start=System.currentTimeMillis();
-        fcb.acquire();
-        Assert.assertThat(System.currentTimeMillis()-start,Matchers.greaterThan(10L)); 
-        Assert.assertThat(System.currentTimeMillis()-start,Matchers.lessThan(500L)); 
+        try (Blocker blocker=sbcb.acquire())
+        {
+            Assert.assertThat(System.currentTimeMillis()-start,Matchers.greaterThan(10L)); 
+            Assert.assertThat(System.currentTimeMillis()-start,Matchers.lessThan(500L)); 
 
-        fcb.succeeded();
-        fcb.block();
+            blocker.succeeded();
+        };
         Assert.assertThat(System.currentTimeMillis()-start,Matchers.lessThan(600L));   
     }
 }
