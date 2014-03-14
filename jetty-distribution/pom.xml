@@ -301,8 +301,8 @@
             </goals>
             <configuration>
               <includeGroupIds>org.eclipse.jetty</includeGroupIds>
-              <excludeGroupIds>org.eclipse.jetty.orbit,org.eclipse.jetty.spdy,org.eclipse.jetty.websocket,org.eclipse.jetty.toolchain</excludeGroupIds>
-              <excludeArtifactIds>jetty-all,jetty-jsp,jetty-start,jetty-monitor</excludeArtifactIds>
+              <excludeGroupIds>org.eclipse.jetty.orbit,org.eclipse.jetty.spdy,org.eclipse.jetty.websocket,org.eclipse.jetty.toolchain,org.apache.taglibs</excludeGroupIds>
+              <excludeArtifactIds>jetty-all,jetty-jsp,apache-jsp,jetty-start,jetty-monitor</excludeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib</outputDirectory>
             </configuration>
@@ -433,7 +433,7 @@
             </configuration>
           </execution>
           <execution>
-            <id>copy-jsp-deps</id>
+            <id>copy-glassfish-jsp-deps</id>
             <phase>generate-resources</phase>
             <goals>
               <goal>copy-dependencies</goal>
@@ -443,6 +443,20 @@
               <includeArtifactIds>org.eclipse.jdt.core, javax.servlet.jsp-api, javax.servlet.jsp, jetty-jsp-jdt, javax.el-api, javax.el</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/jsp</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-apache-jsp-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>org.eclipse.jetty,org.eclipse.jetty.toolchain,javax.servlet.jsp,org.mortbay.jasper,org.mortbay.jasper,org.eclipse.jetty.orbit</includeGroupIds>
+              <includeArtifactIds>apache-jsp,jetty-schemas,javax.servlet.jsp-api,apache-el,org.eclipse.jdt.core</includeArtifactIds>
+              <includeTypes>jar</includeTypes>
+              <prependGroupId>true</prependGroupId>
+              <outputDirectory>${assembly-directory}/lib/apache-jsp</outputDirectory>
             </configuration>
           </execution>
           <execution>
@@ -470,6 +484,20 @@
               <includeArtifactIds>javax.servlet.jsp.jstl</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/jsp</outputDirectory>
+           </configuration>
+          </execution>
+          <execution>
+           <id>copy-apache-jstl-deps</id>
+           <phase>generate-resources</phase>
+           <goals>
+             <goal>copy-dependencies</goal>
+           </goals>
+           <configuration>
+	      <excludeGroupIds>org.glassfish.web</excludeGroupIds>
+	      <includeArtifactIds>taglibs-standard-spec,taglibs-standard-impl</includeArtifactIds>
+              <prependGroupId>true</prependGroupId>
+              <includeTypes>jar</includeTypes>
+              <outputDirectory>${assembly-directory}/lib/apache-jstl</outputDirectory>
            </configuration>
           </execution>
           <execution>
@@ -513,8 +541,8 @@
 	      <arguments>
 		<argument>jetty.home=${assembly-directory}</argument>
 		<argument>jetty.base=${assembly-directory}</argument>
-		<argument>--add-to-start=server,deploy,websocket,jsp,ext,resources</argument>
-		<argument>--add-to-startd=http</argument>
+		<argument>--add-to-start=server,deploy,websocket,ext,resources</argument>
+		<argument>--add-to-startd=jsp,http</argument>
 	      </arguments>
 	    </configuration>
             <goals>
@@ -529,8 +557,8 @@
 	      <arguments>
 		<argument>jetty.home=${assembly-directory}</argument>
 		<argument>jetty.base=${assembly-directory}/demo-base</argument>
-		<argument>--add-to-start=server,continuation,deploy,jsp,ext,resources,client,annotations,jndi,servlets</argument>
-		<argument>--add-to-startd-ini=http,https</argument>
+		<argument>--add-to-start=server,continuation,deploy,ext,resources,client,annotations,jndi,servlets</argument>
+		<argument>--add-to-startd-ini=jsp,http,https</argument>
 	      </arguments>
 	    </configuration>
             <goals>
@@ -683,6 +711,16 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jsp</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>apache-jsp</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>apache-jstl</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
