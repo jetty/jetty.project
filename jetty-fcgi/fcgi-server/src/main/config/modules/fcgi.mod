@@ -7,7 +7,6 @@ servlet
 client
 
 [lib]
-lib/jetty-security-${jetty.version}.jar
 lib/jetty-proxy-${jetty.version}.jar
 lib/fcgi/*.jar
 
