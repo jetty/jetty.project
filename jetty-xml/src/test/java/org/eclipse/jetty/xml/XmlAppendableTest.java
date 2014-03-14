@@ -49,6 +49,6 @@ public class XmlAppendableTest
         out.close();
         
         String s = b.toString();
-        Assert.assertEquals("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<test>\n  <tag/>\n  <tag quotes=\"&apos;&quot;\" name=\"attr value\" noval=\"\"/>\n  <tag quotes=\"&apos;&quot;\" name=\"attr value\" noval=\"\">content</tag>\n  <level1>\n    <tag>content</tag>\n    <tag>content</tag>\n  </level1>\n  <level1 quotes=\"&apos;&quot;\" name=\"attr value\" noval=\"\">\n    <level2>\n      <tag>content</tag>\n      <tag>content</tag>\n    </level2>\n  </level1>\n</test>\n",s);
+        Assert.assertEquals("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<test>\n  <tag/>\n  <tag quotes=\"&apos;&quot;\" name=\"attr value\" noval=\"\"/>\n  <tag quotes=\"&apos;&quot;\" name=\"attr value\" noval=\"\">content</tag>\n  <level1>\n    <tag>content</tag>\n    <tag>content</tag>\n  </level1>\n  <level1 quotes=\"&apos;&quot;\" name=\"attr value\" noval=\"\">\n    <level2>\n      <tag>content</tag>\n      <tag>content</tag>\n    </level2>\n  </level1>\n</test>\n",s);        
     }
 }
