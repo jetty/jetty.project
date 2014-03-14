@@ -53,8 +53,12 @@ public class OnMessageBinaryStreamCallable extends OnMessageCallable
 
     public Object call(Object endpoint, InputStream stream) throws DecodeException, IOException
     {
-        super.args[idxMessageObject] = binaryDecoder.decode(stream);
-        return super.call(endpoint,super.args);
+        // Bug-430088 - streaming based calls are dispatched.
+        // create a copy of the calling args array to prevent concurrency problems.
+        Object copy[] = new Object[super.args.length];
+        System.arraycopy(super.args,0,copy,0,super.args.length);
+        copy[idxMessageObject] = binaryDecoder.decode(stream);
+        return super.call(endpoint,copy);
     }
 
     @Override
