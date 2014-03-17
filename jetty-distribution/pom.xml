@@ -697,6 +697,11 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-quickstart</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-start</artifactId>
       <version>${project.version}</version>
     </dependency>

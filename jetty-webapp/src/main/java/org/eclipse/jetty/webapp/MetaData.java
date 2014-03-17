@@ -334,6 +334,11 @@ public class MetaData
     {
         _descriptorProcessors.add(p);
     }
+    
+    public void removeDescriptorProcessor(DescriptorProcessor p)
+    {
+        _descriptorProcessors.remove(p);
+    }
 
     
     public void orderFragments ()
