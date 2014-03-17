@@ -27,6 +27,7 @@ import java.nio.file.Paths;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
@@ -34,7 +35,34 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 /**
- * Inspired by nginx's try_files functionality
+ * Inspired by nginx's try_files functionality.
+ * <p />
+ * This filter accepts the <code>files</code> init-param as a list of space-separated
+ * file URIs. The special token <code>$path</code> represents the current request URL's
+ * path (the portion after the context path).
+ * <p />
+ * Typical example of how this filter can be configured is the following:
+ * <pre>
+ * &lt;filter&gt;
+ *     &lt;filter-name&gt;try_files&lt;/filter-name&gt;
+ *     &lt;filter-class&gt;org.eclipse.jetty.fcgi.server.proxy.TryFilesFilter&lt;/filter-class&gt;
+ *     &lt;init-param&gt;
+ *         &lt;param-name&gt;files&lt;/param-name&gt;
+ *         &lt;param-value&gt;maintenance.html $path index.php?p=$path&lt;/param-value&gt;
+ *     &lt;/init-param&gt;
+ * &lt;/filter&gt;
+ * </pre>
+ * For a request such as <code>/context/path/to/resource.ext</code>, this filter will
+ * try to serve the <code>/maintenance.html</code> file if it finds it; failing that,
+ * it will try to serve the <code>/path/to/resource.ext</code> file if it finds it;
+ * failing that it will forward the request to <code>index.php?p=/path/to/resource.ext</code>.
+ * The last file URI specified in the list is therefore the "fallback" to which the request
+ * is forwarded to in case no previous files can be found.
+ * <p />
+ * The files are resolved using {@link ServletContext#getResource(String)} to make sure
+ * that only files visible to the application are served.
+ *
+ * @see FastCGIProxyServlet
  */
 public class TryFilesFilter implements Filter
 {

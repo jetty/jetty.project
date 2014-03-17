@@ -34,6 +34,29 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.proxy.ProxyServlet;
 
+/**
+ * Specific implementation of {@link ProxyServlet.Transparent} for FastCGI.
+ * <p />
+ * This servlet accepts a HTTP request and transforms it into a FastCGI request
+ * that is sent to the FastCGI server specified in the <code>proxyTo</code>
+ * init-param.
+ * <p />
+ * This servlet accepts two additional init-params:
+ * <ul>
+ *     <li><code>scriptRoot</code>, mandatory, that must be set to the directory where
+ *     the application that must be served via FastCGI is installed and corresponds to
+ *     the FastCGI DOCUMENT_ROOT parameter</li>
+ *     <li><code>scriptPattern</code>, optional, defaults to <code>(.+?\.php)</code>,
+ *     that specifies a regular expression with at least 1 and at most 2 groups that specify
+ *     respectively:
+ *     <ul>
+ *         <li>the FastCGI SCRIPT_NAME parameter</li>
+ *         <li>the FastCGI PATH_INFO parameter</li>
+ *     </ul></li>
+ * </ul>
+ *
+ * @see TryFilesFilter
+ */
 public class FastCGIProxyServlet extends ProxyServlet.Transparent
 {
     public static final String SCRIPT_ROOT_INIT_PARAM = "scriptRoot";
