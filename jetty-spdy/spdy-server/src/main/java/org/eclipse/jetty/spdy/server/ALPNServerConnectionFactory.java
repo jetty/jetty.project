@@ -21,40 +21,40 @@ package org.eclipse.jetty.spdy.server;
 import java.util.List;
 import javax.net.ssl.SSLEngine;
 
+import org.eclipse.jetty.alpn.ALPN;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.npn.NextProtoNego;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class NPNServerConnectionFactory extends NegotiatingServerConnectionFactory
+public class ALPNServerConnectionFactory extends NegotiatingServerConnectionFactory
 {
-    private static final Logger LOG = Log.getLogger(NPNServerConnectionFactory.class);
+    private static final Logger LOG = Log.getLogger(ALPNServerConnectionFactory.class);
 
-    public NPNServerConnectionFactory(@Name("protocols") String... protocols)
+    public ALPNServerConnectionFactory(@Name("protocols") String... protocols)
     {
-        super("npn", protocols);
+        super("alpn", protocols);
         try
         {
-            ClassLoader npnClassLoader = NextProtoNego.class.getClassLoader();
-            if (npnClassLoader != null)
+            ClassLoader alpnClassLoader = ALPN.class.getClassLoader();
+            if (alpnClassLoader != null)
             {
-                LOG.warn("NPN must be in the boot classloader, not in: " + npnClassLoader);
-                throw new IllegalStateException("NPN must be in the boot classloader");
+                LOG.warn("ALPN must be in the boot classloader, not in: " + alpnClassLoader);
+                throw new IllegalStateException("ALPN must be in the boot classloader");
             }
         }
         catch (Throwable x)
         {
-            LOG.warn("NPN not available: " + x);
-            throw new IllegalStateException("NPN not available", x);
+            LOG.warn("ALPN not available", x);
+            throw new IllegalStateException("ALPN not available", x);
         }
     }
 
     @Override
     protected AbstractConnection newServerConnection(Connector connector, EndPoint endPoint, SSLEngine engine, List<String> protocols, String defaultProtocol)
     {
-        return new NPNServerConnection(endPoint, engine, connector, protocols, defaultProtocol);
+        return new ALPNServerConnection(connector, endPoint, engine, protocols, defaultProtocol);
     }
 }

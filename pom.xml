@@ -17,6 +17,7 @@
     <slf4j-version>1.6.1</slf4j-version>
     <jetty-test-policy-version>1.2</jetty-test-policy-version>
     <npn.api.version>1.1.0.v20120525</npn.api.version>
+    <alpn.api.version>1.0.0-SNAPSHOT</alpn.api.version>
   </properties>
   <scm>
     <connection>scm:git:http://git.eclipse.org/gitroot/jetty/org.eclipse.jetty.project.git</connection>

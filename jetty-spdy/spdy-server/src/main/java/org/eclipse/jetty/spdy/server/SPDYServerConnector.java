@@ -18,7 +18,8 @@
 
 package org.eclipse.jetty.spdy.server;
 
-import org.eclipse.jetty.server.ConnectionFactory;
+import java.util.Objects;
+
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -30,23 +31,21 @@ public class SPDYServerConnector extends ServerConnector
 {
     public SPDYServerConnector(Server server, ServerSessionFrameListener listener)
     {
-        this(server, null, listener);
+        super(server, (SslContextFactory)null, new SPDYServerConnectionFactory(SPDY.V2, listener));
     }
 
     public SPDYServerConnector(Server server, SslContextFactory sslContextFactory, ServerSessionFrameListener listener)
     {
-        super(server,
-            sslContextFactory,
-            sslContextFactory==null
-            ?new ConnectionFactory[]{new SPDYServerConnectionFactory(SPDY.V2, listener)}
-            :new ConnectionFactory[]{
-                new NPNServerConnectionFactory("spdy/3","spdy/2","http/1.1"),
-                new HttpConnectionFactory(),
-                new SPDYServerConnectionFactory(SPDY.V2, listener),
-                new SPDYServerConnectionFactory(SPDY.V3, listener)});
-        if (getConnectionFactory(NPNServerConnectionFactory.class)!=null)
-            getConnectionFactory(NPNServerConnectionFactory.class).setDefaultProtocol("http/1.1");
-
+        this(server, sslContextFactory, listener, new NPNServerConnectionFactory("spdy/3", "spdy/2", "http/1.1"));
     }
 
+    public SPDYServerConnector(Server server, SslContextFactory sslContextFactory, ServerSessionFrameListener listener, NegotiatingServerConnectionFactory negotiator)
+    {
+        super(server, Objects.requireNonNull(sslContextFactory),
+                negotiator,
+                new SPDYServerConnectionFactory(SPDY.V3, listener),
+                new SPDYServerConnectionFactory(SPDY.V2, listener),
+                new HttpConnectionFactory());
+        negotiator.setDefaultProtocol("http/1.1");
+    }
 }
