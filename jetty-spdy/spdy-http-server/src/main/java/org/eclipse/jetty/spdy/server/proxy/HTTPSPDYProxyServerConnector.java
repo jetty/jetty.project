@@ -19,12 +19,14 @@
 
 package org.eclipse.jetty.spdy.server.proxy;
 
-import org.eclipse.jetty.server.ConnectionFactory;
+import java.util.Objects;
+
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.server.NPNServerConnectionFactory;
+import org.eclipse.jetty.spdy.server.NegotiatingServerConnectionFactory;
 import org.eclipse.jetty.spdy.server.SPDYServerConnectionFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
@@ -37,7 +39,7 @@ public class HTTPSPDYProxyServerConnector extends ServerConnector
 
     public HTTPSPDYProxyServerConnector(Server server, HttpConfiguration config, ProxyEngineSelector proxyEngineSelector)
     {
-        this(server, null, config, proxyEngineSelector);
+        super(server, (SslContextFactory)null, new ProxyHTTPConnectionFactory(config, SPDY.V2, proxyEngineSelector));
     }
 
     public HTTPSPDYProxyServerConnector(Server server, SslContextFactory sslContextFactory, ProxyEngineSelector proxyEngineSelector)
@@ -47,16 +49,15 @@ public class HTTPSPDYProxyServerConnector extends ServerConnector
 
     public HTTPSPDYProxyServerConnector(Server server, SslContextFactory sslContextFactory, HttpConfiguration config, ProxyEngineSelector proxyEngineSelector)
     {
-        super(server,
-                sslContextFactory,
-                sslContextFactory == null
-                        ? new ConnectionFactory[]{new ProxyHTTPConnectionFactory(config, SPDY.V2, proxyEngineSelector)}
-                        : new ConnectionFactory[]{new NPNServerConnectionFactory("spdy/3", "spdy/2", "http/1.1"),
-                        new SPDYServerConnectionFactory(SPDY.V3, proxyEngineSelector),
-                        new SPDYServerConnectionFactory(SPDY.V2, proxyEngineSelector),
-                        new ProxyHTTPConnectionFactory(config, SPDY.V2, proxyEngineSelector)});
-        NPNServerConnectionFactory npnConnectionFactory = getConnectionFactory(NPNServerConnectionFactory.class);
-        if (npnConnectionFactory != null)
-            npnConnectionFactory.setDefaultProtocol("http/1.1");
+        this(server, sslContextFactory, config, proxyEngineSelector, new NPNServerConnectionFactory("spdy/3", "spdy/2", "http/1.1"));
+    }
+
+    public HTTPSPDYProxyServerConnector(Server server, SslContextFactory sslContextFactory, HttpConfiguration config, ProxyEngineSelector proxyEngineSelector, NegotiatingServerConnectionFactory negotiatingFactory)
+    {
+        super(server, Objects.requireNonNull(sslContextFactory), negotiatingFactory,
+                new SPDYServerConnectionFactory(SPDY.V3, proxyEngineSelector),
+                new SPDYServerConnectionFactory(SPDY.V2, proxyEngineSelector),
+                new ProxyHTTPConnectionFactory(config, SPDY.V2, proxyEngineSelector));
+        negotiatingFactory.setDefaultProtocol("http/1.1");
     }
 }

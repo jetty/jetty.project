@@ -39,6 +39,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -52,7 +53,9 @@ import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.StringDataInfo;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.client.SPDYClient;
+import org.eclipse.jetty.spdy.server.NegotiatingServerConnectionFactory;
 import org.eclipse.jetty.spdy.server.http.SPDYTestUtils;
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.IO;
@@ -65,8 +68,6 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -80,23 +81,6 @@ import static org.junit.Assert.assertThat;
 public abstract class ProxySPDYToHTTPLoadTest
 {
     private static final Logger LOG = Log.getLogger(ProxySPDYToHTTPLoadTest.class);
-    @Rule
-    public final TestWatcher testName = new TestWatcher()
-    {
-
-        @Override
-        public void starting(Description description)
-        {
-            super.starting(description);
-            System.err.printf("Running %s.%s()%n",
-                    description.getClassName(),
-                    description.getMethodName());
-        }
-    };
-
-    private final short version;
-    private final String server1String = "server1";
-    private final String server2String = "server2";
 
     @Parameterized.Parameters
     public static Collection<Short[]> parameters()
@@ -104,6 +88,12 @@ public abstract class ProxySPDYToHTTPLoadTest
         return Arrays.asList(new Short[]{SPDY.V2}, new Short[]{SPDY.V3});
     }
 
+    @Rule
+    public final TestTracker tracker = new TestTracker();
+    private final short version;
+    private final NegotiatingServerConnectionFactory negotiator;
+    private final String server1String = "server1";
+    private final String server2String = "server2";
     private SPDYClient.Factory factory;
     private Server server1;
     private Server server2;
@@ -111,9 +101,10 @@ public abstract class ProxySPDYToHTTPLoadTest
     private ServerConnector proxyConnector;
     private SslContextFactory sslContextFactory = SPDYTestUtils.newSslContextFactory();
 
-    public ProxySPDYToHTTPLoadTest(short version)
+    public ProxySPDYToHTTPLoadTest(short version, NegotiatingServerConnectionFactory negotiator)
     {
         this.version = version;
+        this.negotiator = negotiator;
     }
 
     @Before
@@ -187,7 +178,7 @@ public abstract class ProxySPDYToHTTPLoadTest
         proxyEngineSelector.putProxyServerInfo("127.0.0.2", new ProxyEngineSelector.ProxyServerInfo("http/1.1",
                 server2.getHostName(), server2.getPort()));
 
-        proxyConnector = new HTTPSPDYProxyServerConnector(proxy, sslContextFactory, proxyEngineSelector);
+        proxyConnector = new HTTPSPDYProxyServerConnector(proxy, sslContextFactory, new HttpConfiguration(), proxyEngineSelector, negotiator);
         proxyConnector.setPort(0);
         proxyConnector.setIdleTimeout(proxyConnectorTimeout);
         proxy.addConnector(proxyConnector);

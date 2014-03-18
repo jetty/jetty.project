@@ -24,20 +24,21 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.List;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 
-import org.eclipse.jetty.npn.NextProtoNego;
+import org.eclipse.jetty.alpn.ALPN;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class ProtocolNegotiationTest extends AbstractNPNTest
+public class ALPNNegotiationTest extends AbstractALPNTest
 {
     @Test
-    public void testServerAdvertisingHTTPSpeaksHTTP() throws Exception
+    public void testClientAdvertisingHTTPServerSpeaksHTTP() throws Exception
     {
         InetSocketAddress address = prepare();
         connector.addConnectionFactory(new HttpConnectionFactory());
@@ -51,7 +52,7 @@ public class ProtocolNegotiationTest extends AbstractNPNTest
             client.setUseClientMode(true);
             client.setSoTimeout(5000);
 
-            NextProtoNego.put(client, new NextProtoNego.ClientProvider()
+            ALPN.put(client, new ALPN.ClientProvider()
             {
                 @Override
                 public boolean supports()
@@ -65,12 +66,15 @@ public class ProtocolNegotiationTest extends AbstractNPNTest
                 }
 
                 @Override
-                public String selectProtocol(List<String> strings)
+                public List<String> protocols()
                 {
-                    Assert.assertNotNull(strings);
-                    String protocol = "http/1.1";
-                    Assert.assertTrue(strings.contains(protocol));
-                    return protocol;
+                    return Arrays.asList("http/1.1");
+                }
+
+                @Override
+                public void selected(String protocol)
+                {
+                    Assert.assertEquals("http/1.1", protocol);
                 }
             });
 
@@ -94,7 +98,7 @@ public class ProtocolNegotiationTest extends AbstractNPNTest
     }
 
     @Test
-    public void testServerAdvertisingSPDYAndHTTPSpeaksHTTPWhenNegotiated() throws Exception
+    public void testClientAdvertisingMultipleProtocolsServerSpeaksHTTPWhenNegotiated() throws Exception
     {
         InetSocketAddress address = prepare();
         connector.addConnectionFactory(new HttpConnectionFactory());
@@ -107,7 +111,7 @@ public class ProtocolNegotiationTest extends AbstractNPNTest
             client.setUseClientMode(true);
             client.setSoTimeout(5000);
 
-            NextProtoNego.put(client, new NextProtoNego.ClientProvider()
+            ALPN.put(client, new ALPN.ClientProvider()
             {
                 @Override
                 public boolean supports()
@@ -121,15 +125,15 @@ public class ProtocolNegotiationTest extends AbstractNPNTest
                 }
 
                 @Override
-                public String selectProtocol(List<String> strings)
+                public List<String> protocols()
                 {
-                    Assert.assertNotNull(strings);
-                    String spdyProtocol = "spdy/2";
-                    Assert.assertTrue(strings.contains(spdyProtocol));
-                    String httpProtocol = "http/1.1";
-                    Assert.assertTrue(strings.contains(httpProtocol));
-                    Assert.assertTrue(strings.indexOf(spdyProtocol) < strings.indexOf(httpProtocol));
-                    return httpProtocol;
+                    return Arrays.asList("unknown/1.0", "http/1.1");
+                }
+
+                @Override
+                public void selected(String protocol)
+                {
+                    Assert.assertEquals("http/1.1", protocol);
                 }
             });
 
@@ -153,7 +157,7 @@ public class ProtocolNegotiationTest extends AbstractNPNTest
     }
 
     @Test
-    public void testServerAdvertisingSPDYAndHTTPSpeaksDefaultProtocolWhenNPNMissing() throws Exception
+    public void testClientNotSupportingALPNServerSpeaksDefaultProtocol() throws Exception
     {
         InetSocketAddress address = prepare();
         connector.addConnectionFactory(new HttpConnectionFactory());
@@ -166,7 +170,7 @@ public class ProtocolNegotiationTest extends AbstractNPNTest
             client.setUseClientMode(true);
             client.setSoTimeout(5000);
 
-            NextProtoNego.put(client, new NextProtoNego.ClientProvider()
+            ALPN.put(client, new ALPN.ClientProvider()
             {
                 @Override
                 public boolean supports()
@@ -180,9 +184,14 @@ public class ProtocolNegotiationTest extends AbstractNPNTest
                 }
 
                 @Override
-                public String selectProtocol(List<String> strings)
+                public List<String> protocols()
                 {
                     return null;
+                }
+
+                @Override
+                public void selected(String s)
+                {
                 }
             });
 
