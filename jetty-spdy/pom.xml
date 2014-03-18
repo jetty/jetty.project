@@ -20,6 +20,7 @@
         <module>spdy-http-common</module>
         <module>spdy-http-server</module>
         <module>spdy-http-client-transport</module>
+        <module>spdy-npn-tests</module>
         <module>spdy-example-webapp</module>
     </modules>
 
