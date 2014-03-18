@@ -91,6 +91,12 @@
             <version>${npn.api.version}</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty.alpn</groupId>
+            <artifactId>alpn-api</artifactId>
+            <version>${alpn.api.version}</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
 </project>

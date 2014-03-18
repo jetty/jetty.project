@@ -102,7 +102,7 @@ public class TestTransparentProxyServer
         
         
         // Spdy Connector
-        SPDYServerConnectionFactory.checkNPNAvailable();
+        SPDYServerConnectionFactory.checkProtocolNegotiationAvailable();
         PushStrategy push = new ReferrerPushStrategy();
         HTTPSPDYServerConnectionFactory spdy2 = new HTTPSPDYServerConnectionFactory(2,config,push);
         spdy2.setInputBufferSize(8192);

@@ -18,49 +18,59 @@
 
 package org.eclipse.jetty.spdy.server;
 
+import java.util.Collections;
 import java.util.List;
 import javax.net.ssl.SSLEngine;
 
+import org.eclipse.jetty.alpn.ALPN;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.npn.NextProtoNego;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class NPNServerConnection extends NegotiatingServerConnection implements NextProtoNego.ServerProvider
+public class ALPNServerConnection extends NegotiatingServerConnection implements ALPN.ServerProvider
 {
-    private static final Logger LOG = Log.getLogger(NPNServerConnection.class);
+    private static final Logger LOG = Log.getLogger(ALPNServerConnection.class);
 
-    public NPNServerConnection(EndPoint endPoint, SSLEngine engine, Connector connector, List<String> protocols, String defaultProtocol)
+    public ALPNServerConnection(Connector connector, EndPoint endPoint, SSLEngine engine, List<String> protocols, String defaultProtocol)
     {
         super(connector, endPoint, engine, protocols, defaultProtocol);
-        NextProtoNego.put(engine, this);
+        ALPN.put(engine, this);
     }
 
     @Override
     public void unsupported()
     {
-        protocolSelected(getDefaultProtocol());
+        select(Collections.<String>emptyList());
     }
 
     @Override
-    public List<String> protocols()
+    public String select(List<String> clientProtocols)
     {
-        return getProtocols();
-    }
-
-    @Override
-    public void protocolSelected(String protocol)
-    {
-        LOG.debug("{} protocol selected {}", this, protocol);
-        setProtocol(protocol != null ? protocol : getDefaultProtocol());
-        NextProtoNego.remove(getSSLEngine());
+        List<String> serverProtocols = getProtocols();
+        String negotiated = null;
+        for (String clientProtocol : clientProtocols)
+        {
+            if (serverProtocols.contains(clientProtocol))
+            {
+                negotiated = clientProtocol;
+                break;
+            }
+        }
+        if (negotiated == null)
+        {
+            negotiated = getDefaultProtocol();
+        }
+        LOG.debug("{} protocol selected {}", this, negotiated);
+        setProtocol(negotiated);
+        ALPN.remove(getSSLEngine());
+        return negotiated;
     }
 
     @Override
     public void close()
     {
-        NextProtoNego.remove(getSSLEngine());
+        ALPN.remove(getSSLEngine());
         super.close();
     }
 }
