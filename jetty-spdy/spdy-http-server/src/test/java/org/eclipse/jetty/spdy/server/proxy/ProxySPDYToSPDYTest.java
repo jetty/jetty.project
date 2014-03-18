@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.spdy.server.proxy;
 
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
-
 import java.io.ByteArrayOutputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
@@ -66,8 +63,11 @@ import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
+
 @RunWith(value = Parameterized.class)
-public class ProxySPDYToSPDYTest
+public abstract class ProxySPDYToSPDYTest
 {
     @Rule
     public final TestWatcher testName = new TestWatcher()

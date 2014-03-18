@@ -19,39 +19,20 @@
 package org.eclipse.jetty.spdy.server;
 
 import java.lang.reflect.Field;
+import java.net.InetSocketAddress;
 import java.util.Map;
-import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.npn.NextProtoNego;
-import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.spdy.api.GoAwayInfo;
+import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
-import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
-import org.eclipse.jetty.spdy.client.SPDYClient;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
-public class SSLEngineLeakTest extends AbstractTest
+public class SSLEngineLeakTest extends AbstractNPNTest
 {
-    @Override
-    protected SPDYServerConnector newSPDYServerConnector(Server server, ServerSessionFrameListener listener)
-    {
-        SslContextFactory sslContextFactory = newSslContextFactory();
-        return new SPDYServerConnector(server, sslContextFactory, listener);
-    }
-
-    @Override
-    protected SPDYClient.Factory newSPDYClientFactory(Executor threadPool)
-    {
-        SslContextFactory sslContextFactory = newSslContextFactory();
-        return new SPDYClient.Factory(threadPool, null, sslContextFactory);
-    }
-
     @Test
-    @Ignore
     public void testSSLEngineLeak() throws Exception
     {
         System.gc();
@@ -67,12 +48,12 @@ public class SSLEngineLeakTest extends AbstractTest
         // Allow the close to arrive to the server and the selector to process it
         Thread.sleep(1000);
 
-        // Perform GC to be sure that the WeakHashMap is cleared
-        Thread.sleep(1000);
+        // Perform GC to be sure that the map is cleared
         System.gc();
+        Thread.sleep(1000);
 
-        // Check that the WeakHashMap is empty
-        if (objects.size()!=initialSize)
+        // Check that the map is empty
+        if (objects.size() != initialSize)
         {
             System.err.println(objects);
             server.dumpStdErr();
@@ -83,7 +64,8 @@ public class SSLEngineLeakTest extends AbstractTest
 
     private void avoidStackLocalVariables() throws Exception
     {
-        Session session = startClient(startServer(null), null);
+        InetSocketAddress address = prepare();
+        Session session = clientFactory.newSPDYClient(SPDY.V3).connect(address, null);
         session.goAway(new GoAwayInfo(5, TimeUnit.SECONDS));
     }
 }
