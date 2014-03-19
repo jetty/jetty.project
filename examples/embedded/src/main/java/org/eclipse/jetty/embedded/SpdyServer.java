@@ -110,7 +110,7 @@ public class SpdyServer
         // Spdy Connector
 
         // Make sure that the required NPN implementations are available.
-        SPDYServerConnectionFactory.checkProtocolNegotiationAvailable();
+        SPDYServerConnectionFactory.checkNPNAvailable();
 
         // A ReferrerPushStrategy is being initialized.
         // See: http://www.eclipse.org/jetty/documentation/current/spdy-configuring-push.html for more details.

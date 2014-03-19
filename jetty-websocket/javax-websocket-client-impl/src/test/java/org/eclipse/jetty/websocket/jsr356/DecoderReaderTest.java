@@ -20,6 +20,8 @@ package org.eclipse.jetty.websocket.jsr356;
 
 import static org.hamcrest.Matchers.*;
 
+import org.junit.Ignore;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -57,6 +59,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+@Ignore
 public class DecoderReaderTest
 {
     public static class Quotes

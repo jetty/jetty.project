@@ -72,7 +72,7 @@ public class SpdyConnector
             new HTTPSPDYServerConnectionFactory(3,https_config,new ReferrerPushStrategy());
 
         // NPN Factory
-        SPDYServerConnectionFactory.checkProtocolNegotiationAvailable();
+        SPDYServerConnectionFactory.checkNPNAvailable();
         NPNServerConnectionFactory npn = 
             new NPNServerConnectionFactory(spdy3.getProtocol(),spdy2.getProtocol(),http.getDefaultProtocol());
         npn.setDefaultProtocol(http.getDefaultProtocol());

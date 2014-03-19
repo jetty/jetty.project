@@ -73,6 +73,11 @@ public abstract class AbstractHTTPSPDYTest
         this.version = version;
     }
 
+    protected InetSocketAddress startHTTPServer(Handler handler) throws Exception
+    {
+        return startHTTPServer(SPDY.V2, handler, 30000);
+    }
+
     protected InetSocketAddress startHTTPServer(short version, Handler handler, long idleTimeout) throws Exception
     {
         QueuedThreadPool threadPool = new QueuedThreadPool(256);
@@ -84,6 +89,7 @@ public abstract class AbstractHTTPSPDYTest
         server.addConnector(connector);
         server.setHandler(handler);
         server.start();
+        server.dumpStdErr();
         return new InetSocketAddress("localhost", connector.getLocalPort());
     }
 
@@ -98,7 +104,13 @@ public abstract class AbstractHTTPSPDYTest
         HttpConfiguration httpConfiguration = new HttpConfiguration();
         httpConfiguration.setSendServerVersion(true);
         httpConfiguration.setSendXPoweredBy(true);
-        return new HTTPSPDYServerConnector(server, version, httpConfiguration, new PushStrategy.None());
+        HTTPSPDYServerConnector connector = new HTTPSPDYServerConnector(server,version, httpConfiguration, new PushStrategy.None());
+        return connector;
+    }
+
+    protected Session startClient(InetSocketAddress socketAddress, SessionFrameListener listener) throws Exception
+    {
+        return startClient(SPDY.V2, socketAddress, listener);
     }
 
     protected Session startClient(short version, InetSocketAddress socketAddress, SessionFrameListener listener) throws Exception

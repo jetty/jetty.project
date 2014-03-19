@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.spdy.server.proxy;
 
+import static junit.framework.Assert.fail;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+
 import java.io.ByteArrayOutputStream;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -48,7 +52,6 @@ import org.eclipse.jetty.spdy.client.SPDYClient;
 import org.eclipse.jetty.spdy.server.SPDYServerConnectionFactory;
 import org.eclipse.jetty.spdy.server.SPDYServerConnector;
 import org.eclipse.jetty.spdy.server.http.SPDYTestUtils;
-import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -57,18 +60,28 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static junit.framework.Assert.fail;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-
 @RunWith(value = Parameterized.class)
-public abstract class ProxySPDYToSPDYLoadTest
+public class ProxySPDYToSPDYLoadTest
 {
     @Rule
-    public final TestTracker tracker = new TestTracker();
+    public final TestWatcher testName = new TestWatcher()
+    {
+
+        @Override
+        public void starting(Description description)
+        {
+            super.starting(description);
+            System.err.printf("Running %s.%s()%n",
+                    description.getClassName(),
+                    description.getMethodName());
+        }
+    };
+
     private final short version;
 
     @Parameterized.Parameters

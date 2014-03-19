@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.spdy.server;
 
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -42,14 +45,8 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 @RunWith(Parameterized.class)
-public class NPNModuleTest
+public class NpnModuleTest
 {
     /** This is here to prevent pointless download attempts */
     private static final List<String> KNOWN_GOOD_NPN_URLS = new ArrayList<>();
@@ -69,7 +66,7 @@ public class NPNModuleTest
     @Parameters(name = "{index}: mod:{0}")
     public static List<Object[]> data()
     {
-        File npnBootModDir = MavenTestingUtils.getProjectDir("../spdy-http-server/src/main/config/modules/npn");
+        File npnBootModDir = MavenTestingUtils.getProjectDir("src/main/config/modules/npn");
         List<Object[]> data = new ArrayList<>();
         for (File file : npnBootModDir.listFiles())
         {
@@ -89,8 +86,8 @@ public class NPNModuleTest
     @BeforeClass
     public static void initBaseHome()
     {
-        File homeDir = MavenTestingUtils.getProjectDir("../spdy-http-server/src/main/config");
-        File baseDir = MavenTestingUtils.getTargetTestingDir(NPNModuleTest.class.getName());
+        File homeDir = MavenTestingUtils.getProjectDir("src/main/config");
+        File baseDir = MavenTestingUtils.getTargetTestingDir(NpnModuleTest.class.getName());
         FS.ensureEmpty(baseDir);
         basehome = new BaseHome(homeDir,baseDir);
     }
@@ -142,7 +139,7 @@ public class NPNModuleTest
 
     public static void main(String[] args)
     {
-        File outputDir = MavenTestingUtils.getTargetTestingDir(NPNModuleTest.class.getSimpleName() + "-main");
+        File outputDir = MavenTestingUtils.getTargetTestingDir(NpnModuleTest.class.getSimpleName() + "-main");
         FS.ensureEmpty(outputDir);
         for (String ref : KNOWN_GOOD_NPN_URLS)
         {

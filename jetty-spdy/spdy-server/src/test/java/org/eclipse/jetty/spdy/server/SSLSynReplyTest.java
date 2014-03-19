@@ -23,20 +23,48 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.List;
+import java.util.concurrent.Executor;
+
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.npn.NextProtoNego;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
+import org.eclipse.jetty.spdy.client.SPDYClient;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
-public class SSLSynReplyTest extends AbstractNPNTest
+public class SSLSynReplyTest extends SynReplyTest
 {
+    @Override
+    protected SPDYServerConnector newSPDYServerConnector(Server server, ServerSessionFrameListener listener)
+    {
+        SslContextFactory sslContextFactory = newSslContextFactory();
+        sslContextFactory.setEndpointIdentificationAlgorithm("");
+        return new SPDYServerConnector(server, sslContextFactory, listener);
+    }
+
+    @Override
+    protected SPDYClient.Factory newSPDYClientFactory(Executor threadPool)
+    {
+        SslContextFactory sslContextFactory = newSslContextFactory();
+        sslContextFactory.setEndpointIdentificationAlgorithm("");
+        return new SPDYClient.Factory(threadPool, null, sslContextFactory);
+    }
+
+    @Before
+    public void init()
+    {
+        NextProtoNego.debug = true;
+    }
+
     @Test
     public void testGentleCloseDuringHandshake() throws Exception
     {
-        InetSocketAddress address = prepare();
+        InetSocketAddress address = startServer(version, null);
         SslContextFactory sslContextFactory = newSslContextFactory();
         sslContextFactory.start();
         SSLEngine sslEngine = sslContextFactory.newSSLEngine(address);
@@ -96,7 +124,7 @@ public class SSLSynReplyTest extends AbstractNPNTest
     @Test
     public void testAbruptCloseDuringHandshake() throws Exception
     {
-        InetSocketAddress address = prepare();
+        InetSocketAddress address = startServer(version, null);
         SslContextFactory sslContextFactory = newSslContextFactory();
         sslContextFactory.start();
         SSLEngine sslEngine = sslContextFactory.newSSLEngine(address);

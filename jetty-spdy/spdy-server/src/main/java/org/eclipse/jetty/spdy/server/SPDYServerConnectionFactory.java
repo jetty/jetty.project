@@ -47,34 +47,19 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 @ManagedObject("SPDY Server Connection Factory")
 public class SPDYServerConnectionFactory extends AbstractConnectionFactory
 {
-    /**
-     * @deprecated use {@link #checkProtocolNegotiationAvailable()} instead.
-     */
-    @Deprecated
+    // This method is placed here so as to provide a check for NPN before attempting to load any
+    // NPN classes.
     public static void checkNPNAvailable()
-    {
-        checkProtocolNegotiationAvailable();
-    }
-
-    public static void checkProtocolNegotiationAvailable()
-    {
-        if (!isAvailableInBootClassPath("org.eclipse.jetty.alpn.ALPN") &&
-                !isAvailableInBootClassPath("org.eclipse.jetty.npn.NextProtoNego"))
-            throw new IllegalStateException("No ALPN nor NPN classes available");
-    }
-
-    private static boolean isAvailableInBootClassPath(String className)
     {
         try
         {
-            Class<?> klass = ClassLoader.getSystemClassLoader().loadClass(className);
-            if (klass.getClassLoader() != null)
-                throw new IllegalStateException(className + " must be on JVM boot classpath");
-            return true;
+            Class<?> npn = ClassLoader.getSystemClassLoader().loadClass("org.eclipse.jetty.npn.NextProtoNego");
+            if (npn.getClassLoader() != null)
+                throw new IllegalStateException("NextProtoNego must be on JVM boot path");
         }
-        catch (ClassNotFoundException x)
+        catch (ClassNotFoundException e)
         {
-            return false;
+            throw new IllegalStateException("No NextProtoNego on boot path", e);
         }
     }
 
