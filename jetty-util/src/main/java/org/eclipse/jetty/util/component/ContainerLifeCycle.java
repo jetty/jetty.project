@@ -36,9 +36,17 @@ import org.eclipse.jetty.util.log.Logger;
  * Beans can be added the ContainerLifeCycle either as managed beans or as unmanaged beans.  A managed bean is started, stopped and destroyed with the aggregate.
  * An unmanaged bean is associated with the aggregate for the purposes of {@link #dump()}, but it's lifecycle must be managed externally.
  * <p>
- * When a {@link LifeCycle} bean is added with out a managed state being specified, if it is already started, then it is assumed to be an unmanaged bean.
- * If it is not started then it is added in and auto managed state, which means that when this bean is itself started, it if must also start the added bean, then it
- * is switched from Auto to be a managed bean.  Otherwise it becomes an unmanaged bean.    Simply put an Auto bean will be stopped by this aggregate only if it
+ * When a {@link LifeCycle} bean is added without a managed state being specified the state is determined heuristically:
+ * <ul>
+ *   <li>If when added, a bean is already started, then it is assumed to be an unmanaged bean.
+ *   <li>If when added, a bean is not started, then it is added in Auto state.
+ * </ul>
+ * When the container is started, then all contained managed beans will also be started.  Any contained Auto beans 
+ * will be check for their status and if already started will be switched unmanaged beans, else they will be 
+ * started and switched to managed beans.  Beans added after a container is started are not started and their state needs to
+ * be explicitly managed.
+ * <p>
+ * When stopping the container, a contained bean will be stopped by this aggregate only if it
  * is started by this aggregate.
  * <p>
  * The methods {@link #addBean(Object, boolean)}, {@link #manage(Object)} and {@link #unmanage(Object)} can be used to
