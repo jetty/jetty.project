@@ -18,87 +18,28 @@
 
 package org.eclipse.jetty.spdy.client;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-
+import java.util.concurrent.Executor;
 import javax.net.ssl.SSLEngine;
 
-import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ClientConnectionFactory;
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.npn.NextProtoNego;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class NPNClientConnection extends AbstractConnection implements NextProtoNego.ClientProvider
+public class NPNClientConnection extends NegotiatingClientConnection implements NextProtoNego.ClientProvider
 {
-    private final Logger LOG = Log.getLogger(getClass());
-    private final SPDYClient client;
-    private final ClientConnectionFactory connectionFactory;
-    private final SSLEngine engine;
-    private final Map<String, Object> context;
-    private volatile boolean completed;
+    private static final Logger LOG = Log.getLogger(NPNClientConnection.class);
 
-    public NPNClientConnection(EndPoint endPoint, SPDYClient client, ClientConnectionFactory connectionFactory, SSLEngine sslEngine, Map<String, Object> context)
-    {
-        super(endPoint, client.getFactory().getExecutor());
-        this.client = client;
-        this.connectionFactory = connectionFactory;
-        this.engine = sslEngine;
-        this.context = context;
-        NextProtoNego.put(engine, this);
-    }
+    private final String protocol;
 
-    @Override
-    public void onOpen()
+    public NPNClientConnection(EndPoint endPoint, Executor executor, ClientConnectionFactory connectionFactory, SSLEngine sslEngine, Map<String, Object> context, String protocol)
     {
-        super.onOpen();
-        try
-        {
-            getEndPoint().flush(BufferUtil.EMPTY_BUFFER);
-            if (completed)
-                replaceConnection();
-            else
-                fillInterested();
-        }
-        catch(IOException e)
-        {
-            throw new RuntimeIOException(e);
-        }
-    }
-
-    @Override
-    public void onFillable()
-    {
-        while (true)
-        {
-            int filled = fill();
-            if (filled == 0 && !completed)
-                fillInterested();
-            if (filled <= 0 || completed)
-                break;
-        }
-        if (completed)
-            replaceConnection();
-    }
-
-    private int fill()
-    {
-        try
-        {
-            return getEndPoint().fill(BufferUtil.EMPTY_BUFFER);
-        }
-        catch (IOException x)
-        {
-            LOG.debug(x);
-            NextProtoNego.remove(engine);
-            close();
-            return -1;
-        }
+        super(endPoint, executor, sslEngine, connectionFactory, context);
+        this.protocol = protocol;
+        NextProtoNego.put(sslEngine, this);
     }
 
     @Override
@@ -110,31 +51,31 @@ public class NPNClientConnection extends AbstractConnection implements NextProto
     @Override
     public void unsupported()
     {
-        NextProtoNego.remove(engine);
-        completed = true;
+        NextProtoNego.remove(getSSLEngine());
+        completed();
     }
 
     @Override
     public String selectProtocol(List<String> protocols)
     {
-        NextProtoNego.remove(engine);
-        completed = true;
-        return client.selectProtocol(protocols);
+        if (protocols.contains(protocol))
+        {
+            NextProtoNego.remove(getSSLEngine());
+            completed();
+            return protocol;
+        }
+        else
+        {
+            LOG.info("Could not negotiate protocol: server {} - client {}", protocols, protocol);
+            close();
+            return null;
+        }
     }
 
-    private void replaceConnection()
+    @Override
+    public void close()
     {
-        EndPoint endPoint = getEndPoint();
-        try
-        {
-            Connection oldConnection = endPoint.getConnection();
-            Connection newConnection = connectionFactory.newConnection(endPoint, context);
-            ClientConnectionFactory.Helper.replaceConnection(oldConnection, newConnection);
-        }
-        catch (Throwable x)
-        {
-            LOG.debug(x);
-            close();
-        }
+        NextProtoNego.remove(getSSLEngine());
+        super.close();
     }
 }

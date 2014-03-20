@@ -814,13 +814,13 @@
       </build>
     </profile>
     <profile>
-        <id>osgi</id>
-        <activation>
-            <jdk>[1.7,1.8)</jdk>
-        </activation>
-        <modules>
-            <module>jetty-osgi</module>
-        </modules>
+      <id>osgi</id>
+      <activation>
+        <jdk>[1.7,1.8)</jdk>
+      </activation>
+      <modules>
+        <module>jetty-osgi</module>
+      </modules>
     </profile>
     <profile>
       <id>7u9</id>

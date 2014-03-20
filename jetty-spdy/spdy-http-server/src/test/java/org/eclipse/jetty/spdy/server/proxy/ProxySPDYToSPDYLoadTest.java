@@ -67,16 +67,15 @@ import static org.junit.Assert.assertThat;
 @RunWith(value = Parameterized.class)
 public abstract class ProxySPDYToSPDYLoadTest
 {
-    @Rule
-    public final TestTracker tracker = new TestTracker();
-    private final short version;
-
     @Parameterized.Parameters
     public static Collection<Short[]> parameters()
     {
         return Arrays.asList(new Short[]{SPDY.V2}, new Short[]{SPDY.V3});
     }
 
+    @Rule
+    public final TestTracker tracker = new TestTracker();
+    private final short version;
     private static final String UUID_HEADER_NAME = "uuidHeader";
     private static final String SERVER_ID_HEADER = "serverId";
     private SPDYClient.Factory factory;

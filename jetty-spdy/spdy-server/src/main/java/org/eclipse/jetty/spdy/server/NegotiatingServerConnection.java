@@ -42,7 +42,7 @@ public abstract class NegotiatingServerConnection extends AbstractConnection
     private final String defaultProtocol;
     private String protocol; // No need to be volatile: it is modified and read by the same thread
 
-    public NegotiatingServerConnection(Connector connector, EndPoint endPoint, SSLEngine engine, List<String> protocols, String defaultProtocol)
+    protected NegotiatingServerConnection(Connector connector, EndPoint endPoint, SSLEngine engine, List<String> protocols, String defaultProtocol)
     {
         super(endPoint, connector.getExecutor());
         this.connector = connector;

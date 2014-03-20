@@ -68,16 +68,15 @@ import static org.junit.Assert.assertThat;
 @RunWith(value = Parameterized.class)
 public abstract class ProxySPDYToSPDYTest
 {
-    @Rule
-    public final TestTracker tracker = new TestTracker();
-    private final short version;
-
     @Parameterized.Parameters
     public static Collection<Short[]> parameters()
     {
         return Arrays.asList(new Short[]{SPDY.V2}, new Short[]{SPDY.V3});
     }
 
+    @Rule
+    public final TestTracker tracker = new TestTracker();
+    private final short version;
     private SPDYClient.Factory factory;
     private Server server;
     private Server proxy;
