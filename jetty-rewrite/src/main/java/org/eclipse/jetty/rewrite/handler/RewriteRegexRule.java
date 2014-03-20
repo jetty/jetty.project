@@ -96,11 +96,11 @@ public class RewriteRegexRule extends RegexRule  implements Rule.ApplyURI
 
     /* ------------------------------------------------------------ */
     @Override
-    public void applyURI(Request request, String oldTarget, String newTarget) throws IOException
+    public void applyURI(Request request, String oldURI, String newURI) throws IOException
     {
         if (_query==null)
         {
-            request.setRequestURI(newTarget);
+            request.setRequestURI(newURI);
         }
         else
         {
@@ -108,9 +108,9 @@ public class RewriteRegexRule extends RegexRule  implements Rule.ApplyURI
             
             if (!_queryGroup && request.getQueryString()!=null)
                 query=request.getQueryString()+"&"+query;
-            HttpURI uri=new HttpURI(newTarget+"?"+query);
+            HttpURI uri=new HttpURI(newURI+"?"+query);
             request.setUri(uri);
-            request.setRequestURI(newTarget);
+            request.setRequestURI(newURI);
             request.setQueryString(query);
         }
     }

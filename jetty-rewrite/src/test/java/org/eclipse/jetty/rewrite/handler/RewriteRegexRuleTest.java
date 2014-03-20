@@ -25,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.util.MultiMap;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,6 +38,7 @@ public class RewriteRegexRuleTest extends AbstractRuleTestCase
             {"/foo1/bar","n=v",".*","/replace","/replace","n=v"},
             {"/foo2/bar",null,"/xxx.*","/replace",null,null},
             {"/foo3/bar",null,"/(.*)/(.*)","/$2/$1/xxx","/bar/foo3/xxx",null},
+            {"/f%20o3/bar",null,"/(.*)/(.*)","/$2/$1/xxx","/bar/f%20o3/xxx",null},
             {"/foo4/bar",null,"/(.*)/(.*)","/test?p2=$2&p1=$1","/test","p2=bar&p1=foo4"},
             {"/foo5/bar","n=v","/(.*)/(.*)","/test?p2=$2&p1=$1","/test","n=v&p2=bar&p1=foo5"},
             {"/foo6/bar",null,"/(.*)/(.*)","/foo6/bar?p2=$2&p1=$1","/foo6/bar","p2=bar&p1=foo6"},
@@ -112,8 +114,8 @@ public class RewriteRegexRuleTest extends AbstractRuleTestCase
             _request.setQueryString(test[1]);
             _request.getAttributes().clearAttributes();
             
-            String result = container.apply(test[0],_request,_response);
-            assertEquals(t,test[4]==null?test[0]:test[4], result);
+            String result = container.apply(URIUtil.decodePath(test[0]),_request,_response);
+            assertEquals(t,URIUtil.decodePath(test[4]==null?test[0]:test[4]), result);
             assertEquals(t,test[4]==null?test[0]:test[4], _request.getRequestURI());
             assertEquals(t,test[5], _request.getQueryString());
         }
