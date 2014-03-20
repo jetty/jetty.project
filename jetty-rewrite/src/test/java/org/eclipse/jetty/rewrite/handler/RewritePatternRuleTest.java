@@ -36,6 +36,7 @@ public class RewritePatternRuleTest extends AbstractRuleTestCase
                     {"/foo/bar", "/foo/*", "/replace/bar"},
                     {"/foo/bar", "/foo/bar", "/replace"},
                     {"/foo/bar.txt", "*.txt", "/replace"},
+                    {"/foo/bar/%20x", "/foo/*", "/replace/bar/%20x"},
             };
     private RewritePatternRule _rule;
 

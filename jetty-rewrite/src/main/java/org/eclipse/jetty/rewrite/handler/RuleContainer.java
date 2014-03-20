@@ -26,6 +26,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.ArrayUtil;
+import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -211,10 +213,11 @@ public class RuleContainer extends Rule
 
                 if (_rewriteRequestURI)
                 {
+                    String encoded=URIUtil.encodePath(applied);
                     if (rule instanceof Rule.ApplyURI)
-                        ((Rule.ApplyURI)rule).applyURI((Request)request, target, applied);
+                        ((Rule.ApplyURI)rule).applyURI((Request)request,((Request)request).getRequestURI(), encoded);
                     else
-                        ((Request)request).setRequestURI(applied);
+                        ((Request)request).setRequestURI(encoded);
                 }
 
                 if (_rewritePathInfo)
