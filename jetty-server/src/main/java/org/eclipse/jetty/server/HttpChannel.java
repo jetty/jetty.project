@@ -274,7 +274,6 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
                         case REQUEST_DISPATCH:
                             _request.setHandled(false);
                             _response.getHttpOutput().reopen();
-                            _request.setTimeStamp(System.currentTimeMillis());
                             _request.setDispatcherType(DispatcherType.REQUEST);
 
                             for (HttpConfiguration.Customizer customizer : _configuration.getCustomizers())
@@ -486,8 +485,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
         _expect100Continue = false;
         _expect102Processing = false;
 
-        if (_request.getTimeStamp() == 0)
-            _request.setTimeStamp(System.currentTimeMillis());
+        _request.setTimeStamp(System.currentTimeMillis());
         _request.setMethod(httpMethod, method);
 
         if (httpMethod == HttpMethod.CONNECT)
