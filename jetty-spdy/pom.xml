@@ -23,13 +23,17 @@
         <module>spdy-example-webapp</module>
     </modules>
 
-    <dependencies>
-        <dependency>
-            <groupId>org.eclipse.jetty.toolchain</groupId>
-            <artifactId>jetty-test-helper</artifactId>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
+    <profiles>
+        <profile>
+            <id>jdk7-npn</id>
+            <activation>
+                <jdk>[1.7,1.8)</jdk>
+            </activation>
+            <modules>
+                <module>spdy-npn-tests</module>
+            </modules>
+        </profile>
+    </profiles>
 
     <build>
         <plugins>
@@ -69,5 +73,13 @@
             </plugin>
         </plugins>
     </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.eclipse.jetty.toolchain</groupId>
+            <artifactId>jetty-test-helper</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 
 </project>

@@ -20,7 +20,7 @@ package org.eclipse.jetty.spdy.client;
 
 import java.io.IOException;
 import java.util.Map;
-
+import java.util.concurrent.Executor;
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.ClientConnectionFactory;
@@ -28,21 +28,22 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 
-public class NPNClientConnectionFactory implements ClientConnectionFactory
+public class NPNClientConnectionFactory extends NegotiatingClientConnectionFactory
 {
-    private final SPDYClient client;
-    private final ClientConnectionFactory connectionFactory;
+    private final Executor executor;
+    private final String protocol;
 
-    public NPNClientConnectionFactory(SPDYClient client, ClientConnectionFactory connectionFactory)
+    public NPNClientConnectionFactory(Executor executor, ClientConnectionFactory connectionFactory, String protocol)
     {
-        this.client = client;
-        this.connectionFactory = connectionFactory;
+        super(connectionFactory);
+        this.executor = executor;
+        this.protocol = protocol;
     }
 
     @Override
     public Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
     {
-        return new NPNClientConnection(endPoint, client, connectionFactory,
-                (SSLEngine)context.get(SslClientConnectionFactory.SSL_ENGINE_CONTEXT_KEY), context);
+        return new NPNClientConnection(endPoint, executor, getClientConnectionFactory(),
+                (SSLEngine)context.get(SslClientConnectionFactory.SSL_ENGINE_CONTEXT_KEY), context, protocol);
     }
 }

@@ -26,7 +26,6 @@ import java.nio.channels.SocketChannel;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -86,10 +85,6 @@ public class SPDYClient
         this.factory = factory;
         setInitialWindowSize(65536);
         setDispatchIO(true);
-        ClientConnectionFactory connectionFactory = new SPDYClientConnectionFactory();
-        if (factory.sslContextFactory != null)
-            connectionFactory = new SslClientConnectionFactory(factory.getSslContextFactory(), factory.getByteBufferPool(), factory.getExecutor(), new NPNClientConnectionFactory(this, connectionFactory));
-        setClientConnectionFactory(connectionFactory);
     }
 
     public short getVersion()
@@ -239,17 +234,6 @@ public class SPDYClient
         this.connectionFactory = connectionFactory;
     }
 
-    protected String selectProtocol(List<String> serverProtocols)
-    {
-        String protocol = "spdy/" + version;
-        for (String serverProtocol : serverProtocols)
-        {
-            if (serverProtocol.equals(protocol))
-                return protocol;
-        }
-        return null;
-    }
-
     protected FlowControlStrategy newFlowControlStrategy()
     {
         return FlowControlStrategyFactory.newFlowControlStrategy(version);
@@ -357,7 +341,19 @@ public class SPDYClient
 
         public SPDYClient newSPDYClient(short version)
         {
-            return new SPDYClient(version, this);
+            return newSPDYClient(version, new NPNClientConnectionFactory(getExecutor(), new SPDYClientConnectionFactory(), "spdy/" + version));
+        }
+
+        public SPDYClient newSPDYClient(short version, NegotiatingClientConnectionFactory negotiatingFactory)
+        {
+            SPDYClient client = new SPDYClient(version, this);
+
+            ClientConnectionFactory connectionFactory = negotiatingFactory.getClientConnectionFactory();
+            if (sslContextFactory != null)
+                connectionFactory = new SslClientConnectionFactory(getSslContextFactory(), getByteBufferPool(), getExecutor(), negotiatingFactory);
+
+            client.setClientConnectionFactory(connectionFactory);
+            return client;
         }
 
         @Override
