@@ -61,7 +61,7 @@ public abstract class HttpDestination implements Destination, Closeable, Dumpabl
         this.exchanges = new BlockingArrayQueue<>(client.getMaxRequestsQueuedPerDestination());
 
         this.requestNotifier = new RequestNotifier(client);
-        this.responseNotifier = new ResponseNotifier(client);
+        this.responseNotifier = new ResponseNotifier();
 
         ProxyConfiguration proxyConfig = client.getProxyConfiguration();
         proxy = proxyConfig.match(origin);

@@ -33,12 +33,6 @@ import org.eclipse.jetty.util.log.Logger;
 public class ResponseNotifier
 {
     private static final Logger LOG = Log.getLogger(ResponseNotifier.class);
-    private final HttpClient client;
-
-    public ResponseNotifier(HttpClient client)
-    {
-        this.client = client;
-    }
 
     public void notifyBegin(List<Response.ResponseListener> listeners, Response response)
     {
@@ -57,7 +51,7 @@ public class ResponseNotifier
         {
             listener.onBegin(response);
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             LOG.info("Exception while notifying listener " + listener, x);
         }
@@ -82,7 +76,7 @@ public class ResponseNotifier
         {
             return listener.onHeader(response, field);
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             LOG.info("Exception while notifying listener " + listener, x);
             return false;
@@ -106,7 +100,7 @@ public class ResponseNotifier
         {
             listener.onHeaders(response);
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             LOG.info("Exception while notifying listener " + listener, x);
         }
@@ -138,7 +132,7 @@ public class ResponseNotifier
         {
             listener.onContent(response, buffer);
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             LOG.info("Exception while notifying listener " + listener, x);
         }
@@ -161,7 +155,7 @@ public class ResponseNotifier
         {
             listener.onSuccess(response);
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             LOG.info("Exception while notifying listener " + listener, x);
         }
@@ -184,7 +178,7 @@ public class ResponseNotifier
         {
             listener.onFailure(response, failure);
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             LOG.info("Exception while notifying listener " + listener, x);
         }
@@ -207,7 +201,7 @@ public class ResponseNotifier
         {
             listener.onComplete(result);
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             LOG.info("Exception while notifying listener " + listener, x);
         }
