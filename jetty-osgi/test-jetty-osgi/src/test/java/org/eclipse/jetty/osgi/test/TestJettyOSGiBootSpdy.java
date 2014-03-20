@@ -90,18 +90,14 @@ public class TestJettyOSGiBootSpdy
     {
         List<Option> res = new ArrayList<Option>();
         res.add(CoreOptions.systemProperty(JETTY_SPDY_PORT).value(String.valueOf(DEFAULT_JETTY_SPDY_PORT)));
-        // java
-        // -Xbootclasspath/p:${settings.localRepository}/org/mortbay/jetty/npn/npn-boot/${npn-version}/npn-boot-${npn-version}.jar
-        // res.add(CoreOptions.vmOptions("-Xbootclasspath/p:"+System.getenv("HOME")+"/.m2/repository/org/mortbay/jetty/npn/npn-boot/"+npnBootVersion+"/npn-boot-"+npnBootVersion+".jar"));
-        String npnBoot = System.getProperty("mortbay-npn-boot");
-        if (npnBoot == null) { throw new IllegalStateException("Define path to npn boot jar as system property -Dmortbay-npn-boot"); }
-        File checkNpnBoot = new File(npnBoot);
-        if (!checkNpnBoot.exists()) { throw new IllegalStateException("Unable to find the npn boot jar here: " + npnBoot); }
 
-        res.add(CoreOptions.vmOptions("-Xbootclasspath/p:" + npnBoot));
-       // res.add(CoreOptions.bootDelegationPackages("org.eclipse.jetty.npn"));
+        String alpnBoot = System.getProperty("mortbay-alpn-boot");
+        if (alpnBoot == null) { throw new IllegalStateException("Define path to alpn boot jar as system property -Dmortbay-alpn-boot"); }
+        File checkALPNBoot = new File(alpnBoot);
+        if (!checkALPNBoot.exists()) { throw new IllegalStateException("Unable to find the alpn boot jar here: " + alpnBoot); }
+        res.add(CoreOptions.vmOptions("-Xbootclasspath/p:" + alpnBoot));
 
-        res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("jetty-osgi-npn").versionAsInProject().noStart());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("jetty-osgi-alpn").versionAsInProject().noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty.spdy").artifactId("spdy-core").versionAsInProject().noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty.spdy").artifactId("spdy-server").versionAsInProject().noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty.spdy").artifactId("spdy-http-common").versionAsInProject().noStart());
@@ -111,11 +107,11 @@ public class TestJettyOSGiBootSpdy
     }
 
     @Test
-    public void checkNpnBootOnBootstrapClasspath() throws Exception
+    public void checkALPNBootOnBootstrapClasspath() throws Exception
     {
-        Class<?> npn = Thread.currentThread().getContextClassLoader().loadClass("org.eclipse.jetty.npn.NextProtoNego");
-        Assert.assertNotNull(npn);
-        Assert.assertNull(npn.getClassLoader());
+        Class<?> alpn = Thread.currentThread().getContextClassLoader().loadClass("org.eclipse.jetty.alpn.ALPN");
+        Assert.assertNotNull(alpn);
+        Assert.assertNull(alpn.getClassLoader());
     }
 
     @Test
