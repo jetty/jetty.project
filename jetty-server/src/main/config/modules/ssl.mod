@@ -27,3 +27,9 @@ jetty.keystore.password=OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4
 jetty.keymanager.password=OBF:1u2u1wml1z7s1z7a1wnl1u2g
 jetty.truststore.password=OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4
 
+# Set the client auth behavior
+# Set to true if client certificate authentication is required
+# jetty.ssl.needClientAuth=true
+# Set to true if client certificate authentication is desired
+# jetty.ssl.wantClientAuth=true
+

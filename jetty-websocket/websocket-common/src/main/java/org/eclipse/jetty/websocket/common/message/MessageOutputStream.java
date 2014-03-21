@@ -31,7 +31,6 @@ import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.BlockingWriteCallback;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
-import org.eclipse.jetty.websocket.common.BlockingWriteCallback.WriteBlocker;
 import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
 
 /**
@@ -143,10 +142,9 @@ public class MessageOutputStream extends OutputStream
             frame.setPayload(buffer);
             frame.setFin(fin);
 
-            try(WriteBlocker b=blocker.acquireWriteBlocker())
-            {
-                outgoing.outgoingFrame(frame, b, BatchMode.OFF);
-            }
+            blocker.acquire();
+            outgoing.outgoingFrame(frame, blocker, BatchMode.OFF);
+            blocker.block();
 
             ++frameCount;
             // Any flush after the first will be a CONTINUATION frame.

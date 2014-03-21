@@ -402,4 +402,10 @@ public class HttpTransportOverSPDY implements HttpTransport
                     '}';
         }
     }
+
+    @Override
+    public void abort()
+    {
+        // TODO close the stream in a way to indicate an incomplete response?
+    }
 }

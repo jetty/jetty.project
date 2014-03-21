@@ -60,7 +60,7 @@ public class RequestNotifier
         {
             listener.onQueued(request);
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             LOG.info("Exception while notifying listener " + listener, x);
         }
@@ -90,7 +90,7 @@ public class RequestNotifier
         {
             listener.onBegin(request);
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             LOG.info("Exception while notifying listener " + listener, x);
         }
@@ -120,7 +120,7 @@ public class RequestNotifier
         {
             listener.onHeaders(request);
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             LOG.info("Exception while notifying listener " + listener, x);
         }
@@ -150,7 +150,7 @@ public class RequestNotifier
         {
             listener.onCommit(request);
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             LOG.info("Exception while notifying listener " + listener, x);
         }
@@ -192,7 +192,7 @@ public class RequestNotifier
         {
             listener.onContent(request, content);
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             LOG.info("Exception while notifying listener " + listener, x);
         }
@@ -222,7 +222,7 @@ public class RequestNotifier
         {
             listener.onSuccess(request);
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             LOG.info("Exception while notifying listener " + listener, x);
         }
@@ -252,7 +252,7 @@ public class RequestNotifier
         {
             listener.onFailure(request, failure);
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             LOG.info("Exception while notifying listener " + listener, x);
         }

@@ -48,9 +48,8 @@ NAME=$(echo $(basename $0) | sed -e 's/^[SK][0-9]*//' -e 's/\.sh$//')
 #
 # JETTY_HOME
 #   Where Jetty is installed. If not set, the script will try go
-#   guess it by first looking at the invocation path for the script,
-#   and then by looking in standard locations as $HOME/opt/jetty
-#   and /opt/jetty. The java system property "jetty.home" will be
+#   guess it by looking at the invocation path for the script
+#   The java system property "jetty.home" will be
 #   set to this value for use by configure.xml files, f.e.:
 #
 #    <Arg><Property name="jetty.home" default="."/>/webapps/jetty.war</Arg>
@@ -74,6 +73,12 @@ NAME=$(echo $(basename $0) | sed -e 's/^[SK][0-9]*//' -e 's/\.sh$//')
 #
 # JETTY_USER
 #   if set, then used as a username to run the server as
+#
+# JETTY_SHELL
+#   If set, then used as the shell by su when starting the server.  Will have
+#   no effect if start-stop-daemon exists.  Useful when JETTY_USER does not
+#   have shell access, e.g. /bin/false
+#
 
 usage()
 {
@@ -417,10 +422,16 @@ case "$ACTION" in
 
       if [ "$JETTY_USER" ] 
       then
+        unset SU_SHELL
+        if [ "$JETTY_SHELL" ]
+        then
+          SU_SHELL="-s $JETTY_SHELL"
+        fi
+
         touch "$JETTY_PID"
         chown "$JETTY_USER" "$JETTY_PID"
         # FIXME: Broken solution: wordsplitting, pathname expansion, arbitrary command execution, etc.
-        su - "$JETTY_USER" -c "
+        su - "$JETTY_USER" $SU_SHELL -c "
           exec ${RUN_CMD[*]} start-log-file="$JETTY_LOGS/start.log" &
           disown \$!
           echo \$! > '$JETTY_PID'"
