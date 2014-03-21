@@ -661,7 +661,7 @@ public class Main
             moduleIni(args,module,true,false);
         }
 
-        // Check files
+        // Check ini files for download possibilities
         for (FileArg arg : args.getFiles())
         {
             File file = baseHome.getBaseFile(arg.location);
@@ -670,12 +670,15 @@ public class Main
 
             if (!file.exists())
             {
-                args.setRun(false);
+                /* Startup should NEVER fail to run on missing content.
+                 * See Bug #427204
+                 */
+                // args.setRun(false);
                 String type=arg.location.endsWith("/")?"directory":"file";
-                if (arg.uri==null)
-                    StartLog.warn("Required %s '%s' does not exist. Run with --create-files to create",type,baseHome.toShortForm(file));
-                else
+                if (arg.uri!=null)
+                {
                     StartLog.warn("Required %s '%s' not downloaded from %s.  Run with --create-files to download",type,baseHome.toShortForm(file),arg.uri);
+                }
             }
         }
         
