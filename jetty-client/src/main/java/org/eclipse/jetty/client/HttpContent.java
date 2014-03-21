@@ -26,6 +26,7 @@ import java.util.Iterator;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.util.DeferredContentProvider;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -63,7 +64,7 @@ import org.eclipse.jetty.util.log.Logger;
  * {@link #getContent() content}. When the deferred content is available, a further call to {@link #advance()}
  * will move the cursor to a position that provides non {@code null} buffer and content.
  */
-public class HttpContent implements Closeable
+public class HttpContent implements Callback, Closeable
 {
     private static final Logger LOG = Log.getLogger(HttpContent.class);
     private static final ByteBuffer AFTER = ByteBuffer.allocate(0);
@@ -149,6 +150,20 @@ public class HttpContent implements Closeable
     public boolean isConsumed()
     {
         return content == AFTER;
+    }
+
+    @Override
+    public void succeeded()
+    {
+        if (iterator instanceof Callback)
+            ((Callback)iterator).succeeded();
+    }
+
+    @Override
+    public void failed(Throwable x)
+    {
+        if (iterator instanceof Callback)
+            ((Callback)iterator).failed(x);
     }
 
     @Override
