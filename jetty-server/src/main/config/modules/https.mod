@@ -14,3 +14,6 @@ etc/jetty-https.xml
 https.port=8443
 # HTTPS idle timeout in milliseconds
 https.timeout=30000
+# HTTPS Socket.soLingerTime in seconds. (-1 to disable)
+# https.soLingerTime=-1
+
