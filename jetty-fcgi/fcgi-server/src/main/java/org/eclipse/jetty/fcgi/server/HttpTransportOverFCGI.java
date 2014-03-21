@@ -99,4 +99,9 @@ public class HttpTransportOverFCGI implements HttpTransport
     public void completed()
     {
     }
+
+    @Override
+    public void abort()
+    {
+    }
 }
