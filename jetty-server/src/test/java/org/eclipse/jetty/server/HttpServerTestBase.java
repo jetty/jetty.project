@@ -1158,7 +1158,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             assertTrue(in.contains("HTTP/1.1 200 OK"));
             assertTrue(in.indexOf("Transfer-Encoding: chunked") > 0);
             assertTrue(in.indexOf("Now is the time for all good men to come to the aid of the party") > 0);
-            assertTrue(in.contains("\r\n0\r\n"));
+            assertThat(in, Matchers.not(Matchers.containsString("\r\n0\r\n")));
 
             client.close();
             Thread.sleep(200);

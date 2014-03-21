@@ -30,4 +30,11 @@ public interface HttpTransport
     void send(ByteBuffer content, boolean lastContent, Callback callback);
     
     void completed();
+    
+    /* ------------------------------------------------------------ */
+    /** Abort transport.
+     * This is called when an error response needs to be sent, but the response is already committed.
+     * Abort to should terminate the transport in a way that can indicate abnormal response to the client. 
+     */
+    void abort();
 }

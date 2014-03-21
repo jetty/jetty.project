@@ -739,4 +739,12 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         }
     }
 
+    @Override
+    public void abort()
+    {
+        // Do a direct close of the output, as this may indicate to a client that the 
+        // response is bad either with RST or by abnormal completion of chunked response.
+        getEndPoint().close();
+    }
+
 }

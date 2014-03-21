@@ -440,6 +440,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
             }
             else if (isCommitted())
             {
+                _transport.abort();
                 if (!(x instanceof EofException))
                     LOG.warn("Could not send response error 500: "+x);
             }
