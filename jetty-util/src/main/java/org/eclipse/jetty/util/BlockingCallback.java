@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 /* ------------------------------------------------------------ */
 /**
- * TODO
+ * An implementation of Callback that blocks until success or failure.
  */
 public class BlockingCallback implements Callback
 {

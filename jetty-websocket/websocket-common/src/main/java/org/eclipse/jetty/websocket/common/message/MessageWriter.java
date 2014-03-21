@@ -150,6 +150,7 @@ public class MessageWriter extends Writer
             try (WriteBlocker b = blocker.acquireWriteBlocker())
             {
                 outgoing.outgoingFrame(frame, b, BatchMode.OFF);
+                b.block();
             }
 
             ++frameCount;

@@ -146,6 +146,7 @@ public class MessageOutputStream extends OutputStream
             try(WriteBlocker b=blocker.acquireWriteBlocker())
             {
                 outgoing.outgoingFrame(frame, b, BatchMode.OFF);
+                b.block();
             }
 
             ++frameCount;

@@ -104,6 +104,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
         try(WriteBlocker b=blocker.acquireWriteBlocker())
         {
             uncheckedSendFrame(frame, b);
+            b.block();
         }
     }
 
@@ -450,6 +451,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
         try (WriteBlocker b = blocker.acquireWriteBlocker())
         {
             uncheckedSendFrame(FrameFlusher.FLUSH_FRAME, b);
+            b.block();
         }
         finally
         {

@@ -25,6 +25,9 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+
 
 /* ------------------------------------------------------------ */
 /** Provides a reusable BlockingCallback.
@@ -35,16 +38,16 @@ import java.util.concurrent.locks.ReentrantLock;
  *   try(Blocker blocker=sharedBlockingCallback.acquire())
  *   {
  *     someAsyncCall(args,blocker);
- *   }
- *   catch(Throwable e)
- *   {
- *     blocker.fail(e);
+ *     blocker.block();
  *   }
  * }
  * </pre>
  */
 public class SharedBlockingCallback
 {
+    private static final Logger LOG = Log.getLogger(SharedBlockingCallback.class);
+
+    
     private static Throwable IDLE = new Throwable()
     {
         @Override
@@ -103,7 +106,7 @@ public class SharedBlockingCallback
     
     /* ------------------------------------------------------------ */
     /** A Closeable Callback.
-     * Uses the auto close mechanism to block until the collback is complete.
+     * Uses the auto close mechanism to check block has been called OK.
      */
     public static class Blocker implements Callback, Closeable
     {
@@ -163,8 +166,7 @@ public class SharedBlockingCallback
          * @throws IOException
          *             if exception was caught during blocking, or callback was cancelled
          */
-        @Override
-        public void close() throws IOException
+        public void block() throws IOException
         {
             _lock.lock();
             try
@@ -194,6 +196,29 @@ public class SharedBlockingCallback
                         initCause(e);
                     }
                 };
+            }
+            finally
+            {
+                _lock.unlock();
+            }
+        }
+        
+        /**
+         * Check the Callback has succeeded or failed and after the return leave in the state to allow reuse.
+         * 
+         * @throws IOException
+         *             if exception was caught during blocking, or callback was cancelled
+         */
+        @Override
+        public void close() throws IOException
+        {
+            _lock.lock();
+            try
+            {
+                if (_state == IDLE)
+                    throw new IllegalStateException("IDLE");
+                if (_state == null)
+                    LOG.warn(new Throwable());
             }
             finally
             {

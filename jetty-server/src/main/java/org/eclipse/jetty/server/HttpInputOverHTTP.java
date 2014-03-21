@@ -62,6 +62,7 @@ public class HttpInputOverHTTP extends HttpInput<ByteBuffer> implements Callback
             {            
                 _httpConnection.fillInterested(blocker);
                 LOG.debug("{} block readable on {}",this,blocker);
+                blocker.block();
             }
 
             Object content=getNextContent();

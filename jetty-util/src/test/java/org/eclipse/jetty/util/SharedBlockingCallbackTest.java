@@ -44,6 +44,7 @@ public class SharedBlockingCallbackTest
         {
             blocker.succeeded();
             start=System.currentTimeMillis();
+            blocker.block();
         }
         Assert.assertThat(System.currentTimeMillis()-start,Matchers.lessThan(500L));     
     }
@@ -69,6 +70,7 @@ public class SharedBlockingCallbackTest
 
             latch.await();
             start=System.currentTimeMillis();
+            blocker.block();
         }
         Assert.assertThat(System.currentTimeMillis()-start,Matchers.greaterThan(10L)); 
         Assert.assertThat(System.currentTimeMillis()-start,Matchers.lessThan(1000L)); 
@@ -84,6 +86,7 @@ public class SharedBlockingCallbackTest
             try (final Blocker blocker=sbcb.acquire())
             {
                 blocker.failed(ex);
+                blocker.block();
             }
             Assert.fail();
         }
@@ -120,6 +123,7 @@ public class SharedBlockingCallbackTest
 
                 latch.await();
                 start=System.currentTimeMillis();
+                blocker.block();
             }
             Assert.fail();
         }
@@ -149,6 +153,7 @@ public class SharedBlockingCallbackTest
                         latch.countDown();
                         TimeUnit.MILLISECONDS.sleep(100);
                         blocker.succeeded();
+                        blocker.block();
                     }
                 }
                 catch(Exception e)
@@ -167,6 +172,7 @@ public class SharedBlockingCallbackTest
             Assert.assertThat(System.currentTimeMillis()-start,Matchers.lessThan(500L)); 
 
             blocker.succeeded();
+            blocker.block();
         };
         Assert.assertThat(System.currentTimeMillis()-start,Matchers.lessThan(600L));   
     }

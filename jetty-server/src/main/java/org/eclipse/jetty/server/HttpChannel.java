@@ -731,7 +731,9 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     {
         try(Blocker blocker = _response.getHttpOutput().acquireWriteBlockingCallback())
         {
-            return sendResponse(info,content,complete,blocker);
+            boolean committing = sendResponse(info,content,complete,blocker);
+            blocker.block();
+            return committing;
         }
     }
 

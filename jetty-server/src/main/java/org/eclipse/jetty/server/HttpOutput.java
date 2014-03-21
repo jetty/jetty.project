@@ -127,6 +127,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         try (Blocker blocker=_writeblock.acquire())
         {        
             write(content,complete,blocker);
+            blocker.block();
         }
     }
     
@@ -443,6 +444,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                         try(Blocker blocker=_writeblock.acquire())
                         {
                             write(_aggregate, complete, blocker);
+                            blocker.block();
                         }
                         if (complete)
                             closed();
@@ -502,6 +504,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         try(Blocker blocker=_writeblock.acquire())
         {
             write(content,true,blocker);
+            blocker.block();
         }
     }
 
@@ -515,6 +518,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         try(Blocker blocker=_writeblock.acquire())
         {
             new InputStreamWritingCB(in,blocker).iterate();
+            blocker.block();
         }
     }
 
@@ -528,6 +532,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         try(Blocker blocker=_writeblock.acquire())
         {
             new ReadableByteChannelWritingCB(in,blocker).iterate();
+            blocker.block();
         }
     }
 
@@ -542,6 +547,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         try(Blocker blocker=_writeblock.acquire())
         {
             sendContent(content,blocker);
+            blocker.block();
         }
     }
 
