@@ -37,8 +37,8 @@ import org.eclipse.jetty.util.log.Logger;
 public class URLResource extends Resource
 {
     private static final Logger LOG = Log.getLogger(URLResource.class);
-    protected URL _url;
-    protected String _urlString;
+    protected final URL _url;
+    protected final String _urlString;
     
     protected URLConnection _connection;
     protected InputStream _in=null;
@@ -48,7 +48,7 @@ public class URLResource extends Resource
     protected URLResource(URL url, URLConnection connection)
     {
         _url = url;
-        _urlString=_url.toString();
+        _urlString=_url.toExternalForm();
         _connection=connection;
     }
     
@@ -116,14 +116,14 @@ public class URLResource extends Resource
 
     /* ------------------------------------------------------------ */
     /**
-     * Returns true if the respresenetd resource is a container/directory.
+     * Returns true if the represented resource is a container/directory.
      * If the resource is not a file, resources ending with "/" are
      * considered directories.
      */
     @Override
     public boolean isDirectory()
     {
-        return exists() && _url.toString().endsWith("/");
+        return exists() && _urlString.endsWith("/");
     }
 
 
