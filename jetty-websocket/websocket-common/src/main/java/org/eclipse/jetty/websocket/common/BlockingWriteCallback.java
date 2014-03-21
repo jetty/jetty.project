@@ -18,39 +18,23 @@
 
 package org.eclipse.jetty.websocket.common;
 
-import java.io.IOException;
-
 import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 
-
-/* ------------------------------------------------------------ */
-/** extend a SharedlBlockingCallback to an websocket WriteCallback
- */
-public class BlockingWriteCallback extends SharedBlockingCallback
+public class BlockingWriteCallback extends SharedBlockingCallback implements WriteCallback
 {
     public BlockingWriteCallback()
-    {
-        super(new WriteBlocker());
-    }
-        
-    public WriteBlocker acquireWriteBlocker() throws IOException
-    {
-        return (WriteBlocker)acquire();
-    }
+    {}
     
-    public static class WriteBlocker extends Blocker implements WriteCallback
+    @Override
+    public void writeFailed(Throwable x)
     {
-        @Override
-        public void writeFailed(Throwable x)
-        {
-            failed(x);
-        }
+        failed(x);
+    }
 
-        @Override
-        public void writeSuccess()
-        {
-            succeeded();
-        }
+    @Override
+    public void writeSuccess()
+    {
+        succeeded();
     }
 }

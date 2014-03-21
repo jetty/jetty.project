@@ -24,7 +24,6 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.SharedBlockingCallback;
-import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -58,11 +57,10 @@ public class HttpInputOverHTTP extends HttpInput<ByteBuffer> implements Callback
     {
         while(true)
         {
-            try (Blocker blocker=_readBlocker.acquire())
-            {            
-                _httpConnection.fillInterested(blocker);
-                LOG.debug("{} block readable on {}",this,blocker);
-            }
+            _readBlocker.acquire();
+            _httpConnection.fillInterested(_readBlocker);
+            LOG.debug("{} block readable on {}",this,_readBlocker);
+            _readBlocker.block();
 
             Object content=getNextContent();
             if (content!=null || isFinished())
