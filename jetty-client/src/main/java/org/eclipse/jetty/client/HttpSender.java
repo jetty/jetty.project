@@ -791,17 +791,8 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
                                 sendContent(exchange, content, this);
                                 return Action.SCHEDULED;
                             }
-                            else if (consumed)
-                            {
-                                sendContent(exchange, content, lastCallback);
-                                return Action.IDLE;
-                            }
-                            else
-                            {
-                                throw new IllegalStateException();
-                            }
                         }
-                        break;
+                        throw new IllegalStateException();
                     }
                     default:
                     {
