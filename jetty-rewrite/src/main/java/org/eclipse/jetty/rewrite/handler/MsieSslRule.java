@@ -39,7 +39,7 @@ public class MsieSslRule extends Rule
 {
     private static final int IEv5 = '5';
     private static final int IEv6 = '6';
-    private static Trie<Boolean> __IE6_BadOS = new ArrayTernaryTrie<>();
+    private static Trie<Boolean> __IE6_BadOS = new ArrayTernaryTrie();
     {
         __IE6_BadOS.put("NT 5.01", Boolean.TRUE);
         __IE6_BadOS.put("NT 5.0",Boolean.TRUE);

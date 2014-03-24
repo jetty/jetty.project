@@ -67,7 +67,7 @@ public abstract class AbstractSessionInvalidateAndCreateTest
         public void sessionDestroyed(HttpSessionEvent e)
         {
             if (destroys == null)
-                destroys = new ArrayList<>();
+                destroys = new ArrayList();
 
             destroys.add((String)e.getSession().getAttribute("identity"));
         }
