@@ -149,7 +149,7 @@ public class JdbcLoginServiceTest
         mapping.setPathSpec( "/*" );
         mapping.setConstraint( constraint );
 
-        Set<String> knownRoles = new HashSet();
+        Set<String> knownRoles = new HashSet<>();
         knownRoles.add("user");
         knownRoles.add("admin");
 
