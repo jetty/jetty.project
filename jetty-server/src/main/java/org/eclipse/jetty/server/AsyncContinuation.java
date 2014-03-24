@@ -305,7 +305,6 @@ public class AsyncContinuation implements AsyncContext, Continuation
         synchronized (this)
         {
             _continuation=false;
-            _responseWrapped=false;
             
             switch(_state)
             {
