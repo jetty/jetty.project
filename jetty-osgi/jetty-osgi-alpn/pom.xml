@@ -35,7 +35,7 @@
               <Bundle-ManifestVersion>2</Bundle-ManifestVersion>
               <Bundle-SymbolicName>${bundle-symbolic-name};singleton:=true</Bundle-SymbolicName>
               <Bundle-Name>Jetty OSGi ALPN Fragment</Bundle-Name>
-              <Bundle-Version>${parsedVersion.osgiVersion}</Bundle-Version>
+              <Bundle-Version>${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}</Bundle-Version>
               <Export-Package>org.eclipse.jetty.alpn</Export-Package>
               <Fragment-Host>system.bundle;extension:=framework</Fragment-Host>
             </manifestEntries>
