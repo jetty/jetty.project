@@ -928,6 +928,7 @@
       </activation>
       <properties>
         <npn.version>1.1.6.v20130911</npn.version>
+        <alpn.version>7.0.0</alpn.version>
       </properties>
     </profile>
     <profile>
@@ -940,6 +941,7 @@
       </activation>
       <properties>
         <npn.version>1.1.6.v20130911</npn.version>
+        <alpn.version>7.0.0</alpn.version>
       </properties>
     </profile>
     <profile>
