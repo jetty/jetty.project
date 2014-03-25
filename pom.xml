@@ -18,6 +18,9 @@
     <jetty-test-policy-version>1.2</jetty-test-policy-version>
     <npn.api.version>1.1.0.v20120525</npn.api.version>
     <alpn.api.version>1.0.0</alpn.api.version>
+    <!-- default values are unsupported, but required to be defined for reactor sanity reasons -->
+    <npn.version>unsupported</npn.version>
+    <alpn.version>unsupported</alpn.version>
   </properties>
   <scm>
     <connection>scm:git:http://git.eclipse.org/gitroot/jetty/org.eclipse.jetty.project.git</connection>
@@ -127,10 +130,11 @@
               <rules>
                 <requireMavenVersion>
                   <version>[3.0.0,)</version>
+                  <message>[ERROR] OLD MAVEN [${maven.version}] in use, Jetty ${project.version} requires Maven 3.0.0 or newer</message>
                 </requireMavenVersion>
                 <requireJavaVersion>
-                  <version>[1.7,)</version>
-                  <message>[ERROR] OLD JDK [${java.version}] in use. Jetty ${project.version} requires JDK 1.7 or newer</message>
+                  <version>[1.7.0-40,)</version>
+                  <message>[ERROR] OLD JDK [${java.version}] in use. Jetty ${project.version} requires JDK 1.7.0_40 or newer</message>
                 </requireJavaVersion>
                 <versionTxtRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.VersionTxtRule" />
                 <versionOsgiRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireOsgiCompatibleVersionRule" />
@@ -443,6 +447,7 @@
     <module>jetty-runner</module>
     <module>jetty-monitor</module>
     <module>jetty-http-spi</module>
+    <module>jetty-osgi</module>
 
     <!-- modules that need fixed and added back, or simply dropped and not maintained
     <module>jetty-rhttp</module>
@@ -814,111 +819,6 @@
       </build>
     </profile>
     <profile>
-      <id>osgi</id>
-      <activation>
-        <jdk>[1.7,1.8)</jdk>
-      </activation>
-      <modules>
-        <module>jetty-osgi</module>
-      </modules>
-    </profile>
-    <profile>
-      <id>7u9</id>
-      <activation>
-        <property>
-          <name>java.version</name>
-          <value>1.7.0_9</value>
-        </property>
-      </activation>
-      <properties>
-        <npn.version>1.1.3.v20130313</npn.version>
-      </properties>
-    </profile>
-    <profile>
-      <id>7u10</id>
-      <activation>
-        <property>
-          <name>java.version</name>
-          <value>1.7.0_10</value>
-        </property>
-      </activation>
-      <properties>
-        <npn.version>1.1.3.v20130313</npn.version>
-      </properties>
-    </profile>
-    <profile>
-      <id>7u11</id>
-      <activation>
-        <property>
-          <name>java.version</name>
-          <value>1.7.0_11</value>
-        </property>
-      </activation>
-      <properties>
-        <npn.version>1.1.3.v20130313</npn.version>
-      </properties>
-    </profile>
-    <profile>
-      <id>7u13</id>
-      <activation>
-        <property>
-          <name>java.version</name>
-          <value>1.7.0_13</value>
-        </property>
-      </activation>
-      <properties>
-        <npn.version>1.1.4.v20130313</npn.version>
-      </properties>
-    </profile>
-    <profile>
-      <id>7u15</id>
-      <activation>
-        <property>
-          <name>java.version</name>
-          <value>1.7.0_15</value>
-        </property>
-      </activation>
-      <properties>
-        <npn.version>1.1.5.v20130313</npn.version>
-      </properties>
-    </profile>
-    <profile>
-      <id>7u17</id>
-      <activation>
-        <property>
-          <name>java.version</name>
-          <value>1.7.0_17</value>
-        </property>
-      </activation>
-      <properties>
-        <npn.version>1.1.5.v20130313</npn.version>
-      </properties>
-    </profile>
-    <profile>
-      <id>7u21</id>
-      <activation>
-        <property>
-          <name>java.version</name>
-          <value>1.7.0_21</value>
-        </property>
-      </activation>
-      <properties>
-        <npn.version>1.1.5.v20130313</npn.version>
-      </properties>
-    </profile>
-    <profile>
-      <id>7u25</id>
-      <activation>
-        <property>
-          <name>java.version</name>
-          <value>1.7.0_25</value>
-        </property>
-      </activation>
-      <properties>
-        <npn.version>1.1.5.v20130313</npn.version>
-      </properties>
-    </profile>
-    <profile>
       <id>7u40</id>
       <activation>
         <property>
@@ -930,6 +830,14 @@
         <npn.version>1.1.6.v20130911</npn.version>
         <alpn.version>7.0.0</alpn.version>
       </properties>
+      <modules>
+        <!-- npn modules -->
+        <module>jetty-osgi/jetty-osgi-npn</module>
+        <module>jetty-spdy/spdy-npn-tests</module>
+        <!-- alpn modules -->
+        <module>jetty-osgi/jetty-osgi-alpn</module>
+        <module>jetty-spdy/spdy-alpn-tests</module>
+      </modules>
     </profile>
     <profile>
       <id>7u45</id>
@@ -943,6 +851,14 @@
         <npn.version>1.1.6.v20130911</npn.version>
         <alpn.version>7.0.0</alpn.version>
       </properties>
+      <modules>
+        <!-- npn modules -->
+        <module>jetty-osgi/jetty-osgi-npn</module>
+        <module>jetty-spdy/spdy-npn-tests</module>
+        <!-- alpn modules -->
+        <module>jetty-osgi/jetty-osgi-alpn</module>
+        <module>jetty-spdy/spdy-alpn-tests</module>
+      </modules>
     </profile>
     <profile>
       <id>7u51</id>
@@ -956,6 +872,14 @@
         <npn.version>1.1.6.v20130911</npn.version>
         <alpn.version>7.0.0</alpn.version>
       </properties>
+      <modules>
+        <!-- npn modules -->
+        <module>jetty-osgi/jetty-osgi-npn</module>
+        <module>jetty-spdy/spdy-npn-tests</module>
+        <!-- alpn modules -->
+        <module>jetty-osgi/jetty-osgi-alpn</module>
+        <module>jetty-spdy/spdy-alpn-tests</module>
+      </modules>
     </profile>
     <profile>
       <id>8u00</id>
@@ -968,6 +892,12 @@
       <properties>
         <alpn.version>8.0.0</alpn.version>
       </properties>
+      <modules>
+        <!-- npn not supported on java 8 -->
+        <!-- alpn modules -->
+        <module>jetty-osgi/jetty-osgi-alpn</module>
+        <module>jetty-spdy/spdy-alpn-tests</module>
+      </modules>
     </profile>
   </profiles>
 </project>
