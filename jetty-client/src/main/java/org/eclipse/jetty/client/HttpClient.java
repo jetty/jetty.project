@@ -105,7 +105,6 @@ public class HttpClient extends ContainerLifeCycle
     private static final Logger LOG = Log.getLogger(HttpClient.class);
 
     private final ConcurrentMap<Origin, HttpDestination> destinations = new ConcurrentHashMap<>();
-    private final ConcurrentMap<Long, HttpConversation> conversations = new ConcurrentHashMap<>();
     private final List<ProtocolHandler> handlers = new ArrayList<>();
     private final List<Request.Listener> requestListeners = new ArrayList<>();
     private final AuthenticationStore authenticationStore = new HttpAuthenticationStore();
@@ -237,7 +236,6 @@ public class HttpClient extends ContainerLifeCycle
             destination.close();
         destinations.clear();
 
-        conversations.clear();
         requestListeners.clear();
         authenticationStore.clearAuthentications();
         authenticationStore.clearAuthenticationResults();
