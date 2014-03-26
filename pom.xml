@@ -830,14 +830,6 @@
         <npn.version>1.1.6.v20130911</npn.version>
         <alpn.version>7.0.0</alpn.version>
       </properties>
-      <modules>
-        <!-- npn modules -->
-        <module>jetty-osgi/jetty-osgi-npn</module>
-        <module>jetty-spdy/spdy-npn-tests</module>
-        <!-- alpn modules -->
-        <module>jetty-osgi/jetty-osgi-alpn</module>
-        <module>jetty-spdy/spdy-alpn-tests</module>
-      </modules>
     </profile>
     <profile>
       <id>7u45</id>
@@ -851,14 +843,6 @@
         <npn.version>1.1.6.v20130911</npn.version>
         <alpn.version>7.0.0</alpn.version>
       </properties>
-      <modules>
-        <!-- npn modules -->
-        <module>jetty-osgi/jetty-osgi-npn</module>
-        <module>jetty-spdy/spdy-npn-tests</module>
-        <!-- alpn modules -->
-        <module>jetty-osgi/jetty-osgi-alpn</module>
-        <module>jetty-spdy/spdy-alpn-tests</module>
-      </modules>
     </profile>
     <profile>
       <id>7u51</id>
@@ -872,14 +856,6 @@
         <npn.version>1.1.6.v20130911</npn.version>
         <alpn.version>7.0.0</alpn.version>
       </properties>
-      <modules>
-        <!-- npn modules -->
-        <module>jetty-osgi/jetty-osgi-npn</module>
-        <module>jetty-spdy/spdy-npn-tests</module>
-        <!-- alpn modules -->
-        <module>jetty-osgi/jetty-osgi-alpn</module>
-        <module>jetty-spdy/spdy-alpn-tests</module>
-      </modules>
     </profile>
     <profile>
       <id>8u00</id>
@@ -892,12 +868,6 @@
       <properties>
         <alpn.version>8.0.0</alpn.version>
       </properties>
-      <modules>
-        <!-- npn not supported on java 8 -->
-        <!-- alpn modules -->
-        <module>jetty-osgi/jetty-osgi-alpn</module>
-        <module>jetty-spdy/spdy-alpn-tests</module>
-      </modules>
     </profile>
   </profiles>
 </project>

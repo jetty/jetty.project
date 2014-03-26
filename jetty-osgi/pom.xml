@@ -26,7 +26,19 @@
     <module>test-jetty-osgi-webapp</module>
     <module>test-jetty-osgi-context</module>
     <module>test-jetty-osgi</module>
+    <module>jetty-osgi-alpn</module>
   </modules>
+  <profiles>
+    <profile>
+      <id>npn</id>
+      <activation>
+        <jdk>1.7</jdk>
+      </activation>
+      <modules>
+        <module>jetty-osgi-npn</module>
+      </modules>
+    </profile>
+  </profiles>
   <build>
     <resources>
       <resource>
