@@ -4,7 +4,6 @@
 
 [optional]
 jvm
-jmx
 ext
 resources
 
