@@ -322,7 +322,9 @@ public class StartArgs
             // Find and Expand Libraries
             for (String rawlibref : module.getLibs())
             {
+                StartLog.debug("rawlibref = " + rawlibref);
                 String libref = properties.expand(rawlibref);
+                StartLog.debug("expanded = " + libref);
 
                 if (libref.startsWith("regex:"))
                 {
@@ -367,10 +369,13 @@ public class StartArgs
                         }
                     }
                     regex.append('$');
+                    StartLog.debug("regex = " + regex);
 
                     FileFilter filter = new FS.FilenameRegexFilter(regex.toString());
 
-                    for (File libfile : baseHome.listFiles(relativePath,filter))
+                    List<File> libs = baseHome.listFiles(relativePath,filter);
+                    StartLog.debug("found " + libs.size() + " libs");
+                    for (File libfile : libs)
                     {
                         classpath.addComponent(libfile);
                     }
