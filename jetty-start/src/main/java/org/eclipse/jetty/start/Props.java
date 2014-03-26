@@ -96,13 +96,6 @@ public final class Props implements Iterable<Prop>
             return str;
         }
 
-        if (props.isEmpty())
-        {
-            // nothing to expand
-            // this situation can occur from --add-to-startd on a new blank base directory
-            return str;
-        }
-
         Pattern pat = Pattern.compile("(?<=[^$]|^)(\\$\\{[^}]*\\})");
         Matcher mat = pat.matcher(str);
         StringBuilder expanded = new StringBuilder();
