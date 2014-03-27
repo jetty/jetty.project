@@ -204,7 +204,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             ManagedSelector selector = newSelector(i);
             _selectors[i] = selector;
             selector.start();
-            execute(selector);
+            execute(new NonBlockingThread(selector));
         }
     }
 
@@ -476,21 +476,14 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         public void run()
         {
             _thread = Thread.currentThread();
-            final String name = _thread.getName();
+            String name = _thread.getName();
             try
             {
-                NonBlockingThread.runAsNonBlocking(new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        _thread.setName(name + "-selector-" + SelectorManager.this.getClass().getSimpleName()+"@"+Integer.toHexString(SelectorManager.this.hashCode())+"/"+_id);
-                        LOG.debug("Starting {} on {}", _thread, this);
-                        while (isRunning())
-                            select();
-                        runChanges();
-                    }
-                });
+                _thread.setName(name + "-selector-" + SelectorManager.this.getClass().getSimpleName()+"@"+Integer.toHexString(SelectorManager.this.hashCode())+"/"+_id);
+                LOG.debug("Starting {} on {}", _thread, this);
+                while (isRunning())
+                    select();
+                runChanges();
             }
             finally
             {

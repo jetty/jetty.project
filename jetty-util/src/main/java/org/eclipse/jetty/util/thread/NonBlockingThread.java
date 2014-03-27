@@ -18,20 +18,38 @@
 
 package org.eclipse.jetty.util.thread;
 
-public class NonBlockingThread 
+/**
+ * Marker that wraps a Runnable, indicating that it is running in a thread that must not be blocked.
+ * <p />
+ * Client code can use the thread-local {@link #isNonBlockingThread()} to detect whether they are
+ * in the context of a non-blocking thread, and perform different actions if that's the case.
+ */
+public class NonBlockingThread implements Runnable
 {
-    private final static ThreadLocal<Boolean> __nonBlockingThread = new ThreadLocal<>(); 
+    private final static ThreadLocal<Boolean> __nonBlockingThread = new ThreadLocal<>();
+
+    /**
+     * @return whether the current thread is a thread that must not block.
+     */
     public static boolean isNonBlockingThread()
     {
         return Boolean.TRUE.equals(__nonBlockingThread.get());
     }
 
-    public static void runAsNonBlocking(Runnable runnable)
+    private final Runnable delegate;
+
+    public NonBlockingThread(Runnable delegate)
+    {
+        this.delegate = delegate;
+    }
+
+    @Override
+    public void run()
     {
         try
         {
             __nonBlockingThread.set(Boolean.TRUE);
-            runnable.run();
+            delegate.run();
         }
         finally
         {
