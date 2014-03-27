@@ -57,10 +57,10 @@ public class HashSessionManagerTest
         manager.setDeleteUnrestorableSessions(true);
         manager.setLazyLoad(true);
         File testDir = MavenTestingUtils.getTargetTestingDir("hashes");
-        Assert.assertTrue(testDir.mkdirs());
+        testDir.mkdirs();
         manager.setStoreDirectory(testDir);
 
-        Assert.assertTrue(MavenTestingUtils.getTargetFile("dangerFile.session").createNewFile());
+        MavenTestingUtils.getTargetFile("dangerFile.session").createNewFile();
         
         Assert.assertTrue("File should exist!", MavenTestingUtils.getTargetFile("dangerFile.session").exists());
 
@@ -77,7 +77,7 @@ public class HashSessionManagerTest
         manager.setDeleteUnrestorableSessions(true);
         manager.setLazyLoad(true);
         File testDir = MavenTestingUtils.getTargetTestingDir("hashes");
-        Assert.assertTrue(testDir.mkdirs());
+        testDir.mkdirs();
         manager.setStoreDirectory(testDir);
 
         Assert.assertTrue(new File(testDir, "validFile.session").createNewFile());
@@ -94,7 +94,7 @@ public class HashSessionManagerTest
     public void testHashSession() throws Exception
     {
         File testDir = MavenTestingUtils.getTargetTestingDir("saved");
-        Assert.assertTrue(testDir.mkdirs());
+        testDir.mkdirs();
         
         Server server = new Server();
         SessionHandler handler = new SessionHandler();
