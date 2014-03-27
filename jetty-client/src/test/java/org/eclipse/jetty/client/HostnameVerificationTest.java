@@ -34,13 +34,11 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.hamcrest.Matchers;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
-import static junit.framework.Assert.fail;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertThat;
 
 /**
  * This test class runs tests to make sure that hostname verification (http://www.ietf.org/rfc/rfc2818.txt
@@ -106,7 +104,7 @@ public class HostnameVerificationTest
         try
         {
             client.GET(uri);
-            fail("sending request to client should have failed with an Exception!");
+            Assert.fail("sending request to client should have failed with an Exception!");
         }
         catch (ExecutionException x)
         {
@@ -119,9 +117,9 @@ public class HostnameVerificationTest
             // ExecutionException wraps an SSLHandshakeException
             Throwable cause = x.getCause();
             if (cause instanceof SSLHandshakeException)
-                assertThat(cause.getCause().getCause(), instanceOf(CertificateException.class));
+                Assert.assertThat(cause.getCause().getCause(), Matchers.instanceOf(CertificateException.class));
             else
-                assertThat(cause.getCause(), instanceOf(ClosedChannelException.class));
+                Assert.assertThat(cause.getCause(), Matchers.instanceOf(ClosedChannelException.class));
         }
     }
 
@@ -142,7 +140,7 @@ public class HostnameVerificationTest
         }
         catch (ExecutionException e)
         {
-            fail("SSLHandshake should work just fine as hostname verification is disabled! " + e.getMessage());
+            Assert.fail("SSLHandshake should work just fine as hostname verification is disabled! " + e.getMessage());
         }
     }
 
@@ -163,7 +161,7 @@ public class HostnameVerificationTest
         }
         catch (ExecutionException e)
         {
-            fail("SSLHandshake should work just fine as hostname verification is disabled! " + e.getMessage());
+            Assert.fail("SSLHandshake should work just fine as hostname verification is disabled! " + e.getMessage());
         }
     }
 }
