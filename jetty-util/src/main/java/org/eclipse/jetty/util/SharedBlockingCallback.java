@@ -27,6 +27,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.NonBlockingThread;
 
 
 /* ------------------------------------------------------------ */
@@ -168,6 +169,9 @@ public class SharedBlockingCallback
          */
         public void block() throws IOException
         {
+            if (NonBlockingThread.isNonBlockingThread())
+                LOG.warn("Blocking a NonBlockingThread: ",new Throwable());
+            
             _lock.lock();
             try
             {

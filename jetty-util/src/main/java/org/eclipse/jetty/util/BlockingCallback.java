@@ -24,12 +24,18 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.NonBlockingThread;
+
 /* ------------------------------------------------------------ */
 /**
  * An implementation of Callback that blocks until success or failure.
  */
 public class BlockingCallback implements Callback
 {
+    private static final Logger LOG = Log.getLogger(BlockingCallback.class);
+    
     private static Throwable SUCCEEDED=new Throwable()
     {
         @Override
@@ -64,6 +70,9 @@ public class BlockingCallback implements Callback
      */
     public void block() throws IOException
     {
+        if (NonBlockingThread.isNonBlockingThread())
+            LOG.warn("Blocking a NonBlockingThread: ",new Throwable());
+        
         try
         {
             _latch.await();

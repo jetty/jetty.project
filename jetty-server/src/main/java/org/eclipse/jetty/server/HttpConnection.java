@@ -34,6 +34,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
@@ -609,22 +610,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         public void failed(final Throwable x)
         {
             super.failed(x);
-            try
-            {
-                getExecutor().execute(new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        _callback.failed(x);
-                    }
-                });
-            }
-            catch(RejectedExecutionException e)
-            {
-                LOG.debug(e);
-                _callback.failed(x);
-            }
+            failedCallback(_callback,x);
         }
     }
 
@@ -720,22 +706,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         public void failed(final Throwable x)
         {
             super.failed(x);
-            try
-            {
-                getExecutor().execute(new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        _callback.failed(x);
-                    }
-                });
-            }
-            catch (RejectedExecutionException e)
-            {
-                LOG.debug(e);
-                _callback.failed(x);
-            }
+            failedCallback(_callback,x);
         }
     }
 

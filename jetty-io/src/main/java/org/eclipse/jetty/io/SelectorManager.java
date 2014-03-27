@@ -46,6 +46,7 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.NonBlockingThread;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
@@ -66,7 +67,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     private final ManagedSelector[] _selectors;
     private long _connectTimeout = DEFAULT_CONNECT_TIMEOUT;
     private long _selectorIndex;
-
+    
     protected SelectorManager(Executor executor, Scheduler scheduler)
     {
         this(executor, scheduler, (Runtime.getRuntime().availableProcessors() + 1) / 2);
@@ -475,14 +476,21 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         public void run()
         {
             _thread = Thread.currentThread();
-            String name = _thread.getName();
+            final String name = _thread.getName();
             try
             {
-                _thread.setName(name + "-selector-" + SelectorManager.this.getClass().getSimpleName()+"@"+Integer.toHexString(SelectorManager.this.hashCode())+"/"+_id);
-                LOG.debug("Starting {} on {}", _thread, this);
-                while (isRunning())
-                    select();
-                runChanges();
+                NonBlockingThread.runAsNonBlocking(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        _thread.setName(name + "-selector-" + SelectorManager.this.getClass().getSimpleName()+"@"+Integer.toHexString(SelectorManager.this.hashCode())+"/"+_id);
+                        LOG.debug("Starting {} on {}", _thread, this);
+                        while (isRunning())
+                            select();
+                        runChanges();
+                    }
+                });
             }
             finally
             {
