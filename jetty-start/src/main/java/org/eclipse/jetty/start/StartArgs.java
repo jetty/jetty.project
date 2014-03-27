@@ -408,11 +408,11 @@ public class StartArgs
 
         if (addJavaInit)
         {
-            cmd.addArg(CommandLineBuilder.findJavaBin());
+            cmd.addRawArg(CommandLineBuilder.findJavaBin());
 
             for (String x : jvmArgs)
             {
-                cmd.addArg(x);
+                cmd.addRawArg(x);
             }
 
             cmd.addRawArg("-Djetty.home=" + baseHome.getHome());
@@ -425,7 +425,7 @@ public class StartArgs
                 cmd.addEqualsArg("-D" + propKey,value);
             }
 
-            cmd.addArg("-cp");
+            cmd.addRawArg("-cp");
             cmd.addRawArg(classpath.toString());
             cmd.addRawArg(getMainClassname());
         }
@@ -447,7 +447,7 @@ public class StartArgs
             {
                 properties.store(out,"start.jar properties");
             }
-            cmd.addArg(prop_file.getAbsolutePath());
+            cmd.addRawArg(prop_file.getAbsolutePath());
         }
 
         for (File xml : xmls)

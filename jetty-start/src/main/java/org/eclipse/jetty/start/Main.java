@@ -687,6 +687,7 @@ public class Main
         if (args.isExec())
         {
             CommandLineBuilder cmd = args.getMainArgs(baseHome,true);
+            cmd.debug();
             ProcessBuilder pbuilder = new ProcessBuilder(cmd.getArgs());
             final Process process = pbuilder.start();
             Runtime.getRuntime().addShutdownHook(new Thread()
