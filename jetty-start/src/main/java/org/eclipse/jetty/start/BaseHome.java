@@ -217,6 +217,7 @@ public class BaseHome
             if (FS.isValidDirectory(root))
             {
                 PathFinder finder = new PathFinder();
+                finder.setIncludeDirsInResults(true);
                 finder.setFileMatcher(matcher);
                 finder.setBase(root);
                 Files.walkFileTree(root,SEARCH_VISIT_OPTIONS,MAX_SEARCH_DEPTH,finder);
@@ -228,6 +229,7 @@ public class BaseHome
             Path relativePath = PathMatchers.getSearchRoot(pattern);
             PathMatcher matcher = PathMatchers.getMatcher(pattern);
             PathFinder finder = new PathFinder();
+            finder.setIncludeDirsInResults(true);
             finder.setFileMatcher(matcher);
 
             Path homePath = homeDir.toPath().resolve(relativePath);

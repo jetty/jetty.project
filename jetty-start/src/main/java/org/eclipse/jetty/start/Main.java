@@ -568,6 +568,7 @@ public class Main
         List<Module> activeModules = modules.resolveEnabled();
         
         // 7) Lib & XML Expansion / Resolution
+        args.expandLibs(baseHome);
         args.expandModules(baseHome,activeModules);
 
         // 8) Resolve Extra XMLs

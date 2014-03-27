@@ -32,6 +32,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.StringTokenizer;
 
 import org.eclipse.jetty.start.Props.Prop;
 
@@ -77,6 +78,7 @@ public class StartArgs
     private Props properties = new Props();
     private Set<String> systemPropertyKeys = new HashSet<>();
     private List<String> jvmArgs = new ArrayList<>();
+    private List<String> rawLibs = new ArrayList<>();
     private List<String> moduleStartdIni = new ArrayList<>();
     private List<String> moduleStartIni = new ArrayList<>();
     private Map<String, String> propertySource = new HashMap<>();
@@ -305,6 +307,27 @@ public class StartArgs
             // setup system property
             systemPropertyKeys.add(key);
             System.setProperty(key,val);
+        }
+    }
+    
+    /**
+     * Expand any command line added <code>--lib</code> lib references.
+     * 
+     * @param baseHome
+     * @throws IOException
+     */
+    public void expandLibs(BaseHome baseHome) throws IOException
+    {
+        for (String rawlibref : rawLibs)
+        {
+            StartLog.debug("rawlibref = " + rawlibref);
+            String libref = properties.expand(rawlibref);
+            StartLog.debug("expanded = " + libref);
+
+            for (Path libpath : baseHome.getPaths(libref))
+            {
+                classpath.addComponent(libpath.toFile());
+            }
         }
     }
 
@@ -715,7 +738,15 @@ public class StartArgs
         if (arg.startsWith("--lib="))
         {
             String cp = getValue(arg);
-            classpath.addClasspath(cp);
+            
+            if (cp != null)
+            {
+                StringTokenizer t = new StringTokenizer(cp,File.pathSeparator);
+                while (t.hasMoreTokens())
+                {
+                    rawLibs.add(t.nextToken());
+                }
+            }
             return;
         }
 

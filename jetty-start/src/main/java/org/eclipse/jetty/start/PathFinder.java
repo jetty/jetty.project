@@ -83,7 +83,7 @@ public class PathFinder extends SimpleFileVisitor<Path>
         if (dirMatcher.matches(dir))
         {
             StartLog.debug("Following dir: " + dir);
-            if (includeDirsInResults)
+            if (includeDirsInResults && fileMatcher.matches(dir))
             {
                 addHit(dir);
             }
