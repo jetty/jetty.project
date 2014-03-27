@@ -18,9 +18,7 @@
 
 package org.eclipse.jetty.start;
 
-import static org.eclipse.jetty.start.UsageException.ERR_INVOKE_MAIN;
-import static org.eclipse.jetty.start.UsageException.ERR_NOT_STOPPED;
-import static org.eclipse.jetty.start.UsageException.ERR_UNKNOWN;
+import static org.eclipse.jetty.start.UsageException.*;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -39,6 +37,7 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -534,17 +533,12 @@ public class Main
         File start_d = baseHome.getBaseFile("start.d");
         if (FS.canReadDirectory(start_d))
         {
-            List<File> files = new ArrayList<>();
-            for (File file : start_d.listFiles(new FS.IniFilter()))
+            List<Path> paths = baseHome.getPaths(start_d.toPath(),1,"*.ini");
+            Collections.sort(paths,new NaturalSort.Paths());
+            for (Path path: paths)
             {
-                files.add(file);
-            }
-
-            Collections.sort(files,new NaturalSort.Files());
-            for (File file : files)
-            {
-                StartLog.debug("Reading ${jetty.base}/start.d/%s - %s",file.getName(),file);
-                args.parse(baseHome,new StartIni(file));
+                StartLog.debug("Reading ${jetty.base}/start.d/%s - %s",path.getFileName(),path);
+                args.parse(baseHome,new StartIni(path));
             }
         }
 

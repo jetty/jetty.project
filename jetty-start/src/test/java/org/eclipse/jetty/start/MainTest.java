@@ -98,7 +98,7 @@ public class MainTest
         List<String> cmdLineArgs = new ArrayList<>();
 
         addUseCasesHome(cmdLineArgs);
-
+        
         // JVM args
         cmdLineArgs.add("--exec");
         cmdLineArgs.add("-Xms1024m");

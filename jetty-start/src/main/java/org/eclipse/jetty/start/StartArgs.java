@@ -21,9 +21,9 @@ package org.eclipse.jetty.start;
 import static org.eclipse.jetty.start.UsageException.*;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -325,66 +325,10 @@ public class StartArgs
                 StartLog.debug("rawlibref = " + rawlibref);
                 String libref = properties.expand(rawlibref);
                 StartLog.debug("expanded = " + libref);
-
-                if (libref.startsWith("regex:"))
+                
+                for (Path libpath : baseHome.getPaths(libref))
                 {
-                    String regex = libref.substring("regex:".length());
-                    for (File libfile : baseHome.listFilesRegex(regex))
-                    {
-                        classpath.addComponent(libfile);
-                    }
-                    continue;
-                }
-
-                libref = FS.separators(libref);
-
-                // Any globs here?
-                if (libref.contains("*"))
-                {
-                    // Glob Reference
-                    int idx = libref.lastIndexOf(File.separatorChar);
-
-                    String relativePath = "/";
-                    String filenameRef = libref;
-                    if (idx >= 0)
-                    {
-                        relativePath = libref.substring(0,idx);
-                        filenameRef = libref.substring(idx + 1);
-                    }
-
-                    StringBuilder regex = new StringBuilder();
-                    regex.append('^');
-                    for (char c : filenameRef.toCharArray())
-                    {
-                        switch (c)
-                        {
-                            case '*':
-                                regex.append(".*");
-                                break;
-                            case '.':
-                                regex.append("\\.");
-                                break;
-                            default:
-                                regex.append(c);
-                        }
-                    }
-                    regex.append('$');
-                    StartLog.debug("regex = " + regex);
-
-                    FileFilter filter = new FS.FilenameRegexFilter(regex.toString());
-
-                    List<File> libs = baseHome.listFiles(relativePath,filter);
-                    StartLog.debug("found " + libs.size() + " libs");
-                    for (File libfile : libs)
-                    {
-                        classpath.addComponent(libfile);
-                    }
-                }
-                else
-                {
-                    // Straight Reference
-                    File libfile = baseHome.getFile(libref);
-                    classpath.addComponent(libfile);
+                    classpath.addComponent(libpath.toFile());
                 }
             }
 
