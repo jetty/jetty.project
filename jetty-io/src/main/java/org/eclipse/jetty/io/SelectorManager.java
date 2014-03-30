@@ -46,6 +46,7 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.NonBlockingThread;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
@@ -66,7 +67,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     private final ManagedSelector[] _selectors;
     private long _connectTimeout = DEFAULT_CONNECT_TIMEOUT;
     private long _selectorIndex;
-
+    
     protected SelectorManager(Executor executor, Scheduler scheduler)
     {
         this(executor, scheduler, (Runtime.getRuntime().availableProcessors() + 1) / 2);
@@ -203,7 +204,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             ManagedSelector selector = newSelector(i);
             _selectors[i] = selector;
             selector.start();
-            execute(selector);
+            execute(new NonBlockingThread(selector));
         }
     }
 

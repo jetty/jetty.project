@@ -26,7 +26,7 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.Callback;
@@ -64,11 +64,7 @@ public class SelectorManagerTest
         server.bind(new InetSocketAddress("localhost", 0));
         SocketAddress address = server.getLocalAddress();
 
-        SocketChannel client = SocketChannel.open();
-        client.configureBlocking(false);
-        client.connect(address);
-
-        final AtomicBoolean timeoutConnection = new AtomicBoolean();
+        final AtomicLong timeoutConnection = new AtomicLong();
         final long connectTimeout = 1000;
         SelectorManager selectorManager = new SelectorManager(executor, scheduler)
         {
@@ -83,8 +79,9 @@ public class SelectorManagerTest
             {
                 try
                 {
-                    if (timeoutConnection.get())
-                        TimeUnit.MILLISECONDS.sleep(connectTimeout * 2);
+                    long timeout = timeoutConnection.get();
+                    if (timeout > 0)
+                        TimeUnit.MILLISECONDS.sleep(timeout);
                     return super.finishConnect(channel);
                 }
                 catch (InterruptedException e)
@@ -96,6 +93,7 @@ public class SelectorManagerTest
             @Override
             public Connection newConnection(SocketChannel channel, EndPoint endpoint, Object attachment) throws IOException
             {
+                ((Callback)attachment).succeeded();
                 return new AbstractConnection(endpoint, executor)
                 {
                     @Override
@@ -116,9 +114,13 @@ public class SelectorManagerTest
 
         try
         {
-            timeoutConnection.set(true);
+            SocketChannel client1 = SocketChannel.open();
+            client1.configureBlocking(false);
+            client1.connect(address);
+            long timeout = connectTimeout * 2;
+            timeoutConnection.set(timeout);
             final CountDownLatch latch1 = new CountDownLatch(1);
-            selectorManager.connect(client, new Callback.Adapter()
+            selectorManager.connect(client1, new Callback.Adapter()
             {
                 @Override
                 public void failed(Throwable x)
@@ -127,19 +129,29 @@ public class SelectorManagerTest
                 }
             });
             Assert.assertTrue(latch1.await(connectTimeout * 3, TimeUnit.MILLISECONDS));
+            Assert.assertFalse(client1.isOpen());
 
-            // Verify that after the failure we can connect successfully
-            timeoutConnection.set(false);
-            final CountDownLatch latch2 = new CountDownLatch(1);
-            selectorManager.connect(client, new Callback.Adapter()
+            // Wait for the first connect to finish, as the selector thread is waiting in finishConnect().
+            Thread.sleep(timeout);
+
+            // Verify that after the failure we can connect successfully.
+            try (SocketChannel client2 = SocketChannel.open())
             {
-                @Override
-                public void failed(Throwable x)
+                client2.configureBlocking(false);
+                client2.connect(address);
+                timeoutConnection.set(0);
+                final CountDownLatch latch2 = new CountDownLatch(1);
+                selectorManager.connect(client2, new Callback.Adapter()
                 {
-                    latch2.countDown();
-                }
-            });
-            Assert.assertTrue(latch2.await(connectTimeout, TimeUnit.MILLISECONDS));
+                    @Override
+                    public void succeeded()
+                    {
+                        latch2.countDown();
+                    }
+                });
+                Assert.assertTrue(latch2.await(connectTimeout * 5, TimeUnit.MILLISECONDS));
+                Assert.assertTrue(client2.isOpen());
+            }
         }
         finally
         {

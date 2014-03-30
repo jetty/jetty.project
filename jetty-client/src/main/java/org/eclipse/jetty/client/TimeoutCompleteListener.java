@@ -58,13 +58,14 @@ public class TimeoutCompleteListener implements Response.CompleteListener, Runna
         Scheduler.Task task = scheduler.schedule(this, timeout, TimeUnit.MILLISECONDS);
         if (this.task.getAndSet(task) != null)
             throw new IllegalStateException();
-        LOG.debug("Scheduled timeout task {} in {} ms", task, timeout);
+        LOG.debug("Scheduled timeout task {} in {} ms for {}", task, timeout, request);
         return true;
     }
 
     @Override
     public void run()
     {
+        LOG.debug("Executing timeout task {} for {}", task, request);
         request.abort(new TimeoutException("Total timeout elapsed"));
     }
 }

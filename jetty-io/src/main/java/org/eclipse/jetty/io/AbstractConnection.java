@@ -21,12 +21,14 @@ package org.eclipse.jetty.io;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.NonBlockingThread;
 
 /**
  * <p>A convenience base implementation of {@link Connection}.</p>
@@ -85,6 +87,33 @@ public abstract class AbstractConnection implements Connection
     protected Executor getExecutor()
     {
         return _executor;
+    }
+    
+    protected void failedCallback(final Callback callback, final Throwable x)
+    {
+        if (NonBlockingThread.isNonBlockingThread())
+        {
+            try
+            {
+                getExecutor().execute(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        callback.failed(x);
+                    }
+                });
+            }
+            catch(RejectedExecutionException e)
+            {
+                LOG.debug(e);
+                callback.failed(x);
+            }
+        }
+        else
+        {
+            callback.failed(x);
+        }
     }
     
     /**

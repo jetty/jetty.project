@@ -49,9 +49,8 @@ import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.HttpChannelState.Action;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
-import org.eclipse.jetty.util.BlockingCallback;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -728,10 +727,12 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
 
     protected boolean sendResponse(ResponseInfo info, ByteBuffer content, boolean complete) throws IOException
     {
-        BlockingCallback writeBlock = _response.getHttpOutput().acquireWriteBlockingCallback();
-        boolean committing=sendResponse(info,content,complete,writeBlock);
-        writeBlock.block();
-        return committing;
+        try(Blocker blocker = _response.getHttpOutput().acquireWriteBlockingCallback())
+        {
+            boolean committing = sendResponse(info,content,complete,blocker);
+            blocker.block();
+            return committing;
+        }
     }
 
     public boolean isCommitted()

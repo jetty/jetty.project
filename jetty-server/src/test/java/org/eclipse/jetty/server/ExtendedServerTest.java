@@ -36,7 +36,6 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectorManager.ManagedSelector;
-import org.eclipse.jetty.server.HttpServerTestFixture.HelloWorldHandler;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.hamcrest.Matchers;

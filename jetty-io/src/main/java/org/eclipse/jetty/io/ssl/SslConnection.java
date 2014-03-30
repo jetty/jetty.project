@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.util.Arrays;
 import java.util.concurrent.Executor;
+
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
@@ -300,17 +301,22 @@ public class SslConnection extends AbstractConnection
 
                 final boolean filler_failed=fail_filler;
 
-                getExecutor().execute(new Runnable()
+                failedCallback(new Callback()
                 {
                     @Override
-                    public void run()
-                    {
+                    public void succeeded()
+                    {                        
+                    }
 
+                    @Override
+                    public void failed(Throwable x)
+                    {
                         if (filler_failed)
                             getFillInterest().onFail(x);
                         getWriteFlusher().onFail(x);
                     }
-                });
+                    
+                },x);
             }
         };
 
