@@ -33,7 +33,6 @@ import java.nio.charset.Charset;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 /* ======================================================================== */
 /** IO Utilities.
