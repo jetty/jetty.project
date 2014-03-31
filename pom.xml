@@ -6,7 +6,7 @@
     <version>21</version>
   </parent>
   <artifactId>jetty-project</artifactId>
-  <version>9.1.4-SNAPSHOT</version>
+  <version>9.2.0-SNAPSHOT</version>
   <name>Jetty :: Project</name>
   <url>http://www.eclipse.org/jetty</url>
   <packaging>pom</packaging>
@@ -440,9 +440,9 @@
     <module>jetty-jaspi</module>
     <module>jetty-rewrite</module>
     <module>jetty-nosql</module>
-    <module>jetty-quickstart</module>
     <module>tests</module>
     <module>examples</module>
+    <module>jetty-quickstart</module>
     <module>jetty-distribution</module>
     <module>jetty-runner</module>
     <module>jetty-monitor</module>
