@@ -247,7 +247,7 @@ public class ForwardedRequestCustomizer implements Customizer
 
         if (forwardedFor != null)
         {
-            request.setRemoteAddr(new InetSocketAddress(forwardedFor,request.getRemotePort()));
+            request.setRemoteAddr(InetSocketAddress.createUnresolved(forwardedFor,request.getRemotePort()));
         }
 
         if (forwardedProto != null)
