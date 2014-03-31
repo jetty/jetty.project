@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.spdy.server;
+package org.eclipse.jetty.server;
 
 import java.util.Arrays;
 import java.util.Iterator;

@@ -448,6 +448,7 @@
     <module>jetty-monitor</module>
     <module>jetty-http-spi</module>
     <module>jetty-osgi</module>
+    <module>jetty-alpn</module>
 
     <!-- modules that need fixed and added back, or simply dropped and not maintained
     <module>jetty-rhttp</module>

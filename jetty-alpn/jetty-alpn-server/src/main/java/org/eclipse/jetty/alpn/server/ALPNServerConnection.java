@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.spdy.server;
+package org.eclipse.jetty.alpn.server;
 
 import java.util.Collections;
 import java.util.List;
@@ -25,6 +25,7 @@ import javax.net.ssl.SSLEngine;
 import org.eclipse.jetty.alpn.ALPN;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.NegotiatingServerConnection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 

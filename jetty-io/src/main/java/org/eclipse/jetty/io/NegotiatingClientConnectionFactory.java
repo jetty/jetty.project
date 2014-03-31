@@ -16,9 +16,8 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.spdy.client;
+package org.eclipse.jetty.io;
 
-import org.eclipse.jetty.io.ClientConnectionFactory;
 
 public abstract class NegotiatingClientConnectionFactory implements ClientConnectionFactory
 {

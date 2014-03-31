@@ -26,6 +26,7 @@ import javax.net.ssl.SSLEngine;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.NegotiatingClientConnectionFactory;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 
 public class NPNClientConnectionFactory extends NegotiatingClientConnectionFactory

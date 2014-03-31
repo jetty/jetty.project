@@ -16,18 +16,13 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.spdy.client;
+package org.eclipse.jetty.io;
 
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import javax.net.ssl.SSLEngine;
 
-import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.ClientConnectionFactory;
-import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;

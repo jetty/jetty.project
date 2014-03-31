@@ -21,6 +21,7 @@ package org.eclipse.jetty.spdy.server;
 import java.net.InetSocketAddress;
 
 import org.eclipse.jetty.alpn.ALPN;
+import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.spdy.client.SPDYClient;
 import org.eclipse.jetty.toolchain.test.TestTracker;
