@@ -809,6 +809,11 @@
       <type>war</type>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-alpn-server</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.example-async-rest</groupId>
       <artifactId>example-async-rest-webapp</artifactId>
       <version>${project.version}</version>

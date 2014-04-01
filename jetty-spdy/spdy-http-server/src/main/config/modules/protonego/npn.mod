@@ -1,9 +1,8 @@
-#
-# NPN Module
-#
+[name]
+protonego
 
 [depend]
-npn/npn-${java.version}
+protonego/npn-${java.version}
 
 [files]
 lib/
@@ -14,7 +13,7 @@ lib/npn/
 # in java to support the NPN layer needed for SPDY.
 #
 # This modification has a tight dependency on specific updates of Java 1.7.
-# (No support for Java 8 currently exists for npn / npn-boot)
+# (No support for Java 8 exists for npn / npn-boot, use alpn instead)
 #
 # The npn module will use an appropriate npn-boot jar for your specific
 # version of Java.
