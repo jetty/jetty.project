@@ -340,8 +340,13 @@ public interface Request
     /**
      * @param listener a listener for response content events
      * @return this request object
+     * @deprecated Use {@link #onResponseContent(Response.AsyncContentListener)} instead.
      */
+    @Deprecated
     Request onResponseContent(Response.ContentListener listener);
+
+    // TODO: JAVADOCS
+    Request onResponseContent(Response.AsyncContentListener listener);
 
     /**
      * @param listener a listener for response success event

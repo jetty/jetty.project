@@ -50,6 +50,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 
 public class HttpRequest implements Request
@@ -455,6 +456,20 @@ public class HttpRequest implements Request
             public void onContent(Response response, ByteBuffer content)
             {
                 listener.onContent(response, content);
+            }
+        });
+        return this;
+    }
+
+    @Override
+    public Request onResponseContent(final Response.AsyncContentListener listener)
+    {
+        this.responseListeners.add(new Response.AsyncContentListener()
+        {
+            @Override
+            public void onContent(Response response, ByteBuffer content, Callback callback)
+            {
+                listener.onContent(response, content, callback);
             }
         });
         return this;

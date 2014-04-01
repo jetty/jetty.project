@@ -26,6 +26,7 @@ import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.util.Callback;
 
 /**
  * <p>{@link Response} represents a HTTP response and offers methods to retrieve status code, HTTP version
@@ -152,6 +153,11 @@ public interface Response
         public void onContent(Response response, ByteBuffer content);
     }
 
+    public interface AsyncContentListener extends ResponseListener
+    {
+        public void onContent(Response response, ByteBuffer content, Callback callback);
+    }
+
     /**
      * Listener for the response succeeded event.
      */
@@ -204,7 +210,7 @@ public interface Response
     /**
      * Listener for all response events.
      */
-    public interface Listener extends BeginListener, HeaderListener, HeadersListener, ContentListener, SuccessListener, FailureListener, CompleteListener
+    public interface Listener extends BeginListener, HeaderListener, HeadersListener, ContentListener, AsyncContentListener, SuccessListener, FailureListener, CompleteListener
     {
         /**
          * An empty implementation of {@link Listener}
@@ -230,6 +236,12 @@ public interface Response
             @Override
             public void onContent(Response response, ByteBuffer content)
             {
+            }
+
+            @Override
+            public void onContent(Response response, ByteBuffer content, Callback callback)
+            {
+                callback.succeeded();
             }
 
             @Override

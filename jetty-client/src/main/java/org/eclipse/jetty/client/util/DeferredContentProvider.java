@@ -24,6 +24,7 @@ import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -33,6 +34,7 @@ import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.util.ArrayQueue;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 
 /**
@@ -83,10 +85,11 @@ import org.eclipse.jetty.util.Callback;
  */
 public class DeferredContentProvider implements AsyncContentProvider, Closeable
 {
-    private static final ByteBuffer CLOSE = ByteBuffer.allocate(0);
+    private static final Callback EMPTY_CALLBACK = new Callback.Adapter();
+    private static final AsyncChunk CLOSE = new AsyncChunk(BufferUtil.EMPTY_BUFFER, EMPTY_CALLBACK);
 
     private final Object lock = this;
-    private final Queue<ByteBuffer> chunks = new ArrayQueue<>(4, 64, lock);
+    private final Queue<AsyncChunk> chunks = new ArrayQueue<>(4, 64, lock);
     private final AtomicReference<Listener> listener = new AtomicReference<>();
     private final Iterator<ByteBuffer> iterator = new DeferredContentProviderIterator();
     private final AtomicBoolean closed = new AtomicBoolean();
@@ -127,11 +130,21 @@ public class DeferredContentProvider implements AsyncContentProvider, Closeable
      */
     public boolean offer(ByteBuffer buffer)
     {
+        return offer(buffer, EMPTY_CALLBACK);
+    }
+
+    public boolean offer(ByteBuffer buffer, Callback callback)
+    {
+        return offer(new AsyncChunk(buffer, callback));
+    }
+
+    private boolean offer(AsyncChunk chunk)
+    {
         boolean result;
         synchronized (lock)
         {
-            result = chunks.offer(buffer);
-            if (result && buffer != CLOSE)
+            result = chunks.offer(chunk);
+            if (result && chunk != CLOSE)
                 ++size;
         }
         if (result)
@@ -186,7 +199,7 @@ public class DeferredContentProvider implements AsyncContentProvider, Closeable
 
     private class DeferredContentProviderIterator implements Iterator<ByteBuffer>, Callback
     {
-        private ByteBuffer current;
+        private AsyncChunk current;
 
         @Override
         public boolean hasNext()
@@ -202,10 +215,10 @@ public class DeferredContentProvider implements AsyncContentProvider, Closeable
         {
             synchronized (lock)
             {
-                ByteBuffer element = current = chunks.poll();
-                if (element == CLOSE)
+                AsyncChunk chunk = current = chunks.poll();
+                if (chunk == CLOSE)
                     throw new NoSuchElementException();
-                return element;
+                return chunk == null ? null : chunk.buffer;
             }
         }
 
@@ -218,24 +231,39 @@ public class DeferredContentProvider implements AsyncContentProvider, Closeable
         @Override
         public void succeeded()
         {
+            AsyncChunk chunk;
             synchronized (lock)
             {
-                if (current != null)
-                {
-                    --size;
-                    lock.notify();
-                }
+                chunk = current;
+                --size;
+                lock.notify();
             }
+            chunk.callback.succeeded();
         }
 
         @Override
         public void failed(Throwable x)
         {
+            AsyncChunk chunk;
             synchronized (lock)
             {
+                chunk = current;
                 failure = x;
                 lock.notify();
             }
+            chunk.callback.failed(x);
+        }
+    }
+
+    private static class AsyncChunk
+    {
+        private final ByteBuffer buffer;
+        private final Callback callback;
+
+        private AsyncChunk(ByteBuffer buffer, Callback callback)
+        {
+            this.buffer = Objects.requireNonNull(buffer);
+            this.callback = Objects.requireNonNull(callback);
         }
     }
 }

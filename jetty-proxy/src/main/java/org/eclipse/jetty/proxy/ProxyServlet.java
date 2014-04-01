@@ -19,6 +19,7 @@
 package org.eclipse.jetty.proxy;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
@@ -41,6 +42,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
@@ -385,7 +387,7 @@ public class ProxyServlet extends HttpServlet
 
         if (rewrittenURI == null)
         {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN);
+            onRewriteFailed(request, response);
             return;
         }
 
@@ -427,31 +429,15 @@ public class ProxyServlet extends HttpServlet
         addViaHeader(proxyRequest);
         addXForwardedHeaders(proxyRequest, request);
 
-        if (hasContent)
-        {
-            proxyRequest.content(new InputStreamContentProvider(request.getInputStream())
-            {
-                @Override
-                public long getLength()
-                {
-                    return request.getContentLength();
-                }
-
-                @Override
-                protected ByteBuffer onRead(byte[] buffer, int offset, int length)
-                {
-                    _log.debug("{} proxying content to upstream: {} bytes", requestId, length);
-                    return super.onRead(buffer, offset, length);
-                }
-            });
-        }
-
         final AsyncContext asyncContext = request.startAsync();
         // We do not timeout the continuation, but the proxy request
         asyncContext.setTimeout(0);
         request.setAttribute(ASYNC_CONTEXT, asyncContext);
 
         customizeProxyRequest(proxyRequest, request);
+
+        if (hasContent)
+            proxyRequest.content(proxyRequestContent(asyncContext, requestId));
 
         if (_log.isDebugEnabled())
         {
@@ -488,6 +474,31 @@ public class ProxyServlet extends HttpServlet
 
         proxyRequest.timeout(getTimeout(), TimeUnit.MILLISECONDS);
         proxyRequest.send(new ProxyResponseListener(request, response));
+    }
+
+    protected ContentProvider proxyRequestContent(final AsyncContext asyncContext, final int requestId) throws IOException
+    {
+        final HttpServletRequest request = (HttpServletRequest)asyncContext.getRequest();
+        return new InputStreamContentProvider(request.getInputStream())
+        {
+            @Override
+            public long getLength()
+            {
+                return request.getContentLength();
+            }
+
+            @Override
+            protected ByteBuffer onRead(byte[] buffer, int offset, int length)
+            {
+                _log.debug("{} proxying content to upstream: {} bytes", requestId, length);
+                return super.onRead(buffer, offset, length);
+            }
+        };
+    }
+
+    protected void onRewriteFailed(HttpServletRequest request, HttpServletResponse response) throws IOException
+    {
+        response.sendError(HttpServletResponse.SC_FORBIDDEN);
     }
 
     protected Request addViaHeader(Request proxyRequest)
