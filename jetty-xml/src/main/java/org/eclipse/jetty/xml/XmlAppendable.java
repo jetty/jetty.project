@@ -20,27 +20,45 @@ package org.eclipse.jetty.xml;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.util.Map;
 import java.util.Stack;
 
 public class XmlAppendable
 {
-    private final String SPACES="                                            ";
+    private final String SPACES="                                                                 ";
     private final Appendable _out;
     private final int _indent;
     private final Stack<String> _tags = new Stack<>();
     private String _space="";
+
+    public XmlAppendable(OutputStream out,String encoding) throws IOException
+    {
+        this(new OutputStreamWriter(out,encoding),encoding);
+    }
     
     public XmlAppendable(Appendable out) throws IOException
     {
         this(out,2);
     }
     
+    public XmlAppendable(Appendable out,String encoding) throws IOException
+    {
+        this(out,2,encoding);
+    }
+    
     public XmlAppendable(Appendable out, int indent) throws IOException
+    {
+        this(out,indent,"UTF-8");
+    }
+    
+    public XmlAppendable(Appendable out, int indent, String encoding) throws IOException
     {
         _out=out;
         _indent=indent;
-        _out.append("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n");
+        _out.append("<?xml version=\"1.0\" encoding=\""+encoding+"\"?>\n");
     }
 
     public XmlAppendable open(String tag, Map<String,String> attributes) throws IOException
@@ -119,6 +137,14 @@ public class XmlAppendable
     {
         _out.append(_space).append('<').append(tag).append('>');
         content(content);
+        _out.append("</").append(tag).append(">\n");
+        return this;
+    }
+    
+    public XmlAppendable tagCDATA(String tag,String data) throws IOException
+    {
+        _out.append(_space).append('<').append(tag).append('>');
+        cdata(data);
         _out.append("</").append(tag).append(">\n");
         return this;
     }

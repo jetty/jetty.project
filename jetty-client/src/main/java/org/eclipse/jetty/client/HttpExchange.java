@@ -43,7 +43,6 @@ public class HttpExchange
     private final HttpResponse response;
     private volatile Throwable requestFailure;
     private volatile Throwable responseFailure;
-  
 
     public HttpExchange(HttpDestination destination, HttpRequest request, List<Response.ResponseListener> listeners)
     {
@@ -205,6 +204,7 @@ public class HttpExchange
     {
         if (update(0b0101, cause) == 0b0101)
         {
+            LOG.debug("Failing {}: {}", this, cause);
             destination.getRequestNotifier().notifyFailure(request, cause);
             List<Response.ResponseListener> listeners = getConversation().getResponseListeners();
             ResponseNotifier responseNotifier = destination.getResponseNotifier();

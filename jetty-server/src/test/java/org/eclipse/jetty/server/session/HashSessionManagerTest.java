@@ -20,20 +20,18 @@ package org.eclipse.jetty.server.session;
 
 import java.io.File;
 
-import junit.framework.Assert;
-
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 public class HashSessionManagerTest
 {
-    
     @After
     public void enableStacks()
     {
@@ -61,7 +59,7 @@ public class HashSessionManagerTest
         File testDir = MavenTestingUtils.getTargetTestingDir("hashes");
         testDir.mkdirs();
         manager.setStoreDirectory(testDir);
-        
+
         MavenTestingUtils.getTargetFile("dangerFile.session").createNewFile();
         
         Assert.assertTrue("File should exist!", MavenTestingUtils.getTargetFile("dangerFile.session").exists());
@@ -81,8 +79,8 @@ public class HashSessionManagerTest
         File testDir = MavenTestingUtils.getTargetTestingDir("hashes");
         testDir.mkdirs();
         manager.setStoreDirectory(testDir);
-        
-        new File(testDir, "validFile.session").createNewFile();
+
+        Assert.assertTrue(new File(testDir, "validFile.session").createNewFile());
         
         Assert.assertTrue("File should exist!", new File(testDir, "validFile.session").exists());
        

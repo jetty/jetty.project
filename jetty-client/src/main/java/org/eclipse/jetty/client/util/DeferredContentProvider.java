@@ -19,11 +19,12 @@
 package org.eclipse.jetty.client.util;
 
 import java.io.Closeable;
+import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -31,6 +32,8 @@ import org.eclipse.jetty.client.AsyncContentProvider;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.util.ArrayQueue;
+import org.eclipse.jetty.util.Callback;
 
 /**
  * A {@link ContentProvider} that allows to add content after {@link Request#send(Response.CompleteListener)}
@@ -82,10 +85,13 @@ public class DeferredContentProvider implements AsyncContentProvider, Closeable
 {
     private static final ByteBuffer CLOSE = ByteBuffer.allocate(0);
 
-    private final Queue<ByteBuffer> chunks = new ConcurrentLinkedQueue<>();
+    private final Object lock = this;
+    private final Queue<ByteBuffer> chunks = new ArrayQueue<>(4, 64, lock);
     private final AtomicReference<Listener> listener = new AtomicReference<>();
     private final Iterator<ByteBuffer> iterator = new DeferredContentProviderIterator();
     private final AtomicBoolean closed = new AtomicBoolean();
+    private int size;
+    private Throwable failure;
 
     /**
      * Creates a new {@link DeferredContentProvider} with the given initial content
@@ -95,7 +101,7 @@ public class DeferredContentProvider implements AsyncContentProvider, Closeable
     public DeferredContentProvider(ByteBuffer... buffers)
     {
         for (ByteBuffer buffer : buffers)
-            chunks.offer(buffer);
+            offer(buffer);
     }
 
     @Override
@@ -121,9 +127,38 @@ public class DeferredContentProvider implements AsyncContentProvider, Closeable
      */
     public boolean offer(ByteBuffer buffer)
     {
-        boolean result = chunks.offer(buffer);
-        notifyListener();
+        boolean result;
+        synchronized (lock)
+        {
+            result = chunks.offer(buffer);
+            if (result && buffer != CLOSE)
+                ++size;
+        }
+        if (result)
+            notifyListener();
         return result;
+    }
+
+    public void flush() throws IOException
+    {
+        synchronized (lock)
+        {
+            try
+            {
+                while (true)
+                {
+                    if (failure != null)
+                        throw new IOException(failure);
+                    if (size == 0)
+                        break;
+                    lock.wait();
+                }
+            }
+            catch (InterruptedException x)
+            {
+                throw new InterruptedIOException();
+            }
+        }
     }
 
     /**
@@ -133,10 +168,7 @@ public class DeferredContentProvider implements AsyncContentProvider, Closeable
     public void close()
     {
         if (closed.compareAndSet(false, true))
-        {
-            chunks.offer(CLOSE);
-            notifyListener();
-        }
+            offer(CLOSE);
     }
 
     private void notifyListener()
@@ -152,27 +184,58 @@ public class DeferredContentProvider implements AsyncContentProvider, Closeable
         return iterator;
     }
 
-    private class DeferredContentProviderIterator implements Iterator<ByteBuffer>
+    private class DeferredContentProviderIterator implements Iterator<ByteBuffer>, Callback
     {
+        private ByteBuffer current;
+
         @Override
         public boolean hasNext()
         {
-            return chunks.peek() != CLOSE;
+            synchronized (lock)
+            {
+                return chunks.peek() != CLOSE;
+            }
         }
 
         @Override
         public ByteBuffer next()
         {
-            ByteBuffer element = chunks.poll();
-            if (element == CLOSE)
-                throw new NoSuchElementException();
-            return element;
+            synchronized (lock)
+            {
+                ByteBuffer element = current = chunks.poll();
+                if (element == CLOSE)
+                    throw new NoSuchElementException();
+                return element;
+            }
         }
 
         @Override
         public void remove()
         {
             throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void succeeded()
+        {
+            synchronized (lock)
+            {
+                if (current != null)
+                {
+                    --size;
+                    lock.notify();
+                }
+            }
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            synchronized (lock)
+            {
+                failure = x;
+                lock.notify();
+            }
         }
     }
 }

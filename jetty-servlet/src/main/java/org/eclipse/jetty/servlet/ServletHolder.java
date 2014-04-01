@@ -277,9 +277,36 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     public void doStart()
         throws Exception
     {
+
+        
         _unavailable=0;
         if (!_enabled)
             return;
+        
+        // Handle JSP file forced paths
+        if (_forcedPath != null)
+        {
+            // Look for a precompiled JSP Servlet
+            String precompiled="org.apache.jsp"+_forcedPath.replace('.','_').replace('/','.');
+            
+            ServletHolder jsp=getServletHandler().getServlet(precompiled);
+            if (jsp!=null)
+            {
+                LOG.debug("JSP file {} for {} mapped to Servlet {}",_forcedPath, getName(),jsp.getClassName());
+                // set the className for this servlet to the precompiled one
+                setClassName(jsp.getClassName());
+            }
+            else
+            {
+                // Look for normal JSP servlet
+                jsp=getServletHandler().getServlet("jsp");
+                if (jsp!=null)
+                {
+                    LOG.debug("JSP file {} for {} mapped to Servlet {}",_forcedPath, getName(),jsp.getClassName());
+                    setClassName(jsp.getClassName());
+                }
+            }
+        }
         
         
         //check servlet has a class (ie is not a preliminary registration). If preliminary, fail startup.

@@ -13,6 +13,47 @@
     <properties>
         <bundle-symbolic-name>${project.groupId}.servlet</bundle-symbolic-name>
     </properties>
+    <build>
+      <plugins>
+           <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>artifact-jar</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <archive>
+                        <manifestFile>target/classes/META-INF/MANIFEST.MF</manifestFile>
+                    </archive>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <extensions>true</extensions>
+                <executions>
+                    <execution>
+                        <id>bundle-manifest</id>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>manifest</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <instructions>
+                        <Bundle-Description>Websocket Servlet Interface</Bundle-Description>
+                        <Dynamic-Import-Package>org.eclipse.jetty.websocket.server.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}"</Dynamic-Import-Package>
+                    </instructions>
+                </configuration>
+            </plugin>
+      </plugins>
+    </build>
 
     <dependencies>
         <dependency>
@@ -25,13 +66,6 @@
          <artifactId>javax.servlet-api</artifactId>
         </dependency>
 
-<!--
-        <dependency>
-            <groupId>org.eclipse.jetty.orbit</groupId>
-            <artifactId>javax.servlet</artifactId>
-            <scope>provided</scope>
-        </dependency>
--->
         <dependency>
             <groupId>org.eclipse.jetty.toolchain</groupId>
             <artifactId>jetty-test-helper</artifactId>

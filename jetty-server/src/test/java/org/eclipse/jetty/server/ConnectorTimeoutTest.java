@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.matchers.JUnitMatchers.containsString;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -40,6 +35,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
+import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -64,7 +60,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
         client.setSoTimeout(10000);
 
-        assertFalse(client.isClosed());
+        Assert.assertFalse(client.isClosed());
 
         OutputStream os=client.getOutputStream();
         InputStream is=client.getInputStream();
@@ -80,10 +76,10 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         IO.toString(is);
 
         Thread.sleep(sleepTime);
-        assertEquals(-1, is.read());
+        Assert.assertEquals(-1, is.read());
 
-        Assert.assertTrue(System.currentTimeMillis()-start>minimumTestRuntime);
-        Assert.assertTrue(System.currentTimeMillis()-start<maximumTestRuntime);
+        Assert.assertTrue(System.currentTimeMillis() - start > minimumTestRuntime);
+        Assert.assertTrue(System.currentTimeMillis() - start < maximumTestRuntime);
     }
 
     @Test
@@ -93,7 +89,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
         client.setSoTimeout(10000);
 
-        assertFalse(client.isClosed());
+        Assert.assertFalse(client.isClosed());
 
         OutputStream os=client.getOutputStream();
         InputStream is=client.getInputStream();
@@ -113,10 +109,10 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         IO.toString(is);
 
         Thread.sleep(sleepTime);
-        assertEquals(-1, is.read());
+        Assert.assertEquals(-1, is.read());
 
-        Assert.assertTrue(System.currentTimeMillis()-start>minimumTestRuntime);
-        Assert.assertTrue(System.currentTimeMillis()-start<maximumTestRuntime);
+        Assert.assertTrue(System.currentTimeMillis() - start > minimumTestRuntime);
+        Assert.assertTrue(System.currentTimeMillis() - start < maximumTestRuntime);
     }
 
     @Test
@@ -144,7 +140,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
         client.setSoTimeout(10000);
 
-        assertFalse(client.isClosed());
+        Assert.assertFalse(client.isClosed());
 
         OutputStream os=client.getOutputStream();
         InputStream is=client.getInputStream();
@@ -163,10 +159,10 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
 
         // read the response
         String result=IO.toString(is);
-        Assert.assertThat("OK",result,containsString("200 OK"));
+        Assert.assertThat("OK",result, Matchers.containsString("200 OK"));
 
         // check client reads EOF
-        assertEquals(-1, is.read());
+        Assert.assertEquals(-1, is.read());
 
         // wait for idle timeout
         TimeUnit.MILLISECONDS.sleep(3 * MAX_IDLE_TIME);
@@ -218,7 +214,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
         client.setSoTimeout(10000);
 
-        assertFalse(client.isClosed());
+        Assert.assertFalse(client.isClosed());
 
         OutputStream os=client.getOutputStream();
         InputStream is=client.getInputStream();
@@ -237,11 +233,11 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
 
         // read the response
         String result=IO.toString(is);
-        Assert.assertThat("OK",result,containsString("200 OK"));
+        Assert.assertThat("OK",result, Matchers.containsString("200 OK"));
 
         // check client reads EOF
-        assertEquals(-1, is.read());
-        assertTrue(endPoint.isOutputShutdown());
+        Assert.assertEquals(-1, is.read());
+        Assert.assertTrue(endPoint.isOutputShutdown());
 
         Thread.sleep(2 * MAX_IDLE_TIME);
 
@@ -294,7 +290,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
         client.setSoTimeout(10000);
 
-        assertFalse(client.isClosed());
+        Assert.assertFalse(client.isClosed());
 
         OutputStream os=client.getOutputStream();
         InputStream is=client.getInputStream();
@@ -318,7 +314,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         IO.toString(is);
 
         // check client reads EOF
-        assertEquals(-1, is.read());
+        Assert.assertEquals(-1, is.read());
 
         TimeUnit.MILLISECONDS.sleep(3*MAX_IDLE_TIME);
 
@@ -353,14 +349,14 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
         client.setSoTimeout(10000);
         InputStream is=client.getInputStream();
-        assertFalse(client.isClosed());
+        Assert.assertFalse(client.isClosed());
 
         Thread.sleep(sleepTime);
         long start = System.currentTimeMillis();
         try
         {
             IO.toString(is);
-            assertEquals(-1, is.read());
+            Assert.assertEquals(-1, is.read());
         }
         catch(SSLException e)
         {
@@ -370,7 +366,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         {
             e.printStackTrace();
         }
-        Assert.assertTrue(System.currentTimeMillis()-start<maximumTestRuntime);
+        Assert.assertTrue(System.currentTimeMillis() - start < maximumTestRuntime);
 
     }
 
@@ -381,7 +377,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
         client.setSoTimeout(10000);
 
-        assertFalse(client.isClosed());
+        Assert.assertFalse(client.isClosed());
 
         OutputStream os=client.getOutputStream();
         InputStream is=client.getInputStream();
@@ -410,7 +406,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         for (int i =0;i<20;i++)
         {
             offset=in.indexOf("Wibble",offset+1);
-            Assert.assertTrue(""+i,offset>0);
+            Assert.assertTrue("" + i, offset > 0);
         }
     }
 
@@ -421,7 +417,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
         client.setSoTimeout(10000);
 
-        assertFalse(client.isClosed());
+        Assert.assertFalse(client.isClosed());
 
         OutputStream os=client.getOutputStream();
         InputStream is=client.getInputStream();
@@ -439,7 +435,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         for (int i =0;i<20;i++)
         {
             offset=in.indexOf("Hello World",offset+1);
-            Assert.assertTrue(""+i,offset>0);
+            Assert.assertTrue("" + i, offset > 0);
         }
     }
 
@@ -450,7 +446,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
         client.setSoTimeout(10000);
 
-        assertFalse(client.isClosed());
+        Assert.assertFalse(client.isClosed());
 
         OutputStream os=client.getOutputStream();
         InputStream is=client.getInputStream();
@@ -465,7 +461,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
 
         String in = IO.toString(is);
         int offset=in.indexOf("Hello World");
-        Assert.assertTrue(offset>0);
+        Assert.assertTrue(offset > 0);
     }
 
     protected static class SlowResponseHandler extends AbstractHandler

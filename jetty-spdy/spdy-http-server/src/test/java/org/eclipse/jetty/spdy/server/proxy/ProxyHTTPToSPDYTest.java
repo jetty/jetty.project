@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.spdy.server.proxy;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -53,49 +50,35 @@ import org.eclipse.jetty.spdy.client.SPDYClient;
 import org.eclipse.jetty.spdy.http.HTTPSPDYHeader;
 import org.eclipse.jetty.spdy.server.SPDYServerConnectionFactory;
 import org.eclipse.jetty.spdy.server.SPDYServerConnector;
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 
 @RunWith(Parameterized.class)
 public class ProxyHTTPToSPDYTest
 {
-    private static final Logger LOG = Log.getLogger(ProxyHTTPToSPDYTest.class);
-    @Rule
-    public final TestWatcher testName = new TestWatcher()
-    {
-
-        @Override
-        public void starting(Description description)
-        {
-            super.starting(description);
-            System.err.printf("Running %s.%s()%n",
-                    description.getClassName(),
-                    description.getMethodName());
-        }
-    };
-
-    private final short version;
-    private HttpClient httpClient;
-    private HttpClient httpClient2;
-
     @Parameterized.Parameters
     public static Collection<Short[]> parameters()
     {
         return Arrays.asList(new Short[]{SPDY.V2}, new Short[]{SPDY.V3});
     }
 
+    @Rule
+    public final TestTracker tracker = new TestTracker();
+    private final short version;
+    private HttpClient httpClient;
+    private HttpClient httpClient2;
     private SPDYClient.Factory factory;
     private Server server;
     private Server proxy;

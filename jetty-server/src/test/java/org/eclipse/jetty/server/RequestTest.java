@@ -55,6 +55,7 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiPartInputStreamParser;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -578,6 +579,55 @@ public class RequestTest
         }
     }
 
+    @Test
+    public void test8859EncodedForm() throws Exception
+    {
+        _handler._checker = new RequestTester()
+        {
+            @Override
+            public boolean check(HttpServletRequest request,HttpServletResponse response) throws IOException
+            {
+                request.setCharacterEncoding(StringUtil.__ISO_8859_1);
+                return "test\u00e4".equals(request.getParameter("name2"));
+            }
+        };
+
+
+        String content="name1=test&name2=test%E4&name3=&name4=test";
+        String request="POST / HTTP/1.1\r\n"+
+            "Host: whatever\r\n"+
+            "Content-Type: "+MimeTypes.Type.FORM_ENCODED.asString()+"\r\n" +
+            "Content-Length: "+content.length()+"\r\n"+
+            "Connection: close\r\n"+
+            "\r\n"+
+            content;
+        _connector.getResponses(request);
+    }
+    
+    @Test
+    public void testUTF8EncodedForm() throws Exception
+    {
+        _handler._checker = new RequestTester()
+        {
+            @Override
+            public boolean check(HttpServletRequest request,HttpServletResponse response) throws IOException
+            {
+                return "test\u00e4".equals(request.getParameter("name2"));
+            }
+        };
+
+        String content="name1=test&name2=test%C4%A4&name3=&name4=test";
+        String request="POST / HTTP/1.1\r\n"+
+            "Host: whatever\r\n"+
+            "Content-Type: "+MimeTypes.Type.FORM_ENCODED.asString()+"\r\n" +
+            "Content-Length: "+content.length()+"\r\n"+
+            "Connection: close\r\n"+
+            "\r\n"+
+            content;
+        _connector.getResponses(request);
+    }
+    
+    
     @Test
     public void testPartialRead() throws Exception
     {

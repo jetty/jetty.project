@@ -166,6 +166,7 @@ public class RewriteHandlerTest extends AbstractRuleTestCase
     }
 
 
+    @Test
     public void testEncodedPattern() throws Exception
     {
         _response.setStatus(200);
@@ -173,15 +174,18 @@ public class RewriteHandlerTest extends AbstractRuleTestCase
         _handler.setOriginalPathAttribute("/before");
         _handler.setRewriteRequestURI(true);
         _handler.setRewritePathInfo(false);
-        _request.setRequestURI("/ccc/x%2Fy");
-        _request.setPathInfo("/ccc/x/y");
-        _handler.handle("/ccc/x/y",_request,_request, _response);
+        _request.setRequestURI("/ccc/x%20y");
+        _request.setPathInfo("/ccc/x y");
+        _handler.handle("/ccc/x y",_request,_request, _response);
         assertEquals(201,_response.getStatus());
-        assertEquals("/ddd/x/y",_request.getAttribute("target"));
-        assertEquals("/ddd/x%2Fy",_request.getAttribute("URI"));
-        assertEquals("/ccc/x/y",_request.getAttribute("info"));
+        assertEquals("/ddd/x y",_request.getAttribute("target"));
+        assertEquals("/ddd/x%20y",_request.getAttribute("URI"));
+        assertEquals("/ccc/x y",_request.getAttribute("info"));
 
     }
+    
+
+    @Test
     public void testEncodedRegex() throws Exception
     {
         _response.setStatus(200);
@@ -189,13 +193,13 @@ public class RewriteHandlerTest extends AbstractRuleTestCase
         _handler.setOriginalPathAttribute("/before");
         _handler.setRewriteRequestURI(true);
         _handler.setRewritePathInfo(false);
-        _request.setRequestURI("/xxx/x%2Fy");
-        _request.setPathInfo("/xxx/x/y");
-        _handler.handle("/xxx/x/y",_request,_request, _response);
+        _request.setRequestURI("/xxx/x%20y");
+        _request.setPathInfo("/xxx/x y");
+        _handler.handle("/xxx/x y",_request,_request, _response);
         assertEquals(201,_response.getStatus());
-        assertEquals("/x/y/zzz",_request.getAttribute("target"));
-        assertEquals("/x%2Fy/zzz",_request.getAttribute("URI"));
-        assertEquals("/xxx/x/y",_request.getAttribute("info"));
+        assertEquals("/x y/zzz",_request.getAttribute("target"));
+        assertEquals("/x%20y/zzz",_request.getAttribute("URI"));
+        assertEquals("/xxx/x y",_request.getAttribute("info"));
 
     }
 }

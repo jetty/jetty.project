@@ -609,6 +609,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
         {
             try
             {
+                content.succeeded();
                 process();
             }
             // Catch-all for runtime exceptions
@@ -616,6 +617,13 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
             {
                 anyToFailure(x);
             }
+        }
+
+        @Override
+        public void failed(Throwable failure)
+        {
+            content.failed(failure);
+            anyToFailure(failure);
         }
 
         private void process() throws Exception
@@ -721,12 +729,6 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
                 }
             }
         }
-
-        @Override
-        public void failed(Throwable failure)
-        {
-            anyToFailure(failure);
-        }
     }
 
     private class ContentCallback extends IteratingCallback
@@ -748,44 +750,49 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
                     return Action.IDLE;
             }
 
-            if (content.advance())
-            {
-                // There is more content to send
-                sendContent(exchange, content, this);
-                return Action.SCHEDULED;
-            }
-            
-
-            if (content.isConsumed())
-            {
-                sendContent(exchange, content, lastCallback);
-                return Action.SCHEDULED;
-            }
-
             while (true)
             {
+                boolean advanced = content.advance();
+                boolean consumed = content.isConsumed();
+
                 SenderState current = senderState.get();
                 switch (current)
                 {
                     case SENDING:
                     {
-                        if (updateSenderState(current, SenderState.IDLE))
+                        if (advanced)
                         {
-                            LOG.debug("Waiting for deferred content for {}", request);
+                            // There is more content to send
+                            sendContent(exchange, content, this);
+                            return Action.SCHEDULED;
+                        }
+                        else if (consumed)
+                        {
+                            sendContent(exchange, content, lastCallback);
                             return Action.IDLE;
                         }
-                        break;
+                        else
+                        {
+                            if (updateSenderState(current, SenderState.IDLE))
+                            {
+                                LOG.debug("Waiting for deferred content for {}", request);
+                                return Action.IDLE;
+                            }
+                            break;
+                        }
                     }
                     case SENDING_WITH_CONTENT:
                     {
                         if (updateSenderState(current, SenderState.SENDING))
                         {
                             LOG.debug("Deferred content available for {}", request);
-                            // TODO: this case is not covered by tests
-                            sendContent(exchange, content, this);
-                            return Action.SCHEDULED;
+                            if (advanced)
+                            {
+                                sendContent(exchange, content, this);
+                                return Action.SCHEDULED;
+                            }
                         }
-                        break;
+                        throw new IllegalStateException();
                     }
                     default:
                     {
@@ -796,17 +803,25 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
         }
 
         @Override
-        protected void completed()
+        public void succeeded()
         {
-            // Nothing to do, since we always return false from process().
-            // Termination is obtained via LastContentCallback.
+            content.succeeded();
+            super.succeeded();
         }
 
         @Override
         public void failed(Throwable failure)
         {
+            content.failed(failure);
             super.failed(failure);
             anyToFailure(failure);
+        }
+
+        @Override
+        protected void completed()
+        {
+            // Nothing to do, since we always return false from process().
+            // Termination is obtained via LastContentCallback.
         }
     }
 
@@ -815,6 +830,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
         @Override
         public void succeeded()
         {
+            content.succeeded();
             HttpExchange exchange = getHttpExchange();
             if (exchange == null)
                 return;
@@ -824,6 +840,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
         @Override
         public void failed(Throwable failure)
         {
+            content.failed(failure);
             anyToFailure(failure);
         }
     }

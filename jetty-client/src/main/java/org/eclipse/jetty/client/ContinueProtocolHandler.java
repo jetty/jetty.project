@@ -37,7 +37,7 @@ public class ContinueProtocolHandler implements ProtocolHandler
     public ContinueProtocolHandler(HttpClient client)
     {
         this.client = client;
-        this.notifier = new ResponseNotifier(client);
+        this.notifier = new ResponseNotifier();
     }
 
     @Override

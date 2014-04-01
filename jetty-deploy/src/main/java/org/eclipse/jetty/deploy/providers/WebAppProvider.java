@@ -280,7 +280,7 @@ public class WebAppProvider extends ScanningAppProvider
                     }
                 }
             };
-
+            
             xmlc.getIdMap().put("Server", getDeploymentManager().getServer());
             xmlc.getProperties().put("jetty.home",System.getProperty("jetty.home","."));
             xmlc.getProperties().put("jetty.base",System.getProperty("jetty.base","."));

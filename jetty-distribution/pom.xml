@@ -301,7 +301,7 @@
             </goals>
             <configuration>
               <includeGroupIds>org.eclipse.jetty</includeGroupIds>
-              <excludeGroupIds>org.eclipse.jetty.orbit,org.eclipse.jetty.spdy,org.eclipse.jetty.websocket,org.eclipse.jetty.toolchain</excludeGroupIds>
+              <excludeGroupIds>org.eclipse.jetty.orbit,org.eclipse.jetty.spdy,org.eclipse.jetty.websocket,org.eclipse.jetty.fcgi,org.eclipse.jetty.toolchain,org.apache.taglibs</excludeGroupIds>
               <excludeArtifactIds>jetty-all,jetty-jsp,jetty-start,jetty-monitor</excludeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib</outputDirectory>
@@ -318,6 +318,18 @@
               <excludeArtifactIds>javax.websocket-client-api</excludeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/websocket</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-lib-fcgi-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>org.eclipse.jetty.fcgi</includeGroupIds>
+              <includeTypes>jar</includeTypes>
+              <outputDirectory>${assembly-directory}/lib/fcgi</outputDirectory>
             </configuration>
           </execution>
           <execution>
@@ -433,7 +445,7 @@
             </configuration>
           </execution>
           <execution>
-            <id>copy-jsp-deps</id>
+            <id>copy-glassfish-jsp-deps</id>
             <phase>generate-resources</phase>
             <goals>
               <goal>copy-dependencies</goal>
@@ -506,33 +518,33 @@
         <artifactId>exec-maven-plugin</artifactId>
         <executions>
           <execution>
-	    <id>setup home</id>
+            <id>setup home</id>
             <phase>process-classes</phase>
-	    <configuration>
-	      <mainClass>org.eclipse.jetty.start.Main</mainClass>
-	      <arguments>
-		<argument>jetty.home=${assembly-directory}</argument>
-		<argument>jetty.base=${assembly-directory}</argument>
-		<argument>--add-to-start=server,deploy,websocket,jsp,ext,resources</argument>
-		<argument>--add-to-startd=http</argument>
-	      </arguments>
-	    </configuration>
+            <configuration>
+              <mainClass>org.eclipse.jetty.start.Main</mainClass>
+              <arguments>
+                <argument>jetty.home=${assembly-directory}</argument>
+                <argument>jetty.base=${assembly-directory}</argument>
+                <argument>--add-to-start=server,deploy,websocket,ext,resources</argument>
+                <argument>--add-to-startd=jsp,http</argument>
+              </arguments>
+            </configuration>
             <goals>
               <goal>java</goal>
             </goals>
           </execution>
           <execution>
-	    <id>setup demo-base</id>
+            <id>setup demo-base</id>
             <phase>process-classes</phase>
-	    <configuration>
-	      <mainClass>org.eclipse.jetty.start.Main</mainClass>
-	      <arguments>
-		<argument>jetty.home=${assembly-directory}</argument>
-		<argument>jetty.base=${assembly-directory}/demo-base</argument>
-		<argument>--add-to-start=server,continuation,deploy,jsp,ext,resources,client,annotations,jndi,servlets</argument>
-		<argument>--add-to-startd-ini=http,https</argument>
-	      </arguments>
-	    </configuration>
+            <configuration>
+              <mainClass>org.eclipse.jetty.start.Main</mainClass>
+              <arguments>
+                <argument>jetty.home=${assembly-directory}</argument>
+                <argument>jetty.base=${assembly-directory}/demo-base</argument>
+                <argument>--add-to-start=server,continuation,deploy,ext,resources,client,annotations,jndi,servlets</argument>
+                <argument>--add-to-startd-ini=jsp,http,https</argument>
+              </arguments>
+            </configuration>
             <goals>
               <goal>java</goal>
             </goals>
@@ -703,6 +715,11 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-proxy</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.fcgi</groupId>
+      <artifactId>fcgi-server</artifactId>
       <version>${project.version}</version>
     </dependency>
 <!--

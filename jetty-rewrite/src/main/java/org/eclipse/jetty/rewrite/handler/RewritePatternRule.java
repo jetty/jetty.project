@@ -71,7 +71,6 @@ public class RewritePatternRule extends PatternRule implements Rule.ApplyURI
     }
 
     /* ------------------------------------------------------------ */
-
     /**
      * This method will add _query to the requests's queryString and also combine it with existing queryStrings in
      * the request. However it won't take care for duplicate. E.g. if request.getQueryString contains a parameter
@@ -80,16 +79,16 @@ public class RewritePatternRule extends PatternRule implements Rule.ApplyURI
      * cases.
      *
      * @param request
-     * @param oldTarget
-     * @param newTarget
+     * @param oldURI
+     * @param newURI
      * @throws IOException
      */
     @Override
-    public void applyURI(Request request, String oldTarget, String newTarget) throws IOException
+    public void applyURI(Request request, String oldURI, String newURI) throws IOException
     {
         if (_query == null)
         {
-            request.setRequestURI(newTarget);
+            request.setRequestURI(newURI);
         }
         else
         {
@@ -98,9 +97,9 @@ public class RewritePatternRule extends PatternRule implements Rule.ApplyURI
                 queryString = queryString + "&" + _query;
             else
                 queryString = _query;
-            HttpURI uri = new HttpURI(newTarget + "?" + queryString);
+            HttpURI uri = new HttpURI(newURI + "?" + queryString);
             request.setUri(uri);
-            request.setRequestURI(newTarget);
+            request.setRequestURI(newURI);
             request.setQueryString(queryString);
         }
     }

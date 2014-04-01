@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
+import static org.hamcrest.Matchers.*;
+
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
 import java.lang.management.MemoryUsage;
@@ -116,7 +118,7 @@ public class MemoryUsageTest
 
         // Assume no more than 25 KiB per session pair (client and server).
         long expected = 25 * 1024 * sessionCount;
-        Assert.assertTrue(heapUsed < expected);
+        Assert.assertThat("heap used", heapUsed,lessThan(expected));
     }
 
     private static abstract class EndpointAdapter extends Endpoint implements MessageHandler.Whole<String>

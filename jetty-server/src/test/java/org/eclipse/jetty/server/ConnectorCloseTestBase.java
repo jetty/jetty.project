@@ -26,6 +26,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -155,7 +156,7 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
                 "content-type: text/plain; charset=utf-8\r\n"+
                 "content-length: "+bytes.length+"\r\n"+
                 "\r\n"
-            ).getBytes("iso-8859-1"));
+            ).getBytes(StandardCharsets.ISO_8859_1));
 
             int len = bytes.length;
             int offset = 0;

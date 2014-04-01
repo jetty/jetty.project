@@ -96,9 +96,6 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
         LOG.debug("Processing exchange {} on connection {}", exchange, connection);
         if (exchange == null)
         {
-            // TODO: review this part... may not be 100% correct
-            // TODO: e.g. is client is not running, there should be no need to close the connection
-
             if (!connectionPool.release(connection))
                 connection.close();
 
@@ -114,9 +111,11 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
             Throwable cause = request.getAbortCause();
             if (cause != null)
             {
-                // If we have a non-null abort cause, it means that someone
-                // else has already aborted and notified, nothing do to here.
                 LOG.debug("Aborted before processing {}: {}", exchange, cause);
+                // It may happen that the request is aborted before the exchange
+                // is created. Aborting the exchange a second time will result in
+                // a no-operation, so we just abort here to cover that edge case.
+                exchange.abort(cause);
             }
             else
             {

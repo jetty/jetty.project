@@ -20,6 +20,7 @@ package org.eclipse.jetty.osgi.boot;
 
 import java.io.File;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -72,7 +73,35 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
     
     public static String[] getDefaultConfigurations ()
     {
-        return __defaultConfigurations;
+        if (annotationsAvailable())
+        {
+            String[] configs = new String[__defaultConfigurations.length+1];
+            System.arraycopy(__defaultConfigurations, 0, configs, 0, 4);
+            configs[4] = "org.eclipse.jetty.osgi.annotations.AnnotationConfiguration";
+            configs[5] = __defaultConfigurations[__defaultConfigurations.length-1];
+            return configs;
+        }
+
+
+        return Arrays.copyOf(__defaultConfigurations, __defaultConfigurations.length);
+    }
+
+    private static boolean annotationsAvailable()
+    {
+        boolean result = false;
+        try
+        {
+            Thread.currentThread().getContextClassLoader().loadClass("org.eclipse.jetty.annotations.AnnotationConfiguration");
+            result = true;
+            LOG.debug("Annotation support detected");
+        }
+        catch (ClassNotFoundException e)
+        {
+            result = false;
+            LOG.debug("No annotation support detected");
+        }
+
+        return result;
     }
     
 
@@ -247,7 +276,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
             if (getConfigurationClasses() != null)
                 _webApp.setConfigurationClasses(getConfigurationClasses());
             else
-                _webApp.setConfigurationClasses(__defaultConfigurations);
+                _webApp.setConfigurationClasses(getDefaultConfigurations());
 
             if (getDefaultsDescriptor() != null)
                 _webApp.setDefaultsDescriptor(getDefaultsDescriptor());

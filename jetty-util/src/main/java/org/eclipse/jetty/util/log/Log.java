@@ -147,23 +147,19 @@ public class Log
     }
 
     private static Logger LOG;
-    private static boolean __initialized;
+    private static boolean __initialized=false;
 
-    public static boolean initialized()
-    {
-        if (LOG != null)
-        {
-            return true;
-        }
-
+    public static void initialized()
+    {   
+       
         synchronized (Log.class)
         {
             if (__initialized)
-            {
-                return LOG != null;
-            }
+                return;
             __initialized = true;
         }
+        
+        final long uptime=ManagementFactory.getRuntimeMXBean().getUptime();
 
         try
         {
@@ -181,9 +177,7 @@ public class Log
         }
         
         if (LOG!=null)
-            LOG.info(String.format("Logging initialized @%dms",ManagementFactory.getRuntimeMXBean().getUptime()));
-
-        return LOG != null;
+            LOG.info(String.format("Logging initialized @%dms",uptime));
     }
 
     private static void initStandardLogging(Throwable e)
@@ -284,12 +278,7 @@ public class Log
      */
     public static Logger getLogger(String name)
     {
-        if (!initialized())
-        {
-            IllegalStateException e = new IllegalStateException();
-            e.printStackTrace();
-            throw e;
-        }
+        initialized();
 
         if(name==null)
             return LOG;

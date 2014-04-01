@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.common.message;
 
+import static org.hamcrest.Matchers.*;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -27,14 +29,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.common.io.LocalWebSocketConnection;
 import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPool;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
-
-import static org.hamcrest.Matchers.is;
 
 public class MessageInputStreamTest
 {
@@ -47,8 +46,6 @@ public class MessageInputStreamTest
     @Test(timeout=10000)
     public void testBasicAppendRead() throws IOException
     {
-        LocalWebSocketConnection conn = new LocalWebSocketConnection(testname,bufferPool);
-
         try (MessageInputStream stream = new MessageInputStream())
         {
             // Append a single message (simple, short)
@@ -70,8 +67,6 @@ public class MessageInputStreamTest
     @Test(timeout=5000)
     public void testBlockOnRead() throws Exception
     {
-        LocalWebSocketConnection conn = new LocalWebSocketConnection(testname,bufferPool);
-
         try (MessageInputStream stream = new MessageInputStream())
         {
             final AtomicBoolean hadError = new AtomicBoolean(false);
@@ -121,8 +116,6 @@ public class MessageInputStreamTest
     @Test(timeout=10000)
     public void testBlockOnReadInitial() throws IOException
     {
-        LocalWebSocketConnection conn = new LocalWebSocketConnection(testname,bufferPool);
-
         try (MessageInputStream stream = new MessageInputStream())
         {
             final AtomicBoolean hadError = new AtomicBoolean(false);
@@ -160,8 +153,6 @@ public class MessageInputStreamTest
     @Test(timeout=10000)
     public void testReadByteNoBuffersClosed() throws IOException
     {
-        LocalWebSocketConnection conn = new LocalWebSocketConnection(testname,bufferPool);
-
         try (MessageInputStream stream = new MessageInputStream())
         {
             final AtomicBoolean hadError = new AtomicBoolean(false);
@@ -192,6 +183,54 @@ public class MessageInputStreamTest
             // Test it
             Assert.assertThat("Error when appending",hadError.get(),is(false));
             Assert.assertThat("Initial byte",b,is(-1));
+        }
+    }
+    
+    @Test(timeout=10000)
+    public void testAppendEmptyPayloadRead() throws IOException
+    {
+        try (MessageInputStream stream = new MessageInputStream())
+        {
+            // Append parts of message
+            ByteBuffer msg1 = BufferUtil.toBuffer("Hello ",StandardCharsets.UTF_8);
+            ByteBuffer msg2 = ByteBuffer.allocate(0); // what is being tested
+            ByteBuffer msg3 = BufferUtil.toBuffer("World",StandardCharsets.UTF_8);
+            
+            stream.appendFrame(msg1,false);
+            stream.appendFrame(msg2,false);
+            stream.appendFrame(msg3,true);
+
+            // Read entire message it from the stream.
+            byte buf[] = new byte[32];
+            int len = stream.read(buf);
+            String message = new String(buf,0,len,StandardCharsets.UTF_8);
+
+            // Test it
+            Assert.assertThat("Message",message,is("Hello World"));
+        }
+    }
+    
+    @Test(timeout=10000)
+    public void testAppendNullPayloadRead() throws IOException
+    {
+        try (MessageInputStream stream = new MessageInputStream())
+        {
+            // Append parts of message
+            ByteBuffer msg1 = BufferUtil.toBuffer("Hello ",StandardCharsets.UTF_8);
+            ByteBuffer msg2 = null; // what is being tested
+            ByteBuffer msg3 = BufferUtil.toBuffer("World",StandardCharsets.UTF_8);
+            
+            stream.appendFrame(msg1,false);
+            stream.appendFrame(msg2,false);
+            stream.appendFrame(msg3,true);
+
+            // Read entire message it from the stream.
+            byte buf[] = new byte[32];
+            int len = stream.read(buf);
+            String message = new String(buf,0,len,StandardCharsets.UTF_8);
+
+            // Test it
+            Assert.assertThat("Message",message,is("Hello World"));
         }
     }
 }

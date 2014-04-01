@@ -34,9 +34,13 @@ import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
+import javax.servlet.ServletRequestWrapper;
+import javax.servlet.ServletResponseWrapper;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpServletResponseWrapper;
 
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
@@ -91,6 +95,9 @@ public class AsyncServletTest
         ServletHolder holder=new ServletHolder(_servlet);
         holder.setAsyncSupported(true);
         _servletHandler.addServletWithMapping(holder,"/path/*");
+        _servletHandler.addServletWithMapping(holder,"/path1/*");
+        _servletHandler.addServletWithMapping(holder,"/path2/*");
+        _servletHandler.addServletWithMapping(new ServletHolder(new FwdServlet()),"/fwd/*");
         _server.start();
         _port=_connector.getLocalPort();
     }
@@ -99,7 +106,7 @@ public class AsyncServletTest
     public void tearDown() throws Exception
     {
         assertEquals(_expectedLogs,_log.size());
-        Assert.assertThat(_log.get(0),Matchers.containsString(_expectedCode));
+        Assert.assertThat(_log.get(0), Matchers.containsString(_expectedCode));
         _server.stop();
     }
 
@@ -109,7 +116,7 @@ public class AsyncServletTest
         String response=process(null,null);
         assertEquals("HTTP/1.1 200 OK",response.substring(0,15));
         assertContains(
-                "history: REQUEST\r\n"+
+                "history: REQUEST /path\r\n"+
                 "history: initial\r\n",response);
         assertContains("NORMAL",response);
         assertNotContains("history: onTimeout",response);
@@ -122,7 +129,7 @@ public class AsyncServletTest
         String response=process("sleep=200",null);
         assertEquals("HTTP/1.1 200 OK",response.substring(0,15));
         assertContains(
-                "history: REQUEST\r\n"+
+                "history: REQUEST /path\r\n"+
                 "history: initial\r\n",response);
         assertContains("SLEPT",response);
         assertNotContains("history: onTimeout",response);
@@ -136,11 +143,11 @@ public class AsyncServletTest
         String response=process("suspend=200",null);
         assertEquals("HTTP/1.1 500 Async Timeout",response.substring(0,26));
         assertContains(
-            "history: REQUEST\r\n"+
+            "history: REQUEST /path\r\n"+
             "history: initial\r\n"+
             "history: suspend\r\n"+
             "history: onTimeout\r\n"+
-            "history: ERROR\r\n"+
+            "history: ERROR /path\r\n"+
             "history: !initial\r\n"+
             "history: onComplete\r\n",response);
 
@@ -153,12 +160,12 @@ public class AsyncServletTest
         String response=process("suspend=200&timeout=dispatch",null);
         assertEquals("HTTP/1.1 200 OK",response.substring(0,15));
         assertContains(
-            "history: REQUEST\r\n"+
+            "history: REQUEST /path\r\n"+
             "history: initial\r\n"+
             "history: suspend\r\n"+
             "history: onTimeout\r\n"+
             "history: dispatch\r\n"+
-            "history: ASYNC\r\n"+
+            "history: ASYNC /path\r\n"+
             "history: !initial\r\n"+
             "history: onComplete\r\n",response);
 
@@ -171,7 +178,7 @@ public class AsyncServletTest
         String response=process("suspend=200&timeout=complete",null);
         assertEquals("HTTP/1.1 200 OK",response.substring(0,15));
         assertContains(
-            "history: REQUEST\r\n"+
+            "history: REQUEST /path\r\n"+
             "history: initial\r\n"+
             "history: suspend\r\n"+
             "history: onTimeout\r\n"+
@@ -187,11 +194,11 @@ public class AsyncServletTest
         String response=process("suspend=200&resume=10",null);
         assertEquals("HTTP/1.1 200 OK",response.substring(0,15));
         assertContains(
-            "history: REQUEST\r\n"+
+            "history: REQUEST /path\r\n"+
             "history: initial\r\n"+
             "history: suspend\r\n"+
             "history: resume\r\n"+
-            "history: ASYNC\r\n"+
+            "history: ASYNC /path\r\n"+
             "history: !initial\r\n"+
             "history: onComplete\r\n",response);
         assertNotContains("history: onTimeout",response);
@@ -203,11 +210,11 @@ public class AsyncServletTest
         String response=process("suspend=200&resume=0",null);
         assertEquals("HTTP/1.1 200 OK",response.substring(0,15));
         assertContains(
-            "history: REQUEST\r\n"+
+            "history: REQUEST /path\r\n"+
             "history: initial\r\n"+
             "history: suspend\r\n"+
             "history: resume\r\n"+
-            "history: ASYNC\r\n"+
+            "history: ASYNC /path\r\n"+
             "history: !initial\r\n"+
             "history: onComplete\r\n",response);
         assertContains("history: onComplete",response);
@@ -219,7 +226,7 @@ public class AsyncServletTest
         String response=process("suspend=200&complete=50",null);
         assertEquals("HTTP/1.1 200 OK",response.substring(0,15));
         assertContains(
-            "history: REQUEST\r\n"+
+            "history: REQUEST /path\r\n"+
             "history: initial\r\n"+
             "history: suspend\r\n"+
             "history: complete\r\n"+
@@ -235,7 +242,7 @@ public class AsyncServletTest
         String response=process("suspend=200&complete=0",null);
         assertEquals("HTTP/1.1 200 OK",response.substring(0,15));
         assertContains(
-            "history: REQUEST\r\n"+
+            "history: REQUEST /path\r\n"+
             "history: initial\r\n"+
             "history: suspend\r\n"+
             "history: complete\r\n"+
@@ -251,15 +258,15 @@ public class AsyncServletTest
         String response=process("suspend=1000&resume=10&suspend2=1000&resume2=10",null);
         assertEquals("HTTP/1.1 200 OK",response.substring(0,15));
         assertContains(
-            "history: REQUEST\r\n"+
+            "history: REQUEST /path\r\n"+
             "history: initial\r\n"+
             "history: suspend\r\n"+
             "history: resume\r\n"+
-            "history: ASYNC\r\n"+
+            "history: ASYNC /path\r\n"+
             "history: !initial\r\n"+
             "history: suspend\r\n"+
             "history: resume\r\n"+
-            "history: ASYNC\r\n"+
+            "history: ASYNC /path\r\n"+
             "history: !initial\r\n"+
             "history: onComplete\r\n",response);
         assertContains("DISPATCHED",response);
@@ -271,11 +278,11 @@ public class AsyncServletTest
         String response=process("suspend=1000&resume=10&suspend2=1000&complete2=10",null);
         assertEquals("HTTP/1.1 200 OK",response.substring(0,15));
         assertContains(
-            "history: REQUEST\r\n"+
+            "history: REQUEST /path\r\n"+
             "history: initial\r\n"+
             "history: suspend\r\n"+
             "history: resume\r\n"+
-            "history: ASYNC\r\n"+
+            "history: ASYNC /path\r\n"+
             "history: !initial\r\n"+
             "history: suspend\r\n"+
             "history: complete\r\n"+
@@ -290,15 +297,15 @@ public class AsyncServletTest
         String response=process("suspend=1000&resume=10&suspend2=10",null);
         assertEquals("HTTP/1.1 500 Async Timeout",response.substring(0,26));
         assertContains(
-            "history: REQUEST\r\n"+
+            "history: REQUEST /path\r\n"+
             "history: initial\r\n"+
             "history: suspend\r\n"+
             "history: resume\r\n"+
-            "history: ASYNC\r\n"+
+            "history: ASYNC /path\r\n"+
             "history: !initial\r\n"+
             "history: suspend\r\n"+
             "history: onTimeout\r\n"+
-            "history: ERROR\r\n"+
+            "history: ERROR /path\r\n"+
             "history: !initial\r\n"+
             "history: onComplete\r\n",response);
         assertContains("ERROR: /ctx/path/info",response);
@@ -310,15 +317,15 @@ public class AsyncServletTest
         String response=process("suspend=10&suspend2=1000&resume2=10",null);
         assertEquals("HTTP/1.1 200 OK",response.substring(0,15));
         assertContains(
-            "history: REQUEST\r\n"+
+            "history: REQUEST /path\r\n"+
             "history: initial\r\n"+
             "history: suspend\r\n"+
             "history: onTimeout\r\n"+
-            "history: ERROR\r\n"+
+            "history: ERROR /path\r\n"+
             "history: !initial\r\n"+
             "history: suspend\r\n"+
             "history: resume\r\n"+
-            "history: ASYNC\r\n"+
+            "history: ASYNC /path\r\n"+
             "history: !initial\r\n"+
             "history: onComplete\r\n",response);
         assertContains("DISPATCHED",response);
@@ -330,11 +337,11 @@ public class AsyncServletTest
         String response=process("suspend=10&suspend2=1000&complete2=10",null);
         assertEquals("HTTP/1.1 200 OK",response.substring(0,15));
         assertContains(
-            "history: REQUEST\r\n"+
+            "history: REQUEST /path\r\n"+
             "history: initial\r\n"+
             "history: suspend\r\n"+
             "history: onTimeout\r\n"+
-            "history: ERROR\r\n"+
+            "history: ERROR /path\r\n"+
             "history: !initial\r\n"+
             "history: suspend\r\n"+
             "history: complete\r\n"+
@@ -348,20 +355,109 @@ public class AsyncServletTest
         _expectedCode="500 ";
         String response=process("suspend=10&suspend2=10",null);
         assertContains(
-            "history: REQUEST\r\n"+
+            "history: REQUEST /path\r\n"+
             "history: initial\r\n"+
             "history: suspend\r\n"+
             "history: onTimeout\r\n"+
-            "history: ERROR\r\n"+
+            "history: ERROR /path\r\n"+
             "history: !initial\r\n"+
             "history: suspend\r\n"+
             "history: onTimeout\r\n"+
-            "history: ERROR\r\n"+
+            "history: ERROR /path\r\n"+
             "history: !initial\r\n"+
             "history: onComplete\r\n",response);
         assertContains("ERROR: /ctx/path/info",response);
     }
 
+    @Test
+    public void testWrapStartDispatch() throws Exception
+    {
+        String response=process("wrap=true&suspend=200&resume=20",null);
+        assertEquals("HTTP/1.1 200 OK",response.substring(0,15));
+        assertContains(
+            "history: REQUEST /path\r\n"+
+            "history: initial\r\n"+
+            "history: suspend\r\n"+
+            "history: resume\r\n"+
+            "history: ASYNC /path\r\n"+
+            "history: wrapped REQ RSP\r\n"+
+            "history: !initial\r\n"+
+            "history: onComplete\r\n",response);
+        assertContains("DISPATCHED",response);
+    }
+
+    @Test
+    public void testFwdStartDispatch() throws Exception
+    {
+        String response=process("fwd","suspend=200&resume=20",null);
+        assertEquals("HTTP/1.1 200 OK",response.substring(0,15));
+        assertContains(
+            "history: FWD REQUEST /fwd\r\n"+
+            "history: FORWARD /path1\r\n"+
+            "history: initial\r\n"+
+            "history: suspend\r\n"+
+            "history: resume\r\n"+
+            "history: FWD ASYNC /fwd\r\n"+
+            "history: FORWARD /path1\r\n"+
+            "history: !initial\r\n"+
+            "history: onComplete\r\n",response);
+        assertContains("DISPATCHED",response);
+    }
+    
+    @Test
+    public void testFwdStartDispatchPath() throws Exception
+    {
+        String response=process("fwd","suspend=200&resume=20&path=/path2",null);
+        assertEquals("HTTP/1.1 200 OK",response.substring(0,15));
+        assertContains(
+            "history: FWD REQUEST /fwd\r\n"+
+            "history: FORWARD /path1\r\n"+
+            "history: initial\r\n"+
+            "history: suspend\r\n"+
+            "history: resume\r\n"+
+            "history: ASYNC /path2\r\n"+
+            "history: !initial\r\n"+
+            "history: onComplete\r\n",response);
+        assertContains("DISPATCHED",response);
+    }
+
+    @Test
+    public void testFwdWrapStartDispatch() throws Exception
+    {
+        String response=process("fwd","wrap=true&suspend=200&resume=20",null);
+        assertEquals("HTTP/1.1 200 OK",response.substring(0,15));
+        assertContains(
+            "history: FWD REQUEST /fwd\r\n"+
+            "history: FORWARD /path1\r\n"+
+            "history: initial\r\n"+
+            "history: suspend\r\n"+
+            "history: resume\r\n"+
+            "history: ASYNC /path1\r\n"+
+            "history: wrapped REQ RSP\r\n"+
+            "history: !initial\r\n"+
+            "history: onComplete\r\n",response);
+        assertContains("DISPATCHED",response);
+    }
+    
+    @Test
+    public void testFwdWrapStartDispatchPath() throws Exception
+    {
+        String response=process("fwd","wrap=true&suspend=200&resume=20&path=/path2",null);
+        assertEquals("HTTP/1.1 200 OK",response.substring(0,15));
+        assertContains(
+            "history: FWD REQUEST /fwd\r\n"+
+            "history: FORWARD /path1\r\n"+
+            "history: initial\r\n"+
+            "history: suspend\r\n"+
+            "history: resume\r\n"+
+            "history: ASYNC /path2\r\n"+
+            "history: wrapped REQ RSP\r\n"+
+            "history: !initial\r\n"+
+            "history: onComplete\r\n",response);
+        assertContains("DISPATCHED",response);
+    }
+    
+    
     @Test
     public void testAsyncRead() throws Exception
     {
@@ -379,22 +475,22 @@ public class AsyncServletTest
         try (Socket socket = new Socket("localhost",_port))
         {
             socket.setSoTimeout(10000);
-            socket.getOutputStream().write(header.getBytes("ISO-8859-1"));
+            socket.getOutputStream().write(header.getBytes(StandardCharsets.ISO_8859_1));
             Thread.sleep(500);
-            socket.getOutputStream().write(body.getBytes("ISO-8859-1"),0,2);
+            socket.getOutputStream().write(body.getBytes(StandardCharsets.ISO_8859_1),0,2);
             Thread.sleep(500);
-            socket.getOutputStream().write(body.getBytes("ISO-8859-1"),2,8);
-            socket.getOutputStream().write(close.getBytes("ISO-8859-1"));
+            socket.getOutputStream().write(body.getBytes(StandardCharsets.ISO_8859_1),2,8);
+            socket.getOutputStream().write(close.getBytes(StandardCharsets.ISO_8859_1));
 
             String response = IO.toString(socket.getInputStream());
             assertEquals("HTTP/1.1 200 OK",response.substring(0,15));
             assertContains(
-                "history: REQUEST\r\n"+
+                "history: REQUEST /path\r\n"+
                 "history: initial\r\n"+
                 "history: suspend\r\n"+
                 "history: async-read=10\r\n"+
                 "history: resume\r\n"+
-                "history: ASYNC\r\n"+
+                "history: ASYNC /path\r\n"+
                 "history: !initial\r\n"+
                 "history: onComplete\r\n",response);
         }
@@ -402,7 +498,12 @@ public class AsyncServletTest
 
     public synchronized String process(String query,String content) throws Exception
     {
-        String request = "GET /ctx/path/info";
+        return process("path",query,content);
+    }
+    
+    public synchronized String process(String path,String query,String content) throws Exception
+    {
+        String request = "GET /ctx/"+path+"/info";
 
         if (query!=null)
             request+="?"+query;
@@ -434,7 +535,7 @@ public class AsyncServletTest
 
     protected void assertContains(String content,String response)
     {
-        Assert.assertThat(response,Matchers.containsString(content));
+        Assert.assertThat(response, Matchers.containsString(content));
     }
 
     protected void assertNotContains(String content,String response)
@@ -442,6 +543,18 @@ public class AsyncServletTest
         Assert.assertThat(response,Matchers.not(Matchers.containsString(content)));
     }
 
+    private static class FwdServlet extends HttpServlet
+    {
+        @Override
+        public void doGet(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
+        {
+            response.addHeader("history","FWD "+request.getDispatcherType()+" "+request.getServletPath());
+            if (request instanceof ServletRequestWrapper || response instanceof ServletResponseWrapper)
+                response.addHeader("history","wrapped"+((request instanceof ServletRequestWrapper)?" REQ":"")+((response instanceof ServletResponseWrapper)?" RSP":""));
+            request.getServletContext().getRequestDispatcher("/path1").forward(request,response);
+        }
+    }
+    
     private static class AsyncServlet extends HttpServlet
     {
         private static final long serialVersionUID = -8161977157098646562L;
@@ -451,8 +564,11 @@ public class AsyncServletTest
         public void doGet(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
         {
             // System.err.println(request.getDispatcherType()+" "+request.getRequestURI());
-            response.addHeader("history",request.getDispatcherType().toString());
-
+            response.addHeader("history",request.getDispatcherType()+" "+request.getServletPath());
+            if (request instanceof ServletRequestWrapper || response instanceof ServletResponseWrapper)
+                response.addHeader("history","wrapped"+((request instanceof ServletRequestWrapper)?" REQ":"")+((response instanceof ServletResponseWrapper)?" RSP":""));
+                
+            boolean wrap="true".equals(request.getParameter("wrap"));
             int read_before=0;
             long sleep_for=-1;
             long suspend_for=-1;
@@ -462,6 +578,7 @@ public class AsyncServletTest
             long complete_after=-1;
             long complete2_after=-1;
 
+            
             if (request.getParameter("read")!=null)
                 read_before=Integer.parseInt(request.getParameter("read"));
             if (request.getParameter("sleep")!=null)
@@ -472,6 +589,7 @@ public class AsyncServletTest
                 suspend2_for=Integer.parseInt(request.getParameter("suspend2"));
             if (request.getParameter("resume")!=null)
                 resume_after=Integer.parseInt(request.getParameter("resume"));
+            final String path=request.getParameter("path");
             if (request.getParameter("resume2")!=null)
                 resume2_after=Integer.parseInt(request.getParameter("resume2"));
             if (request.getParameter("complete")!=null)
@@ -479,8 +597,9 @@ public class AsyncServletTest
             if (request.getParameter("complete2")!=null)
                 complete2_after=Integer.parseInt(request.getParameter("complete2"));
 
-            if (request.getDispatcherType()==DispatcherType.REQUEST)
+            if (request.getAttribute("State")==null)
             {
+                request.setAttribute("State",new Integer(1));
                 response.addHeader("history","initial");
                 if (read_before>0)
                 {
@@ -521,7 +640,7 @@ public class AsyncServletTest
 
                 if (suspend_for>=0)
                 {
-                    final AsyncContext async=request.startAsync();
+                    final AsyncContext async=wrap?request.startAsync(new HttpServletRequestWrapper(request),new HttpServletResponseWrapper(response)):request.startAsync();
                     if (suspend_for>0)
                         async.setTimeout(suspend_for);
                     async.addListener(__listener);
@@ -567,7 +686,10 @@ public class AsyncServletTest
                             public void run()
                             {
                                 ((HttpServletResponse)async.getResponse()).addHeader("history","resume");
-                                async.dispatch();
+                                if (path!=null)             
+                                    async.dispatch(path);
+                                else
+                                    async.dispatch();
                             }
                         };
                         synchronized (_timer)
@@ -578,7 +700,10 @@ public class AsyncServletTest
                     else if (resume_after==0)
                     {
                         ((HttpServletResponse)async.getResponse()).addHeader("history","resume");
-                        async.dispatch();
+                        if (path!=null)             
+                            async.dispatch(path);
+                        else
+                            async.dispatch();
                     }
 
                 }
@@ -607,7 +732,7 @@ public class AsyncServletTest
 
                 if (suspend2_for>=0 && request.getAttribute("2nd")==null)
                 {
-                    final AsyncContext async=request.startAsync();
+                    final AsyncContext async=wrap?request.startAsync(new HttpServletRequestWrapper(request),new HttpServletResponseWrapper(response)):request.startAsync();
                     async.addListener(__listener);
                     request.setAttribute("2nd","cycle");
 

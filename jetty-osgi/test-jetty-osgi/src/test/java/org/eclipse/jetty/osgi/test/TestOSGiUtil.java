@@ -59,7 +59,7 @@ public class TestOSGiUtil
         //options.add(CoreOptions.equinox().version("3.6.1"));
         //options.add(CoreOptions.equinox().version("3.7.0"));
        // options.add(CoreOptions.felix().version("3.2.2"));
-        options.add(CoreOptions.felix().version("4.0.2"));
+        options.add(CoreOptions.felix().version("4.0.2")); 
     }
 
     protected static Bundle getBundle(BundleContext bundleContext, String symbolicName)
@@ -148,6 +148,11 @@ public class TestOSGiUtil
             bundlesIndexedBySymbolicName.put(b.getSymbolicName(), b);
             System.err.println("    " + b.getSymbolicName() + " " + b.getState());
         }
+    }
+   
+    protected static ServiceReference[] getServices (String service, BundleContext bundleContext) throws Exception
+    {
+       return bundleContext.getAllServiceReferences(service, null);
     }
 
     protected static SslContextFactory newSslContextFactory()

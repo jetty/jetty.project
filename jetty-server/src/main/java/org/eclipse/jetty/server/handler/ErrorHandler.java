@@ -30,13 +30,13 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ByteArrayISO8859Writer;
 import org.eclipse.jetty.util.log.Log;
@@ -140,7 +140,7 @@ public class ErrorHandler extends AbstractHandler
     protected void writeErrorPageHead(HttpServletRequest request, Writer writer, int code, String message)
         throws IOException
         {
-        writer.write("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=ISO-8859-1\"/>\n");
+        writer.write("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"/>\n");
         writer.write("<title>Error ");
         writer.write(Integer.toString(code));
 
@@ -213,7 +213,7 @@ public class ErrorHandler extends AbstractHandler
         if (reason==null)
             reason=HttpStatus.getMessage(status);
         fields.put(HttpHeader.CONTENT_TYPE,MimeTypes.Type.TEXT_HTML_8859_1.asString());
-        return BufferUtil.toBuffer("<h1>Bad Message "+status+"</h1><pre>reason: "+reason+"</pre>");
+        return BufferUtil.toBuffer("<h1>Bad Message " + status + "</h1><pre>reason: " + reason + "</pre>");
     }    
     
     /* ------------------------------------------------------------ */
@@ -304,5 +304,16 @@ public class ErrorHandler extends AbstractHandler
     public interface ErrorPageMapper
     {
         String getErrorPage(HttpServletRequest request);
+    }
+
+    /* ------------------------------------------------------------ */
+    public static ErrorHandler getErrorHandler(Server server, ContextHandler context)
+    {
+        ErrorHandler error_handler=null;
+        if (context!=null)
+            error_handler=context.getErrorHandler();
+        if (error_handler==null && server!=null)
+            error_handler = server.getBean(ErrorHandler.class);
+        return error_handler;
     }
 }

@@ -21,7 +21,6 @@ package org.eclipse.jetty.servlet;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -612,7 +611,15 @@ public class ServletHandler extends ScopedHandler
                     response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             }
             else
-                LOG.debug("Response already committed",th);
+            {
+                if (th instanceof IOException)
+                    throw (IOException)th;
+                if (th instanceof RuntimeException)
+                    throw (RuntimeException)th;
+                if (th instanceof ServletException)
+                    throw (ServletException)th;
+                throw new IllegalStateException("response already committed",th);
+            }
         }
         catch(Error e)
         {

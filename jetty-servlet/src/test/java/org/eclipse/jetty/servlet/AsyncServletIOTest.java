@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -48,17 +49,20 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.hamcrest.Matchers;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertEquals;
 
 // TODO need  these on SPDY as well!
 public class AsyncServletIOTest 
 {    
+    private static final Logger LOG = Log.getLogger(AsyncServletIOTest.class);
     protected AsyncIOServlet _servlet0=new AsyncIOServlet();
     protected AsyncIOServlet2 _servlet2=new AsyncIOServlet2();
     protected int _port;
@@ -135,8 +139,8 @@ public class AsyncServletIOTest
     @Test
     public void testBigWrites() throws Exception
     {
-        process(102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400);
-        Assert.assertThat(_owp.get(),Matchers.greaterThan(1));
+        process(102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400);
+        Assert.assertThat("On Write Possible",_owp.get(),greaterThan(1));
     }
 
     @Test
@@ -172,20 +176,20 @@ public class AsyncServletIOTest
         {
             socket.setSoTimeout(1000000);
             OutputStream out = socket.getOutputStream();
-            out.write(request.toString().getBytes("ISO-8859-1"));
+            out.write(request.toString().getBytes(StandardCharsets.ISO_8859_1));
             
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()),102400);
             
             // response line
             String line = in.readLine();
-            // System.err.println("resp: "+line);
-            Assert.assertThat(line,Matchers.startsWith("HTTP/1.1 200 OK"));
+            LOG.debug("response-line: "+line);
+            Assert.assertThat(line,startsWith("HTTP/1.1 200 OK"));
             
             // Skip headers
             while (line!=null)
             {
                 line = in.readLine();
-                // System.err.println("line: "+line);
+                LOG.debug("header-line: "+line);
                 if (line.length()==0)
                     break;
             }
@@ -194,7 +198,7 @@ public class AsyncServletIOTest
             while (true)
             {
                 line = in.readLine();
-                // System.err.println("body: "+line);
+                LOG.debug("body: "+line);
                 if (line==null)
                     break;
                 list.add(line);
@@ -207,7 +211,7 @@ public class AsyncServletIOTest
 
     public synchronized List<String> process(String content,int... writes) throws Exception
     {
-        return process(content.getBytes("ISO-8859-1"),writes);
+        return process(content.getBytes(StandardCharsets.ISO_8859_1),writes);
     }
 
     public synchronized List<String> process(int... writes) throws Exception
@@ -242,7 +246,7 @@ public class AsyncServletIOTest
         {
             socket.setSoTimeout(1000000);
             OutputStream out = socket.getOutputStream();
-            out.write(request.toString().getBytes("ISO-8859-1"));
+            out.write(request.toString().getBytes(StandardCharsets.ISO_8859_1));
 
             if (content!=null && content.length>0)
             {
@@ -255,19 +259,18 @@ public class AsyncServletIOTest
                 out.write(content,1+half,content.length-half-1);
             }
             
-            
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()),102400);
             
             // response line
             String line = in.readLine();
-            //System.err.println("line: "+line);
-            Assert.assertThat(line,Matchers.startsWith("HTTP/1.1 200 OK"));
+            LOG.debug("response-line: "+line);
+            Assert.assertThat(line,startsWith("HTTP/1.1 200 OK"));
             
             // Skip headers
             while (line!=null)
             {
                 line = in.readLine();
-                //System.err.println("line: "+line);
+                LOG.debug("header-line:  "+line);
                 if (line.length()==0)
                     break;
             }
@@ -278,7 +281,7 @@ public class AsyncServletIOTest
                 line = in.readLine();
                 if (line==null)
                     break;
-                //System.err.println("line:  "+line.length()+"\t"+(line.length()>40?(line.substring(0,40)+"..."):line));
+                LOG.debug("body:  "+brief(line));
                 list.add(line);
                 Thread.sleep(50);
             }
@@ -288,11 +291,11 @@ public class AsyncServletIOTest
         int w=0;
         for (String line : list)
         {
-            // System.err.println(line);
+            LOG.debug("line:  "+brief(line));
             if ("-".equals(line))
                 continue;
-            assertEquals(writes[w],line.length());
-            assertEquals(line.charAt(0),'0'+(w%10));
+            assertEquals("Line Length",writes[w],line.length());
+            assertEquals("Line Contents",line.charAt(0),'0'+(w%10));
             
             w++;
             if (w<writes.length && writes[w]<=0)
@@ -300,9 +303,14 @@ public class AsyncServletIOTest
         }
         
         if (content!=null)
-            Assert.assertEquals(content.length,_read.get());
+            Assert.assertEquals("Content Length",content.length,_read.get());
         
         return list;
+    }
+    
+    private static String brief(String line)
+    {
+        return line.length()+"\t"+(line.length()>40?(line.substring(0,40)+"..."):line);
     }
 
     static AtomicInteger _owp = new AtomicInteger();
@@ -365,7 +373,7 @@ public class AsyncServletIOTest
                     {    
                         if (onDataAvailable.get())
                         {
-                            System.err.println("OADR too early!");
+                            LOG.warn("OADR too early!");
                             _read.set(-1);
                         }
                         
@@ -389,7 +397,7 @@ public class AsyncServletIOTest
                 @Override
                 public void onWritePossible() throws IOException
                 {
-                    //System.err.println("OWP");
+                    LOG.debug("OWP");
                     _owp.incrementAndGet();
 
                     while (writes!=null && _w< writes.length)
@@ -423,6 +431,7 @@ public class AsyncServletIOTest
         }
     }
 
+    @SuppressWarnings("serial")
     public class AsyncIOServlet2 extends HttpServlet
     {
         public CountDownLatch completed = new CountDownLatch(1);

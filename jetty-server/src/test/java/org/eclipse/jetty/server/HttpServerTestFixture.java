@@ -25,6 +25,7 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLSession;
@@ -42,7 +43,7 @@ import org.junit.Before;
 public class HttpServerTestFixture
 {    // Useful constants
     protected static final long PAUSE=10L;
-    protected static final int LOOPS=PropertyFlag.isEnabled("test.stress")?250:50;
+    protected static final int LOOPS= PropertyFlag.isEnabled("test.stress")?250:50;
 
     protected Server _server;
     protected URI _serverURI;
@@ -168,7 +169,7 @@ public class HttpServerTestFixture
             response.setStatus(200);
 
             InputStream in = request.getInputStream();
-            String input=IO.toString(in);
+            String input= IO.toString(in);
 
             String tmp = request.getParameter("writes");
             int writes=Integer.parseInt(tmp==null?"10":tmp);
@@ -185,7 +186,7 @@ public class HttpServerTestFixture
             response.setContentType("text/plain");
             if (encoding==null)
             {
-                byte[] bytes=chunk.getBytes("ISO-8859-1");
+                byte[] bytes=chunk.getBytes(StandardCharsets.ISO_8859_1);
                 OutputStream out=response.getOutputStream();
                 for (int i=0;i<writes;i++)
                 {

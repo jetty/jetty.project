@@ -121,6 +121,13 @@ public class OutputStreamContentProvider implements AsyncContentProvider
         public void write(byte[] b, int off, int len) throws IOException
         {
             OutputStreamContentProvider.this.write(ByteBuffer.wrap(b, off, len));
+            flush();
+        }
+
+        @Override
+        public void flush() throws IOException
+        {
+            deferred.flush();
         }
 
         @Override

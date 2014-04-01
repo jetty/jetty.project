@@ -23,42 +23,20 @@
         <module>spdy-example-webapp</module>
     </modules>
 
-    <dependencies>
-        <dependency>
-            <groupId>org.eclipse.jetty.toolchain</groupId>
-            <artifactId>jetty-test-helper</artifactId>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
+    <profiles>
+        <profile>
+            <id>jdk7-npn</id>
+            <activation>
+                <jdk>[1.7,1.8)</jdk>
+            </activation>
+            <modules>
+                <module>spdy-npn-tests</module>
+            </modules>
+        </profile>
+    </profiles>
 
     <build>
         <plugins>
-            <plugin>
-                <artifactId>maven-enforcer-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>require-jdk7</id>
-                        <goals>
-                            <goal>enforce</goal>
-                        </goals>
-                        <configuration>
-                            <rules>
-                                <requireJavaVersion>
-                                    <version>[1.7,)</version>
-                                </requireJavaVersion>
-                            </rules>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>2.3.2</version>
-                <configuration>
-                    <source>1.7</source>
-                    <target>1.7</target>
-                </configuration>
-            </plugin>
             <plugin>
                 <artifactId>maven-pmd-plugin</artifactId>
                 <configuration>
@@ -95,5 +73,13 @@
             </plugin>
         </plugins>
     </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.eclipse.jetty.toolchain</groupId>
+            <artifactId>jetty-test-helper</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 
 </project>

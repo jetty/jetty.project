@@ -41,6 +41,7 @@ import javax.websocket.WebSocketContainer;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
@@ -97,7 +98,9 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         decoderFactory.init(empty);
         encoderFactory.init(empty);
 
-        client = new WebSocketClient(executor);
+        boolean trustAll = Boolean.getBoolean("org.eclipse.jetty.websocket.jsr356.ssl-trust-all");
+        
+        client = new WebSocketClient(new SslContextFactory(trustAll), executor);
         client.setEventDriverFactory(new JsrEventDriverFactory(client.getPolicy()));
         client.setSessionFactory(new JsrSessionFactory(this,this,client));
         addBean(client);

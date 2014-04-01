@@ -115,6 +115,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         "org.eclipse.jetty.jndi.",          // webapp cannot change naming classes
         "org.eclipse.jetty.jaas.",          // webapp cannot change jaas classes
         "org.eclipse.jetty.websocket.",     // webapp cannot change / replace websocket classes
+        "org.eclipse.jetty.util.log.",      // webapp should use server log 
         "org.eclipse.jetty.servlet.DefaultServlet", // webapp cannot change default servlets
         "org.eclipse.jetty.servlets.AsyncGzipFilter" // special case for AsyncGzipFilter
     } ;
@@ -132,6 +133,10 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         "-org.eclipse.jetty.servlet.DefaultServlet", // don't hide default servlet
         "-org.eclipse.jetty.servlet.listener.", // don't hide useful listeners
         "-org.eclipse.jetty.websocket.",    // don't hide websocket classes from webapps (allow webapp to use ones from system classloader)
+        "-org.eclipse.jetty.apache.",       // don't hide jetty apache impls
+        "-org.eclipse.jetty.util.log.",     // don't hide server log 
+        "org.objectweb.asm.",               // hide asm used by jetty
+        "org.eclipse.jdt.",                 // hide jdt used by jetty
         "org.eclipse.jetty."                // hide other jetty classes
     } ;
 
@@ -942,7 +947,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      */
     public void setConfigurationClasses(String[] configurations)
     {
-        if (isRunning())
+        if (isStarted())
             throw new IllegalStateException();
         _configurationClasses.clear();
         if (configurations!=null)
@@ -961,7 +966,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      */
     public void setConfigurations(Configuration[] configurations)
     {
-        if (isRunning())
+        if (isStarted())
             throw new IllegalStateException();
         _configurations.clear();
         if (configurations!=null)
@@ -1344,9 +1349,16 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         //resolve the metadata
         _metadata.resolve(this);
 
+        startWebapp();
+    }
+
+    /* ------------------------------------------------------------ */
+    protected void startWebapp()
+        throws Exception
+    {
         super.startContext();
     }
-       
+    
     /* ------------------------------------------------------------ */    
     @Override
     public Set<String> setServletSecurity(Dynamic registration, ServletSecurityElement servletSecurityElement)

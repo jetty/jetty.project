@@ -49,9 +49,8 @@ import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.HttpChannelState.Action;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
-import org.eclipse.jetty.util.BlockingCallback;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -273,7 +272,6 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
                         case REQUEST_DISPATCH:
                             _request.setHandled(false);
                             _response.getHttpOutput().reopen();
-                            _request.setTimeStamp(System.currentTimeMillis());
                             _request.setDispatcherType(DispatcherType.REQUEST);
 
                             for (HttpConfiguration.Customizer customizer : _configuration.getCustomizers())
@@ -306,7 +304,8 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
 
                             _response.setStatusWithReason(500,reason);
 
-                            ErrorHandler eh = _state.getContextHandler().getErrorHandler();
+                            
+                            ErrorHandler eh = ErrorHandler.getErrorHandler(getServer(),_state.getContextHandler());                                
                             if (eh instanceof ErrorHandler.ErrorPageMapper)
                             {
                                 String error_page=((ErrorHandler.ErrorPageMapper)eh).getErrorPage((HttpServletRequest)_state.getAsyncContextEvent().getSuppliedRequest());
@@ -439,6 +438,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
             }
             else if (isCommitted())
             {
+                _transport.abort();
                 if (!(x instanceof EofException))
                     LOG.warn("Could not send response error 500: "+x);
             }
@@ -484,8 +484,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
         _expect100Continue = false;
         _expect102Processing = false;
 
-        if (_request.getTimeStamp() == 0)
-            _request.setTimeStamp(System.currentTimeMillis());
+        _request.setTimeStamp(System.currentTimeMillis());
         _request.setMethod(httpMethod, method);
 
         if (httpMethod == HttpMethod.CONNECT)
@@ -728,10 +727,12 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
 
     protected boolean sendResponse(ResponseInfo info, ByteBuffer content, boolean complete) throws IOException
     {
-        BlockingCallback writeBlock = _response.getHttpOutput().getWriteBlockingCallback();
-        boolean committing=sendResponse(info,content,complete,writeBlock);
-        writeBlock.block();
-        return committing;
+        try(Blocker blocker = _response.getHttpOutput().acquireWriteBlockingCallback())
+        {
+            boolean committing = sendResponse(info,content,complete,blocker);
+            blocker.block();
+            return committing;
+        }
     }
 
     public boolean isCommitted()

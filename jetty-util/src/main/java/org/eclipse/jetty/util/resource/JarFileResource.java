@@ -211,19 +211,6 @@ class JarFileResource extends JarResource
                         break;
                     }
                 }
-
-                if (_directory && !_urlString.endsWith("/"))
-                {
-                    _urlString+="/";
-                    try
-                    {
-                        _url=new URL(_urlString);
-                    }
-                    catch(MalformedURLException ex)
-                    {
-                        LOG.warn(ex);
-                    }
-                }
             }
         }    
         

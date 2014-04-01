@@ -27,6 +27,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayInputStream;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -578,7 +579,7 @@ public class XmlConfigurationTest
                 "      <Arg>arg3</Arg>\n" + 
                 "    </New>" +
                 "  </Set>" +
-                "</Configure>").getBytes("ISO-8859-1")));
+                "</Configure>").getBytes(StandardCharsets.ISO_8859_1)));
 //        XmlConfiguration xmlConfiguration = new XmlConfiguration(url);
 
         AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
@@ -606,7 +607,7 @@ public class XmlConfigurationTest
                 "      <Set name=\"third\">arg3</Set>  " +
                 "    </New>" +
                 "  </Set>" +
-                "</Configure>").getBytes("ISO-8859-1")));
+                "</Configure>").getBytes(StandardCharsets.UTF_8)));
 //        XmlConfiguration xmlConfiguration = new XmlConfiguration(url);
 
         DefaultTestConfiguration atc = (DefaultTestConfiguration)xmlConfiguration.configure();

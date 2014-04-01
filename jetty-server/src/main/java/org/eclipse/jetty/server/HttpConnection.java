@@ -609,22 +609,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         public void failed(final Throwable x)
         {
             super.failed(x);
-            try
-            {
-                getExecutor().execute(new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        _callback.failed(x);
-                    }
-                });
-            }
-            catch(RejectedExecutionException e)
-            {
-                LOG.debug(e);
-                _callback.failed(x);
-            }
+            failedCallback(_callback,x);
         }
     }
 
@@ -720,23 +705,16 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         public void failed(final Throwable x)
         {
             super.failed(x);
-            try
-            {
-                getExecutor().execute(new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        _callback.failed(x);
-                    }
-                });
-            }
-            catch (RejectedExecutionException e)
-            {
-                LOG.debug(e);
-                _callback.failed(x);
-            }
+            failedCallback(_callback,x);
         }
+    }
+
+    @Override
+    public void abort()
+    {
+        // Do a direct close of the output, as this may indicate to a client that the 
+        // response is bad either with RST or by abnormal completion of chunked response.
+        getEndPoint().close();
     }
 
 }

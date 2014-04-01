@@ -6,6 +6,7 @@
 server
 security
 jndi
+webapp
 
 [lib]
 lib/jetty-plus-${jetty.version}.jar

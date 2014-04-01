@@ -35,7 +35,7 @@ public abstract class Rule
      */
     public interface ApplyURI
     {
-        void applyURI(Request request, String oldTarget, String newTarget) throws IOException;   
+        void applyURI(Request request, String oldURI, String newURI) throws IOException;   
     }
     
     protected boolean _terminating;
