@@ -3,10 +3,10 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-parent</artifactId>
-    <version>21</version>
+    <version>22</version>
   </parent>
   <artifactId>jetty-project</artifactId>
-  <version>9.1.4-SNAPSHOT</version>
+  <version>9.1.4.v20140401</version>
   <name>Jetty :: Project</name>
   <url>http://www.eclipse.org/jetty</url>
   <packaging>pom</packaging>
@@ -398,7 +398,7 @@
       </snapshots>
       <id>sonatype-snapshots</id>
       <name>Sonatype Jetty Snapshots</name>
-      <url>http://oss.sonatype.org/content/groups/jetty</url>
+      <url>https://oss.sonatype.org/content/groups/jetty</url>
     </repository>
   </repositories>
   <modules>
