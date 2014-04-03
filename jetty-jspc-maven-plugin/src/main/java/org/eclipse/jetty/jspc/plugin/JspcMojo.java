@@ -79,6 +79,7 @@ import org.eclipse.jetty.util.resource.Resource;
 public class JspcMojo extends AbstractMojo
 {
     public static final String END_OF_WEBAPP = "</web-app>";
+    public static final String PRECOMPILED_FLAG = "org.eclipse.jetty.jsp.precompiled";
 
 
     /**
@@ -207,7 +208,7 @@ public class JspcMojo extends AbstractMojo
     /**
      * Patterns of jars on the system path that contain tlds. Use | to separate each pattern.
      * 
-     * @parameter default-value=".*taglibs[^/]*\.jar|.*jstl-impl[^/]*\.jar$
+     * @parameter default-value=".*taglibs[^/]*\.jar|.*jstl[^/]*\.jar$
      */
     private String tldJarNamePatterns;
     
@@ -294,9 +295,9 @@ public class JspcMojo extends AbstractMojo
         jspc.setWebXmlFragment(webXmlFragment);
         jspc.setUriroot(webAppSourceDirectory);     
         jspc.setOutputDir(generatedClasses);
-        jspc.setClassPath(webAppClassPath.toString());
+        jspc.setClassPath(sysClassPath+System.getProperty("path.separator")+webAppClassPath.toString());
         jspc.setCompile(true);
-        jspc.setSystemClassPath(sysClassPath);
+        //jspc.setSystemClassPath(sysClassPath);
                
 
         // JspC#setExtensions() does not exist, so 
@@ -419,6 +420,10 @@ public class JspcMojo extends AbstractMojo
                         mergedWebXmlWriter.println(line);
                     }
                 }
+                
+                //put in a context init-param to flag that the contents have been precompiled
+                mergedWebXmlWriter.println("<context-param><param-name>"+PRECOMPILED_FLAG+"</param-name><param-value>true</param-value></context-param>");
+                
 
                 // put in the generated fragment
                 try (BufferedReader fragmentWebXmlReader = new BufferedReader(
@@ -541,13 +546,16 @@ public class JspcMojo extends AbstractMojo
      */
     private List<URL> getSystemJarsWithTlds() throws Exception
     {
+        getLog().debug("tld pattern=" + tldJarNamePatterns);   
         final List<URL> list = new ArrayList<URL>();
         List<URI> artifactUris = new ArrayList<URI>();
         Pattern pattern = Pattern.compile(tldJarNamePatterns);
         for (Iterator<Artifact> iter = pluginArtifacts.iterator(); iter.hasNext(); )
         {
             Artifact pluginArtifact = iter.next();
-            artifactUris.add(Resource.newResource(pluginArtifact.getFile()).getURI());
+            Resource res = Resource.newResource(pluginArtifact.getFile());
+            getLog().debug("scan jar: "+res.getURI());
+            artifactUris.add(res.getURI());
         }
         
         PatternMatcher matcher = new PatternMatcher()
