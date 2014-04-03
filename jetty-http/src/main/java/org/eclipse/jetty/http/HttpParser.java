@@ -104,6 +104,7 @@ public class HttpParser
         SPACE2,
         REQUEST_VERSION,
         REASON,
+        PROXY,
         HEADER,
         HEADER_IN_NAME,
         HEADER_VALUE,
@@ -403,7 +404,7 @@ public class HttpParser
      * otherwise skip white space until something else to parse.
      */
     private boolean quickStart(ByteBuffer buffer)
-    {
+    {    	
         if (_requestHandler!=null)
         {
             _method = HttpMethod.lookAheadGet(buffer);
@@ -411,6 +412,7 @@ public class HttpParser
             {
                 _methodString = _method.asString();
                 buffer.position(buffer.position()+_methodString.length()+1);
+                
                 setState(State.SPACE1);
                 return false;
             }
@@ -655,7 +657,29 @@ public class HttpParser
                                 version=HttpVersion.lookAheadGet(buffer.array(),buffer.arrayOffset()+buffer.position()-1,buffer.arrayOffset()+buffer.limit());
                             else
                                 version=HttpVersion.CACHE.getBest(buffer,0,buffer.remaining());
-                            if (version!=null) 
+                            if (version==null)
+                            {
+                                if (_method==HttpMethod.PROXY)
+                                {
+                                    if (!(_requestHandler instanceof ProxyHandler))
+                                        throw new BadMessage();
+                                    
+                                    _uri.flip();
+                                    String protocol=BufferUtil.toString(_uri);
+                                    // This is the proxy protocol, so we can assume entire first line is in buffer else 400
+                                    buffer.position(buffer.position()-1);
+                                    String sAddr = getProxyField(buffer);
+                                    String dAddr = getProxyField(buffer);
+                                    int sPort = BufferUtil.takeInt(buffer);
+                                    next(buffer);
+                                    int dPort = BufferUtil.takeInt(buffer);
+                                    next(buffer);
+                                    _state=State.START;
+                                    ((ProxyHandler)_requestHandler).proxied(protocol,sAddr,dAddr,sPort,dPort);
+                                    return false;
+                                }
+                            }
+                            else
                             {
                                 int pos = buffer.position()+version.asString().length()-1;
                                 if (pos<buffer.limit())
@@ -715,8 +739,7 @@ public class HttpParser
                         if (_connectionFields==null && _version.getVersion()>=HttpVersion.HTTP_1_1.getVersion())
                         {
                             int header_cache = _handler.getHeaderCacheSize();
-                            if (header_cache>0)
-                                _connectionFields=new ArrayTernaryTrie<>(header_cache);
+                            _connectionFields=new ArrayTernaryTrie<>(header_cache);                            
                         }
 
                         setState(State.HEADER);
@@ -1586,6 +1609,11 @@ public class HttpParser
         public int getHeaderCacheSize();
     }
 
+    public interface ProxyHandler 
+    {
+        void proxied(String protocol, String sAddr, String dAddr, int sPort, int dPort);
+    }
+    
     public interface RequestHandler<T> extends HttpHandler<T>
     {
         /**
@@ -1617,5 +1645,21 @@ public class HttpParser
     public Trie<HttpField> getFieldCache()
     {
         return _connectionFields;
+    }
+
+    private String getProxyField(ByteBuffer buffer)
+    {
+        _string.setLength(0);
+        _length=0;
+        
+        while (buffer.hasRemaining())
+        {
+            // process each character
+            byte ch=next(buffer);
+            if (ch<=' ')
+                return _string.toString();
+            _string.append((char)ch);    
+        }
+        throw new BadMessage();
     }
 }

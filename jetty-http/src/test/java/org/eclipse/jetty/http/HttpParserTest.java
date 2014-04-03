@@ -1398,6 +1398,63 @@ public class HttpParserTest
         
     }
 
+    @Test
+    public void testProxyProtocol() throws Exception
+    {
+        ByteBuffer buffer=BufferUtil
+            .toBuffer("PROXY TCP4 107.47.45.254 10.0.1.116 27689 80\015\012"
+                +"GET / HTTP/1.1\015\012"
+                +"Host: localhost \015\012"
+                +"Connection: close\015\012"+"\015\012"+"\015\012");
+
+        Handler handler=new Handler();
+        HttpParser parser=new HttpParser((HttpParser.RequestHandler)handler);
+        parseAll(parser, buffer);
+
+        assertTrue(_headerCompleted);
+        assertTrue(_messageCompleted);
+        assertEquals("GET", _methodOrVersion);
+        assertEquals("/", _uriOrStatus);
+        assertEquals("HTTP/1.1", _versionOrReason);
+        assertEquals("PROXY TCP4 107.47.45.254 10.0.1.116 27689 80", handler._proxy);
+        assertEquals("Host", _hdr[0]);
+        assertEquals("localhost", _val[0]);
+        assertEquals("Connection", _hdr[1]);
+        assertEquals("close", _val[1]);
+        assertEquals(1, _headers);
+    }
+
+    @Test
+    public void testSplitProxyHeaderParseTest() throws Exception
+    {
+        Handler handler=new Handler();
+        HttpParser parser=new HttpParser((HttpParser.RequestHandler)handler);
+
+        ByteBuffer buffer=BufferUtil.toBuffer("PROXY TCP4 207.47.45.254 10.0.1.116 27689 80\015\012");
+        parser.parseNext(buffer);
+
+        buffer=BufferUtil.toBuffer(
+            "GET / HTTP/1.1\015\012"
+                +"Host: localhost \015\012"
+                +"Connection: close\015\012"
+                +"\015\012"
+                +"\015\012");
+
+        parser.parseNext(buffer);
+        assertTrue(_headerCompleted);
+        assertTrue(_messageCompleted);
+        assertEquals("GET", _methodOrVersion);
+        assertEquals("/", _uriOrStatus);
+        assertEquals("HTTP/1.1", _versionOrReason);
+        assertEquals("PROXY TCP4 207.47.45.254 10.0.1.116 27689 80", handler._proxy);
+        assertEquals("Host", _hdr[0]);
+        assertEquals("localhost", _val[0]);
+        assertEquals("Connection", _hdr[1]);
+        assertEquals("close", _val[1]);
+        assertEquals(1, _headers);
+    }
+    
+
     @Before
     public void init()
     {
@@ -1429,9 +1486,10 @@ public class HttpParserTest
     private boolean _headerCompleted;
     private boolean _messageCompleted;
 
-    private class Handler implements HttpParser.RequestHandler<ByteBuffer>, HttpParser.ResponseHandler<ByteBuffer>
+    private class Handler implements HttpParser.RequestHandler<ByteBuffer>, HttpParser.ResponseHandler<ByteBuffer>, HttpParser.ProxyHandler
     {
         private HttpFields fields;
+        String _proxy;
 
         @Override
         public boolean content(ByteBuffer ref)
@@ -1538,6 +1596,12 @@ public class HttpParserTest
         public int getHeaderCacheSize()
         {
             return 512;
+        }
+
+        @Override
+        public void proxied(String protocol, String sAddr, String dAddr, int sPort, int dPort)
+        {
+            _proxy="PROXY "+protocol+" "+sAddr+" "+dAddr+" "+sPort+" "+dPort;
         }
     }
 }
