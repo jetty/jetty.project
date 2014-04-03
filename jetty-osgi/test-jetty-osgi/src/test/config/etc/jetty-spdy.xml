@@ -56,7 +56,7 @@
                         </Item>
 
                         <Item>
-                            <New class="org.eclipse.jetty.spdy.server.ALPNServerConnectionFactory">
+                            <New class="org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory">
                                 <Arg name="protocols">
                                     <Array type="String">
                                         <Item>spdy/3</Item>

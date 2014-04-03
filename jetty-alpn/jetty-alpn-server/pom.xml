@@ -25,7 +25,8 @@
             </goals>
             <configuration>
               <instructions>
-               <Import-Package>org.eclipse.jetty.alpn;resolution:=optional</Import-Package>
+               <Import-Package>org.eclipse.jetty.alpn,*</Import-Package>
+               <_nouses>true</_nouses>
               </instructions>
             </configuration>
           </execution>
