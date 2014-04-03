@@ -210,12 +210,14 @@ public class GzipFilter extends UserAgentFilter
                 {
                     if (type.startsWith("image/")||
                         type.startsWith("audio/")||
-                        type.startsWith("video/"))
+                        type.startsWith("video/")) {
                         _mimeTypes.add(type);
-                    _mimeTypes.add("application/compress");
-                    _mimeTypes.add("application/zip");
-                    _mimeTypes.add("application/gzip");
+                    }
                 }
+                
+                _mimeTypes.add("application/compress");
+                _mimeTypes.add("application/zip");
+                _mimeTypes.add("application/gzip");
             }
             else
             {
