@@ -465,7 +465,7 @@
             </goals>
             <configuration>
               <includeGroupIds>org.eclipse.jetty,org.eclipse.jetty.toolchain,javax.servlet.jsp,org.mortbay.jasper,org.mortbay.jasper,org.eclipse.jetty.orbit</includeGroupIds>
-              <includeArtifactIds>apache-jsp,jetty-schemas,javax.servlet.jsp-api,apache-el,org.eclipse.jdt.core</includeArtifactIds>
+              <includeArtifactIds>apache-jsp,javax.servlet.jsp-api,apache-el,org.eclipse.jdt.core</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <prependGroupId>true</prependGroupId>
               <outputDirectory>${assembly-directory}/lib/apache-jsp</outputDirectory>
@@ -554,7 +554,7 @@
                 <argument>jetty.home=${assembly-directory}</argument>
                 <argument>jetty.base=${assembly-directory}</argument>
                 <argument>--add-to-start=server,deploy,websocket,ext,resources</argument>
-                <argument>--add-to-startd=jsp,http</argument>
+                <argument>--add-to-startd=jsp,jstl,http</argument>
               </arguments>
             </configuration>
             <goals>
@@ -570,7 +570,7 @@
                 <argument>jetty.home=${assembly-directory}</argument>
                 <argument>jetty.base=${assembly-directory}/demo-base</argument>
                 <argument>--add-to-start=server,continuation,deploy,ext,resources,client,annotations,jndi,servlets</argument>
-                <argument>--add-to-startd-ini=jsp,http,https</argument>
+                <argument>--add-to-startd-ini=jsp,jstl,http,https</argument>
               </arguments>
             </configuration>
             <goals>

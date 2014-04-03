@@ -197,7 +197,7 @@ public class Modules implements Iterable<Module>
             }
             for (String parent : module.getParentNames())
             {
-                System.out.printf("   Parent: %s%n",parent);
+                System.out.printf("   Depend: %s%n",parent);
             }
             for (String lib : module.getLibs())
             {
