@@ -355,6 +355,12 @@ public class StartArgs
                 }
             }
 
+            for (String jvmArg : module.getJvmArgs())
+            {
+                exec=true;
+                jvmArgs.add(jvmArg);
+            }
+            
             // Find and Expand XML files
             for (String xmlRef : module.getXmls())
             {
@@ -766,6 +772,7 @@ public class StartArgs
             }
             moduleStartdIni.addAll(getValues(arg));
             run = false;
+            download = true;
             return;
         }
 
@@ -777,6 +784,7 @@ public class StartArgs
             }
             moduleStartIni.addAll(getValues(arg));
             run = false;
+            download = true;
             return;
         }
 

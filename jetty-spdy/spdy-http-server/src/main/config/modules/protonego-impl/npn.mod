@@ -1,14 +1,3 @@
-[name]
-protonego
-
-[depend]
-protonego/npn-${java.version}
-
-[files]
-lib/
-lib/npn/
-
-[ini-template]
 # NPN is provided via a -Xbootclasspath that modifies the secure connections
 # in java to support the NPN layer needed for SPDY.
 #
@@ -28,4 +17,15 @@ lib/npn/
 # http://central.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/
 
 
+[name]
+protonego-impl
 
+[depend]
+protonego-impl/npn-${java.version}
+
+[xml]
+etc/protonego-npn.xml
+
+[files]
+lib/
+lib/npn/

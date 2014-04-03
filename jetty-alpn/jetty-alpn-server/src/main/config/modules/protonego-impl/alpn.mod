@@ -1,14 +1,3 @@
-[name]
-protonego
-
-[depend]
-protonego/alpn-${java.version}
-
-[files]
-lib/
-lib/alpn/
-
-[ini-template]
 # ALPN is provided via a -Xbootclasspath that modifies the secure connections
 # in java to support the ALPN layer needed for SPDY (and eventually HTTP/2)
 #
@@ -28,5 +17,20 @@ lib/alpn/
 # All versions of alpn-boot can be found at
 # http://central.maven.org/maven2/org/mortbay/jetty/alpn/alpn-boot/
 
+[name]
+protonego-impl
 
+[depend]
+protonego-impl/alpn-${java.version}
+
+[lib]
+lib/jetty-alpn-client-${jetty.version}.jar
+lib/jetty-alpn-server-${jetty.version}.jar
+
+[xml]
+etc/protonego-alpn.xml
+
+[files]
+lib/
+lib/alpn/
 

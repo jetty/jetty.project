@@ -334,6 +334,8 @@ public class Main
 
     private void moduleIni(StartArgs args, String name, boolean topLevel, boolean appendStartIni) throws IOException
     {
+        System.err.println("module ini "+name);
+        
         // Find the start.d relative to the base directory only.
         File start_d = baseHome.getBaseFile("start.d");
 
