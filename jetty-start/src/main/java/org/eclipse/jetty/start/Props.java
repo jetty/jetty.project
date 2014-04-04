@@ -131,7 +131,7 @@ public final class Props implements Iterable<Prop>
             if (value == null)
             {
                 StartLog.debug("Unable to expand: %s",property);
-                expanded.append(property);
+                expanded.append(mat.group(1));
             }
             else
             {

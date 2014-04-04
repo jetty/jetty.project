@@ -41,8 +41,10 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -333,7 +335,7 @@ public class Main
     }
 
     private void moduleIni(StartArgs args, String name, boolean topLevel, boolean appendStartIni) throws IOException
-    {
+    {        
         // Find the start.d relative to the base directory only.
         File start_d = baseHome.getBaseFile("start.d");
 
@@ -457,7 +459,9 @@ public class Main
         {
             StartLog.info("%-15s initialised in %s",name,short_ini);
         }
-
+        else
+            StartLog.info("%-15s initialised transitively",name);
+        
         // Also list other places this module is enabled
         for (String source : module.getSources())
         {
@@ -473,23 +477,57 @@ public class Main
             initFile(new FileArg(file));
         }
 
-        // Process dependencies from top level only
+        // Process dependencies
+        module.expandProperties(args.getProperties());
+        modules.registerParentsIfMissing(baseHome,args,module);
+        modules.buildGraph();
+        
+        
+        // process new ini modules
         if (topLevel)
         {
-            List<Module> parents = new ArrayList<>();
-            for (String parent : modules.resolveParentModulesOf(name))
+            List<Module> depends = new ArrayList<>();
+            for (String depend : modules.resolveParentModulesOf(name))
             {
-                if (!name.equals(parent))
+                if (!name.equals(depend))
                 {
-                    Module m = modules.get(parent);
+                    Module m = modules.get(depend);
                     m.setEnabled(true);
-                    parents.add(m);
+                    depends.add(m);
                 }
             }
-            Collections.sort(parents,Collections.reverseOrder(new Module.DepthComparator()));
-            for (Module m : parents)
+            Collections.sort(depends,Collections.reverseOrder(new Module.DepthComparator()));
+            
+            Set<String> done = new HashSet<>(0);
+            while (true)
             {
-                moduleIni(args,m.getName(),false,appendStartIni);
+                // initialize known dependencies
+                boolean complete=true;
+                for (Module m : depends)
+                {
+                    if (!done.contains(m.getName()))
+                    {
+                        complete=false;
+                        moduleIni(args,m.getName(),false,appendStartIni);
+                        done.add(m.getName());
+                    }
+                }
+                
+                if (complete)
+                    break;
+                
+                // look for any new ones resolved via expansion
+                depends.clear();
+                for (String depend : modules.resolveParentModulesOf(name))
+                {
+                    if (!name.equals(depend))
+                    {
+                        Module m = modules.get(depend);
+                        m.setEnabled(true);
+                        depends.add(m);
+                    }
+                }
+                Collections.sort(depends,Collections.reverseOrder(new Module.DepthComparator()));
             }
         }
     }
@@ -644,13 +682,13 @@ public class Main
             }
         }
 
-        // Initialize
+        // Initialize start.ini
         for (String module : args.getModuleStartIni())
         {
             moduleIni(args,module,true,true);
         }
 
-        // Initialize
+        // Initialize start.d
         for (String module : args.getModuleStartdIni())
         {
             moduleIni(args,module,true,false);

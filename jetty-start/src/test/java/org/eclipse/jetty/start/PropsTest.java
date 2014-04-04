@@ -91,6 +91,7 @@ public class PropsTest
         assertThat(props.expand("port=8080"),is("port=8080"));
         assertThat(props.expand("jdk=${java.version}"),is("jdk=" + System.getProperty("java.version")));
         assertThat(props.expand("id=${name}-${version}"),is("id=jetty-9.1"));
+        assertThat(props.expand("id=${unknown}-${wibble}"),is("id=${unknown}-${wibble}"));
     }
 
     @Test

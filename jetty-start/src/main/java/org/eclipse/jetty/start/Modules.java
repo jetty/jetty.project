@@ -118,7 +118,10 @@ public class Modules implements Iterable<Module>
 
                 if (parent == null)
                 {
-                    StartLog.debug("module not found [%s]%n",parentName);
+                    if (parentName.contains("${"))
+                        StartLog.debug("module not found [%s]%n",parentName);
+                    else
+                        StartLog.warn("module not found [%s]%n",parentName);
                 }
                 else
                 {
@@ -370,6 +373,23 @@ public class Modules implements Iterable<Module>
         return module;
     }
 
+    public void registerParentsIfMissing(BaseHome basehome, StartArgs args, Module module) throws IOException
+    {
+        for (String name : module.getParentNames())   
+        {
+            if (!modules.containsKey(name))
+            {
+                File file = basehome.getFile("modules/" + name + ".mod");
+                if (FS.canReadFile(file))
+                {
+                    Module parent = registerModule(basehome,args,file);
+                    updateParentReferencesTo(parent);
+                    registerParentsIfMissing(basehome, args, parent);
+                }
+            }
+        }
+    }
+    
     public void registerAll(BaseHome basehome, StartArgs args) throws IOException
     {
         for (Path path : basehome.getPaths("modules/*.mod"))
