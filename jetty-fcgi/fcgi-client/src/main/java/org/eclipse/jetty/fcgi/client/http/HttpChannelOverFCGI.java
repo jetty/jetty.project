@@ -132,7 +132,7 @@ public class HttpChannelOverFCGI extends HttpChannel
         if (close)
             connection.close();
         else
-            connection.release();
+            connection.release(this);
     }
 
     protected void flush(Generator.Result... results)
@@ -155,7 +155,7 @@ public class HttpChannelOverFCGI extends HttpChannel
         protected void onIdleExpired(TimeoutException timeout)
         {
             LOG.debug("Idle timeout for request {}", request);
-            abort(timeout);
+            connection.abort(timeout);
         }
 
         @Override

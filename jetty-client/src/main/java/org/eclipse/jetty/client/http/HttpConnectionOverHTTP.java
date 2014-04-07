@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.client.http;
 
+import java.nio.channels.AsynchronousCloseException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -85,13 +86,8 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
     protected boolean onReadTimeout()
     {
         LOG.debug("{} idle timeout", this);
-
-        HttpExchange exchange = channel.getHttpExchange();
-        if (exchange != null)
-            return exchange.getRequest().abort(new TimeoutException());
-
-        getHttpDestination().close(this);
-        return true;
+        close(new TimeoutException());
+        return false;
     }
 
     @Override
@@ -120,19 +116,34 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
     @Override
     public void close()
     {
+        close(new AsynchronousCloseException());
+    }
+
+    protected void close(Throwable failure)
+    {
         if (softClose())
         {
+            // First close then abort, to be sure that the connection cannot be reused
+            // from an onFailure() handler or by blocking code waiting for completion.
             getHttpDestination().close(this);
             getEndPoint().shutdownOutput();
             LOG.debug("{} oshut", this);
             getEndPoint().close();
             LOG.debug("{} closed", this);
+
+            abort(failure);
         }
     }
 
     public boolean softClose()
     {
         return closed.compareAndSet(false, true);
+    }
+
+    private boolean abort(Throwable failure)
+    {
+        HttpExchange exchange = channel.getHttpExchange();
+        return exchange != null && exchange.getRequest().abort(failure);
     }
 
     @Override

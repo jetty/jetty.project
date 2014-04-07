@@ -20,6 +20,7 @@ package org.eclipse.jetty.fcgi.client.http;
 
 import java.io.EOFException;
 import java.nio.ByteBuffer;
+import java.nio.channels.AsynchronousCloseException;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -139,25 +140,19 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
 
     private void shutdown()
     {
-        // First close then abort, to be sure that the
-        // connection cannot be reused from an onFailure()
-        // handler or by blocking code waiting for completion.
-        close();
-        for (HttpChannelOverFCGI channel : channels.values())
-            channel.abort(new EOFException());
+        close(new EOFException());
     }
 
     @Override
     protected boolean onReadTimeout()
     {
-        for (HttpChannelOverFCGI channel : channels.values())
-            channel.abort(new TimeoutException());
-        close();
+        close(new TimeoutException());
         return false;
     }
 
-    public void release()
+    protected void release(HttpChannelOverFCGI channel)
     {
+        channels.remove(channel.getRequest());
         if (destination instanceof PoolingHttpDestination)
         {
             @SuppressWarnings("unchecked")
@@ -170,14 +165,34 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
     @Override
     public void close()
     {
+        close(new AsynchronousCloseException());
+    }
+
+    private void close(Throwable failure)
+    {
         if (closed.compareAndSet(false, true))
         {
+            // First close then abort, to be sure that the connection cannot be reused
+            // from an onFailure() handler or by blocking code waiting for completion.
             getHttpDestination().close(this);
             getEndPoint().shutdownOutput();
             LOG.debug("{} oshut", this);
             getEndPoint().close();
             LOG.debug("{} closed", this);
+
+            abort(failure);
         }
+    }
+
+    protected void abort(Throwable failure)
+    {
+        for (HttpChannelOverFCGI channel : channels.values())
+        {
+            HttpExchange exchange = channel.getHttpExchange();
+            if (exchange != null)
+                exchange.getRequest().abort(failure);
+        }
+        channels.clear();
     }
 
     private int acquireRequest()
@@ -304,7 +319,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
         @Override
         public void onEnd(int request)
         {
-            HttpChannelOverFCGI channel = channels.remove(request);
+            HttpChannelOverFCGI channel = channels.get(request);
             if (channel != null)
             {
                 channel.responseSuccess();

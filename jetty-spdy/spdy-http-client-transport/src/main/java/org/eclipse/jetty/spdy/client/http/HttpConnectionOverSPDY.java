@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.spdy.client.http;
 
+import java.nio.channels.AsynchronousCloseException;
+import java.util.Set;
+
 import org.eclipse.jetty.client.HttpChannel;
 import org.eclipse.jetty.client.HttpConnection;
 import org.eclipse.jetty.client.HttpDestination;
@@ -25,9 +28,11 @@ import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.spdy.api.GoAwayInfo;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.ConcurrentHashSet;
 
 public class HttpConnectionOverSPDY extends HttpConnection
 {
+    private final Set<HttpChannel> channels = new ConcurrentHashSet<>();
     private final Session session;
 
     public HttpConnectionOverSPDY(HttpDestination destination, Session session)
@@ -41,14 +46,35 @@ public class HttpConnectionOverSPDY extends HttpConnection
     {
         normalizeRequest(exchange.getRequest());
         // One connection maps to N channels, so for each exchange we create a new channel
-        HttpChannel channel = new HttpChannelOverSPDY(getHttpDestination(), session);
+        HttpChannel channel = new HttpChannelOverSPDY(getHttpDestination(), this, session);
+        channels.add(channel);
         channel.associate(exchange);
         channel.send();
+    }
+
+    protected void release(HttpChannel channel)
+    {
+        channels.remove(channel);
     }
 
     @Override
     public void close()
     {
+        // First close then abort, to be sure that the connection cannot be reused
+        // from an onFailure() handler or by blocking code waiting for completion.
+        getHttpDestination().close(this);
         session.goAway(new GoAwayInfo(), new Callback.Adapter());
+        abort(new AsynchronousCloseException());
+    }
+
+    private void abort(Throwable failure)
+    {
+        for (HttpChannel channel : channels)
+        {
+            HttpExchange exchange = channel.getHttpExchange();
+            if (exchange != null)
+                exchange.getRequest().abort(failure);
+        }
+        channels.clear();
     }
 }
