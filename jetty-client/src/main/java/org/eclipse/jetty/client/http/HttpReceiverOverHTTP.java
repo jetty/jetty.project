@@ -127,8 +127,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         // Shutting down the parser may invoke messageComplete() or earlyEOF()
         parser.atEOF();
         parser.parseNext(BufferUtil.EMPTY_BUFFER);
-        if (!responseFailure(new EOFException()))
-            getHttpConnection().close();
+        getHttpConnection().close(new EOFException());
     }
 
     @Override

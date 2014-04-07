@@ -130,6 +130,15 @@ public abstract class MultiplexHttpDestination<C extends Connection> extends Htt
     }
 
     @Override
+    public void close()
+    {
+        super.close();
+        C connection = this.connection;
+        if (connection != null)
+            connection.close();
+    }
+
+    @Override
     public void close(Connection connection)
     {
         super.close(connection);

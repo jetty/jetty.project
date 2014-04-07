@@ -21,17 +21,20 @@ package org.eclipse.jetty.spdy.client.http;
 import org.eclipse.jetty.client.HttpChannel;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpExchange;
+import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.spdy.api.Session;
 
 public class HttpChannelOverSPDY extends HttpChannel
 {
+    private final HttpConnectionOverSPDY connection;
     private final Session session;
     private final HttpSenderOverSPDY sender;
     private final HttpReceiverOverSPDY receiver;
 
-    public HttpChannelOverSPDY(HttpDestination destination, Session session)
+    public HttpChannelOverSPDY(HttpDestination destination, HttpConnectionOverSPDY connection, Session session)
     {
         super(destination);
+        this.connection = connection;
         this.session = session;
         this.sender = new HttpSenderOverSPDY(this);
         this.receiver = new HttpReceiverOverSPDY(this);
@@ -71,5 +74,12 @@ public class HttpChannelOverSPDY extends HttpChannel
     {
         sender.abort(cause);
         return receiver.abort(cause);
+    }
+
+    @Override
+    public void exchangeTerminated(Result result)
+    {
+        super.exchangeTerminated(result);
+        connection.release(this);
     }
 }
