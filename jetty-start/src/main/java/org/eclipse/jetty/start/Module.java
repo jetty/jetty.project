@@ -268,6 +268,16 @@ public class Module
 
     private void init(BaseHome basehome)
     {
+        parentNames = new HashSet<>();
+        optionalParentNames = new HashSet<>();
+        parentEdges = new HashSet<>();
+        childEdges = new HashSet<>();
+        xmls = new ArrayList<>();
+        initialise = new ArrayList<>();
+        libs = new ArrayList<>();
+        files = new ArrayList<>();
+        jvmArgs = new ArrayList<>();
+
         String name = basehome.toShortForm(file);
 
         // Find module system name (usually in the form of a filesystem reference)
@@ -279,16 +289,6 @@ public class Module
         }
         this.fileRef = mat.group(1).replace('\\','/');
         this.logicalName = this.fileRef;
-
-        parentNames = new HashSet<>();
-        optionalParentNames = new HashSet<>();
-        parentEdges = new HashSet<>();
-        childEdges = new HashSet<>();
-        xmls = new ArrayList<>();
-        initialise = new ArrayList<>();
-        libs = new ArrayList<>();
-        files = new ArrayList<>();
-        jvmArgs = new ArrayList<>();
     }
 
     public boolean isEnabled()
