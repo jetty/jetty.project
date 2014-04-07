@@ -23,6 +23,7 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -36,6 +37,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -425,5 +427,41 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.getStatus());
         Assert.assertEquals(length, response.getContent().length);
+    }
+
+    @Test
+    public void testLongPollIsAbortedWhenClientIsStopped() throws Exception
+    {
+        final CountDownLatch latch = new CountDownLatch(1);
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                request.startAsync();
+                latch.countDown();
+            }
+        });
+
+        final CountDownLatch completeLatch = new CountDownLatch(1);
+        client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .send(new Response.CompleteListener()
+                {
+                    @Override
+                    public void onComplete(Result result)
+                    {
+                        if (result.isFailed())
+                            completeLatch.countDown();
+                    }
+                });
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+
+        // Stop the client, the complete listener must be invoked.
+        client.stop();
+
+        Assert.assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
     }
 }

@@ -35,12 +35,4 @@ public class HttpDestinationOverSPDY extends MultiplexHttpDestination<HttpConnec
     {
         connection.send(exchange);
     }
-
-    @Override
-    public void abort(Throwable cause)
-    {
-        // TODO: in case of connection failure, we need to abort also
-        // TODO: all pending exchanges, so we need to track them.
-        super.abort(cause);
-    }
 }
