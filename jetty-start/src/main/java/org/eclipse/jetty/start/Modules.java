@@ -375,7 +375,7 @@ public class Modules implements Iterable<Module>
 
     public void registerParentsIfMissing(BaseHome basehome, StartArgs args, Module module) throws IOException
     {
-        for (String name : module.getParentNames())   
+        for (String name : new ArrayList<>(module.getParentNames()))   
         {
             if (!modules.containsKey(name))
             {
