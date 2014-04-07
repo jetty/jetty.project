@@ -385,7 +385,7 @@ public class ProxyServlet extends HttpServlet
 
         if (rewrittenURI == null)
         {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN);
+            onRewriteFailed(request, response);
             return;
         }
 
@@ -488,6 +488,11 @@ public class ProxyServlet extends HttpServlet
 
         proxyRequest.timeout(getTimeout(), TimeUnit.MILLISECONDS);
         proxyRequest.send(new ProxyResponseListener(request, response));
+    }
+
+    protected void onRewriteFailed(HttpServletRequest request, HttpServletResponse response) throws IOException
+    {
+        response.sendError(HttpServletResponse.SC_FORBIDDEN);
     }
 
     protected Request addViaHeader(Request proxyRequest)
