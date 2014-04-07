@@ -115,36 +115,12 @@ public class GzipHttpOutput extends HttpOutput
     
     private void gzip(ByteBuffer content, boolean complete, final Callback callback)
     {
-        if (content.hasRemaining())
+        if (content.hasRemaining() || complete)
         {
             if (content.hasArray())
                 new GzipArrayCB(content,complete,callback).iterate();
             else
                 new GzipBufferCB(content,complete,callback).iterate();
-        }
-        else if (complete)
-        {
-            _deflater.finish();
-
-            int produced=_deflater.deflate(_buffer.array(),_buffer.arrayOffset()+_buffer.limit(),_buffer.capacity()-_buffer.limit(),Deflater.NO_FLUSH);
-            _buffer.limit(_buffer.limit()+produced);
-            addTrailer();
-            superWrite(_buffer,complete,new Callback()
-            {
-                @Override
-                public void succeeded()
-                {
-                    getHttpChannel().getByteBufferPool().release(_buffer);
-                    _buffer=null;
-                    callback.succeeded();
-                }
-
-                @Override
-                public void failed(Throwable x)
-                {
-                    callback.failed(x);
-                }
-            });
         }
     }
 
