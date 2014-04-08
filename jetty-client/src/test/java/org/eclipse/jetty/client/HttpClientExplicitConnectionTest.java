@@ -82,9 +82,12 @@ public class HttpClientExplicitConnectionTest extends AbstractHttpClientServerTe
 
         Assert.assertEquals(200, response.getStatus());
 
+        // Wait some time to have the client is an idle state.
+        TimeUnit.SECONDS.sleep(1);
+
         connector.stop();
 
-        // Give the connection some time to process the remote close
+        // Give the connection some time to process the remote close.
         TimeUnit.SECONDS.sleep(1);
 
         HttpConnectionOverHTTP httpConnection = (HttpConnectionOverHTTP)connection;
