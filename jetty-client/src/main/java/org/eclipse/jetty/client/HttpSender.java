@@ -152,7 +152,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
                 }
                 default:
                 {
-                    throw new IllegalStateException(current.toString());
+                    throw illegalSenderState(current);
                 }
             }
         }
@@ -178,7 +178,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
             if (expects100Continue(request))
                 newSenderState = content.hasContent() ? SenderState.EXPECTING_WITH_CONTENT : SenderState.EXPECTING;
             if (!updateSenderState(SenderState.IDLE, newSenderState))
-                throw new IllegalStateException();
+                throw illegalSenderState(SenderState.IDLE);
 
             // Setting the listener may trigger calls to onContent() by other
             // threads so we must set it only after the sender state has been updated
@@ -462,7 +462,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
                     {
                         // There is content to send.
                         if (!updateSenderState(current, SenderState.SENDING))
-                            throw new IllegalStateException();
+                            throw illegalSenderState(current);
                         LOG.debug("Proceeding while waiting");
                         sendContent(exchange, content, contentCallback); // TODO old style usage!
                         return;
@@ -471,14 +471,14 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
                     {
                         // No content to send yet - it's deferred.
                         if (!updateSenderState(current, SenderState.IDLE))
-                            throw new IllegalStateException();
+                            throw illegalSenderState(current);
                         LOG.debug("Proceeding deferred");
                         return;
                     }
                 }
                 default:
                 {
-                    throw new IllegalStateException(current.toString());
+                    throw illegalSenderState(current);
                 }
             }
         }
@@ -530,6 +530,11 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
             default:
                 return false;
         }
+    }
+
+    private RuntimeException illegalSenderState(SenderState current)
+    {
+        return new IllegalStateException("Expected " + current + " found " + senderState.get() + " instead");
     }
 
     /**
@@ -723,7 +728,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
                         }
                         default:
                         {
-                            throw new IllegalStateException();
+                            throw illegalSenderState(current);
                         }
                     }
                 }
@@ -792,11 +797,11 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
                                 return Action.SCHEDULED;
                             }
                         }
-                        throw new IllegalStateException();
+                        throw illegalSenderState(current);
                     }
                     default:
                     {
-                        throw new IllegalStateException();
+                        throw illegalSenderState(current);
                     }
                 }
             }
