@@ -213,7 +213,11 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     @Override
     public void earlyEOF()
     {
-        failAndClose(new EOFException());
+        HttpExchange exchange = getHttpExchange();
+        if (exchange == null)
+            getHttpConnection().close();
+        else
+            failAndClose(new EOFException());
     }
 
     @Override
@@ -244,10 +248,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
 
     private void failAndClose(Throwable failure)
     {
-        // Close the connection anyway, even if responseFailure() returns false.
-        // This may happen for idle closes (there is no exchange to fail).
-        responseFailure(failure);
-        getHttpConnection().close(failure);
+        if (responseFailure(failure))
+            getHttpConnection().close(failure);
     }
 
     @Override
