@@ -243,7 +243,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         ContentResponse response = client.POST(scheme + "://localhost:" + connector.getLocalPort() + "/?b=1")
                 .param(paramName, paramValue)
                 .content(new BytesContentProvider(content))
-                .timeout(555, TimeUnit.SECONDS)
+                .timeout(5, TimeUnit.SECONDS)
                 .send();
 
         Assert.assertNotNull(response);
