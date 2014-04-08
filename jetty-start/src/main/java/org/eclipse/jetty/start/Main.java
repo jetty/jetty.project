@@ -683,13 +683,13 @@ public class Main
         }
 
         // Initialize start.ini
-        for (String module : args.getModuleStartIni())
+        for (String module : args.getAddToStartIni())
         {
             moduleIni(args,module,true,true);
         }
 
         // Initialize start.d
-        for (String module : args.getModuleStartdIni())
+        for (String module : args.getAddToStartdIni())
         {
             moduleIni(args,module,true,false);
         }

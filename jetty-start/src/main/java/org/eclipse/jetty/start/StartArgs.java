@@ -69,23 +69,41 @@ public class StartArgs
     private static final String SERVER_MAIN = "org.eclipse.jetty.xml.XmlConfiguration";
 
     private List<String> commandLine = new ArrayList<>();
+    /** List of enabled modules */
     private Set<String> modules = new HashSet<>();
+    /** Map of enabled modules to the source of where that activation occurred */
     private Map<String, List<String>> sources = new HashMap<>();
+    /** Map of properties to where that property was declared */
+    private Map<String, String> propertySource = new HashMap<>();
+    /** List of all active [files] sections from enabled modules */
     private List<FileArg> files = new ArrayList<>();
+    /** List of all active [lib] sectinos from enabled modules */
     private Classpath classpath;
-    private List<String> xmlRefs = new ArrayList<>();
+    /** List of all active [xml] sections from enabled modules */
     private List<File> xmls = new ArrayList<>();
+    /** JVM arguments, found via commmand line and in all active [exec] sections from enabled modules */
+    private List<String> jvmArgs = new ArrayList<>();
+
+    /** List of all xml references found directly on command line or start.ini */
+    private List<String> xmlRefs = new ArrayList<>();
+
     private Props properties = new Props();
     private Set<String> systemPropertyKeys = new HashSet<>();
-    private List<String> jvmArgs = new ArrayList<>();
     private List<String> rawLibs = new ArrayList<>();
-    private List<String> moduleStartdIni = new ArrayList<>();
-    private List<String> moduleStartIni = new ArrayList<>();
-    private Map<String, String> propertySource = new HashMap<>();
+
+    // jetty.base - build out commands
+    /** --add-to-startd=[module,[module]] */
+    private List<String> addToStartdIni = new ArrayList<>();
+    /** --add-to-start=[module,[module]] */
+    private List<String> addToStartIni = new ArrayList<>();
+
+    // module inspection commands
+    /** --write-module-graph=[filename] */
     private String moduleGraphFilename;
 
+    /** Collection of all modules */
     private Modules allModules;
-    // Should the server be run?
+    /** Should the server be run? */
     private boolean run = true;
     private boolean download = false;
     private boolean help = false;
@@ -309,7 +327,7 @@ public class StartArgs
             System.setProperty(key,val);
         }
     }
-    
+
     /**
      * Expand any command line added <code>--lib</code> lib references.
      * 
@@ -348,7 +366,7 @@ public class StartArgs
                 StartLog.debug("rawlibref = " + rawlibref);
                 String libref = properties.expand(rawlibref);
                 StartLog.debug("expanded = " + libref);
-                
+
                 for (Path libpath : baseHome.getPaths(libref))
                 {
                     classpath.addComponent(libpath.toFile());
@@ -357,10 +375,10 @@ public class StartArgs
 
             for (String jvmArg : module.getJvmArgs())
             {
-                exec=true;
+                exec = true;
                 jvmArgs.add(jvmArg);
             }
-            
+
             // Find and Expand XML files
             for (String xmlRef : module.getXmls())
             {
@@ -475,14 +493,14 @@ public class StartArgs
         return moduleGraphFilename;
     }
 
-    public List<String> getModuleStartdIni()
+    public List<String> getAddToStartdIni()
     {
-        return moduleStartdIni;
+        return addToStartdIni;
     }
 
-    public List<String> getModuleStartIni()
+    public List<String> getAddToStartIni()
     {
-        return moduleStartIni;
+        return addToStartIni;
     }
 
     public Props getProperties()
@@ -744,7 +762,7 @@ public class StartArgs
         if (arg.startsWith("--lib="))
         {
             String cp = getValue(arg);
-            
+
             if (cp != null)
             {
                 StringTokenizer t = new StringTokenizer(cp,File.pathSeparator);
@@ -770,7 +788,7 @@ public class StartArgs
             {
                 throw new UsageException(ERR_BAD_ARG,"%s not allowed in %s",arg,source);
             }
-            moduleStartdIni.addAll(getValues(arg));
+            addToStartdIni.addAll(getValues(arg));
             run = false;
             download = true;
             return;
@@ -782,7 +800,7 @@ public class StartArgs
             {
                 throw new UsageException(ERR_BAD_ARG,"%s not allowed in %s",arg,source);
             }
-            moduleStartIni.addAll(getValues(arg));
+            addToStartIni.addAll(getValues(arg));
             run = false;
             download = true;
             return;
