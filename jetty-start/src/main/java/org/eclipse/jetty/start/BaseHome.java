@@ -48,7 +48,7 @@ import java.util.regex.Pattern;
 public class BaseHome
 {
     private final static EnumSet<FileVisitOption> SEARCH_VISIT_OPTIONS = EnumSet.of(FileVisitOption.FOLLOW_LINKS);;
-    private final static int MAX_SEARCH_DEPTH = 30;
+    private final static int MAX_SEARCH_DEPTH = Integer.getInteger("org.eclipse.jetty.start.searchDepth",10);
 
     private Path homeDir;
     private Path baseDir;
