@@ -38,6 +38,7 @@ import org.eclipse.jetty.util.BufferUtil;
 public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
 {
     private final HttpParser parser = new HttpParser(this);
+    private boolean shutdown;
 
     public HttpReceiverOverHTTP(HttpChannelOverHTTP channel)
     {
@@ -124,10 +125,23 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
 
     private void shutdown()
     {
-        // Shutting down the parser may invoke messageComplete() or earlyEOF()
+        // Mark this receiver as shutdown, so that we can
+        // close the connection when the exchange terminates.
+        // We cannot close the connection from here because
+        // the request may still be in process.
+        shutdown = true;
+
+        // Shutting down the parser may invoke messageComplete() or earlyEOF().
+        // In case of content delimited by EOF, without a Connection: close
+        // header, the connection will be closed at exchange termination
+        // thanks to the flag we have set above.
         parser.atEOF();
         parser.parseNext(BufferUtil.EMPTY_BUFFER);
-        getHttpConnection().close(new EOFException());
+    }
+
+    protected boolean isShutdown()
+    {
+        return shutdown;
     }
 
     @Override
@@ -230,8 +244,10 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
 
     private void failAndClose(Throwable failure)
     {
-        if (responseFailure(failure))
-            getHttpChannel().getHttpConnection().close();
+        // Close the connection anyway, even if responseFailure() returns false.
+        // This may happen for idle closes (there is no exchange to fail).
+        responseFailure(failure);
+        getHttpConnection().close(failure);
     }
 
     @Override
