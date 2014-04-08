@@ -98,7 +98,7 @@ public class BaseHomeTest
         File baseDir = null;
 
         BaseHome hb = new BaseHome(homeDir,baseDir);
-        File startIni = hb.getFile("/start.ini");
+        File startIni = hb.getFile("start.ini");
 
         String ref = hb.toShortForm(startIni);
         Assert.assertThat("Reference",ref,startsWith("${jetty.home}"));
@@ -183,7 +183,7 @@ public class BaseHomeTest
         File baseDir = MavenTestingUtils.getTestResourceDir("hb.1/base");
 
         BaseHome hb = new BaseHome(homeDir,baseDir);
-        File startIni = hb.getFile("/start.ini");
+        File startIni = hb.getFile("start.ini");
 
         String ref = hb.toShortForm(startIni);
         Assert.assertThat("Reference",ref,startsWith("${jetty.base}"));

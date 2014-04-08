@@ -22,6 +22,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
@@ -255,5 +256,10 @@ public class FS
     public static boolean exists(Path path)
     {
         return Files.exists(path,new LinkOption[0]);
+    }
+
+    public static Path toPath(String path)
+    {
+        return FileSystems.getDefault().getPath(FS.separators(path));
     }
 }
