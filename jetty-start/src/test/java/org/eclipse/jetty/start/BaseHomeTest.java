@@ -167,6 +167,30 @@ public class BaseHomeTest
 
         assertPathList(hb,"Paths found",expected,paths);
     }
+    
+    @Test
+    public void testGetPaths_More() throws IOException
+    {
+        File homeDir = MavenTestingUtils.getTestResourceDir("hb.1/home");
+        File baseDir = MavenTestingUtils.getTestResourceDir("hb.1/base");
+        File moreDir = MavenTestingUtils.getTestResourceDir("extra-start-dirs/more-startd");
+
+        BaseHome hb = new BaseHome(homeDir,baseDir);
+        hb.addExtraStart("more",moreDir);
+        List<Path> paths = hb.getPaths("start.d/*.ini");
+
+        List<String> expected = new ArrayList<>();
+        expected.add("${more}/start.d/more.ini");
+        expected.add("${jetty.base}/start.d/jmx.ini");
+        expected.add("${jetty.home}/start.d/jndi.ini");
+        expected.add("${jetty.home}/start.d/jsp.ini");
+        expected.add("${jetty.base}/start.d/logging.ini");
+        expected.add("${jetty.home}/start.d/ssl.ini");
+        expected.add("${jetty.base}/start.d/myapp.ini");
+        FSTest.toOsSeparators(expected);
+
+        assertPathList(hb,"Paths found",expected,paths);
+    }
 
     @Test
     public void testDefault() throws IOException

@@ -86,7 +86,7 @@ public class StartArgs
 
     /** List of all xml references found directly on command line or start.ini */
     private List<String> xmlRefs = new ArrayList<>();
-
+    
     private Props properties = new Props();
     private Set<String> systemPropertyKeys = new HashSet<>();
     private List<String> rawLibs = new ArrayList<>();

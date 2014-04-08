@@ -32,7 +32,9 @@ import java.nio.file.PathMatcher;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -47,29 +49,94 @@ import java.util.regex.Pattern;
  */
 public class BaseHome
 {
+    private static final String JETTY_BASE = "jetty.base";
+    private static final String JETTY_HOME = "jetty.home";
+
     private final static EnumSet<FileVisitOption> SEARCH_VISIT_OPTIONS = EnumSet.of(FileVisitOption.FOLLOW_LINKS);;
     private final static int MAX_SEARCH_DEPTH = Integer.getInteger("org.eclipse.jetty.start.searchDepth",10);
 
-    private Path homeDir;
-    private Path baseDir;
+    public static class SearchDir
+    {
+        private Path dir;
+        private String name;
+
+        public SearchDir(String name)
+        {
+            this.name = name;
+        }
+
+        public SearchDir setDir(String path)
+        {
+            if (path != null)
+            {
+                return setDir(FS.toPath(path));
+            }
+            return this;
+        }
+
+        public SearchDir setDir(File path)
+        {
+            if (path != null)
+            {
+                return setDir(path.toPath());
+            }
+            return this;
+        }
+
+        public SearchDir setDir(Path path)
+        {
+            if (path != null)
+            {
+                this.dir = path.toAbsolutePath();
+            }
+            return this;
+        }
+
+        public Path getDir()
+        {
+            return dir;
+        }
+
+        public Path resolve(String subpath)
+        {
+            return dir.resolve(FS.separators(subpath));
+        }
+
+        public Path resolve(Path subpath)
+        {
+            return dir.resolve(subpath);
+        }
+
+        public String toShortForm(Path path)
+        {
+            Path relative = dir.relativize(path);
+            return String.format("${%s}%c%s",name,File.separatorChar,relative.toString());
+        }
+    }
+
+    private SearchDir homeDir;
+    private LinkedList<SearchDir> searchDirs = new LinkedList<>();
+    private SearchDir baseDir;
 
     public BaseHome()
     {
         try
         {
             // find ${jetty.base}
+            this.baseDir = new SearchDir(JETTY_BASE);
 
             // default is ${user.dir}
-            this.baseDir = new File(System.getProperty("user.dir",".")).toPath();
+            this.baseDir.setDir(System.getProperty("user.dir","."));
 
             // if ${jetty.base} declared, use it
-            String jettyBase = System.getProperty("jetty.base");
+            String jettyBase = System.getProperty(JETTY_BASE);
             if (jettyBase != null)
             {
-                this.baseDir = new File(jettyBase).toPath();
+                this.baseDir.setDir(jettyBase);
             }
 
             // find ${jetty.home}
+            this.homeDir = new SearchDir(JETTY_HOME);
 
             // default location is based on lookup for BaseHome (from jetty's start.jar)
             URL jarfile = this.getClass().getClassLoader().getResource("org/eclipse/jetty/start/BaseHome.class");
@@ -79,23 +146,19 @@ public class BaseHome
                 if (m.matches())
                 {
                     // ${jetty.home} is relative to found BaseHome class
-                    this.homeDir = new File(new URI(m.group(1))).getParentFile().toPath();
+                    this.homeDir.setDir(new File(new URI(m.group(1))).getParentFile());
                 }
             }
 
             // if we can't locate BaseHome, then assume home == base
-            this.homeDir = baseDir;
+            this.homeDir.setDir(baseDir.getDir());
 
             // if ${jetty.home} declared, use it
-            String jettyHome = System.getProperty("jetty.home");
+            String jettyHome = System.getProperty(JETTY_HOME);
             if (jettyHome != null)
             {
-                this.homeDir = new File(jettyHome).toPath();
+                this.homeDir.setDir(jettyHome);
             }
-
-            // resolve base and home to absolute paths
-            baseDir = baseDir.toAbsolutePath();
-            homeDir = homeDir.toAbsolutePath();
         }
         catch (URISyntaxException e)
         {
@@ -105,8 +168,15 @@ public class BaseHome
 
     public BaseHome(File homeDir, File baseDir)
     {
-        this.homeDir = homeDir.toPath().toAbsolutePath();
-        this.baseDir = baseDir == null?this.homeDir:baseDir.toPath().toAbsolutePath();
+        this.baseDir = new SearchDir(JETTY_BASE);
+        this.homeDir = new SearchDir(JETTY_HOME);
+
+        this.homeDir.setDir(homeDir);
+        this.baseDir.setDir(homeDir); // default
+        if (baseDir != null)
+        {
+            this.baseDir.setDir(baseDir);
+        }
     }
 
     public String getBase()
@@ -121,7 +191,7 @@ public class BaseHome
     // TODO: change return type to Path
     public File getBaseDir()
     {
-        return baseDir.toFile();
+        return baseDir.getDir().toFile();
     }
 
     /**
@@ -131,9 +201,10 @@ public class BaseHome
      *            the path to reference
      * @return the file reference
      */
+    // TODO: change return type to Path
     public File getBaseFile(String path)
     {
-        return baseDir.resolve(FS.separators(path)).toFile();
+        return baseDir.resolve(path).toFile();
     }
 
     /**
@@ -150,6 +221,7 @@ public class BaseHome
      *            the path to get.
      * @return the file reference.
      */
+    // TODO: deprecate in favor of getPath() version
     public File getFile(String path)
     {
         return getPath(path).toAbsolutePath().toFile();
@@ -169,14 +241,22 @@ public class BaseHome
      *            the path to get.
      * @return the file reference.
      */
-    public Path getPath(String path)
+    public Path getPath(final String path)
     {
-        String rpath = FS.separators(path);
-
         // Relative to Base Directory First
         if (isBaseDifferent())
         {
-            Path file = baseDir.resolve(rpath);
+            Path file = baseDir.resolve(path);
+            if (FS.exists(file))
+            {
+                return file;
+            }
+        }
+
+        // Next, test for relative to all extra search paths
+        for (SearchDir search : searchDirs)
+        {
+            Path file = search.resolve(path);
             if (FS.exists(file))
             {
                 return file;
@@ -184,14 +264,14 @@ public class BaseHome
         }
 
         // Then relative to Home Directory
-        Path file = homeDir.resolve(rpath);
+        Path file = homeDir.resolve(path);
         if (FS.exists(file))
         {
             return file;
         }
 
         // Finally, as an absolute path
-        return FileSystems.getDefault().getPath(rpath);
+        return FS.toPath(path);
     }
 
     /**
@@ -251,7 +331,11 @@ public class BaseHome
 
         if (PathMatchers.isAbsolute(pattern))
         {
+            // Perform absolute path pattern search
+
+            // The root to start search from
             Path root = PathMatchers.getSearchRoot(pattern);
+            // The matcher for file hits
             PathMatcher matcher = PathMatchers.getMatcher(pattern);
 
             if (FS.isValidDirectory(root))
@@ -266,6 +350,7 @@ public class BaseHome
         }
         else
         {
+            // Perform relative path pattern search
             Path relativePath = PathMatchers.getSearchRoot(pattern);
             PathMatcher matcher = PathMatchers.getMatcher(pattern);
             PathFinder finder = new PathFinder();
@@ -278,6 +363,18 @@ public class BaseHome
             {
                 finder.setBase(homePath);
                 Files.walkFileTree(homePath,SEARCH_VISIT_OPTIONS,MAX_SEARCH_DEPTH,finder);
+            }
+
+            ListIterator<SearchDir> iter = searchDirs.listIterator(searchDirs.size());
+            while (iter.hasPrevious())
+            {
+                SearchDir search = iter.previous();
+                Path dir = search.getDir();
+                if (FS.isValidDirectory(dir))
+                {
+                    finder.setBase(dir);
+                    Files.walkFileTree(dir,SEARCH_VISIT_OPTIONS,MAX_SEARCH_DEPTH,finder);
+                }
             }
 
             if (isBaseDifferent())
@@ -338,7 +435,7 @@ public class BaseHome
     // TODO: change return type to Path
     public File getHomeDir()
     {
-        return homeDir.toFile();
+        return homeDir.getDir().toFile();
     }
 
     public void initialize(StartArgs args)
@@ -368,35 +465,31 @@ public class BaseHome
         if (homePath != null)
         {
             // logic if home is specified
-            this.homeDir = homePath;
+            this.homeDir.setDir(homePath);
             if (basePath == null)
             {
-                this.baseDir = homePath;
-                args.getProperties().setProperty("jetty.base",this.baseDir.toString(),"<internal-fallback>");
+                this.baseDir.setDir(homePath);
+                args.getProperties().setProperty(JETTY_BASE,this.baseDir.toString(),"<internal-fallback>");
             }
             else
             {
-                this.baseDir = basePath;
+                this.baseDir.setDir(basePath);
             }
         }
         else if (basePath != null)
         {
             // logic if home is undeclared
-            this.baseDir = basePath;
+            this.baseDir.setDir(basePath);
         }
 
-        // resolve base and home to absolute paths
-        baseDir = baseDir.toAbsolutePath();
-        homeDir = homeDir.toAbsolutePath();
-
         // Update System Properties
-        args.addSystemProperty("jetty.home",this.homeDir.toString());
-        args.addSystemProperty("jetty.base",this.baseDir.toString());
+        args.addSystemProperty(JETTY_HOME,this.homeDir.toString());
+        args.addSystemProperty(JETTY_BASE,this.baseDir.toString());
     }
 
     public boolean isBaseDifferent()
     {
-        return homeDir.compareTo(baseDir) != 0;
+        return homeDir.getDir().compareTo(baseDir.getDir()) != 0;
     }
 
     // TODO: deprecate (in favor of Path version)
@@ -407,8 +500,8 @@ public class BaseHome
 
     public void setBaseDir(Path dir)
     {
-        this.baseDir = dir.toAbsolutePath();
-        System.setProperty("jetty.base",dir.toString());
+        this.baseDir.setDir(dir);
+        System.setProperty(JETTY_BASE,dir.toString());
     }
 
     // TODO: deprecate (in favor of Path version)
@@ -419,8 +512,8 @@ public class BaseHome
 
     public void setHomeDir(Path dir)
     {
-        this.homeDir = dir.toAbsolutePath();
-        System.setProperty("jetty.home",dir.toString());
+        this.homeDir.setDir(dir);
+        System.setProperty(JETTY_HOME,dir.toString());
     }
 
     /**
@@ -437,16 +530,25 @@ public class BaseHome
         if (isBaseDifferent())
         {
             // is path part of ${jetty.base} ?
-            if (apath.startsWith(baseDir))
+            if (apath.startsWith(baseDir.getDir()))
             {
-                return "${jetty.base}" + File.separatorChar + baseDir.relativize(apath);
+                return baseDir.toShortForm(apath);
+            }
+        }
+        
+        // Extra search dirs
+        for(SearchDir search: searchDirs)
+        {
+            if(apath.startsWith(search.getDir()))
+            {
+                return search.toShortForm(apath);
             }
         }
 
         // is path part of ${jetty.home} ?
-        if (apath.startsWith(homeDir))
+        if (apath.startsWith(homeDir.getDir()))
         {
-            return "${jetty.home}" + File.separatorChar + homeDir.relativize(apath);
+            return homeDir.toShortForm(apath);
         }
 
         return apath.toString();
@@ -475,5 +577,10 @@ public class BaseHome
         }
 
         return toShortForm(FS.toPath(path));
+    }
+
+    public void addExtraStart(String name, File dir)
+    {
+        this.searchDirs.add(new SearchDir(name).setDir(dir));
     }
 }
