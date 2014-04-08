@@ -59,6 +59,7 @@ import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
 import org.eclipse.jetty.client.http.HttpDestinationOverHTTP;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.BytesContentProvider;
+import org.eclipse.jetty.client.util.DeferredContentProvider;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
@@ -72,6 +73,7 @@ import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -1196,5 +1198,44 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         client.stop();
 
         Assert.assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testContentDelimitedByEOFWithSlowRequest() throws Exception
+    {
+        // This test is crafted in a way that the response completes before the request is fully written.
+        // With SSL, the response coming down will close the SSLEngine so it would not be possible to
+        // write the last chunk of the request content, and the request will be failed, failing also the
+        // test, which is not what we want.
+        // This is a limit of Java's SSL implementation that does not allow half closes.
+        Assume.assumeTrue(sslContextFactory == null);
+
+        final byte[] data = new byte[8 * 1024];
+        new Random().nextBytes(data);
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                response.setHeader("Connection", "close");
+                response.getOutputStream().write(data);
+            }
+        });
+
+        DeferredContentProvider content = new DeferredContentProvider(ByteBuffer.wrap(new byte[]{0}));
+        Request request = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .content(content);
+        FutureResponseListener listener = new FutureResponseListener(request);
+        request.send(listener);
+        // Wait some time to simulate a slow request.
+        Thread.sleep(1000);
+        content.close();
+
+        ContentResponse response = listener.get(5, TimeUnit.SECONDS);
+
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertArrayEquals(data, response.getContent());
     }
 }
