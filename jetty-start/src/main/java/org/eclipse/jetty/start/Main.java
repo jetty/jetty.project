@@ -334,7 +334,20 @@ public class Main
         modules.dumpEnabledTree();
     }
 
-    private void moduleIni(StartArgs args, String name, boolean topLevel, boolean appendStartIni) throws IOException
+    /**
+     * Build out INI file.
+     * <p>
+     * This applies equally for either <code>${jetty.base}/start.ini</code> or
+     * <code>${jetty.base}/start.d/${name}.ini</code> 
+     * 
+     * @param args the arguments of what modules are enabled
+     * @param name the name of the module to based the build of the ini
+     * @param topLevel 
+     * @param appendStartIni true to append to <code>${jetty.base}/start.ini</code>, 
+     * false to create a <code>${jetty.base}/start.d/${name}.ini</code> entry instead.
+     * @throws IOException
+     */
+    private void buildIni(StartArgs args, String name, boolean topLevel, boolean appendStartIni) throws IOException
     {        
         // Find the start.d relative to the base directory only.
         File start_d = baseHome.getBaseFile("start.d");
@@ -460,7 +473,9 @@ public class Main
             StartLog.info("%-15s initialised in %s",name,short_ini);
         }
         else
+        {
             StartLog.info("%-15s initialised transitively",name);
+        }
         
         // Also list other places this module is enabled
         for (String source : module.getSources())
@@ -508,7 +523,7 @@ public class Main
                     if (!done.contains(m.getName()))
                     {
                         complete=false;
-                        moduleIni(args,m.getName(),false,appendStartIni);
+                        buildIni(args,m.getName(),false,appendStartIni);
                         done.add(m.getName());
                     }
                 }
@@ -685,13 +700,13 @@ public class Main
         // Initialize start.ini
         for (String module : args.getAddToStartIni())
         {
-            moduleIni(args,module,true,true);
+            buildIni(args,module,true,true);
         }
 
         // Initialize start.d
         for (String module : args.getAddToStartdIni())
         {
-            moduleIni(args,module,true,false);
+            buildIni(args,module,true,false);
         }
 
         // Check ini files for download possibilities
