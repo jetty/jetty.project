@@ -9,12 +9,6 @@
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
     <!-- =========================================================== -->
-    <!-- Enables NPN debugging on System.err                         -->
-    <!-- ===========================================================
-     <Set class="org.eclipse.jetty.npn.NextProtoNego" name="debug" type="boolean">true</Set>
-    -->
-
-    <!-- =========================================================== -->
     <!-- Create a push strategy which can be used by reference by    -->
     <!-- individual connection factories below.                      -->
     <!--                                                             -->
@@ -53,16 +47,17 @@
     <!-- =========================================================== -->
     <!-- Add a SPDY/HTTPS Connector.                                 -->
     <!-- Configure an o.e.j.server.ServerConnector with connection   -->
-    <!-- factories for TLS (aka SSL), NPN, SPDY and HTTP to provide  -->
-    <!-- a connector that can accept HTTPS or SPDY connections.      -->
+    <!-- factories for TLS (aka SSL), ProtoNego, SPDY and HTTP to    -->
+    <!-- provide a connector that can accept HTTPS or SPDY           -->
+    <!-- connections.                                                -->
     <!--                                                             -->
-    <!-- All accepted TLS connections are initially wired to a NPN   -->
-    <!-- connection, which attempts to use a TLS extension to        -->
-    <!-- negotiation the protocol.     If NPN is not supported by    -->
-    <!-- the client, then the NPN connection is replaced by a HTTP   -->
+    <!-- All accepted TLS connections are initially wired to a       -->
+    <!-- Protonego connection, which attempts to use a TLS extension -->
+    <!-- to negotiation the protocol.  If it is not supported by     -->
+    <!-- the client, then the connection is replaced by a HTTP       -->
     <!-- connection.  If a specific protocol version (eg spdy/3) is  -->
-    <!-- negotiated by NPN, then the appropriate connection factory  -->
-    <!-- is used to create a connection to replace the NPN connection-->
+    <!-- negotiated, then the appropriate connection factory         -->
+    <!-- is used to create a connection to replace the connection    -->
     <!--                                                             -->
     <!-- The final result is a SPDY or HTTP connection wired behind  -->
     <!-- a TLS (aka SSL) connection.                                 -->
@@ -80,10 +75,10 @@
                 <Arg name="factories">
                     <Array type="org.eclipse.jetty.server.ConnectionFactory">
 
-                        <!-- SSL Connection factory with NPN as next protocol -->
+                        <!-- SSL Connection factory with Protonego as next protocol -->
                         <Item>
                             <New class="org.eclipse.jetty.server.SslConnectionFactory">
-                                <Arg name="next">npn</Arg>
+                                <Arg name="next"><Property name="protonego"/></Arg>
                                 <Arg name="sslContextFactory">
                                     <Ref refid="sslContextFactory"/>
                                 </Arg>
@@ -92,16 +87,7 @@
 
                         <!-- NPN Connection factory with HTTP as default protocol -->
                         <Item>
-                            <New class="org.eclipse.jetty.spdy.server.NPNServerConnectionFactory">
-                                <Arg name="protocols">
-                                    <Array type="String">
-                                        <Item>spdy/3</Item>
-                                        <Item>spdy/2</Item>
-                                        <Item>http/1.1</Item>
-                                    </Array>
-                                </Arg>
-                                <Set name="defaultProtocol">http/1.1</Set>
-                            </New>
+			    <Ref refid="protonego"/>
                         </Item>
 
                         <!-- SPDY/3 Connection factory -->

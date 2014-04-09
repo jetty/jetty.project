@@ -3,7 +3,7 @@
 #
 
 [lib]
-regex:lib/ext/.*\.jar$
+lib/ext/**.jar
 
 [files]
 lib/

@@ -24,6 +24,7 @@ import javax.net.ssl.SSLEngine;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.npn.NextProtoNego;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.NegotiatingServerConnection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 

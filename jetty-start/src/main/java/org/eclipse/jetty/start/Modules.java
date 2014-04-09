@@ -21,6 +21,7 @@ package org.eclipse.jetty.start;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -45,7 +46,7 @@ public class Modules implements Iterable<Module>
      * ex: modules/npn/npn-1.7.0_01.mod (property expansion resolves to non-existent file)
      */
     private Set<String> missingModules = new HashSet<String>();
-    
+
     private int maxDepth = -1;
 
     private Set<String> asNameSet(Set<Module> moduleSet)
@@ -117,7 +118,10 @@ public class Modules implements Iterable<Module>
 
                 if (parent == null)
                 {
-                    StartLog.debug("module not found [%s]%n",parentName);
+                    if (parentName.contains("${"))
+                        StartLog.debug("module not found [%s]%n",parentName);
+                    else
+                        StartLog.warn("module not found [%s]%n",parentName);
                 }
                 else
                 {
@@ -196,7 +200,7 @@ public class Modules implements Iterable<Module>
             }
             for (String parent : module.getParentNames())
             {
-                System.out.printf("   Parent: %s%n",parent);
+                System.out.printf("   Depend: %s%n",parent);
             }
             for (String lib : module.getLibs())
             {
@@ -294,10 +298,10 @@ public class Modules implements Iterable<Module>
 
     private void findParents(Module module, Map<String, Module> ret)
     {
-        ret.put(module.getName(), module);
+        ret.put(module.getName(),module);
         for (Module parent : module.getParentEdges())
         {
-            ret.put(parent.getName(), parent);
+            ret.put(parent.getName(),parent);
             findParents(parent,ret);
         }
     }
@@ -369,15 +373,33 @@ public class Modules implements Iterable<Module>
         return module;
     }
 
+    public void registerParentsIfMissing(BaseHome basehome, StartArgs args, Module module) throws IOException
+    {
+        Set<String> parents = new HashSet<>(module.getParentNames());
+        for (String name : parents)
+        {
+            if (!modules.containsKey(name))
+            {
+                File file = basehome.getFile("modules/" + name + ".mod");
+                if (FS.canReadFile(file))
+                {
+                    Module parent = registerModule(basehome,args,file);
+                    updateParentReferencesTo(parent);
+                    registerParentsIfMissing(basehome, args, parent);
+                }
+            }
+        }
+    }
+    
     public void registerAll(BaseHome basehome, StartArgs args) throws IOException
     {
-        for (File file : basehome.listFiles("modules",new FS.FilenameRegexFilter("^.*\\.mod$")))
+        for (Path path : basehome.getPaths("modules/*.mod"))
         {
-            registerModule(basehome,args,file);
+            registerModule(basehome,args,path.toFile());
         }
 
         // load missing post-expanded dependent modules
-        boolean done = false;     
+        boolean done = false;
         while (!done)
         {
             done = true;
@@ -399,14 +421,14 @@ public class Modules implements Iterable<Module>
             for (String missingParent : missingParents)
             {
                 File file = basehome.getFile("modules/" + missingParent + ".mod");
-                if ( FS.canReadFile(file) )
+                if (FS.canReadFile(file))
                 {
                     Module module = registerModule(basehome,args,file);
                     updateParentReferencesTo(module);
                 }
                 else
                 {
-                    StartLog.debug("Missing module definition: [ Mod: %s | File: %s]", missingParent, file);
+                    StartLog.debug("Missing module definition: [ Mod: %s | File: %s]",missingParent,file);
                     missingModules.add(missingParent);
                 }
             }
@@ -440,7 +462,7 @@ public class Modules implements Iterable<Module>
      */
     public List<Module> resolveEnabled()
     {
-        Map<String, Module> active = new HashMap<String,Module>();
+        Map<String, Module> active = new HashMap<String, Module>();
 
         for (Module module : modules.values())
         {
@@ -455,20 +477,20 @@ public class Modules implements Iterable<Module>
          * 
          * Ex: npn should match anything under npn/
          */
-        for ( String missing : missingModules )
+        for (String missing : missingModules)
         {
-            for (String activeModule: active.keySet())
-            {                
-                if ( missing.startsWith(activeModule) )
+            for (String activeModule : active.keySet())
+            {
+                if (missing.startsWith(activeModule))
                 {
-                    StartLog.warn("** Unable to continue, required dependency missing. [%s]", missing);
+                    StartLog.warn("** Unable to continue, required dependency missing. [%s]",missing);
                     StartLog.warn("** As configured, Jetty is unable to start due to a missing enabled module dependency.");
                     StartLog.warn("** This may be due to a transitive dependency akin to spdy on npn, which resolves based on the JDK in use.");
                     return Collections.emptyList();
                 }
             }
         }
-        
+
         List<Module> ordered = new ArrayList<>();
         ordered.addAll(active.values());
         Collections.sort(ordered,new Module.DepthComparator());
@@ -477,7 +499,7 @@ public class Modules implements Iterable<Module>
 
     public Set<String> resolveParentModulesOf(String moduleName)
     {
-        Map<String,Module> ret = new HashMap<>();
+        Map<String, Module> ret = new HashMap<>();
         Module module = get(moduleName);
         findParents(module,ret);
         return ret.keySet();
@@ -523,5 +545,27 @@ public class Modules implements Iterable<Module>
             }
             m.setParentNames(resolvedParents);
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder str = new StringBuilder();
+        str.append("Modules[");
+        str.append("count=").append(modules.size());
+        str.append(",<");
+        boolean delim = false;
+        for (String name : modules.keySet())
+        {
+            if (delim)
+            {
+                str.append(',');
+            }
+            str.append(name);
+            delim = true;
+        }
+        str.append(">");
+        str.append("]");
+        return str.toString();
     }
 }

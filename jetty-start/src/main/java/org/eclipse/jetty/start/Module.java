@@ -100,6 +100,8 @@ public class Module
     private List<String> libs;
     /** List of files for this Module */
     private List<String> files;
+    /** List of jvm Args */
+    private List<String> jvmArgs;
 
     /** Is this Module enabled via start.jar command line, start.ini, or start.d/*.ini ? */
     private boolean enabled = false;
@@ -250,6 +252,11 @@ public class Module
         return xmls;
     }
 
+    public List<String> getJvmArgs()
+    {
+        return jvmArgs;
+    }
+
     @Override
     public int hashCode()
     {
@@ -261,6 +268,16 @@ public class Module
 
     private void init(BaseHome basehome)
     {
+        parentNames = new HashSet<>();
+        optionalParentNames = new HashSet<>();
+        parentEdges = new HashSet<>();
+        childEdges = new HashSet<>();
+        xmls = new ArrayList<>();
+        initialise = new ArrayList<>();
+        libs = new ArrayList<>();
+        files = new ArrayList<>();
+        jvmArgs = new ArrayList<>();
+
         String name = basehome.toShortForm(file);
 
         // Find module system name (usually in the form of a filesystem reference)
@@ -272,15 +289,6 @@ public class Module
         }
         this.fileRef = mat.group(1).replace('\\','/');
         this.logicalName = this.fileRef;
-
-        parentNames = new HashSet<>();
-        optionalParentNames = new HashSet<>();
-        parentEdges = new HashSet<>();
-        childEdges = new HashSet<>();
-        xmls = new ArrayList<>();
-        initialise = new ArrayList<>();
-        libs = new ArrayList<>();
-        files = new ArrayList<>();
     }
 
     public boolean isEnabled()
@@ -331,26 +339,29 @@ public class Module
                                 case "":
                                     // ignore (this would be entries before first section)
                                     break;
-                                case "NAME":
-                                    logicalName = line;
-                                    break;
                                 case "DEPEND":
                                     parentNames.add(line);
-                                    break;
-                                case "LIB":
-                                    libs.add(line);
-                                    break;
-                                case "XML":
-                                    xmls.add(line);
-                                    break;
-                                case "OPTIONAL":
-                                    optionalParentNames.add(line);
                                     break;
                                 case "FILES":
                                     files.add(line);
                                     break;
                                 case "INI-TEMPLATE":
                                     initialise.add(line);
+                                    break;
+                                case "LIB":
+                                    libs.add(line);
+                                    break;
+                                case "NAME":
+                                    logicalName = line;
+                                    break;
+                                case "OPTIONAL":
+                                    optionalParentNames.add(line);
+                                    break;
+                                case "EXEC":
+                                    jvmArgs.add(line);
+                                    break;
+                                case "XML":
+                                    xmls.add(line);
                                     break;
                                 default:
                                     throw new IOException("Unrecognized Module section: [" + sectionType + "]");

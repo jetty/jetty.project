@@ -31,12 +31,14 @@ import java.util.List;
 import javax.inject.Inject;
 
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.junit.Configuration;
 import org.ops4j.pax.exam.junit.JUnit4TestRunner;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 
 /**
@@ -64,9 +66,9 @@ public class TestJettyOSGiBootSpdy
       
         options.addAll(TestJettyOSGiBootWithJsp.configureJettyHomeAndPort("jetty-spdy.xml"));
         options.addAll(TestJettyOSGiBootCore.coreJettyDependencies());
+        options.addAll(spdyJettyDependencies());
         options.add(CoreOptions.junitBundles());
         options.addAll(TestJettyOSGiBootCore.httpServiceJetty());
-        options.addAll(spdyJettyDependencies());
         
         String logLevel = "WARN";
         
@@ -90,37 +92,42 @@ public class TestJettyOSGiBootSpdy
     {
         List<Option> res = new ArrayList<Option>();
         res.add(CoreOptions.systemProperty(JETTY_SPDY_PORT).value(String.valueOf(DEFAULT_JETTY_SPDY_PORT)));
-        // java
-        // -Xbootclasspath/p:${settings.localRepository}/org/mortbay/jetty/npn/npn-boot/${npn-version}/npn-boot-${npn-version}.jar
-        // res.add(CoreOptions.vmOptions("-Xbootclasspath/p:"+System.getenv("HOME")+"/.m2/repository/org/mortbay/jetty/npn/npn-boot/"+npnBootVersion+"/npn-boot-"+npnBootVersion+".jar"));
-        String npnBoot = System.getProperty("mortbay-npn-boot");
-        if (npnBoot == null) { throw new IllegalStateException("Define path to npn boot jar as system property -Dmortbay-npn-boot"); }
-        File checkNpnBoot = new File(npnBoot);
-        if (!checkNpnBoot.exists()) { throw new IllegalStateException("Unable to find the npn boot jar here: " + npnBoot); }
 
-        res.add(CoreOptions.vmOptions("-Xbootclasspath/p:" + npnBoot));
-       // res.add(CoreOptions.bootDelegationPackages("org.eclipse.jetty.npn"));
+        String alpnBoot = System.getProperty("mortbay-alpn-boot");
+        if (alpnBoot == null) { throw new IllegalStateException("Define path to alpn boot jar as system property -Dmortbay-alpn-boot"); }
+        File checkALPNBoot = new File(alpnBoot);
+        if (!checkALPNBoot.exists()) { throw new IllegalStateException("Unable to find the alpn boot jar here: " + alpnBoot); }
 
-        res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("jetty-osgi-npn").versionAsInProject().noStart());
+
+        res.add(CoreOptions.vmOptions("-Xbootclasspath/p:" + alpnBoot));
+
+        res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("jetty-osgi-alpn").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-server").versionAsInProject().start());
+
+        res.add(mavenBundle().groupId("org.eclipse.jetty.spdy").artifactId("spdy-client").versionAsInProject().noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty.spdy").artifactId("spdy-core").versionAsInProject().noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty.spdy").artifactId("spdy-server").versionAsInProject().noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty.spdy").artifactId("spdy-http-common").versionAsInProject().noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty.spdy").artifactId("spdy-http-server").versionAsInProject().noStart());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.spdy").artifactId("spdy-client").versionAsInProject().noStart());
         return res;
     }
 
+    @Ignore
     @Test
-    public void checkNpnBootOnBootstrapClasspath() throws Exception
+    public void checkALPNBootOnBootstrapClasspath() throws Exception
     {
-        Class<?> npn = Thread.currentThread().getContextClassLoader().loadClass("org.eclipse.jetty.npn.NextProtoNego");
-        Assert.assertNotNull(npn);
-        Assert.assertNull(npn.getClassLoader());
+        Class<?> alpn = Thread.currentThread().getContextClassLoader().loadClass("org.eclipse.jetty.alpn.ALPN");
+        Assert.assertNotNull(alpn);
+        Assert.assertNull(alpn.getClassLoader());
     }
 
     @Test
     public void assertAllBundlesActiveOrResolved()
     {
+        Bundle b = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.spdy.client");
+        TestOSGiUtil.diagnoseNonActiveOrNonResolvedBundle(b);
+        b = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.osgi.boot");
+        TestOSGiUtil.diagnoseNonActiveOrNonResolvedBundle(b);
         TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
     }
 

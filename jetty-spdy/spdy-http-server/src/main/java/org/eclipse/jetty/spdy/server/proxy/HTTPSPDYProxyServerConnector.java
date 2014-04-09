@@ -22,11 +22,11 @@ package org.eclipse.jetty.spdy.server.proxy;
 import java.util.Objects;
 
 import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.NegotiatingServerConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.server.NPNServerConnectionFactory;
-import org.eclipse.jetty.spdy.server.NegotiatingServerConnectionFactory;
 import org.eclipse.jetty.spdy.server.SPDYServerConnectionFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 

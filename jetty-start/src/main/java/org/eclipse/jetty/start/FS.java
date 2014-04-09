@@ -22,11 +22,15 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.Path;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
 public class FS
 {
+    @Deprecated
     public static class AllFilter implements FileFilter
     {
         public static final AllFilter INSTANCE = new AllFilter();
@@ -37,7 +41,8 @@ public class FS
             return true;
         }
     }
-    
+
+    @Deprecated
     public static class DirFilter implements FileFilter
     {
         public static final DirFilter INSTANCE = new DirFilter();
@@ -48,7 +53,8 @@ public class FS
             return path.isDirectory();
         }
     }
-    
+
+    @Deprecated
     public static class RelativeRegexFilter implements FileFilter
     {
         private final File baseDir;
@@ -65,12 +71,13 @@ public class FS
         {
             // get relative path
             String relativePath = FS.toRelativePath(baseDir,path);
-            
+
             // see if it matches
             return (pattern.matcher(relativePath).matches());
         }
     }
 
+    @Deprecated
     public static class FilenameRegexFilter implements FileFilter
     {
         private final Pattern pattern;
@@ -87,6 +94,7 @@ public class FS
         }
     }
 
+    @Deprecated
     public static class FileNamesFilter implements FileFilter
     {
         private final String filenames[];
@@ -114,6 +122,7 @@ public class FS
         }
     }
 
+    @Deprecated
     public static class IniFilter extends FilenameRegexFilter
     {
         public IniFilter()
@@ -122,6 +131,7 @@ public class FS
         }
     }
 
+    @Deprecated
     public static class XmlFilter extends FilenameRegexFilter
     {
         public XmlFilter()
@@ -130,9 +140,34 @@ public class FS
         }
     }
 
+    public static boolean isValidDirectory(Path path)
+    {
+        LinkOption lopts[] = new LinkOption[0];
+        if (!Files.exists(path,lopts))
+        {
+            // doesn't exist, not a valid directory
+            return false;
+        }
+
+        if (!Files.isDirectory(path,lopts))
+        {
+            // not a directory (as expected)
+            StartLog.warn("Not a directory: " + path);
+            return false;
+        }
+        
+        return true;
+    }
+
     public static boolean canReadDirectory(File path)
     {
         return (path.exists() && path.isDirectory() && path.canRead());
+    }
+
+    public static boolean canReadDirectory(Path path)
+    {
+        LinkOption lopts[] = new LinkOption[0];
+        return Files.exists(path,lopts) && Files.isDirectory(path,lopts) && Files.isReadable(path);
     }
 
     public static boolean canReadFile(File path)
@@ -168,7 +203,7 @@ public class FS
             throw new IOException("Unable to create directory: " + dir.getAbsolutePath());
         }
     }
-    
+
     public static void ensureDirectoryWritable(File dir) throws IOException
     {
         if (!dir.exists())
@@ -194,7 +229,7 @@ public class FS
     {
         return filename.toLowerCase(Locale.ENGLISH).endsWith(".xml");
     }
-    
+
     public static String toRelativePath(File baseDir, File path)
     {
         return baseDir.toURI().relativize(path.toURI()).toASCIIString();
@@ -215,5 +250,10 @@ public class FS
             }
         }
         return ret.toString();
+    }
+
+    public static boolean exists(Path path)
+    {
+        return Files.exists(path,new LinkOption[0]);
     }
 }

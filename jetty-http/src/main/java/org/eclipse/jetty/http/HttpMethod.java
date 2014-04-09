@@ -38,7 +38,8 @@ public enum HttpMethod
     DELETE,
     TRACE,
     CONNECT,
-    MOVE;
+    MOVE,
+    PROXY;
 
     /* ------------------------------------------------------------ */
     /**
@@ -48,7 +49,7 @@ public enum HttpMethod
      * @param limit The first non valid index
      * @return A HttpMethod if a match or null if no easy match.
      */
-    public static HttpMethod lookAheadGet(byte[] bytes, int position, int limit)
+    public static HttpMethod lookAheadGet(byte[] bytes, final int position, int limit)
     {
         int length=limit-position;
         if (length<4)
@@ -62,6 +63,8 @@ public enum HttpMethod
             case 'P':
                 if (bytes[position+1]=='O' && bytes[position+2]=='S' && bytes[position+3]=='T' && length>=5 && bytes[position+4]==' ')
                     return POST;
+                if (bytes[position+1]=='R' && bytes[position+2]=='O' && bytes[position+3]=='X' && length>=6 && bytes[position+4]=='Y' && bytes[position+5]==' ')
+                    return PROXY;
                 if (bytes[position+1]=='U' && bytes[position+2]=='T' && bytes[position+3]==' ')
                     return PUT;
                 break;

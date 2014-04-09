@@ -35,7 +35,7 @@ public class ModulesTest
 {
     private final static List<String> TEST_SOURCE = Collections.singletonList("<test>");
     private StartArgs DEFAULT_ARGS = new StartArgs(new String[] { "jetty.version=TEST" }).parseCommandLine();
-    
+
     @Test
     public void testLoadAllModules() throws IOException
     {
@@ -43,10 +43,26 @@ public class ModulesTest
         BaseHome basehome = new BaseHome(homeDir,homeDir);
 
         Modules modules = new Modules();
-        modules.registerAll(basehome, DEFAULT_ARGS);
-        Assert.assertThat("Module count",modules.count(),is(30));
+        modules.registerAll(basehome,DEFAULT_ARGS);
+
+        List<String> moduleNames = new ArrayList<>();
+        for (Module mod : modules)
+        {
+            // skip npn-boot in this test (as its behavior is jdk specific)
+            if (mod.getName().equals("npn-boot"))
+            {
+                continue;
+            }
+            moduleNames.add(mod.getName());
+        }
+
+        String expected[] = { "jmx", "client", "stats", "spdy", "deploy", "debug", "security", "npn", "ext", "websocket", "rewrite", "ipaccess", "xinetd",
+                "proxy", "webapp", "jndi", "lowresources", "https", "plus", "requestlog", "jsp", "monitor", "xml", "servlet", "jaas", "http", "base", "server",
+                "annotations" };
+
+        Assert.assertThat("Module count: " + moduleNames,moduleNames.size(),is(expected.length));
     }
-    
+
     @Test
     public void testEnableRegexSimple() throws IOException
     {
@@ -54,11 +70,11 @@ public class ModulesTest
         BaseHome basehome = new BaseHome(homeDir,homeDir);
 
         Modules modules = new Modules();
-        modules.registerAll(basehome, DEFAULT_ARGS);
+        modules.registerAll(basehome,DEFAULT_ARGS);
         modules.enable("[sj]{1}.*",TEST_SOURCE);
-        
+
         String expected[] = { "jmx", "stats", "spdy", "security", "jndi", "jsp", "servlet", "jaas", "server" };
-        
+
         Assert.assertThat("Enabled Module count",modules.resolveEnabled().size(),is(expected.length));
     }
 
@@ -70,7 +86,7 @@ public class ModulesTest
 
         // Register modules
         Modules modules = new Modules();
-        modules.registerAll(basehome, DEFAULT_ARGS);
+        modules.registerAll(basehome,DEFAULT_ARGS);
         modules.buildGraph();
 
         // Enable 2 modules
@@ -108,12 +124,12 @@ public class ModulesTest
 
         List<String> actualLibs = modules.normalizeLibs(active);
         Assert.assertThat("Resolved Libs: " + actualLibs,actualLibs,contains(expectedLibs.toArray()));
-        
+
         // Assert XML List
         List<String> expectedXmls = new ArrayList<>();
         expectedXmls.add("etc/jetty.xml");
         expectedXmls.add("etc/jetty-http.xml");
-        
+
         List<String> actualXmls = modules.normalizeXmls(active);
         Assert.assertThat("Resolved XMLs: " + actualXmls,actualXmls,contains(expectedXmls.toArray()));
     }
@@ -126,7 +142,7 @@ public class ModulesTest
 
         // Register modules
         Modules modules = new Modules();
-        modules.registerAll(basehome, DEFAULT_ARGS);
+        modules.registerAll(basehome,DEFAULT_ARGS);
         modules.buildGraph();
         // modules.dump();
 
@@ -136,7 +152,7 @@ public class ModulesTest
 
         // Collect active module list
         List<Module> active = modules.resolveEnabled();
-        
+
         // Assert names are correct, and in the right order
         List<String> expectedNames = new ArrayList<>();
         expectedNames.add("base");
@@ -174,10 +190,10 @@ public class ModulesTest
         expectedLibs.add("lib/jetty-annotations-${jetty.version}.jar");
         expectedLibs.add("lib/annotations/*.jar");
         expectedLibs.add("lib/websocket/*.jar");
-        
+
         List<String> actualLibs = modules.normalizeLibs(active);
         Assert.assertThat("Resolved Libs: " + actualLibs,actualLibs,contains(expectedLibs.toArray()));
-        
+
         // Assert XML List
         List<String> expectedXmls = new ArrayList<>();
         expectedXmls.add("etc/jetty.xml");
@@ -185,7 +201,7 @@ public class ModulesTest
         expectedXmls.add("etc/jetty-plus.xml");
         expectedXmls.add("etc/jetty-annotations.xml");
         expectedXmls.add("etc/jetty-websockets.xml");
-        
+
         List<String> actualXmls = modules.normalizeXmls(active);
         Assert.assertThat("Resolved XMLs: " + actualXmls,actualXmls,contains(expectedXmls.toArray()));
     }

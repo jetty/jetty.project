@@ -21,6 +21,7 @@ package org.eclipse.jetty.spdy.server;
 import java.util.Objects;
 
 import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.NegotiatingServerConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.spdy.api.SPDY;
