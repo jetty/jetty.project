@@ -25,9 +25,12 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.channels.SocketChannel;
 import java.security.SecureRandom;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
@@ -38,35 +41,40 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.io.AsyncEndPoint;
+import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 
-/**
- * @version $Revision$ $Date$
- */
 public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
 {
-    @BeforeClass
-    public static void init() throws Exception
+    @Before
+    public void init() throws Exception
+    {
+        startServer(prepareServerConnector(), new ServerHandler());
+        startProxy();
+    }
+
+    private SslSelectChannelConnector prepareServerConnector()
     {
         SslSelectChannelConnector connector = new SslSelectChannelConnector();
-        connector.setMaxIdleTime(3600000); // TODO remove
-
         String keyStorePath = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
         SslContextFactory cf = connector.getSslContextFactory();
         cf.setKeyStorePath(keyStorePath);
         cf.setKeyStorePassword("storepwd");
         cf.setKeyManagerPassword("keypwd");
-
-        startServer(connector, new ServerHandler());
-        startProxy();
+        return connector;
     }
 
     @Test
@@ -78,7 +86,6 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
                 "Host: " + hostPort + "\r\n" +
                 "\r\n";
         Socket socket = newSocket();
-        socket.setSoTimeout(3600000); // TODO remove
         try
         {
             OutputStream output = socket.getOutputStream();
@@ -104,8 +111,8 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
 
                 request =
                         "GET /echo HTTP/1.1\r\n" +
-                        "Host: " + hostPort + "\r\n" +
-                        "\r\n";
+                                "Host: " + hostPort + "\r\n" +
+                                "\r\n";
                 output.write(request.getBytes("UTF-8"));
                 output.flush();
 
@@ -182,6 +189,118 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
         }
     }
 
+    @Test
+    public void testServerHalfClosesClientDoesNotCloseExpectIdleTimeout() throws Exception
+    {
+        stop();
+
+        final String uri = "/echo";
+        int idleTimeout = 2000;
+        startServer(prepareServerConnector(), new AbstractHandler()
+        {
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                String requestURI = request.getRequestURI();
+                if (uri.equals(requestURI))
+                {
+                    baseRequest.setHandled(true);
+                    response.setHeader("Connection", "close");
+                    response.setContentLength(uri.length());
+                    response.getOutputStream().print(uri);
+                }
+            }
+        });
+        Connector proxyConnector = new SelectChannelConnector();
+        proxyConnector.setMaxIdleTime(idleTimeout);
+
+        final AtomicReference<EndPoint> proxyToClientEndPoint = new AtomicReference<EndPoint>();
+        final AtomicReference<EndPoint> proxyToServerEndPoint = new AtomicReference<EndPoint>();
+        ConnectHandler connectHandler = new ConnectHandler()
+        {
+            @Override
+            protected ClientToProxyConnection newClientToProxyConnection(ConcurrentMap<String, Object> context, SocketChannel channel, EndPoint endPoint, long timeStamp)
+            {
+                proxyToClientEndPoint.set(endPoint);
+                return new ClientToProxyConnection(context, channel, endPoint, timeStamp);
+            }
+
+            @Override
+            protected ProxyToServerConnection newProxyToServerConnection(ConcurrentMap<String, Object> context, Buffer buffer)
+            {
+                return new ProxyToServerConnection(context, buffer)
+                {
+                    @Override
+                    public void setEndPoint(AsyncEndPoint endpoint)
+                    {
+                        proxyToServerEndPoint.set(endpoint);
+                        super.setEndPoint(endpoint);
+                    }
+                };
+            }
+        };
+        connectHandler.setWriteTimeout(2 * idleTimeout);
+        startProxy(proxyConnector, connectHandler);
+
+        String hostPort = "localhost:" + serverConnector.getLocalPort();
+        String request = "" +
+                "CONNECT " + hostPort + " HTTP/1.1\r\n" +
+                "Host: " + hostPort + "\r\n" +
+                "\r\n";
+        Socket socket = newSocket();
+        try
+        {
+            OutputStream output = socket.getOutputStream();
+            BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
+            output.write(request.getBytes("UTF-8"));
+            output.flush();
+
+            // Expect 200 OK from the CONNECT request
+            Response response = readResponse(input);
+            System.err.println(response);
+            assertEquals("200", response.getCode());
+
+            // Be sure the buffered input does not have anything buffered
+            assertFalse(input.ready());
+
+            // Upgrade the socket to SSL
+            SSLSocket sslSocket = wrapSocket(socket);
+            try
+            {
+                output = sslSocket.getOutputStream();
+                input = new BufferedReader(new InputStreamReader(sslSocket.getInputStream()));
+
+                request = "" +
+                        "GET " + uri + " HTTP/1.1\r\n" +
+                        "Host: " + hostPort + "\r\n" +
+                        "\r\n";
+                output.write(request.getBytes("UTF-8"));
+                output.flush();
+
+                response = readResponse(input);
+                assertEquals("200", response.getCode());
+                assertEquals(uri, response.getBody());
+
+                Thread.sleep(4 * idleTimeout);
+
+                EndPoint p2c = proxyToClientEndPoint.get();
+                assertNotNull(p2c);
+                assertFalse(p2c.isOpen());
+                EndPoint p2s = proxyToServerEndPoint.get();
+                assertNotNull(p2s);
+                assertFalse(p2s.isOpen());
+            }
+            finally
+            {
+                sslSocket.close();
+            }
+        }
+        finally
+        {
+            socket.close();
+        }
+    }
+
     private SSLSocket wrapSocket(Socket socket) throws Exception
     {
         SSLContext sslContext = SSLContext.getInstance("SSLv3");
@@ -225,7 +344,7 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
 
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 InputStream input = httpRequest.getInputStream();
-                int read = -1;
+                int read;
                 while ((read = input.read()) >= 0)
                     baos.write(read);
                 baos.close();
