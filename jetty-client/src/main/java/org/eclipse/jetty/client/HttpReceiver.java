@@ -298,8 +298,8 @@ public abstract class HttpReceiver
         if (decoder != null)
         {
             buffer = decoder.decode(buffer);
-//            if (LOG.isDebugEnabled())
-                LOG.info("Response content decoded ({}) {}{}{}", decoder, response, System.getProperty("line.separator"), BufferUtil.toDetailString(buffer));
+            if (LOG.isDebugEnabled())
+                LOG.debug("Response content decoded ({}) {}{}{}", decoder, response, System.getProperty("line.separator"), BufferUtil.toDetailString(buffer));
         }
 
         ResponseNotifier notifier = getHttpDestination().getResponseNotifier();
