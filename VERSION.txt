@@ -1,4 +1,23 @@
-jetty-9.2.0-SNAPSHOT
+jetty-9.2.0.M0 - 09 April 2014
+ + 419801 Upgrade to asm5 for jdk8
+ + 423392 Fix buffer overflow in AsyncGzipFilter
+ + 425736 jetty-start / Jetty 9 fails to startup with --exec option if Java
+   path contain
+ + 426920 jetty-start / BaseHome.listFilesRegex() and .recurseDir() do not
+   detect filesystem loops
+ + 427188 Re-enable automatic detection of logging-dependencies with
+   logging-module
+ + 429734 Implemented the HA ProxyProtocol
+ + 430341 use apache jsp/jstl for maven plugins
+ + 430747 jetty-start / Allow --lib and module [lib] to recursively add jars
+ + 430825 jetty-start / use of jetty-jmx.xml prevents configuration of
+   ThreadPool in jetty.xml
+ + 431279 jetty-start / Unable to start jetty if no properties are defined.
+ + 431892 DefaultFileLocatorHelper.getBundleInstallLocation fails for equinox
+   3.10
+ + 432122 ignore frequently failing test
+ + 432145 Pending request is not failed when HttpClient is stopped.
+ + 432270 Slow requests with response content delimited by EOF fail.
 
 jetty-9.1.4.v20140401 - 01 April 2014
  + 414206 Rewrite rules re-encode requestURI
