@@ -29,7 +29,7 @@
                         <configuration>
                             <instructions>
                                 <Export-Package>org.eclipse.jetty.spdy.client;version="9.1"</Export-Package>
-                                <Import-Package>!org.eclipse.jetty.npn,org.eclipse.jetty.*;version="[9.0,10.0)",*</Import-Package>
+                                <Import-Package>!org.eclipse.jetty.npn,!org.eclipse.jetty.alpn,org.eclipse.jetty.*;version="[9.0,10.0)",*</Import-Package>
                             </instructions>
                           </configuration>
                        </execution>
@@ -43,6 +43,17 @@
             <groupId>org.eclipse.jetty.spdy</groupId>
             <artifactId>spdy-core</artifactId>
             <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-alpn-client</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty.alpn</groupId>
+            <artifactId>alpn-api</artifactId>
+            <version>${alpn.api.version}</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty.npn</groupId>

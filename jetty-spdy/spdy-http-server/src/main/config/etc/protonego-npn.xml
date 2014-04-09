@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
+
+<Configure id="protonego" class="org.eclipse.jetty.spdy.server.NPNServerConnectionFactory">
+    <Arg name="protocols">
+	<Array type="String">
+	    <Item>spdy/3</Item>
+	    <Item>spdy/2</Item>
+	    <Item>http/1.1</Item>
+	</Array>
+    </Arg>
+   
+    <Set name="defaultProtocol">http/1.1</Set>
+
+    <!-- =========================================================== -->
+    <!-- Enables NPN debugging on System.err                         -->
+    <!-- ===========================================================
+     <Set class="org.eclipse.jetty.npn.NextProtoNego" name="debug" type="boolean">true</Set>
+    -->
+
+</Configure>

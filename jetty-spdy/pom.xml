@@ -21,18 +21,19 @@
         <module>spdy-http-server</module>
         <module>spdy-http-client-transport</module>
         <module>spdy-example-webapp</module>
+        <module>spdy-alpn-tests</module>
     </modules>
 
     <profiles>
-        <profile>
-            <id>jdk7-npn</id>
-            <activation>
-                <jdk>[1.7,1.8)</jdk>
-            </activation>
-            <modules>
-                <module>spdy-npn-tests</module>
-            </modules>
-        </profile>
+      <profile>
+        <id>npn</id>
+        <activation>
+          <jdk>1.7</jdk>
+        </activation>
+        <modules>
+          <module>spdy-npn-tests</module>
+        </modules>
+      </profile>
     </profiles>
 
     <build>

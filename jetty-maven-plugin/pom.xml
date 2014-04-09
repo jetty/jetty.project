@@ -122,19 +122,19 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-jsp</artifactId>
+      <artifactId>apache-jsp</artifactId>
       <version>${project.version}</version>
     </dependency>
-      <!-- dependency>
-        <groupId>org.eclipse.jetty.orbit</groupId>
-        <artifactId>javax.activation</artifactId>
-        <scope>compile</scope>
-      </dependency -->
-      <dependency>
-        <groupId>javax.transaction</groupId>
-        <artifactId>javax.transaction-api</artifactId>
-        <scope>compile</scope>
-      </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>apache-jstl</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+     <dependency>
+       <groupId>javax.transaction</groupId>
+       <artifactId>javax.transaction-api</artifactId>
+       <scope>compile</scope>
+     </dependency>
   </dependencies>
   <reporting>
   <plugins>

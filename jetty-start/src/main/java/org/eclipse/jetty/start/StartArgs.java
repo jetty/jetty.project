@@ -21,9 +21,9 @@ package org.eclipse.jetty.start;
 import static org.eclipse.jetty.start.UsageException.*;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -32,6 +32,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.StringTokenizer;
 
 import org.eclipse.jetty.start.Props.Prop;
 
@@ -77,6 +78,7 @@ public class StartArgs
     private Props properties = new Props();
     private Set<String> systemPropertyKeys = new HashSet<>();
     private List<String> jvmArgs = new ArrayList<>();
+    private List<String> rawLibs = new ArrayList<>();
     private List<String> moduleStartdIni = new ArrayList<>();
     private List<String> moduleStartIni = new ArrayList<>();
     private Map<String, String> propertySource = new HashMap<>();
@@ -307,6 +309,27 @@ public class StartArgs
             System.setProperty(key,val);
         }
     }
+    
+    /**
+     * Expand any command line added <code>--lib</code> lib references.
+     * 
+     * @param baseHome
+     * @throws IOException
+     */
+    public void expandLibs(BaseHome baseHome) throws IOException
+    {
+        for (String rawlibref : rawLibs)
+        {
+            StartLog.debug("rawlibref = " + rawlibref);
+            String libref = properties.expand(rawlibref);
+            StartLog.debug("expanded = " + libref);
+
+            for (Path libpath : baseHome.getPaths(libref))
+            {
+                classpath.addComponent(libpath.toFile());
+            }
+        }
+    }
 
     /**
      * Build up the Classpath and XML file references based on enabled Module list.
@@ -322,67 +345,22 @@ public class StartArgs
             // Find and Expand Libraries
             for (String rawlibref : module.getLibs())
             {
+                StartLog.debug("rawlibref = " + rawlibref);
                 String libref = properties.expand(rawlibref);
-
-                if (libref.startsWith("regex:"))
+                StartLog.debug("expanded = " + libref);
+                
+                for (Path libpath : baseHome.getPaths(libref))
                 {
-                    String regex = libref.substring("regex:".length());
-                    for (File libfile : baseHome.listFilesRegex(regex))
-                    {
-                        classpath.addComponent(libfile);
-                    }
-                    continue;
-                }
-
-                libref = FS.separators(libref);
-
-                // Any globs here?
-                if (libref.contains("*"))
-                {
-                    // Glob Reference
-                    int idx = libref.lastIndexOf(File.separatorChar);
-
-                    String relativePath = "/";
-                    String filenameRef = libref;
-                    if (idx >= 0)
-                    {
-                        relativePath = libref.substring(0,idx);
-                        filenameRef = libref.substring(idx + 1);
-                    }
-
-                    StringBuilder regex = new StringBuilder();
-                    regex.append('^');
-                    for (char c : filenameRef.toCharArray())
-                    {
-                        switch (c)
-                        {
-                            case '*':
-                                regex.append(".*");
-                                break;
-                            case '.':
-                                regex.append("\\.");
-                                break;
-                            default:
-                                regex.append(c);
-                        }
-                    }
-                    regex.append('$');
-
-                    FileFilter filter = new FS.FilenameRegexFilter(regex.toString());
-
-                    for (File libfile : baseHome.listFiles(relativePath,filter))
-                    {
-                        classpath.addComponent(libfile);
-                    }
-                }
-                else
-                {
-                    // Straight Reference
-                    File libfile = baseHome.getFile(libref);
-                    classpath.addComponent(libfile);
+                    classpath.addComponent(libpath.toFile());
                 }
             }
 
+            for (String jvmArg : module.getJvmArgs())
+            {
+                exec=true;
+                jvmArgs.add(jvmArg);
+            }
+            
             // Find and Expand XML files
             for (String xmlRef : module.getXmls())
             {
@@ -436,11 +414,11 @@ public class StartArgs
 
         if (addJavaInit)
         {
-            cmd.addArg(CommandLineBuilder.findJavaBin());
+            cmd.addRawArg(CommandLineBuilder.findJavaBin());
 
             for (String x : jvmArgs)
             {
-                cmd.addArg(x);
+                cmd.addRawArg(x);
             }
 
             cmd.addRawArg("-Djetty.home=" + baseHome.getHome());
@@ -453,7 +431,7 @@ public class StartArgs
                 cmd.addEqualsArg("-D" + propKey,value);
             }
 
-            cmd.addArg("-cp");
+            cmd.addRawArg("-cp");
             cmd.addRawArg(classpath.toString());
             cmd.addRawArg(getMainClassname());
         }
@@ -475,7 +453,7 @@ public class StartArgs
             {
                 properties.store(out,"start.jar properties");
             }
-            cmd.addArg(prop_file.getAbsolutePath());
+            cmd.addRawArg(prop_file.getAbsolutePath());
         }
 
         for (File xml : xmls)
@@ -766,7 +744,15 @@ public class StartArgs
         if (arg.startsWith("--lib="))
         {
             String cp = getValue(arg);
-            classpath.addClasspath(cp);
+            
+            if (cp != null)
+            {
+                StringTokenizer t = new StringTokenizer(cp,File.pathSeparator);
+                while (t.hasMoreTokens())
+                {
+                    rawLibs.add(t.nextToken());
+                }
+            }
             return;
         }
 
@@ -786,6 +772,7 @@ public class StartArgs
             }
             moduleStartdIni.addAll(getValues(arg));
             run = false;
+            download = true;
             return;
         }
 
@@ -797,6 +784,7 @@ public class StartArgs
             }
             moduleStartIni.addAll(getValues(arg));
             run = false;
+            download = true;
             return;
         }
 

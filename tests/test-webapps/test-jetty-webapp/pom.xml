@@ -157,33 +157,6 @@
           </loginServices>
         </configuration>
       </plugin>
-      <!-- uncomment to precompile jsps -->
-      <!--
-      <plugin>
-          <groupId>org.eclipse.jetty</groupId>
-          <artifactId>jetty-jspc-maven-plugin</artifactId>
-          <version>${project.version}</version>
-          <executions>
-            <execution>
-              <id>jspc</id>
-              <goals>
-                <goal>jspc</goal>
-              </goals>
-              <configuration>
-                 <includes>**/*.foo</includes>
-                 <excludes>**/*.fff</excludes>
-              </configuration>
-            </execution>
-          </executions>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-war-plugin</artifactId>
-          <configuration>
-            <webXml>${basedir}/target/web.xml</webXml>
-          </configuration>
-        </plugin>
-        -->
     </plugins>
   </build>
   <dependencies>
@@ -261,4 +234,37 @@
       <scope>provided</scope>
     </dependency>
   </dependencies>
+  <profiles>
+    <profile>
+      <id>precompile-jsp</id>
+      <build>
+        <plugins>
+         <plugin>
+          <groupId>org.eclipse.jetty</groupId>
+          <artifactId>jetty-jspc-maven-plugin</artifactId>
+          <version>${project.version}</version>
+          <executions>
+            <execution>
+              <id>jspc</id>
+              <goals>
+                <goal>jspc</goal>
+              </goals>
+              <configuration>
+                 <includes>**/*.foo</includes>
+                 <excludes>**/*.fff</excludes>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-war-plugin</artifactId>
+          <configuration>
+            <webXml>${basedir}/target/web.xml</webXml>
+          </configuration>
+        </plugin>
+       </plugins>
+     </build>
+    </profile>
+  </profiles>
 </project>

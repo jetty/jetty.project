@@ -18,9 +18,7 @@
 
 package org.eclipse.jetty.start;
 
-import static org.eclipse.jetty.start.UsageException.ERR_INVOKE_MAIN;
-import static org.eclipse.jetty.start.UsageException.ERR_NOT_STOPPED;
-import static org.eclipse.jetty.start.UsageException.ERR_UNKNOWN;
+import static org.eclipse.jetty.start.UsageException.*;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -39,11 +37,14 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -334,7 +335,7 @@ public class Main
     }
 
     private void moduleIni(StartArgs args, String name, boolean topLevel, boolean appendStartIni) throws IOException
-    {
+    {        
         // Find the start.d relative to the base directory only.
         File start_d = baseHome.getBaseFile("start.d");
 
@@ -458,7 +459,9 @@ public class Main
         {
             StartLog.info("%-15s initialised in %s",name,short_ini);
         }
-
+        else
+            StartLog.info("%-15s initialised transitively",name);
+        
         // Also list other places this module is enabled
         for (String source : module.getSources())
         {
@@ -474,23 +477,57 @@ public class Main
             initFile(new FileArg(file));
         }
 
-        // Process dependencies from top level only
+        // Process dependencies
+        module.expandProperties(args.getProperties());
+        modules.registerParentsIfMissing(baseHome,args,module);
+        modules.buildGraph();
+        
+        
+        // process new ini modules
         if (topLevel)
         {
-            List<Module> parents = new ArrayList<>();
-            for (String parent : modules.resolveParentModulesOf(name))
+            List<Module> depends = new ArrayList<>();
+            for (String depend : modules.resolveParentModulesOf(name))
             {
-                if (!name.equals(parent))
+                if (!name.equals(depend))
                 {
-                    Module m = modules.get(parent);
+                    Module m = modules.get(depend);
                     m.setEnabled(true);
-                    parents.add(m);
+                    depends.add(m);
                 }
             }
-            Collections.sort(parents,Collections.reverseOrder(new Module.DepthComparator()));
-            for (Module m : parents)
+            Collections.sort(depends,Collections.reverseOrder(new Module.DepthComparator()));
+            
+            Set<String> done = new HashSet<>(0);
+            while (true)
             {
-                moduleIni(args,m.getName(),false,appendStartIni);
+                // initialize known dependencies
+                boolean complete=true;
+                for (Module m : depends)
+                {
+                    if (!done.contains(m.getName()))
+                    {
+                        complete=false;
+                        moduleIni(args,m.getName(),false,appendStartIni);
+                        done.add(m.getName());
+                    }
+                }
+                
+                if (complete)
+                    break;
+                
+                // look for any new ones resolved via expansion
+                depends.clear();
+                for (String depend : modules.resolveParentModulesOf(name))
+                {
+                    if (!name.equals(depend))
+                    {
+                        Module m = modules.get(depend);
+                        m.setEnabled(true);
+                        depends.add(m);
+                    }
+                }
+                Collections.sort(depends,Collections.reverseOrder(new Module.DepthComparator()));
             }
         }
     }
@@ -534,17 +571,12 @@ public class Main
         File start_d = baseHome.getBaseFile("start.d");
         if (FS.canReadDirectory(start_d))
         {
-            List<File> files = new ArrayList<>();
-            for (File file : start_d.listFiles(new FS.IniFilter()))
+            List<Path> paths = baseHome.getPaths(start_d.toPath(),1,"*.ini");
+            Collections.sort(paths,new NaturalSort.Paths());
+            for (Path path: paths)
             {
-                files.add(file);
-            }
-
-            Collections.sort(files,new NaturalSort.Files());
-            for (File file : files)
-            {
-                StartLog.debug("Reading ${jetty.base}/start.d/%s - %s",file.getName(),file);
-                args.parse(baseHome,new StartIni(file));
+                StartLog.debug("Reading ${jetty.base}/start.d/%s - %s",path.getFileName(),path);
+                args.parse(baseHome,new StartIni(path));
             }
         }
 
@@ -574,6 +606,7 @@ public class Main
         List<Module> activeModules = modules.resolveEnabled();
         
         // 7) Lib & XML Expansion / Resolution
+        args.expandLibs(baseHome);
         args.expandModules(baseHome,activeModules);
 
         // 8) Resolve Extra XMLs
@@ -649,13 +682,13 @@ public class Main
             }
         }
 
-        // Initialize
+        // Initialize start.ini
         for (String module : args.getModuleStartIni())
         {
             moduleIni(args,module,true,true);
         }
 
-        // Initialize
+        // Initialize start.d
         for (String module : args.getModuleStartdIni())
         {
             moduleIni(args,module,true,false);
@@ -692,6 +725,7 @@ public class Main
         if (args.isExec())
         {
             CommandLineBuilder cmd = args.getMainArgs(baseHome,true);
+            cmd.debug();
             ProcessBuilder pbuilder = new ProcessBuilder(cmd.getArgs());
             final Process process = pbuilder.start();
             Runtime.getRuntime().addShutdownHook(new Thread()

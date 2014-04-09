@@ -21,6 +21,7 @@ package org.eclipse.jetty.start;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Path;
 
 /**
  * Simple Start .INI handler
@@ -30,6 +31,11 @@ public class StartIni extends TextFile
     public StartIni(File file) throws FileNotFoundException, IOException
     {
         super(file);
+    }
+
+    public StartIni(Path path) throws FileNotFoundException, IOException
+    {
+        this(path.toFile());
     }
 
     @Override
