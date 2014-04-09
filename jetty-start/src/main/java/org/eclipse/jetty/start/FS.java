@@ -175,6 +175,12 @@ public class FS
     {
         return (path.exists() && path.isFile() && path.canRead());
     }
+    
+    public static boolean canReadFile(Path path)
+    {
+        LinkOption lopts[] = new LinkOption[0];
+        return Files.exists(path,lopts) && Files.isRegularFile(path,lopts) && Files.isReadable(path);
+    }
 
     public static void close(Closeable c)
     {

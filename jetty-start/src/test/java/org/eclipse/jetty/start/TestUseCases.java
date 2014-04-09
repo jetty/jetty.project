@@ -60,6 +60,12 @@ public class TestUseCases
     {
         assertUseCase("home","base.jmx","assert-jmx.txt");
     }
+    
+    @Test
+    public void testWithExtraStartDir_Logging() throws Exception
+    {
+        assertUseCase("home","base.with.extra.start.dirs","assert-extra-start-dir-logging.txt");
+    }
 
     @Test
     public void testWithMissingNpnVersion() throws Exception

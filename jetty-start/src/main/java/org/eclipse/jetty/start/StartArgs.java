@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -87,6 +88,9 @@ public class StartArgs
     /** List of all xml references found directly on command line or start.ini */
     private List<String> xmlRefs = new ArrayList<>();
     
+    /** List of extra Start Directories referenced */
+    private LinkedList<String> extraStartRefs = new LinkedList<>();
+
     private Props properties = new Props();
     private Set<String> systemPropertyKeys = new HashSet<>();
     private List<String> rawLibs = new ArrayList<>();
@@ -410,6 +414,11 @@ public class StartArgs
     {
         return this.commandLine;
     }
+    
+    public LinkedList<String> getExtraStartRefs()
+    {
+        return extraStartRefs;
+    }
 
     public List<FileArg> getFiles()
     {
@@ -646,18 +655,19 @@ public class StartArgs
         return version;
     }
 
-    public void parse(BaseHome baseHome, TextFile file)
+    public void parse(BaseHome baseHome, StartIni ini)
     {
         String source;
         try
         {
-            source = baseHome.toShortForm(file.getFile());
+            source = baseHome.toShortForm(ini.getFile());
         }
         catch (Exception e)
         {
-            throw new UsageException(ERR_BAD_ARG,"Bad file: %s",file);
+            throw new UsageException(ERR_BAD_ARG,"Bad file: %s",ini);
         }
-        for (String line : file)
+        
+        for (String line : ini)
         {
             parse(line,source);
         }
@@ -751,14 +761,22 @@ public class StartArgs
             return;
         }
 
+        // Enable forked execution of Jetty server
         if ("--exec".equals(arg))
         {
             exec = true;
             return;
         }
 
-        // Arbitrary Libraries
+        // Add extra start dir
+        if (arg.startsWith("--extra-start-dir="))
+        {
+            String dirRef = getValue(arg);
+            extraStartRefs.add(dirRef);
+            return;
+        }
 
+        // Arbitrary Libraries
         if (arg.startsWith("--lib="))
         {
             String cp = getValue(arg);
@@ -782,7 +800,8 @@ public class StartArgs
             return;
         }
 
-        if (arg.startsWith("--add-to-startd"))
+        // jetty.base build-out : add to ${jetty.base}/start.d/
+        if (arg.startsWith("--add-to-startd="))
         {
             if (!CMD_LINE_SOURCE.equals(source))
             {
@@ -794,7 +813,8 @@ public class StartArgs
             return;
         }
 
-        if (arg.startsWith("--add-to-start"))
+        // jetty.base build-out : add to ${jetty.base}/start.ini
+        if (arg.startsWith("--add-to-start="))
         {
             if (!CMD_LINE_SOURCE.equals(source))
             {
@@ -806,6 +826,7 @@ public class StartArgs
             return;
         }
 
+        // Enable a module
         if (arg.startsWith("--module="))
         {
             for (String moduleName : getValues(arg))
@@ -822,6 +843,7 @@ public class StartArgs
             return;
         }
 
+        // Create graphviz output of module graph
         if (arg.startsWith("--write-module-graph="))
         {
             this.moduleGraphFilename = getValue(arg);

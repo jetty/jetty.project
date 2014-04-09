@@ -206,7 +206,7 @@ public class ConfigurationAssert
         }
     }
 
-    private static void assertOrdered(String msg, List<String> expectedList, List<String> actualList)
+    public static void assertOrdered(String msg, List<String> expectedList, List<String> actualList)
     {
         // same size?
         boolean mismatch = expectedList.size() != actualList.size();
