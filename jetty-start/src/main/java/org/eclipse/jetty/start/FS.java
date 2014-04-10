@@ -26,6 +26,7 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
@@ -52,29 +53,6 @@ public class FS
         public boolean accept(File path)
         {
             return path.isDirectory();
-        }
-    }
-
-    @Deprecated
-    public static class RelativeRegexFilter implements FileFilter
-    {
-        private final File baseDir;
-        private final Pattern pattern;
-
-        public RelativeRegexFilter(File baseDir, Pattern pattern)
-        {
-            this.baseDir = baseDir;
-            this.pattern = pattern;
-        }
-
-        @Override
-        public boolean accept(File path)
-        {
-            // get relative path
-            String relativePath = FS.toRelativePath(baseDir,path);
-
-            // see if it matches
-            return (pattern.matcher(relativePath).matches());
         }
     }
 
@@ -133,6 +111,29 @@ public class FS
     }
 
     @Deprecated
+    public static class RelativeRegexFilter implements FileFilter
+    {
+        private final File baseDir;
+        private final Pattern pattern;
+
+        public RelativeRegexFilter(File baseDir, Pattern pattern)
+        {
+            this.baseDir = baseDir;
+            this.pattern = pattern;
+        }
+
+        @Override
+        public boolean accept(File path)
+        {
+            // get relative path
+            String relativePath = FS.toRelativePath(baseDir,path);
+
+            // see if it matches
+            return (pattern.matcher(relativePath).matches());
+        }
+    }
+
+    @Deprecated
     public static class XmlFilter extends FilenameRegexFilter
     {
         public XmlFilter()
@@ -141,24 +142,8 @@ public class FS
         }
     }
 
-    public static boolean isValidDirectory(Path path)
-    {
-        LinkOption lopts[] = new LinkOption[0];
-        if (!Files.exists(path,lopts))
-        {
-            // doesn't exist, not a valid directory
-            return false;
-        }
-
-        if (!Files.isDirectory(path,lopts))
-        {
-            // not a directory (as expected)
-            StartLog.warn("Not a directory: " + path);
-            return false;
-        }
-        
-        return true;
-    }
+    // Default Link Options
+    private static final LinkOption[] NO_LINK_OPTIONS = new LinkOption[0];
 
     public static boolean canReadDirectory(File path)
     {
@@ -167,19 +152,22 @@ public class FS
 
     public static boolean canReadDirectory(Path path)
     {
-        LinkOption lopts[] = new LinkOption[0];
-        return Files.exists(path,lopts) && Files.isDirectory(path,lopts) && Files.isReadable(path);
+        return Files.exists(path,NO_LINK_OPTIONS) && Files.isDirectory(path,NO_LINK_OPTIONS) && Files.isReadable(path);
     }
 
     public static boolean canReadFile(File path)
     {
         return (path.exists() && path.isFile() && path.canRead());
     }
-    
+
     public static boolean canReadFile(Path path)
     {
-        LinkOption lopts[] = new LinkOption[0];
-        return Files.exists(path,lopts) && Files.isRegularFile(path,lopts) && Files.isReadable(path);
+        return Files.exists(path,NO_LINK_OPTIONS) && Files.isRegularFile(path,NO_LINK_OPTIONS) && Files.isReadable(path);
+    }
+
+    public static boolean canWrite(Path path)
+    {
+        return Files.isWritable(path);
     }
 
     public static void close(Closeable c)
@@ -199,6 +187,16 @@ public class FS
         }
     }
 
+    public static boolean createNewFile(Path path) throws IOException
+    {
+        Path ret = Files.createFile(path);
+        return Files.exists(ret,NO_LINK_OPTIONS);
+    }
+
+    /**
+     * @deprecated use {@link #ensureDirectoryExists(Path)} instead
+     */
+    @Deprecated
     public static void ensureDirectoryExists(File dir) throws IOException
     {
         if (dir.exists())
@@ -210,7 +208,21 @@ public class FS
             throw new IOException("Unable to create directory: " + dir.getAbsolutePath());
         }
     }
+    
+    public static void ensureDirectoryExists(Path dir) throws IOException
+    {
+        if (exists(dir))
+        {
+            // exists already, nothing to do
+            return;
+        }
+        Files.createDirectories(dir);
+    }
 
+    /**
+     * @deprecated use {@link #ensureDirectoryWritable(Path)} instead
+     */
+    @Deprecated
     public static void ensureDirectoryWritable(File dir) throws IOException
     {
         if (!dir.exists())
@@ -223,6 +235,27 @@ public class FS
         }
     }
 
+    public static void ensureDirectoryWritable(Path dir) throws IOException
+    {
+        if (!Files.exists(dir,NO_LINK_OPTIONS))
+        {
+            throw new IOException("Path does not exist: " + dir.toAbsolutePath());
+        }
+        if (!Files.isDirectory(dir,NO_LINK_OPTIONS))
+        {
+            throw new IOException("Directory does not exist: " + dir.toAbsolutePath());
+        }
+        if (!Files.isWritable(dir))
+        {
+            throw new IOException("Unable to write to directory: " + dir.toAbsolutePath());
+        }
+    }
+
+    public static boolean exists(Path path)
+    {
+        return Files.exists(path,NO_LINK_OPTIONS);
+    }
+
     public static boolean isFile(File file)
     {
         if (file == null)
@@ -232,14 +265,28 @@ public class FS
         return file.exists() && file.isFile();
     }
 
+    public static boolean isValidDirectory(Path path)
+    {
+        LinkOption lopts[] = NO_LINK_OPTIONS;
+        if (!Files.exists(path,lopts))
+        {
+            // doesn't exist, not a valid directory
+            return false;
+        }
+
+        if (!Files.isDirectory(path,lopts))
+        {
+            // not a directory (as expected)
+            StartLog.warn("Not a directory: " + path);
+            return false;
+        }
+
+        return true;
+    }
+
     public static boolean isXml(String filename)
     {
         return filename.toLowerCase(Locale.ENGLISH).endsWith(".xml");
-    }
-
-    public static String toRelativePath(File baseDir, File path)
-    {
-        return baseDir.toURI().relativize(path.toURI()).toASCIIString();
     }
 
     public static String separators(String path)
@@ -259,13 +306,33 @@ public class FS
         return ret.toString();
     }
 
-    public static boolean exists(Path path)
+    public static Path toOptionalPath(String path)
     {
-        return Files.exists(path,new LinkOption[0]);
+        if (path == null)
+        {
+            return null;
+        }
+        return toPath(path);
     }
 
     public static Path toPath(String path)
     {
         return FileSystems.getDefault().getPath(FS.separators(path));
+    }
+
+    public static String toRelativePath(File baseDir, File path)
+    {
+        return baseDir.toURI().relativize(path.toURI()).toASCIIString();
+    }
+
+    public static void touch(Path path) throws IOException
+    {
+        FileTime now = FileTime.fromMillis(System.currentTimeMillis());
+        Files.setLastModifiedTime(path,now);
+    }
+
+    public static Path toRealPath(Path path) throws IOException
+    {
+        return path.toRealPath(NO_LINK_OPTIONS);
     }
 }

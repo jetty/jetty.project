@@ -21,9 +21,6 @@ package org.eclipse.jetty.start;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.List;
-
-import org.eclipse.jetty.start.config.ConfigSource;
 
 /**
  * Simple Start .INI handler

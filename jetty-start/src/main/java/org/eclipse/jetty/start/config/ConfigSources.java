@@ -80,6 +80,18 @@ public class ConfigSources implements Iterable<ConfigSource>
         }
     }
 
+    public CommandLineConfigSource getCommandLineSource()
+    {
+        for (ConfigSource source : sources)
+        {
+            if (source instanceof CommandLineConfigSource)
+            {
+                return (CommandLineConfigSource)source;
+            }
+        }
+        return null;
+    }
+
     public Prop getProp(String key)
     {
         return props.getProp(key);
@@ -109,6 +121,31 @@ public class ConfigSources implements Iterable<ConfigSource>
     public Iterator<ConfigSource> iterator()
     {
         return sources.iterator();
+    }
+
+    public ListIterator<ConfigSource> reverseListIterator()
+    {
+        return sources.listIterator(sources.size());
+    }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder str = new StringBuilder();
+        str.append(this.getClass().getSimpleName());
+        str.append('[');
+        boolean delim = false;
+        for (ConfigSource source : sources)
+        {
+            if (delim)
+            {
+                str.append(',');
+            }
+            str.append(source.getId());
+            delim = true;
+        }
+        str.append(']');
+        return str.toString();
     }
 
     private void updateProps()

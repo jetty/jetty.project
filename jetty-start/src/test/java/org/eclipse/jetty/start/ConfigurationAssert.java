@@ -25,6 +25,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -64,7 +65,7 @@ public class ConfigurationAssert
             }
         }
         List<String> actualXmls = new ArrayList<>();
-        for (File xml : args.getXmlFiles())
+        for (Path xml : args.getXmlFiles())
         {
             actualXmls.add(shorten(baseHome,xml,testResourcesDir));
         }
@@ -82,7 +83,7 @@ public class ConfigurationAssert
         List<String> actualLibs = new ArrayList<>();
         for (File path : args.getClasspath())
         {
-            actualLibs.add(shorten(baseHome,path,testResourcesDir));
+            actualLibs.add(shorten(baseHome,path.toPath(),testResourcesDir));
         }
         assertContainsUnordered("Libs",expectedLibs,actualLibs);
 
@@ -147,7 +148,7 @@ public class ConfigurationAssert
         assertContainsUnordered("Files/Dirs",expectedFiles,actualFiles);
     }
 
-    private static String shorten(BaseHome baseHome, File path, File testResourcesDir)
+    private static String shorten(BaseHome baseHome, Path path, File testResourcesDir)
     {
         String value = baseHome.toShortForm(path);
         if (value.startsWith(testResourcesDir.getAbsolutePath()))

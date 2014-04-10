@@ -27,23 +27,48 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.eclipse.jetty.start.config.CommandLineConfigSource;
+import org.eclipse.jetty.start.config.ConfigSources;
+import org.eclipse.jetty.start.config.JettyBaseConfigSource;
+import org.eclipse.jetty.start.config.JettyHomeConfigSource;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class ModulesTest
 {
     private final static List<String> TEST_SOURCE = Collections.singletonList("<test>");
-    private StartArgs DEFAULT_ARGS = new StartArgs(new String[] { "jetty.version=TEST" }).parseCommandLine();
+
+    @Rule
+    public TestingDir testdir = new TestingDir();
 
     @Test
     public void testLoadAllModules() throws IOException
     {
+        // Test Env
         File homeDir = MavenTestingUtils.getTestResourceDir("usecases/home");
-        BaseHome basehome = new BaseHome(homeDir,homeDir);
+        File baseDir = testdir.getEmptyDir();
+        String cmdLine[] = new String[] {"jetty.version=TEST"};
+        
+        // Configuration
+        CommandLineConfigSource cmdLineSource = new CommandLineConfigSource(cmdLine);
+        ConfigSources config = new ConfigSources();
+        config.add(cmdLineSource);
+        config.add(new JettyHomeConfigSource(homeDir.toPath()));
+        config.add(new JettyBaseConfigSource(baseDir.toPath()));
+        
+        // Initialize
+        BaseHome basehome = new BaseHome();
+        basehome.initialize(config);
+        
+        StartArgs args = new StartArgs();
+        args.parse(config);
 
+        // Test Modules
         Modules modules = new Modules();
-        modules.registerAll(basehome,DEFAULT_ARGS);
+        modules.registerAll(basehome,args);
 
         List<String> moduleNames = new ArrayList<>();
         for (Module mod : modules)
@@ -66,11 +91,28 @@ public class ModulesTest
     @Test
     public void testEnableRegexSimple() throws IOException
     {
+        // Test Env
         File homeDir = MavenTestingUtils.getTestResourceDir("usecases/home");
-        BaseHome basehome = new BaseHome(homeDir,homeDir);
+        File baseDir = testdir.getEmptyDir();
+        String cmdLine[] = new String[] {"jetty.version=TEST"};
+        
+        // Configuration
+        CommandLineConfigSource cmdLineSource = new CommandLineConfigSource(cmdLine);
+        ConfigSources config = new ConfigSources();
+        config.add(cmdLineSource);
+        config.add(new JettyHomeConfigSource(homeDir.toPath()));
+        config.add(new JettyBaseConfigSource(baseDir.toPath()));
+        
+        // Initialize
+        BaseHome basehome = new BaseHome();
+        basehome.initialize(config);
+        
+        StartArgs args = new StartArgs();
+        args.parse(config);
 
+        // Test Modules
         Modules modules = new Modules();
-        modules.registerAll(basehome,DEFAULT_ARGS);
+        modules.registerAll(basehome,args);
         modules.enable("[sj]{1}.*",TEST_SOURCE);
 
         String expected[] = { "jmx", "stats", "spdy", "security", "jndi", "jsp", "servlet", "jaas", "server" };
@@ -81,12 +123,28 @@ public class ModulesTest
     @Test
     public void testResolve_ServerHttp() throws IOException
     {
+        // Test Env
         File homeDir = MavenTestingUtils.getTestResourceDir("usecases/home");
-        BaseHome basehome = new BaseHome(homeDir,homeDir);
+        File baseDir = testdir.getEmptyDir();
+        String cmdLine[] = new String[] {"jetty.version=TEST"};
+        
+        // Configuration
+        CommandLineConfigSource cmdLineSource = new CommandLineConfigSource(cmdLine);
+        ConfigSources config = new ConfigSources();
+        config.add(cmdLineSource);
+        config.add(new JettyHomeConfigSource(homeDir.toPath()));
+        config.add(new JettyBaseConfigSource(baseDir.toPath()));
+        
+        // Initialize
+        BaseHome basehome = new BaseHome();
+        basehome.initialize(config);
+        
+        StartArgs args = new StartArgs();
+        args.parse(config);
 
-        // Register modules
+        // Test Modules
         Modules modules = new Modules();
-        modules.registerAll(basehome,DEFAULT_ARGS);
+        modules.registerAll(basehome,args);
         modules.buildGraph();
 
         // Enable 2 modules
@@ -137,12 +195,28 @@ public class ModulesTest
     @Test
     public void testResolve_WebSocket() throws IOException
     {
+        // Test Env
         File homeDir = MavenTestingUtils.getTestResourceDir("usecases/home");
-        BaseHome basehome = new BaseHome(homeDir,homeDir);
+        File baseDir = testdir.getEmptyDir();
+        String cmdLine[] = new String[] {"jetty.version=TEST"};
+        
+        // Configuration
+        CommandLineConfigSource cmdLineSource = new CommandLineConfigSource(cmdLine);
+        ConfigSources config = new ConfigSources();
+        config.add(cmdLineSource);
+        config.add(new JettyHomeConfigSource(homeDir.toPath()));
+        config.add(new JettyBaseConfigSource(baseDir.toPath()));
+        
+        // Initialize
+        BaseHome basehome = new BaseHome();
+        basehome.initialize(config);
+        
+        StartArgs args = new StartArgs();
+        args.parse(config);
 
-        // Register modules
+        // Test Modules
         Modules modules = new Modules();
-        modules.registerAll(basehome,DEFAULT_ARGS);
+        modules.registerAll(basehome,args);
         modules.buildGraph();
         // modules.dump();
 

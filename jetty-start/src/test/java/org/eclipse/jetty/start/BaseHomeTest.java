@@ -26,6 +26,9 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jetty.start.config.ConfigSources;
+import org.eclipse.jetty.start.config.JettyBaseConfigSource;
+import org.eclipse.jetty.start.config.JettyHomeConfigSource;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.Assert;
@@ -92,18 +95,22 @@ public class BaseHomeTest
     }
 
     @Test
-    public void testGetFile_OnlyHome() throws IOException
+    public void testGetPath_OnlyHome() throws IOException
     {
         File homeDir = MavenTestingUtils.getTestResourceDir("hb.1/home");
         File baseDir = null;
+        
+        ConfigSources config = new ConfigSources();
+        config.add(new JettyHomeConfigSource(homeDir.toPath()));
 
         BaseHome hb = new BaseHome(homeDir,baseDir);
-        File startIni = hb.getFile("start.ini");
+        hb.initialize(config);
+        Path startIni = hb.getPath("start.ini");
 
         String ref = hb.toShortForm(startIni);
         Assert.assertThat("Reference",ref,startsWith("${jetty.home}"));
 
-        String contents = IO.readToString(startIni);
+        String contents = IO.readToString(startIni.toFile());
         Assert.assertThat("Contents",contents,containsString("Home Ini"));
     }
 
@@ -113,7 +120,11 @@ public class BaseHomeTest
         File homeDir = MavenTestingUtils.getTestResourceDir("hb.1/home");
         File baseDir = null;
 
+        ConfigSources config = new ConfigSources();
+        config.add(new JettyHomeConfigSource(homeDir.toPath()));
+
         BaseHome hb = new BaseHome(homeDir,baseDir);
+        hb.initialize(config);
         List<Path> paths = hb.getPaths("start.d/*");
 
         List<String> expected = new ArrayList<>();
@@ -133,7 +144,11 @@ public class BaseHomeTest
         File homeDir = MavenTestingUtils.getTestResourceDir("hb.1/home");
         File baseDir = null;
 
+        ConfigSources config = new ConfigSources();
+        config.add(new JettyHomeConfigSource(homeDir.toPath()));
+
         BaseHome hb = new BaseHome(homeDir,baseDir);
+        hb.initialize(config);
         List<Path> paths = hb.getPaths("start.d/*.ini");
 
         List<String> expected = new ArrayList<>();
@@ -153,34 +168,15 @@ public class BaseHomeTest
         File homeDir = MavenTestingUtils.getTestResourceDir("hb.1/home");
         File baseDir = MavenTestingUtils.getTestResourceDir("hb.1/base");
 
+        ConfigSources config = new ConfigSources();
+        config.add(new JettyBaseConfigSource(baseDir.toPath()));
+        config.add(new JettyHomeConfigSource(homeDir.toPath()));
+
         BaseHome hb = new BaseHome(homeDir,baseDir);
+        hb.initialize(config);
         List<Path> paths = hb.getPaths("start.d/*.ini");
 
         List<String> expected = new ArrayList<>();
-        expected.add("${jetty.base}/start.d/jmx.ini");
-        expected.add("${jetty.home}/start.d/jndi.ini");
-        expected.add("${jetty.home}/start.d/jsp.ini");
-        expected.add("${jetty.base}/start.d/logging.ini");
-        expected.add("${jetty.home}/start.d/ssl.ini");
-        expected.add("${jetty.base}/start.d/myapp.ini");
-        FSTest.toOsSeparators(expected);
-
-        assertPathList(hb,"Paths found",expected,paths);
-    }
-    
-    @Test
-    public void testGetPaths_More() throws IOException
-    {
-        File homeDir = MavenTestingUtils.getTestResourceDir("hb.1/home");
-        File baseDir = MavenTestingUtils.getTestResourceDir("hb.1/base");
-        File moreDir = MavenTestingUtils.getTestResourceDir("extra-start-dirs/more-startd");
-
-        BaseHome hb = new BaseHome(homeDir,baseDir);
-        hb.addExtraStart("more",moreDir);
-        List<Path> paths = hb.getPaths("start.d/*.ini");
-
-        List<String> expected = new ArrayList<>();
-        expected.add("${more}/start.d/more.ini");
         expected.add("${jetty.base}/start.d/jmx.ini");
         expected.add("${jetty.home}/start.d/jndi.ini");
         expected.add("${jetty.home}/start.d/jsp.ini");
@@ -201,18 +197,23 @@ public class BaseHomeTest
     }
 
     @Test
-    public void testGetFile_Both() throws IOException
+    public void testGetPath_Both() throws IOException
     {
         File homeDir = MavenTestingUtils.getTestResourceDir("hb.1/home");
         File baseDir = MavenTestingUtils.getTestResourceDir("hb.1/base");
 
+        ConfigSources config = new ConfigSources();
+        config.add(new JettyBaseConfigSource(baseDir.toPath()));
+        config.add(new JettyHomeConfigSource(homeDir.toPath()));
+
         BaseHome hb = new BaseHome(homeDir,baseDir);
-        File startIni = hb.getFile("start.ini");
+        hb.initialize(config);
+        Path startIni = hb.getPath("start.ini");
 
         String ref = hb.toShortForm(startIni);
         Assert.assertThat("Reference",ref,startsWith("${jetty.base}"));
 
-        String contents = IO.readToString(startIni);
+        String contents = IO.readToString(startIni.toFile());
         Assert.assertThat("Contents",contents,containsString("Base Ini"));
     }
 }

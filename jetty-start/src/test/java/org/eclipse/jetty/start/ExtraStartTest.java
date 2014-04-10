@@ -25,6 +25,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.start.Props.Prop;
+import org.eclipse.jetty.start.config.ConfigSource;
+import org.eclipse.jetty.start.config.ConfigSources;
+import org.eclipse.jetty.start.config.DirConfigSource;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.junit.Assert;
@@ -40,14 +43,15 @@ public class ExtraStartTest
 
         public void assertSearchOrder(List<String> expectedSearchOrder)
         {
+            ConfigSources sources = main.getBaseHome().getConfigSources();
             List<String> actualOrder = new ArrayList<>();
-            actualOrder.add("${jetty.base}");
-            List<String> startRefs = args.getExtraStartRefs();
-            if (startRefs.size() > 0)
+            for (ConfigSource source : sources)
             {
-                actualOrder.addAll(startRefs);
+                if (source instanceof DirConfigSource)
+                {
+                    actualOrder.add(source.getId());
+                }
             }
-            actualOrder.add("${jetty.home}");
             ConfigurationAssert.assertOrdered("Search Order",expectedSearchOrder,actualOrder);
         }
 
@@ -92,7 +96,7 @@ public class ExtraStartTest
         FS.ensureEmpty(base);
         TestEnv.makeFile(base,"start.ini", //
                 "jetty.host=127.0.0.1");
-        
+
         // Simple command line - no reference to extra-start-dirs
         MainResult result = runMain(base,home);
 
@@ -125,7 +129,7 @@ public class ExtraStartTest
 
         // Simple command line reference to extra-start-dir
         MainResult result = runMain(base,home,
-                // direct reference via path
+        // direct reference via path
                 "--extra-start-dir=" + common.getAbsolutePath());
 
         List<String> expectedSearchOrder = new ArrayList<>();
@@ -158,9 +162,9 @@ public class ExtraStartTest
                 "jetty.host=127.0.0.1");
 
         // Simple command line reference to extra-start-dir via property (also on command line)
-        MainResult result = runMain(base,home, 
-                // property
-                "my.common=" + common.getAbsolutePath(), 
+        MainResult result = runMain(base,home,
+        // property
+                "my.common=" + common.getAbsolutePath(),
                 // reference via property
                 "--extra-start-dir=${my.common}");
 
@@ -185,9 +189,9 @@ public class ExtraStartTest
         // Create opt
         File opt = testdir.getFile("opt");
         FS.ensureEmpty(opt);
-        
+
         // Create common
-        File common = new File(opt, "common");
+        File common = new File(opt,"common");
         FS.ensureEmpty(common);
         TestEnv.makeFile(common,"start.ini","jetty.port=8080");
 
@@ -196,13 +200,13 @@ public class ExtraStartTest
         FS.ensureEmpty(base);
         TestEnv.makeFile(base,"start.ini", //
                 "jetty.host=127.0.0.1");
-        
+
         String dirRef = "${my.opt}" + File.separator + "common";
 
         // Simple command line reference to extra-start-dir via property (also on command line)
-        MainResult result = runMain(base,home, 
-                // property to 'opt' dir
-                "my.opt=" + opt.getAbsolutePath(), 
+        MainResult result = runMain(base,home,
+        // property to 'opt' dir
+                "my.opt=" + opt.getAbsolutePath(),
                 // reference via property prefix
                 "--extra-start-dir=" + dirRef);
 
@@ -219,7 +223,7 @@ public class ExtraStartTest
     @Test
     public void testCommandLine_1Extra_FromCompoundProp() throws Exception
     {
-     // Create home
+        // Create home
         File home = testdir.getFile("home");
         FS.ensureEmpty(home);
         TestEnv.copyTestDir("usecases/home",home);
@@ -227,9 +231,9 @@ public class ExtraStartTest
         // Create opt
         File opt = testdir.getFile("opt");
         FS.ensureEmpty(opt);
-        
+
         // Create common
-        File common = new File(opt, "common");
+        File common = new File(opt,"common");
         FS.ensureEmpty(common);
         TestEnv.makeFile(common,"start.ini","jetty.port=8080");
 
@@ -238,12 +242,12 @@ public class ExtraStartTest
         FS.ensureEmpty(base);
         TestEnv.makeFile(base,"start.ini", //
                 "jetty.host=127.0.0.1");
-        
+
         String dirRef = "${my.opt}" + File.separator + "${my.dir}";
-        
+
         // Simple command line reference to extra-start-dir via property (also on command line)
-        MainResult result = runMain(base,home, 
-                // property to 'opt' dir
+        MainResult result = runMain(base,home,
+        // property to 'opt' dir
                 "my.opt=" + opt.getAbsolutePath(),
                 // property to commmon dir name
                 "my.dir=common",
@@ -327,7 +331,7 @@ public class ExtraStartTest
         result.assertProperty("jetty.host","127.0.0.1");
         result.assertProperty("jetty.port","8080"); // from 'common'
     }
-    
+
     @Test
     public void testRefCommonRefCorp() throws Exception
     {
@@ -368,7 +372,7 @@ public class ExtraStartTest
         result.assertProperty("jetty.host","127.0.0.1");
         result.assertProperty("jetty.port","8080"); // from 'common'
     }
-    
+
     @Test
     public void testRefCommonRefCorp_FromSimpleProps() throws Exception
     {
@@ -396,7 +400,7 @@ public class ExtraStartTest
         FS.ensureEmpty(base);
         TestEnv.makeFile(base,"start.ini", //
                 "jetty.host=127.0.0.1",//
-                "my.common="+common.getAbsolutePath(), //
+                "my.common=" + common.getAbsolutePath(), //
                 "--extra-start-dir=${my.common}");
 
         MainResult result = runMain(base,home);
@@ -411,7 +415,7 @@ public class ExtraStartTest
         result.assertProperty("jetty.host","127.0.0.1");
         result.assertProperty("jetty.port","8080"); // from 'common'
     }
-    
+
     @Test
     public void testRefCommonRefCorp_CmdLineRef() throws Exception
     {
@@ -448,7 +452,7 @@ public class ExtraStartTest
                 "--extra-start-dir=" + common.getAbsolutePath());
 
         MainResult result = runMain(base,home,
-                // command line provided extra-start-dir ref
+        // command line provided extra-start-dir ref
                 "--extra-start-dir=" + devops.getAbsolutePath());
 
         List<String> expectedSearchOrder = new ArrayList<>();
@@ -462,7 +466,7 @@ public class ExtraStartTest
         result.assertProperty("jetty.host","127.0.0.1");
         result.assertProperty("jetty.port","2222"); // from 'devops'
     }
-    
+
     @Test
     public void testRefCommonRefCorp_CmdLineProp() throws Exception
     {
@@ -492,7 +496,7 @@ public class ExtraStartTest
                 "--extra-start-dir=" + common.getAbsolutePath());
 
         MainResult result = runMain(base,home,
-                // command line property should override all others
+        // command line property should override all others
                 "jetty.port=7070");
 
         List<String> expectedSearchOrder = new ArrayList<>();
@@ -505,7 +509,7 @@ public class ExtraStartTest
         result.assertProperty("jetty.host","127.0.0.1");
         result.assertProperty("jetty.port","7070"); // from command line
     }
-    
+
     @Test
     public void testBadDoubleRef() throws Exception
     {
@@ -521,15 +525,15 @@ public class ExtraStartTest
         // Create corp
         File corp = testdir.getFile("corp");
         FS.ensureEmpty(corp);
-        TestEnv.makeFile(corp,"start.ini", 
-                // standard property
+        TestEnv.makeFile(corp,"start.ini",
+        // standard property
                 "jetty.port=9090",
                 // INTENTIONAL BAD Reference (duplicate)
                 "--extra-start-dir=" + common.getAbsolutePath());
 
         // Populate common
-        TestEnv.makeFile(common,"start.ini", 
-                // standard property
+        TestEnv.makeFile(common,"start.ini",
+        // standard property
                 "jetty.port=8080",
                 // reference to corp
                 "--extra-start-dir=" + corp.getAbsolutePath());

@@ -18,19 +18,25 @@
 
 package org.eclipse.jetty.start.config;
 
+import static org.eclipse.jetty.start.UsageException.*;
+
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.eclipse.jetty.start.FS;
+import org.eclipse.jetty.start.NaturalSort;
 import org.eclipse.jetty.start.PathMatchers;
 import org.eclipse.jetty.start.Props;
+import org.eclipse.jetty.start.UsageException;
 import org.eclipse.jetty.start.Props.Prop;
 import org.eclipse.jetty.start.StartIni;
+import org.eclipse.jetty.start.StartLog;
 
 /**
  * A Directory based {@link ConfigSource}.
@@ -39,6 +45,29 @@ import org.eclipse.jetty.start.StartIni;
  */
 public class DirConfigSource implements ConfigSource
 {
+    private static final List<String> BANNED_ARGS;
+
+    static
+    {
+        // Arguments that are not allowed to be in start.ini or start.d/{name}.ini files
+        BANNED_ARGS = new ArrayList<>();
+        BANNED_ARGS.add("--help");
+        BANNED_ARGS.add("-?");
+        BANNED_ARGS.add("--stop");
+        BANNED_ARGS.add("--dry-run");
+        BANNED_ARGS.add("--exec-print");
+        BANNED_ARGS.add("--list-config");
+        BANNED_ARGS.add("--list-classpath");
+        BANNED_ARGS.add("--list-modules");
+        BANNED_ARGS.add("--write-module-graph");
+        BANNED_ARGS.add("--version");
+        BANNED_ARGS.add("-v");
+        BANNED_ARGS.add("--download");
+        BANNED_ARGS.add("--create-files");
+        BANNED_ARGS.add("--add-to-startd");
+        BANNED_ARGS.add("--add-to-start");
+    }
+
     private final String id;
     private final Path dir;
     private final int weight;
@@ -62,7 +91,7 @@ public class DirConfigSource implements ConfigSource
     public DirConfigSource(String id, Path dir, int weight, boolean canHaveArgs) throws IOException
     {
         this.id = id;
-        this.dir = dir;
+        this.dir = dir.toAbsolutePath();
         this.weight = weight;
         this.props = new Props();
 
@@ -75,7 +104,7 @@ public class DirConfigSource implements ConfigSource
             {
                 StartIni ini = new StartIni(iniFile);
                 args.addAll(ini.getLines());
-                this.props.addAllProperties(ini.getLines(),iniFile.toString());
+                parseAllArgs(ini.getLines(),iniFile.toString());
             }
 
             Path startDdir = dir.resolve("start.d");
@@ -93,45 +122,74 @@ public class DirConfigSource implements ConfigSource
                     }
                 };
 
+                List<Path> paths = new ArrayList<>();
+
                 for (Path diniFile : Files.newDirectoryStream(startDdir,filter))
                 {
                     if (FS.canReadFile(diniFile))
                     {
-                        StartIni ini = new StartIni(diniFile);
-                        args.addAll(ini.getLines());
-                        this.props.addAllProperties(ini.getLines(),diniFile.toString());
+                        paths.add(diniFile);
                     }
+                }
+
+                Collections.sort(paths,new NaturalSort.Paths());
+
+                for (Path diniFile : paths)
+                {
+                    StartLog.debug("Reading %s/start.d/%s - %s",id,diniFile.getFileName(),diniFile);
+                    StartIni ini = new StartIni(diniFile);
+                    args.addAll(ini.getLines());
+                    parseAllArgs(ini.getLines(),diniFile.toString());
                 }
             }
         }
     }
 
-    @Override
-    public int hashCode()
+    private void parseAllArgs(List<String> lines, String origin)
     {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((dir == null)?0:dir.hashCode());
-        return result;
+        for (String line : lines)
+        {
+            String arg = line;
+            int idx = line.indexOf('=');
+            if (idx > 0)
+            {
+                arg = line.substring(0,idx);
+            }
+            if (BANNED_ARGS.contains(arg))
+            {
+                throw new UsageException(ERR_BAD_ARG,"%s not allowed in %s",arg,origin);
+            }
+            this.props.addPossibleProperty(line,origin);
+        }
     }
 
     @Override
     public boolean equals(Object obj)
     {
         if (this == obj)
+        {
             return true;
+        }
         if (obj == null)
+        {
             return false;
+        }
         if (getClass() != obj.getClass())
+        {
             return false;
+        }
         DirConfigSource other = (DirConfigSource)obj;
         if (dir == null)
         {
             if (other.dir != null)
+            {
                 return false;
+            }
         }
         else if (!dir.equals(other.dir))
+        {
             return false;
+        }
         return true;
     }
 
@@ -153,9 +211,14 @@ public class DirConfigSource implements ConfigSource
     }
 
     @Override
-    public int getWeight()
+    public String getProperty(String key)
     {
-        return weight;
+        Prop prop = props.getProp(key,false);
+        if (prop == null)
+        {
+            return null;
+        }
+        return prop.value;
     }
 
     @Override
@@ -165,14 +228,23 @@ public class DirConfigSource implements ConfigSource
     }
 
     @Override
-    public String getProperty(String key)
+    public int getWeight()
     {
-        Prop prop = props.getProp(key,false);
-        if (prop == null)
-        {
-            return null;
-        }
-        return prop.value;
+        return weight;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        final int prime = 31;
+        int result = 1;
+        result = (prime * result) + ((dir == null)?0:dir.hashCode());
+        return result;
+    }
+
+    public boolean isPropertyBased()
+    {
+        return id.contains("${");
     }
 
     @Override

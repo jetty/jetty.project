@@ -34,7 +34,7 @@ public class ModuleTest
     private Module loadTestHomeModule(String moduleFileName) throws IOException
     {
         File file = MavenTestingUtils.getTestResourceFile("usecases/home/modules/" + moduleFileName);
-        return new Module(new BaseHome(),file);
+        return new Module(new BaseHome(),file.toPath());
     }
 
     @Test
