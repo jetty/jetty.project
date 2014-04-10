@@ -1201,7 +1201,30 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     }
 
     @Test
-    public void testContentDelimitedByEOFWithSlowRequest() throws Exception
+    public void testSmallContentDelimitedByEOFWithSlowRequestHTTP10() throws Exception
+    {
+        testContentDelimitedByEOFWithSlowRequest(HttpVersion.HTTP_1_0, 1024);
+    }
+
+    @Test
+    public void testBigContentDelimitedByEOFWithSlowRequestHTTP10() throws Exception
+    {
+        testContentDelimitedByEOFWithSlowRequest(HttpVersion.HTTP_1_0, 128 * 1024);
+    }
+
+    @Test
+    public void testSmallContentDelimitedByEOFWithSlowRequestHTTP11() throws Exception
+    {
+        testContentDelimitedByEOFWithSlowRequest(HttpVersion.HTTP_1_1, 1024);
+    }
+
+    @Test
+    public void testBigContentDelimitedByEOFWithSlowRequestHTTP11() throws Exception
+    {
+        testContentDelimitedByEOFWithSlowRequest(HttpVersion.HTTP_1_1, 128 * 1024);
+    }
+
+    private void testContentDelimitedByEOFWithSlowRequest(final HttpVersion version, int length) throws Exception
     {
         // This test is crafted in a way that the response completes before the request is fully written.
         // With SSL, the response coming down will close the SSLEngine so it would not be possible to
@@ -1210,7 +1233,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         // This is a limit of Java's SSL implementation that does not allow half closes.
         Assume.assumeTrue(sslContextFactory == null);
 
-        final byte[] data = new byte[8 * 1024];
+        final byte[] data = new byte[length];
         new Random().nextBytes(data);
         start(new AbstractHandler()
         {
@@ -1218,7 +1241,9 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
-                response.setHeader("Connection", "close");
+                // Send Connection: close to avoid that the server chunks the content with HTTP 1.1.
+                if (version.compareTo(HttpVersion.HTTP_1_0) > 0)
+                    response.setHeader("Connection", "close");
                 response.getOutputStream().write(data);
             }
         });
@@ -1226,6 +1251,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         DeferredContentProvider content = new DeferredContentProvider(ByteBuffer.wrap(new byte[]{0}));
         Request request = client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
+                .version(version)
                 .content(content);
         FutureResponseListener listener = new FutureResponseListener(request);
         request.send(listener);

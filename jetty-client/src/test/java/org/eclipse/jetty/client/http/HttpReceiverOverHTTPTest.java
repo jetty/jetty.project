@@ -23,6 +23,7 @@ import java.io.EOFException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -221,8 +222,22 @@ public class HttpReceiverOverHTTPTest
                 "Content-Length: " + gzip.length + "\r\n" +
                 "Content-Encoding: gzip\r\n" +
                 "\r\n");
-        HttpExchange exchange = newExchange();
-        FutureResponseListener listener = (FutureResponseListener)exchange.getResponseListeners().get(0);
+
+        HttpRequest request = (HttpRequest)client.newRequest("http://localhost");
+        final CountDownLatch latch = new CountDownLatch(1);
+        FutureResponseListener listener = new FutureResponseListener(request)
+        {
+            @Override
+            public void onContent(Response response, ByteBuffer content)
+            {
+                super.onContent(response, content);
+                latch.countDown();
+            }
+        };
+        HttpExchange exchange = new HttpExchange(destination, request, Collections.<Response.ResponseListener>singletonList(listener));
+        connection.getHttpChannel().associate(exchange);
+        exchange.requestComplete();
+        exchange.terminateRequest(null);
         connection.getHttpChannel().receive();
         endPoint.reset();
 
@@ -241,6 +256,7 @@ public class HttpReceiverOverHTTPTest
         ContentResponse response = listener.get(5, TimeUnit.SECONDS);
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.getStatus());
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         Assert.assertArrayEquals(data, response.getContent());
     }
 }

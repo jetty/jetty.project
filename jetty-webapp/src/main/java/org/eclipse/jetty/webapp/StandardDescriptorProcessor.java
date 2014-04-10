@@ -70,9 +70,11 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
 
     public static final String STANDARD_PROCESSOR = "org.eclipse.jetty.standardDescriptorProcessor";
 
-    final Map<String,FilterHolder> _filterHolders = new HashMap<>();
+    final Map<String,FilterHolder> _filterHolderMap = new HashMap<>();
+    final List<FilterHolder> _filterHolders = new ArrayList<>();
     final List<FilterMapping> _filterMappings = new ArrayList<>();
-    final Map<String,ServletHolder> _servletHolders = new HashMap<>();
+    final Map<String,ServletHolder> _servletHolderMap = new HashMap<>();
+    final List<ServletHolder> _servletHolders = new ArrayList<>();
     final List<ServletMapping> _servletMappings = new ArrayList<>();
 
     public StandardDescriptorProcessor ()
@@ -113,11 +115,17 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
     public void start(WebAppContext context, Descriptor descriptor)
     {
         for (FilterHolder h : context.getServletHandler().getFilters())
-            _filterHolders.put(h.getName(),h);
+        {
+            _filterHolderMap.put(h.getName(),h);
+            _filterHolders.add(h);
+        }
         if (context.getServletHandler().getFilterMappings()!=null)
             _filterMappings.addAll(Arrays.asList(context.getServletHandler().getFilterMappings()));
         for (ServletHolder h : context.getServletHandler().getServlets())
-            _servletHolders.put(h.getName(),h);
+        {
+            _servletHolderMap.put(h.getName(),h);
+            _servletHolders.add(h);
+        }
         if (context.getServletHandler().getServletMappings()!=null)
             _servletMappings.addAll(Arrays.asList(context.getServletHandler().getServletMappings()));
     }
@@ -128,14 +136,16 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
      */
     public void end(WebAppContext context, Descriptor descriptor)
     {
-        context.getServletHandler().setFilters(_filterHolders.values().toArray(new FilterHolder[_filterHolders.size()]));
-        context.getServletHandler().setServlets(_servletHolders.values().toArray(new ServletHolder[_servletHolders.size()]));
+        context.getServletHandler().setFilters(_filterHolders.toArray(new FilterHolder[_filterHolderMap.size()]));
+        context.getServletHandler().setServlets(_servletHolders.toArray(new ServletHolder[_servletHolderMap.size()]));
 
         context.getServletHandler().setFilterMappings(_filterMappings.toArray(new FilterMapping[_filterMappings.size()]));
         context.getServletHandler().setServletMappings(_servletMappings.toArray(new ServletMapping[_servletMappings.size()]));
 
+        _filterHolderMap.clear();
         _filterHolders.clear();
         _filterMappings.clear();
+        _servletHolderMap.clear();
         _servletHolders.clear();
         _servletMappings.clear();
     }
@@ -217,14 +227,15 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
 
         // initialize holder
         String name = node.getString("servlet-name", false, true);
-        ServletHolder holder = _servletHolders.get(name);
+        ServletHolder holder = _servletHolderMap.get(name);
 
         //If servlet of that name does not already exist, create it.
         if (holder == null)
         {
             holder = context.getServletHandler().newServletHolder(Source.DESCRIPTOR);
             holder.setName(name);
-            _servletHolders.put(name,holder);
+            _servletHolderMap.put(name,holder);
+            _servletHolders.add(holder);
         }
 
         // init params
@@ -1401,11 +1412,11 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         if (paths.size() > 0)
         {
             ServletHandler handler = context.getServletHandler();
-            ServletHolder jsp_pg_servlet = _servletHolders.get(JspPropertyGroupServlet.NAME);
+            ServletHolder jsp_pg_servlet = _servletHolderMap.get(JspPropertyGroupServlet.NAME);
             if (jsp_pg_servlet==null)
             {
                 jsp_pg_servlet=new ServletHolder(JspPropertyGroupServlet.NAME,new JspPropertyGroupServlet(context,handler));
-                _servletHolders.put(JspPropertyGroupServlet.NAME,jsp_pg_servlet);
+                _servletHolderMap.put(JspPropertyGroupServlet.NAME,jsp_pg_servlet);
             }
 
             ServletMapping mapping = new ServletMapping();
@@ -1721,12 +1732,13 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
     protected void visitFilter(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
         String name = node.getString("filter-name", false, true);
-        FilterHolder holder = _filterHolders.get(name);
+        FilterHolder holder = _filterHolderMap.get(name);
         if (holder == null)
         {
             holder = context.getServletHandler().newFilterHolder(Source.DESCRIPTOR);
             holder.setName(name);
-            _filterHolders.put(name,holder);
+            _filterHolderMap.put(name,holder);
+            _filterHolders.add(holder);
         }
 
         String filter_class = node.getString("filter-class", false, true);
