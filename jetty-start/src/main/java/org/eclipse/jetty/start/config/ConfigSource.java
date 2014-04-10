@@ -16,9 +16,11 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.start;
+package org.eclipse.jetty.start.config;
 
 import java.util.List;
+
+import org.eclipse.jetty.start.Props;
 
 /**
  * A Configuration Source
@@ -33,11 +35,42 @@ public interface ConfigSource
      * @return the configuration source identifier.
      */
     public String getId();
-    
+
     /**
-     * The list of Arguments for this ConfigSource 
+     * The weight of this source, used for proper ordering of the config source search order.
+     * <p>
+     * Recommended Weights:
+     * <pre>
+     *           -1 = the command line
+     *            0 = the ${jetty.base} source
+     *       [1..n] = extra-start-dir entries from command line
+     *     [n+1..n] = extra-start-dir entries from start.ini (or start.d/*.ini) 
+     *      9999999 = the ${jetty.home} source
+     * </pre>
+     * 
+     * @return the weight of the config source. (lower value is more important)
+     */
+    public int getWeight();
+
+    /**
+     * The list of Arguments for this ConfigSource
      * 
      * @return the list of Arguments for this ConfigSource
      */
     public List<String> getArgs();
+
+    /**
+     * The properties for this ConfigSource
+     * 
+     * @return the properties for this ConfigSource
+     */
+    public Props getProps();
+    
+    /**
+     * Return the value of the specified property.
+     * 
+     * @param key the key to lookup
+     * @return the value of the property, or null if not found
+     */
+    public String getProperty(String key);
 }

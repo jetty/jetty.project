@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.start;
+package org.eclipse.jetty.start.config;
 
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
@@ -25,6 +25,12 @@ import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.eclipse.jetty.start.FS;
+import org.eclipse.jetty.start.PathMatchers;
+import org.eclipse.jetty.start.Props;
+import org.eclipse.jetty.start.Props.Prop;
+import org.eclipse.jetty.start.StartIni;
 
 /**
  * A Directory based {@link ConfigSource}.
@@ -35,7 +41,9 @@ public class DirConfigSource implements ConfigSource
 {
     private final String id;
     private final Path dir;
+    private final int weight;
     private final List<String> args;
+    private final Props props;
 
     /**
      * Create DirConfigSource with specified identifier and directory.
@@ -44,15 +52,19 @@ public class DirConfigSource implements ConfigSource
      *            the identifier for this {@link ConfigSource}
      * @param dir
      *            the directory for this {@link ConfigSource}
+     * @param weight
+     *            the configuration weight (used for search order)
      * @param canHaveArgs
      *            true if this directory can have start.ini or start.d entries. (false for directories like ${jetty.home}, for example)
      * @throws IOException
      *             if unable to load the configuration args
      */
-    public DirConfigSource(String id, Path dir, boolean canHaveArgs) throws IOException
+    public DirConfigSource(String id, Path dir, int weight, boolean canHaveArgs) throws IOException
     {
         this.id = id;
         this.dir = dir;
+        this.weight = weight;
+        this.props = new Props();
 
         this.args = new ArrayList<>();
 
@@ -62,7 +74,8 @@ public class DirConfigSource implements ConfigSource
             if (FS.canReadFile(iniFile))
             {
                 StartIni ini = new StartIni(iniFile);
-                args.addAll(ini.getArgs());
+                args.addAll(ini.getLines());
+                this.props.addAllProperties(ini.getLines(),iniFile.toString());
             }
 
             Path startDdir = dir.resolve("start.d");
@@ -85,11 +98,47 @@ public class DirConfigSource implements ConfigSource
                     if (FS.canReadFile(diniFile))
                     {
                         StartIni ini = new StartIni(diniFile);
-                        args.addAll(ini.getArgs());
+                        args.addAll(ini.getLines());
+                        this.props.addAllProperties(ini.getLines(),diniFile.toString());
                     }
                 }
             }
         }
+    }
+
+    @Override
+    public int hashCode()
+    {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((dir == null)?0:dir.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        DirConfigSource other = (DirConfigSource)obj;
+        if (dir == null)
+        {
+            if (other.dir != null)
+                return false;
+        }
+        else if (!dir.equals(other.dir))
+            return false;
+        return true;
+    }
+
+    @Override
+    public List<String> getArgs()
+    {
+        return args;
     }
 
     public Path getDir()
@@ -104,8 +153,31 @@ public class DirConfigSource implements ConfigSource
     }
 
     @Override
-    public List<String> getArgs()
+    public int getWeight()
     {
-        return args;
+        return weight;
+    }
+
+    @Override
+    public Props getProps()
+    {
+        return props;
+    }
+
+    @Override
+    public String getProperty(String key)
+    {
+        Prop prop = props.getProp(key,false);
+        if (prop == null)
+        {
+            return null;
+        }
+        return prop.value;
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s[%s,%s,args.length=%d]",this.getClass().getSimpleName(),id,dir,getArgs().size());
     }
 }

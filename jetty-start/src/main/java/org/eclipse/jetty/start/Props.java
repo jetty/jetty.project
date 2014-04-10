@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Stack;
@@ -62,6 +63,48 @@ public final class Props implements Iterable<Prop>
     public static final String ORIGIN_SYSPROP = "<system-property>";
 
     private Map<String, Prop> props = new HashMap<>();
+
+    public void addAll(Props other)
+    {
+        this.props.putAll(other.props);
+    }
+
+    public void addAllProperties(List<String> args, String source)
+    {
+        for (String arg : args)
+        {
+            // Start property (syntax similar to System property)
+            if (arg.startsWith("-D"))
+            {
+                String[] assign = arg.substring(2).split("=",2);
+                switch (assign.length)
+                {
+                    case 2:
+                        setProperty(assign[0],assign[1],source);
+                        break;
+                    case 1:
+                        setProperty(assign[0],"",source);
+                        break;
+                    default:
+                        break;
+                }
+                continue;
+            }
+
+            // Is this a raw property declaration?
+            int idx = arg.indexOf('=');
+            if (idx >= 0)
+            {
+                String key = arg.substring(0,idx);
+                String value = arg.substring(idx + 1);
+
+                setProperty(key,value,source);
+                continue;
+            }
+
+            // All other strings are ignored
+        }
+    }
 
     public String cleanReference(String property)
     {
@@ -157,8 +200,13 @@ public final class Props implements Iterable<Prop>
 
     public Prop getProp(String key)
     {
+        return getProp(key,true);
+    }
+
+    public Prop getProp(String key, boolean searchSystemProps)
+    {
         Prop prop = props.get(key);
-        if (prop == null)
+        if ((prop == null) && searchSystemProps)
         {
             // try system property
             prop = getSystemProperty(key);
@@ -212,6 +260,11 @@ public final class Props implements Iterable<Prop>
     public Iterator<Prop> iterator()
     {
         return props.values().iterator();
+    }
+
+    public void reset()
+    {
+        props.clear();
     }
 
     public void setProperty(Prop prop)

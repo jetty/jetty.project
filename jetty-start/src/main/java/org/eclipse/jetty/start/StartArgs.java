@@ -68,8 +68,9 @@ public class StartArgs
     }
 
     private static final String SERVER_MAIN = "org.eclipse.jetty.xml.XmlConfiguration";
-
+    
     private List<String> commandLine = new ArrayList<>();
+    
     /** List of enabled modules */
     private Set<String> modules = new HashSet<>();
     /** Map of enabled modules to the source of where that activation occurred */

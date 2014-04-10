@@ -23,10 +23,12 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 
+import org.eclipse.jetty.start.config.ConfigSource;
+
 /**
  * Simple Start .INI handler
  */
-public class StartIni extends TextFile implements ConfigSource
+public class StartIni extends TextFile
 {
     private Path basedir;
 
@@ -77,19 +79,5 @@ public class StartIni extends TextFile implements ConfigSource
     public Path getBaseDir()
     {
         return basedir;
-    }
-
-    @Override
-    public String getId()
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public List<String> getArgs()
-    {
-        // TODO Auto-generated method stub
-        return null;
     }
 }

@@ -16,34 +16,21 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.start;
+package org.eclipse.jetty.start.config;
 
-import java.util.Arrays;
-import java.util.List;
+import java.io.IOException;
+import java.nio.file.Path;
 
 /**
- * Configuration Source representing the Command Line arguments.
+ * ${jetty.home} specific ConfigSource
  */
-public class CommandLineConfigSource implements ConfigSource
+public class JettyHomeConfigSource extends DirConfigSource
 {
-    public static final String CMD_LINE_SOURCE = "<command-line>";
+    // Standard weight for ${jetty.home}, so that it comes after everything else
+    private final static int WEIGHT = 9999999;
 
-    private final List<String> args;
-
-    public CommandLineConfigSource(String rawargs[])
+    public JettyHomeConfigSource(Path dir) throws IOException
     {
-        args = Arrays.asList(rawargs);
-    }
-
-    @Override
-    public String getId()
-    {
-        return CMD_LINE_SOURCE;
-    }
-
-    @Override
-    public List<String> getArgs()
-    {
-        return args;
+        super("${jetty.home}",dir,WEIGHT,false);
     }
 }

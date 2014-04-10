@@ -16,71 +16,69 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.start;
+package org.eclipse.jetty.start.config;
 
 import static org.hamcrest.Matchers.*;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
+import org.eclipse.jetty.start.ConfigurationAssert;
 import org.eclipse.jetty.start.Props.Prop;
+import org.eclipse.jetty.start.TestEnv;
+import org.eclipse.jetty.start.UsageException;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class ExtraStartTest
+public class ConfigSourcesTest
 {
-    private static class MainResult
-    {
-        private Main main;
-        private StartArgs args;
-
-        public void assertSearchOrder(List<String> expectedSearchOrder)
-        {
-            List<String> actualOrder = new ArrayList<>();
-            actualOrder.add("${jetty.base}");
-            List<String> startRefs = args.getExtraStartRefs();
-            if (startRefs.size() > 0)
-            {
-                actualOrder.addAll(startRefs);
-            }
-            actualOrder.add("${jetty.home}");
-            ConfigurationAssert.assertOrdered("Search Order",expectedSearchOrder,actualOrder);
-        }
-
-        public void assertProperty(String key, String expectedValue)
-        {
-            Prop prop = args.getProperties().getProp(key);
-            String prefix = "Prop[" + key + "]";
-            Assert.assertThat(prefix + " should have a value",prop,notNullValue());
-            Assert.assertThat(prefix + " value",prop.value,is(expectedValue));
-        }
-    }
-
     @Rule
     public TestingDir testdir = new TestingDir();
 
-    private MainResult runMain(File baseDir, File homeDir, String... cmdLineArgs) throws Exception
+    private void assertIdOrder(ConfigSources sources, String... expectedOrder)
     {
-        MainResult ret = new MainResult();
-        ret.main = new Main();
-        List<String> cmdLine = new ArrayList<>();
-        cmdLine.add("jetty.home=" + homeDir.getAbsolutePath());
-        cmdLine.add("jetty.base=" + baseDir.getAbsolutePath());
-        // cmdLine.add("--debug");
-        for (String arg : cmdLineArgs)
+        List<String> actualList = new ArrayList<>();
+        for (ConfigSource source : sources)
         {
-            cmdLine.add(arg);
+            actualList.add(source.getId());
         }
-        ret.args = ret.main.processCommandLine(cmdLine);
-        return ret;
+        List<String> expectedList = Arrays.asList(expectedOrder);
+        ConfigurationAssert.assertOrdered("ConfigSources.id order",expectedList,actualList);
+    }
+
+    private void assertDirOrder(ConfigSources sources, File... expectedDirOrder)
+    {
+        List<String> actualList = new ArrayList<>();
+        for (ConfigSource source : sources)
+        {
+            if (source instanceof DirConfigSource)
+            {
+                actualList.add(((DirConfigSource)source).getDir().toString());
+            }
+        }
+        List<String> expectedList = new ArrayList<>();
+        for (File path : expectedDirOrder)
+        {
+            expectedList.add(path.getAbsolutePath());
+        }
+        ConfigurationAssert.assertOrdered("ConfigSources.dir order",expectedList,actualList);
+    }
+
+    private void assertProperty(ConfigSources sources, String key, String expectedValue)
+    {
+        Prop prop = sources.getProp(key);
+        Assert.assertThat("getProp('" + key + "') should not be null",prop,notNullValue());
+        Assert.assertThat("getProp('" + key + "')",prop.value,is(expectedValue));
     }
 
     @Test
-    public void testNoExtras() throws Exception
+    public void testOrder_BasicConfig() throws IOException
     {
         // Create home
         File home = testdir.getFile("home");
@@ -92,20 +90,19 @@ public class ExtraStartTest
         FS.ensureEmpty(base);
         TestEnv.makeFile(base,"start.ini", //
                 "jetty.host=127.0.0.1");
-        
-        // Simple command line - no reference to extra-start-dirs
-        MainResult result = runMain(base,home);
 
-        List<String> expectedSearchOrder = new ArrayList<>();
-        expectedSearchOrder.add("${jetty.base}");
-        expectedSearchOrder.add("${jetty.home}");
-        result.assertSearchOrder(expectedSearchOrder);
+        ConfigSources sources = new ConfigSources();
 
-        result.assertProperty("jetty.host","127.0.0.1");
+        String[] cmdLine = new String[0];
+        sources.add(new CommandLineConfigSource(cmdLine));
+        sources.add(new JettyBaseConfigSource(base.toPath()));
+        sources.add(new JettyHomeConfigSource(home.toPath()));
+
+        assertIdOrder(sources,"<command-line>","${jetty.base}","${jetty.home}");
     }
 
     @Test
-    public void testCommandLine_1Extra() throws Exception
+    public void testOrder_With1ExtraConfig() throws IOException
     {
         // Create home
         File home = testdir.getFile("home");
@@ -115,27 +112,22 @@ public class ExtraStartTest
         // Create common
         File common = testdir.getFile("common");
         FS.ensureEmpty(common);
-        TestEnv.makeFile(common,"start.ini","jetty.port=8080");
 
         // Create base
         File base = testdir.getFile("base");
         FS.ensureEmpty(base);
         TestEnv.makeFile(base,"start.ini", //
-                "jetty.host=127.0.0.1");
-
-        // Simple command line reference to extra-start-dir
-        MainResult result = runMain(base,home,
-                // direct reference via path
+                "jetty.host=127.0.0.1",//
                 "--extra-start-dir=" + common.getAbsolutePath());
 
-        List<String> expectedSearchOrder = new ArrayList<>();
-        expectedSearchOrder.add("${jetty.base}");
-        expectedSearchOrder.add(common.getAbsolutePath());
-        expectedSearchOrder.add("${jetty.home}");
-        result.assertSearchOrder(expectedSearchOrder);
+        ConfigSources sources = new ConfigSources();
 
-        result.assertProperty("jetty.host","127.0.0.1");
-        result.assertProperty("jetty.port","8080"); // from 'common'
+        String[] cmdLine = new String[0];
+        sources.add(new CommandLineConfigSource(cmdLine));
+        sources.add(new JettyHomeConfigSource(home.toPath()));
+        sources.add(new JettyBaseConfigSource(base.toPath()));
+
+        assertIdOrder(sources,"<command-line>","${jetty.base}",common.getAbsolutePath(),"${jetty.home}");
     }
 
     @Test
@@ -157,21 +149,26 @@ public class ExtraStartTest
         TestEnv.makeFile(base,"start.ini", //
                 "jetty.host=127.0.0.1");
 
+        ConfigSources sources = new ConfigSources();
+
         // Simple command line reference to extra-start-dir via property (also on command line)
-        MainResult result = runMain(base,home, 
+
+        String[] cmdLine = new String[] {
                 // property
-                "my.common=" + common.getAbsolutePath(), 
+                "my.common=" + common.getAbsolutePath(),
                 // reference via property
-                "--extra-start-dir=${my.common}");
+                "--extra-start-dir=${my.common}" };
+        
+        sources.add(new CommandLineConfigSource(cmdLine));
+        sources.add(new JettyHomeConfigSource(home.toPath()));
+        sources.add(new JettyBaseConfigSource(base.toPath()));
 
-        List<String> expectedSearchOrder = new ArrayList<>();
-        expectedSearchOrder.add("${jetty.base}");
-        expectedSearchOrder.add("${my.common}"); // should see property use
-        expectedSearchOrder.add("${jetty.home}");
-        result.assertSearchOrder(expectedSearchOrder);
+        assertIdOrder(sources,"<command-line>","${jetty.base}","${my.common}","${jetty.home}");
 
-        result.assertProperty("jetty.host","127.0.0.1");
-        result.assertProperty("jetty.port","8080"); // from 'common'
+        assertDirOrder(sources,base,common,home);
+
+        assertProperty(sources,"jetty.host","127.0.0.1");
+        assertProperty(sources,"jetty.port","8080"); // from 'common'
     }
 
     @Test
@@ -185,9 +182,9 @@ public class ExtraStartTest
         // Create opt
         File opt = testdir.getFile("opt");
         FS.ensureEmpty(opt);
-        
+
         // Create common
-        File common = new File(opt, "common");
+        File common = new File(opt,"common");
         FS.ensureEmpty(common);
         TestEnv.makeFile(common,"start.ini","jetty.port=8080");
 
@@ -196,30 +193,34 @@ public class ExtraStartTest
         FS.ensureEmpty(base);
         TestEnv.makeFile(base,"start.ini", //
                 "jetty.host=127.0.0.1");
-        
+
         String dirRef = "${my.opt}" + File.separator + "common";
 
+        ConfigSources sources = new ConfigSources();
+
         // Simple command line reference to extra-start-dir via property (also on command line)
-        MainResult result = runMain(base,home, 
+        String[] cmdLine = new String[] {
                 // property to 'opt' dir
-                "my.opt=" + opt.getAbsolutePath(), 
+                "my.opt=" + opt.getAbsolutePath(),
                 // reference via property prefix
-                "--extra-start-dir=" + dirRef);
+                "--extra-start-dir=" + dirRef };
+        
+        sources.add(new CommandLineConfigSource(cmdLine));
+        sources.add(new JettyHomeConfigSource(home.toPath()));
+        sources.add(new JettyBaseConfigSource(base.toPath()));
 
-        List<String> expectedSearchOrder = new ArrayList<>();
-        expectedSearchOrder.add("${jetty.base}");
-        expectedSearchOrder.add(dirRef); // should use property
-        expectedSearchOrder.add("${jetty.home}");
-        result.assertSearchOrder(expectedSearchOrder);
+        assertIdOrder(sources,"<command-line>","${jetty.base}",dirRef,"${jetty.home}");
 
-        result.assertProperty("jetty.host","127.0.0.1");
-        result.assertProperty("jetty.port","8080"); // from 'common'
+        assertDirOrder(sources,base,common,home);
+
+        assertProperty(sources,"jetty.host","127.0.0.1");
+        assertProperty(sources,"jetty.port","8080"); // from 'common'
     }
 
     @Test
     public void testCommandLine_1Extra_FromCompoundProp() throws Exception
     {
-     // Create home
+        // Create home
         File home = testdir.getFile("home");
         FS.ensureEmpty(home);
         TestEnv.copyTestDir("usecases/home",home);
@@ -227,9 +228,9 @@ public class ExtraStartTest
         // Create opt
         File opt = testdir.getFile("opt");
         FS.ensureEmpty(opt);
-        
+
         // Create common
-        File common = new File(opt, "common");
+        File common = new File(opt,"common");
         FS.ensureEmpty(common);
         TestEnv.makeFile(common,"start.ini","jetty.port=8080");
 
@@ -238,28 +239,33 @@ public class ExtraStartTest
         FS.ensureEmpty(base);
         TestEnv.makeFile(base,"start.ini", //
                 "jetty.host=127.0.0.1");
-        
+
         String dirRef = "${my.opt}" + File.separator + "${my.dir}";
-        
+
+        ConfigSources sources = new ConfigSources();
+
         // Simple command line reference to extra-start-dir via property (also on command line)
-        MainResult result = runMain(base,home, 
+
+        String[] cmdLine = new String[] {
                 // property to 'opt' dir
                 "my.opt=" + opt.getAbsolutePath(),
                 // property to commmon dir name
                 "my.dir=common",
                 // reference via property prefix
-                "--extra-start-dir=" + dirRef);
+                "--extra-start-dir=" + dirRef };
+        
+        sources.add(new CommandLineConfigSource(cmdLine));
+        sources.add(new JettyHomeConfigSource(home.toPath()));
+        sources.add(new JettyBaseConfigSource(base.toPath()));
 
-        List<String> expectedSearchOrder = new ArrayList<>();
-        expectedSearchOrder.add("${jetty.base}");
-        expectedSearchOrder.add(dirRef); // should use property
-        expectedSearchOrder.add("${jetty.home}");
-        result.assertSearchOrder(expectedSearchOrder);
+        assertIdOrder(sources,"<command-line>","${jetty.base}",dirRef,"${jetty.home}");
 
-        result.assertProperty("jetty.host","127.0.0.1");
-        result.assertProperty("jetty.port","8080"); // from 'common'
+        assertDirOrder(sources,base,common,home);
+
+        assertProperty(sources,"jetty.host","127.0.0.1");
+        assertProperty(sources,"jetty.port","8080"); // from 'common'
     }
-
+    
     @Test
     public void testRefCommon() throws Exception
     {
@@ -271,6 +277,7 @@ public class ExtraStartTest
         // Create common
         File common = testdir.getFile("common");
         FS.ensureEmpty(common);
+        TestEnv.makeFile(common,"start.ini","jetty.port=8080");
 
         // Create base
         File base = testdir.getFile("base");
@@ -279,16 +286,19 @@ public class ExtraStartTest
                 "jetty.host=127.0.0.1",//
                 "--extra-start-dir=" + common.getAbsolutePath());
 
-        MainResult result = runMain(base,home);
+        ConfigSources sources = new ConfigSources();
+        
+        String cmdLine[] = new String[0];
+        sources.add(new CommandLineConfigSource(cmdLine));
+        sources.add(new JettyHomeConfigSource(home.toPath()));
+        sources.add(new JettyBaseConfigSource(base.toPath()));
 
-        List<String> expectedSearchOrder = new ArrayList<>();
-        expectedSearchOrder.add("${jetty.base}");
-        expectedSearchOrder.add(common.getAbsolutePath());
-        expectedSearchOrder.add("${jetty.home}");
-        result.assertSearchOrder(expectedSearchOrder);
+        assertIdOrder(sources,"<command-line>","${jetty.base}",common.getAbsolutePath(),"${jetty.home}");
 
-        result.assertProperty("jetty.host","127.0.0.1");
-        result.assertProperty("jetty.port","8080"); // from 'common'
+        assertDirOrder(sources,base,common,home);
+
+        assertProperty(sources,"jetty.host","127.0.0.1");
+        assertProperty(sources,"jetty.port","8080"); // from 'common'
     }
 
     @Test
@@ -302,6 +312,7 @@ public class ExtraStartTest
         // Create common
         File common = testdir.getFile("common");
         FS.ensureEmpty(common);
+        TestEnv.makeFile(common,"start.ini","jetty.port=8080");
 
         // Create corp
         File corp = testdir.getFile("corp");
@@ -315,17 +326,22 @@ public class ExtraStartTest
                 "--extra-start-dir=" + common.getAbsolutePath(), //
                 "--extra-start-dir=" + corp.getAbsolutePath());
 
-        MainResult result = runMain(base,home);
+        ConfigSources sources = new ConfigSources();
 
-        List<String> expectedSearchOrder = new ArrayList<>();
-        expectedSearchOrder.add("${jetty.base}");
-        expectedSearchOrder.add(common.getAbsolutePath());
-        expectedSearchOrder.add(corp.getAbsolutePath());
-        expectedSearchOrder.add("${jetty.home}");
-        result.assertSearchOrder(expectedSearchOrder);
+        String cmdLine[] = new String[0];
+        sources.add(new CommandLineConfigSource(cmdLine));
+        sources.add(new JettyHomeConfigSource(home.toPath()));
+        sources.add(new JettyBaseConfigSource(base.toPath()));
 
-        result.assertProperty("jetty.host","127.0.0.1");
-        result.assertProperty("jetty.port","8080"); // from 'common'
+        assertIdOrder(sources,"<command-line>","${jetty.base}",
+                common.getAbsolutePath(),
+                corp.getAbsolutePath(),
+                "${jetty.home}");
+
+        assertDirOrder(sources,base,common,corp,home);
+
+        assertProperty(sources,"jetty.host","127.0.0.1");
+        assertProperty(sources,"jetty.port","8080"); // from 'common'
     }
     
     @Test
@@ -356,17 +372,22 @@ public class ExtraStartTest
                 "jetty.host=127.0.0.1",//
                 "--extra-start-dir=" + common.getAbsolutePath());
 
-        MainResult result = runMain(base,home);
+        ConfigSources sources = new ConfigSources();
 
-        List<String> expectedSearchOrder = new ArrayList<>();
-        expectedSearchOrder.add("${jetty.base}");
-        expectedSearchOrder.add(common.getAbsolutePath());
-        expectedSearchOrder.add(corp.getAbsolutePath());
-        expectedSearchOrder.add("${jetty.home}");
-        result.assertSearchOrder(expectedSearchOrder);
+        String cmdLine[] = new String[0];
+        sources.add(new CommandLineConfigSource(cmdLine));
+        sources.add(new JettyHomeConfigSource(home.toPath()));
+        sources.add(new JettyBaseConfigSource(base.toPath()));
 
-        result.assertProperty("jetty.host","127.0.0.1");
-        result.assertProperty("jetty.port","8080"); // from 'common'
+        assertIdOrder(sources,"<command-line>","${jetty.base}",
+                common.getAbsolutePath(),
+                corp.getAbsolutePath(),
+                "${jetty.home}");
+
+        assertDirOrder(sources,base,common,corp,home);
+
+        assertProperty(sources,"jetty.host","127.0.0.1");
+        assertProperty(sources,"jetty.port","8080"); // from 'common'
     }
     
     @Test
@@ -399,17 +420,23 @@ public class ExtraStartTest
                 "my.common="+common.getAbsolutePath(), //
                 "--extra-start-dir=${my.common}");
 
-        MainResult result = runMain(base,home);
+        ConfigSources sources = new ConfigSources();
 
-        List<String> expectedSearchOrder = new ArrayList<>();
-        expectedSearchOrder.add("${jetty.base}");
-        expectedSearchOrder.add("${my.common}");
-        expectedSearchOrder.add("${my.corp}");
-        expectedSearchOrder.add("${jetty.home}");
-        result.assertSearchOrder(expectedSearchOrder);
+        String cmdLine[] = new String[0];
+        sources.add(new CommandLineConfigSource(cmdLine));
+        sources.add(new JettyHomeConfigSource(home.toPath()));
+        sources.add(new JettyBaseConfigSource(base.toPath()));
 
-        result.assertProperty("jetty.host","127.0.0.1");
-        result.assertProperty("jetty.port","8080"); // from 'common'
+        assertIdOrder(sources,"<command-line>",
+                "${jetty.base}",
+                "${my.common}",
+                "${my.corp}",
+                "${jetty.home}");
+
+        assertDirOrder(sources,base,common,corp,home);
+
+        assertProperty(sources,"jetty.host","127.0.0.1");
+        assertProperty(sources,"jetty.port","8080"); // from 'common'
     }
     
     @Test
@@ -447,20 +474,26 @@ public class ExtraStartTest
                 "jetty.host=127.0.0.1",//
                 "--extra-start-dir=" + common.getAbsolutePath());
 
-        MainResult result = runMain(base,home,
+        ConfigSources sources = new ConfigSources();
+        
+        String cmdLine[] = new String[]{
                 // command line provided extra-start-dir ref
-                "--extra-start-dir=" + devops.getAbsolutePath());
+                "--extra-start-dir=" + devops.getAbsolutePath()};
+        sources.add(new CommandLineConfigSource(cmdLine));
+        sources.add(new JettyHomeConfigSource(home.toPath()));
+        sources.add(new JettyBaseConfigSource(base.toPath()));
 
-        List<String> expectedSearchOrder = new ArrayList<>();
-        expectedSearchOrder.add("${jetty.base}");
-        expectedSearchOrder.add(devops.getAbsolutePath());
-        expectedSearchOrder.add(common.getAbsolutePath());
-        expectedSearchOrder.add(corp.getAbsolutePath());
-        expectedSearchOrder.add("${jetty.home}");
-        result.assertSearchOrder(expectedSearchOrder);
+        assertIdOrder(sources,"<command-line>",
+                "${jetty.base}",
+                devops.getAbsolutePath(),
+                common.getAbsolutePath(),
+                corp.getAbsolutePath(),
+                "${jetty.home}");
 
-        result.assertProperty("jetty.host","127.0.0.1");
-        result.assertProperty("jetty.port","2222"); // from 'devops'
+        assertDirOrder(sources,base,devops,common,corp,home);
+
+        assertProperty(sources,"jetty.host","127.0.0.1");
+        assertProperty(sources,"jetty.port","2222"); // from 'common'
     }
     
     @Test
@@ -491,19 +524,25 @@ public class ExtraStartTest
                 "jetty.host=127.0.0.1",//
                 "--extra-start-dir=" + common.getAbsolutePath());
 
-        MainResult result = runMain(base,home,
-                // command line property should override all others
-                "jetty.port=7070");
+        ConfigSources sources = new ConfigSources();
+        
+        String cmdLine[] = new String[]{
+             // command line property should override all others
+                "jetty.port=7070"
+        };
+        sources.add(new CommandLineConfigSource(cmdLine));
+        sources.add(new JettyHomeConfigSource(home.toPath()));
+        sources.add(new JettyBaseConfigSource(base.toPath()));
 
-        List<String> expectedSearchOrder = new ArrayList<>();
-        expectedSearchOrder.add("${jetty.base}");
-        expectedSearchOrder.add(common.getAbsolutePath());
-        expectedSearchOrder.add(corp.getAbsolutePath());
-        expectedSearchOrder.add("${jetty.home}");
-        result.assertSearchOrder(expectedSearchOrder);
+        assertIdOrder(sources,"<command-line>","${jetty.base}",
+                common.getAbsolutePath(),
+                corp.getAbsolutePath(),
+                "${jetty.home}");
 
-        result.assertProperty("jetty.host","127.0.0.1");
-        result.assertProperty("jetty.port","7070"); // from command line
+        assertDirOrder(sources,base,common,corp,home);
+
+        assertProperty(sources,"jetty.host","127.0.0.1");
+        assertProperty(sources,"jetty.port","7070"); // from <command-line>
     }
     
     @Test
@@ -541,9 +580,15 @@ public class ExtraStartTest
                 "jetty.host=127.0.0.1",//
                 "--extra-start-dir=" + common.getAbsolutePath());
 
+        ConfigSources sources = new ConfigSources();
+
         try
         {
-            runMain(base,home);
+            String cmdLine[] = new String[0];
+            sources.add(new CommandLineConfigSource(cmdLine));
+            sources.add(new JettyHomeConfigSource(home.toPath()));
+            sources.add(new JettyBaseConfigSource(base.toPath()));
+            
             Assert.fail("Should have thrown a UsageException");
         }
         catch (UsageException e)

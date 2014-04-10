@@ -563,7 +563,7 @@ public class Main
         // ------------------------------------------------------------
         // 1) Directory Locations
 
-        // Set Home and Base at the start, as all other paths encountered
+        // Set Home and Base at the start, as many other paths encountered
         // will be based off of them.
         baseHome.initialize(args);
 
