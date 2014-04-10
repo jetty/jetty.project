@@ -19,19 +19,23 @@
 package org.eclipse.jetty.osgi.test;
  
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
+import static org.ops4j.pax.exam.CoreOptions.options;
+import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.inject.Inject;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.MavenUtils;
 import org.ops4j.pax.exam.Option;
-import org.ops4j.pax.exam.junit.Configuration;
-import org.ops4j.pax.exam.junit.JUnit4TestRunner;
+import org.ops4j.pax.exam.Configuration;
+import org.ops4j.pax.exam.junit.PaxExam;
 import org.ops4j.pax.exam.options.MavenUrlReference.VersionResolver;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -40,27 +44,30 @@ import org.osgi.framework.BundleContext;
 /**
  * Default OSGi setup integration test
  */
-@RunWith( JUnit4TestRunner.class )
+@RunWith( PaxExam.class )
 public class TestJettyOSGiBootCore
 {
- 
+    private static final String LOG_LEVEL = "WARN";
     public static int DEFAULT_JETTY_HTTP_PORT = 9876;
-     
+
     @Inject
     private BundleContext bundleContext;
- 
+
     @Configuration
     public Option[] config()
     {
         VersionResolver resolver = MavenUtils.asInProject();
         ArrayList<Option> options = new ArrayList<Option>();
-        TestOSGiUtil.addMoreOSGiContainers(options);
         options.addAll(provisionCoreJetty());
         options.add(CoreOptions.junitBundles());
         options.addAll(httpServiceJetty());
+        options.addAll(Arrays.asList(options(systemProperty("pax.exam.logging").value("none"))));
+        options.addAll(Arrays.asList(options(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL))));
+        options.addAll(Arrays.asList(options(systemProperty("org.eclipse.jetty.LEVEL").value(LOG_LEVEL))));
+
         return options.toArray(new Option[options.size()]);
     }
-     
+
     public static List<Option> provisionCoreJetty()
     { 
         List<Option> res = new ArrayList<Option>();
@@ -124,9 +131,12 @@ public class TestJettyOSGiBootCore
         return res;
     }
      
+    @Ignore
     @Test
     public void assertAllBundlesActiveOrResolved() throws Exception
     {
+        
+        TestOSGiUtil.debugBundles(bundleContext);
         TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
     }
      
