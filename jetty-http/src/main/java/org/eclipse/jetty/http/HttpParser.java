@@ -1357,24 +1357,36 @@ public class HttpParser
 
     protected boolean parseContent(ByteBuffer buffer)
     {
+        int remaining=buffer.remaining();
+        if (remaining==0 && _state==State.CONTENT)
+        {
+            long content=_contentLength - _contentPosition;
+            if (content == 0)
+            {
+                setState(State.END);
+                if (_handler.messageComplete())
+                    return true;
+            }
+        }
+        
         // Handle _content
         byte ch;
-        while (_state.ordinal() < State.END.ordinal() && buffer.hasRemaining())
+        while (_state.ordinal() < State.END.ordinal() && remaining>0)
         {
             switch (_state)
             {
                 case EOF_CONTENT:
                     _contentChunk=buffer.asReadOnlyBuffer();
-                    _contentPosition += _contentChunk.remaining();
-                    buffer.position(buffer.position()+_contentChunk.remaining());
+                    _contentPosition += remaining;
+                    buffer.position(buffer.position()+remaining);
                     if (_handler.content(_contentChunk))
                         return true;
                     break;
 
                 case CONTENT:
                 {
-                    long remaining=_contentLength - _contentPosition;
-                    if (remaining == 0)
+                    long content=_contentLength - _contentPosition;
+                    if (content == 0)
                     {
                         setState(State.END);
                         if (_handler.messageComplete())
@@ -1385,25 +1397,25 @@ public class HttpParser
                         _contentChunk=buffer.asReadOnlyBuffer();
 
                         // limit content by expected size
-                        if (_contentChunk.remaining() > remaining)
+                        if (remaining > content)
                         {
                             // We can cast remaining to an int as we know that it is smaller than
                             // or equal to length which is already an int.
-                            _contentChunk.limit(_contentChunk.position()+(int)remaining);
+                            _contentChunk.limit(_contentChunk.position()+(int)content);
                         }
 
                         _contentPosition += _contentChunk.remaining();
                         buffer.position(buffer.position()+_contentChunk.remaining());
 
-                        boolean handle=_handler.content(_contentChunk);
+                        if (_handler.content(_contentChunk))
+                            return true;
+
                         if(_contentPosition == _contentLength)
                         {
                             setState(State.END);
                             if (_handler.messageComplete())
                                 return true;
                         }
-                        if (handle)
-                            return true;
                     }
                     break;
                 }
@@ -1463,8 +1475,8 @@ public class HttpParser
 
                 case CHUNK:
                 {
-                    int remaining=_chunkLength - _chunkPosition;
-                    if (remaining == 0)
+                    int chunk=_chunkLength - _chunkPosition;
+                    if (chunk == 0)
                     {
                         setState(State.CHUNKED_CONTENT);
                     }
@@ -1472,13 +1484,13 @@ public class HttpParser
                     {
                         _contentChunk=buffer.asReadOnlyBuffer();
 
-                        if (_contentChunk.remaining() > remaining)
-                            _contentChunk.limit(_contentChunk.position()+remaining);
-                        remaining=_contentChunk.remaining();
+                        if (remaining > chunk)
+                            _contentChunk.limit(_contentChunk.position()+chunk);
+                        chunk=_contentChunk.remaining();
 
-                        _contentPosition += remaining;
-                        _chunkPosition += remaining;
-                        buffer.position(buffer.position()+remaining);
+                        _contentPosition += chunk;
+                        _chunkPosition += chunk;
+                        buffer.position(buffer.position()+chunk);
                         if (_handler.content(_contentChunk))
                             return true;
                     }
@@ -1493,7 +1505,10 @@ public class HttpParser
 
                 default: 
                     break;
+                    
             }
+            
+            remaining=buffer.remaining();
         }
         return false;
     }
