@@ -68,6 +68,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -984,6 +985,13 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             }
 
             @Override
+            public void onContent(Response response, ByteBuffer content, Callback callback)
+            {
+                // Should not be invoked
+                counter.incrementAndGet();
+            }
+
+            @Override
             public void onSuccess(Response response)
             {
                 counter.incrementAndGet();
@@ -1010,6 +1018,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 .onResponseHeader(listener)
                 .onResponseHeaders(listener)
                 .onResponseContent(listener)
+                .onResponseContentAsync(listener)
                 .onResponseSuccess(listener)
                 .onResponseFailure(listener)
                 .send(listener);

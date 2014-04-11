@@ -241,7 +241,15 @@ public interface Response
             @Override
             public void onContent(Response response, ByteBuffer content, Callback callback)
             {
-                callback.succeeded();
+                try
+                {
+                    onContent(response, content);
+                    callback.succeeded();
+                }
+                catch (Exception x)
+                {
+                    callback.failed(x);
+                }
             }
 
             @Override

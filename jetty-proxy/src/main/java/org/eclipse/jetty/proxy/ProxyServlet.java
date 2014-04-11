@@ -19,7 +19,6 @@
 package org.eclipse.jetty.proxy;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
@@ -51,6 +50,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -531,7 +531,7 @@ public class ProxyServlet extends HttpServlet
         }
     }
 
-    protected void onResponseContent(HttpServletRequest request, HttpServletResponse response, Response proxyResponse, byte[] buffer, int offset, int length) throws IOException
+    protected void onResponseContent(HttpServletRequest request, HttpServletResponse response, Response proxyResponse, byte[] buffer, int offset, int length, Callback callback) throws IOException
     {
         response.getOutputStream().write(buffer, offset, length);
         _log.debug("{} proxying content to downstream: {} bytes", getRequestId(request), length);
@@ -732,7 +732,7 @@ public class ProxyServlet extends HttpServlet
         }
 
         @Override
-        public void onContent(Response proxyResponse, ByteBuffer content)
+        public void onContent(Response proxyResponse, ByteBuffer content, Callback callback)
         {
             byte[] buffer;
             int offset;
@@ -751,7 +751,7 @@ public class ProxyServlet extends HttpServlet
 
             try
             {
-                onResponseContent(request, response, proxyResponse, buffer, offset, length);
+                onResponseContent(request, response, proxyResponse, buffer, offset, length, callback);
             }
             catch (IOException x)
             {

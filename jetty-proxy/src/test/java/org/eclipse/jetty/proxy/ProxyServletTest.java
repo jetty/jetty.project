@@ -65,6 +65,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
@@ -797,7 +798,7 @@ public class ProxyServletTest
             }
 
             @Override
-            protected void onResponseContent(HttpServletRequest request, HttpServletResponse response, Response proxyResponse, byte[] buffer, int offset, int length) throws IOException
+            protected void onResponseContent(HttpServletRequest request, HttpServletResponse response, Response proxyResponse, byte[] buffer, int offset, int length, Callback callback) throws IOException
             {
                 // Accumulate the response content
                 ByteArrayOutputStream baos = temp.get(request.getRequestURI());
@@ -807,7 +808,7 @@ public class ProxyServletTest
                     temp.put(request.getRequestURI(), baos);
                 }
                 baos.write(buffer, offset, length);
-                super.onResponseContent(request, response, proxyResponse, buffer, offset, length);
+                super.onResponseContent(request, response, proxyResponse, buffer, offset, length, callback);
             }
 
             @Override

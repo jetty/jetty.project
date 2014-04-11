@@ -108,6 +108,10 @@ public class ResponseNotifier
 
     public void notifyContent(List<Response.ResponseListener> listeners, Response response, ByteBuffer buffer)
     {
+        // TODO: we need to create a "cumulative" callback that keeps track of how many listeners
+        // TODO: are invoked, and how many of these actually invoked the callback, and eventually
+        // TODO: call the callback passed to this method.
+
         // Slice the buffer to avoid that listeners peek into data they should not look at.
         buffer = buffer.slice();
         if (!buffer.hasRemaining())

@@ -182,6 +182,11 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         if (exchange == null)
             return false;
 
+        // TODO: need to create the callback here, then check whether it has completed
+        // TODO: after the call to responseContent. If it has, return false.
+        // TODO: if it has not, return true, and when will be invoked, we need to
+        // TODO: proceed with parsing.
+
         responseContent(exchange, buffer);
         return false;
     }

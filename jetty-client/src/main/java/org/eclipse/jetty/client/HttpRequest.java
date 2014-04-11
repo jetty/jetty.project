@@ -450,19 +450,27 @@ public class HttpRequest implements Request
     @Override
     public Request onResponseContent(final Response.ContentListener listener)
     {
-        this.responseListeners.add(new Response.ContentListener()
+        this.responseListeners.add(new Response.AsyncContentListener()
         {
             @Override
-            public void onContent(Response response, ByteBuffer content)
+            public void onContent(Response response, ByteBuffer content, Callback callback)
             {
-                listener.onContent(response, content);
+                try
+                {
+                    listener.onContent(response, content);
+                    callback.succeeded();
+                }
+                catch (Exception x)
+                {
+                    callback.failed(x);
+                }
             }
         });
         return this;
     }
 
     @Override
-    public Request onResponseContent(final Response.AsyncContentListener listener)
+    public Request onResponseContentAsync(final Response.AsyncContentListener listener)
     {
         this.responseListeners.add(new Response.AsyncContentListener()
         {

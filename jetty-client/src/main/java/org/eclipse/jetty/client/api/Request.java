@@ -338,15 +338,16 @@ public interface Request
     Request onResponseHeaders(Response.HeadersListener listener);
 
     /**
-     * @param listener a listener for response content events
+     * @param listener a consuming listener for response content events
      * @return this request object
-     * @deprecated Use {@link #onResponseContent(Response.AsyncContentListener)} instead.
      */
-    @Deprecated
     Request onResponseContent(Response.ContentListener listener);
 
-    // TODO: JAVADOCS
-    Request onResponseContent(Response.AsyncContentListener listener);
+    /**
+     * @param listener an asynchronous listener for response content events
+     * @return this request object
+     */
+    Request onResponseContentAsync(Response.AsyncContentListener listener);
 
     /**
      * @param listener a listener for response success event
