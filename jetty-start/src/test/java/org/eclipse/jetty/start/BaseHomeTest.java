@@ -98,13 +98,11 @@ public class BaseHomeTest
     public void testGetPath_OnlyHome() throws IOException
     {
         File homeDir = MavenTestingUtils.getTestResourceDir("hb.1/home");
-        File baseDir = null;
         
         ConfigSources config = new ConfigSources();
         config.add(new JettyHomeConfigSource(homeDir.toPath()));
 
-        BaseHome hb = new BaseHome(homeDir,baseDir);
-        hb.initialize(config);
+        BaseHome hb = new BaseHome(config);
         Path startIni = hb.getPath("start.ini");
 
         String ref = hb.toShortForm(startIni);
@@ -118,13 +116,11 @@ public class BaseHomeTest
     public void testGetPaths_OnlyHome() throws IOException
     {
         File homeDir = MavenTestingUtils.getTestResourceDir("hb.1/home");
-        File baseDir = null;
 
         ConfigSources config = new ConfigSources();
         config.add(new JettyHomeConfigSource(homeDir.toPath()));
 
-        BaseHome hb = new BaseHome(homeDir,baseDir);
-        hb.initialize(config);
+        BaseHome hb = new BaseHome(config);
         List<Path> paths = hb.getPaths("start.d/*");
 
         List<String> expected = new ArrayList<>();
@@ -142,13 +138,11 @@ public class BaseHomeTest
     public void testGetPaths_OnlyHome_InisOnly() throws IOException
     {
         File homeDir = MavenTestingUtils.getTestResourceDir("hb.1/home");
-        File baseDir = null;
 
         ConfigSources config = new ConfigSources();
         config.add(new JettyHomeConfigSource(homeDir.toPath()));
 
-        BaseHome hb = new BaseHome(homeDir,baseDir);
-        hb.initialize(config);
+        BaseHome hb = new BaseHome(config);
         List<Path> paths = hb.getPaths("start.d/*.ini");
 
         List<String> expected = new ArrayList<>();
@@ -172,8 +166,7 @@ public class BaseHomeTest
         config.add(new JettyBaseConfigSource(baseDir.toPath()));
         config.add(new JettyHomeConfigSource(homeDir.toPath()));
 
-        BaseHome hb = new BaseHome(homeDir,baseDir);
-        hb.initialize(config);
+        BaseHome hb = new BaseHome(config);
         List<Path> paths = hb.getPaths("start.d/*.ini");
 
         List<String> expected = new ArrayList<>();
@@ -206,8 +199,7 @@ public class BaseHomeTest
         config.add(new JettyBaseConfigSource(baseDir.toPath()));
         config.add(new JettyHomeConfigSource(homeDir.toPath()));
 
-        BaseHome hb = new BaseHome(homeDir,baseDir);
-        hb.initialize(config);
+        BaseHome hb = new BaseHome(config);
         Path startIni = hb.getPath("start.ini");
 
         String ref = hb.toShortForm(startIni);

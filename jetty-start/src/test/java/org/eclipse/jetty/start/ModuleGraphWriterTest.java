@@ -55,8 +55,7 @@ public class ModuleGraphWriterTest
         config.add(new JettyBaseConfigSource(baseDir.toPath()));
         
         // Initialize
-        BaseHome basehome = new BaseHome();
-        basehome.initialize(config);
+        BaseHome basehome = new BaseHome(config);
         
         StartArgs args = new StartArgs();
         args.parse(config);

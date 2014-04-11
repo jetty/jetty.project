@@ -306,15 +306,6 @@ public class FS
         return ret.toString();
     }
 
-    public static Path toOptionalPath(String path)
-    {
-        if (path == null)
-        {
-            return null;
-        }
-        return toPath(path);
-    }
-
     public static Path toPath(String path)
     {
         return FileSystems.getDefault().getPath(FS.separators(path));

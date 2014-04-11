@@ -48,7 +48,7 @@ public class PathFinder extends SimpleFileVisitor<Path>
     private void addHit(Path path)
     {
         String relPath = basePath.relativize(path).toString();
-        StartLog.debug("addHit(" + path + ") = [" + relPath + "," + path + "]");
+        StartLog.debug("Found [" + relPath + "]  " + path);
         hits.put(relPath,path);
     }
 
@@ -139,7 +139,6 @@ public class PathFinder extends SimpleFileVisitor<Path>
     {
         if (fileMatcher.matches(file))
         {
-            StartLog.debug("Found file: " + file);
             addHit(file);
         }
         else

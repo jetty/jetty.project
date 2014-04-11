@@ -29,11 +29,13 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
 
 import org.eclipse.jetty.start.Props.Prop;
+import org.eclipse.jetty.start.config.ConfigSource;
 import org.eclipse.jetty.start.config.ConfigSources;
 
 /**
@@ -66,7 +68,7 @@ public class StartArgs
     }
 
     private static final String SERVER_MAIN = "org.eclipse.jetty.xml.XmlConfiguration";
-    
+
     /** List of enabled modules */
     private Set<String> modules = new HashSet<>();
     /** Map of enabled modules to the source of where that activation occurred */
@@ -84,7 +86,7 @@ public class StartArgs
 
     /** List of all xml references found directly on command line or start.ini */
     private List<String> xmlRefs = new ArrayList<>();
-    
+
     private Props properties = new Props();
     private Set<String> systemPropertyKeys = new HashSet<>();
     private List<String> rawLibs = new ArrayList<>();
@@ -247,6 +249,30 @@ public class StartArgs
         }
     }
 
+    private void dumpProperty(String key)
+    {
+        Prop prop = properties.getProp(key);
+        if (prop == null)
+        {
+            System.out.printf(" %s (not defined)%n",key);
+        }
+        else
+        {
+            System.out.printf(" %s = %s%n",key,properties.expand(prop.value));
+            if (StartLog.isDebugEnabled())
+            {
+                System.out.printf("   origin: %s%n",prop.origin);
+                while (prop.overrides != null)
+                {
+                    prop = prop.overrides;
+                    System.out.printf("   (overrides)%n");
+                    System.out.printf("     %s = %s%n",key,properties.expand(prop.value));
+                    System.out.printf("     origin: %s%n",prop.origin);
+                }
+            }
+        }
+    }
+
     public void dumpSystemProperties()
     {
         System.out.println();
@@ -273,30 +299,6 @@ public class StartArgs
     private void dumpSystemProperty(String key)
     {
         System.out.printf(" %s = %s%n",key,System.getProperty(key));
-    }
-
-    private void dumpProperty(String key)
-    {
-        Prop prop = properties.getProp(key);
-        if (prop == null)
-        {
-            System.out.printf(" %s (not defined)%n",key);
-        }
-        else
-        {
-            System.out.printf(" %s = %s%n",key,properties.expand(prop.value));
-            if (StartLog.isDebugEnabled())
-            {
-                System.out.printf("   origin: %s%n",prop.origin);
-                while (prop.overrides != null)
-                {
-                    prop = prop.overrides;
-                    System.out.printf("   (overrides)%n");
-                    System.out.printf("     %s = %s%n",key,properties.expand(prop.value));
-                    System.out.printf("     origin: %s%n",prop.origin);
-                }
-            }
-        }
     }
 
     /**
@@ -393,6 +395,16 @@ public class StartArgs
         }
     }
 
+    public List<String> getAddToStartdIni()
+    {
+        return addToStartdIni;
+    }
+
+    public List<String> getAddToStartIni()
+    {
+        return addToStartIni;
+    }
+
     public Modules getAllModules()
     {
         return allModules;
@@ -403,14 +415,14 @@ public class StartArgs
         return classpath;
     }
 
-    public List<FileArg> getFiles()
-    {
-        return files;
-    }
-
     public Set<String> getEnabledModules()
     {
         return this.modules;
+    }
+
+    public List<FileArg> getFiles()
+    {
+        return files;
     }
 
     public List<String> getJvmArgs()
@@ -485,16 +497,6 @@ public class StartArgs
         return moduleGraphFilename;
     }
 
-    public List<String> getAddToStartdIni()
-    {
-        return addToStartdIni;
-    }
-
-    public List<String> getAddToStartIni()
-    {
-        return addToStartIni;
-    }
-
     public Props getProperties()
     {
         return properties;
@@ -565,31 +567,6 @@ public class StartArgs
         return listModules;
     }
 
-    private void setProperty(String key, String value, String source)
-    {
-        // Special / Prevent override from start.ini's
-        if (key.equals("jetty.home"))
-        {
-            properties.setProperty("jetty.home",System.getProperty("jetty.home"),source);
-            return;
-        }
-
-        // Special / Prevent override from start.ini's
-        if (key.equals("jetty.base"))
-        {
-            properties.setProperty("jetty.base",System.getProperty("jetty.base"),source);
-            return;
-        }
-
-        // Normal
-        properties.setProperty(key,value,source);
-    }
-
-    public void setRun(boolean run)
-    {
-        this.run = run;
-    }
-
     public boolean isRun()
     {
         return run;
@@ -603,6 +580,19 @@ public class StartArgs
     public boolean isVersion()
     {
         return version;
+    }
+
+    public void parse(ConfigSources sources)
+    {
+        ListIterator<ConfigSource> iter = sources.reverseListIterator();
+        while (iter.hasPrevious())
+        {
+            ConfigSource source = iter.previous();
+            for (String arg : source.getArgs())
+            {
+                parse(arg,source.getId());
+            }
+        }
     }
 
     public void parse(final String rawarg, String source)
@@ -639,7 +629,7 @@ public class StartArgs
 
         if (arg.startsWith("--extra-start-dir="))
         {
-         // valid, but handled in ConfigSources instead
+            // valid, but handled in ConfigSources instead
             return;
         }
 
@@ -855,6 +845,31 @@ public class StartArgs
         this.allModules = allModules;
     }
 
+    private void setProperty(String key, String value, String source)
+    {
+        // Special / Prevent override from start.ini's
+        if (key.equals("jetty.home"))
+        {
+            properties.setProperty("jetty.home",System.getProperty("jetty.home"),source);
+            return;
+        }
+
+        // Special / Prevent override from start.ini's
+        if (key.equals("jetty.base"))
+        {
+            properties.setProperty("jetty.base",System.getProperty("jetty.base"),source);
+            return;
+        }
+
+        // Normal
+        properties.setProperty(key,value,source);
+    }
+
+    public void setRun(boolean run)
+    {
+        this.run = run;
+    }
+
     @Override
     public String toString()
     {
@@ -869,10 +884,5 @@ public class StartArgs
         builder.append(jvmArgs);
         builder.append("]");
         return builder.toString();
-    }
-
-    public void parse(ConfigSources sources)
-    {
-        // TODO Auto-generated method stub
     }
 }

@@ -51,9 +51,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.start.config.CommandLineConfigSource;
-import org.eclipse.jetty.start.config.ConfigSources;
-import org.eclipse.jetty.start.config.JettyBaseConfigSource;
-import org.eclipse.jetty.start.config.JettyHomeConfigSource;
 
 /**
  * Main start class.
@@ -138,11 +135,10 @@ public class Main
         System.exit(exit);
     }
 
-    private final BaseHome baseHome;
+    private BaseHome baseHome;
 
     Main() throws IOException
     {
-        baseHome = new BaseHome();
     }
 
     private void copyInThread(final InputStream in, final OutputStream out)
@@ -551,45 +547,32 @@ public class Main
 
     public StartArgs processCommandLine(String[] cmdLine) throws Exception
     {
-        ConfigSources sources = new ConfigSources();
-
         // Processing Order is important!
         // ------------------------------------------------------------
-        // 1) Directory Locations
-        
+        // 1) Configuration Locations
         CommandLineConfigSource cmdLineSource = new CommandLineConfigSource(cmdLine);
-        sources.add(cmdLineSource);
-        sources.add(new JettyBaseConfigSource(cmdLineSource.getBasePath()));
-        sources.add(new JettyHomeConfigSource(cmdLineSource.getHomePath()));
-
-        // Set Home and Base at the start, as many other paths encountered
-        // will be based off of them.
-        baseHome.initialize(sources);
-        
-        // ------------------------------------------------------------
-        // 2) Start Logging
-        StartLog.getInstance().initialize(baseHome,cmdLineSource);
+        baseHome = new BaseHome(cmdLineSource);
 
         StartLog.debug("jetty.home=%s",baseHome.getHome());
         StartLog.debug("jetty.base=%s",baseHome.getBase());
 
         // ------------------------------------------------------------
-        // 3) Parse everything provided.
+        // 2) Parse everything provided.
         // This would be the directory information +
         // the various start inis
         // and then the raw command line arguments
         StartLog.debug("Parsing collected arguments");
         StartArgs args = new StartArgs();
-        args.parse(sources);
+        args.parse(baseHome.getConfigSources());
 
         // ------------------------------------------------------------
-        // 4) Module Registration
+        // 3) Module Registration
         Modules modules = new Modules();
         StartLog.debug("Registering all modules");
         modules.registerAll(baseHome, args);
 
         // ------------------------------------------------------------
-        // 5) Active Module Resolution
+        // 4) Active Module Resolution
         for (String enabledModule : args.getEnabledModules())
         {
             List<String> msources = args.getSources(enabledModule);
@@ -603,12 +586,12 @@ public class Main
         List<Module> activeModules = modules.resolveEnabled();
         
         // ------------------------------------------------------------
-        // 6) Lib & XML Expansion / Resolution
+        // 5) Lib & XML Expansion / Resolution
         args.expandLibs(baseHome);
         args.expandModules(baseHome,activeModules);
 
         // ------------------------------------------------------------
-        // 7) Resolve Extra XMLs
+        // 6) Resolve Extra XMLs
         args.resolveExtraXmls(baseHome);
 
         return args;

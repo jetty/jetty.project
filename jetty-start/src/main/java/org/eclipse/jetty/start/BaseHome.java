@@ -20,9 +20,6 @@ package org.eclipse.jetty.start;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -33,13 +30,13 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Objects;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.eclipse.jetty.start.config.CommandLineConfigSource;
 import org.eclipse.jetty.start.config.ConfigSource;
 import org.eclipse.jetty.start.config.ConfigSources;
 import org.eclipse.jetty.start.config.DirConfigSource;
+import org.eclipse.jetty.start.config.JettyBaseConfigSource;
+import org.eclipse.jetty.start.config.JettyHomeConfigSource;
 
 /**
  * File access for <code>${jetty.home}</code>, <code>${jetty.base}</code>, directories.
@@ -110,87 +107,71 @@ public class BaseHome
             return String.format("${%s}%c%s",name,File.separatorChar,relative.toString());
         }
     }
-    private static final String JETTY_BASE = "jetty.base";
 
-    private static final String JETTY_HOME = "jetty.home";;
+    public static final String JETTY_BASE = "jetty.base";
+    public static final String JETTY_HOME = "jetty.home";
     private final static EnumSet<FileVisitOption> SEARCH_VISIT_OPTIONS = EnumSet.of(FileVisitOption.FOLLOW_LINKS);
 
     private final static int MAX_SEARCH_DEPTH = Integer.getInteger("org.eclipse.jetty.start.searchDepth",10);
 
-    private Path homeDir;
-    private ConfigSources sources;
-    private Path baseDir;
+    private final ConfigSources sources;
+    private final Path homeDir;
+    private final Path baseDir;
 
-    public BaseHome()
+    public BaseHome() throws IOException
     {
-        try
-        {
-            // find ${jetty.base} and ${jetty.home} from environment.
-
-            // overrides from command line (and the like) come later.
-            // in the .initialize() step
-
-            // default is ${user.dir}
-            this.baseDir = FS.toPath(System.getProperty("user.dir","."));
-
-            // if ${jetty.base} declared, use it
-            String jettyBase = System.getProperty(JETTY_BASE);
-            if (jettyBase != null)
-            {
-                this.baseDir = FS.toPath(jettyBase);
-            }
-
-            // find ${jetty.home}
-
-            // default location is based on lookup for BaseHome (from jetty's start.jar)
-            URL jarfile = this.getClass().getClassLoader().getResource("org/eclipse/jetty/start/BaseHome.class");
-            if (jarfile != null)
-            {
-                Matcher m = Pattern.compile("jar:(file:.*)!/org/eclipse/jetty/start/BaseHome.class").matcher(jarfile.toString());
-                if (m.matches())
-                {
-                    // ${jetty.home} is relative to found BaseHome class
-                    this.homeDir = new File(new URI(m.group(1))).getParentFile().toPath();
-                }
-            }
-
-            // if we can't locate BaseHome, then assume home == base
-            if (this.homeDir == null)
-            {
-                this.homeDir = baseDir.toAbsolutePath();
-            }
-
-            // if ${jetty.home} declared, use it
-            String jettyHome = System.getProperty(JETTY_HOME);
-            if (jettyHome != null)
-            {
-                this.homeDir = FS.toPath(jettyHome);
-            }
-
-            // Resolve to absolute paths
-            this.homeDir = this.homeDir.toAbsolutePath();
-            this.baseDir = this.baseDir.toAbsolutePath();
-        }
-        catch (URISyntaxException e)
-        {
-            throw new RuntimeException(e);
-        }
+        this(new String[0]);
     }
 
-    public BaseHome(File homeDir, File baseDir)
+    public BaseHome(String cmdLine[]) throws IOException
     {
-        Objects.requireNonNull(homeDir,"Home Dir cannot be null");
+        this(new CommandLineConfigSource(cmdLine));
+    }
 
-        this.homeDir = homeDir.toPath();
-        this.baseDir = homeDir.toPath(); // default
-        if (baseDir != null)
+    public BaseHome(CommandLineConfigSource cmdLineSource) throws IOException
+    {
+        StartLog.getInstance().initialize(this,cmdLineSource);
+
+        sources = new ConfigSources();
+        sources.add(cmdLineSource);
+        this.homeDir = cmdLineSource.getHomePath();
+        this.baseDir = cmdLineSource.getBasePath();
+        sources.add(new JettyBaseConfigSource(cmdLineSource.getBasePath()));
+        sources.add(new JettyHomeConfigSource(cmdLineSource.getHomePath()));
+
+        System.setProperty(JETTY_HOME,homeDir.toAbsolutePath().toString());
+        System.setProperty(JETTY_BASE,baseDir.toAbsolutePath().toString());
+    }
+
+    public BaseHome(ConfigSources sources)
+    {
+        this.sources = sources;
+        Path home = null;
+        Path base = null;
+        for (ConfigSource source : sources)
         {
-            this.baseDir = baseDir.toPath();
+            if (source instanceof CommandLineConfigSource)
+            {
+                CommandLineConfigSource cmdline = (CommandLineConfigSource)source;
+                home = cmdline.getHomePath();
+                base = cmdline.getBasePath();
+            }
+            else if (source instanceof JettyBaseConfigSource)
+            {
+                base = ((JettyBaseConfigSource)source).getDir();
+            }
+            else if (source instanceof JettyHomeConfigSource)
+            {
+                home = ((JettyHomeConfigSource)source).getDir();
+            }
         }
 
-        // Resolve to absolute paths
-        this.homeDir = this.homeDir.toAbsolutePath();
-        this.baseDir = this.baseDir.toAbsolutePath();
+        Objects.requireNonNull(home,"jetty.home cannot be null");
+        this.homeDir = home;
+        this.baseDir = (base != null)?base:home;
+
+        System.setProperty(JETTY_HOME,homeDir.toAbsolutePath().toString());
+        System.setProperty(JETTY_BASE,baseDir.toAbsolutePath().toString());
     }
 
     public String getBase()
@@ -468,51 +449,9 @@ public class BaseHome
         return hits;
     }
 
-    public void initialize(ConfigSources config)
-    {
-        CommandLineConfigSource cmdLine = config.getCommandLineSource();
-        if (cmdLine != null)
-        {
-            this.homeDir = cmdLine.getHomePath();
-            this.baseDir = cmdLine.getBasePath();
-        }
-
-        this.sources = config;
-    }
-
     public boolean isBaseDifferent()
     {
         return homeDir.compareTo(baseDir) != 0;
-    }
-
-    /**
-     * @deprecated use {@link #setBaseDir(Path)}
-     */
-    @Deprecated
-    public void setBaseDir(File dir)
-    {
-        setBaseDir(dir.toPath());
-    }
-
-    public void setBaseDir(Path dir)
-    {
-        this.baseDir = dir.toAbsolutePath();
-        System.setProperty(JETTY_BASE,dir.toString());
-    }
-
-    /**
-     * @deprecated use {@link #setHomeDir(Path)}
-     */
-    @Deprecated
-    public void setHomeDir(File dir)
-    {
-        setHomeDir(dir.toPath());
-    }
-
-    public void setHomeDir(Path dir)
-    {
-        this.homeDir = dir.toAbsolutePath();
-        System.setProperty(JETTY_HOME,dir.toString());
     }
 
     /**

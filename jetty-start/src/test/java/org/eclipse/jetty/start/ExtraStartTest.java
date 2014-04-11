@@ -275,6 +275,7 @@ public class ExtraStartTest
         // Create common
         File common = testdir.getFile("common");
         FS.ensureEmpty(common);
+        TestEnv.makeFile(common,"start.ini","jetty.port=8080");
 
         // Create base
         File base = testdir.getFile("base");
@@ -306,6 +307,7 @@ public class ExtraStartTest
         // Create common
         File common = testdir.getFile("common");
         FS.ensureEmpty(common);
+        TestEnv.makeFile(common,"start.ini","jetty.port=8080");
 
         // Create corp
         File corp = testdir.getFile("corp");
@@ -343,8 +345,7 @@ public class ExtraStartTest
         // Create corp
         File corp = testdir.getFile("corp");
         FS.ensureEmpty(corp);
-        TestEnv.makeFile(corp,"start.ini", //
-                "jetty.port=9090");
+        TestEnv.makeFile(corp,"start.ini","jetty.port=9090");
 
         // Create common
         File common = testdir.getFile("common");

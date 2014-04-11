@@ -18,19 +18,29 @@
 
 package org.eclipse.jetty.start.config;
 
+import java.io.File;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import org.eclipse.jetty.start.BaseHome;
 import org.eclipse.jetty.start.FS;
 import org.eclipse.jetty.start.Props;
+import org.eclipse.jetty.start.Props.Prop;
+import org.eclipse.jetty.start.UsageException;
 
 /**
  * Configuration Source representing the Command Line arguments.
  */
 public class CommandLineConfigSource implements ConfigSource
 {
-    public static final String CMD_LINE_SOURCE = "<command-line>";
+    public static final String ORIGIN_INTERNAL_FALLBACK = "<internal-fallback>";
+    public static final String ORIGIN_CMD_LINE = "<command-line>";
 
     private final List<String> args;
     private final Props props;
@@ -43,28 +53,99 @@ public class CommandLineConfigSource implements ConfigSource
         this.props = new Props();
         for (String arg : args)
         {
-            this.props.addPossibleProperty(arg,CMD_LINE_SOURCE);
+            this.props.addPossibleProperty(arg,ORIGIN_CMD_LINE);
         }
 
-        Path home = FS.toOptionalPath(getProperty("jetty.home"));
-        Path base = FS.toOptionalPath(getProperty("jetty.base"));
+        // Setup ${jetty.base} and ${jetty.home}
+        this.homePath = findJettyHomePath().toAbsolutePath();
+        this.basePath = findJettyBasePath().toAbsolutePath();
 
-        if (home != null)
+        // Update System Properties
+        setSystemProperty(BaseHome.JETTY_HOME,homePath.toAbsolutePath().toString());
+        setSystemProperty(BaseHome.JETTY_BASE,basePath.toAbsolutePath().toString());
+    }
+
+    private final Path findJettyBasePath()
+    {
+        // If a jetty property is defined, use it
+        Prop prop = this.props.getProp(BaseHome.JETTY_BASE,false);
+        if (prop != null && !isEmpty(prop.value))
         {
-            // logic if home is specified
-            if (base == null)
+            return FS.toPath(prop.value);
+        }
+
+        // If a system property is defined, use it
+        String val = System.getProperty(BaseHome.JETTY_BASE);
+        if (!isEmpty(val))
+        {
+            return FS.toPath(val);
+        }
+
+        // Lastly, fall back to base == home
+        Path base = this.homePath.toAbsolutePath();
+        setProperty(BaseHome.JETTY_BASE,base.toString(),ORIGIN_INTERNAL_FALLBACK);
+        return base;
+    }
+
+    private final Path findJettyHomePath()
+    {
+        // If a jetty property is defined, use it
+        Prop prop = this.props.getProp(BaseHome.JETTY_HOME,false);
+        if (prop != null && !isEmpty(prop.value))
+        {
+            return FS.toPath(prop.value);
+        }
+
+        // If a system property is defined, use it
+        String val = System.getProperty(BaseHome.JETTY_HOME);
+        if (!isEmpty(val))
+        {
+            return FS.toPath(val);
+        }
+
+        // Attempt to find path relative to content in jetty's start.jar
+        // based on lookup for the Main class (from jetty's start.jar)
+        String classRef = "org/eclipse/jetty/start/Main.class";
+        URL jarfile = this.getClass().getClassLoader().getResource(classRef);
+        if (jarfile != null)
+        {
+            Matcher m = Pattern.compile("jar:(file:.*)!/" + classRef).matcher(jarfile.toString());
+            if (m.matches())
             {
-                base = home;
-                setProperty("jetty.base",base.toString(),"<internal-fallback>");
+                // ${jetty.home} is relative to found BaseHome class
+                try
+                {
+                    return new File(new URI(m.group(1))).getParentFile().toPath();
+                }
+                catch (URISyntaxException e)
+                {
+                    throw new UsageException(UsageException.ERR_UNKNOWN,e);
+                }
             }
         }
 
-        this.homePath = home;
-        this.basePath = base;
+        // Lastly, fall back to ${user.dir} default
+        Path home = FS.toPath(System.getProperty("user.dir","."));
+        setProperty(BaseHome.JETTY_HOME,home.toString(),ORIGIN_INTERNAL_FALLBACK);
+        return home;
+    }
 
-        // Update System Properties
-        setSystemProperty("jetty.home",homePath.toAbsolutePath().toString());
-        setSystemProperty("jetty.base",basePath.toAbsolutePath().toString());
+    private boolean isEmpty(String value)
+    {
+        if (value == null)
+        {
+            return true;
+        }
+        int len = value.length();
+        for (int i = 0; i < len; i++)
+        {
+            int c = value.codePointAt(i);
+            if (!Character.isWhitespace(c))
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
     @Override
@@ -116,7 +197,7 @@ public class CommandLineConfigSource implements ConfigSource
     @Override
     public String getId()
     {
-        return CMD_LINE_SOURCE;
+        return ORIGIN_CMD_LINE;
     }
 
     @Override
