@@ -11,6 +11,13 @@ jetty-8.1.16.v20140903 - 03 September 2014
  + 442839 highly fragmented websocket messages can result in corrupt binary
    messages
 
+jetty-7.6.16.v20140903 - 03 September 2014
+ + 409788 Large POST body causes java.lang.IllegalStateException: SENDING =>
+   HEADERS.
+ + 433802 check EOF in send1xx
+ + 442839 highly fragmented websocket messages can result in corrupt binary
+   messages
+
 jetty-8.1.15.v20140411 - 11 April 2014
  + 397167 Remote Access documentation is wrong
  + 419799 complete after exceptions thrown from async error pages
@@ -27,6 +34,13 @@ jetty-8.1.15.v20140411 - 11 April 2014
    should still be able to startup
  + 428710 JDBCSession(Id)Manager use 'read committed isolation level'
  + 430968 Use wrapped response with async dispatch
+ + 432452 ConnectHandler does not timeout sockets in FIN_WAIT2.
+
+jetty-7.6.15.v20140411 - 11 April 2014
+ + 422137 Added maxQueued to QueuedThreadPool MBean
+ + 425038 WebSocketClient leaks file handles when exceptions are thrown from
+   open()
+ + 425551 Memory Leak in SelectConnector$ConnectTimeout.expired.
  + 432452 ConnectHandler does not timeout sockets in FIN_WAIT2.
 
 jetty-8.1.14.v20131031 - 31 October 2013
