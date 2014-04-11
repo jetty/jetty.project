@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -559,8 +559,8 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
                 {
                     // Complete async requests 
                     if (error && _request.isAsyncStarted())
-                        _request.getAsyncContext().complete();
-                    
+                        _request.getAsyncContinuation().errorComplete();
+                        
                     was_continuation=_request._async.isContinuation();
                     handling = !_request._async.unhandle() && server.isRunning() && _server!=null;
                 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,7 +22,6 @@ import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
 import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletResponseWrapper;
 import javax.servlet.ServletException;
 
 import java.util.ArrayList;
@@ -44,7 +43,6 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Timeout;
-import org.omg.CosNaming.IstringHelper;
 
 /* ------------------------------------------------------------ */
 /** Implementation of Continuation and AsyncContext interfaces
@@ -307,7 +305,6 @@ public class AsyncContinuation implements AsyncContext, Continuation
         synchronized (this)
         {
             _continuation=false;
-            _responseWrapped=false;
             
             switch(_state)
             {
@@ -589,6 +586,32 @@ public class AsyncContinuation implements AsyncContext, Continuation
             scheduleDispatch();
         }
     }
+    
+    /* ------------------------------------------------------------ */
+    /* (non-Javadoc)
+     * @see javax.servlet.ServletRequest#complete()
+     */
+    public void errorComplete()
+    {
+        // just like complete except can overrule a prior dispatch call;
+        synchronized (this)
+        {
+            switch(_state)
+            {
+                case __REDISPATCHING:
+                case __ASYNCSTARTED:
+                    _state=__COMPLETING;
+                    _resumed=false;
+                    return;
+                    
+                case __COMPLETING:
+                    return;
+                    
+                default:
+                    throw new IllegalStateException(this.getStatusString());
+            }
+        }
+    }
 
     /* ------------------------------------------------------------ */
     @Override
@@ -639,8 +662,8 @@ public class AsyncContinuation implements AsyncContext, Continuation
                 {
                     if (ex!=null)
                     {
-                        _event.getSuppliedRequest().setAttribute(Dispatcher.ERROR_EXCEPTION,ex);
-                        _event.getSuppliedRequest().setAttribute(Dispatcher.ERROR_MESSAGE,ex.getMessage());
+                        _event.getSuppliedRequest().setAttribute(RequestDispatcher.ERROR_EXCEPTION,ex);
+                        _event.getSuppliedRequest().setAttribute(RequestDispatcher.ERROR_MESSAGE,ex.getMessage());
                         listener.onError(_event);
                     }
                     else
@@ -1085,14 +1108,14 @@ public class AsyncContinuation implements AsyncContext, Continuation
                 // they are only available after a call to AsyncContext.dispatch(...);
                 
                 // have we been forwarded before?
-                String uri=(String)r.getAttribute(Dispatcher.FORWARD_REQUEST_URI);
+                String uri=(String)r.getAttribute(RequestDispatcher.FORWARD_REQUEST_URI);
                 if (uri!=null)
                 {
                     r.setAttribute(AsyncContext.ASYNC_REQUEST_URI,uri);
-                    r.setAttribute(AsyncContext.ASYNC_CONTEXT_PATH,r.getAttribute(Dispatcher.FORWARD_CONTEXT_PATH));
-                    r.setAttribute(AsyncContext.ASYNC_SERVLET_PATH,r.getAttribute(Dispatcher.FORWARD_SERVLET_PATH));
-                    r.setAttribute(AsyncContext.ASYNC_PATH_INFO,r.getAttribute(Dispatcher.FORWARD_PATH_INFO));
-                    r.setAttribute(AsyncContext.ASYNC_QUERY_STRING,r.getAttribute(Dispatcher.FORWARD_QUERY_STRING));
+                    r.setAttribute(AsyncContext.ASYNC_CONTEXT_PATH,r.getAttribute(RequestDispatcher.FORWARD_CONTEXT_PATH));
+                    r.setAttribute(AsyncContext.ASYNC_SERVLET_PATH,r.getAttribute(RequestDispatcher.FORWARD_SERVLET_PATH));
+                    r.setAttribute(AsyncContext.ASYNC_PATH_INFO,r.getAttribute(RequestDispatcher.FORWARD_PATH_INFO));
+                    r.setAttribute(AsyncContext.ASYNC_QUERY_STRING,r.getAttribute(RequestDispatcher.FORWARD_QUERY_STRING));
                 }
                 else
                 {

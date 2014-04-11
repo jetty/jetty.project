@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -58,6 +58,7 @@ import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.AbstractHttpConnection;
+import org.eclipse.jetty.server.AsyncContinuation;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.Request;
@@ -267,7 +268,7 @@ public class ServletHandler extends ScopedHandler
     }
 
     /* ------------------------------------------------------------ */
-    IdentityService getIdentityService()
+    protected IdentityService getIdentityService()
     {
         return _identityService;
     }
@@ -474,7 +475,8 @@ public class ServletHandler extends ScopedHandler
         }
 
         LOG.debug("chain={}",chain);
-        
+
+        Throwable th=null;
         try
         {
             if (servlet_holder==null)
@@ -526,7 +528,7 @@ public class ServletHandler extends ScopedHandler
             }
 
             // unwrap cause
-            Throwable th=e;
+            th=e;
             if (th instanceof UnavailableException)
             {
                 LOG.debug(th); 
@@ -579,14 +581,12 @@ public class ServletHandler extends ScopedHandler
             else
                 LOG.debug("Response already committed for handling "+th);
             
-            // Complete async requests 
-            if (request.isAsyncStarted())
-                request.getAsyncContext().complete();
         }
         catch(Error e)
         {   
             if (!(DispatcherType.REQUEST.equals(type) || DispatcherType.ASYNC.equals(type)))
                 throw e;
+            th=e;
             LOG.warn("Error for "+request.getRequestURI(),e);
             if(LOG.isDebugEnabled())LOG.debug(request.toString());
 
@@ -596,20 +596,20 @@ public class ServletHandler extends ScopedHandler
                 response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             else
                 LOG.debug("Response already committed for handling ",e);
-            
-            // Complete async requests 
-            if (request.isAsyncStarted())
-                request.getAsyncContext().complete();
         }
         finally
         {
             if (servlet_holder!=null)
                 baseRequest.setHandled(true);
+
+            // Complete async requests 
+            if (th!=null && request.isAsyncStarted())
+                ((AsyncContinuation)request.getAsyncContext()).errorComplete();
         }
     }
 
     /* ------------------------------------------------------------ */
-    private FilterChain getFilterChain(Request baseRequest, String pathInContext, ServletHolder servletHolder) 
+    protected FilterChain getFilterChain(Request baseRequest, String pathInContext, ServletHolder servletHolder) 
     {
         String key=pathInContext==null?servletHolder.getName():pathInContext;
         int dispatch = FilterMapping.dispatch(baseRequest.getDispatcherType());
@@ -696,7 +696,7 @@ public class ServletHandler extends ScopedHandler
     }
     
     /* ------------------------------------------------------------ */
-    private void invalidateChainsCache()
+    protected void invalidateChainsCache()
     {
         if (_chainLRU[FilterMapping.REQUEST]!=null)
         {

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -33,22 +33,19 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
-import org.junit.AfterClass;
+import org.junit.After;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * @version $Revision$ $Date$
- */
 public abstract class AbstractConnectHandlerTest
 {
-    protected static Server server;
-    protected static Connector serverConnector;
-    protected static Server proxy;
-    protected static Connector proxyConnector;
+    protected Server server;
+    protected Connector serverConnector;
+    protected Server proxy;
+    protected Connector proxyConnector;
 
-    protected static void startServer(Connector connector, Handler handler) throws Exception
+    protected void startServer(Connector connector, Handler handler) throws Exception
     {
         server = new Server();
         serverConnector = connector;
@@ -57,29 +54,34 @@ public abstract class AbstractConnectHandlerTest
         server.start();
     }
 
-    protected static void startProxy() throws Exception
+    protected void startProxy() throws Exception
+    {
+        startProxy(new SelectChannelConnector(), new ConnectHandler());
+    }
+
+    protected void startProxy(Connector connector, ConnectHandler connectHandler) throws Exception
     {
         proxy = new Server();
-        proxyConnector = new SelectChannelConnector();
+        proxyConnector = connector;
         proxy.addConnector(proxyConnector);
-        proxy.setHandler(new ConnectHandler());
+        proxy.setHandler(connectHandler);
         proxy.start();
     }
 
-    @AfterClass
-    public static void stop() throws Exception
+    @After
+    public void stop() throws Exception
     {
         stopProxy();
         stopServer();
     }
 
-    protected static void stopServer() throws Exception
+    protected void stopServer() throws Exception
     {
         server.stop();
         server.join();
     }
 
-    protected static void stopProxy() throws Exception
+    protected void stopProxy() throws Exception
     {
         proxy.stop();
         proxy.join();
@@ -113,7 +115,7 @@ public abstract class AbstractConnectHandlerTest
         {
             int readLen = 0;
             int length = Integer.parseInt(headers.get("content-length"));
-            body=new StringBuilder(length);
+            body = new StringBuilder(length);
             try
             {
                 for (int i = 0; i < length; ++i)
@@ -121,19 +123,17 @@ public abstract class AbstractConnectHandlerTest
                     char c = (char)reader.read();
                     body.append(c);
                     readLen++;
-                        
                 }
-                
             }
             catch (SocketTimeoutException e)
             {
-                System.err.printf("Read %,d bytes (out of an expected %,d bytes)%n",readLen,length);
+                System.err.printf("Read %,d bytes (out of an expected %,d bytes)%n", readLen, length);
                 throw e;
             }
         }
         else if ("chunked".equals(headers.get("transfer-encoding")))
         {
-            body = new StringBuilder(64*1024);
+            body = new StringBuilder(64 * 1024);
             while ((line = reader.readLine()) != null)
             {
                 if ("0".equals(line))
@@ -151,7 +151,7 @@ public abstract class AbstractConnectHandlerTest
                 {
                     e.printStackTrace();
                 }
-                
+
                 int length = Integer.parseInt(line, 16);
                 for (int i = 0; i < length; ++i)
                 {

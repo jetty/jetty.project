@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -534,7 +534,11 @@ public class JDBCSessionManager extends AbstractSessionManager
 
                     }
                     else
+                    {
+                       //the session loaded from the db and the one in memory are the same, so keep using the one in memory
+                       session = memSession;
                        LOG.debug("getSession({}): Session not stale {}", idInCluster,session);
+                    }
                 }
                 else
                 {

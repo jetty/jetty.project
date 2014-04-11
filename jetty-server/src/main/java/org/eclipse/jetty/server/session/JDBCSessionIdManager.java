@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -900,7 +900,6 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
      * @throws Exception
      */
     private void cleanExpiredSessions ()
-    throws Exception
     {
         Connection connection = null;
         PreparedStatement statement = null;
@@ -910,7 +909,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         try
         {     
             connection = getConnection();
-            connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+            connection.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
             connection.setAutoCommit(false);
 
             statement = connection.prepareStatement(_selectExpiredSessions);
@@ -946,8 +945,14 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         catch (Exception e)
         {
             if (connection != null)
-                connection.rollback();
-            throw e;
+            {
+                try 
+                { 
+                    LOG.warn("Rolling back clean of expired sessions", e);
+                    connection.rollback();
+                }
+                catch (Exception x) { LOG.warn("Rollback of expired sessions failed", x);}
+            }
         }
         finally
         {

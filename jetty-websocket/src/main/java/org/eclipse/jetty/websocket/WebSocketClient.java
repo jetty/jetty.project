@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -35,6 +35,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Logger;
 
 
@@ -338,18 +339,38 @@ public class WebSocketClient
 
         InetSocketAddress address = toSocketAddress(uri);
 
-        SocketChannel channel = SocketChannel.open();
-        if (_bindAddress != null)
-            channel.socket().bind(_bindAddress);
-        channel.socket().setTcpNoDelay(true);
+        SocketChannel channel = null;
+        try
+        {
+            channel = SocketChannel.open();
+            if (_bindAddress != null)
+                channel.socket().bind(_bindAddress);
+            channel.socket().setTcpNoDelay(true);
 
-        WebSocketFuture holder = new WebSocketFuture(websocket, uri, this, channel);
+            WebSocketFuture holder = new WebSocketFuture(websocket,uri,this,channel);
 
-        channel.configureBlocking(false);
-        channel.connect(address);
-        _factory.getSelectorManager().register(channel, holder);
+            channel.configureBlocking(false);
+            channel.connect(address);
+            _factory.getSelectorManager().register(channel,holder);
 
-        return holder;
+            return holder;
+        }
+        catch (RuntimeException e)
+        {
+            // close the channel (prevent connection leak)
+            IO.close(channel);
+            
+            // rethrow
+            throw e;
+        }
+        catch(IOException e)
+        {
+            // close the channel (prevent connection leak)
+            IO.close(channel);
+
+            // rethrow
+            throw e;
+        }
     }
 
     public static InetSocketAddress toSocketAddress(URI uri)

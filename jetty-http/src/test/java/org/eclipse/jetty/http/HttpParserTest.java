@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -444,7 +444,7 @@ public class HttpParserTest
             {
                 if (t+1 < tests.length)
                     throw e;
-                assertTrue(e.toString().indexOf("FULL")>=0);
+                assertTrue(e.toString().indexOf("Request Entity Too Large")>=0);
             }
         }
     }

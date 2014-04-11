@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -1036,7 +1036,7 @@ public class HttpParser implements Parser
             {
                 LOG.warn("HttpParser Full for {} ",_endp);
                 _buffer.clear();
-                throw new HttpException(HttpStatus.REQUEST_ENTITY_TOO_LARGE_413, "FULL "+(_buffer==_body?"body":"head"));
+                throw new HttpException(HttpStatus.REQUEST_ENTITY_TOO_LARGE_413, "Request Entity Too Large: "+(_buffer==_body?"body":"head"));
             }
 
             try

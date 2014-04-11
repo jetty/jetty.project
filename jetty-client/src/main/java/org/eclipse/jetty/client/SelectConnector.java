@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -226,16 +226,22 @@ class SelectConnector extends AggregateLifeCycle implements HttpClient.Connector
             if (channel.isConnectionPending())
             {
                 LOG.debug("Channel {} timed out while connecting, closing it", channel);
-                try
-                {
-                    // This will unregister the channel from the selector
-                    channel.close();
-                }
-                catch (IOException x)
-                {
-                    LOG.ignore(x);
-                }
+                close();
+                _connectingChannels.remove(channel);
                 destination.onConnectionFailed(new SocketTimeoutException());
+            }
+        }
+
+        private void close()
+        {
+            try
+            {
+                // This will unregister the channel from the selector
+                channel.close();
+            }
+            catch (IOException x)
+            {
+                LOG.ignore(x);
             }
         }
     }

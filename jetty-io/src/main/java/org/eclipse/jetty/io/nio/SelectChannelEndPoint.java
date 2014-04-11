@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2013 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,6 +19,7 @@
 package org.eclipse.jetty.io.nio;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
@@ -86,6 +87,8 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
 
     private volatile long _idleTimestamp;
     private volatile boolean _checkIdle;
+    
+    private boolean _interruptable;
 
     private boolean _ishut;
 
@@ -445,9 +448,11 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                         updateKey();
                         this.wait(timeoutMs>0?(end-now):10000);
                     }
-                    catch (InterruptedException e)
+                    catch (final InterruptedException e)
                     {
                         LOG.warn(e);
+                        if (_interruptable)
+                            throw new InterruptedIOException(){{this.initCause(e);}};
                     }
                     finally
                     {
@@ -493,9 +498,11 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                         updateKey();
                         this.wait(timeoutMs>0?(end-now):10000);
                     }
-                    catch (InterruptedException e)
+                    catch (final InterruptedException e)
                     {
                         LOG.warn(e);
+                        if (_interruptable)
+                            throw new InterruptedIOException(){{this.initCause(e);}};
                     }
                     finally
                     {
@@ -514,6 +521,28 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         return true;
     }
 
+    /* ------------------------------------------------------------ */
+    /** Set the interruptable mode of the endpoint.
+     * If set to false (default), then interrupts are assumed to be spurious 
+     * and blocking operations continue unless the endpoint has been closed.
+     * If true, then interrupts of blocking operations result in InterruptedIOExceptions
+     * being thrown.
+     * @param interupable
+     */
+    public void setInterruptable(boolean interupable)
+    {
+        synchronized (this)
+        {
+            _interruptable=interupable;
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    public boolean isInterruptable()
+    {
+        return _interruptable;
+    }
+    
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.io.AsyncEndPoint#scheduleWrite()
