@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.server.handler;
 
-import static org.junit.Assert.*;
-import static org.junit.Assume.*;
-
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -32,7 +29,6 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.ConcurrentMap;
-
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -44,16 +40,16 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.junit.Assert;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 
-/**
- * @version $Revision$ $Date$
- */
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeTrue;
+
 public class ConnectHandlerTest extends AbstractConnectHandlerTest
 {
-    @BeforeClass
-    public static void init() throws Exception
+    @Before
+    public void init() throws Exception
     {
         startServer(new SelectChannelConnector(), new ServerHandler());
         startProxy();
@@ -658,7 +654,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
 
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 InputStream input = httpRequest.getInputStream();
-                int read = -1;
+                int read;
                 while ((read = input.read()) >= 0)
                     baos.write(read);
                 baos.close();

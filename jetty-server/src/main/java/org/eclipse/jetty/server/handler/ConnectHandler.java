@@ -517,8 +517,6 @@ public class ConnectHandler extends HandlerWrapper
         }
     }
 
-
-
     public class ProxyToServerConnection implements AsyncConnection
     {
         private final CountDownLatch _ready = new CountDownLatch(1);
@@ -601,7 +599,6 @@ public class ConnectHandler extends HandlerWrapper
 
         public void onInputShutdown() throws IOException
         {
-            // TODO
         }
 
         private void writeData() throws IOException
@@ -724,7 +721,11 @@ public class ConnectHandler extends HandlerWrapper
         {
             try
             {
-                shutdownOutput();
+                LOG.debug("{} idle expired", this);
+                if (_endPoint.isOutputShutdown())
+                    close();
+                else
+                    shutdownOutput();
             }
             catch(Exception e)
             {
@@ -824,7 +825,6 @@ public class ConnectHandler extends HandlerWrapper
 
         public void onInputShutdown() throws IOException
         {
-            // TODO
         }
 
         public long getTimeStamp()
@@ -891,7 +891,11 @@ public class ConnectHandler extends HandlerWrapper
         {
             try
             {
-                shutdownOutput();
+                LOG.debug("{} idle expired", this);
+                if (_endPoint.isOutputShutdown())
+                    close();
+                else
+                    shutdownOutput();
             }
             catch(Exception e)
             {
