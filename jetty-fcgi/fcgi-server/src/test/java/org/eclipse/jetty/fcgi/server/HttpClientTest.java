@@ -24,6 +24,7 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -40,6 +41,8 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BytesContentProvider;
+import org.eclipse.jetty.client.util.DeferredContentProvider;
+import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.IO;
@@ -550,5 +553,78 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         client.stop();
 
         Assert.assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testEarlyEOF() throws Exception
+    {
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                // Promise some content, then flush the headers, then fail to send the content.
+                response.setContentLength(16);
+                response.flushBuffer();
+                throw new NullPointerException();
+            }
+        });
+
+        try
+        {
+            client.newRequest("localhost", connector.getLocalPort())
+                    .scheme(scheme)
+                    .timeout(5, TimeUnit.SECONDS)
+                    .send();
+            Assert.fail();
+        }
+        catch (ExecutionException x)
+        {
+            // Expected.
+        }
+    }
+
+    @Test
+    public void testSmallContentDelimitedByEOFWithSlowRequest() throws Exception
+    {
+        testContentDelimitedByEOFWithSlowRequest(1024);
+    }
+
+    @Test
+    public void testBigContentDelimitedByEOFWithSlowRequest() throws Exception
+    {
+        testContentDelimitedByEOFWithSlowRequest(128 * 1024);
+    }
+
+    private void testContentDelimitedByEOFWithSlowRequest(int length) throws Exception
+    {
+        final byte[] data = new byte[length];
+        new Random().nextBytes(data);
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                response.setHeader("Connection", "close");
+                response.getOutputStream().write(data);
+            }
+        });
+
+        DeferredContentProvider content = new DeferredContentProvider(ByteBuffer.wrap(new byte[]{0}));
+        Request request = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .content(content);
+        FutureResponseListener listener = new FutureResponseListener(request);
+        request.send(listener);
+        // Wait some time to simulate a slow request.
+        Thread.sleep(1000);
+        content.close();
+
+        ContentResponse response = listener.get(5, TimeUnit.SECONDS);
+
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertArrayEquals(data, response.getContent());
     }
 }
