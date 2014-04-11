@@ -1,4 +1,20 @@
-jetty-8.1.15-SNAPSHOT
+jetty-8.1.15.v20140411 - 11 April 2014
+ + 397167 Remote Access documentation is wrong
+ + 419799 complete after exceptions thrown from async error pages
+ + 420776 complete error pages after startAsync
+ + 421197 fix method comment and ensure close synchronized
+ + 422137 Added maxQueued to QueuedThreadPool MBean
+ + 424180 improve bad message errors
+ + 425038 WebSocketClient leaks file handles when exceptions are thrown from
+   open()
+ + 425551 Memory Leak in SelectConnector$ConnectTimeout.expired.
+ + 426658 backport Bug 425930 to jetty-8
+ + 427761 allow endpoints to be interrupted
+ + 428708 JDBCSessionIdManager when clearing expired sessions failed, jetty
+   should still be able to startup
+ + 428710 JDBCSession(Id)Manager use 'read committed isolation level'
+ + 430968 Use wrapped response with async dispatch
+ + 432452 ConnectHandler does not timeout sockets in FIN_WAIT2.
 
 jetty-8.1.14.v20131031 - 31 October 2013
  + 417772 fixed low resources idle timeout
