@@ -342,7 +342,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
     {
         switch (state)
         {
-            case CLOSED:
+            case CLOSING:
                 // notify session listeners
                 for (SessionListener listener : sessionListeners)
                 {
@@ -355,7 +355,8 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
                         LOG.ignore(t);
                     }
                 }
-                
+                break;
+            case CLOSED:
                 IOState ioState = this.connection.getIOState();
                 CloseInfo close = ioState.getCloseInfo();
                 // confirmed close of local endpoint
