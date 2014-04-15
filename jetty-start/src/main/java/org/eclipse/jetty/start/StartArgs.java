@@ -37,6 +37,7 @@ import java.util.StringTokenizer;
 import org.eclipse.jetty.start.Props.Prop;
 import org.eclipse.jetty.start.config.ConfigSource;
 import org.eclipse.jetty.start.config.ConfigSources;
+import org.eclipse.jetty.start.config.DirConfigSource;
 
 /**
  * The Arguments required to start Jetty.
@@ -166,7 +167,7 @@ public class StartArgs
         }
     }
 
-    public void dumpEnvironment()
+    public void dumpEnvironment(BaseHome baseHome)
     {
         // Java Details
         System.out.println();
@@ -188,10 +189,30 @@ public class StartArgs
         System.out.println();
         System.out.println("Jetty Environment:");
         System.out.println("-----------------");
-
+        dumpProperty("jetty.version");
         dumpProperty("jetty.home");
         dumpProperty("jetty.base");
-        dumpProperty("jetty.version");
+        
+        // Jetty Configuration Environment
+        System.out.println();
+        System.out.println("Config Search Order:");
+        System.out.println("--------------------");
+        for (ConfigSource config : baseHome.getConfigSources())
+        {
+            System.out.printf(" %s",config.getId());
+            if (config instanceof DirConfigSource)
+            {
+                DirConfigSource dirsource = (DirConfigSource)config;
+                if (dirsource.isPropertyBased())
+                {
+                    System.out.printf(" -> %s",dirsource.getDir());
+                }
+            }
+            System.out.println();
+        }
+        
+        // Jetty Se
+        System.out.println();
     }
 
     public void dumpJvmArgs()

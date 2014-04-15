@@ -307,7 +307,7 @@ public class Main
     public void listConfig(StartArgs args)
     {
         // Dump Jetty Home / Base
-        args.dumpEnvironment();
+        args.dumpEnvironment(baseHome);
 
         // Dump JVM Args
         args.dumpJvmArgs();
