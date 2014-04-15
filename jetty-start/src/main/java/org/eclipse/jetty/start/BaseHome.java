@@ -183,34 +183,18 @@ public class BaseHome
         return baseDir.toString();
     }
 
-    /**
-     * @deprecated use {@link #getBasePath()}
-     */
-    @Deprecated
-    public File getBaseDir()
-    {
-        return baseDir.toFile();
-    }
-
-    /**
-     * Create a file reference to some content in <code>"${jetty.base}"</code>
-     * 
-     * @param path
-     *            the path to reference
-     * @return the file reference
-     * @deprecated use {@link #getBasePath(String)}
-     */
-    @Deprecated
-    public File getBaseFile(String path)
-    {
-        return baseDir.resolve(path).toFile();
-    }
-
     public Path getBasePath()
     {
         return baseDir;
     }
 
+    /**
+     * Create a {@link Path} reference to some content in <code>"${jetty.base}"</code>
+     * 
+     * @param path
+     *            the path to reference
+     * @return the file reference
+     */
     public Path getBasePath(String path)
     {
         return baseDir.resolve(path);
@@ -221,39 +205,9 @@ public class BaseHome
         return this.sources;
     }
 
-    /**
-     * Get a specific file reference.
-     * <p>
-     * File references go through 3 possibly scenarios.
-     * <ol>
-     * <li>If exists relative to <code>${jetty.base}</code>, return that reference</li>
-     * <li>If exists relative to <code>${jetty.home}</code>, return that reference</li>
-     * <li>Otherwise return absolute path reference (standard java logic)</li>
-     * </ol>
-     * 
-     * @param path
-     *            the path to get.
-     * @return the file reference.
-     * @deprecated use {@link #getPath(String)}
-     */
-    @Deprecated
-    public File getFile(String path)
-    {
-        return getPath(path).toAbsolutePath().toFile();
-    }
-
     public String getHome()
     {
         return homeDir.toString();
-    }
-
-    /**
-     * @deprecated use {@link #getHomePath()}
-     */
-    @Deprecated
-    public File getHomeDir()
-    {
-        return homeDir.toFile();
     }
 
     public Path getHomePath()
