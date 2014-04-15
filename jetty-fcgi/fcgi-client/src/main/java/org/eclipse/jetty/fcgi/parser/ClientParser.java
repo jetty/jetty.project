@@ -98,5 +98,13 @@ public class ClientParser extends Parser
             for (StreamContentParser streamParser : streamParsers)
                 streamParser.end(request);
         }
+
+        @Override
+        public void onFailure(int request, Throwable failure)
+        {
+            listener.onFailure(request, failure);
+            for (StreamContentParser streamParser : streamParsers)
+                streamParser.end(request);
+        }
     }
 }

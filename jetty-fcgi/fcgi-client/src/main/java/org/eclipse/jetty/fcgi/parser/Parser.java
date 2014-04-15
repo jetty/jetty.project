@@ -100,6 +100,8 @@ public abstract class Parser
 
         public void onEnd(int request);
 
+        public void onFailure(int request, Throwable failure);
+
         public static class Adapter implements Listener
         {
             @Override
@@ -120,6 +122,12 @@ public abstract class Parser
             @Override
             public void onEnd(int request)
             {
+            }
+
+            @Override
+            public void onFailure(int request, Throwable failure)
+            {
+
             }
         }
     }

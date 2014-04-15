@@ -28,8 +28,6 @@ import org.eclipse.jetty.fcgi.generator.Flusher;
 import org.eclipse.jetty.fcgi.generator.Generator;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.IdleTimeout;
 
@@ -83,42 +81,43 @@ public class HttpChannelOverFCGI extends HttpChannel
         return receiver.abort(cause);
     }
 
-    protected void responseBegin(int code, String reason)
+    protected boolean responseBegin(int code, String reason)
     {
         HttpExchange exchange = getHttpExchange();
-        if (exchange != null)
-        {
-            exchange.getResponse().version(version).status(code).reason(reason);
-            receiver.responseBegin(exchange);
-        }
+        if (exchange == null)
+            return false;
+        exchange.getResponse().version(version).status(code).reason(reason);
+        return receiver.responseBegin(exchange);
     }
 
-    protected void responseHeader(HttpField field)
+    protected boolean responseHeader(HttpField field)
     {
         HttpExchange exchange = getHttpExchange();
-        if (exchange != null)
-            receiver.responseHeader(exchange, field);
+        return exchange != null && receiver.responseHeader(exchange, field);
     }
 
-    protected void responseHeaders()
+    protected boolean responseHeaders()
     {
         HttpExchange exchange = getHttpExchange();
-        if (exchange != null)
-            receiver.responseHeaders(exchange);
+        return exchange != null && receiver.responseHeaders(exchange);
     }
 
-    protected void content(ByteBuffer buffer)
+    protected boolean content(ByteBuffer buffer)
     {
         HttpExchange exchange = getHttpExchange();
-        if (exchange != null)
-            receiver.responseContent(exchange, buffer);
+        return exchange != null && receiver.responseContent(exchange, buffer);
     }
 
-    protected void responseSuccess()
+    protected boolean responseSuccess()
     {
         HttpExchange exchange = getHttpExchange();
-        if (exchange != null)
-            receiver.responseSuccess(exchange);
+        return exchange != null && receiver.responseSuccess(exchange);
+    }
+
+    protected boolean responseFailure(Throwable failure)
+    {
+        HttpExchange exchange = getHttpExchange();
+        return exchange != null && receiver.responseFailure(failure);
     }
 
     @Override
@@ -126,12 +125,10 @@ public class HttpChannelOverFCGI extends HttpChannel
     {
         super.exchangeTerminated(result);
         idle.onClose();
-        boolean close = result.isFailed();
         HttpFields responseHeaders = result.getResponse().getHeaders();
-        close |= responseHeaders.contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
-        if (close)
-            connection.close();
-        else
+        if (result.isFailed())
+            connection.close(result.getFailure());
+        else if (!connection.closeByHTTP(responseHeaders))
             connection.release(this);
     }
 
@@ -154,7 +151,8 @@ public class HttpChannelOverFCGI extends HttpChannel
         @Override
         protected void onIdleExpired(TimeoutException timeout)
         {
-            LOG.debug("Idle timeout for request {}", request);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Idle timeout for request {}", request);
             connection.abort(timeout);
         }
 
