@@ -43,7 +43,8 @@ public class MainTest
     public void testBasicProcessing() throws Exception
     {
         List<String> cmdLineArgs = new ArrayList<>();
-        File testJettyHome = MavenTestingUtils.getTestResourceDir("usecases/home");
+        File testJettyHome = MavenTestingUtils.getTestResourceDir("usecases/home").getAbsoluteFile();
+        cmdLineArgs.add("user.dir=" + testJettyHome);
         cmdLineArgs.add("jetty.home=" + testJettyHome);
         cmdLineArgs.add("jetty.port=9090");
 
@@ -103,8 +104,9 @@ public class MainTest
     {
         List<String> cmdLineArgs = new ArrayList<>();
 
-        File homePath = MavenTestingUtils.getTestResourceDir("usecases/home");
+        File homePath = MavenTestingUtils.getTestResourceDir("usecases/home").getAbsoluteFile();
         cmdLineArgs.add("jetty.home=" + homePath);
+        cmdLineArgs.add("user.dir=" + homePath);
         
         // JVM args
         cmdLineArgs.add("--exec");
@@ -137,7 +139,8 @@ public class MainTest
     {
         List<String> cmdLineArgs = new ArrayList<>();
 
-        File homePath = MavenTestingUtils.getTestResourceDir("jetty home with spaces");
+        File homePath = MavenTestingUtils.getTestResourceDir("jetty home with spaces").getAbsoluteFile();
+        cmdLineArgs.add("user.dir=" + homePath);
         cmdLineArgs.add("jetty.home=" + homePath);
 
         Main main = new Main();

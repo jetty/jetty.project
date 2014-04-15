@@ -100,7 +100,8 @@ public class ConfigurationAssert
         for (Prop prop : args.getProperties())
         {
             String name = prop.key;
-            if ("jetty.home".equals(name) || "jetty.base".equals(name) || prop.origin.equals(Props.ORIGIN_SYSPROP))
+            if ("jetty.home".equals(name) || "jetty.base".equals(name) ||
+                "user.dir".equals(name) || prop.origin.equals(Props.ORIGIN_SYSPROP))
             {
                 // strip these out from assertion, to make assertions easier.
                 continue;

@@ -81,8 +81,8 @@ public class CommandLineConfigSource implements ConfigSource
             return FS.toPath(val);
         }
 
-        // Lastly, fall back to base == home
-        Path base = this.homePath.toAbsolutePath();
+        // Lastly, fall back to base == ${user.dir}
+        Path base = FS.toPath(this.props.getString("user.dir","."));
         setProperty(BaseHome.JETTY_BASE,base.toString(),ORIGIN_INTERNAL_FALLBACK);
         return base;
     }
