@@ -29,11 +29,16 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class PathFinder extends SimpleFileVisitor<Path>
 {
+    // internal tracking of prior notified paths (to avoid repeated notification of same ignored path)
+    private static Set<Path> NOTIFIED_PATHS = new HashSet<>();
+
     private boolean includeDirsInResults = false;
     private Map<String, Path> hits = new HashMap<>();
     private Path basePath = null;
@@ -43,7 +48,7 @@ public class PathFinder extends SimpleFileVisitor<Path>
     private void addHit(Path path)
     {
         String relPath = basePath.relativize(path).toString();
-        StartLog.debug("addHit(" + path + ") = [" + relPath + "," + path + "]");
+        StartLog.debug("Found [" + relPath + "]  " + path);
         hits.put(relPath,path);
     }
 
@@ -134,7 +139,6 @@ public class PathFinder extends SimpleFileVisitor<Path>
     {
         if (fileMatcher.matches(file))
         {
-            StartLog.debug("Found file: " + file);
             addHit(file);
         }
         else
@@ -149,7 +153,11 @@ public class PathFinder extends SimpleFileVisitor<Path>
     {
         if (exc instanceof FileSystemLoopException)
         {
-            StartLog.warn("skipping detected filesystem loop: " + file);
+            if (!NOTIFIED_PATHS.contains(file))
+            {
+                StartLog.warn("skipping detected filesystem loop: " + file);
+                NOTIFIED_PATHS.add(file);
+            }
             return FileVisitResult.SKIP_SUBTREE;
         }
         else

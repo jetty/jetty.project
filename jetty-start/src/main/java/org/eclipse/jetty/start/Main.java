@@ -21,9 +21,8 @@ package org.eclipse.jetty.start;
 import static org.eclipse.jetty.start.UsageException.*;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -37,7 +36,10 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -47,6 +49,8 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.eclipse.jetty.start.config.CommandLineConfigSource;
 
 /**
  * Main start class.
@@ -131,11 +135,10 @@ public class Main
         System.exit(exit);
     }
 
-    private final BaseHome baseHome;
+    private BaseHome baseHome;
 
     Main() throws IOException
     {
-        baseHome = new BaseHome();
     }
 
     private void copyInThread(final InputStream in, final OutputStream out)
@@ -168,11 +171,12 @@ public class Main
     {
         try
         {
-            File file = baseHome.getBaseFile(arg.location);
+            Path file = baseHome.getBasePath(arg.location);
 
-            StartLog.debug("Module file %s %s",file.getAbsolutePath(),(file.exists()?"[Exists!]":""));
-            if (file.exists())
+            StartLog.debug("Module file %s %s",file.toAbsolutePath(),(FS.exists(file)?"[Exists!]":""));
+            if (FS.exists(file))
             {
+                // file already initialized / downloaded, skip it
                 return;
             }
 
@@ -182,10 +186,11 @@ public class Main
 
                 System.err.println("DOWNLOAD: " + url + " to " + arg.location);
 
-                FS.ensureDirectoryExists(file.getParentFile());
+                FS.ensureDirectoryExists(file.getParent());
 
                 byte[] buf = new byte[8192];
-                try (InputStream in = url.openStream(); OutputStream out = new FileOutputStream(file);)
+                try (InputStream in = url.openStream(); 
+                     OutputStream out = Files.newOutputStream(file,StandardOpenOption.CREATE_NEW,StandardOpenOption.WRITE))
                 {
                     while (true)
                     {
@@ -205,11 +210,12 @@ public class Main
             else if (arg.location.endsWith("/"))
             {
                 System.err.println("MKDIR: " + baseHome.toShortForm(file));
-                file.mkdirs();
+                FS.ensureDirectoryExists(file);
             }
             else
+            {
                 StartLog.warn("MISSING: required file "+ baseHome.toShortForm(file));
-            
+            }
         }
         catch (Exception e)
         {
@@ -334,10 +340,23 @@ public class Main
         modules.dumpEnabledTree();
     }
 
-    private void moduleIni(StartArgs args, String name, boolean topLevel, boolean appendStartIni) throws IOException
+    /**
+     * Build out INI file.
+     * <p>
+     * This applies equally for either <code>${jetty.base}/start.ini</code> or
+     * <code>${jetty.base}/start.d/${name}.ini</code> 
+     * 
+     * @param args the arguments of what modules are enabled
+     * @param name the name of the module to based the build of the ini
+     * @param topLevel 
+     * @param appendStartIni true to append to <code>${jetty.base}/start.ini</code>, 
+     * false to create a <code>${jetty.base}/start.d/${name}.ini</code> entry instead.
+     * @throws IOException
+     */
+    private void buildIni(StartArgs args, String name, boolean topLevel, boolean appendStartIni) throws IOException
     {        
         // Find the start.d relative to the base directory only.
-        File start_d = baseHome.getBaseFile("start.d");
+        Path start_d = baseHome.getBasePath("start.d");
 
         // Is this a module?
         Modules modules = args.getAllModules();
@@ -349,12 +368,12 @@ public class Main
         }
 
         // Find any named ini file and check it follows the convention
-        File start_ini = baseHome.getBaseFile("start.ini");
+        Path start_ini = baseHome.getBasePath("start.ini");
         String short_start_ini = baseHome.toShortForm(start_ini);
-        File ini = new File(start_d,name + ".ini");
+        Path ini = start_d.resolve(name + ".ini");
         String short_ini = baseHome.toShortForm(ini);
         StartIni module_ini = null;
-        if (ini.exists())
+        if (FS.exists(ini))
         {
             module_ini = new StartIni(ini);
             if (module_ini.getLineMatches(Pattern.compile("--module=(.*, *)*" + name)).size() == 0)
@@ -368,46 +387,30 @@ public class Main
         boolean has_ini_lines = module.getInitialise().size() > 0;
 
         // If it is not enabled or is transitive with ini template lines or toplevel and doesn't exist
-        if (!module.isEnabled() || (transitive && has_ini_lines) || (topLevel && !ini.exists() && !appendStartIni))
+        if (!module.isEnabled() || (transitive && has_ini_lines) || (topLevel && !FS.exists(ini) && !appendStartIni))
         {
+            // File BufferedWriter
+            BufferedWriter writer = null;
             String source = null;
             PrintWriter out = null;
             try
             {
                 if (appendStartIni)
                 {
-                    if ((!start_ini.exists() && !start_ini.createNewFile()) || !start_ini.canWrite())
-                    {
-                        StartLog.warn("ERROR: Bad %s! ",start_ini);
-                        return;
-                    }
                     source = short_start_ini;
                     StartLog.info("%-15s initialised in %s (appended)",name,source);
-                    out = new PrintWriter(new FileWriter(start_ini,true));
+                    writer = Files.newBufferedWriter(start_ini,StandardCharsets.UTF_8,StandardOpenOption.CREATE,StandardOpenOption.APPEND);
+                    out = new PrintWriter(writer);
                 }
                 else
                 {
                     // Create the directory if needed
                     FS.ensureDirectoryExists(start_d);
                     FS.ensureDirectoryWritable(start_d);
-                    try
-                    {
-                        // Create a new ini file for it
-                        if (!ini.createNewFile())
-                        {
-                            StartLog.warn("ERROR: %s cannot be initialised in %s! ",name,short_ini);
-                            return;
-                        }
-                    }
-                    catch (IOException e)
-                    {
-                        StartLog.warn("ERROR: Unable to create %s!",ini);
-                        StartLog.warn(e);
-                        return;
-                    }
                     source = short_ini;
                     StartLog.info("%-15s initialised in %s (created)",name,source);
-                    out = new PrintWriter(ini);
+                    writer = Files.newBufferedWriter(ini,StandardCharsets.UTF_8,StandardOpenOption.CREATE_NEW,StandardOpenOption.WRITE);
+                    out = new PrintWriter(writer);
                 }
 
                 if (appendStartIni)
@@ -455,12 +458,14 @@ public class Main
                 }
             }
         }
-        else if (ini.exists())
+        else if (FS.exists(ini))
         {
             StartLog.info("%-15s initialised in %s",name,short_ini);
         }
         else
+        {
             StartLog.info("%-15s initialised transitively",name);
+        }
         
         // Also list other places this module is enabled
         for (String source : module.getSources())
@@ -508,7 +513,7 @@ public class Main
                     if (!done.contains(m.getName()))
                     {
                         complete=false;
-                        moduleIni(args,m.getName(),false,appendStartIni);
+                        buildIni(args,m.getName(),false,appendStartIni);
                         done.add(m.getName());
                     }
                 }
@@ -542,61 +547,36 @@ public class Main
 
     public StartArgs processCommandLine(String[] cmdLine) throws Exception
     {
-        StartArgs args = new StartArgs(cmdLine);
-
         // Processing Order is important!
         // ------------------------------------------------------------
-        // 1) Directory Locations
-
-        // Set Home and Base at the start, as all other paths encountered
-        // will be based off of them.
-        baseHome.initialize(args);
-
-        // ------------------------------------------------------------
-        // 2) Start Logging
-        StartLog.getInstance().initialize(baseHome,args);
+        // 1) Configuration Locations
+        CommandLineConfigSource cmdLineSource = new CommandLineConfigSource(cmdLine);
+        baseHome = new BaseHome(cmdLineSource);
 
         StartLog.debug("jetty.home=%s",baseHome.getHome());
         StartLog.debug("jetty.base=%s",baseHome.getBase());
 
         // ------------------------------------------------------------
-        // 3) Load Inis
-        File start_ini = baseHome.getBaseFile("start.ini");
-        if (FS.canReadFile(start_ini))
-        {
-            StartLog.debug("Reading ${jetty.base}/start.ini - %s",start_ini);
-            args.parse(baseHome,new StartIni(start_ini));
-        }
-
-        File start_d = baseHome.getBaseFile("start.d");
-        if (FS.canReadDirectory(start_d))
-        {
-            List<Path> paths = baseHome.getPaths(start_d.toPath(),1,"*.ini");
-            Collections.sort(paths,new NaturalSort.Paths());
-            for (Path path: paths)
-            {
-                StartLog.debug("Reading ${jetty.base}/start.d/%s - %s",path.getFileName(),path);
-                args.parse(baseHome,new StartIni(path));
-            }
-        }
-
-        // 4) Parse everything provided.
+        // 2) Parse everything provided.
         // This would be the directory information +
         // the various start inis
         // and then the raw command line arguments
         StartLog.debug("Parsing collected arguments");
-        args.parseCommandLine();
+        StartArgs args = new StartArgs();
+        args.parse(baseHome.getConfigSources());
 
-        // 5) Module Registration
+        // ------------------------------------------------------------
+        // 3) Module Registration
         Modules modules = new Modules();
         StartLog.debug("Registering all modules");
         modules.registerAll(baseHome, args);
 
-        // 6) Active Module Resolution
+        // ------------------------------------------------------------
+        // 4) Active Module Resolution
         for (String enabledModule : args.getEnabledModules())
         {
-            List<String> sources = args.getSources(enabledModule);
-            modules.enable(enabledModule,sources);
+            List<String> msources = args.getSources(enabledModule);
+            modules.enable(enabledModule,msources);
         }
 
         StartLog.debug("Building Module Graph");
@@ -605,11 +585,13 @@ public class Main
         args.setAllModules(modules);
         List<Module> activeModules = modules.resolveEnabled();
         
-        // 7) Lib & XML Expansion / Resolution
+        // ------------------------------------------------------------
+        // 5) Lib & XML Expansion / Resolution
         args.expandLibs(baseHome);
         args.expandModules(baseHome,activeModules);
 
-        // 8) Resolve Extra XMLs
+        // ------------------------------------------------------------
+        // 6) Resolve Extra XMLs
         args.resolveExtraXmls(baseHome);
 
         return args;
@@ -651,7 +633,7 @@ public class Main
         // Generate Module Graph File
         if (args.getModuleGraphFilename() != null)
         {
-            File outputFile = baseHome.getBaseFile(args.getModuleGraphFilename());
+            Path outputFile = baseHome.getBasePath(args.getModuleGraphFilename());
             System.out.printf("Generating GraphViz Graph of Jetty Modules at %s%n",baseHome.toShortForm(outputFile));
             ModuleGraphWriter writer = new ModuleGraphWriter();
             writer.config(args.getProperties());
@@ -683,25 +665,27 @@ public class Main
         }
 
         // Initialize start.ini
-        for (String module : args.getModuleStartIni())
+        for (String module : args.getAddToStartIni())
         {
-            moduleIni(args,module,true,true);
+            buildIni(args,module,true,true);
         }
 
         // Initialize start.d
-        for (String module : args.getModuleStartdIni())
+        for (String module : args.getAddToStartdIni())
         {
-            moduleIni(args,module,true,false);
+            buildIni(args,module,true,false);
         }
 
         // Check ini files for download possibilities
         for (FileArg arg : args.getFiles())
         {
-            File file = baseHome.getBaseFile(arg.location);
-            if (!file.exists() && args.isDownload())
+            Path file = baseHome.getBasePath(arg.location);
+            if (!FS.exists(file) && args.isDownload())
+            {
                 initFile(arg);
+            }
 
-            if (!file.exists())
+            if (!FS.exists(file))
             {
                 /* Startup should NEVER fail to run on missing content.
                  * See Bug #427204

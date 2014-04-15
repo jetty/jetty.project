@@ -25,23 +25,24 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
 
 import org.eclipse.jetty.start.Props.Prop;
+import org.eclipse.jetty.start.config.ConfigSource;
+import org.eclipse.jetty.start.config.ConfigSources;
 
 /**
  * The Arguments required to start Jetty.
  */
 public class StartArgs
 {
-    public static final String CMD_LINE_SOURCE = "<command-line>";
     public static final String VERSION;
 
     static
@@ -68,24 +69,41 @@ public class StartArgs
 
     private static final String SERVER_MAIN = "org.eclipse.jetty.xml.XmlConfiguration";
 
-    private List<String> commandLine = new ArrayList<>();
+    /** List of enabled modules */
     private Set<String> modules = new HashSet<>();
+    /** Map of enabled modules to the source of where that activation occurred */
     private Map<String, List<String>> sources = new HashMap<>();
+    /** Map of properties to where that property was declared */
+    private Map<String, String> propertySource = new HashMap<>();
+    /** List of all active [files] sections from enabled modules */
     private List<FileArg> files = new ArrayList<>();
+    /** List of all active [lib] sectinos from enabled modules */
     private Classpath classpath;
+    /** List of all active [xml] sections from enabled modules */
+    private List<Path> xmls = new ArrayList<>();
+    /** JVM arguments, found via commmand line and in all active [exec] sections from enabled modules */
+    private List<String> jvmArgs = new ArrayList<>();
+
+    /** List of all xml references found directly on command line or start.ini */
     private List<String> xmlRefs = new ArrayList<>();
-    private List<File> xmls = new ArrayList<>();
+
     private Props properties = new Props();
     private Set<String> systemPropertyKeys = new HashSet<>();
-    private List<String> jvmArgs = new ArrayList<>();
     private List<String> rawLibs = new ArrayList<>();
-    private List<String> moduleStartdIni = new ArrayList<>();
-    private List<String> moduleStartIni = new ArrayList<>();
-    private Map<String, String> propertySource = new HashMap<>();
+
+    // jetty.base - build out commands
+    /** --add-to-startd=[module,[module]] */
+    private List<String> addToStartdIni = new ArrayList<>();
+    /** --add-to-start=[module,[module]] */
+    private List<String> addToStartIni = new ArrayList<>();
+
+    // module inspection commands
+    /** --write-module-graph=[filename] */
     private String moduleGraphFilename;
 
+    /** Collection of all modules */
     private Modules allModules;
-    // Should the server be run?
+    /** Should the server be run? */
     private boolean run = true;
     private boolean download = false;
     private boolean help = false;
@@ -98,9 +116,8 @@ public class StartArgs
 
     private boolean exec = false;
 
-    public StartArgs(String[] commandLineArgs)
+    public StartArgs()
     {
-        commandLine.addAll(Arrays.asList(commandLineArgs));
         classpath = new Classpath();
     }
 
@@ -119,13 +136,13 @@ public class StartArgs
         System.setProperty(key,value);
     }
 
-    private void addUniqueXmlFile(String xmlRef, File xmlfile) throws IOException
+    private void addUniqueXmlFile(String xmlRef, Path xmlfile) throws IOException
     {
         if (!FS.canReadFile(xmlfile))
         {
             throw new IOException("Cannot read file: " + xmlRef);
         }
-        xmlfile = xmlfile.getCanonicalFile();
+        xmlfile = FS.toRealPath(xmlfile);
         if (!xmls.contains(xmlfile))
         {
             xmls.add(xmlfile);
@@ -143,9 +160,9 @@ public class StartArgs
             return;
         }
 
-        for (File xml : xmls)
+        for (Path xml : xmls)
         {
-            System.out.printf(" %s%n",baseHome.toShortForm(xml.getAbsolutePath()));
+            System.out.printf(" %s%n",baseHome.toShortForm(xml.toAbsolutePath()));
         }
     }
 
@@ -232,6 +249,30 @@ public class StartArgs
         }
     }
 
+    private void dumpProperty(String key)
+    {
+        Prop prop = properties.getProp(key);
+        if (prop == null)
+        {
+            System.out.printf(" %s (not defined)%n",key);
+        }
+        else
+        {
+            System.out.printf(" %s = %s%n",key,properties.expand(prop.value));
+            if (StartLog.isDebugEnabled())
+            {
+                System.out.printf("   origin: %s%n",prop.origin);
+                while (prop.overrides != null)
+                {
+                    prop = prop.overrides;
+                    System.out.printf("   (overrides)%n");
+                    System.out.printf("     %s = %s%n",key,properties.expand(prop.value));
+                    System.out.printf("     origin: %s%n",prop.origin);
+                }
+            }
+        }
+    }
+
     public void dumpSystemProperties()
     {
         System.out.println();
@@ -260,30 +301,6 @@ public class StartArgs
         System.out.printf(" %s = %s%n",key,System.getProperty(key));
     }
 
-    private void dumpProperty(String key)
-    {
-        Prop prop = properties.getProp(key);
-        if (prop == null)
-        {
-            System.out.printf(" %s (not defined)%n",key);
-        }
-        else
-        {
-            System.out.printf(" %s = %s%n",key,properties.expand(prop.value));
-            if (StartLog.isDebugEnabled())
-            {
-                System.out.printf("   origin: %s%n",prop.origin);
-                while (prop.overrides != null)
-                {
-                    prop = prop.overrides;
-                    System.out.printf("   (overrides)%n");
-                    System.out.printf("     %s = %s%n",key,properties.expand(prop.value));
-                    System.out.printf("     origin: %s%n",prop.origin);
-                }
-            }
-        }
-    }
-
     /**
      * Ensure that the System Properties are set (if defined as a System property, or start.config property, or start.ini property)
      * 
@@ -309,7 +326,7 @@ public class StartArgs
             System.setProperty(key,val);
         }
     }
-    
+
     /**
      * Expand any command line added <code>--lib</code> lib references.
      * 
@@ -348,7 +365,7 @@ public class StartArgs
                 StartLog.debug("rawlibref = " + rawlibref);
                 String libref = properties.expand(rawlibref);
                 StartLog.debug("expanded = " + libref);
-                
+
                 for (Path libpath : baseHome.getPaths(libref))
                 {
                     classpath.addComponent(libpath.toFile());
@@ -357,15 +374,15 @@ public class StartArgs
 
             for (String jvmArg : module.getJvmArgs())
             {
-                exec=true;
+                exec = true;
                 jvmArgs.add(jvmArg);
             }
-            
+
             // Find and Expand XML files
             for (String xmlRef : module.getXmls())
             {
                 // Straight Reference
-                File xmlfile = baseHome.getFile(xmlRef);
+                Path xmlfile = baseHome.getPath(xmlRef);
                 addUniqueXmlFile(xmlRef,xmlfile);
             }
 
@@ -378,6 +395,16 @@ public class StartArgs
         }
     }
 
+    public List<String> getAddToStartdIni()
+    {
+        return addToStartdIni;
+    }
+
+    public List<String> getAddToStartIni()
+    {
+        return addToStartIni;
+    }
+
     public Modules getAllModules()
     {
         return allModules;
@@ -388,19 +415,14 @@ public class StartArgs
         return classpath;
     }
 
-    public List<String> getCommandLine()
+    public Set<String> getEnabledModules()
     {
-        return this.commandLine;
+        return this.modules;
     }
 
     public List<FileArg> getFiles()
     {
         return files;
-    }
-
-    public Set<String> getEnabledModules()
-    {
-        return this.modules;
     }
 
     public List<String> getJvmArgs()
@@ -456,9 +478,9 @@ public class StartArgs
             cmd.addRawArg(prop_file.getAbsolutePath());
         }
 
-        for (File xml : xmls)
+        for (Path xml : xmls)
         {
-            cmd.addRawArg(xml.getAbsolutePath());
+            cmd.addRawArg(xml.toAbsolutePath().toString());
         }
 
         return cmd;
@@ -475,16 +497,6 @@ public class StartArgs
         return moduleGraphFilename;
     }
 
-    public List<String> getModuleStartdIni()
-    {
-        return moduleStartdIni;
-    }
-
-    public List<String> getModuleStartIni()
-    {
-        return moduleStartIni;
-    }
-
     public Props getProperties()
     {
         return properties;
@@ -495,40 +507,7 @@ public class StartArgs
         return sources.get(module);
     }
 
-    private String getValue(String arg)
-    {
-        int idx = arg.indexOf('=');
-        if (idx == (-1))
-        {
-            throw new UsageException(ERR_BAD_ARG,"Argument is missing a required value: %s",arg);
-        }
-        String value = arg.substring(idx + 1).trim();
-        if (value.length() <= 0)
-        {
-            throw new UsageException(ERR_BAD_ARG,"Argument is missing a required value: %s",arg);
-        }
-        return value;
-    }
-
-    private List<String> getValues(String arg)
-    {
-        String v = getValue(arg);
-        ArrayList<String> l = new ArrayList<>();
-        for (String s : v.split(","))
-        {
-            if (s != null)
-            {
-                s = s.trim();
-                if (s.length() > 0)
-                {
-                    l.add(s);
-                }
-            }
-        }
-        return l;
-    }
-
-    public List<File> getXmlFiles()
+    public List<Path> getXmlFiles()
     {
         return xmls;
     }
@@ -588,31 +567,6 @@ public class StartArgs
         return listModules;
     }
 
-    private void setProperty(String key, String value, String source)
-    {
-        // Special / Prevent override from start.ini's
-        if (key.equals("jetty.home"))
-        {
-            properties.setProperty("jetty.home",System.getProperty("jetty.home"),source);
-            return;
-        }
-
-        // Special / Prevent override from start.ini's
-        if (key.equals("jetty.base"))
-        {
-            properties.setProperty("jetty.base",System.getProperty("jetty.base"),source);
-            return;
-        }
-
-        // Normal
-        properties.setProperty(key,value,source);
-    }
-
-    public void setRun(boolean run)
-    {
-        this.run = run;
-    }
-
     public boolean isRun()
     {
         return run;
@@ -628,20 +582,16 @@ public class StartArgs
         return version;
     }
 
-    public void parse(BaseHome baseHome, TextFile file)
+    public void parse(ConfigSources sources)
     {
-        String source;
-        try
+        ListIterator<ConfigSource> iter = sources.reverseListIterator();
+        while (iter.hasPrevious())
         {
-            source = baseHome.toShortForm(file.getFile());
-        }
-        catch (Exception e)
-        {
-            throw new UsageException(ERR_BAD_ARG,"Bad file: %s",file);
-        }
-        for (String line : file)
-        {
-            parse(line,source);
+            ConfigSource source = iter.previous();
+            for (String arg : source.getArgs())
+            {
+                parse(arg,source.getId());
+            }
         }
     }
 
@@ -666,28 +616,25 @@ public class StartArgs
 
         if ("--help".equals(arg) || "-?".equals(arg))
         {
-            if (!CMD_LINE_SOURCE.equals(source))
-            {
-                throw new UsageException(ERR_BAD_ARG,"%s not allowed in %s",arg,source);
-            }
-
             help = true;
             run = false;
             return;
         }
 
-        if ("--debug".equals(arg))
+        if ("--debug".equals(arg) || arg.startsWith("--start-log-file"))
         {
             // valid, but handled in StartLog instead
             return;
         }
 
+        if (arg.startsWith("--extra-start-dir="))
+        {
+            // valid, but handled in ConfigSources instead
+            return;
+        }
+
         if ("--stop".equals(arg))
         {
-            if (!CMD_LINE_SOURCE.equals(source))
-            {
-                throw new UsageException(ERR_BAD_ARG,"%s not allowed in %s",arg,source);
-            }
             stopCommand = true;
             run = false;
             return;
@@ -695,7 +642,7 @@ public class StartArgs
 
         if (arg.startsWith("--download="))
         {
-            addFile(getValue(arg));
+            addFile(Props.getValue(arg));
             run = false;
             download = true;
             return;
@@ -724,15 +671,12 @@ public class StartArgs
 
         if ("--dry-run".equals(arg) || "--exec-print".equals(arg))
         {
-            if (!CMD_LINE_SOURCE.equals(source))
-            {
-                throw new UsageException(ERR_BAD_ARG,"%s not allowed in %s",arg,source);
-            }
             dryRun = true;
             run = false;
             return;
         }
 
+        // Enable forked execution of Jetty server
         if ("--exec".equals(arg))
         {
             exec = true;
@@ -740,11 +684,10 @@ public class StartArgs
         }
 
         // Arbitrary Libraries
-
         if (arg.startsWith("--lib="))
         {
-            String cp = getValue(arg);
-            
+            String cp = Props.getValue(arg);
+
             if (cp != null)
             {
                 StringTokenizer t = new StringTokenizer(cp,File.pathSeparator);
@@ -764,33 +707,28 @@ public class StartArgs
             return;
         }
 
-        if (arg.startsWith("--add-to-startd"))
+        // jetty.base build-out : add to ${jetty.base}/start.d/
+        if (arg.startsWith("--add-to-startd="))
         {
-            if (!CMD_LINE_SOURCE.equals(source))
-            {
-                throw new UsageException(ERR_BAD_ARG,"%s not allowed in %s",arg,source);
-            }
-            moduleStartdIni.addAll(getValues(arg));
+            addToStartdIni.addAll(Props.getValues(arg));
             run = false;
             download = true;
             return;
         }
 
-        if (arg.startsWith("--add-to-start"))
+        // jetty.base build-out : add to ${jetty.base}/start.ini
+        if (arg.startsWith("--add-to-start="))
         {
-            if (!CMD_LINE_SOURCE.equals(source))
-            {
-                throw new UsageException(ERR_BAD_ARG,"%s not allowed in %s",arg,source);
-            }
-            moduleStartIni.addAll(getValues(arg));
+            addToStartIni.addAll(Props.getValues(arg));
             run = false;
             download = true;
             return;
         }
 
+        // Enable a module
         if (arg.startsWith("--module="))
         {
-            for (String moduleName : getValues(arg))
+            for (String moduleName : Props.getValues(arg))
             {
                 modules.add(moduleName);
                 List<String> list = sources.get(moduleName);
@@ -804,9 +742,10 @@ public class StartArgs
             return;
         }
 
+        // Create graphviz output of module graph
         if (arg.startsWith("--write-module-graph="))
         {
-            this.moduleGraphFilename = getValue(arg);
+            this.moduleGraphFilename = Props.getValue(arg);
             run = false;
             return;
         }
@@ -850,14 +789,11 @@ public class StartArgs
             String key = arg.substring(0,idx);
             String value = arg.substring(idx + 1);
 
-            if (source != CMD_LINE_SOURCE)
+            if (propertySource.containsKey(key))
             {
-                if (propertySource.containsKey(key))
-                {
-                    throw new UsageException(ERR_BAD_ARG,"Property %s in %s already set in %s",key,source,propertySource.get(key));
-                }
-                propertySource.put(key,source);
+                StartLog.warn("Property %s in %s already set in %s",key,source,propertySource.get(key));
             }
+            propertySource.put(key,source);
 
             if ("OPTION".equals(key) || "OPTIONS".equals(key))
             {
@@ -889,26 +825,16 @@ public class StartArgs
         throw new UsageException(ERR_BAD_ARG,"Unrecognized argument: \"%s\" in %s",arg,source);
     }
 
-    public StartArgs parseCommandLine()
-    {
-        for (String line : commandLine)
-        {
-            parse(line,StartArgs.CMD_LINE_SOURCE);
-        }
-
-        return this;
-    }
-
     public void resolveExtraXmls(BaseHome baseHome) throws IOException
     {
         // Find and Expand XML files
         for (String xmlRef : xmlRefs)
         {
             // Straight Reference
-            File xmlfile = baseHome.getFile(xmlRef);
-            if (!xmlfile.exists())
+            Path xmlfile = baseHome.getPath(xmlRef);
+            if (!FS.exists(xmlfile))
             {
-                xmlfile = baseHome.getFile("etc/" + xmlRef);
+                xmlfile = baseHome.getPath("etc/" + xmlRef);
             }
             addUniqueXmlFile(xmlRef,xmlfile);
         }
@@ -919,13 +845,36 @@ public class StartArgs
         this.allModules = allModules;
     }
 
+    private void setProperty(String key, String value, String source)
+    {
+        // Special / Prevent override from start.ini's
+        if (key.equals("jetty.home"))
+        {
+            properties.setProperty("jetty.home",System.getProperty("jetty.home"),source);
+            return;
+        }
+
+        // Special / Prevent override from start.ini's
+        if (key.equals("jetty.base"))
+        {
+            properties.setProperty("jetty.base",System.getProperty("jetty.base"),source);
+            return;
+        }
+
+        // Normal
+        properties.setProperty(key,value,source);
+    }
+
+    public void setRun(boolean run)
+    {
+        this.run = run;
+    }
+
     @Override
     public String toString()
     {
         StringBuilder builder = new StringBuilder();
-        builder.append("StartArgs [commandLine=");
-        builder.append(commandLine);
-        builder.append(", enabledModules=");
+        builder.append("StartArgs [enabledModules=");
         builder.append(modules);
         builder.append(", xmlRefs=");
         builder.append(xmlRefs);
@@ -936,5 +885,4 @@ public class StartArgs
         builder.append("]");
         return builder.toString();
     }
-
 }

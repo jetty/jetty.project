@@ -29,6 +29,7 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -85,12 +86,14 @@ public class NPNModuleTest
     private static BaseHome basehome;
 
     @BeforeClass
-    public static void initBaseHome()
+    public static void initBaseHome() throws IOException
     {
         File homeDir = MavenTestingUtils.getProjectDir("../spdy-http-server/src/main/config");
         File baseDir = MavenTestingUtils.getTargetTestingDir(NPNModuleTest.class.getName());
         FS.ensureEmpty(baseDir);
-        basehome = new BaseHome(homeDir,baseDir);
+        
+        String cmdLine[] = { "jetty.home="+homeDir.getAbsolutePath(),"jetty.base="+baseDir.getAbsolutePath() };
+        basehome = new BaseHome(cmdLine);
     }
 
     /**
@@ -99,7 +102,7 @@ public class NPNModuleTest
     @Test
     public void testModuleValues() throws IOException
     {
-        File modFile = basehome.getFile("modules/protonego-impl/" + modBootFile);
+        Path modFile = basehome.getPath("modules/protonego-impl/" + modBootFile);
         Module mod = new Module(basehome,modFile);
         assertNotNull("module",mod);
         
@@ -128,7 +131,7 @@ public class NPNModuleTest
             StringBuilder err = new StringBuilder();
             err.append("XBootClasspath mismatch between [files] and [exec]");
             err.append("\nThe following are inferred from your [files] definition in ");
-            err.append(modFile.getAbsolutePath());
+            err.append(modFile.toAbsolutePath().toString());
             err.append("\nbut are not referenced in your [exec] section");
             for (String entry : expectedBootClasspath)
             {

@@ -36,7 +36,7 @@ public class PathFinderTest
     public void testFindInis() throws IOException
     {
         File homeDir = MavenTestingUtils.getTestResourceDir("hb.1/home");
-        Path homePath = homeDir.toPath();
+        Path homePath = homeDir.toPath().toAbsolutePath();
 
         PathFinder finder = new PathFinder();
         finder.setFileMatcher("glob:**/*.ini");
@@ -53,7 +53,7 @@ public class PathFinderTest
         expected.add("${jetty.home}/start.ini");
         FSTest.toOsSeparators(expected);
 
-        BaseHome hb = new BaseHome(homeDir,null);
+        BaseHome hb = new BaseHome(new String[] { "jetty.home=" + homePath.toString() });
         BaseHomeTest.assertPathList(hb,"Files found",expected,finder);
     }
 
@@ -61,6 +61,7 @@ public class PathFinderTest
     public void testFindMods() throws IOException
     {
         File homeDir = MavenTestingUtils.getTestResourceDir("usecases/home");
+        Path homePath = homeDir.toPath().toAbsolutePath();
 
         List<String> expected = new ArrayList<>();
         File modulesDir = new File(homeDir,"modules");
@@ -81,7 +82,7 @@ public class PathFinderTest
         
         Files.walkFileTree(modulesPath,EnumSet.of(FileVisitOption.FOLLOW_LINKS),1,finder);
 
-        BaseHome hb = new BaseHome(homeDir,null);
+        BaseHome hb = new BaseHome(new String[] { "jetty.home=" + homePath.toString() });
         BaseHomeTest.assertPathList(hb,"Files found",expected,finder);
     }
 }
