@@ -121,9 +121,6 @@ public abstract class AbstractEventDriver implements IncomingFrames, EventDriver
                     CloseFrame closeframe = (CloseFrame)frame;
                     CloseInfo close = new CloseInfo(closeframe,validate);
 
-                    // notify user websocket pojo
-                    onClose(close);
-
                     // process handshake
                     session.getConnection().getIOState().onCloseRemote(close);
 

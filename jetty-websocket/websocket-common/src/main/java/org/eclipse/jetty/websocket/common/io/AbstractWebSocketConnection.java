@@ -114,16 +114,22 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
 
     public class OnDisconnectCallback implements WriteCallback
     {
+        private final boolean outputOnly;
+
+        public OnDisconnectCallback(boolean outputOnly) {
+            this.outputOnly = outputOnly;
+        }
+        
         @Override
         public void writeFailed(Throwable x)
         {
-            disconnect();
+            disconnect(outputOnly);
         }
 
         @Override
         public void writeSuccess()
         {
-            disconnect();
+            disconnect(outputOnly);
         }
     }
 
@@ -379,18 +385,18 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                 {
                     // Fire out a close frame, indicating abnormal shutdown, then disconnect
                     CloseInfo abnormal = new CloseInfo(StatusCode.SHUTDOWN,"Abnormal Close - " + ioState.getCloseInfo().getReason());
-                    outgoingFrame(abnormal.asFrame(),new OnDisconnectCallback(), BatchMode.OFF);
+                    outgoingFrame(abnormal.asFrame(),new OnDisconnectCallback(false), BatchMode.OFF);
                 }
                 else
                 {
                     // Just disconnect
-                    this.disconnect();
+                    this.disconnect(false);
                 }
                 break;
             case CLOSING:
                 CloseInfo close = ioState.getCloseInfo();
-                // append close frame
-                outgoingFrame(close.asFrame(),new OnDisconnectCallback(), BatchMode.OFF);
+                // reply to close handshake from remote
+                outgoingFrame(close.asFrame(),new OnDisconnectCallback(true), BatchMode.OFF);
             default:
                 break;
         }

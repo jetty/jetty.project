@@ -342,7 +342,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
     {
         switch (state)
         {
-            case CLOSING:
+            case CLOSED:
                 // notify session listeners
                 for (SessionListener listener : sessionListeners)
                 {
@@ -355,18 +355,11 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
                         LOG.ignore(t);
                     }
                 }
-                break;
-            case CLOSED:
+                
                 IOState ioState = this.connection.getIOState();
-                // The session only cares about abnormal close, as we need to notify
-                // the endpoint of this close scenario.
-                if (ioState.wasAbnormalClose())
-                {
-                    CloseInfo close = ioState.getCloseInfo();
-                    LOG.debug("Detected abnormal close: {}", close);
-                    // notify local endpoint
-                    notifyClose(close.getStatusCode(), close.getReason());
-                }
+                CloseInfo close = ioState.getCloseInfo();
+                // confirmed close of local endpoint
+                notifyClose(close.getStatusCode(), close.getReason());
                 break;
             case OPEN:
                 // notify session listeners
