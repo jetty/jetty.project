@@ -53,7 +53,7 @@ public class ConfigurationAssert
     {
         File testResourcesDir = MavenTestingUtils.getTestResourcesDir();
         File file = MavenTestingUtils.getTestResourceFile(filename);
-        TextFile textFile = new TextFile(file);
+        TextFile textFile = new TextFile(file.toPath());
 
         // Validate XMLs (order is important)
         List<String> expectedXmls = new ArrayList<>();

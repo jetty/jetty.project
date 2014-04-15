@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.start;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 
@@ -29,14 +28,9 @@ public class StartIni extends TextFile
 {
     private Path basedir;
 
-    public StartIni(File file) throws IOException
+    public StartIni(Path file) throws IOException
     {
         super(file);
-    }
-
-    public StartIni(Path path) throws IOException
-    {
-        this(path.toFile());
     }
 
     @Override
@@ -70,7 +64,7 @@ public class StartIni extends TextFile
     @Override
     public void init()
     {
-        basedir = getFile().getParentFile().toPath().toAbsolutePath();
+        basedir = getFile().getParent().toAbsolutePath();
     }
 
     public Path getBaseDir()

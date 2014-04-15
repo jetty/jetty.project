@@ -29,19 +29,9 @@ import java.util.Locale;
 
 public class FS
 {
-    public static boolean canReadDirectory(File path)
-    {
-        return (path.exists() && path.isDirectory() && path.canRead());
-    }
-
     public static boolean canReadDirectory(Path path)
     {
         return Files.exists(path) && Files.isDirectory(path) && Files.isReadable(path);
-    }
-
-    public static boolean canReadFile(File path)
-    {
-        return (path.exists() && path.isFile() && path.canRead());
     }
 
     public static boolean canReadFile(Path path)
@@ -77,22 +67,6 @@ public class FS
         return Files.exists(ret);
     }
 
-    /**
-     * @deprecated use {@link #ensureDirectoryExists(Path)} instead
-     */
-    @Deprecated
-    public static void ensureDirectoryExists(File dir) throws IOException
-    {
-        if (dir.exists())
-        {
-            return;
-        }
-        if (!dir.mkdirs())
-        {
-            throw new IOException("Unable to create directory: " + dir.getAbsolutePath());
-        }
-    }
-    
     public static void ensureDirectoryExists(Path dir) throws IOException
     {
         if (exists(dir))
@@ -101,22 +75,6 @@ public class FS
             return;
         }
         Files.createDirectories(dir);
-    }
-
-    /**
-     * @deprecated use {@link #ensureDirectoryWritable(Path)} instead
-     */
-    @Deprecated
-    public static void ensureDirectoryWritable(File dir) throws IOException
-    {
-        if (!dir.exists())
-        {
-            throw new IOException("Directory does not exist: " + dir.getAbsolutePath());
-        }
-        if (!dir.canWrite())
-        {
-            throw new IOException("Unable to write to directory: " + dir.getAbsolutePath());
-        }
     }
 
     public static void ensureDirectoryWritable(Path dir) throws IOException
@@ -138,15 +96,6 @@ public class FS
     public static boolean exists(Path path)
     {
         return Files.exists(path);
-    }
-
-    public static boolean isFile(File file)
-    {
-        if (file == null)
-        {
-            return false;
-        }
-        return file.exists() && file.isFile();
     }
 
     public static boolean isValidDirectory(Path path)
@@ -192,11 +141,6 @@ public class FS
     public static Path toPath(String path)
     {
         return FileSystems.getDefault().getPath(FS.separators(path));
-    }
-
-    public static String toRelativePath(File baseDir, File path)
-    {
-        return baseDir.toURI().relativize(path.toURI()).toASCIIString();
     }
 
     public static void touch(Path path) throws IOException
