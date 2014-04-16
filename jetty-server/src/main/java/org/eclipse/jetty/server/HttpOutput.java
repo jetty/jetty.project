@@ -24,7 +24,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritePendingException;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.ServletRequest;
@@ -885,7 +884,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             // Can we just aggregate the remainder?
             if (!_complete && _len<BufferUtil.space(_aggregate) && _len<_commitSize)
             {
+                int position = BufferUtil.flipToFill(_aggregate);
                 BufferUtil.put(_buffer,_aggregate);
+                BufferUtil.flipToFlush(_aggregate, position);
                 return Action.SUCCEEDED;
             }
             
