@@ -829,7 +829,7 @@
       </activation>
       <properties>
         <npn.version>1.1.6.v20130911</npn.version>
-        <alpn.version>7.0.0</alpn.version>
+        <alpn.version>7.0.0.v20140317</alpn.version>
       </properties>
     </profile>
     <profile>
@@ -842,7 +842,7 @@
       </activation>
       <properties>
         <npn.version>1.1.6.v20130911</npn.version>
-        <alpn.version>7.0.0</alpn.version>
+        <alpn.version>7.0.0.v20140317</alpn.version>
       </properties>
     </profile>
     <profile>
@@ -855,19 +855,7 @@
       </activation>
       <properties>
         <npn.version>1.1.6.v20130911</npn.version>
-        <alpn.version>7.0.0</alpn.version>
-      </properties>
-    </profile>
-    <profile>
-      <id>8u00</id>
-      <activation>
-        <property>
-          <name>java.version</name>
-          <value>1.8.0</value>
-        </property>
-      </activation>
-      <properties>
-        <alpn.version>8.0.0</alpn.version>
+        <alpn.version>7.0.0.v20140317</alpn.version>
       </properties>
     </profile>
     <profile>
@@ -880,6 +868,31 @@
       </activation>
       <properties>
         <npn.version>1.1.7.v20140316</npn.version>
+        <alpn.version>7.0.0.v20140317</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>8u00</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.0.0.v20140317</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>8u05</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_05</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.0.0.v20140317</alpn.version>
       </properties>
     </profile>
   </profiles>
