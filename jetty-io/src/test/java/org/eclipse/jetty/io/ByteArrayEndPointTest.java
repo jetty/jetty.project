@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.io;
 
+import static org.hamcrest.Matchers.*;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
@@ -36,6 +37,8 @@ import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.junit.After;
@@ -235,6 +238,26 @@ public class ByteArrayEndPointTest
         assertEquals(null, fcb.get());
         assertEquals(" more.", endp.getOutputString());
     }
+    
+    /**
+     * Simulate AbstractConnection.ReadCallback.failed()
+     */
+    public static class Closer extends FutureCallback
+    {
+        private EndPoint endp;
+
+        public Closer(EndPoint endp)
+        {
+            this.endp = endp;
+        }
+
+        @Override
+        public void failed(Throwable cause)
+        {
+            endp.close();
+            super.failed(cause);
+        }
+    }
 
     @Slow
     @Test
@@ -275,7 +298,7 @@ public class ByteArrayEndPointTest
             assertThat(t.getCause(), instanceOf(TimeoutException.class));
         }
         assertThat(System.currentTimeMillis() - start, greaterThan(idleTimeout / 2));
-        assertTrue(endp.isOpen());
+        assertThat("Endpoint open", endp.isOpen(), is(true));
 
         // We need to delay the write timeout test below from the read timeout test above.
         // The reason is that the scheduler thread that fails the endPoint WriteFlusher
@@ -298,17 +321,19 @@ public class ByteArrayEndPointTest
             assertThat(t.getCause(), instanceOf(TimeoutException.class));
         }
         assertThat(System.currentTimeMillis() - start, greaterThan(idleTimeout / 2));
-        assertTrue(endp.isOpen());
+        assertThat("Endpoint open", endp.isOpen(), is(true));
 
-        // Still no idle close
-        Thread.sleep(idleTimeout * 2);
-        assertTrue(endp.isOpen());
+        endp.fillInterested(new Closer(endp));
+        
+        // Still no idle close (wait half the time)
+        Thread.sleep(idleTimeout / 2);
+        assertThat("Endpoint open", endp.isOpen(), is(true));
 
         // shutdown out
         endp.shutdownOutput();
 
-        // idle close
+        // idle close (wait double the time)
         Thread.sleep(idleTimeout * 2);
-        assertFalse(endp.isOpen());
+        assertThat("Endpoint open", endp.isOpen(), is(false));
     }
 }
