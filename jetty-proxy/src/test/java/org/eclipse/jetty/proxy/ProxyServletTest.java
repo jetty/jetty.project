@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.proxy;
 
-import static java.nio.file.StandardOpenOption.CREATE;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,6 +28,7 @@ import java.net.HttpCookie;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,7 +38,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.zip.GZIPOutputStream;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -94,6 +92,11 @@ public class ProxyServletTest
 
     private void prepareProxy(ProxyServlet proxyServlet) throws Exception
     {
+        prepareProxy(proxyServlet, new HashMap<String, String>());
+    }
+
+    private void prepareProxy(ProxyServlet proxyServlet, Map<String, String> initParams) throws Exception
+    {
         proxy = new Server();
         proxyConnector = new ServerConnector(proxy);
         proxy.addConnector(proxyConnector);
@@ -101,6 +104,7 @@ public class ProxyServletTest
         ServletContextHandler proxyCtx = new ServletContextHandler(proxy, "/", true, false);
         this.proxyServlet = proxyServlet;
         ServletHolder proxyServletHolder = new ServletHolder(proxyServlet);
+        proxyServletHolder.setInitParameters(initParams);
         proxyCtx.addServlet(proxyServletHolder, "/*");
 
         proxy.start();
@@ -379,7 +383,7 @@ public class ProxyServletTest
         final Path temp = Files.createTempFile(targetTestsDir, "test_", null);
         byte[] kb = new byte[1024];
         new Random().nextBytes(kb);
-        try (OutputStream output = Files.newOutputStream(temp, CREATE))
+        try (OutputStream output = Files.newOutputStream(temp, StandardOpenOption.CREATE))
         {
             for (int i = 0; i < length; ++i)
                 output.write(kb);
@@ -729,6 +733,36 @@ public class ProxyServletTest
         // Make the request to the proxy, it should transparently forward to the server
         ContentResponse response = client.newRequest("localhost", proxyConnector.getLocalPort())
                 .path(prefix + target + "?" + query)
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertTrue(response.getHeaders().containsKey(PROXIED_HEADER));
+    }
+
+    @Test
+    public void testTransparentProxyWithoutPrefix() throws Exception
+    {
+        final String target = "/test";
+        prepareServer(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                if (req.getHeader("Via") != null)
+                    resp.addHeader(PROXIED_HEADER, "true");
+                resp.setStatus(target.equals(req.getRequestURI()) ? 200 : 404);
+            }
+        });
+
+        final String proxyTo = "http://localhost:" + serverConnector.getLocalPort();
+        ProxyServlet.Transparent proxyServlet = new ProxyServlet.Transparent();
+        Map<String, String> initParams = new HashMap<>();
+        initParams.put("proxyTo", proxyTo);
+        prepareProxy(proxyServlet, initParams);
+
+        // Make the request to the proxy, it should transparently forward to the server
+        ContentResponse response = client.newRequest("localhost", proxyConnector.getLocalPort())
+                .path(target)
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
         Assert.assertEquals(200, response.getStatus());
