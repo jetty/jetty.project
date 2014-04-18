@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
-    <version>9.1.4-SNAPSHOT</version>
+    <version>9.2.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
@@ -14,50 +14,18 @@
     <bundle-symbolic-name>${project.groupId}.boot.test.spdy</bundle-symbolic-name>
     <jetty-orbit-url>http://download.eclipse.org/jetty/orbit/</jetty-orbit-url>
     <assembly-directory>target/distribution</assembly-directory>
-    <exam.version>2.6.0</exam.version>
-    <url.version>1.4.0</url.version>
-    <paxswissbox.version>1.5.1</paxswissbox.version>
-    <felixversion>4.0.3</felixversion>
+    <exam.version>3.4.0</exam.version>
+    <url.version>1.5.2</url.version>
     <injection.bundle.version>1.0</injection.bundle.version>
-    <runner.version>1.7.6</runner.version>
+    <runner.version>1.8.5</runner.version>
   </properties>
   <dependencies>
     <!-- Pax Exam Dependencies -->
-    <!-- OPS4J Swissbox Dependencies -->
-    <dependency>
-      <groupId>org.ops4j.pax.swissbox</groupId>
-      <artifactId>pax-swissbox-core</artifactId>
-      <version>${paxswissbox.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.ops4j.pax.swissbox</groupId>
-      <artifactId>pax-swissbox-extender</artifactId>
-      <version>${paxswissbox.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.ops4j.pax.swissbox</groupId>
-      <artifactId>pax-swissbox-lifecycle</artifactId>
-      <version>${paxswissbox.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.ops4j.pax.swissbox</groupId>
-      <artifactId>pax-swissbox-framework</artifactId>
-      <version>${paxswissbox.version}</version>
-      <scope>test</scope>
-    </dependency>
+
     <dependency>
       <groupId>org.ops4j.pax.exam</groupId>
       <artifactId>pax-exam</artifactId>
       <version>${exam.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.geronimo.specs</groupId>
-      <artifactId>geronimo-atinject_1.0_spec</artifactId>
-      <version>${injection.bundle.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -66,50 +34,16 @@
       <version>${exam.version}</version>
       <scope>test</scope>
     </dependency>
-    <dependency>
-     <groupId>org.apache.aries.spifly</groupId>
-      <artifactId>org.apache.aries.spifly.dynamic.bundle</artifactId>
-      <version>1.0.0</version>
-     <scope>test</scope>
-    </dependency>
     
 
-    <!-- Don't use the native container for now. Observed limitations:
-    - single test with a single configuration
-    - does not read the versions of the dependencies from the pom.xml
-    and hence hardcode the bundles versions in the source code instead
-    - no support for most configuration options for the OSGi container. -->
-    <!--dependency>
-      <groupId>org.ops4j.pax.exam</groupId>
-      <artifactId>pax-exam-container-native</artifactId>
-      <version>${exam.version}</version>
-      <scope>test</scope>
-    </dependency-->
-
-    <!-- container is not bad but not enough config parameters yet
-    can't pass the VMOption for npn-boot
+    <!-- use the forked container so we can pass it system properties eg for npn/alpn -->
     <dependency>
         <groupId>org.ops4j.pax.exam</groupId>
         <artifactId>pax-exam-container-forked</artifactId>
         <version>${exam.version}</version>
         <scope>test</scope>
     </dependency>
-    -->
-
-    <dependency>
-        <groupId>org.ops4j.pax.exam</groupId>
-        <artifactId>pax-exam-container-paxrunner</artifactId>
-        <version>${exam.version}</version>
-        <scope>test</scope>
-    </dependency>
-
-    <dependency>
-        <groupId>org.ops4j.pax.runner</groupId>
-        <artifactId>pax-runner-no-jcl</artifactId>
-        <version>${runner.version}</version>
-        <scope>test</scope>
-    </dependency>
-
+ 
     <dependency>
       <groupId>org.ops4j.pax.exam</groupId>
       <artifactId>pax-exam-junit4</artifactId>
@@ -134,28 +68,81 @@
       <version>${url.version}</version>
       <scope>test</scope>
     </dependency>
+
     <!-- OSGi R4 frameworks -->
+<!--
     <dependency>
       <groupId>org.apache.felix</groupId>
       <artifactId>org.apache.felix.framework</artifactId>
-      <version>${felixversion}</version>
+      <version>4.4.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
-        <groupId>org.ops4j.pax.exam</groupId>
-        <artifactId>pax-exam-testforge</artifactId>
-        <version>${exam.version}</version>
-        <scope>test</scope>
-    </dependency>
-    <!-- For sane logging -->
-<!--
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-log4j12</artifactId>
-      <version>1.6.1</version>
+      <groupId>org.osgi</groupId>
+      <artifactId>org.osgi.enterprise</artifactId>
+      <version>5.0.0</version>
       <scope>test</scope>
     </dependency>
 -->
+    <dependency>
+      <groupId>org.eclipse</groupId>
+      <artifactId>osgi</artifactId>
+      <version>3.9.1-v20140110-1610</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+        <groupId>org.eclipse.osgi</groupId>
+        <artifactId>org.eclipse.osgi.services</artifactId>
+        <scope>test</scope>
+    </dependency>
+
+
+    <!-- Jetty OSGi Deps -->
+    <dependency>
+      <groupId>org.eclipse.jetty.osgi</groupId>
+      <artifactId>jetty-osgi-boot</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>org.eclipse.osgi</groupId>
+          <artifactId>org.eclipse.osgi</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.eclipse.osgi</groupId>
+          <artifactId>org.eclipse.osgi.services</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.osgi</groupId>
+      <artifactId>jetty-osgi-boot-jsp</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>org.eclipse.osgi</groupId>
+          <artifactId>org.eclipse.osgi</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.eclipse.osgi</groupId>
+          <artifactId>org.eclipse.osgi.services</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-jsp-fragment</artifactId>
+      <version>2.3.3</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.osgi</groupId>
+      <artifactId>jetty-httpservice</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+
     <dependency>
       <groupId>javax.servlet</groupId>
       <artifactId>javax.servlet-api</artifactId>
@@ -167,36 +154,55 @@
       <version>1.1.1</version>
       <scope>test</scope>
     </dependency>
-    <!-- OSGi Deps -->
+
     <dependency>
-      <groupId>org.eclipse.jetty.osgi</groupId>
-      <artifactId>jetty-osgi-boot</artifactId>
-      <version>${project.version}</version>
-      <scope>provided</scope>
+      <groupId>org.apache.geronimo.specs</groupId>
+      <artifactId>geronimo-atinject_1.0_spec</artifactId>
+      <version>${injection.bundle.version}</version>
+      <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.osgi</groupId>
-      <artifactId>jetty-osgi-boot-jsp</artifactId>
-      <version>${project.version}</version>
-      <scope>provided</scope>
+     <groupId>org.apache.aries.spifly</groupId>
+      <artifactId>org.apache.aries.spifly.dynamic.bundle</artifactId>
+      <version>1.0.0</version>
+     <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-jsp-fragment</artifactId>
-      <version>2.3.3</version>
-      <scope>provided</scope>
+        <groupId>org.ow2.asm</groupId>
+        <artifactId>asm</artifactId>
+        <version>4.1</version>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.osgi</groupId>
-      <artifactId>jetty-httpservice</artifactId>
-      <version>${project.version}</version>
-      <scope>provided</scope>
+        <groupId>org.ow2.asm</groupId>
+        <artifactId>asm-commons</artifactId>
+        <version>4.1</version>
     </dependency>
+    <dependency>
+        <groupId>org.ow2.asm</groupId>
+        <artifactId>asm-tree</artifactId>
+        <version>4.1</version>
+    </dependency>
+
+
     <!-- Jetty Deps -->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-annotations</artifactId>
       <scope>runtime</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>org.ow2.asm</groupId>
+          <artifactId>asm</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.ow2.asm</groupId>
+          <artifactId>asm-commons</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.ow2.asm</groupId>
+          <artifactId>asm-tree</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -324,14 +330,20 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.mortbay.jetty.npn</groupId>
-      <artifactId>npn-boot</artifactId>
-      <version>${npn.version}</version>
+      <groupId>org.mortbay.jetty.alpn</groupId>
+      <artifactId>alpn-boot</artifactId>
+      <version>${alpn.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.osgi</groupId>
-      <artifactId>jetty-osgi-npn</artifactId>
+      <artifactId>jetty-osgi-alpn</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-alpn-server</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
@@ -348,7 +360,9 @@
       <version>${project.version}</version>
       <scope>runtime</scope>
     </dependency>
+
     <!-- Eclipse OSGi Deps -->
+<!--
     <dependency>
       <groupId>org.eclipse.osgi</groupId>
       <artifactId>org.eclipse.osgi</artifactId>
@@ -360,7 +374,6 @@
       <scope>runtime</scope>
       <exclusions>
         <exclusion>
-          <!-- we use the servlet jar from orbit -->
           <groupId>javax.servlet</groupId>
           <artifactId>servlet-api</artifactId>
         </exclusion>
@@ -371,6 +384,9 @@
       <artifactId>servlet</artifactId>
       <scope>runtime</scope>
     </dependency>
+
+-->
+
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>test-jetty-webapp</artifactId>
@@ -402,9 +418,8 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <!-- No point defining -Xbootclasspath as the actual OSGi VM is run as a forked process by pax-exam -->
-          <!--argLine>-Xbootclasspath/p:${settings.localRepository}/org/mortbay/jetty/npn/npn-boot/${npn.version}/npn-boot-${npn.version}.jar</argLine-->
-          <!-- But we do pass the sys property of the npn-boot jar -->
-          <argLine>-Dmortbay-npn-boot=${settings.localRepository}/org/mortbay/jetty/npn/npn-boot/${npn.version}/npn-boot-${npn.version}.jar</argLine>
+          <!-- But we do pass the sys property of the alpn-boot jar so that it can be configued inside tests -->
+          <argLine>-Dmortbay-alpn-boot=${settings.localRepository}/org/mortbay/jetty/alpn/alpn-boot/${alpn.version}/alpn-boot-${alpn.version}.jar</argLine>
         </configuration>
       </plugin>
       <plugin>

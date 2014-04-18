@@ -19,10 +19,11 @@
 package org.eclipse.jetty.start;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.text.CollationKey;
 import java.text.Collator;
 import java.util.ArrayList;
@@ -75,7 +76,7 @@ public class Module
     }
 
     /** The file of the module */
-    private File file;
+    private Path file;
     /** The name of this Module (as a filesystem reference) */
     private String fileRef;
     /**
@@ -100,18 +101,20 @@ public class Module
     private List<String> libs;
     /** List of files for this Module */
     private List<String> files;
+    /** List of jvm Args */
+    private List<String> jvmArgs;
 
     /** Is this Module enabled via start.jar command line, start.ini, or start.d/*.ini ? */
     private boolean enabled = false;
     /** List of sources that enabled this module */
     private final Set<String> sources = new HashSet<>();
 
-    public Module(BaseHome basehome, File file) throws FileNotFoundException, IOException
+    public Module(BaseHome basehome, Path file) throws FileNotFoundException, IOException
     {
         this.file = file;
 
         // Strip .mod
-        this.fileRef = Pattern.compile(".mod$",Pattern.CASE_INSENSITIVE).matcher(file.getName()).replaceFirst("");
+        this.fileRef = Pattern.compile(".mod$",Pattern.CASE_INSENSITIVE).matcher(file.getFileName().toString()).replaceFirst("");
         this.logicalName = fileRef;
 
         init(basehome);
@@ -250,6 +253,11 @@ public class Module
         return xmls;
     }
 
+    public List<String> getJvmArgs()
+    {
+        return jvmArgs;
+    }
+
     @Override
     public int hashCode()
     {
@@ -261,6 +269,16 @@ public class Module
 
     private void init(BaseHome basehome)
     {
+        parentNames = new HashSet<>();
+        optionalParentNames = new HashSet<>();
+        parentEdges = new HashSet<>();
+        childEdges = new HashSet<>();
+        xmls = new ArrayList<>();
+        initialise = new ArrayList<>();
+        libs = new ArrayList<>();
+        files = new ArrayList<>();
+        jvmArgs = new ArrayList<>();
+
         String name = basehome.toShortForm(file);
 
         // Find module system name (usually in the form of a filesystem reference)
@@ -272,15 +290,6 @@ public class Module
         }
         this.fileRef = mat.group(1).replace('\\','/');
         this.logicalName = this.fileRef;
-
-        parentNames = new HashSet<>();
-        optionalParentNames = new HashSet<>();
-        parentEdges = new HashSet<>();
-        childEdges = new HashSet<>();
-        xmls = new ArrayList<>();
-        initialise = new ArrayList<>();
-        libs = new ArrayList<>();
-        files = new ArrayList<>();
     }
 
     public boolean isEnabled()
@@ -298,63 +307,63 @@ public class Module
             return;
         }
 
-        try (FileReader reader = new FileReader(file))
+        try (BufferedReader buf = Files.newBufferedReader(file,StandardCharsets.UTF_8))
         {
-            try (BufferedReader buf = new BufferedReader(reader))
+            String sectionType = "";
+            String line;
+            while ((line = buf.readLine()) != null)
             {
-                String sectionType = "";
-                String line;
-                while ((line = buf.readLine()) != null)
+                line = line.trim();
+
+                Matcher sectionMatcher = section.matcher(line);
+
+                if (sectionMatcher.matches())
                 {
-                    line = line.trim();
-
-                    Matcher sectionMatcher = section.matcher(line);
-
-                    if (sectionMatcher.matches())
+                    sectionType = sectionMatcher.group(1).trim().toUpperCase(Locale.ENGLISH);
+                }
+                else
+                {
+                    // blank lines and comments are valid for ini-template section
+                    if ((line.length() == 0) || line.startsWith("#"))
                     {
-                        sectionType = sectionMatcher.group(1).trim().toUpperCase(Locale.ENGLISH);
+                        if ("INI-TEMPLATE".equals(sectionType))
+                        {
+                            initialise.add(line);
+                        }
                     }
                     else
                     {
-                        // blank lines and comments are valid for ini-template section
-                        if ((line.length() == 0) || line.startsWith("#"))
+                        switch (sectionType)
                         {
-                            if ("INI-TEMPLATE".equals(sectionType))
-                            {
+                            case "":
+                                // ignore (this would be entries before first section)
+                                break;
+                            case "DEPEND":
+                                parentNames.add(line);
+                                break;
+                            case "FILES":
+                                files.add(line);
+                                break;
+                            case "INI-TEMPLATE":
                                 initialise.add(line);
-                            }
-                        }
-                        else
-                        {
-                            switch (sectionType)
-                            {
-                                case "":
-                                    // ignore (this would be entries before first section)
-                                    break;
-                                case "NAME":
-                                    logicalName = line;
-                                    break;
-                                case "DEPEND":
-                                    parentNames.add(line);
-                                    break;
-                                case "LIB":
-                                    libs.add(line);
-                                    break;
-                                case "XML":
-                                    xmls.add(line);
-                                    break;
-                                case "OPTIONAL":
-                                    optionalParentNames.add(line);
-                                    break;
-                                case "FILES":
-                                    files.add(line);
-                                    break;
-                                case "INI-TEMPLATE":
-                                    initialise.add(line);
-                                    break;
-                                default:
-                                    throw new IOException("Unrecognized Module section: [" + sectionType + "]");
-                            }
+                                break;
+                            case "LIB":
+                                libs.add(line);
+                                break;
+                            case "NAME":
+                                logicalName = line;
+                                break;
+                            case "OPTIONAL":
+                                optionalParentNames.add(line);
+                                break;
+                            case "EXEC":
+                                jvmArgs.add(line);
+                                break;
+                            case "XML":
+                                xmls.add(line);
+                                break;
+                            default:
+                                throw new IOException("Unrecognized Module section: [" + sectionType + "]");
                         }
                     }
                 }

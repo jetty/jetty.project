@@ -104,6 +104,7 @@ public class HttpParser
         SPACE2,
         REQUEST_VERSION,
         REASON,
+        PROXY,
         HEADER,
         HEADER_IN_NAME,
         HEADER_VALUE,
@@ -403,7 +404,7 @@ public class HttpParser
      * otherwise skip white space until something else to parse.
      */
     private boolean quickStart(ByteBuffer buffer)
-    {
+    {    	
         if (_requestHandler!=null)
         {
             _method = HttpMethod.lookAheadGet(buffer);
@@ -411,6 +412,7 @@ public class HttpParser
             {
                 _methodString = _method.asString();
                 buffer.position(buffer.position()+_methodString.length()+1);
+                
                 setState(State.SPACE1);
                 return false;
             }
@@ -655,7 +657,29 @@ public class HttpParser
                                 version=HttpVersion.lookAheadGet(buffer.array(),buffer.arrayOffset()+buffer.position()-1,buffer.arrayOffset()+buffer.limit());
                             else
                                 version=HttpVersion.CACHE.getBest(buffer,0,buffer.remaining());
-                            if (version!=null) 
+                            if (version==null)
+                            {
+                                if (_method==HttpMethod.PROXY)
+                                {
+                                    if (!(_requestHandler instanceof ProxyHandler))
+                                        throw new BadMessage();
+                                    
+                                    _uri.flip();
+                                    String protocol=BufferUtil.toString(_uri);
+                                    // This is the proxy protocol, so we can assume entire first line is in buffer else 400
+                                    buffer.position(buffer.position()-1);
+                                    String sAddr = getProxyField(buffer);
+                                    String dAddr = getProxyField(buffer);
+                                    int sPort = BufferUtil.takeInt(buffer);
+                                    next(buffer);
+                                    int dPort = BufferUtil.takeInt(buffer);
+                                    next(buffer);
+                                    _state=State.START;
+                                    ((ProxyHandler)_requestHandler).proxied(protocol,sAddr,dAddr,sPort,dPort);
+                                    return false;
+                                }
+                            }
+                            else
                             {
                                 int pos = buffer.position()+version.asString().length()-1;
                                 if (pos<buffer.limit())
@@ -715,8 +739,7 @@ public class HttpParser
                         if (_connectionFields==null && _version.getVersion()>=HttpVersion.HTTP_1_1.getVersion())
                         {
                             int header_cache = _handler.getHeaderCacheSize();
-                            if (header_cache>0)
-                                _connectionFields=new ArrayTernaryTrie<>(header_cache);
+                            _connectionFields=new ArrayTernaryTrie<>(header_cache);                            
                         }
 
                         setState(State.HEADER);
@@ -1334,24 +1357,36 @@ public class HttpParser
 
     protected boolean parseContent(ByteBuffer buffer)
     {
+        int remaining=buffer.remaining();
+        if (remaining==0 && _state==State.CONTENT)
+        {
+            long content=_contentLength - _contentPosition;
+            if (content == 0)
+            {
+                setState(State.END);
+                if (_handler.messageComplete())
+                    return true;
+            }
+        }
+        
         // Handle _content
         byte ch;
-        while (_state.ordinal() < State.END.ordinal() && buffer.hasRemaining())
+        while (_state.ordinal() < State.END.ordinal() && remaining>0)
         {
             switch (_state)
             {
                 case EOF_CONTENT:
                     _contentChunk=buffer.asReadOnlyBuffer();
-                    _contentPosition += _contentChunk.remaining();
-                    buffer.position(buffer.position()+_contentChunk.remaining());
+                    _contentPosition += remaining;
+                    buffer.position(buffer.position()+remaining);
                     if (_handler.content(_contentChunk))
                         return true;
                     break;
 
                 case CONTENT:
                 {
-                    long remaining=_contentLength - _contentPosition;
-                    if (remaining == 0)
+                    long content=_contentLength - _contentPosition;
+                    if (content == 0)
                     {
                         setState(State.END);
                         if (_handler.messageComplete())
@@ -1362,25 +1397,25 @@ public class HttpParser
                         _contentChunk=buffer.asReadOnlyBuffer();
 
                         // limit content by expected size
-                        if (_contentChunk.remaining() > remaining)
+                        if (remaining > content)
                         {
                             // We can cast remaining to an int as we know that it is smaller than
                             // or equal to length which is already an int.
-                            _contentChunk.limit(_contentChunk.position()+(int)remaining);
+                            _contentChunk.limit(_contentChunk.position()+(int)content);
                         }
 
                         _contentPosition += _contentChunk.remaining();
                         buffer.position(buffer.position()+_contentChunk.remaining());
 
-                        boolean handle=_handler.content(_contentChunk);
+                        if (_handler.content(_contentChunk))
+                            return true;
+
                         if(_contentPosition == _contentLength)
                         {
                             setState(State.END);
                             if (_handler.messageComplete())
                                 return true;
                         }
-                        if (handle)
-                            return true;
                     }
                     break;
                 }
@@ -1440,8 +1475,8 @@ public class HttpParser
 
                 case CHUNK:
                 {
-                    int remaining=_chunkLength - _chunkPosition;
-                    if (remaining == 0)
+                    int chunk=_chunkLength - _chunkPosition;
+                    if (chunk == 0)
                     {
                         setState(State.CHUNKED_CONTENT);
                     }
@@ -1449,13 +1484,13 @@ public class HttpParser
                     {
                         _contentChunk=buffer.asReadOnlyBuffer();
 
-                        if (_contentChunk.remaining() > remaining)
-                            _contentChunk.limit(_contentChunk.position()+remaining);
-                        remaining=_contentChunk.remaining();
+                        if (remaining > chunk)
+                            _contentChunk.limit(_contentChunk.position()+chunk);
+                        chunk=_contentChunk.remaining();
 
-                        _contentPosition += remaining;
-                        _chunkPosition += remaining;
-                        buffer.position(buffer.position()+remaining);
+                        _contentPosition += chunk;
+                        _chunkPosition += chunk;
+                        buffer.position(buffer.position()+chunk);
                         if (_handler.content(_contentChunk))
                             return true;
                     }
@@ -1470,7 +1505,10 @@ public class HttpParser
 
                 default: 
                     break;
+                    
             }
+            
+            remaining=buffer.remaining();
         }
         return false;
     }
@@ -1586,6 +1624,11 @@ public class HttpParser
         public int getHeaderCacheSize();
     }
 
+    public interface ProxyHandler 
+    {
+        void proxied(String protocol, String sAddr, String dAddr, int sPort, int dPort);
+    }
+    
     public interface RequestHandler<T> extends HttpHandler<T>
     {
         /**
@@ -1617,5 +1660,21 @@ public class HttpParser
     public Trie<HttpField> getFieldCache()
     {
         return _connectionFields;
+    }
+
+    private String getProxyField(ByteBuffer buffer)
+    {
+        _string.setLength(0);
+        _length=0;
+        
+        while (buffer.hasRemaining())
+        {
+            // process each character
+            byte ch=next(buffer);
+            if (ch<=' ')
+                return _string.toString();
+            _string.append((char)ch);    
+        }
+        throw new BadMessage();
     }
 }

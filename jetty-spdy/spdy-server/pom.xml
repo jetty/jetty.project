@@ -3,7 +3,7 @@
     <parent>
         <groupId>org.eclipse.jetty.spdy</groupId>
         <artifactId>spdy-parent</artifactId>
-        <version>9.1.4-SNAPSHOT</version>
+        <version>9.2.0-SNAPSHOT</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -29,7 +29,7 @@
                         <configuration>
                             <instructions>
                                 <Export-Package>org.eclipse.jetty.spdy.server;version="9.1"</Export-Package>
-                                <Import-Package>org.eclipse.jetty.npn,org.eclipse.jetty.*;version="[9.0,10.0)",*</Import-Package>
+                                <Import-Package>org.eclipse.jetty.alpn;resolution:=optional,org.eclipse.jetty.alpn.server;resolution:=optional, org.eclipse.jetty.npn;resolution:=optional,org.eclipse.jetty.*;version="[9.0,10.0)",*</Import-Package>
                                 <_nouses>true</_nouses>
                             </instructions>
                           </configuration>
@@ -59,6 +59,12 @@
             <groupId>org.eclipse.jetty.npn</groupId>
             <artifactId>npn-api</artifactId>
             <version>${npn.api.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty.alpn</groupId>
+            <artifactId>alpn-api</artifactId>
+            <version>${alpn.api.version}</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

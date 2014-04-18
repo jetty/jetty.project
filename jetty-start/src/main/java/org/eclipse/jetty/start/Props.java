@@ -18,10 +18,14 @@
 
 package org.eclipse.jetty.start;
 
+import static org.eclipse.jetty.start.UsageException.*;
+
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Stack;
@@ -60,8 +64,91 @@ public final class Props implements Iterable<Prop>
     }
 
     public static final String ORIGIN_SYSPROP = "<system-property>";
+    
+    public static String getValue(String arg)
+    {
+        int idx = arg.indexOf('=');
+        if (idx == (-1))
+        {
+            throw new UsageException(ERR_BAD_ARG,"Argument is missing a required value: %s",arg);
+        }
+        String value = arg.substring(idx + 1).trim();
+        if (value.length() <= 0)
+        {
+            throw new UsageException(ERR_BAD_ARG,"Argument is missing a required value: %s",arg);
+        }
+        return value;
+    }
+
+    public static List<String> getValues(String arg)
+    {
+        String v = getValue(arg);
+        ArrayList<String> l = new ArrayList<>();
+        for (String s : v.split(","))
+        {
+            if (s != null)
+            {
+                s = s.trim();
+                if (s.length() > 0)
+                {
+                    l.add(s);
+                }
+            }
+        }
+        return l;
+    }
 
     private Map<String, Prop> props = new HashMap<>();
+    private List<String> sysPropTracking = new ArrayList<>();
+
+    public void addAll(Props other)
+    {
+        this.props.putAll(other.props);
+        this.sysPropTracking.addAll(other.sysPropTracking);
+    }
+    
+    /**
+     * Add a potential argument as a property.
+     * <p>
+     * If arg is not a property, ignore it.
+     * @param arg the argument to parse for a potential property
+     * @param source the source for this argument (to track origin of property from)
+     */
+    public void addPossibleProperty(String arg, String source)
+    {
+        // Start property (syntax similar to System property)
+        if (arg.startsWith("-D"))
+        {
+            String[] assign = arg.substring(2).split("=",2);
+            switch (assign.length)
+            {
+                case 2:
+                    setSystemProperty(assign[0],assign[1]);
+                    setProperty(assign[0],assign[1],source);
+                    break;
+                case 1:
+                    setSystemProperty(assign[0],"");
+                    setProperty(assign[0],"",source);
+                    break;
+                default:
+                    break;
+            }
+            return;
+        }
+
+        // Is this a raw property declaration?
+        int idx = arg.indexOf('=');
+        if (idx >= 0)
+        {
+            String key = arg.substring(0,idx);
+            String value = arg.substring(idx + 1);
+
+            setProperty(key,value,source);
+            return;
+        }
+
+        // All other strings are ignored
+    }
 
     public String cleanReference(String property)
     {
@@ -93,13 +180,6 @@ public final class Props implements Iterable<Prop>
         if (str.indexOf("${") < 0)
         {
             // Contains no potential expressions.
-            return str;
-        }
-
-        if (props.isEmpty())
-        {
-            // nothing to expand
-            // this situation can occur from --add-to-startd on a new blank base directory
             return str;
         }
 
@@ -138,7 +218,7 @@ public final class Props implements Iterable<Prop>
             if (value == null)
             {
                 StartLog.debug("Unable to expand: %s",property);
-                expanded.append(property);
+                expanded.append(mat.group(1));
             }
             else
             {
@@ -164,8 +244,13 @@ public final class Props implements Iterable<Prop>
 
     public Prop getProp(String key)
     {
+        return getProp(key,true);
+    }
+
+    public Prop getProp(String key, boolean searchSystemProps)
+    {
         Prop prop = props.get(key);
-        if (prop == null)
+        if ((prop == null) && searchSystemProps)
         {
             // try system property
             prop = getSystemProperty(key);
@@ -221,6 +306,11 @@ public final class Props implements Iterable<Prop>
         return props.values().iterator();
     }
 
+    public void reset()
+    {
+        props.clear();
+    }
+
     public void setProperty(Prop prop)
     {
         props.put(prop.key,prop);
@@ -255,5 +345,11 @@ public final class Props implements Iterable<Prop>
         }
         // write normal properties file
         props.store(stream,comments);
+    }
+
+    public void setSystemProperty(String key, String value)
+    {
+        System.setProperty(key,value);
+        sysPropTracking.add(key);
     }
 }

@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.1.4-SNAPSHOT</version>
+    <version>9.2.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-annotations</artifactId>
@@ -43,8 +43,8 @@
             </goals>
             <configuration>
               <instructions>
-                <Import-Package>javax.servlet.*;version="[2.6.0,3.2)",*</Import-Package>
-                <Require-Capability>osgi.serviceloader; filter:="(osgi.serviceloader=javax.servlet.ServletContainerInitializer)";cardinality:=multiple, osgi.extender; filter:="(osgi.extender=osgi.serviceloader.processor)"</Require-Capability>
+                <Import-Package>javax.servlet.*;version="[2.6.0,3.2)",org.objectweb.asm.*;version=4,*</Import-Package>
+                <Require-Capability>osgi.serviceloader; filter:="(osgi.serviceloader=javax.servlet.ServletContainerInitializer)";resolution:=optional;cardinality:=multiple, osgi.extender; filter:="(osgi.extender=osgi.serviceloader.processor)"</Require-Capability>
               </instructions>
             </configuration>
           </execution>

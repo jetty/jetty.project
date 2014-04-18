@@ -88,21 +88,36 @@ public class ServerGenerator extends Generator
         return generateContent(request, buffer, true, false, callback, FCGI.FrameType.STDOUT);
     }
 
-    public Result generateResponseContent(int request, ByteBuffer content, boolean lastContent, Callback callback)
+    public Result generateResponseContent(int request, ByteBuffer content, boolean lastContent, boolean aborted, Callback callback)
     {
-        Result result = generateContent(request, content, false, lastContent, callback, FCGI.FrameType.STDOUT);
-        if (lastContent)
+        if (aborted)
         {
-            // Generate the FCGI_END_REQUEST
-            request &= 0xFF_FF;
-            ByteBuffer endRequestBuffer = byteBufferPool.acquire(8, false);
-            BufferUtil.clearToFill(endRequestBuffer);
-            endRequestBuffer.putInt(0x01_03_00_00 + request);
-            endRequestBuffer.putInt(0x00_08_00_00);
-            endRequestBuffer.putLong(0x00L);
-            endRequestBuffer.flip();
-            result = result.append(endRequestBuffer, true);
+            Result result = new Result(byteBufferPool, callback);
+            if (lastContent)
+                result.append(generateEndRequest(request, true), true);
+            else
+                result.append(BufferUtil.EMPTY_BUFFER, false);
+            return result;
         }
-        return result;
+        else
+        {
+            Result result = generateContent(request, content, false, lastContent, callback, FCGI.FrameType.STDOUT);
+            if (lastContent)
+                result.append(generateEndRequest(request, false), true);
+            return result;
+        }
+    }
+
+    private ByteBuffer generateEndRequest(int request, boolean aborted)
+    {
+        request &= 0xFF_FF;
+        ByteBuffer endRequestBuffer = byteBufferPool.acquire(8, false);
+        BufferUtil.clearToFill(endRequestBuffer);
+        endRequestBuffer.putInt(0x01_03_00_00 + request);
+        endRequestBuffer.putInt(0x00_08_00_00);
+        endRequestBuffer.putInt(aborted ? 1 : 0);
+        endRequestBuffer.putInt(0);
+        endRequestBuffer.flip();
+        return endRequestBuffer;
     }
 }

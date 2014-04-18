@@ -1,9 +1,9 @@
 #
-# Module to add all lib/ext/*.jar files to classpath
+# Module to add all lib/ext/**.jar files to classpath
 #
 
 [lib]
-regex:lib/ext/.*\.jar$
+lib/ext/**.jar
 
 [files]
 lib/

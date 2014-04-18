@@ -391,26 +391,29 @@ public class HttpClient extends ContainerLifeCycle
                 .idleTimeout(oldRequest.getIdleTimeout(), TimeUnit.MILLISECONDS)
                 .timeout(oldRequest.getTimeout(), TimeUnit.MILLISECONDS)
                 .followRedirects(oldRequest.isFollowRedirects());
-        for (HttpField header : oldRequest.getHeaders())
+        for (HttpField field : oldRequest.getHeaders())
         {
-            // We have a new URI, so skip the host header if present
-            if (HttpHeader.HOST == header.getHeader())
+            HttpHeader header = field.getHeader();
+            // We have a new URI, so skip the host header if present.
+            if (HttpHeader.HOST == header)
                 continue;
 
-            // Remove expectation headers
-            if (HttpHeader.EXPECT == header.getHeader())
+            // Remove expectation headers.
+            if (HttpHeader.EXPECT == header)
                 continue;
 
-            // Remove cookies
-            if (HttpHeader.COOKIE == header.getHeader())
+            // Remove cookies.
+            if (HttpHeader.COOKIE == header)
                 continue;
 
-            // Remove authorization headers
-            if (HttpHeader.AUTHORIZATION == header.getHeader() ||
-                    HttpHeader.PROXY_AUTHORIZATION == header.getHeader())
+            // Remove authorization headers.
+            if (HttpHeader.AUTHORIZATION == header ||
+                    HttpHeader.PROXY_AUTHORIZATION == header)
                 continue;
 
-            newRequest.header(header.getName(), header.getValue());
+            String value = field.getValue();
+            if (!newRequest.getHeaders().contains(header, value))
+                newRequest.header(field.getName(), value);
         }
         return newRequest;
     }

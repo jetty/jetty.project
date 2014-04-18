@@ -62,7 +62,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
     private final AtomicReference<RequestState> requestState = new AtomicReference<>(RequestState.QUEUED);
     private final AtomicReference<SenderState> senderState = new AtomicReference<>(SenderState.IDLE);
     private final Callback commitCallback = new CommitCallback();
-    private final Callback contentCallback = new ContentCallback();
+    private final IteratingCallback contentCallback = new ContentCallback();
     private final Callback lastCallback = new LastContentCallback();
     private final HttpChannel channel;
     private volatile HttpContent content;
@@ -100,14 +100,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
                     if (updateSenderState(current, newSenderState))
                     {
                         LOG.debug("Deferred content available, {} -> {}", current, newSenderState);
-                        // TODO should just call contentCallback.iterate() here.
-                        HttpContent content = this.content;
-                        if (content.advance())
-                            sendContent(exchange, content, contentCallback); // TODO old style usage!
-                        else if (content.isConsumed())
-                            sendContent(exchange, content, lastCallback);
-                        else
-                            throw new IllegalStateException();
+                        contentCallback.iterate();
                         return;
                     }
                     break;
@@ -152,7 +145,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
                 }
                 default:
                 {
-                    throw new IllegalStateException(current.toString());
+                    throw illegalSenderState(current);
                 }
             }
         }
@@ -178,7 +171,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
             if (expects100Continue(request))
                 newSenderState = content.hasContent() ? SenderState.EXPECTING_WITH_CONTENT : SenderState.EXPECTING;
             if (!updateSenderState(SenderState.IDLE, newSenderState))
-                throw new IllegalStateException();
+                throw illegalSenderState(SenderState.IDLE);
 
             // Setting the listener may trigger calls to onContent() by other
             // threads so we must set it only after the sender state has been updated
@@ -456,29 +449,15 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
                 case WAITING:
                 {
                     // We received the 100 Continue, now send the content if any.
-                    HttpContent content = this.content;
-                    // TODO should just call contentCallback.iterate() here.
-                    if (content.advance())
-                    {
-                        // There is content to send.
-                        if (!updateSenderState(current, SenderState.SENDING))
-                            throw new IllegalStateException();
-                        LOG.debug("Proceeding while waiting");
-                        sendContent(exchange, content, contentCallback); // TODO old style usage!
-                        return;
-                    }
-                    else
-                    {
-                        // No content to send yet - it's deferred.
-                        if (!updateSenderState(current, SenderState.IDLE))
-                            throw new IllegalStateException();
-                        LOG.debug("Proceeding deferred");
-                        return;
-                    }
+                    if (!updateSenderState(current, SenderState.SENDING))
+                        throw illegalSenderState(current);
+                    LOG.debug("Proceeding while waiting");
+                    contentCallback.iterate();
+                    return;
                 }
                 default:
                 {
-                    throw new IllegalStateException(current.toString());
+                    throw illegalSenderState(current);
                 }
             }
         }
@@ -530,6 +509,11 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
             default:
                 return false;
         }
+    }
+
+    private RuntimeException illegalSenderState(SenderState current)
+    {
+        return new IllegalStateException("Expected " + current + " found " + senderState.get() + " instead");
     }
 
     /**
@@ -660,30 +644,8 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
                     {
                         case SENDING:
                         {
-                            // TODO should just call contentCallback.iterate() here.
-                            // We have content to send ?
-                            if (content.advance())
-                            {
-                                sendContent(exchange, content, contentCallback); // TODO old style usage!
-                                return;
-                            }
-                            else
-                            {
-                                if (content.isConsumed())
-                                {
-                                    sendContent(exchange, content, lastCallback);
-                                    return;
-                                }
-                                else
-                                {
-                                    if (updateSenderState(current, SenderState.IDLE))
-                                    {
-                                        LOG.debug("Waiting for deferred content for {}", request);
-                                        return;
-                                    }
-                                    break;
-                                }
-                            }
+                            contentCallback.iterate();
+                            return;
                         }
                         case SENDING_WITH_CONTENT:
                         {
@@ -723,7 +685,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
                         }
                         default:
                         {
-                            throw new IllegalStateException();
+                            throw illegalSenderState(current);
                         }
                     }
                 }
@@ -740,63 +702,47 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
             if (exchange == null)
                 return Action.IDLE;
 
-            Request request = exchange.getRequest();
             HttpContent content = HttpSender.this.content;
-
-            ByteBuffer contentBuffer = content.getContent();
-            if (contentBuffer != null)
-            {
-                if (!someToContent(request, contentBuffer))
-                    return Action.IDLE;
-            }
-
             while (true)
             {
                 boolean advanced = content.advance();
                 boolean consumed = content.isConsumed();
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Content {} consumed {} for {}", advanced, consumed, exchange.getRequest());
 
-                SenderState current = senderState.get();
+                if (advanced)
+                {
+                    sendContent(exchange, content, this);
+                    return Action.SCHEDULED;
+                }
+
+                if (consumed)
+                {
+                    sendContent(exchange, content, lastCallback);
+                    return Action.IDLE;
+                }
+
+                SenderState current = HttpSender.this.senderState.get();
                 switch (current)
                 {
                     case SENDING:
                     {
-                        if (advanced)
+                        if (updateSenderState(current, SenderState.IDLE))
                         {
-                            // There is more content to send
-                            sendContent(exchange, content, this);
-                            return Action.SCHEDULED;
-                        }
-                        else if (consumed)
-                        {
-                            sendContent(exchange, content, lastCallback);
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("Content is deferred for {}", exchange.getRequest());
                             return Action.IDLE;
                         }
-                        else
-                        {
-                            if (updateSenderState(current, SenderState.IDLE))
-                            {
-                                LOG.debug("Waiting for deferred content for {}", request);
-                                return Action.IDLE;
-                            }
-                            break;
-                        }
+                        break;
                     }
                     case SENDING_WITH_CONTENT:
                     {
-                        if (updateSenderState(current, SenderState.SENDING))
-                        {
-                            LOG.debug("Deferred content available for {}", request);
-                            if (advanced)
-                            {
-                                sendContent(exchange, content, this);
-                                return Action.SCHEDULED;
-                            }
-                        }
-                        throw new IllegalStateException();
+                        updateSenderState(current, SenderState.SENDING);
+                        break;
                     }
                     default:
                     {
-                        throw new IllegalStateException();
+                        throw illegalSenderState(current);
                     }
                 }
             }
@@ -805,6 +751,8 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
         @Override
         public void succeeded()
         {
+            ByteBuffer buffer = content.getContent();
+            someToContent(getHttpExchange().getRequest(), buffer);
             content.succeeded();
             super.succeeded();
         }

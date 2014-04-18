@@ -63,7 +63,25 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
     // DirZipBundleEntry
 
     private static Field ZIP_FILE_FILED_FOR_ZIP_BUNDLE_FILE = null;// ZipFile
+    
+    private static final String[] FILE_BUNDLE_ENTRY_CLASSES = {"org.eclipse.osgi.baseadaptor.bundlefile.FileBundleEntry","org.eclipse.osgi.storage.bundlefile.FileBundleEntry"};
+    private static final String[] ZIP_BUNDLE_ENTRY_CLASSES = {"org.eclipse.osgi.baseadaptor.bundlefile.ZipBundleEntry","org.eclipse.osgi.storage.bundlefile.ZipBundleEntry"};
+    private static final String[] DIR_ZIP_BUNDLE_ENTRY_CLASSES = {"org.eclipse.osgi.baseadaptor.bundlefile.DirZipBundleEntry","org.eclipse.osgi.storage.bundlefile.DirZipBundleEntry"};
+    private static final String[] BUNDLE_URL_CONNECTION_CLASSES = {"org.eclipse.osgi.framework.internal.core.BundleURLConnection", "org.eclipse.osgi.storage.url.BundleURLConnection"};
 
+
+    public static boolean match (String name, String... names)
+    {
+        if (name == null || names == null)
+            return false;
+        boolean matched = false;
+        for (int i=0; i< names.length && !matched; i++)
+            if (name.equals(names[i]))
+                matched = true;
+        return matched;
+    }
+    
+    
     /**
      * Works with equinox, felix, nuxeo and probably more. Not exactly in the
      * spirit of OSGi but quite necessary to support self-contained webapps and
@@ -107,7 +125,8 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
                 BUNDLE_ENTRY_FIELD.setAccessible(true);
             }
             Object bundleEntry = BUNDLE_ENTRY_FIELD.get(con);
-            if (bundleEntry.getClass().getName().equals("org.eclipse.osgi.baseadaptor.bundlefile.FileBundleEntry"))
+           
+            if (match(bundleEntry.getClass().getName(), FILE_BUNDLE_ENTRY_CLASSES))
             {
                 if (FILE_FIELD == null)
                 {
@@ -117,7 +136,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
                 File f = (File) FILE_FIELD.get(bundleEntry);
                 return f.getParentFile().getParentFile();
             }
-            else if (bundleEntry.getClass().getName().equals("org.eclipse.osgi.baseadaptor.bundlefile.ZipBundleEntry"))
+            else if (match(bundleEntry.getClass().getName(), ZIP_BUNDLE_ENTRY_CLASSES))
             {
                 url = bundle.getEntry("/");
 
@@ -144,7 +163,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
                 ZipFile zipFile = (ZipFile) ZIP_FILE_FILED_FOR_ZIP_BUNDLE_FILE.get(zipBundleFile);
                 return new File(zipFile.getName());
             }
-            else if (bundleEntry.getClass().getName().equals("org.eclipse.osgi.baseadaptor.bundlefile.DirZipBundleEntry"))
+            else if (match (bundleEntry.getClass().getName(), DIR_ZIP_BUNDLE_ENTRY_CLASSES))
             {
                 // that will not happen as we did ask for the manifest not a
                 // directory.
@@ -309,7 +328,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
 
             URLConnection conn = url.openConnection();
             conn.setDefaultUseCaches(Resource.getDefaultUseCaches());
-            if (BUNDLE_URL_CONNECTION_getLocalURL == null && conn.getClass().getName().equals("org.eclipse.osgi.framework.internal.core.BundleURLConnection"))
+            if (BUNDLE_URL_CONNECTION_getLocalURL == null && match(conn.getClass().getName(), BUNDLE_URL_CONNECTION_CLASSES))
             {
                 BUNDLE_URL_CONNECTION_getLocalURL = conn.getClass().getMethod("getLocalURL", null);
                 BUNDLE_URL_CONNECTION_getLocalURL.setAccessible(true);
@@ -340,7 +359,9 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
 
             URLConnection conn = url.openConnection();
             conn.setDefaultUseCaches(Resource.getDefaultUseCaches());
-            if (BUNDLE_URL_CONNECTION_getFileURL == null && conn.getClass().getName().equals("org.eclipse.osgi.framework.internal.core.BundleURLConnection"))
+            if (BUNDLE_URL_CONNECTION_getFileURL == null 
+                && 
+                match (conn.getClass().getName(), BUNDLE_URL_CONNECTION_CLASSES))
             {
                 BUNDLE_URL_CONNECTION_getFileURL = conn.getClass().getMethod("getFileURL", null);
                 BUNDLE_URL_CONNECTION_getFileURL.setAccessible(true);

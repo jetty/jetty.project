@@ -18,10 +18,13 @@
 
 package org.eclipse.jetty.start;
 
-import java.io.File;
-import java.io.FileWriter;
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.Collection;
 import java.util.List;
 
@@ -73,9 +76,10 @@ public class ModuleGraphWriter
         return val;
     }
 
-    public void write(Modules modules, File outputFile) throws IOException
+    public void write(Modules modules, Path outputFile) throws IOException
     {
-        try (FileWriter writer = new FileWriter(outputFile,false); PrintWriter out = new PrintWriter(writer);)
+        try (BufferedWriter writer = Files.newBufferedWriter(outputFile,StandardCharsets.UTF_8,StandardOpenOption.CREATE_NEW,StandardOpenOption.WRITE); 
+             PrintWriter out = new PrintWriter(writer);)
         {
             writeHeaderMessage(out,outputFile);
 
@@ -112,7 +116,7 @@ public class ModuleGraphWriter
         }
     }
 
-    private void writeHeaderMessage(PrintWriter out, File outputFile)
+    private void writeHeaderMessage(PrintWriter out, Path outputFile)
     {
         out.println("/*");
         out.println(" * GraphViz Graph of Jetty Modules");
@@ -121,7 +125,7 @@ public class ModuleGraphWriter
         out.println(" * GraphViz: http://graphviz.org/");
         out.println(" * ");
         out.println(" * To Generate Graph image using graphviz:");
-        String filename = outputFile.getName();
+        String filename = outputFile.getFileName().toString();
         String basename = filename.substring(0,filename.indexOf('.'));
         out.printf(" *   $ dot -Tpng -Goverlap=false -o %s.png %s%n",basename,filename);
         out.println(" */");

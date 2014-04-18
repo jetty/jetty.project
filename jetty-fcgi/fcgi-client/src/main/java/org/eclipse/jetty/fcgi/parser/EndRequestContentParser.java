@@ -107,8 +107,12 @@ public class EndRequestContentParser extends ContentParser
 
     private void onEnd()
     {
-        // TODO: if protocol != 0, invoke an error callback
-        listener.onEnd(getRequest());
+        if (application != 0)
+            listener.onFailure(getRequest(), new Exception("FastCGI application returned code " + application));
+        else if (protocol != 0)
+            listener.onFailure(getRequest(), new Exception("FastCGI server returned code " + protocol));
+        else
+            listener.onEnd(getRequest());
     }
 
     private void reset()

@@ -19,20 +19,24 @@
 package org.eclipse.jetty.start;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
+import java.nio.file.FileVisitOption;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.PathMatcher;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Objects;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-import org.eclipse.jetty.start.FS.RelativeRegexFilter;
+import org.eclipse.jetty.start.config.CommandLineConfigSource;
+import org.eclipse.jetty.start.config.ConfigSource;
+import org.eclipse.jetty.start.config.ConfigSources;
+import org.eclipse.jetty.start.config.DirConfigSource;
+import org.eclipse.jetty.start.config.JettyBaseConfigSource;
+import org.eclipse.jetty.start.config.JettyHomeConfigSource;
 
 /**
  * File access for <code>${jetty.home}</code>, <code>${jetty.base}</code>, directories.
@@ -45,45 +49,129 @@ import org.eclipse.jetty.start.FS.RelativeRegexFilter;
  */
 public class BaseHome
 {
-    private File homeDir;
-    private File baseDir;
-
-    public BaseHome()
+    public static class SearchDir
     {
-        try
-        {
-            this.baseDir = new File(System.getProperty("jetty.base",System.getProperty("user.dir",".")));
-            URL jarfile = this.getClass().getClassLoader().getResource("org/eclipse/jetty/start/BaseHome.class");
-            if (jarfile != null)
-            {
-                Matcher m = Pattern.compile("jar:(file:.*)!/org/eclipse/jetty/start/BaseHome.class").matcher(jarfile.toString());
-                if (m.matches())
-                {
-                    homeDir = new File(new URI(m.group(1))).getParentFile();
-                }
-            }
-            homeDir = new File(System.getProperty("jetty.home",(homeDir == null?baseDir:homeDir).getAbsolutePath()));
+        private Path dir;
+        private String name;
 
-            baseDir = baseDir.getAbsoluteFile().getCanonicalFile();
-            homeDir = homeDir.getAbsoluteFile().getCanonicalFile();
-        }
-        catch (IOException | URISyntaxException e)
+        public SearchDir(String name)
         {
-            throw new RuntimeException(e);
+            this.name = name;
+        }
+
+        public Path getDir()
+        {
+            return dir;
+        }
+
+        public Path resolve(Path subpath)
+        {
+            return dir.resolve(subpath);
+        }
+
+        public Path resolve(String subpath)
+        {
+            return dir.resolve(FS.separators(subpath));
+        }
+
+        public SearchDir setDir(File path)
+        {
+            if (path != null)
+            {
+                return setDir(path.toPath());
+            }
+            return this;
+        }
+
+        public SearchDir setDir(Path path)
+        {
+            if (path != null)
+            {
+                this.dir = path.toAbsolutePath();
+            }
+            return this;
+        }
+
+        public SearchDir setDir(String path)
+        {
+            if (path != null)
+            {
+                return setDir(FS.toPath(path));
+            }
+            return this;
+        }
+
+        public String toShortForm(Path path)
+        {
+            Path relative = dir.relativize(path);
+            return String.format("${%s}%c%s",name,File.separatorChar,relative.toString());
         }
     }
 
-    public BaseHome(File homeDir, File baseDir)
+    public static final String JETTY_BASE = "jetty.base";
+    public static final String JETTY_HOME = "jetty.home";
+    private final static EnumSet<FileVisitOption> SEARCH_VISIT_OPTIONS = EnumSet.of(FileVisitOption.FOLLOW_LINKS);
+
+    private final static int MAX_SEARCH_DEPTH = Integer.getInteger("org.eclipse.jetty.start.searchDepth",10);
+
+    private final ConfigSources sources;
+    private final Path homeDir;
+    private final Path baseDir;
+
+    public BaseHome() throws IOException
     {
-        try
+        this(new String[0]);
+    }
+
+    public BaseHome(String cmdLine[]) throws IOException
+    {
+        this(new CommandLineConfigSource(cmdLine));
+    }
+
+    public BaseHome(CommandLineConfigSource cmdLineSource) throws IOException
+    {
+        StartLog.getInstance().initialize(this,cmdLineSource);
+
+        sources = new ConfigSources();
+        sources.add(cmdLineSource);
+        this.homeDir = cmdLineSource.getHomePath();
+        this.baseDir = cmdLineSource.getBasePath();
+        sources.add(new JettyBaseConfigSource(cmdLineSource.getBasePath()));
+        sources.add(new JettyHomeConfigSource(cmdLineSource.getHomePath()));
+
+        System.setProperty(JETTY_HOME,homeDir.toAbsolutePath().toString());
+        System.setProperty(JETTY_BASE,baseDir.toAbsolutePath().toString());
+    }
+
+    public BaseHome(ConfigSources sources)
+    {
+        this.sources = sources;
+        Path home = null;
+        Path base = null;
+        for (ConfigSource source : sources)
         {
-            this.homeDir = homeDir.getCanonicalFile();
-            this.baseDir = baseDir == null?this.homeDir:baseDir.getCanonicalFile();
+            if (source instanceof CommandLineConfigSource)
+            {
+                CommandLineConfigSource cmdline = (CommandLineConfigSource)source;
+                home = cmdline.getHomePath();
+                base = cmdline.getBasePath();
+            }
+            else if (source instanceof JettyBaseConfigSource)
+            {
+                base = ((JettyBaseConfigSource)source).getDir();
+            }
+            else if (source instanceof JettyHomeConfigSource)
+            {
+                home = ((JettyHomeConfigSource)source).getDir();
+            }
         }
-        catch (IOException e)
-        {
-            throw new RuntimeException(e);
-        }
+
+        Objects.requireNonNull(home,"jetty.home cannot be null");
+        this.homeDir = home;
+        this.baseDir = (base != null)?base:home;
+
+        System.setProperty(JETTY_HOME,homeDir.toAbsolutePath().toString());
+        System.setProperty(JETTY_BASE,baseDir.toAbsolutePath().toString());
     }
 
     public String getBase()
@@ -92,120 +180,227 @@ public class BaseHome
         {
             return null;
         }
-        return baseDir.getAbsolutePath();
+        return baseDir.toString();
     }
 
-    public File getBaseDir()
+    public Path getBasePath()
     {
         return baseDir;
     }
 
     /**
-     * Create a file reference to some content in <code>"${jetty.base}"</code>
+     * Create a {@link Path} reference to some content in <code>"${jetty.base}"</code>
      * 
      * @param path
      *            the path to reference
      * @return the file reference
      */
-    public File getBaseFile(String path)
+    public Path getBasePath(String path)
     {
-        return new File(baseDir,FS.separators(path));
+        return baseDir.resolve(path);
     }
 
-    /**
-     * Get a specific file reference.
-     * <p>
-     * File references go through 3 possibly scenarios.
-     * <ol>
-     * <li>If exists relative to <code>${jetty.base}</code>, return that reference</li>
-     * <li>If exists relative to <code>${jetty.home}</code>, return that reference</li>
-     * <li>Otherwise return absolute path reference</li>
-     * </ol>
-     * 
-     * @param path
-     *            the path to get.
-     * @return the file reference.
-     */
-    public File getFile(String path)
+    public ConfigSources getConfigSources()
     {
-        String rpath = FS.separators(path);
-
-        // Relative to Base Directory First
-        if (isBaseDifferent())
-        {
-            File file = new File(baseDir,rpath);
-            if (file.exists())
-            {
-                return file;
-            }
-        }
-
-        // Then relative to Home Directory
-        File file = new File(homeDir,rpath);
-        if (file.exists())
-        {
-            return file;
-        }
-
-        // Finally, as an absolute path
-        return new File(rpath);
+        return this.sources;
     }
 
     public String getHome()
     {
-        return homeDir.getAbsolutePath();
+        return homeDir.toString();
     }
 
-    public File getHomeDir()
+    public Path getHomePath()
     {
         return homeDir;
     }
 
-    public void initialize(StartArgs args)
+    /**
+     * Get a specific path reference.
+     * <p>
+     * Path references are searched based on the config source search order.
+     * <ol>
+     * <li>If provided path is an absolute reference., and exists, return that reference</li>
+     * <li>If exists relative to <code>${jetty.base}</code>, return that reference</li>
+     * <li>If exists relative to and <code>extra-start-dir</code> locations, return that reference</li>
+     * <li>If exists relative to <code>${jetty.home}</code>, return that reference</li>
+     * <li>Return standard {@link Path} reference obtained from {@link java.nio.file.FileSystem#getPath(String, String...)} (no exists check performed)</li>
+     * </ol>
+     * 
+     * @param path
+     *            the path to get.
+     * @return the path reference.
+     */
+    public Path getPath(final String path)
     {
-        Pattern jetty_home = Pattern.compile("(-D)?jetty.home=(.*)");
-        Pattern jetty_base = Pattern.compile("(-D)?jetty.base=(.*)");
+        Path apath = FS.toPath(path);
 
-        File homePath = null;
-        File basePath = null;
-
-        for (String arg : args.getCommandLine())
+        if (apath.isAbsolute())
         {
-            Matcher home_match = jetty_home.matcher(arg);
-            if (home_match.matches())
+            if (FS.exists(apath))
             {
-                homePath = new File(home_match.group(2));
-            }
-            Matcher base_match = jetty_base.matcher(arg);
-            if (base_match.matches())
-            {
-                basePath = new File(base_match.group(2));
+                return apath;
             }
         }
 
-        if (homePath != null)
+        for (ConfigSource source : sources)
         {
-            // logic if home is specified
-            this.homeDir = homePath.getAbsoluteFile();
-            if (basePath == null)
+            if (source instanceof DirConfigSource)
             {
-                this.baseDir = homePath.getAbsoluteFile();
-                args.getProperties().setProperty("jetty.base",this.baseDir.toString(),"<internal-fallback>");
+                DirConfigSource dirsource = (DirConfigSource)source;
+                Path file = dirsource.getDir().resolve(apath);
+                if (FS.exists(file))
+                {
+                    return file;
+                }
             }
-            else
-            {
-                this.baseDir = basePath.getAbsoluteFile();
-            }
-        }
-        else if (basePath != null)
-        {
-            // logic if home is undeclared
-            this.baseDir = basePath.getAbsoluteFile();
         }
 
-        // Update System Properties
-        args.addSystemProperty("jetty.home",this.homeDir.getAbsolutePath());
-        args.addSystemProperty("jetty.base",this.baseDir.getAbsolutePath());
+        // Finally, as an anonymous path
+        return FS.toPath(path);
+    }
+
+    /**
+     * Search specified Path with pattern and return hits
+     * 
+     * @param dir
+     *            the path to a directory to start search from
+     * @param searchDepth
+     *            the number of directories deep to perform the search
+     * @param pattern
+     *            the raw pattern to use for the search (must be relative)
+     * @return the list of Paths found
+     * @throws IOException
+     *             if unable to search the path
+     */
+    public List<Path> getPaths(Path dir, int searchDepth, String pattern) throws IOException
+    {
+        if (PathMatchers.isAbsolute(pattern))
+        {
+            throw new RuntimeException("Pattern cannot be absolute: " + pattern);
+        }
+
+        List<Path> hits = new ArrayList<>();
+        if (FS.isValidDirectory(dir))
+        {
+            PathMatcher matcher = PathMatchers.getMatcher(pattern);
+            PathFinder finder = new PathFinder();
+            finder.setFileMatcher(matcher);
+            finder.setBase(dir);
+            Files.walkFileTree(dir,SEARCH_VISIT_OPTIONS,searchDepth,finder);
+            hits.addAll(finder.getHits());
+            Collections.sort(hits,new NaturalSort.Paths());
+        }
+        return hits;
+    }
+
+    /**
+     * Get a List of {@link Path}s from a provided pattern.
+     * <p>
+     * Resolution Steps:
+     * <ol>
+     * <li>If the pattern starts with "regex:" or "glob:" then a standard {@link PathMatcher} is built using
+     * {@link java.nio.file.FileSystem#getPathMatcher(String)} as a file search.</li>
+     * <li>If pattern starts with a known filesystem root (using information from {@link java.nio.file.FileSystem#getRootDirectories()}) then this is assumed to
+     * be a absolute file system pattern.</li>
+     * <li>All other patterns are treated as relative to BaseHome information:
+     * <ol>
+     * <li>Search ${jetty.home} first</li>
+     * <li>Search ${jetty.base} for overrides</li>
+     * </ol>
+     * </li>
+     * </ol>
+     * <p>
+     * Pattern examples:
+     * <dl>
+     * <dt><code>lib/logging/*.jar</code></dt>
+     * <dd>Relative pattern, not recursive, search <code>${jetty.home}</code> then <code>${jetty.base}</code> for lib/logging/*.jar content</dd>
+     * 
+     * <dt><code>lib/**&#47;*-dev.jar</code></dt>
+     * <dd>Relative pattern, recursive search <code>${jetty.home}</code> then <code>${jetty.base}</code> for files under <code>lib</code> ending in
+     * <code>-dev.jar</code></dd>
+     * </dl>
+     * 
+     * <dt><code>etc/jetty.xml</code></dt>
+     * <dd>Relative pattern, no glob, search for <code>${jetty.home}/etc/jetty.xml</code> then <code>${jetty.base}/etc/jetty.xml</code></dd>
+     * 
+     * <dt><code>glob:/opt/app/common/*-corp.jar</code></dt>
+     * <dd>PathMapper pattern, glob, search <code>/opt/app/common/</code> for <code>*-corp.jar</code></code></dd>
+     * 
+     * </dl>
+     * 
+     * <p>
+     * Notes:
+     * <ul>
+     * <li>FileSystem case sensitivity is implementation specific (eg: linux is case-sensitive, windows is case-insensitive).<br/>
+     * See {@link java.nio.file.FileSystem#getPathMatcher(String)} for more details</li>
+     * <li>Pattern slashes are implementation neutral (use '/' always and you'll be fine)</li>
+     * <li>Recursive searching is limited to 30 levels deep (not configurable)</li>
+     * <li>File System loops are detected and skipped</li>
+     * </ul>
+     * 
+     * @param pattern
+     *            the pattern to search.
+     * @return the collection of paths found
+     * @throws IOException
+     *             if error during search operation
+     */
+    public List<Path> getPaths(String pattern) throws IOException
+    {
+        StartLog.debug("getPaths('%s')",pattern);
+        List<Path> hits = new ArrayList<>();
+
+        if (PathMatchers.isAbsolute(pattern))
+        {
+            // Perform absolute path pattern search
+
+            // The root to start search from
+            Path root = PathMatchers.getSearchRoot(pattern);
+            // The matcher for file hits
+            PathMatcher matcher = PathMatchers.getMatcher(pattern);
+
+            if (FS.isValidDirectory(root))
+            {
+                PathFinder finder = new PathFinder();
+                finder.setIncludeDirsInResults(true);
+                finder.setFileMatcher(matcher);
+                finder.setBase(root);
+                Files.walkFileTree(root,SEARCH_VISIT_OPTIONS,MAX_SEARCH_DEPTH,finder);
+                hits.addAll(finder.getHits());
+            }
+        }
+        else
+        {
+            // Perform relative path pattern search
+            Path relativePath = PathMatchers.getSearchRoot(pattern);
+            PathMatcher matcher = PathMatchers.getMatcher(pattern);
+            PathFinder finder = new PathFinder();
+            finder.setIncludeDirsInResults(true);
+            finder.setFileMatcher(matcher);
+
+            // walk config sources backwards ...
+            ListIterator<ConfigSource> iter = sources.reverseListIterator();
+            while (iter.hasPrevious())
+            {
+                ConfigSource source = iter.previous();
+                if (source instanceof DirConfigSource)
+                {
+                    DirConfigSource dirsource = (DirConfigSource)source;
+                    Path dir = dirsource.getDir();
+                    Path deepDir = dir.resolve(relativePath);
+                    if (FS.isValidDirectory(deepDir))
+                    {
+                        finder.setBase(dir);
+                        Files.walkFileTree(deepDir,SEARCH_VISIT_OPTIONS,MAX_SEARCH_DEPTH,finder);
+                    }
+                }
+            }
+
+            hits.addAll(finder.getHits());
+        }
+
+        Collections.sort(hits,new NaturalSort.Paths());
+        return hits;
     }
 
     public boolean isBaseDifferent()
@@ -214,228 +409,11 @@ public class BaseHome
     }
 
     /**
-     * Get all of the files that are in a specific relative directory.
-     * <p>
-     * If the same found path exists in both <code>${jetty.base}</code> and <code>${jetty.home}</code>, then the one in <code>${jetty.base}</code> is returned
-     * (it overrides the one in ${jetty.home})
-     * 
-     * @param relPathToDirectory
-     *            the relative path to the directory
-     * @return the list of files found.
+     * Convenience method for <code>toShortForm(file.toPath())</code>
      */
-    public List<File> listFiles(String relPathToDirectory)
+    public String toShortForm(final File path)
     {
-        return listFiles(relPathToDirectory,FS.AllFilter.INSTANCE);
-    }
-
-    /**
-     * Get all of the files that are in a specific relative directory, with applied {@link FileFilter}
-     * <p>
-     * If the same found path exists in both <code>${jetty.base}</code> and <code>${jetty.home}</code>, then the one in <code>${jetty.base}</code> is returned
-     * (it overrides the one in ${jetty.home})
-     * 
-     * @param relPathToDirectory
-     *            the relative path to the directory
-     * @param filter
-     *            the filter to use
-     * @return the list of files found.
-     */
-    public List<File> listFiles(String relPathToDirectory, FileFilter filter)
-    {
-        Objects.requireNonNull(filter,"FileFilter cannot be null");
-
-        File homePath = new File(homeDir,FS.separators(relPathToDirectory));
-        List<File> homeFiles = new ArrayList<>();
-        if (FS.canReadDirectory(homePath))
-        {
-            homeFiles.addAll(Arrays.asList(homePath.listFiles(filter)));
-        }
-
-        if (isBaseDifferent())
-        {
-            // merge
-            File basePath = new File(baseDir,FS.separators(relPathToDirectory));
-            List<File> ret = new ArrayList<>();
-            if (FS.canReadDirectory(basePath))
-            {
-                File baseFiles[] = basePath.listFiles(filter);
-
-                if (baseFiles != null)
-                {
-                    for (File base : baseFiles)
-                    {
-                        String relpath = toRelativePath(baseDir,base);
-                        File home = new File(homeDir,FS.separators(relpath));
-                        if (home.exists())
-                        {
-                            homeFiles.remove(home);
-                        }
-                        ret.add(base);
-                    }
-                }
-            }
-
-            // add any remaining home files.
-            ret.addAll(homeFiles);
-
-            Collections.sort(ret,new NaturalSort.Files());
-            return ret;
-        }
-        else
-        {
-            // simple return
-            Collections.sort(homeFiles,new NaturalSort.Files());
-            return homeFiles;
-        }
-    }
-    
-    /**
-     * Get all of the files that are in a specific relative directory, with applied regex.
-     * <p>
-     * If the same found path exists in both <code>${jetty.base}</code> and <code>${jetty.home}</code>, then the one in <code>${jetty.base}</code> is returned
-     * (it overrides the one in ${jetty.home})
-     * <p>
-     * All regex paths are assumed to be in unix notation (use of <code>"/"</code> to separate paths, as <code>"\"</code> is used to escape in regex)
-     * 
-     * @param regex
-     *            the regex to use to match against the found files.
-     * @return the list of files found.
-     */
-    public List<File> listFilesRegex(String regex)
-    {
-        Objects.requireNonNull(regex,"Glob cannot be null");
-
-        Pattern pattern = Pattern.compile(regex);
-
-        List<File> homeFiles = new ArrayList<>();
-        if (FS.canReadDirectory(homeDir))
-        {
-            StartLog.debug("Finding files in ${jetty.home} that match: %s",regex);
-            recurseDir(homeFiles,homeDir,new FS.RelativeRegexFilter(homeDir,pattern));
-            StartLog.debug("Found %,d files",homeFiles.size());
-        }
-
-        if (isBaseDifferent())
-        {
-            // merge
-            List<File> ret = new ArrayList<>();
-            if (FS.canReadDirectory(baseDir))
-            {
-                List<File> baseFiles = new ArrayList<>();
-                StartLog.debug("Finding files in ${jetty.base} that match: %s",regex);
-                recurseDir(baseFiles,baseDir,new FS.RelativeRegexFilter(baseDir,pattern));
-                StartLog.debug("Found %,d files",baseFiles.size());
-
-                for (File base : baseFiles)
-                {
-                    String relpath = toRelativePath(baseDir,base);
-                    File home = new File(homeDir,FS.separators(relpath));
-                    if (home.exists())
-                    {
-                        homeFiles.remove(home);
-                    }
-                    ret.add(base);
-                }
-            }
-
-            // add any remaining home files.
-            ret.addAll(homeFiles);
-            StartLog.debug("Merged Files: %,d files%n",ret.size());
-
-            Collections.sort(ret,new NaturalSort.Files());
-            return ret;
-        }
-        else
-        {
-            // simple return
-            Collections.sort(homeFiles,new NaturalSort.Files());
-            return homeFiles;
-        }
-    }
-
-    private void recurseDir(List<File> files, File dir, RelativeRegexFilter filter)
-    {
-        // find matches first
-        files.addAll(Arrays.asList(dir.listFiles(filter)));
-
-        // now dive down into sub-directories
-        for (File subdir : dir.listFiles(FS.DirFilter.INSTANCE))
-        {
-            recurseDir(files,subdir,filter);
-        }
-    }
-
-    /**
-     * Collect the list of files in both <code>${jetty.base}</code> and <code>${jetty.home}</code>, even if the same file shows up in both places.
-     */
-    public List<File> rawListFiles(String relPathToDirectory, FileFilter filter)
-    {
-        Objects.requireNonNull(filter,"FileFilter cannot be null");
-
-        List<File> ret = new ArrayList<>();
-
-        // Home Dir
-        File homePath = new File(homeDir,FS.separators(relPathToDirectory));
-        ret.addAll(Arrays.asList(homePath.listFiles(filter)));
-
-        if (isBaseDifferent())
-        {
-            // Base Dir
-            File basePath = new File(baseDir,FS.separators(relPathToDirectory));
-            ret.addAll(Arrays.asList(basePath.listFiles(filter)));
-        }
-
-        // Sort
-        Collections.sort(ret,new NaturalSort.Files());
-        return ret;
-    }
-
-    public void setBaseDir(File dir)
-    {
-        try
-        {
-            this.baseDir = dir.getCanonicalFile();
-            System.setProperty("jetty.base",dir.getCanonicalPath());
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace(System.err);
-        }
-    }
-
-    public void setHomeDir(File dir)
-    {
-        try
-        {
-            this.homeDir = dir.getCanonicalFile();
-            System.setProperty("jetty.home",dir.getCanonicalPath());
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace(System.err);
-        }
-    }
-
-    // TODO - inline
-    private String toRelativePath(File dir, File path)
-    {
-        return FS.toRelativePath(dir,path);
-    }
-
-    /**
-     * Convenience method for <code>toShortForm(file.getCanonicalPath())</code>
-     */
-    public String toShortForm(File path)
-    {
-        try
-        {
-            return toShortForm(path.getCanonicalPath());
-        }
-        catch (IOException ignore)
-        {
-            /* ignore */
-        }
-        return toShortForm(path.getAbsolutePath());
+        return toShortForm(path.toPath());
     }
 
     /**
@@ -445,32 +423,48 @@ public class BaseHome
      *            the path to shorten
      * @return the potentially shortened path
      */
-    public String toShortForm(String path)
+    public String toShortForm(final Path path)
+    {
+        Path apath = path.toAbsolutePath();
+
+        for (ConfigSource source : sources)
+        {
+            if (source instanceof DirConfigSource)
+            {
+                DirConfigSource dirsource = (DirConfigSource)source;
+                Path dir = dirsource.getDir();
+                if (apath.startsWith(dir))
+                {
+                    if (dirsource.isPropertyBased())
+                    {
+                        Path relative = dir.relativize(apath);
+                        return String.format("%s%c%s",dirsource.getId(),File.separatorChar,relative.toString());
+                    }
+                    else
+                    {
+                        return apath.toString();
+                    }
+                }
+            }
+        }
+
+        return apath.toString();
+    }
+
+    /**
+     * Replace/Shorten arbitrary path with property strings <code>"${jetty.home}"</code> or <code>"${jetty.base}"</code> where appropriate.
+     * 
+     * @param path
+     *            the path to shorten
+     * @return the potentially shortened path
+     */
+    public String toShortForm(final String path)
     {
         if (path == null)
         {
             return path;
         }
 
-        String value;
-
-        if (isBaseDifferent())
-        {
-            value = baseDir.getAbsolutePath();
-            if (path.startsWith(value))
-            {
-                return "${jetty.base}" + path.substring(value.length());
-            }
-        }
-
-        value = homeDir.getAbsolutePath();
-
-        if (path.startsWith(value))
-        {
-            return "${jetty.home}" + path.substring(value.length());
-        }
-
-        return path;
+        return toShortForm(FS.toPath(path));
     }
-
 }

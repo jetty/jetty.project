@@ -38,6 +38,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.zip.GZIPOutputStream;
+
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -77,8 +78,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-
-import static java.nio.file.StandardOpenOption.CREATE;
 
 @RunWith(Parameterized.class)
 public class ProxyServletTest
@@ -122,6 +121,7 @@ public class ProxyServletTest
         ServletContextHandler proxyCtx = new ServletContextHandler(proxy, "/", true, false);
         this.proxyServlet = proxyServlet;
         ServletHolder proxyServletHolder = new ServletHolder(proxyServlet);
+        proxyServletHolder.setInitParameters(initParams);
         proxyCtx.addServlet(proxyServletHolder, "/*");
 
         proxy.start();
@@ -166,7 +166,7 @@ public class ProxyServletTest
     @Test
     public void testProxyDown() throws Exception
     {
-        prepareProxy();
+        prepareProxy(new ProxyServlet());
         prepareServer(new EmptyHttpServlet());
 
         // Shutdown the proxy
@@ -188,7 +188,7 @@ public class ProxyServletTest
     @Test
     public void testServerDown() throws Exception
     {
-        prepareProxy();
+        prepareProxy(new ProxyServlet());
         prepareServer(new EmptyHttpServlet());
 
         // Shutdown the server
@@ -208,7 +208,7 @@ public class ProxyServletTest
         ((StdErrLog)Log.getLogger(ServletHandler.class)).setHideStacks(true);
         try
         {
-            prepareProxy();
+            prepareProxy(new ProxyServlet());
             prepareServer(new HttpServlet()
             {
                 @Override
@@ -233,7 +233,7 @@ public class ProxyServletTest
     @Test
     public void testProxyWithoutContent() throws Exception
     {
-        prepareProxy();
+        prepareProxy(new ProxyServlet());
         prepareServer(new HttpServlet()
         {
             @Override
@@ -255,7 +255,7 @@ public class ProxyServletTest
     @Test
     public void testProxyWithResponseContent() throws Exception
     {
-        prepareProxy();
+        prepareProxy(new ProxyServlet());
 
         HttpClient result = new HttpClient();
         result.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyConnector.getLocalPort()));
@@ -300,7 +300,7 @@ public class ProxyServletTest
     @Test
     public void testProxyWithRequestContentAndResponseContent() throws Exception
     {
-        prepareProxy();
+        prepareProxy(new ProxyServlet());
         prepareServer(new HttpServlet()
         {
             @Override
@@ -328,7 +328,7 @@ public class ProxyServletTest
     @Test
     public void testProxyWithBigRequestContentIgnored() throws Exception
     {
-        prepareProxy();
+        prepareProxy(new ProxyServlet());
         prepareServer(new HttpServlet()
         {
             @Override
@@ -356,7 +356,7 @@ public class ProxyServletTest
         final byte[] content = new byte[128 * 1024];
         new Random().nextBytes(content);
 
-        prepareProxy();
+        prepareProxy(new ProxyServlet());
         prepareServer(new HttpServlet()
         {
             @Override
@@ -391,7 +391,7 @@ public class ProxyServletTest
     @Test
     public void testProxyWithBigResponseContentWithSlowReader() throws Exception
     {
-        prepareProxy();
+        prepareProxy(new ProxyServlet());
 
         // Create a 6 MiB file
         final int length = 6 * 1024;
@@ -400,7 +400,7 @@ public class ProxyServletTest
         final Path temp = Files.createTempFile(targetTestsDir, "test_", null);
         byte[] kb = new byte[1024];
         new Random().nextBytes(kb);
-        try (OutputStream output = Files.newOutputStream(temp, CREATE))
+        try (OutputStream output = Files.newOutputStream(temp, StandardOpenOption.CREATE))
         {
             for (int i = 0; i < length; ++i)
                 output.write(kb);
@@ -452,7 +452,7 @@ public class ProxyServletTest
     @Test
     public void testProxyWithQueryString() throws Exception
     {
-        prepareProxy();
+        prepareProxy(new ProxyServlet());
         String query = "a=1&b=%E2%82%AC";
         prepareServer(new HttpServlet()
         {
@@ -474,7 +474,7 @@ public class ProxyServletTest
     @Test
     public void testProxyLongPoll() throws Exception
     {
-        prepareProxy();
+        prepareProxy(new ProxyServlet());
         final long timeout = 1000;
         prepareServer(new HttpServlet()
         {
@@ -525,7 +525,7 @@ public class ProxyServletTest
     @Test
     public void testProxyRequestExpired() throws Exception
     {
-        prepareProxy();
+        prepareProxy(new ProxyServlet());
         final long timeout = 1000;
         proxyServlet.setTimeout(timeout);
         prepareServer(new HttpServlet()
@@ -557,7 +557,7 @@ public class ProxyServletTest
     @Test(expected = TimeoutException.class)
     public void testClientRequestExpired() throws Exception
     {
-        prepareProxy();
+        prepareProxy(new ProxyServlet());
         final long timeout = 1000;
         proxyServlet.setTimeout(3 * timeout);
         prepareServer(new HttpServlet()
@@ -587,7 +587,7 @@ public class ProxyServletTest
     @Test
     public void testProxyXForwardedHostHeaderIsPresent() throws Exception
     {
-        prepareProxy();
+        prepareProxy(new ProxyServlet());
         prepareServer(new HttpServlet()
         {
             @Override
@@ -608,7 +608,7 @@ public class ProxyServletTest
     @Test
     public void testProxyWhiteList() throws Exception
     {
-        prepareProxy();
+        prepareProxy(new ProxyServlet());
         prepareServer(new EmptyHttpServlet());
         int port = serverConnector.getLocalPort();
         proxyServlet.getWhiteListHosts().add("127.0.0.1:" + port);
@@ -629,7 +629,7 @@ public class ProxyServletTest
     @Test
     public void testProxyBlackList() throws Exception
     {
-        prepareProxy();
+        prepareProxy(new ProxyServlet());
         prepareServer(new EmptyHttpServlet());
         int port = serverConnector.getLocalPort();
         proxyServlet.getBlackListHosts().add("localhost:" + port);
@@ -650,7 +650,7 @@ public class ProxyServletTest
     @Test
     public void testClientExcludedHosts() throws Exception
     {
-        prepareProxy();
+        prepareProxy(new ProxyServlet());
         prepareServer(new HttpServlet()
         {
             @Override
@@ -757,6 +757,36 @@ public class ProxyServletTest
     }
 
     @Test
+    public void testTransparentProxyWithoutPrefix() throws Exception
+    {
+        final String target = "/test";
+        prepareServer(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                if (req.getHeader("Via") != null)
+                    resp.addHeader(PROXIED_HEADER, "true");
+                resp.setStatus(target.equals(req.getRequestURI()) ? 200 : 404);
+            }
+        });
+
+        final String proxyTo = "http://localhost:" + serverConnector.getLocalPort();
+        ProxyServlet.Transparent proxyServlet = new ProxyServlet.Transparent();
+        Map<String, String> initParams = new HashMap<>();
+        initParams.put("proxyTo", proxyTo);
+        prepareProxy(proxyServlet, initParams);
+
+        // Make the request to the proxy, it should transparently forward to the server
+        ContentResponse response = client.newRequest("localhost", proxyConnector.getLocalPort())
+                .path(target)
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertTrue(response.getHeaders().containsKey(PROXIED_HEADER));
+    }
+
+    @Test
     public void testCachingProxy() throws Exception
     {
         final byte[] content = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0xA, 0xB, 0xC, 0xD, 0xE, 0xF};
@@ -842,7 +872,7 @@ public class ProxyServletTest
     @Test
     public void testRedirectsAreProxied() throws Exception
     {
-        prepareProxy();
+        prepareProxy(new ProxyServlet());
         prepareServer(new HttpServlet()
         {
             @Override
@@ -867,7 +897,7 @@ public class ProxyServletTest
     public void testGZIPContentIsProxied() throws Exception
     {
         final byte[] content = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-        prepareProxy();
+        prepareProxy(new ProxyServlet());
         prepareServer(new HttpServlet()
         {
             @Override
@@ -894,7 +924,7 @@ public class ProxyServletTest
     @Test(expected = TimeoutException.class)
     public void shouldHandleWrongContentLength() throws Exception
     {
-        prepareProxy();
+        prepareProxy(new ProxyServlet());
         prepareServer(new HttpServlet()
         {
             @Override
@@ -918,7 +948,7 @@ public class ProxyServletTest
     public void testCookiesFromDifferentClientsAreNotMixed() throws Exception
     {
         final String name = "biscuit";
-        prepareProxy();
+        prepareProxy(new ProxyServlet());
         prepareServer(new HttpServlet()
         {
             @Override

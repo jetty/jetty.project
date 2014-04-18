@@ -41,7 +41,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
@@ -50,7 +49,6 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -603,13 +601,11 @@ public class ProxyServlet extends HttpServlet
     }
 
     /**
-     * Transparent Proxy.
-     * <p/>
-     * This convenience extension to ProxyServlet configures the servlet as a transparent proxy.
-     * The servlet is configured with init parameters:
+     * This convenience extension to {@link ProxyServlet} configures the servlet as a transparent proxy.
+     * This servlet is configured with the following init parameters:
      * <ul>
-     * <li>proxyTo - a URI like http://host:80/context to which the request is proxied.
-     * <li>prefix - a URI prefix that is striped from the start of the forwarded URI.
+     * <li>proxyTo - a mandatory URI like http://host:80/context to which the request is proxied.</li>
+     * <li>prefix - an optional URI prefix that is stripped from the start of the forwarded URI.</li>
      * </ul>
      * For example, if a request is received at /foo/bar and the 'proxyTo' parameter is "http://host:80/context"
      * and the 'prefix' parameter is "/foo", then the request would be proxied to "http://host:80/context/bar".
@@ -636,21 +632,23 @@ public class ProxyServlet extends HttpServlet
 
             ServletConfig config = getServletConfig();
 
-            String prefix = config.getInitParameter("prefix");
-            _prefix = prefix == null ? _prefix : prefix;
-
-            // Adjust prefix value to account for context path
-            String contextPath = getServletContext().getContextPath();
-            _prefix = _prefix == null ? contextPath : (contextPath + _prefix);
-
             String proxyTo = config.getInitParameter("proxyTo");
             _proxyTo = proxyTo == null ? _proxyTo : proxyTo;
 
             if (_proxyTo == null)
                 throw new UnavailableException("Init parameter 'proxyTo' is required.");
 
-            if (!_prefix.startsWith("/"))
-                throw new UnavailableException("Init parameter 'prefix' parameter must start with a '/'.");
+            String prefix = config.getInitParameter("prefix");
+            if (prefix != null)
+            {
+                if (!prefix.startsWith("/"))
+                    throw new UnavailableException("Init parameter 'prefix' must start with a '/'.");
+                _prefix = prefix;
+            }
+
+            // Adjust prefix value to account for context path
+            String contextPath = getServletContext().getContextPath();
+            _prefix = _prefix == null ? contextPath : (contextPath + _prefix);
 
             _log.debug(config.getServletName() + " @ " + _prefix + " to " + _proxyTo);
         }

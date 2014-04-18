@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
-    <version>9.1.4-SNAPSHOT</version>
+    <version>9.2.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
@@ -21,10 +21,12 @@
     <dependency>
     	<groupId>org.eclipse.osgi</groupId>
     	<artifactId>org.eclipse.osgi</artifactId>
+        <scope>provided</scope>
     </dependency>
     <dependency>
         <groupId>org.eclipse.osgi</groupId>
         <artifactId>org.eclipse.osgi.services</artifactId>
+        <scope>provided</scope>
     </dependency>
   </dependencies>
 

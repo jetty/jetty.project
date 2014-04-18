@@ -8,6 +8,10 @@ etc/jetty-logging.xml
 [files]
 logs/
 
+[lib]
+lib/logging/**.jar
+resources/
+
 [ini-template]
 ## Logging Configuration
 # Configure jetty logging for default internal behavior STDERR output

@@ -20,124 +20,28 @@ package org.eclipse.jetty.start;
 
 import java.io.Closeable;
 import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.util.Locale;
-import java.util.regex.Pattern;
 
 public class FS
 {
-    public static class AllFilter implements FileFilter
+    public static boolean canReadDirectory(Path path)
     {
-        public static final AllFilter INSTANCE = new AllFilter();
-
-        @Override
-        public boolean accept(File pathname)
-        {
-            return true;
-        }
-    }
-    
-    public static class DirFilter implements FileFilter
-    {
-        public static final DirFilter INSTANCE = new DirFilter();
-
-        @Override
-        public boolean accept(File path)
-        {
-            return path.isDirectory();
-        }
-    }
-    
-    public static class RelativeRegexFilter implements FileFilter
-    {
-        private final File baseDir;
-        private final Pattern pattern;
-
-        public RelativeRegexFilter(File baseDir, Pattern pattern)
-        {
-            this.baseDir = baseDir;
-            this.pattern = pattern;
-        }
-
-        @Override
-        public boolean accept(File path)
-        {
-            // get relative path
-            String relativePath = FS.toRelativePath(baseDir,path);
-            
-            // see if it matches
-            return (pattern.matcher(relativePath).matches());
-        }
+        return Files.exists(path) && Files.isDirectory(path) && Files.isReadable(path);
     }
 
-    public static class FilenameRegexFilter implements FileFilter
+    public static boolean canReadFile(Path path)
     {
-        private final Pattern pattern;
-
-        public FilenameRegexFilter(String regex)
-        {
-            pattern = Pattern.compile(regex,Pattern.CASE_INSENSITIVE);
-        }
-
-        @Override
-        public boolean accept(File path)
-        {
-            return path.isFile() && pattern.matcher(path.getName()).matches();
-        }
+        return Files.exists(path) && Files.isRegularFile(path) && Files.isReadable(path);
     }
 
-    public static class FileNamesFilter implements FileFilter
+    public static boolean canWrite(Path path)
     {
-        private final String filenames[];
-
-        public FileNamesFilter(String... names)
-        {
-            this.filenames = names;
-        }
-
-        @Override
-        public boolean accept(File path)
-        {
-            if (!path.isFile())
-            {
-                return false;
-            }
-            for (String name : filenames)
-            {
-                if (name.equalsIgnoreCase(path.getName()))
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-    }
-
-    public static class IniFilter extends FilenameRegexFilter
-    {
-        public IniFilter()
-        {
-            super("^.*\\.ini$");
-        }
-    }
-
-    public static class XmlFilter extends FilenameRegexFilter
-    {
-        public XmlFilter()
-        {
-            super("^.*\\.xml$");
-        }
-    }
-
-    public static boolean canReadDirectory(File path)
-    {
-        return (path.exists() && path.isDirectory() && path.canRead());
-    }
-
-    public static boolean canReadFile(File path)
-    {
-        return (path.exists() && path.isFile() && path.canRead());
+        return Files.isWritable(path);
     }
 
     public static void close(Closeable c)
@@ -157,47 +61,64 @@ public class FS
         }
     }
 
-    public static void ensureDirectoryExists(File dir) throws IOException
+    public static boolean createNewFile(Path path) throws IOException
     {
-        if (dir.exists())
+        Path ret = Files.createFile(path);
+        return Files.exists(ret);
+    }
+
+    public static void ensureDirectoryExists(Path dir) throws IOException
+    {
+        if (exists(dir))
         {
+            // exists already, nothing to do
             return;
         }
-        if (!dir.mkdirs())
-        {
-            throw new IOException("Unable to create directory: " + dir.getAbsolutePath());
-        }
+        Files.createDirectories(dir);
     }
-    
-    public static void ensureDirectoryWritable(File dir) throws IOException
+
+    public static void ensureDirectoryWritable(Path dir) throws IOException
     {
-        if (!dir.exists())
+        if (!Files.exists(dir))
         {
-            throw new IOException("Directory does not exist: " + dir.getAbsolutePath());
+            throw new IOException("Path does not exist: " + dir.toAbsolutePath());
         }
-        if (!dir.canWrite())
+        if (!Files.isDirectory(dir))
         {
-            throw new IOException("Unable to write to directory: " + dir.getAbsolutePath());
+            throw new IOException("Directory does not exist: " + dir.toAbsolutePath());
+        }
+        if (!Files.isWritable(dir))
+        {
+            throw new IOException("Unable to write to directory: " + dir.toAbsolutePath());
         }
     }
 
-    public static boolean isFile(File file)
+    public static boolean exists(Path path)
     {
-        if (file == null)
+        return Files.exists(path);
+    }
+
+    public static boolean isValidDirectory(Path path)
+    {
+        if (!Files.exists(path))
         {
+            // doesn't exist, not a valid directory
             return false;
         }
-        return file.exists() && file.isFile();
+
+        if (!Files.isDirectory(path))
+        {
+            // not a directory (as expected)
+            StartLog.warn("Not a directory: " + path);
+            return false;
+        }
+
+        return true;
     }
 
     public static boolean isXml(String filename)
     {
         return filename.toLowerCase(Locale.ENGLISH).endsWith(".xml");
-    }
-    
-    public static String toRelativePath(File baseDir, File path)
-    {
-        return baseDir.toURI().relativize(path.toURI()).toASCIIString();
     }
 
     public static String separators(String path)
@@ -215,5 +136,21 @@ public class FS
             }
         }
         return ret.toString();
+    }
+
+    public static Path toPath(String path)
+    {
+        return FileSystems.getDefault().getPath(FS.separators(path));
+    }
+
+    public static void touch(Path path) throws IOException
+    {
+        FileTime now = FileTime.fromMillis(System.currentTimeMillis());
+        Files.setLastModifiedTime(path,now);
+    }
+
+    public static Path toRealPath(Path path) throws IOException
+    {
+        return path.toRealPath();
     }
 }

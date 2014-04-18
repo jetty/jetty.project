@@ -60,6 +60,12 @@ public class TestUseCases
     {
         assertUseCase("home","base.jmx","assert-jmx.txt");
     }
+    
+    @Test
+    public void testWithExtraStartDir_Logging() throws Exception
+    {
+        assertUseCase("home","base.with.extra.start.dirs","assert-extra-start-dir-logging.txt");
+    }
 
     @Test
     public void testWithMissingNpnVersion() throws Exception
@@ -76,7 +82,6 @@ public class TestUseCases
     @Test
     public void testWithSpdyBadNpnVersion() throws Exception
     {
-        //StartLog.enableDebug(); 
         assertUseCase("home","base.enable.spdy.bad.npn.version","assert-enable-spdy-bad-npn-version.txt","java.version=1.7.0_01");
     }
 

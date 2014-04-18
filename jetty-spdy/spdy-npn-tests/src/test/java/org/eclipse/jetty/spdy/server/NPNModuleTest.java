@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.spdy.server;
 
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -26,8 +29,10 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import org.eclipse.jetty.start.BaseHome;
 import org.eclipse.jetty.start.FileArg;
@@ -42,12 +47,6 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 @RunWith(Parameterized.class)
 public class NPNModuleTest
 {
@@ -57,6 +56,7 @@ public class NPNModuleTest
     static
     {
         /** The main() method in this test case can be run to validate this list independantly */
+        KNOWN_GOOD_NPN_URLS.add("http://central.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.7.v20140316/npn-boot-1.1.7.v20140316.jar");
         KNOWN_GOOD_NPN_URLS.add("http://central.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.6.v20130911/npn-boot-1.1.6.v20130911.jar");
         KNOWN_GOOD_NPN_URLS.add("http://central.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.5.v20130313/npn-boot-1.1.5.v20130313.jar");
         KNOWN_GOOD_NPN_URLS.add("http://central.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.4.v20130313/npn-boot-1.1.4.v20130313.jar");
@@ -69,11 +69,11 @@ public class NPNModuleTest
     @Parameters(name = "{index}: mod:{0}")
     public static List<Object[]> data()
     {
-        File npnBootModDir = MavenTestingUtils.getProjectDir("../spdy-http-server/src/main/config/modules/npn");
+        File npnBootModDir = MavenTestingUtils.getProjectDir("../spdy-http-server/src/main/config/modules/protonego-impl");
         List<Object[]> data = new ArrayList<>();
         for (File file : npnBootModDir.listFiles())
         {
-            if (file.getName().endsWith(".mod"))
+            if (Pattern.matches("npn-.*\\.mod",file.getName()))
             {
                 data.add(new Object[] { file.getName() });
             }
@@ -87,12 +87,14 @@ public class NPNModuleTest
     private static BaseHome basehome;
 
     @BeforeClass
-    public static void initBaseHome()
+    public static void initBaseHome() throws IOException
     {
         File homeDir = MavenTestingUtils.getProjectDir("../spdy-http-server/src/main/config");
         File baseDir = MavenTestingUtils.getTargetTestingDir(NPNModuleTest.class.getName());
         FS.ensureEmpty(baseDir);
-        basehome = new BaseHome(homeDir,baseDir);
+        
+        String cmdLine[] = { "jetty.home="+homeDir.getAbsolutePath(),"jetty.base="+baseDir.getAbsolutePath() };
+        basehome = new BaseHome(cmdLine);
     }
 
     /**
@@ -101,12 +103,12 @@ public class NPNModuleTest
     @Test
     public void testModuleValues() throws IOException
     {
-        File modFile = basehome.getFile("modules/npn/" + modBootFile);
+        Path modFile = basehome.getPath("modules/protonego-impl/" + modBootFile);
         Module mod = new Module(basehome,modFile);
         assertNotNull("module",mod);
         
         // Validate logical name
-        assertThat("Module name",mod.getName(),is("npn-boot"));
+        assertThat("Module name",mod.getName(),is("protonego-boot"));
 
         List<String> expectedBootClasspath = new ArrayList<>();
 
@@ -120,7 +122,7 @@ public class NPNModuleTest
             }
         }
 
-        for (String line : mod.getInitialise())
+        for (String line : mod.getJvmArgs())
         {
             expectedBootClasspath.remove(line);
         }
@@ -128,10 +130,10 @@ public class NPNModuleTest
         if (expectedBootClasspath.size() > 0)
         {
             StringBuilder err = new StringBuilder();
-            err.append("XBootClasspath mismatch between [files] and [ini-template]");
+            err.append("XBootClasspath mismatch between [files] and [exec]");
             err.append("\nThe following are inferred from your [files] definition in ");
-            err.append(modFile.getAbsolutePath());
-            err.append("\nbut are not referenced in your [ini-template] section");
+            err.append(modFile.toAbsolutePath().toString());
+            err.append("\nbut are not referenced in your [exec] section");
             for (String entry : expectedBootClasspath)
             {
                 err.append("\n").append(entry);
