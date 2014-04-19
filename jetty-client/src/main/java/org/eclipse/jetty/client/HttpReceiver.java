@@ -33,6 +33,7 @@ import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -48,8 +49,8 @@ import org.eclipse.jetty.util.log.Logger;
  * is available</li>
  * <li>{@link #responseHeader(HttpExchange, HttpField)}, when a HTTP field is available</li>
  * <li>{@link #responseHeaders(HttpExchange)}, when all HTTP headers are available</li>
- * <li>{@link #responseContent(HttpExchange, ByteBuffer)}, when HTTP content is available; this is the only method
- * that may be invoked multiple times with different buffers containing different content</li>
+ * <li>{@link #responseContent(HttpExchange, ByteBuffer, Callback)}, when HTTP content is available; this is the only
+ * method that may be invoked multiple times with different buffers containing different content</li>
  * <li>{@link #responseSuccess(HttpExchange)}, when the response is complete</li>
  * </ol>
  * At any time, subclasses may invoke {@link #responseFailure(Throwable)} to indicate that the response has failed
@@ -237,7 +238,7 @@ public abstract class HttpReceiver
 
         HttpResponse response = exchange.getResponse();
         if (LOG.isDebugEnabled())
-            LOG.debug("Response headers {}{}{}", response, System.getProperty("line.separator"), response.getHeaders().toString().trim());
+            LOG.debug("Response headers {}{}{}", response, System.lineSeparator(), response.getHeaders().toString().trim());
         ResponseNotifier notifier = getHttpDestination().getResponseNotifier();
         notifier.notifyHeaders(exchange.getConversation().getResponseListeners(), response);
 
@@ -269,7 +270,7 @@ public abstract class HttpReceiver
      * @param buffer the response HTTP content buffer
      * @return whether the processing should continue
      */
-    protected boolean responseContent(HttpExchange exchange, ByteBuffer buffer)
+    protected boolean responseContent(HttpExchange exchange, ByteBuffer buffer, Callback callback)
     {
         out: while (true)
         {
@@ -292,18 +293,18 @@ public abstract class HttpReceiver
 
         HttpResponse response = exchange.getResponse();
         if (LOG.isDebugEnabled())
-            LOG.debug("Response content {}{}{}", response, System.getProperty("line.separator"), BufferUtil.toDetailString(buffer));
+            LOG.debug("Response content {}{}{}", response, System.lineSeparator(), BufferUtil.toDetailString(buffer));
 
         ContentDecoder decoder = this.decoder;
         if (decoder != null)
         {
             buffer = decoder.decode(buffer);
             if (LOG.isDebugEnabled())
-                LOG.debug("Response content decoded ({}) {}{}{}", decoder, response, System.getProperty("line.separator"), BufferUtil.toDetailString(buffer));
+                LOG.debug("Response content decoded ({}) {}{}{}", decoder, response, System.lineSeparator(), BufferUtil.toDetailString(buffer));
         }
 
         ResponseNotifier notifier = getHttpDestination().getResponseNotifier();
-        notifier.notifyContent(exchange.getConversation().getResponseListeners(), response, buffer);
+        notifier.notifyContent(exchange.getConversation().getResponseListeners(), response, buffer, callback);
 
         return true;
     }

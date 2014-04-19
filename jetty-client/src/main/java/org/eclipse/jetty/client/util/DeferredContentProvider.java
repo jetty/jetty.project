@@ -235,10 +235,14 @@ public class DeferredContentProvider implements AsyncContentProvider, Closeable
             synchronized (lock)
             {
                 chunk = current;
-                --size;
-                lock.notify();
+                if (chunk != null)
+                {
+                    --size;
+                    lock.notify();
+                }
             }
-            chunk.callback.succeeded();
+            if (chunk != null)
+                chunk.callback.succeeded();
         }
 
         @Override
@@ -251,7 +255,8 @@ public class DeferredContentProvider implements AsyncContentProvider, Closeable
                 failure = x;
                 lock.notify();
             }
-            chunk.callback.failed(x);
+            if (chunk != null)
+                chunk.callback.failed(x);
         }
     }
 

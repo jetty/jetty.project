@@ -27,6 +27,8 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -106,35 +108,17 @@ public class ResponseNotifier
         }
     }
 
-    public void notifyContent(List<Response.ResponseListener> listeners, Response response, ByteBuffer buffer)
+    public void notifyContent(List<Response.ResponseListener> listeners, Response response, ByteBuffer buffer, Callback callback)
     {
-        // TODO: we need to create a "cumulative" callback that keeps track of how many listeners
-        // TODO: are invoked, and how many of these actually invoked the callback, and eventually
-        // TODO: call the callback passed to this method.
-
-        // Slice the buffer to avoid that listeners peek into data they should not look at.
-        buffer = buffer.slice();
-        if (!buffer.hasRemaining())
-            return;
-        // Optimized to avoid allocations of iterator instances
-        for (int i = 0; i < listeners.size(); ++i)
-        {
-            Response.ResponseListener listener = listeners.get(i);
-            if (listener instanceof Response.ContentListener)
-            {
-                // The buffer was sliced, so we always clear it (position=0, limit=capacity)
-                // before passing it to the listener that may consume it.
-                buffer.clear();
-                notifyContent((Response.ContentListener)listener, response, buffer);
-            }
-        }
+        ContentCallback contentCallback = new ContentCallback(listeners, response, buffer, callback);
+        contentCallback.iterate();
     }
 
-    private void notifyContent(Response.ContentListener listener, Response response, ByteBuffer buffer)
+    private void notifyContent(Response.AsyncContentListener listener, Response response, ByteBuffer buffer, Callback callback)
     {
         try
         {
-            listener.onContent(response, buffer);
+            listener.onContent(response, buffer, callback);
         }
         catch (Throwable x)
         {
@@ -222,7 +206,8 @@ public class ResponseNotifier
         }
         notifyHeaders(listeners, response);
         if (response instanceof ContentResponse)
-            notifyContent(listeners, response, ByteBuffer.wrap(((ContentResponse)response).getContent()));
+            // TODO: handle callback
+            notifyContent(listeners, response, ByteBuffer.wrap(((ContentResponse)response).getContent()), new Callback.Adapter());
         notifySuccess(listeners, response);
     }
 
@@ -243,7 +228,8 @@ public class ResponseNotifier
         }
         notifyHeaders(listeners, response);
         if (response instanceof ContentResponse)
-            notifyContent(listeners, response, ByteBuffer.wrap(((ContentResponse)response).getContent()));
+            // TODO: handle callback
+            notifyContent(listeners, response, ByteBuffer.wrap(((ContentResponse)response).getContent()), new Callback.Adapter());
         notifyFailure(listeners, response, failure);
     }
 
@@ -251,5 +237,52 @@ public class ResponseNotifier
     {
         forwardFailure(listeners, response, responseFailure);
         notifyComplete(listeners, new Result(request, requestFailure, response, responseFailure));
+    }
+
+    private class ContentCallback extends IteratingNestedCallback
+    {
+        private final List<Response.ResponseListener> listeners;
+        private final Response response;
+        private final ByteBuffer buffer;
+        private int index;
+
+        private ContentCallback(List<Response.ResponseListener> listeners, Response response, ByteBuffer buffer, Callback callback)
+        {
+            super(callback);
+            this.listeners = listeners;
+            this.response = response;
+            // Slice the buffer to avoid that listeners peek into data they should not look at.
+            this.buffer = buffer.slice();
+        }
+
+        @Override
+        protected Action process() throws Exception
+        {
+            if (index == listeners.size())
+                return Action.SUCCEEDED;
+
+            Response.ResponseListener listener = listeners.get(index);
+            if (listener instanceof Response.AsyncContentListener)
+            {
+                // The buffer was sliced, so we always clear it
+                // (clear => position=0, limit=capacity) before
+                // passing it to the listener that may consume it.
+                buffer.clear();
+                ResponseNotifier.this.notifyContent((Response.AsyncContentListener)listener, response, buffer, this);
+                return Action.SCHEDULED;
+            }
+            else
+            {
+                succeeded();
+                return Action.SCHEDULED;
+            }
+        }
+
+        @Override
+        public void succeeded()
+        {
+            ++index;
+            super.succeeded();
+        }
     }
 }

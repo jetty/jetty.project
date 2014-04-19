@@ -30,6 +30,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.IdleTimeout;
+import org.eclipse.jetty.util.Callback;
 
 public class HttpChannelOverFCGI extends HttpChannel
 {
@@ -105,7 +106,8 @@ public class HttpChannelOverFCGI extends HttpChannel
     protected boolean content(ByteBuffer buffer)
     {
         HttpExchange exchange = getHttpExchange();
-        return exchange != null && receiver.responseContent(exchange, buffer);
+        // TODO: handle callback properly
+        return exchange != null && receiver.responseContent(exchange, buffer, new Callback.Adapter());
     }
 
     protected boolean responseSuccess()
