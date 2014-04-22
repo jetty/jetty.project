@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.nio.ByteBuffer;
 import java.util.Map;
+
 import javax.websocket.CloseReason;
 import javax.websocket.Endpoint;
 import javax.websocket.MessageHandler;
@@ -34,7 +35,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.message.MessageInputStream;
 import org.eclipse.jetty.websocket.common.message.MessageReader;
 import org.eclipse.jetty.websocket.jsr356.JsrPongMessage;
@@ -49,7 +49,7 @@ import org.eclipse.jetty.websocket.jsr356.messages.TextWholeMessage;
 /**
  * EventDriver for websocket that extend from {@link javax.websocket.Endpoint}
  */
-public class JsrEndpointEventDriver extends AbstractJsrEventDriver implements EventDriver
+public class JsrEndpointEventDriver extends AbstractJsrEventDriver
 {
     private static final Logger LOG = Log.getLogger(JsrEndpointEventDriver.class);
 

@@ -18,7 +18,8 @@
 
 package org.eclipse.jetty.websocket.common.test;
 
-import java.io.Closeable;
+import static org.hamcrest.Matchers.*;
+
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -68,10 +69,6 @@ import org.eclipse.jetty.websocket.common.io.IOState.ConnectionStateListener;
 import org.eclipse.jetty.websocket.common.io.http.HttpResponseHeaderParser;
 import org.junit.Assert;
 
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-
 /**
  * A simple websocket client for performing unit tests with.
  * <p>
@@ -84,7 +81,7 @@ import static org.hamcrest.Matchers.notNullValue;
  * with regards to basic IO behavior, a write should work as expected, a read should work as expected, but <u>what</u> byte it sends or reads is not within its
  * scope.
  */
-public class BlockheadClient implements IncomingFrames, OutgoingFrames, ConnectionStateListener, Closeable
+public class BlockheadClient implements IncomingFrames, OutgoingFrames, ConnectionStateListener, AutoCloseable
 {
     private static final String REQUEST_HASH_KEY = "dGhlIHNhbXBsZSBub25jZQ==";
     private static final int BUFFER_SIZE = 8192;
@@ -182,22 +179,14 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames, Connecti
 
     public void close(int statusCode, String message)
     {
+        LOG.debug("close({},{})",statusCode,message);
         CloseInfo close = new CloseInfo(statusCode,message);
-
-        ioState.onCloseLocal(close);
 
         if (!ioState.isClosed())
         {
-            WebSocketFrame frame = close.asFrame();
-            LOG.debug("Issuing: {}",frame);
-            try
-            {
-                write(frame);
-            }
-            catch (IOException e)
-            {
-                LOG.debug(e);
-            }
+            ioState.onCloseLocal(close);
+        } else {
+            LOG.debug("Not issuing close. ioState = {}",ioState);
         }
     }
 
@@ -429,13 +418,8 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames, Connecti
         {
             LOG.info("Client parsed {} frames",count);
         }
-
-        if (frame.getOpCode() == OpCode.CLOSE)
-        {
-            CloseInfo close = new CloseInfo(frame);
-            ioState.onCloseRemote(close);
-        }
-
+        
+        // Capture Frame Copy
         WebSocketFrame copy = WebSocketFrame.copy(frame);
         incomingFrames.incomingFrame(copy);
     }
@@ -448,6 +432,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames, Connecti
     @Override
     public void onConnectionStateChange(ConnectionState state)
     {
+        LOG.debug("CLIENT onConnectionStateChange() - {}", state);
         switch (state)
         {
             case CLOSED:
@@ -455,10 +440,17 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames, Connecti
                 // this.disconnect();
                 break;
             case CLOSING:
-                if (ioState.wasRemoteCloseInitiated())
+                CloseInfo close = ioState.getCloseInfo();
+                
+                WebSocketFrame frame = close.asFrame();
+                LOG.debug("Issuing: {}",frame);
+                try
                 {
-                    CloseInfo close = ioState.getCloseInfo();
-                    close(close.getStatusCode(),close.getReason());
+                    write(frame);
+                }
+                catch (IOException e)
+                {
+                    LOG.debug(e);
                 }
                 break;
             default:
@@ -701,6 +693,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames, Connecti
     {
         if (!ioState.isOpen())
         {
+            LOG.debug("IO Not Open / Not Writing: {}",frame);
             return;
         }
         LOG.debug("write(Frame->{}) to {}",frame,outgoing);

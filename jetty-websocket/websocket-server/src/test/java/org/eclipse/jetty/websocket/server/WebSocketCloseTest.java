@@ -114,7 +114,7 @@ public class WebSocketCloseTest
         public void onWebSocketConnect(Session sess)
         {
             LOG.debug("onWebSocketConnect({})",sess);
-            sess.close();
+            sess.close(StatusCode.NORMAL,"FastCloseServer");
         }
     }
 
@@ -129,13 +129,9 @@ public class WebSocketCloseTest
         public void onWebSocketConnect(Session sess)
         {
             LOG.debug("onWebSocketConnect({})",sess);
+            // Test failure due to unhandled exception
+            // this should trigger a fast-fail closure during open/connect
             throw new RuntimeException("Intentional FastFail");
-        }
-
-        @Override
-        public void onWebSocketError(Throwable cause)
-        {
-            errors.add(cause);
         }
     }
 
@@ -163,29 +159,27 @@ public class WebSocketCloseTest
     @Test
     public void testFastClose() throws Exception
     {
-        BlockheadClient client = new BlockheadClient(server.getServerUri());
-        client.setProtocols("fastclose");
-        client.setTimeout(TimeUnit.SECONDS,1);
-        try
+        try (BlockheadClient client = new BlockheadClient(server.getServerUri()))
         {
+            client.setProtocols("fastclose");
+            client.setTimeout(TimeUnit.SECONDS,1);
             client.connect();
             client.sendStandardRequest();
             client.expectUpgradeResponse();
 
+            // Verify that client got close frame
             IncomingFramesCapture capture = client.readFrames(1,TimeUnit.SECONDS,1);
             WebSocketFrame frame = capture.getFrames().poll();
             Assert.assertThat("frames[0].opcode",frame.getOpCode(),is(OpCode.CLOSE));
             CloseInfo close = new CloseInfo(frame);
             Assert.assertThat("Close Status Code",close.getStatusCode(),is(StatusCode.NORMAL));
-
+            
+            // Notify server of close handshake
             client.write(close.asFrame()); // respond with close
-
+            
+            // ensure server socket got close event
             Assert.assertThat("Fast Close Latch",closeSocket.closeLatch.await(1,TimeUnit.SECONDS),is(true));
             Assert.assertThat("Fast Close.statusCode",closeSocket.closeStatusCode,is(StatusCode.NORMAL));
-        }
-        finally
-        {
-            client.close();
         }
     }
 
@@ -195,11 +189,10 @@ public class WebSocketCloseTest
     @Test
     public void testFastFail() throws Exception
     {
-        BlockheadClient client = new BlockheadClient(server.getServerUri());
-        client.setProtocols("fastfail");
-        client.setTimeout(TimeUnit.SECONDS,1);
-        try
+        try (BlockheadClient client = new BlockheadClient(server.getServerUri()))
         {
+            client.setProtocols("fastfail");
+            client.setTimeout(TimeUnit.SECONDS,1);
             try (StacklessLogging scope = new StacklessLogging(AbstractEventDriver.class))
             {
                 client.connect();
@@ -214,14 +207,11 @@ public class WebSocketCloseTest
 
                 client.write(close.asFrame()); // respond with close
 
+                // ensure server socket got close event
                 Assert.assertThat("Fast Fail Latch",closeSocket.closeLatch.await(1,TimeUnit.SECONDS),is(true));
                 Assert.assertThat("Fast Fail.statusCode",closeSocket.closeStatusCode,is(StatusCode.SERVER_ERROR));
                 Assert.assertThat("Fast Fail.errors",closeSocket.errors.size(),is(1));
             }
-        }
-        finally
-        {
-            client.close();
         }
     }
 }

@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.client;
 
 import java.io.IOException;
-import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -32,7 +31,6 @@ public class ServerWriteThread extends Thread
 {
     private static final Logger LOG = Log.getLogger(ServerWriteThread.class);
     private final ServerConnection conn;
-    private Exchanger<String> exchanger;
     private int slowness = -1;
     private int messageCount = 100;
     private String message = "Hello";
@@ -40,11 +38,6 @@ public class ServerWriteThread extends Thread
     public ServerWriteThread(ServerConnection conn)
     {
         this.conn = conn;
-    }
-
-    public Exchanger<String> getExchanger()
-    {
-        return exchanger;
     }
 
     public String getMessage()
@@ -73,12 +66,6 @@ public class ServerWriteThread extends Thread
             {
                 conn.write(new TextFrame().setPayload(message));
 
-                if (exchanger != null)
-                {
-                    // synchronized on exchange
-                    exchanger.exchange(message);
-                }
-
                 m.incrementAndGet();
 
                 if (slowness > 0)
@@ -91,11 +78,6 @@ public class ServerWriteThread extends Thread
         {
             LOG.warn(e);
         }
-    }
-
-    public void setExchanger(Exchanger<String> exchanger)
-    {
-        this.exchanger = exchanger;
     }
 
     public void setMessage(String message)

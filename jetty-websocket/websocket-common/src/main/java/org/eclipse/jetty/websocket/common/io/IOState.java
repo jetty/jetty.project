@@ -139,6 +139,10 @@ public class IOState
     {
         for (ConnectionStateListener listener : listeners)
         {
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("{}.onConnectionStateChange({})",listener.getClass().getSimpleName(),state.name());
+            }
             listener.onConnectionStateChange(state);
         }
     }
@@ -166,8 +170,7 @@ public class IOState
             }
 
             this.state = ConnectionState.CLOSED;
-            if (closeInfo == null)
-                this.closeInfo = close;
+            this.closeInfo = close;
             this.inputAvailable = false;
             this.outputAvailable = false;
             this.closeHandshakeSource = CloseHandshakeSource.ABNORMAL;
@@ -193,16 +196,16 @@ public class IOState
 
         if (initialState == ConnectionState.CONNECTED)
         {
-            // fast close. a local close request from end-user onConnected() method
+            // fast close. a local close request from end-user onConnect/onOpen method
             LOG.debug("FastClose in CONNECTED detected");
             // Force the state open (to allow read/write to endpoint)
             onOpened();
+            LOG.debug("FastClose continuing with Closure");
         }
 
         synchronized (this)
         {
-            if (closeInfo == null)
-                closeInfo = close;
+            closeInfo = close;
 
             boolean in = inputAvailable;
             boolean out = outputAvailable;
@@ -236,7 +239,6 @@ public class IOState
             LOG.debug("notifying state listeners: {}",event);
             notifyStateListeners(event);
 
-            /*
             // if abnormal, we don't expect an answer.
             if (close.isAbnormal())
             {
@@ -253,7 +255,6 @@ public class IOState
                 notifyStateListeners(event);
                 return;
             }
-            */
         }
     }
 
@@ -272,8 +273,7 @@ public class IOState
                 return;
             }
 
-            if (closeInfo == null)
-                closeInfo = close;
+            closeInfo = close;
 
             boolean in = inputAvailable;
             boolean out = outputAvailable;
@@ -360,7 +360,7 @@ public class IOState
             // already opened
             return;
         }
-        
+
         if (this.state != ConnectionState.CONNECTED)
         {
             LOG.debug("Unable to open, not in CONNECTED state: {}",this.state);
@@ -394,18 +394,69 @@ public class IOState
                 return;
             }
 
-            CloseInfo close = new CloseInfo(StatusCode.NO_CLOSE,"Read EOF");
+            CloseInfo close = new CloseInfo(StatusCode.ABNORMAL,"Read EOF");
 
             this.cleanClose = false;
             this.state = ConnectionState.CLOSED;
-            if (closeInfo == null)
-                this.closeInfo = close;
+            this.closeInfo = close;
             this.inputAvailable = false;
             this.outputAvailable = false;
             this.closeHandshakeSource = CloseHandshakeSource.ABNORMAL;
             event = this.state;
         }
         notifyStateListeners(event);
+    }
+
+    public void onDisconnected()
+    {
+        ConnectionState event = null;
+        synchronized (this)
+        {
+            if (this.state == ConnectionState.CLOSED)
+            {
+                // already closed
+                return;
+            }
+
+            CloseInfo close = new CloseInfo(StatusCode.ABNORMAL,"Disconnected");
+
+            this.cleanClose = false;
+            this.state = ConnectionState.CLOSED;
+            this.closeInfo = close;
+            this.inputAvailable = false;
+            this.outputAvailable = false;
+            this.closeHandshakeSource = CloseHandshakeSource.ABNORMAL;
+            event = this.state;
+        }
+        notifyStateListeners(event);
+    }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder str = new StringBuilder();
+        str.append(this.getClass().getSimpleName());
+        str.append("@").append(Integer.toHexString(hashCode()));
+        str.append("[").append(state);
+        str.append(',');
+        if (!inputAvailable)
+        {
+            str.append('!');
+        }
+        str.append("in,");
+        if (!outputAvailable)
+        {
+            str.append('!');
+        }
+        str.append("out");
+        if ((state == ConnectionState.CLOSED) || (state == ConnectionState.CLOSING))
+        {
+            str.append(",close=").append(closeInfo);
+            str.append(",clean=").append(cleanClose);
+            str.append(",closeSource=").append(closeHandshakeSource);
+        }
+        str.append(']');
+        return str.toString();
     }
 
     public boolean wasAbnormalClose()
@@ -427,4 +478,5 @@ public class IOState
     {
         return closeHandshakeSource == CloseHandshakeSource.REMOTE;
     }
+
 }

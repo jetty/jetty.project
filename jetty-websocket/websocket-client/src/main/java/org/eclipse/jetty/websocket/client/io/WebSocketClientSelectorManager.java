@@ -98,7 +98,7 @@ public class WebSocketClientSelectorManager extends SelectorManager
             else
             {
                 // Standard "ws://"
-                endPoint.setIdleTimeout(connectPromise.getClient().getMaxIdleTimeout());
+                endPoint.setIdleTimeout(connectPromise.getDriver().getPolicy().getIdleTimeout());
                 return newUpgradeConnection(channel,endPoint,connectPromise);
             }
         }
@@ -138,5 +138,10 @@ public class WebSocketClientSelectorManager extends SelectorManager
     public void setSslContextFactory(SslContextFactory sslContextFactory)
     {
         this.sslContextFactory = sslContextFactory;
+    }
+    
+    public WebSocketPolicy getPolicy()
+    {
+        return policy;
     }
 }
