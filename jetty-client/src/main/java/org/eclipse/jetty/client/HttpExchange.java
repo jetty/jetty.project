@@ -91,6 +91,8 @@ public class HttpExchange
     public static final int STATUS_EXCEPTED = 9;
     public static final int STATUS_CANCELLING = 10;
     public static final int STATUS_CANCELLED = 11;
+    public static final int STATUS_SENDING_PARSING_HEADERS = 12;
+    public static final int STATUS_SENDING_PARSING_CONTENT = 13;
 
     // HTTP protocol fields
     private String _method = HttpMethods.GET;
@@ -126,8 +128,11 @@ public class HttpExchange
     protected void expire(HttpDestination destination)
     {
         AbstractHttpConnection connection = _connection;
-        if (getStatus() < HttpExchange.STATUS_COMPLETED)
-            setStatus(HttpExchange.STATUS_EXPIRED);
+        int status = getStatus();
+        if (status < STATUS_COMPLETED ||
+                status == STATUS_SENDING_PARSING_HEADERS ||
+                status == STATUS_SENDING_PARSING_CONTENT)
+            setStatus(STATUS_EXPIRED);
         destination.exchangeExpired(this);
         if (connection != null)
             connection.exchangeExpired(this);
@@ -255,6 +260,9 @@ public class HttpExchange
                 case STATUS_SENDING_REQUEST:
                     switch (newStatus)
                     {
+                        case STATUS_PARSING_HEADERS:
+                            set = _status.compareAndSet(oldStatus,STATUS_SENDING_PARSING_HEADERS);
+                            break;
                         case STATUS_WAITING_FOR_RESPONSE:
                             if (set = _status.compareAndSet(oldStatus,newStatus))
                                 getEventListener().onRequestCommitted();
@@ -350,14 +358,52 @@ public class HttpExchange
                         case STATUS_START:
                             set = _status.compareAndSet(oldStatus,newStatus);
                             break;
-                            
                         case STATUS_COMPLETED:
                             ignored = true;
                             done();
                             break; 
-                            
                         default:
                             ignored = true;
+                            break;
+                    }
+                    break;
+                case STATUS_SENDING_PARSING_HEADERS:
+                    switch (newStatus)
+                    {
+                        case STATUS_WAITING_FOR_RESPONSE:
+                            if (set = _status.compareAndSet(oldStatus,STATUS_PARSING_HEADERS))
+                                getEventListener().onRequestCommitted();
+                            break;
+                        case STATUS_PARSING_CONTENT:
+                            if (set = _status.compareAndSet(oldStatus,STATUS_SENDING_PARSING_CONTENT))
+                                getEventListener().onResponseHeaderComplete();
+                            break;
+                        case STATUS_CANCELLING:
+                        case STATUS_EXCEPTED:
+                            set = _status.compareAndSet(oldStatus,newStatus);
+                            break;
+                        case STATUS_EXPIRED:
+                            set = setStatusExpired(newStatus,oldStatus);
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                case STATUS_SENDING_PARSING_CONTENT:
+                    switch (newStatus)
+                    {
+                        case STATUS_WAITING_FOR_RESPONSE:
+                            if (set = _status.compareAndSet(oldStatus,STATUS_PARSING_CONTENT))
+                                getEventListener().onRequestCommitted();
+                            break;
+                        case STATUS_CANCELLING:
+                        case STATUS_EXCEPTED:
+                            set = _status.compareAndSet(oldStatus,newStatus);
+                            break;
+                        case STATUS_EXPIRED:
+                            set = setStatusExpired(newStatus,oldStatus);
+                            break;
+                        default:
                             break;
                     }
                     break;
@@ -877,6 +923,12 @@ public class HttpExchange
                 break;
             case STATUS_CANCELLED:
                 state = "CANCELLED";
+                break;
+            case STATUS_SENDING_PARSING_HEADERS:
+                state = "SENDING+HEADERS";
+                break;
+            case STATUS_SENDING_PARSING_CONTENT:
+                state = "SENDING+CONTENT";
                 break;
             default:
                 state = "UNKNOWN";
