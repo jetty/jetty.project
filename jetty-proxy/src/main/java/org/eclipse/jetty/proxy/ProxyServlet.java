@@ -41,6 +41,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
@@ -427,29 +428,13 @@ public class ProxyServlet extends HttpServlet
         addViaHeader(proxyRequest);
         addXForwardedHeaders(proxyRequest, request);
 
-        if (hasContent)
-        {
-            proxyRequest.content(new InputStreamContentProvider(request.getInputStream())
-            {
-                @Override
-                public long getLength()
-                {
-                    return request.getContentLength();
-                }
-
-                @Override
-                protected ByteBuffer onRead(byte[] buffer, int offset, int length)
-                {
-                    _log.debug("{} proxying content to upstream: {} bytes", requestId, length);
-                    return super.onRead(buffer, offset, length);
-                }
-            });
-        }
-
         final AsyncContext asyncContext = request.startAsync();
         // We do not timeout the continuation, but the proxy request
         asyncContext.setTimeout(0);
         request.setAttribute(ASYNC_CONTEXT, asyncContext);
+
+        if (hasContent)
+            proxyRequest.content(proxyRequestContent(proxyRequest, request));
 
         customizeProxyRequest(proxyRequest, request);
 
@@ -488,6 +473,25 @@ public class ProxyServlet extends HttpServlet
 
         proxyRequest.timeout(getTimeout(), TimeUnit.MILLISECONDS);
         proxyRequest.send(new ProxyResponseListener(request, response));
+    }
+
+    protected ContentProvider proxyRequestContent(Request proxyRequest, final HttpServletRequest request) throws IOException
+    {
+        return new InputStreamContentProvider(request.getInputStream())
+        {
+            @Override
+            public long getLength()
+            {
+                return request.getContentLength();
+            }
+
+            @Override
+            protected ByteBuffer onRead(byte[] buffer, int offset, int length)
+            {
+                _log.debug("{} proxying content to upstream: {} bytes", getRequestId(request), length);
+                return super.onRead(buffer, offset, length);
+            }
+        };
     }
 
     protected void onRewriteFailed(HttpServletRequest request, HttpServletResponse response) throws IOException
