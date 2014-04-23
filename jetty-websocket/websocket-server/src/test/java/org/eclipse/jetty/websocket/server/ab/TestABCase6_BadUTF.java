@@ -163,18 +163,15 @@ public class TestABCase6_BadUTF extends AbstractABCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.BAD_PAYLOAD).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try(StacklessLogging supress = new StacklessLogging(Parser.class))
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
-            fuzzer.connect();
-            fuzzer.setSendMode(Fuzzer.SendMode.BULK);
-            fuzzer.send(send);
-            fuzzer.expect(expect);
-            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.UNCLEAN);
-        }
-        finally
-        {
-            fuzzer.close();
+            try (StacklessLogging supress = new StacklessLogging(Parser.class))
+            {
+                fuzzer.connect();
+                fuzzer.setSendMode(Fuzzer.SendMode.BULK);
+                fuzzer.send(send);
+                fuzzer.expect(expect);
+            }
         }
     }
 }

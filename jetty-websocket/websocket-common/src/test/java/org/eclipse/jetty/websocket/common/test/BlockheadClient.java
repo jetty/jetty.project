@@ -524,7 +524,13 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames, Connecti
         return len;
     }
 
+    @Deprecated
     public IncomingFramesCapture readFrames(int expectedCount, TimeUnit timeoutUnit, int timeoutDuration) throws IOException, TimeoutException
+    {
+        return readFrames(expectedCount,timeoutDuration,timeoutUnit);
+    }
+    
+    public IncomingFramesCapture readFrames(int expectedCount, int timeoutDuration, TimeUnit timeoutUnit) throws IOException, TimeoutException
     {
         LOG.debug("Read: waiting for {} frame(s) from server",expectedCount);
 

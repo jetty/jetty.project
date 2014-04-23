@@ -64,17 +64,12 @@ public class TestABCase7 extends AbstractABCase
         expect.add(new TextFrame().setPayload("Hello World"));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
@@ -91,18 +86,13 @@ public class TestABCase7 extends AbstractABCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
             fuzzer.expectNoMoreFrames();
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
@@ -119,18 +109,13 @@ public class TestABCase7 extends AbstractABCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
             fuzzer.expectNoMoreFrames();
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
@@ -147,18 +132,13 @@ public class TestABCase7 extends AbstractABCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
             fuzzer.expectNoMoreFrames();
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
@@ -176,18 +156,13 @@ public class TestABCase7 extends AbstractABCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
             fuzzer.expectNoMoreFrames();
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
@@ -210,18 +185,13 @@ public class TestABCase7 extends AbstractABCase
         expect.add(new TextFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
             fuzzer.expectNoMoreFrames();
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
@@ -237,18 +207,13 @@ public class TestABCase7 extends AbstractABCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
             fuzzer.expectNoMoreFrames();
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
@@ -258,8 +223,7 @@ public class TestABCase7 extends AbstractABCase
     @Test
     public void testCase7_3_2() throws Exception
     {
-        byte payload[] = new byte[]
-        { 0x00 };
+        byte payload[] = new byte[] { 0x00 };
         ByteBuffer buf = ByteBuffer.wrap(payload);
 
         List<WebSocketFrame> send = new ArrayList<>();
@@ -268,18 +232,13 @@ public class TestABCase7 extends AbstractABCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try(StacklessLogging scope = new StacklessLogging(Parser.class))
+        try (Fuzzer fuzzer = new Fuzzer(this); StacklessLogging scope = new StacklessLogging(Parser.class))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
             fuzzer.expectNoMoreFrames();
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
@@ -295,18 +254,13 @@ public class TestABCase7 extends AbstractABCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
             fuzzer.expectNoMoreFrames();
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
@@ -322,18 +276,13 @@ public class TestABCase7 extends AbstractABCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.NORMAL,"Hic").asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
             fuzzer.expectNoMoreFrames();
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
@@ -353,18 +302,13 @@ public class TestABCase7 extends AbstractABCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.NORMAL,reason).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try(StacklessLogging logging = new StacklessLogging(AbstractWebSocketConnection.class))
+        try (Fuzzer fuzzer = new Fuzzer(this); StacklessLogging logging = new StacklessLogging(AbstractWebSocketConnection.class))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
             fuzzer.expectNoMoreFrames();
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
@@ -390,18 +334,13 @@ public class TestABCase7 extends AbstractABCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.BAD_PAYLOAD).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try(StacklessLogging scope = new StacklessLogging(Parser.class,CloseInfo.class))
+        try (Fuzzer fuzzer = new Fuzzer(this); StacklessLogging scope = new StacklessLogging(Parser.class,CloseInfo.class))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
             fuzzer.expectNoMoreFrames();
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 }

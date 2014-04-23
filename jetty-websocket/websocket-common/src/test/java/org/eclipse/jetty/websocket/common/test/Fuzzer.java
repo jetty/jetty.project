@@ -45,7 +45,7 @@ import static org.hamcrest.Matchers.is;
 /**
  * Fuzzing utility for the AB tests.
  */
-public class Fuzzer
+public class Fuzzer implements AutoCloseable
 {
     public static enum CloseState
     {
@@ -117,8 +117,14 @@ public class Fuzzer
         buf.flip();
         return buf;
     }
+    
+    @Override
+    public void close() throws Exception
+    {
+        this.client.disconnect();
+    }
 
-    public void close()
+    public void disconnect()
     {
         this.client.disconnect();
     }
@@ -185,23 +191,6 @@ public class Fuzzer
     public void expectNoMoreFrames()
     {
         // TODO Should test for no more frames. success if connection closed.
-    }
-
-    public void expectServerDisconnect(DisconnectMode mode)
-    {
-        client.expectServerDisconnect();
-        IOState ios = client.getIOState();
-
-        switch (mode)
-        {
-            case CLEAN:
-                Assert.assertTrue(ios.wasRemoteCloseInitiated());
-                Assert.assertTrue(ios.wasCleanClose());
-                break;
-            case UNCLEAN:
-                Assert.assertTrue(ios.wasRemoteCloseInitiated());
-                break;
-        }
     }
 
     public CloseState getCloseState()
