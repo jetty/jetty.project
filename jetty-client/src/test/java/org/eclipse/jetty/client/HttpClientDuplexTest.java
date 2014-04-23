@@ -28,6 +28,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
@@ -297,6 +298,66 @@ public class HttpClientDuplexTest
         output.flush();
 
         Assert.assertEquals(HttpExchange.STATUS_EXCEPTED, exchange.waitForDone());
+
+        socket.close();
+    }
+
+
+    @Test
+    public void testResponseCompleteBeforeRequestContent() throws Exception
+    {
+        // Must be greater than 2 to stay in "sending"
+        // state and trigger the condition of this test.
+        int contentLength = 16;
+        final byte[] chunk = new byte[]{'A'};
+        final AtomicInteger requestContent = new AtomicInteger(contentLength);
+        ContentExchange exchange = new ContentExchange(true)
+        {
+            @Override
+            public Buffer getRequestContentChunk(Buffer buffer) throws IOException
+            {
+                if (requestContent.decrementAndGet() > 0)
+                    return new ByteArrayBuffer(chunk);
+                return null;
+            }
+        };
+        exchange.setURL("http://localhost:" + server.getLocalPort());
+        // The test needs a fake content source to invoke
+        // getRequestContentChunk() which will provide the content.
+        exchange.setRequestContentSource(new ClosedInputStream());
+        exchange.setRequestHeader("Content-Length", String.valueOf(contentLength));
+        client.send(exchange);
+
+        Socket socket = server.accept();
+        BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));
+        OutputStream output = socket.getOutputStream();
+
+        // Read headers.
+        while (true)
+        {
+            String line = input.readLine();
+            Assert.assertNotNull(line);
+            if (line.length() == 0)
+                break;
+        }
+
+        // Send the whole response.
+        String responseHeaders = "" +
+                "HTTP/1.1 200 OK\r\n" +
+                "Content-Length: 0\r\n" +
+                "\r\n";
+        output.write(responseHeaders.getBytes("UTF-8"));
+        output.flush();
+
+        // Read request content on server.
+        while (true)
+        {
+            if (input.read() < 0)
+                break;
+        }
+
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, exchange.waitForDone());
+        Assert.assertEquals(200, exchange.getResponseStatus());
 
         socket.close();
     }

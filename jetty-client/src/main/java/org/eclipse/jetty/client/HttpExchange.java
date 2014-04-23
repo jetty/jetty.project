@@ -325,10 +325,22 @@ public class HttpExchange
                     switch (newStatus)
                     {
                         case STATUS_START:
-                        case STATUS_EXCEPTED:
-                        case STATUS_WAITING_FOR_RESPONSE:
                             set = _status.compareAndSet(oldStatus,newStatus);
                             break;
+                        case STATUS_WAITING_FOR_RESPONSE:
+                            if (isResponseCompleted())
+                            {
+                                // Don't change the status, it's too late.
+                                ignored = true;
+                                getEventListener().onRequestCommitted();
+                            }
+                            else
+                            {
+                                // The 1xx cases go from COMPLETED => WAITING again.
+                                set = _status.compareAndSet(oldStatus,newStatus);
+                            }
+                            break;
+                        case STATUS_EXCEPTED:
                         case STATUS_CANCELLING:
                         case STATUS_EXPIRED:
                             // Don't change the status, it's too late
@@ -396,6 +408,10 @@ public class HttpExchange
                             if (set = _status.compareAndSet(oldStatus,STATUS_PARSING_CONTENT))
                                 getEventListener().onRequestCommitted();
                             break;
+                        case STATUS_COMPLETED:
+                            if (set = _status.compareAndSet(oldStatus,newStatus))
+                                getEventListener().onResponseComplete();
+                            break;
                         case STATUS_CANCELLING:
                         case STATUS_EXCEPTED:
                             set = _status.compareAndSet(oldStatus,newStatus);
@@ -421,6 +437,14 @@ public class HttpExchange
             LOG.warn(x);
         }
         return set;
+    }
+
+    private boolean isResponseCompleted()
+    {
+        synchronized (this)
+        {
+            return _onResponseCompleteDone;
+        }
     }
 
     private boolean setStatusExpired(int newStatus, int oldStatus)
