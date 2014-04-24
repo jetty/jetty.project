@@ -1417,12 +1417,13 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             {
                 jsp_pg_servlet=new ServletHolder(JspPropertyGroupServlet.NAME,new JspPropertyGroupServlet(context,handler));
                 _servletHolderMap.put(JspPropertyGroupServlet.NAME,jsp_pg_servlet);
+                _servletHolders.add(jsp_pg_servlet);
             }
 
             ServletMapping mapping = new ServletMapping();
             mapping.setServletName(JspPropertyGroupServlet.NAME);
             mapping.setPathSpecs(paths.toArray(new String[paths.size()]));
-            context.getServletHandler().addServletMapping(mapping);
+            _servletMappings.add(mapping);
         }
     }
 
