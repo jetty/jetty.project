@@ -48,7 +48,6 @@ import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.InputStreamContentProvider;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.log.Log;
@@ -391,7 +390,7 @@ public class ProxyServlet extends HttpServlet
         }
 
         final Request proxyRequest = _client.newRequest(rewrittenURI)
-                .method(HttpMethod.fromString(request.getMethod()))
+                .method(request.getMethod())
                 .version(HttpVersion.fromString(request.getProtocol()));
 
         // Copy headers
