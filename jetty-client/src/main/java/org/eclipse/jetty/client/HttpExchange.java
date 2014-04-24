@@ -93,6 +93,7 @@ public class HttpExchange
     public static final int STATUS_CANCELLED = 11;
     public static final int STATUS_SENDING_PARSING_HEADERS = 12;
     public static final int STATUS_SENDING_PARSING_CONTENT = 13;
+    public static final int STATUS_SENDING_COMPLETED = 14;
 
     // HTTP protocol fields
     private String _method = HttpMethods.GET;
@@ -131,7 +132,8 @@ public class HttpExchange
         int status = getStatus();
         if (status < STATUS_COMPLETED ||
                 status == STATUS_SENDING_PARSING_HEADERS ||
-                status == STATUS_SENDING_PARSING_CONTENT)
+                status == STATUS_SENDING_PARSING_CONTENT ||
+                status == STATUS_SENDING_COMPLETED)
             setStatus(STATUS_EXPIRED);
         destination.exchangeExpired(this);
         if (connection != null)
@@ -409,8 +411,26 @@ public class HttpExchange
                                 getEventListener().onRequestCommitted();
                             break;
                         case STATUS_COMPLETED:
-                            if (set = _status.compareAndSet(oldStatus,newStatus))
+                            if (set = _status.compareAndSet(oldStatus,STATUS_SENDING_COMPLETED))
                                 getEventListener().onResponseComplete();
+                            break;
+                        case STATUS_CANCELLING:
+                        case STATUS_EXCEPTED:
+                            set = _status.compareAndSet(oldStatus,newStatus);
+                            break;
+                        case STATUS_EXPIRED:
+                            set = setStatusExpired(newStatus,oldStatus);
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                case STATUS_SENDING_COMPLETED:
+                    switch (newStatus)
+                    {
+                        case STATUS_WAITING_FOR_RESPONSE:
+                            if (set = _status.compareAndSet(oldStatus,STATUS_COMPLETED))
+                                getEventListener().onRequestCommitted();
                             break;
                         case STATUS_CANCELLING:
                         case STATUS_EXCEPTED:
@@ -953,6 +973,9 @@ public class HttpExchange
                 break;
             case STATUS_SENDING_PARSING_CONTENT:
                 state = "SENDING+CONTENT";
+                break;
+            case STATUS_SENDING_COMPLETED:
+                state = "SENDING+COMPLETED";
                 break;
             default:
                 state = "UNKNOWN";

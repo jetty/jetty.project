@@ -306,9 +306,9 @@ public class HttpClientDuplexTest
     @Test
     public void testResponseCompleteBeforeRequestContent() throws Exception
     {
-        // Must be greater than 2 to stay in "sending"
-        // state and trigger the condition of this test.
-        int contentLength = 16;
+        // Must be greater than 2 to stay in "sending" state while
+        // receiving the response and trigger the condition of this test.
+        int contentLength = 4;
         final byte[] chunk = new byte[]{'A'};
         final AtomicInteger requestContent = new AtomicInteger(contentLength);
         ContentExchange exchange = new ContentExchange(true)
