@@ -133,6 +133,7 @@ public class HashLoginService extends MappedLoginService implements UserListener
     /**
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
      */
+    @Override
     protected void doStart() throws Exception
     {
         super.doStart();
@@ -154,6 +155,7 @@ public class HashLoginService extends MappedLoginService implements UserListener
     /**
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStop()
      */
+    @Override
     protected void doStop() throws Exception
     {
         super.doStop();
@@ -163,6 +165,7 @@ public class HashLoginService extends MappedLoginService implements UserListener
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public void update(String userName, Credential credential, String[] roleArray)
     {
         if (LOG.isDebugEnabled())
@@ -171,6 +174,7 @@ public class HashLoginService extends MappedLoginService implements UserListener
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void remove(String userName)
     {
         if (LOG.isDebugEnabled())

@@ -42,7 +42,7 @@ public class HashSessionManagerTest
     @Before
     public void quietStacks()
     {
-        enableStacks(true);
+        enableStacks(false);
     }
     
     protected void enableStacks(boolean enabled)
