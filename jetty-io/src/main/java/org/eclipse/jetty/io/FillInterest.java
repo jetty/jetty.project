@@ -93,12 +93,17 @@ public abstract class FillInterest
     
     /* ------------------------------------------------------------ */
     /** Call to signal a failure to a registered interest
+     * @return true if the cause was passed to a {@link Callback} instance
      */
-    public void onFail(Throwable cause)
+    public boolean onFail(Throwable cause)
     {
         Callback callback=_interested.get();
         if (callback!=null && _interested.compareAndSet(callback,null))
+        {
             callback.failed(cause);
+            return true;
+        }
+        return false;
     }
     
     /* ------------------------------------------------------------ */

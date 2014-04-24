@@ -19,8 +19,6 @@
 package org.eclipse.jetty.io;
 
 import static org.hamcrest.Matchers.*;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -37,8 +35,6 @@ import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.junit.After;
@@ -132,6 +128,7 @@ public class ByteArrayEndPointTest
 
         assertEquals(true,endp.flush(BufferUtil.EMPTY_BUFFER,BufferUtil.toBuffer(" and"),BufferUtil.toBuffer(" more")));
         assertEquals("some output some more and more",endp.getOutputString());
+        endp.close();
     }
 
     @Test
@@ -150,6 +147,7 @@ public class ByteArrayEndPointTest
 
         assertEquals(true,endp.flush(data));
         assertEquals("data.",BufferUtil.toString(endp.takeOutput()));
+        endp.close();
     }
 
 
@@ -237,6 +235,7 @@ public class ByteArrayEndPointTest
         assertTrue(fcb.isDone());
         assertEquals(null, fcb.get());
         assertEquals(" more.", endp.getOutputString());
+        endp.close();
     }
     
     /**
