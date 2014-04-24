@@ -26,7 +26,6 @@ import java.util.Enumeration;
 import java.util.EventListener;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -49,7 +48,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
@@ -66,7 +65,7 @@ import org.eclipse.jetty.util.statistic.SampleStatistic;
  */
 @SuppressWarnings("deprecation")
 @ManagedObject("Abstract Session Manager")
-public abstract class AbstractSessionManager extends AbstractLifeCycle implements SessionManager
+public abstract class AbstractSessionManager extends ContainerLifeCycle implements SessionManager
 {
     final static Logger __log = SessionHandler.LOG;
 
@@ -82,11 +81,13 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
 
     static final HttpSessionContext __nullSessionContext=new HttpSessionContext()
     {
+        @Override
         public HttpSession getSession(String sessionId)
         {
             return null;
         }
 
+        @Override
         @SuppressWarnings({ "rawtypes", "unchecked" })
         public Enumeration getIds()
         {
@@ -162,6 +163,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public HttpCookie access(HttpSession session,boolean secure)
     {
         long now=System.currentTimeMillis();
@@ -187,6 +189,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void addEventListener(EventListener listener)
     {
         if (listener instanceof HttpSessionAttributeListener)
@@ -195,17 +198,22 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
             _sessionListeners.add((HttpSessionListener)listener);
         if (listener instanceof HttpSessionIdListener)
             _sessionIdListeners.add((HttpSessionIdListener)listener);
+        addBean(listener,false);
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void clearEventListeners()
     {
+        for (EventListener e :getBeans(EventListener.class))
+            removeBean(e);
         _sessionAttributeListeners.clear();
         _sessionListeners.clear();
         _sessionIdListeners.clear();
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void complete(HttpSession session)
     {
         AbstractSession s = ((SessionIf)session).getSession();
@@ -237,17 +245,20 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
                         Thread.currentThread().setContextClassLoader(serverLoader);
                         _sessionIdManager=new HashSessionIdManager();
                         server.setSessionIdManager(_sessionIdManager);
+                        server.manage(_sessionIdManager);
+                        _sessionIdManager.start();
                     }
                     finally
                     {
                         Thread.currentThread().setContextClassLoader(_loader);
                     }
                 }
+
+                // server session id is never managed by this manager
+                addBean(_sessionIdManager,false);
             }
         }
         
-        if (!_sessionIdManager.isStarted())
-            _sessionIdManager.start();
 
         // Look for a session cookie name
         if (_context!=null)
@@ -299,6 +310,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     /**
      * @return Returns the httpOnly.
      */
+    @Override
     @ManagedAttribute("true if cookies use the http only flag")
     public boolean getHttpOnly()
     {
@@ -306,6 +318,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public HttpSession getHttpSession(String nodeId)
     {
         String cluster_id = getSessionIdManager().getClusterId(nodeId);
@@ -318,18 +331,9 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
 
     /* ------------------------------------------------------------ */
     /**
-     * @return Returns the metaManager used for cross context session management
-     * @deprecated Use {@link #getSessionIdManager()}
-     */
-    public SessionIdManager getIdManager()
-    {
-        return getSessionIdManager();
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
      * @return Returns the SessionIdManager used for cross context session management
      */
+    @Override
     @ManagedAttribute("Session ID Manager")
     public SessionIdManager getSessionIdManager()
     {
@@ -346,16 +350,6 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     public int getMaxInactiveInterval()
     {
         return _dftMaxIdleSecs;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @see #getSessionsMax()
-     */
-    @Deprecated
-    public int getMaxSessions()
-    {
-        return getSessionsMax();
     }
 
     /* ------------------------------------------------------------ */
@@ -379,32 +373,11 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @deprecated use {@link #getSessionIdManager()}
-     */
-    @Deprecated
-    public SessionIdManager getMetaManager()
-    {
-        return getSessionIdManager();
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @deprecated always returns 0. no replacement available.
-     */
-    @Deprecated
-    public int getMinSessions()
-    {
-        return 0;
-    }
-
-    /* ------------------------------------------------------------ */
     @ManagedAttribute("time before a session cookie is re-set (in s)")
     public int getRefreshCookieAge()
     {
         return _refreshCookieAge;
     }
-
 
     /* ------------------------------------------------------------ */
     /**
@@ -437,8 +410,6 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     {
         _secureRequestOnly = secureRequestOnly;
     }
-
-
 
     /* ------------------------------------------------------------ */
     @ManagedAttribute("the set session cookie")
@@ -473,6 +444,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
      *
      * @see org.eclipse.jetty.server.SessionManager#getSessionCookie(javax.servlet.http.HttpSession, java.lang.String, boolean)
      */
+    @Override
     public HttpCookie getSessionCookie(HttpSession session, String contextPath, boolean requestIsSecure)
     {
         if (isUsingCookies())
@@ -527,18 +499,6 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @deprecated  Need to review if it is needed.
-     */
-    @SuppressWarnings("rawtypes")
-    public Map getSessionMap()
-    {
-        throw new UnsupportedOperationException();
-    }
-
-
-
-    /* ------------------------------------------------------------ */
     @ManagedAttribute("number of currently active sessions")
     public int getSessions()
     {
@@ -546,6 +506,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     @ManagedAttribute("name of use for URL session tracking")
     public String getSessionIdPathParameterName()
     {
@@ -553,6 +514,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public String getSessionIdPathParameterNamePrefix()
     {
         return _sessionIdPathParameterNamePrefix;
@@ -562,12 +524,14 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     /**
      * @return Returns the usingCookies.
      */
+    @Override
     public boolean isUsingCookies()
     {
         return _usingCookies;
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public boolean isValid(HttpSession session)
     {
         AbstractSession s = ((SessionIf)session).getSession();
@@ -575,6 +539,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public String getClusterId(HttpSession session)
     {
         AbstractSession s = ((SessionIf)session).getSession();
@@ -582,6 +547,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public String getNodeId(HttpSession session)
     {
         AbstractSession s = ((SessionIf)session).getSession();
@@ -592,6 +558,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     /**
      * Create a new HttpSession for a request
      */
+    @Override
     public HttpSession newHttpSession(HttpServletRequest request)
     {
         AbstractSession session=newSession(request);
@@ -601,6 +568,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void removeEventListener(EventListener listener)
     {
         if (listener instanceof HttpSessionAttributeListener)
@@ -608,17 +576,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
         if (listener instanceof HttpSessionListener)
             _sessionListeners.remove(listener);
     }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @see #statsReset()
-     */
-    @Deprecated
-    public void resetStats()
-    {
-        statsReset();
-    }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * Reset statistics values
@@ -643,33 +601,23 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     /* ------------------------------------------------------------ */
     /**
      * @param metaManager The metaManager used for cross context session management.
-     * @deprecated use {@link #setSessionIdManager(SessionIdManager)}
      */
-    public void setIdManager(SessionIdManager metaManager)
-    {
-        setSessionIdManager(metaManager);
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param metaManager The metaManager used for cross context session management.
-     */
+    @Override
     public void setSessionIdManager(SessionIdManager metaManager)
     {
+        updateBean(_sessionIdManager, metaManager);
         _sessionIdManager=metaManager;
     }
-
-
 
     /* ------------------------------------------------------------ */
     /**
      * @param seconds
      */
+    @Override
     public void setMaxInactiveInterval(int seconds)
     {
         _dftMaxIdleSecs=seconds;
     }
-
 
     /* ------------------------------------------------------------ */
     public void setRefreshCookieAge(int ageInSeconds)
@@ -677,20 +625,18 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
         _refreshCookieAge=ageInSeconds;
     }
 
-
-
+    /* ------------------------------------------------------------ */
     public void setSessionCookie(String cookieName)
     {
         _sessionCookie=cookieName;
     }
-
-
 
     /* ------------------------------------------------------------ */
     /**
      * @param sessionHandler
      *            The sessionHandler to set.
      */
+    @Override
     public void setSessionHandler(SessionHandler sessionHandler)
     {
         _sessionHandler=sessionHandler;
@@ -698,6 +644,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
 
 
     /* ------------------------------------------------------------ */
+    @Override
     public void setSessionIdPathParameterName(String param)
     {
         _sessionIdPathParameterName =(param==null||"none".equals(param))?null:param;
@@ -844,12 +791,14 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public Set<SessionTrackingMode> getDefaultSessionTrackingModes()
     {
         return __defaultSessionTrackingModes;
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public Set<SessionTrackingMode> getEffectiveSessionTrackingModes()
     {
         return Collections.unmodifiableSet(_sessionTrackingModes);
@@ -871,8 +820,8 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
         return _usingURLs;
     }
 
-
     /* ------------------------------------------------------------ */
+    @Override
     public SessionCookieConfig getSessionCookieConfig()
     {
         return _cookieConfig;
@@ -917,6 +866,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     /**
      * @see org.eclipse.jetty.server.SessionManager#isCheckingRemoteSessionIdEncoding()
      */
+    @Override
     @ManagedAttribute("check remote session id encoding")
     public boolean isCheckingRemoteSessionIdEncoding()
     {
@@ -927,6 +877,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     /**
      * @see org.eclipse.jetty.server.SessionManager#setCheckingRemoteSessionIdEncoding(boolean)
      */
+    @Override
     public void setCheckingRemoteSessionIdEncoding(boolean remote)
     {
         _checkingRemoteSessionIdEncoding=remote;
@@ -1090,5 +1041,12 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
                     l.attributeReplaced(event);
             }
         }
+    }
+
+    @Override
+    @Deprecated
+    public SessionIdManager getMetaManager()
+    {
+        throw new UnsupportedOperationException();
     }
 }

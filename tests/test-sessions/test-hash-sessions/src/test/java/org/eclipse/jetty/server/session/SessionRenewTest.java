@@ -21,11 +21,30 @@ package org.eclipse.jetty.server.session;
 import java.io.File;
 
 import org.eclipse.jetty.server.SessionManager;
+import org.eclipse.jetty.util.IO;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 public class SessionRenewTest extends AbstractSessionRenewTest
 {
-
+    File tmpDir;
+    
+    @Before
+    public void before() throws Exception
+    {
+        tmpDir = File.createTempFile("hash-session-renew-test", null);
+        tmpDir.delete();
+        tmpDir.mkdirs();
+        tmpDir.deleteOnExit();
+    }
+    
+    @After 
+    public void after()
+    {
+        IO.delete(tmpDir);
+    }
+    
     @Override
     public AbstractTestServer createServer(int port, int max, int scavenge)
     {
@@ -37,9 +56,7 @@ public class SessionRenewTest extends AbstractSessionRenewTest
             {
                 HashSessionManager sessionManager = (HashSessionManager)super.newSessionManager();
                 sessionManager.setSavePeriod(2);
-                File tmpDir = new File(System.getProperty("java.io.tmpdir"), "hash-session-renew-test");
-                tmpDir.deleteOnExit();
-                tmpDir.mkdirs();
+                
                 try
                 {
                     sessionManager.setStoreDirectory(tmpDir);
