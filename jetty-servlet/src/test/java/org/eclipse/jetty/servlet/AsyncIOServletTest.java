@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.servlet;
 
+import static org.hamcrest.Matchers.*;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
@@ -118,7 +119,8 @@ public class AsyncIOServletTest
                     @Override
                     public void onError(Throwable t)
                     {
-                        Assert.assertSame(throwable, t);
+                        Assert.assertThat("onError type",t,instanceOf(throwable.getClass()));
+                        Assert.assertThat("onError message",t.getMessage(),is(throwable.getMessage()));
                         latch.countDown();
                         response.setStatus(500);
                         asyncContext.complete();
