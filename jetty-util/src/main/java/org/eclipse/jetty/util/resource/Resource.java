@@ -46,6 +46,10 @@ import org.eclipse.jetty.util.log.Logger;
 /* ------------------------------------------------------------ */
 /** 
  * Abstract resource class.
+ * <p>
+ * This class provides a resource abstraction, where a resource may be
+ * a file, a URL or an entry in a jar file.
+ * </p>
  */
 public abstract class Resource implements ResourceFactory, Closeable
 {

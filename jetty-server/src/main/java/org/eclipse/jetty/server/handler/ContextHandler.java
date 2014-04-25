@@ -1384,8 +1384,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
     /* ------------------------------------------------------------ */
     /**
-     * @param base
-     *            The resourceBase to set.
+     * Set the base resource for this context.
+     * @param base The resource used as the base for all static content of this context.
+     * @see #setResourceBase(String)
      */
     public void setBaseResource(Resource base)
     {
@@ -1393,9 +1394,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @param resourceBase
-     *            The base resource as a string.
+    /** 
+     * Set the base resource for this context.
+     * @param resourceBase A string representing the base resource for the context. Any string accepted 
+     * by {@link Resource#newResource(String)} may be passed and the call is equivalent to 
+     * <code>setBaseResource(newResource(resourceBase));</code>
      */
     public void setResourceBase(String resourceBase)
     {
