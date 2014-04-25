@@ -238,10 +238,10 @@ public class AsyncIOServletTest
                     @Override
                     public void onError(Throwable t)
                     {
-                        Assert.assertSame(throwable, t);
                         latch.countDown();
                         response.setStatus(500);
                         asyncContext.complete();
+                        Assert.assertSame(throwable, t);
                     }
                 });
             }
