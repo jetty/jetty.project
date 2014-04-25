@@ -101,6 +101,14 @@ public class BlockheadClient implements OutgoingFrames, ConnectionStateListener,
             byte buf[] = new byte[BUFFER_SIZE];
             try
             {
+                if ((remainingBuffer != null) && (remainingBuffer.remaining() > 0))
+                {
+                    LOG.debug("Reading bytes received during response header parse: {}",BufferUtil.toDetailString(remainingBuffer));
+                    totalBytes += remainingBuffer.remaining();
+                    totalReadOps++;
+                    parser.parse(remainingBuffer);
+                }
+
                 int len = 0;
                 int available = 0;
                 while (!eof)
@@ -237,35 +245,6 @@ public class BlockheadClient implements OutgoingFrames, ConnectionStateListener,
     public boolean awaitDisconnect(long timeout, TimeUnit unit) throws InterruptedException
     {
         return disconnectedLatch.await(timeout,unit);
-    }
-
-    protected int blockingRead(ByteBuffer buf) throws IOException
-    {
-        if (eof)
-        {
-            return -1;
-        }
-
-        if ((remainingBuffer != null) && (remainingBuffer.remaining() > 0))
-        {
-            return BufferUtil.put(remainingBuffer,buf);
-        }
-
-        int len = -1;
-        int b;
-        while (buf.remaining() > 0)
-        {
-            b = in.read();
-            if (b == (-1))
-            {
-                eof = true;
-                break;
-            }
-            buf.put((byte)b);
-            len++;
-        }
-
-        return len;
     }
 
     public void clearCaptured()
@@ -595,35 +574,6 @@ public class BlockheadClient implements OutgoingFrames, ConnectionStateListener,
         }
     }
 
-    public int read(ByteBuffer buf) throws IOException
-    {
-        if (eof)
-        {
-            throw new EOFException("Hit EOF");
-        }
-
-        if ((remainingBuffer != null) && (remainingBuffer.remaining() > 0))
-        {
-            return BufferUtil.put(remainingBuffer,buf);
-        }
-
-        int len = -1;
-        int b;
-        while ((in.available() > 0) && (buf.remaining() > 0))
-        {
-            b = in.read();
-            if (b == (-1))
-            {
-                eof = true;
-                break;
-            }
-            buf.put((byte)b);
-            len++;
-        }
-
-        return len;
-    }
-
     public EventQueue<WebSocketFrame> readFrames(int expectedFrameCount, int timeoutDuration, TimeUnit timeoutUnit) throws Exception
     {
         frameReader.frames.awaitEventCount(expectedFrameCount,timeoutDuration,timeoutUnit);
@@ -633,17 +583,32 @@ public class BlockheadClient implements OutgoingFrames, ConnectionStateListener,
     public HttpResponse readResponseHeader() throws IOException
     {
         HttpResponse response = new HttpResponse();
-        HttpResponseHeaderParser parser = new HttpResponseHeaderParser(response);
+        HttpResponseHeaderParser respParser = new HttpResponseHeaderParser(response);
 
-        ByteBuffer buf = BufferUtil.allocate(512);
+        byte buf[] = new byte[512];
 
-        do
+        while (!eof)
         {
-            BufferUtil.flipToFill(buf);
-            read(buf);
-            BufferUtil.flipToFlush(buf,0);
+            int available = in.available();
+            int len = in.read(buf,0,Math.min(available,buf.length));
+            if (len < 0)
+            {
+                eof = true;
+                break;
+            }
+            else if (len > 0)
+            {
+                ByteBuffer bbuf = ByteBuffer.wrap(buf,0,len);
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("Read {} bytes: {}",len,BufferUtil.toDetailString(bbuf));
+                }
+                if (respParser.parse(bbuf) != null)
+                {
+                    break;
+                }
+            }
         }
-        while (parser.parse(buf) == null);
 
         remainingBuffer = response.getRemainingBuffer();
 
