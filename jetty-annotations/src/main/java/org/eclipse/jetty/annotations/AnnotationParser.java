@@ -373,7 +373,7 @@ public class AnnotationParser
                                final String signature,
                                final String[] exceptions)
         {
-            super(Opcodes.ASM4);
+            super(Opcodes.ASM5);
             _handlers = handlers;
             _mi = new MethodInfo(classInfo, name, access, methodDesc,signature, exceptions);
         }
@@ -417,7 +417,7 @@ public class AnnotationParser
                               final String signature,
                               final Object value)
         {
-            super(Opcodes.ASM4);
+            super(Opcodes.ASM5);
             _handlers = handlers;
             _fieldInfo = new FieldInfo(classInfo, fieldName, access, fieldType, signature, value);
         }
@@ -456,7 +456,7 @@ public class AnnotationParser
         
         public MyClassVisitor(Set<? extends Handler> handlers, Resource containingResource)
         {
-            super(Opcodes.ASM4);
+            super(Opcodes.ASM5);
             _handlers = handlers;
             _containingResource = containingResource;
         }
@@ -702,6 +702,7 @@ public class AnnotationParser
                     }                  
                     catch (Exception ex)
                     {
+                        if (LOG.isDebugEnabled()) LOG.debug("Error scanning file "+files[f], ex);
                         me.add(new RuntimeException("Error scanning file "+files[f],ex));
                     }
                 }
