@@ -755,7 +755,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                         {
                             Throwable th=_onError;
                             _onError=null;
-                            _writeListener.onError(new IOException(th));
+                            LOG.debug("onError",th);
+                            _writeListener.onError(th);
                             close();
 
                             break loop;
