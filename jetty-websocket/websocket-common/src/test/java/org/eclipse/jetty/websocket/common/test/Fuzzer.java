@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.common.test;
 
+import static org.hamcrest.Matchers.*;
+
 import java.io.IOException;
 import java.net.SocketException;
 import java.nio.ByteBuffer;
@@ -25,8 +27,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
+import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -38,9 +40,6 @@ import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.io.IOState;
 import org.junit.Assert;
-
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
 
 /**
  * Fuzzing utility for the AB tests.
@@ -95,6 +94,7 @@ public class Fuzzer implements AutoCloseable
         policy.setIdleTimeout(5000);
 
         this.client = new BlockheadClient(policy,testcase.getServerURI());
+        this.client.setTimeout(2,TimeUnit.SECONDS);
         this.generator = testcase.getLaxGenerator();
         this.testname = testcase.getTestMethodName();
     }
@@ -140,28 +140,24 @@ public class Fuzzer implements AutoCloseable
         }
     }
 
-    public void expect(List<WebSocketFrame> expect) throws IOException, TimeoutException
+    public void expect(List<WebSocketFrame> expect) throws Exception
     {
-        expect(expect,TimeUnit.SECONDS,10);
+        expect(expect,10,TimeUnit.SECONDS);
     }
 
-    public void expect(List<WebSocketFrame> expect, TimeUnit unit, int duration) throws IOException, TimeoutException
+    public void expect(List<WebSocketFrame> expect, int duration, TimeUnit unit) throws Exception
     {
         int expectedCount = expect.size();
         LOG.debug("expect() {} frame(s)",expect.size());
 
         // Read frames
-        IncomingFramesCapture capture = client.readFrames(expect.size(),unit,duration);
-        if (LOG.isDebugEnabled())
-        {
-            capture.dump();
-        }
-
+        EventQueue<WebSocketFrame> frames = client.readFrames(expect.size(),duration,unit);
+        
         String prefix = "";
         for (int i = 0; i < expectedCount; i++)
         {
             WebSocketFrame expected = expect.get(i);
-            WebSocketFrame actual = capture.getFrames().poll();
+            WebSocketFrame actual = frames.poll();
 
             prefix = "Frame[" + i + "]";
 
@@ -183,7 +179,7 @@ public class Fuzzer implements AutoCloseable
         }
     }
 
-    public void expect(WebSocketFrame expect) throws IOException, TimeoutException
+    public void expect(WebSocketFrame expect) throws Exception
     {
         expect(Collections.singletonList(expect));
     }

@@ -425,7 +425,7 @@ public class ClientCloseTest
 
         // client idle timeout triggers close event on client ws-endpoint
         // client close event on ws-endpoint
-        clientSocket.assertReceivedCloseEvent(timeout,is(StatusCode.ABNORMAL),containsString("Timeout"));
+        clientSocket.assertReceivedCloseEvent(timeout,is(StatusCode.SHUTDOWN),containsString("Timeout"));
     }
 
     @Test
@@ -541,9 +541,7 @@ public class ClientCloseTest
         // server sits idle
 
         // client idle timeout triggers close event on client ws-endpoint
-        // assert - close code==1006 (abnormal)
-        // assert - close reason message contains (timeout)
-        clientSocket.assertReceivedCloseEvent(timeout,is(StatusCode.ABNORMAL),containsString("Timeout"));
+        clientSocket.assertReceivedCloseEvent(timeout,is(StatusCode.SHUTDOWN),containsString("Timeout"));
     }
 
     @Test

@@ -53,7 +53,6 @@ import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.ConnectionState;
 import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
-import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.io.IOState.ConnectionStateListener;
@@ -130,6 +129,68 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         public void writeSuccess()
         {
             disconnect(outputOnly);
+        }
+    }
+
+    public class OnCloseLocalCallback implements WriteCallback
+    {
+        private final WriteCallback callback;
+        private final CloseInfo close;
+
+        public OnCloseLocalCallback(WriteCallback callback, CloseInfo close)
+        {
+            this.callback = callback;
+            this.close = close;
+        }
+
+        public OnCloseLocalCallback(CloseInfo close)
+        {
+            this(null,close);
+        }
+
+        @Override
+        public void writeFailed(Throwable x)
+        {
+            try
+            {
+                if (callback != null)
+                {
+                    callback.writeFailed(x);
+                }
+            }
+            finally
+            {
+                onLocalClose();
+            }
+        }
+
+        @Override
+        public void writeSuccess()
+        {
+            try
+            {
+                if (callback != null)
+                {
+                    callback.writeSuccess();
+                }
+            }
+            finally
+            {
+                onLocalClose();
+            }
+        }
+
+        private void onLocalClose()
+        {
+            LOG.debug("Local Close Confirmed {}",close);
+            if (close.isAbnormal())
+            {
+                ioState.onAbnormalClose(close);
+            }
+            else
+            {
+                ioState.onCloseLocal(close);
+            }
         }
     }
 
@@ -220,26 +281,20 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     {
         LOG.debug("close({},{})",statusCode,reason);
         CloseInfo close = new CloseInfo(statusCode,reason);
-        if (statusCode == StatusCode.ABNORMAL)
-        {
-            ioState.onAbnormalClose(close);
-        }
-        else
-        {
-            ioState.onCloseLocal(close);
-        }
+        this.outgoingFrame(close.asFrame(),new OnCloseLocalCallback(close),BatchMode.OFF);
     }
 
     @Override
     public void disconnect()
     {
-        LOG.debug("{} disconnect()",policy.getBehavior());
-        flusher.close();
         disconnect(false);
     }
 
     private void disconnect(boolean onlyOutput)
     {
+        LOG.debug("{} disconnect({})",policy.getBehavior(),onlyOutput?"outputOnly":"both");
+        // close FrameFlusher, we cannot write anymore at this point.
+        flusher.close();
         EndPoint endPoint = getEndPoint();
         // We need to gently close first, to allow
         // SSL close alerts to be sent by Jetty
@@ -388,13 +443,20 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                     CloseInfo abnormal = new CloseInfo(StatusCode.SHUTDOWN,"Abnormal Close - " + ioState.getCloseInfo().getReason());
                     outgoingFrame(abnormal.asFrame(),new OnDisconnectCallback(false),BatchMode.OFF);
                 }
-                // Just disconnect
-                this.disconnect(false);
+                else
+                {
+                    // Just disconnect
+                    this.disconnect(false);
+                }
                 break;
             case CLOSING:
-                CloseInfo close = ioState.getCloseInfo();
-                // reply to close handshake from remote
-                outgoingFrame(close.asFrame(),new OnDisconnectCallback(true),BatchMode.OFF);
+                // First occurrence of .onCloseLocal or .onCloseRemote use
+                if (ioState.wasRemoteCloseInitiated())
+                {
+                    CloseInfo close = ioState.getCloseInfo();
+                    // reply to close handshake from remote
+                    outgoingFrame(close.asFrame(),new OnCloseLocalCallback(new OnDisconnectCallback(true),close),BatchMode.OFF);
+                }
             default:
                 break;
         }
@@ -463,7 +525,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         finally
         {
             // This is an Abnormal Close condition
-            close(StatusCode.ABNORMAL,"Idle Timeout");
+            close(StatusCode.SHUTDOWN,"Idle Timeout");
         }
 
         return false;
@@ -480,21 +542,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             LOG.debug("outgoingFrame({}, {})",frame,callback);
         }
 
-        CloseInfo close = null;
-        // grab a copy of the frame details before masking and whatnot
-        if (frame.getOpCode() == OpCode.CLOSE)
-        {
-            close = new CloseInfo(frame);
-        }
-
         flusher.enqueue(frame,callback,batchMode);
-
-        // now trigger local close
-        if (close != null)
-        {
-            LOG.debug("outgoing CLOSE frame - {}: {}",frame,close);
-            ioState.onCloseLocal(close);
-        }
     }
 
     private int read(ByteBuffer buffer)

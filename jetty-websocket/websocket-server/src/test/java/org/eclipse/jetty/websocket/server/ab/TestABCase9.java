@@ -101,7 +101,7 @@ public class TestABCase9 extends AbstractABCase
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
-            fuzzer.expect(expect,TimeUnit.SECONDS,8);
+            fuzzer.expect(expect,8,TimeUnit.SECONDS);
         }
     }
 
@@ -125,7 +125,7 @@ public class TestABCase9 extends AbstractABCase
             fuzzer.setSendMode(Fuzzer.SendMode.SLOW);
             fuzzer.setSlowSendSegmentSize(segmentSize);
             fuzzer.send(send);
-            fuzzer.expect(expect,TimeUnit.SECONDS,8);
+            fuzzer.expect(expect,8,TimeUnit.SECONDS);
         }
     }
 
@@ -187,7 +187,6 @@ public class TestABCase9 extends AbstractABCase
      * Echo 1MB text message (1 frame)
      */
     @Test
-    @Stress("High I/O use")
     public void testCase9_1_3() throws Exception
     {
         byte utf[] = new byte[1 * MBYTE];
@@ -207,7 +206,7 @@ public class TestABCase9 extends AbstractABCase
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
-            fuzzer.expect(expect,TimeUnit.SECONDS,4);
+            fuzzer.expect(expect,4,TimeUnit.SECONDS);
         }
     }
 
@@ -215,7 +214,6 @@ public class TestABCase9 extends AbstractABCase
      * Echo 4MB text message (1 frame)
      */
     @Test
-    @Stress("High I/O use")
     public void testCase9_1_4() throws Exception
     {
         byte utf[] = new byte[4 * MBYTE];
@@ -235,7 +233,7 @@ public class TestABCase9 extends AbstractABCase
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
-            fuzzer.expect(expect,TimeUnit.SECONDS,8);
+            fuzzer.expect(expect,8,TimeUnit.SECONDS);
         }
     }
 
@@ -263,7 +261,7 @@ public class TestABCase9 extends AbstractABCase
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
-            fuzzer.expect(expect,TimeUnit.SECONDS,16);
+            fuzzer.expect(expect,16,TimeUnit.SECONDS);
         }
     }
 
@@ -291,7 +289,7 @@ public class TestABCase9 extends AbstractABCase
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
-            fuzzer.expect(expect,TimeUnit.SECONDS,32);
+            fuzzer.expect(expect,32,TimeUnit.SECONDS);
         }
     }
 
@@ -372,7 +370,7 @@ public class TestABCase9 extends AbstractABCase
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
-            fuzzer.expect(expect,TimeUnit.SECONDS,4);
+            fuzzer.expect(expect,4,TimeUnit.SECONDS);
         }
     }
 
@@ -400,7 +398,7 @@ public class TestABCase9 extends AbstractABCase
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
-            fuzzer.expect(expect,TimeUnit.SECONDS,8);
+            fuzzer.expect(expect,8,TimeUnit.SECONDS);
         }
     }
 
@@ -428,7 +426,7 @@ public class TestABCase9 extends AbstractABCase
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
-            fuzzer.expect(expect,TimeUnit.SECONDS,16);
+            fuzzer.expect(expect,16,TimeUnit.SECONDS);
         }
     }
 
@@ -456,7 +454,7 @@ public class TestABCase9 extends AbstractABCase
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
-            fuzzer.expect(expect,TimeUnit.SECONDS,32);
+            fuzzer.expect(expect,32,TimeUnit.SECONDS);
         }
     }
 

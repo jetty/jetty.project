@@ -22,13 +22,13 @@ import static org.hamcrest.Matchers.*;
 
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadClient;
-import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.server.helper.RFCSocket;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
@@ -73,7 +73,7 @@ public class IdleTimeoutTest
     {
         BlockheadClient client = new BlockheadClient(server.getServerUri());
         client.setProtocols("onConnect");
-        client.setTimeout(TimeUnit.MILLISECONDS,2500);
+        client.setTimeout(2500,TimeUnit.MILLISECONDS);
         try
         {
             client.connect();
@@ -92,8 +92,8 @@ public class IdleTimeoutTest
             client.write(new TextFrame().setPayload("Hello"));
 
             // Expect server to have closed due to its own timeout
-            IncomingFramesCapture capture = client.readFrames(1,500,TimeUnit.MILLISECONDS);
-            WebSocketFrame frame = capture.getFrames().poll();
+            EventQueue<WebSocketFrame> frames = client.readFrames(1,500,TimeUnit.MILLISECONDS);
+            WebSocketFrame frame = frames.poll();
             Assert.assertThat("frame opcode",frame.getOpCode(),is(OpCode.CLOSE));
             CloseInfo close = new CloseInfo(frame);
             Assert.assertThat("close code",close.getStatusCode(),is(StatusCode.SHUTDOWN));

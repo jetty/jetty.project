@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StacklessLogging;
@@ -36,7 +37,6 @@ import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.events.AbstractEventDriver;
 import org.eclipse.jetty.websocket.common.test.BlockheadClient;
-import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.server.helper.RFCSocket;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
@@ -162,14 +162,14 @@ public class WebSocketCloseTest
         try (BlockheadClient client = new BlockheadClient(server.getServerUri()))
         {
             client.setProtocols("fastclose");
-            client.setTimeout(TimeUnit.SECONDS,1);
+            client.setTimeout(1,TimeUnit.SECONDS);
             client.connect();
             client.sendStandardRequest();
             client.expectUpgradeResponse();
 
             // Verify that client got close frame
-            IncomingFramesCapture capture = client.readFrames(1,TimeUnit.SECONDS,1);
-            WebSocketFrame frame = capture.getFrames().poll();
+            EventQueue<WebSocketFrame> frames = client.readFrames(1,1,TimeUnit.SECONDS);
+            WebSocketFrame frame = frames.poll();
             Assert.assertThat("frames[0].opcode",frame.getOpCode(),is(OpCode.CLOSE));
             CloseInfo close = new CloseInfo(frame);
             Assert.assertThat("Close Status Code",close.getStatusCode(),is(StatusCode.NORMAL));
@@ -192,15 +192,15 @@ public class WebSocketCloseTest
         try (BlockheadClient client = new BlockheadClient(server.getServerUri()))
         {
             client.setProtocols("fastfail");
-            client.setTimeout(TimeUnit.SECONDS,1);
+            client.setTimeout(1,TimeUnit.SECONDS);
             try (StacklessLogging scope = new StacklessLogging(AbstractEventDriver.class))
             {
                 client.connect();
                 client.sendStandardRequest();
                 client.expectUpgradeResponse();
 
-                IncomingFramesCapture capture = client.readFrames(1,TimeUnit.SECONDS,1);
-                WebSocketFrame frame = capture.getFrames().poll();
+                EventQueue<WebSocketFrame> frames = client.readFrames(1,1,TimeUnit.SECONDS);
+                WebSocketFrame frame = frames.poll();
                 Assert.assertThat("frames[0].opcode",frame.getOpCode(),is(OpCode.CLOSE));
                 CloseInfo close = new CloseInfo(frame);
                 Assert.assertThat("Close Status Code",close.getStatusCode(),is(StatusCode.SERVER_ERROR));

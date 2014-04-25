@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
+import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.StacklessLogging;
@@ -41,7 +42,6 @@ import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.common.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadClient;
-import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.test.UnitGenerator;
 import org.eclipse.jetty.websocket.common.util.Hex;
 import org.eclipse.jetty.websocket.server.helper.RFCServlet;
@@ -116,8 +116,8 @@ public class WebSocketServletRFCTest
             client.write(bin); // write buf3 (fin=true)
 
             // Read frame echo'd back (hopefully a single binary frame)
-            IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,1000);
-            Frame binmsg = capture.getFrames().poll();
+            EventQueue<WebSocketFrame> frames = client.readFrames(1,1000,TimeUnit.MILLISECONDS);
+            Frame binmsg = frames.poll();
             int expectedSize = buf1.length + buf2.length + buf3.length;
             Assert.assertThat("BinaryFrame.payloadLength",binmsg.getPayloadLength(),is(expectedSize));
 
@@ -182,8 +182,8 @@ public class WebSocketServletRFCTest
             client.write(new TextFrame().setPayload(msg));
 
             // Read frame (hopefully text frame)
-            IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            WebSocketFrame tf = capture.getFrames().poll();
+            EventQueue<WebSocketFrame> frames = client.readFrames(1,500,TimeUnit.MILLISECONDS);
+            WebSocketFrame tf = frames.poll();
             Assert.assertThat("Text Frame.status code",tf.getPayloadAsUTF8(),is(msg));
         }
         finally
@@ -215,8 +215,8 @@ public class WebSocketServletRFCTest
                 client.write(new TextFrame().setPayload("CRASH"));
 
                 // Read frame (hopefully close frame)
-                IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-                Frame cf = capture.getFrames().poll();
+                EventQueue<WebSocketFrame> frames = client.readFrames(1,500,TimeUnit.MILLISECONDS);
+                Frame cf = frames.poll();
                 CloseInfo close = new CloseInfo(cf);
                 Assert.assertThat("Close Frame.status code",close.getStatusCode(),is(StatusCode.SERVER_ERROR));
             }
@@ -261,8 +261,8 @@ public class WebSocketServletRFCTest
             client.write(new TextFrame().setPayload(msg));
 
             // Read frame (hopefully text frame)
-            IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            WebSocketFrame tf = capture.getFrames().poll();
+            EventQueue<WebSocketFrame> frames = client.readFrames(1,500,TimeUnit.MILLISECONDS);
+            WebSocketFrame tf = frames.poll();
             Assert.assertThat("Text Frame.status code",tf.getPayloadAsUTF8(),is(msg));
         }
         finally
@@ -294,8 +294,8 @@ public class WebSocketServletRFCTest
             client.writeRaw(bbHeader);
             client.writeRaw(txt.getPayload());
 
-            IncomingFramesCapture capture = client.readFrames(1,TimeUnit.SECONDS,1);
-            WebSocketFrame frame = capture.getFrames().poll();
+            EventQueue<WebSocketFrame> frames = client.readFrames(1,1,TimeUnit.SECONDS);
+            WebSocketFrame frame = frames.poll();
             Assert.assertThat("frames[0].opcode",frame.getOpCode(),is(OpCode.CLOSE));
             CloseInfo close = new CloseInfo(frame);
             Assert.assertThat("Close Status Code",close.getStatusCode(),is(StatusCode.BAD_PAYLOAD));
@@ -340,8 +340,8 @@ public class WebSocketServletRFCTest
             client.write(new TextFrame().setPayload(msg));
 
             // Read frame (hopefully text frame)
-            IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            WebSocketFrame tf = capture.getFrames().poll();
+            EventQueue<WebSocketFrame> frames = client.readFrames(1,500,TimeUnit.MILLISECONDS);
+            WebSocketFrame tf = frames.poll();
             Assert.assertThat("Text Frame.status code",tf.getPayloadAsUTF8(),is(msg));
         }
         finally

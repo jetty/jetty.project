@@ -37,6 +37,7 @@ import javax.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.util.QuoteUtil;
@@ -44,7 +45,6 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadClient;
 import org.eclipse.jetty.websocket.common.test.HttpResponse;
-import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -210,8 +210,8 @@ public class ConfiguratorTest
             client.expectUpgradeResponse();
 
             client.write(new TextFrame().setPayload("X-Dummy"));
-            IncomingFramesCapture capture = client.readFrames(1,TimeUnit.SECONDS,1);
-            WebSocketFrame frame = capture.getFrames().poll();
+            EventQueue<WebSocketFrame> frames = client.readFrames(1,1,TimeUnit.SECONDS);
+            WebSocketFrame frame = frames.poll();
             Assert.assertThat("Frame Response", frame.getPayloadAsUTF8(), is("Request Header [X-Dummy]: \"Bogus\""));
         }
     }
