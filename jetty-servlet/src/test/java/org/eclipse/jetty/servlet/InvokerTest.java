@@ -49,6 +49,7 @@ public class InvokerTest
         _server = new Server();
         _connector = new LocalConnector(_server);
         _connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendServerVersion(false);
+        _connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendDateHeader(false);
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
 
         _server.addConnector(_connector);
