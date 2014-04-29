@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.WritePendingException;
+import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.Set;
@@ -301,10 +302,7 @@ abstract public class WriteFlusher
             if (consumed == length)
                 return EMPTY_BUFFERS;
 
-            int newLength = length - consumed;
-            ByteBuffer[] result = new ByteBuffer[newLength];
-            System.arraycopy(buffers, consumed, result, 0, newLength);
-            return result;
+            return Arrays.copyOfRange(buffers,consumed,length);
         }
     }
 

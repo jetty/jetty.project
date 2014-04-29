@@ -30,6 +30,7 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 import org.eclipse.jetty.util.resource.Resource;
 
@@ -215,15 +216,18 @@ public class BufferUtil
      */
     public static byte[] toArray(ByteBuffer buffer)
     {
-        byte[] to = new byte[buffer.remaining()];
         if (buffer.hasArray())
         {
             byte[] array = buffer.array();
-            System.arraycopy(array, buffer.arrayOffset() + buffer.position(), to, 0, to.length);
+            int from=buffer.arrayOffset() + buffer.position();
+            return Arrays.copyOfRange(array,from,from+buffer.remaining());
         }
         else
+        {
+            byte[] to = new byte[buffer.remaining()];
             buffer.slice().get(to);
-        return to;
+            return to;
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -1020,6 +1024,20 @@ public class BufferUtil
             if (prefix.get(i) != buffer.get(bi++))
                 return false;
         return true;
+    }
+
+    public static ByteBuffer ensureCapacity(ByteBuffer buffer, int capacity)
+    {
+        if (buffer==null)
+            return allocate(capacity);
+        
+        if (buffer.capacity()>=capacity)
+            return buffer;
+        
+        if (buffer.hasArray())
+            return ByteBuffer.wrap(Arrays.copyOfRange(buffer.array(), buffer.arrayOffset(), buffer.arrayOffset()+capacity),buffer.position(),buffer.remaining());
+        
+        throw new UnsupportedOperationException();
     }
 
 

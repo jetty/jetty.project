@@ -22,6 +22,7 @@ import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
@@ -62,8 +63,7 @@ public class HeadersBlockGenerator
                 for (int i = 1; i < values.size(); ++i)
                 {
                     byte[] moreValueBytes = values.get(i).getBytes(iso1);
-                    byte[] newValueBytes = new byte[valueBytes.length + 1 + moreValueBytes.length];
-                    System.arraycopy(valueBytes, 0, newValueBytes, 0, valueBytes.length);
+                    byte[] newValueBytes = Arrays.copyOf(valueBytes,valueBytes.length + 1 + moreValueBytes.length);
                     newValueBytes[valueBytes.length] = 0;
                     System.arraycopy(moreValueBytes, 0, newValueBytes, valueBytes.length + 1, moreValueBytes.length);
                     valueBytes = newValueBytes;
