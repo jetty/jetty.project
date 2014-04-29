@@ -33,6 +33,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -58,10 +59,12 @@ public class ExpireTest
             public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
                     throws IOException, ServletException
             {
+                httpResponse.setStatus(200);
                 request.setHandled(true);
                 try
                 {
-                    Thread.sleep(2000);
+                    if (request.getRequestURI().contains("/sleep"))
+                        Thread.sleep(2000);
                 }
                 catch (InterruptedException x)
                 {
@@ -76,7 +79,6 @@ public class ExpireTest
         client.setTimeout(200);
         client.setMaxRetries(0);
         client.setMaxConnectionsPerAddress(100);
-        client.start();
     }
 
     @After
@@ -90,7 +92,10 @@ public class ExpireTest
     @Test
     public void testExpire() throws Exception
     {
-        String baseUrl = "http://" + "localhost" + ":" + port + "/";
+        client.setIdleTimeout(5000);
+        client.start();
+        
+        String baseUrl = "http://" + "localhost" + ":" + port + "/sleep";
 
         int count = 200;
         final CountDownLatch expires = new CountDownLatch(count);
@@ -113,5 +118,42 @@ public class ExpireTest
 
         // Wait to be sure that all exchanges have expired
         assertTrue(expires.await(5, TimeUnit.SECONDS));
+    }
+    
+    @Test
+    public void testRemoveIdleDestination() throws Exception
+    {
+        client.setIdleTimeout(200);
+        client.setRemoveIdleDestinations(true);
+        client.start();
+        
+        String baseUrl = "http://" + "localhost" + ":" + port + "/other";
+
+        int count = 5;
+        final CountDownLatch latch = new CountDownLatch(count);
+
+        for (int i=0;i<count;i++)
+        {
+            final ContentExchange exchange = new ContentExchange()
+            {
+                @Override
+                protected void onResponseComplete()
+                {
+                    latch.countDown();
+                }
+            };
+            exchange.setMethod("GET");
+            exchange.setURL(baseUrl);
+
+            client.send(exchange);
+        }
+
+        // Wait to be sure that all exchanges have expired
+        assertTrue(latch.await(1, TimeUnit.SECONDS));
+        
+        Assert.assertEquals(1,client.getDestinations().size());
+        Thread.sleep(500);
+        Assert.assertEquals(0,client.getDestinations().size());
+                
     }
 }

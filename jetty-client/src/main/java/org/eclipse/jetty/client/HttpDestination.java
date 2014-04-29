@@ -169,6 +169,15 @@ public class HttpDestination implements Dumpable
 
         // TODO query, remove and age methods
     }
+    
+    public void clearCookies()
+    {
+        synchronized (this)
+        {
+            _cookies.clear();
+        }
+
+    }
 
     /**
      * Get a connection. We either get an idle connection if one is available, or
@@ -442,15 +451,20 @@ public class HttpDestination implements Dumpable
         else
         {
             boolean startConnection = false;
+            boolean remove = false;
             synchronized (this)
             {
                 _connections.remove(connection);
-                if (!_exchanges.isEmpty())
+                if (_exchanges.isEmpty())
+                    remove=_client.isRemoveIdleDestinations() && ( _cookies==null || _cookies.isEmpty() ) &&_connections.isEmpty() && _idleConnections.isEmpty();
+                else if (_client.isStarted())
                     startConnection = true;
             }
 
             if (startConnection)
                 startNewConnection();
+            if (remove)
+                _client.removeDestination(this);
         }
     }
 
@@ -461,17 +475,22 @@ public class HttpDestination implements Dumpable
         connection.onIdleExpired(idleForMs);
 
         boolean startConnection = false;
+        boolean remove = false;
         synchronized (this)
         {
             _idleConnections.remove(connection);
             _connections.remove(connection);
 
-            if (!_exchanges.isEmpty() && _client.isStarted())
+            if (_exchanges.isEmpty())
+                remove=_client.isRemoveIdleDestinations() && ( _cookies==null || _cookies.isEmpty() ) &&_connections.isEmpty() && _idleConnections.isEmpty();
+            else if (_client.isStarted())
                 startConnection = true;
         }
 
         if (startConnection)
             startNewConnection();
+        if (remove)
+            _client.removeDestination(this);
     }
 
     public void send(HttpExchange ex) throws IOException
@@ -524,21 +543,24 @@ public class HttpDestination implements Dumpable
     {
         // add cookies
         // TODO handle max-age etc.
-        if (_cookies != null)
+        synchronized (this)
         {
-            StringBuilder buf = null;
-            for (HttpCookie cookie : _cookies)
+            if (_cookies != null)
             {
-                if (buf == null)
-                    buf = new StringBuilder();
-                else
-                    buf.append("; ");
-                buf.append(cookie.getName()); // TODO quotes
-                buf.append("=");
-                buf.append(cookie.getValue()); // TODO quotes
-            }
-            if (buf != null)
-                ex.addRequestHeader(HttpHeaders.COOKIE, buf.toString());
+                StringBuilder buf = null;
+                for (HttpCookie cookie : _cookies)
+                {
+                    if (buf == null)
+                        buf = new StringBuilder();
+                    else
+                        buf.append("; ");
+                    buf.append(cookie.getName()); // TODO quotes
+                    buf.append("=");
+                    buf.append(cookie.getValue()); // TODO quotes
+                }
+                if (buf != null)
+                    ex.addRequestHeader(HttpHeaders.COOKIE, buf.toString());
+            }  
         }
 
         // Add any known authorizations
