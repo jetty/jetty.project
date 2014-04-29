@@ -228,7 +228,6 @@ public class HttpClient extends ContainerLifeCycle
     protected void doStop() throws Exception
     {
         cookieStore.removeAll();
-        cookieStore = null;
         decoderFactories.clear();
         handlers.clear();
 
