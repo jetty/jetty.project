@@ -48,7 +48,6 @@ import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.InputStreamContentProvider;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HttpCookieStore;
@@ -392,7 +391,7 @@ public class ProxyServlet extends HttpServlet
         }
 
         final Request proxyRequest = _client.newRequest(rewrittenURI)
-                .method(HttpMethod.fromString(request.getMethod()))
+                .method(request.getMethod())
                 .version(HttpVersion.fromString(request.getProtocol()));
 
         // Copy headers
@@ -434,10 +433,10 @@ public class ProxyServlet extends HttpServlet
         asyncContext.setTimeout(0);
         request.setAttribute(ASYNC_CONTEXT, asyncContext);
 
-        customizeProxyRequest(proxyRequest, request);
-
         if (hasContent)
-            proxyRequest.content(proxyRequestContent(asyncContext, requestId));
+            proxyRequest.content(proxyRequestContent(proxyRequest, request));
+
+        customizeProxyRequest(proxyRequest, request);
 
         if (_log.isDebugEnabled())
         {
@@ -476,9 +475,8 @@ public class ProxyServlet extends HttpServlet
         proxyRequest.send(new ProxyResponseListener(request, response));
     }
 
-    protected ContentProvider proxyRequestContent(final AsyncContext asyncContext, final int requestId) throws IOException
+    protected ContentProvider proxyRequestContent(Request proxyRequest, final HttpServletRequest request) throws IOException
     {
-        final HttpServletRequest request = (HttpServletRequest)asyncContext.getRequest();
         return new InputStreamContentProvider(request.getInputStream())
         {
             @Override
@@ -490,7 +488,7 @@ public class ProxyServlet extends HttpServlet
             @Override
             protected ByteBuffer onRead(byte[] buffer, int offset, int length)
             {
-                _log.debug("{} proxying content to upstream: {} bytes", requestId, length);
+                _log.debug("{} proxying content to upstream: {} bytes", getRequestId(request), length);
                 return super.onRead(buffer, offset, length);
             }
         };
@@ -609,7 +607,8 @@ public class ProxyServlet extends HttpServlet
      * <li>proxyTo - a mandatory URI like http://host:80/context to which the request is proxied.</li>
      * <li>prefix - an optional URI prefix that is stripped from the start of the forwarded URI.</li>
      * </ul>
-     * For example, if a request is received at /foo/bar and the 'proxyTo' parameter is "http://host:80/context"
+     * <p/>
+     * For example, if a request is received at "/foo/bar", the 'proxyTo' parameter is "http://host:80/context"
      * and the 'prefix' parameter is "/foo", then the request would be proxied to "http://host:80/context/bar".
      */
     public static class Transparent extends ProxyServlet

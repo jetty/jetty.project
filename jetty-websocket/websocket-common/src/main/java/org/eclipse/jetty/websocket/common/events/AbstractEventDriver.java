@@ -88,13 +88,7 @@ public abstract class AbstractEventDriver implements IncomingFrames, EventDriver
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("incoming(WebSocketException)",e);
-        }
-
-        if (e instanceof CloseException)
-        {
-            CloseException close = (CloseException)e;
-            terminateConnection(close.getStatusCode(),close.getMessage());
+            LOG.debug("incomingError(" + e.getClass().getName() + ")",e);
         }
 
         onError(e);
@@ -105,7 +99,7 @@ public abstract class AbstractEventDriver implements IncomingFrames, EventDriver
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("{}.onFrame({})",websocket.getClass().getSimpleName(),frame);
+            LOG.debug("incomingFrame({})",frame);
         }
 
         try
@@ -226,6 +220,7 @@ public abstract class AbstractEventDriver implements IncomingFrames, EventDriver
         catch (Throwable t)
         {
             unhandled(t);
+            throw t;
         }
     }
 

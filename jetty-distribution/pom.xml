@@ -570,7 +570,7 @@
                 <argument>jetty.home=${assembly-directory}</argument>
                 <argument>jetty.base=${assembly-directory}/demo-base</argument>
                 <argument>--add-to-start=server,continuation,deploy,websocket,ext,resources,client,annotations,jndi,servlets</argument>
-                <argument>--add-to-startd-ini=jsp,jstl,http,https</argument>
+                <argument>--add-to-startd=jsp,jstl,http,https</argument>
               </arguments>
             </configuration>
             <goals>

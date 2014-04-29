@@ -40,13 +40,18 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.SecurityHandler;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.AbstractHandlerContainer;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.util.component.LifeCycle.Listener;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
@@ -276,7 +281,37 @@ public class ServletContextHandlerTest
         assertTrue(contextDestroy.get());
     }
     
-    
+
+    @Test
+    public void testFallThrough() throws Exception
+    {
+        HandlerList list = new HandlerList();
+        _server.setHandler(list);
+
+        ServletContextHandler root = new ServletContextHandler(list,"/",ServletContextHandler.SESSIONS);
+
+        ServletHandler servlet = root.getServletHandler();
+        servlet.setEnsureDefaultServlet(false);
+        servlet.addServletWithMapping(HelloServlet.class, "/hello/*");
+        
+        list.addHandler(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                response.sendError(404, "Fell Through");
+            }
+        });
+
+        _server.start();
+
+        String response= _connector.getResponses("GET /hello HTTP/1.0\r\n\r\n");
+        Assert.assertThat(response, Matchers.containsString("200 OK"));
+        
+        response= _connector.getResponses("GET /other HTTP/1.0\r\n\r\n");
+        Assert.assertThat(response, Matchers.containsString("404 Fell Through"));
+        
+    }
 
     private int assertResponseContains(String expected, String response)
     {

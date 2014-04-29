@@ -78,6 +78,7 @@ public class DispatcherTest
         _server = new Server();
         _connector = new LocalConnector(_server);
         _connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendServerVersion(false);
+        _connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendDateHeader(false);
 
         _contextCollection = new ContextHandlerCollection();
         _contextHandler = new ServletContextHandler();

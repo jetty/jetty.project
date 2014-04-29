@@ -370,10 +370,13 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
         protected Action process() throws Exception
         {
             current = entries.poll();
-            LOG.debug("Processing {}", current);
             if (current == null)
+            {
+                LOG.debug("Entering IDLE");
                 return Action.IDLE;
-            nextOutgoing.outgoingFrame(current.frame, this, current.batchMode);
+            }
+            LOG.debug("Processing {}",current);
+            nextOutgoing.outgoingFrame(current.frame,this,current.batchMode);
             return Action.SCHEDULED;
         }
 

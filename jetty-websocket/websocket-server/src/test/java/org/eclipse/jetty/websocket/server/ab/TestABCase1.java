@@ -48,18 +48,12 @@ public class TestABCase1 extends AbstractABCase
         expect.add(new TextFrame());
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
-            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
@@ -81,18 +75,12 @@ public class TestABCase1 extends AbstractABCase
         expect.add(new TextFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
-            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
@@ -114,18 +102,12 @@ public class TestABCase1 extends AbstractABCase
         expect.add(new TextFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
-            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
@@ -147,18 +129,12 @@ public class TestABCase1 extends AbstractABCase
         expect.add(new TextFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
-            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
@@ -180,18 +156,12 @@ public class TestABCase1 extends AbstractABCase
         expect.add(new TextFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
-            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
@@ -213,18 +183,12 @@ public class TestABCase1 extends AbstractABCase
         expect.add(new TextFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
-            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
@@ -246,18 +210,12 @@ public class TestABCase1 extends AbstractABCase
         expect.add(new TextFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
-            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
@@ -284,19 +242,13 @@ public class TestABCase1 extends AbstractABCase
         expect.add(new TextFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(SendMode.SLOW);
             fuzzer.setSlowSendSegmentSize(segmentSize);
             fuzzer.send(send);
             fuzzer.expect(expect);
-            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
@@ -314,18 +266,12 @@ public class TestABCase1 extends AbstractABCase
         expect.add(new BinaryFrame());
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
-            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
@@ -347,18 +293,12 @@ public class TestABCase1 extends AbstractABCase
         expect.add(new BinaryFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
-            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
@@ -380,18 +320,12 @@ public class TestABCase1 extends AbstractABCase
         expect.add(new BinaryFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
-            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
@@ -413,18 +347,12 @@ public class TestABCase1 extends AbstractABCase
         expect.add(new BinaryFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
-            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
@@ -446,18 +374,12 @@ public class TestABCase1 extends AbstractABCase
         expect.add(new BinaryFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
-            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
@@ -479,18 +401,12 @@ public class TestABCase1 extends AbstractABCase
         expect.add(new BinaryFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
-            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
@@ -512,18 +428,12 @@ public class TestABCase1 extends AbstractABCase
         expect.add(new BinaryFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
-            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
@@ -550,19 +460,13 @@ public class TestABCase1 extends AbstractABCase
         expect.add(new BinaryFrame().setPayload(clone(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(SendMode.SLOW);
             fuzzer.setSlowSendSegmentSize(segmentSize);
             fuzzer.send(send);
             fuzzer.expect(expect);
-            fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 }

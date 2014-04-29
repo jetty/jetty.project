@@ -40,6 +40,7 @@ import javax.servlet.http.HttpServletResponseWrapper;
 
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.QuietServletException;
 import org.eclipse.jetty.server.Request;
@@ -70,6 +71,7 @@ public class AsyncContextTest
         _contextHandler = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
         _connector = new LocalConnector(_server);
         _connector.setIdleTimeout(5000);
+        _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setSendDateHeader(false);
         _server.setConnectors(new Connector[]
         { _connector });
 

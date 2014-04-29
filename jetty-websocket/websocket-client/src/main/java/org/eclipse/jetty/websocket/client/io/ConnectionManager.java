@@ -32,6 +32,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
@@ -158,7 +159,7 @@ public class ConnectionManager extends ContainerLifeCycle
         sessions.add(session);
     }
 
-    private void closeAllConnections()
+    private void shutdownAllConnections()
     {
         for (WebSocketSession session : sessions)
         {
@@ -166,11 +167,13 @@ public class ConnectionManager extends ContainerLifeCycle
             {
                 try
                 {
-                    session.getConnection().close();
+                    session.getConnection().close(
+                            StatusCode.SHUTDOWN,
+                            "Shutdown");
                 }
                 catch (Throwable t)
                 {
-                    LOG.debug("During Close All Connections",t);
+                    LOG.debug("During Shutdown All Connections",t);
                 }
             }
         }
@@ -203,7 +206,7 @@ public class ConnectionManager extends ContainerLifeCycle
     @Override
     protected void doStop() throws Exception
     {
-        closeAllConnections();
+        shutdownAllConnections();
         sessions.clear();
         super.doStop();
         removeBean(selector);

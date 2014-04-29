@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 
+import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.IO;
@@ -60,9 +61,7 @@ public class HashSessionManager extends AbstractSessionManager
     final static Logger LOG = SessionHandler.LOG;
 
     protected final ConcurrentMap<String,HashedSession> _sessions=new ConcurrentHashMap<String,HashedSession>();
-    private static int __id;
     private Scheduler _timer;
-    private boolean _timerStop=false;
     private Scheduler.Task _task;
     long _scavengePeriodMs=30000;
     long _savePeriodMs=0; //don't do period saves by default
@@ -134,14 +133,11 @@ public class HashSessionManager extends AbstractSessionManager
     @Override
     public void doStart() throws Exception
     {
-        super.doStart();
-
-        _timerStop=false;
         //try shared scheduler from Server first
         _timer = getSessionHandler().getServer().getBean(Scheduler.class);
         if (_timer == null)
         {
-            //try one passwed into the context
+            //try one passed into the context
             ServletContext context = ContextHandler.getCurrentContext();
             if (context!=null)
                 _timer = (Scheduler)context.getAttribute("org.eclipse.jetty.server.session.timer");   
@@ -149,12 +145,14 @@ public class HashSessionManager extends AbstractSessionManager
       
         if (_timer == null)
         {
-          //make a scheduler if none useable
-            _timerStop=true;
-            _timer=new ScheduledExecutorScheduler();
-            _timer.start();
+            //make a scheduler if none useable
+            _timer=new ScheduledExecutorScheduler(toString()+"Timer",true);
+            addBean(_timer,true);
         }
-     
+        else
+            addBean(_timer,false);
+            
+        super.doStart();
 
         setScavengePeriod(getScavengePeriod());
 
@@ -186,8 +184,6 @@ public class HashSessionManager extends AbstractSessionManager
             if (_task!=null)
                 _task.cancel();
             _task=null;
-            if (_timer!=null && _timerStop)
-                _timer.stop();
             _timer=null;
         }
 
@@ -427,7 +423,7 @@ public class HashSessionManager extends AbstractSessionManager
     /* ------------------------------------------------------------ */
     @Override
     protected void shutdownSessions() throws Exception
-    {
+    {   
         // Invalidate all sessions to cause unbind events
         ArrayList<HashedSession> sessions=new ArrayList<HashedSession>(_sessions.values());
         int loop=100;
@@ -672,7 +668,6 @@ public class HashSessionManager extends AbstractSessionManager
         if (size>0)
         {
             ClassLoadingObjectInputStream ois =  new ClassLoadingObjectInputStream(is);
-        
             for (int i=0; i<size;i++)
             {
                 String key = ois.readUTF();

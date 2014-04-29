@@ -18,7 +18,8 @@
 
 package org.eclipse.jetty.websocket.common.test;
 
-import java.io.Closeable;
+import static org.hamcrest.Matchers.*;
+
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,12 +36,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
@@ -68,10 +70,6 @@ import org.eclipse.jetty.websocket.common.io.IOState.ConnectionStateListener;
 import org.eclipse.jetty.websocket.common.io.http.HttpResponseHeaderParser;
 import org.junit.Assert;
 
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-
 /**
  * A simple websocket client for performing unit tests with.
  * <p>
@@ -84,21 +82,110 @@ import static org.hamcrest.Matchers.notNullValue;
  * with regards to basic IO behavior, a write should work as expected, a read should work as expected, but <u>what</u> byte it sends or reads is not within its
  * scope.
  */
-public class BlockheadClient implements IncomingFrames, OutgoingFrames, ConnectionStateListener, Closeable
+public class BlockheadClient implements OutgoingFrames, ConnectionStateListener, AutoCloseable
 {
+    private class FrameReadingThread extends Thread implements Runnable, IncomingFrames
+    {
+        public long totalBytes = 0;
+        public long totalReadOps = 0;
+        public long totalParseOps = 0;
+
+        public EventQueue<WebSocketFrame> frames = new EventQueue<>();
+        public EventQueue<Throwable> errors = new EventQueue<>();
+
+        @Override
+        public void run()
+        {
+            LOG.debug("Reading frames from server");
+
+            byte buf[] = new byte[BUFFER_SIZE];
+            try
+            {
+                if ((remainingBuffer != null) && (remainingBuffer.remaining() > 0))
+                {
+                    LOG.debug("Reading bytes received during response header parse: {}",BufferUtil.toDetailString(remainingBuffer));
+                    totalBytes += remainingBuffer.remaining();
+                    totalReadOps++;
+                    parser.parse(remainingBuffer);
+                }
+
+                int len = 0;
+                int available = 0;
+                while (!eof)
+                {
+                    available = in.available();
+                    len = in.read(buf,0,Math.min(available,buf.length));
+                    totalReadOps++;
+                    if (len < 0)
+                    {
+                        eof = true;
+                        break;
+                    }
+                    else if (len > 0)
+                    {
+                        totalBytes += len;
+                        ByteBuffer bbuf = ByteBuffer.wrap(buf,0,len);
+                        if (LOG.isDebugEnabled())
+                        {
+                            LOG.debug("Read {} bytes: {}",len,BufferUtil.toDetailString(bbuf));
+                        }
+                        totalParseOps++;
+                        parser.parse(bbuf);
+                    }
+                }
+            }
+            catch (IOException e)
+            {
+                LOG.debug(e);
+            }
+        }
+
+        @Override
+        public String toString()
+        {
+            StringBuilder str = new StringBuilder();
+            str.append("FrameReadingThread[");
+            str.append(",frames=" + frames.size());
+            str.append(",errors=" + errors.size());
+            str.append(String.format(",totalBytes=%,d",totalBytes));
+            str.append(String.format(",totalReadOps=%,d",totalReadOps));
+            str.append(String.format(",totalParseOps=%,d",totalParseOps));
+            str.append("]");
+            return str.toString();
+        }
+
+        @Override
+        public synchronized void incomingError(Throwable t)
+        {
+            this.errors.add(t);
+        }
+
+        @Override
+        public synchronized void incomingFrame(Frame frame)
+        {
+            this.frames.add(WebSocketFrame.copy(frame));
+        }
+
+        public synchronized void clear()
+        {
+            this.frames.clear();
+            this.errors.clear();
+        }
+    }
+
     private static final String REQUEST_HASH_KEY = "dGhlIHNhbXBsZSBub25jZQ==";
-    private static final int BUFFER_SIZE = 8192;
+    private static final int BUFFER_SIZE = 64 * 1024;
     private static final Logger LOG = Log.getLogger(BlockheadClient.class);
-    /** Set to true to disable timeouts (for debugging reasons) */
-    private boolean debug = false;
     private final URI destHttpURI;
     private final URI destWebsocketURI;
     private final ByteBufferPool bufferPool;
     private final Generator generator;
     private final Parser parser;
-    private final IncomingFramesCapture incomingFrames;
-    private final WebSocketExtensionFactory extensionFactory;
 
+    private final WebSocketExtensionFactory extensionFactory;
+    private FrameReadingThread frameReader;
+
+    private ExecutorService executor;
     private Socket socket;
     private OutputStream out;
     private InputStream in;
@@ -106,16 +193,15 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames, Connecti
     private String protocols;
     private List<String> extensions = new ArrayList<>();
     private List<String> headers = new ArrayList<>();
-    private byte[] clientmask = new byte[]
-    { (byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF };
+    private byte[] clientmask = new byte[] { (byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF };
     private int timeout = 1000;
-    private AtomicInteger parseCount;
     private OutgoingFrames outgoing = this;
     private boolean eof = false;
     private ExtensionStack extensionStack;
     private IOState ioState;
     private CountDownLatch disconnectedLatch = new CountDownLatch(1);
     private ByteBuffer remainingBuffer;
+
     private String connectionValue = "Upgrade";
 
     public BlockheadClient(URI destWebsocketURI) throws URISyntaxException
@@ -140,9 +226,6 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames, Connecti
         this.bufferPool = new MappedByteBufferPool(8192);
         this.generator = new Generator(policy,bufferPool);
         this.parser = new Parser(policy,bufferPool);
-        this.parseCount = new AtomicInteger(0);
-
-        this.incomingFrames = new IncomingFramesCapture();
 
         this.extensionFactory = new WebSocketExtensionFactory(policy,bufferPool);
         this.ioState = new IOState();
@@ -166,7 +249,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames, Connecti
 
     public void clearCaptured()
     {
-        this.incomingFrames.clear();
+        frameReader.clear();
     }
 
     public void clearExtensions()
@@ -174,6 +257,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames, Connecti
         extensions.clear();
     }
 
+    @Override
     public void close()
     {
         LOG.debug("close()");
@@ -182,22 +266,16 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames, Connecti
 
     public void close(int statusCode, String message)
     {
+        LOG.debug("close({},{})",statusCode,message);
         CloseInfo close = new CloseInfo(statusCode,message);
-
-        ioState.onCloseLocal(close);
 
         if (!ioState.isClosed())
         {
-            WebSocketFrame frame = close.asFrame();
-            LOG.debug("Issuing: {}",frame);
-            try
-            {
-                write(frame);
-            }
-            catch (IOException e)
-            {
-                LOG.debug(e);
-            }
+            ioState.onCloseLocal(close);
+        }
+        else
+        {
+            LOG.debug("Not issuing close. ioState = {}",ioState);
         }
     }
 
@@ -222,6 +300,10 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames, Connecti
         IO.close(in);
         IO.close(out);
         disconnectedLatch.countDown();
+        if (frameReader != null)
+        {
+            frameReader.interrupt();
+        }
         if (socket != null)
         {
             try
@@ -293,8 +375,12 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames, Connecti
         extensionStack = new ExtensionStack(this.extensionFactory);
         extensionStack.negotiate(configs);
 
+        // Setup Frame Reader
+        this.frameReader = new FrameReadingThread();
+        this.frameReader.start();
+
         // Start with default routing
-        extensionStack.setNextIncoming(this); // the websocket layer
+        extensionStack.setNextIncoming(frameReader); // the websocket layer
         extensionStack.setNextOutgoing(outgoing); // the network layer
 
         // Configure Parser / Generator
@@ -329,6 +415,15 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames, Connecti
     public String getConnectionValue()
     {
         return connectionValue;
+    }
+
+    public ExecutorService getExecutor()
+    {
+        if (executor == null)
+        {
+            executor = Executors.newCachedThreadPool();
+        }
+        return executor;
     }
 
     private List<ExtensionConfig> getExtensionConfigs(HttpResponse response)
@@ -408,38 +503,6 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames, Connecti
         return destWebsocketURI;
     }
 
-    /**
-     * Errors received (after extensions)
-     */
-    @Override
-    public void incomingError(Throwable e)
-    {
-        incomingFrames.incomingError(e);
-    }
-
-    /**
-     * Frames received (after extensions)
-     */
-    @Override
-    public void incomingFrame(Frame frame)
-    {
-        LOG.debug("incoming({})",frame);
-        int count = parseCount.incrementAndGet();
-        if ((count % 10) == 0)
-        {
-            LOG.info("Client parsed {} frames",count);
-        }
-
-        if (frame.getOpCode() == OpCode.CLOSE)
-        {
-            CloseInfo close = new CloseInfo(frame);
-            ioState.onCloseRemote(close);
-        }
-
-        WebSocketFrame copy = WebSocketFrame.copy(frame);
-        incomingFrames.incomingFrame(copy);
-    }
-
     public boolean isConnected()
     {
         return (socket != null) && (socket.isConnected());
@@ -448,6 +511,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames, Connecti
     @Override
     public void onConnectionStateChange(ConnectionState state)
     {
+        LOG.debug("CLIENT onConnectionStateChange() - {}",state);
         switch (state)
         {
             case CLOSED:
@@ -455,10 +519,17 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames, Connecti
                 // this.disconnect();
                 break;
             case CLOSING:
-                if (ioState.wasRemoteCloseInitiated())
+                CloseInfo close = ioState.getCloseInfo();
+
+                WebSocketFrame frame = close.asFrame();
+                LOG.debug("Issuing: {}",frame);
+                try
                 {
-                    CloseInfo close = ioState.getCloseInfo();
-                    close(close.getStatusCode(),close.getReason());
+                    write(frame);
+                }
+                catch (IOException e)
+                {
+                    LOG.debug(e);
                 }
                 break;
             default:
@@ -503,107 +574,41 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames, Connecti
         }
     }
 
-    public int read(ByteBuffer buf) throws IOException
+    public EventQueue<WebSocketFrame> readFrames(int expectedFrameCount, int timeoutDuration, TimeUnit timeoutUnit) throws Exception
     {
-        if (eof)
-        {
-            throw new EOFException("Hit EOF");
-        }
-
-        if ((remainingBuffer != null) && (remainingBuffer.remaining() > 0))
-        {
-            return BufferUtil.put(remainingBuffer,buf);
-        }
-
-        int len = -1;
-        int b;
-        while ((in.available() > 0) && (buf.remaining() > 0))
-        {
-            b = in.read();
-            if (b == (-1))
-            {
-                eof = true;
-                break;
-            }
-            buf.put((byte)b);
-            len++;
-        }
-
-        return len;
-    }
-
-    public IncomingFramesCapture readFrames(int expectedCount, TimeUnit timeoutUnit, int timeoutDuration) throws IOException, TimeoutException
-    {
-        LOG.debug("Read: waiting for {} frame(s) from server",expectedCount);
-
-        ByteBuffer buf = bufferPool.acquire(BUFFER_SIZE,false);
-        BufferUtil.clearToFill(buf);
-        try
-        {
-            long msDur = TimeUnit.MILLISECONDS.convert(timeoutDuration,timeoutUnit);
-            long now = System.currentTimeMillis();
-            long expireOn = now + msDur;
-            LOG.debug("Now: {} - expireOn: {} ({} ms)",now,expireOn,msDur);
-
-            long iter = 0;
-
-            int len = 0;
-            while (incomingFrames.size() < expectedCount)
-            {
-                BufferUtil.clearToFill(buf);
-                len = read(buf);
-                if (len > 0)
-                {
-                    BufferUtil.flipToFlush(buf,0);
-                    if (LOG.isDebugEnabled())
-                    {
-                        LOG.debug("Read {} bytes: {}",len,BufferUtil.toDetailString(buf));
-                    }
-                    parser.parse(buf);
-                }
-                else
-                {
-                    if (LOG.isDebugEnabled())
-                    {
-                        iter++;
-                        if ((iter % 10000000) == 0)
-                        {
-                            LOG.debug("10,000,000 reads of zero length");
-                            iter = 0;
-                        }
-                    }
-                }
-
-                if (!debug && (System.currentTimeMillis() > expireOn))
-                {
-                    incomingFrames.dump();
-                    throw new TimeoutException(String.format("Timeout reading all %d expected frames. (managed to only read %d frame(s))",expectedCount,
-                            incomingFrames.size()));
-                }
-            }
-        }
-        finally
-        {
-            bufferPool.release(buf);
-        }
-
-        return incomingFrames;
+        frameReader.frames.awaitEventCount(expectedFrameCount,timeoutDuration,timeoutUnit);
+        return frameReader.frames;
     }
 
     public HttpResponse readResponseHeader() throws IOException
     {
         HttpResponse response = new HttpResponse();
-        HttpResponseHeaderParser parser = new HttpResponseHeaderParser(response);
+        HttpResponseHeaderParser respParser = new HttpResponseHeaderParser(response);
 
-        ByteBuffer buf = BufferUtil.allocate(512);
+        byte buf[] = new byte[512];
 
-        do
+        while (!eof)
         {
-            BufferUtil.flipToFill(buf);
-            read(buf);
-            BufferUtil.flipToFlush(buf,0);
+            int available = in.available();
+            int len = in.read(buf,0,Math.min(available,buf.length));
+            if (len < 0)
+            {
+                eof = true;
+                break;
+            }
+            else if (len > 0)
+            {
+                ByteBuffer bbuf = ByteBuffer.wrap(buf,0,len);
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("Read {} bytes: {}",len,BufferUtil.toDetailString(bbuf));
+                }
+                if (respParser.parse(bbuf) != null)
+                {
+                    break;
+                }
+            }
         }
-        while (parser.parse(buf) == null);
 
         remainingBuffer = response.getRemainingBuffer();
 
@@ -643,9 +648,9 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames, Connecti
         this.connectionValue = connectionValue;
     }
 
-    public void setDebug(boolean flag)
+    public void setExecutor(ExecutorService executor)
     {
-        this.debug = flag;
+        this.executor = executor;
     }
 
     public void setProtocols(String protocols)
@@ -653,7 +658,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames, Connecti
         this.protocols = protocols;
     }
 
-    public void setTimeout(TimeUnit unit, int duration)
+    public void setTimeout(int duration, TimeUnit unit)
     {
         this.timeout = (int)TimeUnit.MILLISECONDS.convert(duration,unit);
     }
@@ -701,19 +706,19 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames, Connecti
     {
         if (!ioState.isOpen())
         {
+            LOG.debug("IO Not Open / Not Writing: {}",frame);
             return;
         }
         LOG.debug("write(Frame->{}) to {}",frame,outgoing);
         if (LOG.isDebugEnabled())
         {
-            frame.setMask(new byte[]
-            { 0x00, 0x00, 0x00, 0x00 });
+            frame.setMask(new byte[] { 0x00, 0x00, 0x00, 0x00 });
         }
         else
         {
             frame.setMask(clientmask);
         }
-        extensionStack.outgoingFrame(frame,null, BatchMode.OFF);
+        extensionStack.outgoingFrame(frame,null,BatchMode.OFF);
     }
 
     public void writeRaw(ByteBuffer buf) throws IOException

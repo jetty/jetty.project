@@ -45,6 +45,7 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.UserIdentity;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.security.Constraint;
@@ -820,7 +821,9 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         if (paths != null && !paths.isEmpty())
         {
             for (String p:paths)
-                LOG.warn("Path with uncovered http methods: {}",p);
+                LOG.warn("{} has uncovered http methods for path: {}",ContextHandler.getCurrentContext(), p);
+            if (LOG.isDebugEnabled())
+                LOG.debug(new Throwable());
             return true;
         }
         return false; 

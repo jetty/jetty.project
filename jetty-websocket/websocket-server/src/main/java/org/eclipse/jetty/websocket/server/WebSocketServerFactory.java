@@ -44,6 +44,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
+import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
@@ -199,11 +200,23 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         }
     }
 
-    protected void closeAllConnections()
+    protected void shutdownAllConnections()
     {
         for (WebSocketSession session : openSessions)
         {
-            session.close();
+            if (session.getConnection() != null)
+            {
+                try
+                {
+                    session.getConnection().close(
+                            StatusCode.SHUTDOWN,
+                            "Shutdown");
+                }
+                catch (Throwable t)
+                {
+                    LOG.debug("During Shutdown All Connections",t);
+                }
+            }
         }
         openSessions.clear();
     }
@@ -269,7 +282,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     @Override
     protected void doStop() throws Exception
     {
-        closeAllConnections();
+        shutdownAllConnections();
         super.doStop();
     }
 

@@ -47,7 +47,7 @@ public class PathMatchers
             }
         }
     }
-    
+
     private static final char GLOB_CHARS[] = "*?".toCharArray();
     private static final char SYNTAXED_GLOB_CHARS[] = "{}[]|:".toCharArray();
     private static final Path EMPTY_PATH = new File(".").toPath();
@@ -167,7 +167,12 @@ public class PathMatchers
      */
     public static boolean isAbsolute(final String pattern)
     {
-        return asPath(pattern).isAbsolute();
+        Path searchRoot = getSearchRoot(pattern);
+        if (searchRoot == EMPTY_PATH)
+        {
+            return false;
+        }
+        return searchRoot.isAbsolute();
     }
 
     /**

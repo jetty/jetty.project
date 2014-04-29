@@ -107,7 +107,7 @@ public class RequestHeadersTest
     public void testAccessRequestCookies() throws Exception
     {
         BlockheadClient client = new BlockheadClient(server.getServerUri());
-        client.setTimeout(TimeUnit.SECONDS,1);
+        client.setTimeout(1,TimeUnit.SECONDS);
 
         try
         {

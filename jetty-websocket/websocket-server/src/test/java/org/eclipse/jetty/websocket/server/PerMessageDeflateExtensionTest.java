@@ -18,21 +18,20 @@
 
 package org.eclipse.jetty.websocket.server;
 
+import static org.hamcrest.Matchers.*;
+
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadClient;
 import org.eclipse.jetty.websocket.common.test.HttpResponse;
-import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.server.helper.EchoServlet;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
 
 public class PerMessageDeflateExtensionTest
 {
@@ -65,7 +64,7 @@ public class PerMessageDeflateExtensionTest
         try
         {
             // Make sure the read times out if there are problems with the implementation
-            client.setTimeout(TimeUnit.SECONDS,1);
+            client.setTimeout(1,TimeUnit.SECONDS);
             client.connect();
             client.sendStandardRequest();
             HttpResponse resp = client.expectUpgradeResponse();
@@ -77,8 +76,8 @@ public class PerMessageDeflateExtensionTest
             // Client sends first message
             client.write(new TextFrame().setPayload(msg));
 
-            IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,1000);
-            WebSocketFrame frame = capture.getFrames().poll();
+            EventQueue<WebSocketFrame> frames = client.readFrames(1,1000,TimeUnit.MILLISECONDS);
+            WebSocketFrame frame = frames.poll();
             Assert.assertThat("TEXT.payload",frame.getPayloadAsUTF8(),is(msg.toString()));
 
             // Client sends second message
@@ -86,8 +85,8 @@ public class PerMessageDeflateExtensionTest
             msg = "There";
             client.write(new TextFrame().setPayload(msg));
 
-            capture = client.readFrames(1,TimeUnit.SECONDS,1);
-            frame = capture.getFrames().poll();
+            frames = client.readFrames(1,1,TimeUnit.SECONDS);
+            frame = frames.poll();
             Assert.assertThat("TEXT.payload",frame.getPayloadAsUTF8(),is(msg.toString()));
         }
         finally

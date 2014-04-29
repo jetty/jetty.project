@@ -49,7 +49,7 @@ public class SlowServerTest
     public void startClient() throws Exception
     {
         client = new WebSocketClient();
-        client.getPolicy().setIdleTimeout(60000);
+        client.setMaxIdleTimeout(60000);
         client.start();
     }
 
@@ -78,7 +78,7 @@ public class SlowServerTest
     {
         JettyTrackingSocket tsocket = new JettyTrackingSocket();
         client.setMasker(new ZeroMasker());
-        client.getPolicy().setIdleTimeout(60000);
+        client.setMaxIdleTimeout(60000);
 
         URI wsUri = server.getWsUri();
         Future<Session> future = client.connect(tsocket,wsUri);
@@ -123,41 +123,38 @@ public class SlowServerTest
     @Slow
     public void testServerSlowToSend() throws Exception
     {
-        // final Exchanger<String> exchanger = new Exchanger<String>();
-        JettyTrackingSocket tsocket = new JettyTrackingSocket();
-        // tsocket.messageExchanger = exchanger;
+        JettyTrackingSocket clientSocket = new JettyTrackingSocket();
         client.setMasker(new ZeroMasker());
-        client.getPolicy().setIdleTimeout(60000);
+        client.setMaxIdleTimeout(60000);
 
         URI wsUri = server.getWsUri();
-        Future<Session> future = client.connect(tsocket,wsUri);
+        Future<Session> clientConnectFuture = client.connect(clientSocket,wsUri);
 
-        ServerConnection sconnection = server.accept();
-        sconnection.setSoTimeout(60000);
-        sconnection.upgrade();
+        ServerConnection serverConn = server.accept();
+        serverConn.setSoTimeout(60000);
+        serverConn.upgrade();
 
         // Confirm connected
-        future.get(500,TimeUnit.MILLISECONDS);
-        tsocket.waitForConnected(500,TimeUnit.MILLISECONDS);
+        clientConnectFuture.get(500,TimeUnit.MILLISECONDS);
+        clientSocket.waitForConnected(500,TimeUnit.MILLISECONDS);
 
         // Have server write slowly.
         int messageCount = 1000;
 
-        ServerWriteThread writer = new ServerWriteThread(sconnection);
+        ServerWriteThread writer = new ServerWriteThread(serverConn);
         writer.setMessageCount(messageCount);
         writer.setMessage("Hello");
-        // writer.setExchanger(exchanger);
         writer.setSlowness(10);
         writer.start();
         writer.join();
 
         // Verify receive
-        Assert.assertThat("Message Receive Count",tsocket.messageQueue.size(),is(messageCount));
+        Assert.assertThat("Message Receive Count",clientSocket.messageQueue.size(),is(messageCount));
 
         // Close
-        sconnection.close(StatusCode.NORMAL);
+        serverConn.close(StatusCode.NORMAL);
 
-        Assert.assertTrue("Client Socket Closed",tsocket.closeLatch.await(10,TimeUnit.SECONDS));
-        tsocket.assertCloseCode(StatusCode.NORMAL);
+        Assert.assertTrue("Client Socket Closed",clientSocket.closeLatch.await(10,TimeUnit.SECONDS));
+        clientSocket.assertCloseCode(StatusCode.NORMAL);
     }
 }

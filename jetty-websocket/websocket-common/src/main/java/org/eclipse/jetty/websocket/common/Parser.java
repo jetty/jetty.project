@@ -96,8 +96,9 @@ public class Parser
 
     private void assertSanePayloadLength(long len)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Payload Length: {} - {}",len,this);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("{} Payload Length: {} - {}",policy.getBehavior(),len,this);
+        }
 
         // Since we use ByteBuffer so often, having lengths over Integer.MAX_VALUE is really impossible.
         if (len > Integer.MAX_VALUE)
@@ -239,7 +240,7 @@ public class Parser
         incomingFramesHandler.incomingError(e);
     }
 
-    public void parse(ByteBuffer buffer)
+    public void parse(ByteBuffer buffer) throws WebSocketException
     {
         if (buffer.remaining() <= 0)
         {
@@ -266,13 +267,20 @@ public class Parser
         {
             buffer.position(buffer.limit()); // consume remaining
             reset();
+            // let session know
             notifyWebSocketException(e);
+            // need to throw for proper close behavior in connection
+            throw e;
         }
         catch (Throwable t)
         {
             buffer.position(buffer.limit()); // consume remaining
             reset();
-            notifyWebSocketException(new WebSocketException(t));
+            // let session know
+            WebSocketException e = new WebSocketException(t);
+            notifyWebSocketException(e);
+            // need to throw for proper close behavior in connection
+            throw e;
         }
     }
 
@@ -299,7 +307,9 @@ public class Parser
     private boolean parseFrame(ByteBuffer buffer)
     {
         if (LOG.isDebugEnabled())
+        {
             LOG.debug("{} Parsing {} bytes",policy.getBehavior(),buffer.remaining());
+        }
         while (buffer.hasRemaining())
         {
             switch (state)
@@ -318,7 +328,8 @@ public class Parser
                     }
                     
                     if (LOG.isDebugEnabled())
-                        LOG.debug("OpCode {}, fin={} rsv={}{}{}",
+                        LOG.debug("{} OpCode {}, fin={} rsv={}{}{}",
+                                policy.getBehavior(),
                                 OpCode.name(opcode),
                                 fin,
                                 (isRsv1InUse()?'1':'.'),
@@ -411,11 +422,6 @@ public class Parser
                             else
                                 throw new ProtocolException("RSV3 not allowed to be set");   
                         }
-                    }
-                    else
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("OpCode {}, fin={} rsv=000",OpCode.name(opcode),fin);
                     }
                     
                     state = State.PAYLOAD_LEN;
@@ -591,8 +597,9 @@ public class Parser
             buffer.limit(limit);
             buffer.position(buffer.position() + window.remaining());
 
-            if (LOG.isDebugEnabled())
-                LOG.debug("Window: {}",BufferUtil.toDetailString(window));
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("{} Window: {}",policy.getBehavior(),BufferUtil.toDetailString(window));
+            }
 
             maskProcessor.process(window);
 

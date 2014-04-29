@@ -52,7 +52,7 @@ public class HttpConfiguration
     private String _secureScheme = HttpScheme.HTTPS.asString();
     private boolean _sendServerVersion = true; //send Server: header
     private boolean _sendXPoweredBy = false; //send X-Powered-By: header
-    private boolean _sendDateHeader = false; //send Date: header
+    private boolean _sendDateHeader = true; //send Date: header
 
     public interface Customizer
     {

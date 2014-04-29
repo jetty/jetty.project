@@ -59,6 +59,7 @@ public class AsyncRequestReadTest
         server = new Server();
         connector = new ServerConnector(server);
         connector.setIdleTimeout(10000);
+        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setSendDateHeader(false);
         server.addConnector(connector);
     }
 
