@@ -246,14 +246,12 @@ public class GZIPContentDecoder implements ContentDecoder
                                 if (output == null)
                                 {
                                     // Save the inflated bytes and loop to see if we have finished
-                                    output = new byte[decoded];
-                                    System.arraycopy(bytes, 0, output, 0, decoded);
+                                    output = Arrays.copyOf(bytes, decoded);
                                 }
                                 else
                                 {
                                     // Accumulate inflated bytes and loop to see if we have finished
-                                    byte[] newOutput = new byte[output.length + decoded];
-                                    System.arraycopy(output, 0, newOutput, 0, output.length);
+                                    byte[] newOutput = Arrays.copyOf(output, output.length+decoded);
                                     System.arraycopy(bytes, 0, newOutput, output.length, decoded);
                                     output = newOutput;
                                 }

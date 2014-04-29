@@ -19,6 +19,7 @@
 package org.eclipse.jetty.util;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -107,11 +108,12 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
      */
     public ArrayTernaryTrie(ArrayTernaryTrie<V> trie, double factor)
     {
-        this(trie.isCaseInsensitive(),(int)(trie._value.length*factor));
+        super(trie.isCaseInsensitive());
+        int capacity=(int)(trie._value.length*factor);
         _rows=trie._rows;
-        System.arraycopy(trie._value,0,_value,0,trie._value.length);
-        System.arraycopy(trie._tree,0,_tree,0,trie._tree.length);
-        System.arraycopy(trie._key,0,_key,0,trie._key.length);
+        _value=Arrays.copyOf(trie._value, capacity);
+        _tree=Arrays.copyOf(trie._tree, capacity*ROW_SIZE);
+        _key=Arrays.copyOf(trie._key, capacity);
     }
     
     /* ------------------------------------------------------------ */
