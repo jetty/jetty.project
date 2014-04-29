@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.start;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -38,7 +38,7 @@ public class MainTest
         System.setProperty("jetty.home","");
         System.setProperty("jetty.base","");
     }
-    
+
     @Test
     public void testBasicProcessing() throws Exception
     {
@@ -69,12 +69,12 @@ public class MainTest
         StartArgs args = main.processCommandLine(cmdLineArgs.toArray(new String[cmdLineArgs.size()]));
         System.err.println(args);
 
-        //Assert.assertEquals("--stop should not build module tree", 0, args.getEnabledModules().size());
+        // Assert.assertEquals("--stop should not build module tree", 0, args.getEnabledModules().size());
         Assert.assertEquals("--stop missing port","10000",args.getProperties().getString("STOP.PORT"));
         Assert.assertEquals("--stop missing key","foo",args.getProperties().getString("STOP.KEY"));
         Assert.assertEquals("--stop missing wait","300",args.getProperties().getString("STOP.WAIT"));
     }
-    
+
     @Test
     @Ignore("Just a bit noisy for general testing")
     public void testListConfig() throws Exception
@@ -90,7 +90,7 @@ public class MainTest
         StartArgs args = main.processCommandLine(cmdLineArgs.toArray(new String[cmdLineArgs.size()]));
         main.listConfig(args);
     }
-    
+
     @Test
     @Ignore("Just a bit noisy for general testing")
     public void testHelp() throws Exception
@@ -107,12 +107,12 @@ public class MainTest
         File homePath = MavenTestingUtils.getTestResourceDir("usecases/home").getAbsoluteFile();
         cmdLineArgs.add("jetty.home=" + homePath);
         cmdLineArgs.add("user.dir=" + homePath);
-        
+
         // JVM args
         cmdLineArgs.add("--exec");
         cmdLineArgs.add("-Xms1024m");
         cmdLineArgs.add("-Xmx1024m");
-        
+
         // Arbitrary Libs
         File extraJar = MavenTestingUtils.getTestResourceFile("extra-libs/example.jar");
         File extraDir = MavenTestingUtils.getTestResourceDir("extra-resources");
@@ -127,9 +127,9 @@ public class MainTest
 
         StartArgs args = main.processCommandLine(cmdLineArgs.toArray(new String[cmdLineArgs.size()]));
         BaseHome baseHome = main.getBaseHome();
-        
-        Assert.assertThat("jetty.home", baseHome.getHome(), is(homePath.getAbsolutePath()));
-        Assert.assertThat("jetty.base", baseHome.getBase(), is(homePath.getAbsolutePath()));
+
+        Assert.assertThat("jetty.home",baseHome.getHome(),is(homePath.getAbsolutePath()));
+        Assert.assertThat("jetty.base",baseHome.getBase(),is(homePath.getAbsolutePath()));
 
         ConfigurationAssert.assertConfiguration(baseHome,args,"assert-home-with-jvm.txt");
     }
@@ -146,10 +146,10 @@ public class MainTest
         Main main = new Main();
         StartArgs args = main.processCommandLine(cmdLineArgs.toArray(new String[cmdLineArgs.size()]));
         BaseHome baseHome = main.getBaseHome();
-        
-        Assert.assertThat("jetty.home", baseHome.getHome(), is(homePath.getAbsolutePath()));
-        Assert.assertThat("jetty.base", baseHome.getBase(), is(homePath.getAbsolutePath()));
-        
+
+        Assert.assertThat("jetty.home",baseHome.getHome(),is(homePath.getAbsolutePath()));
+        Assert.assertThat("jetty.base",baseHome.getBase(),is(homePath.getAbsolutePath()));
+
         ConfigurationAssert.assertConfiguration(baseHome,args,"assert-home-with-spaces.txt");
     }
 }
