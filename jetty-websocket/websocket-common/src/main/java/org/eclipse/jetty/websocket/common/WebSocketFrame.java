@@ -154,10 +154,7 @@ public abstract class WebSocketFrame implements Frame
         masked = copy.masked;
         mask = null;
         if (copy.mask != null)
-        {
-            mask = new byte[copy.mask.length];
-            System.arraycopy(copy.mask,0,mask,0,mask.length);
-        }
+            mask = Arrays.copyOf(copy.mask, copy.mask.length);
     }
 
     @Override

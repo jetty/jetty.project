@@ -1214,20 +1214,17 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             _protectedTargets = null;
             return;
         }
-
-        _protectedTargets = new String[targets.length];
-        System.arraycopy(targets, 0, _protectedTargets, 0, targets.length);
+        
+        _protectedTargets = Arrays.copyOf(targets, targets.length);
     }
 
     /* ------------------------------------------------------------ */
-    public String[] getProtectedTargets ()
+    public String[] getProtectedTargets()
     {
         if (_protectedTargets == null)
             return null;
 
-        String[] tmp = new String[_protectedTargets.length];
-        System.arraycopy(_protectedTargets, 0, tmp, 0, _protectedTargets.length);
-        return tmp;
+        return Arrays.copyOf(_protectedTargets, _protectedTargets.length);
     }
 
 
