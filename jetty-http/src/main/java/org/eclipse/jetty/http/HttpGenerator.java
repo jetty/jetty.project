@@ -330,7 +330,7 @@ public class HttpGenerator extends AbstractGenerator
             while(_header.length()>0)
             {
                 int len = _endp.flush(_header);
-                if (len<0)
+                if (len<0 || !_endp.isOpen())
                     throw new EofException();
                 if (len==0)
                     Thread.sleep(100);
