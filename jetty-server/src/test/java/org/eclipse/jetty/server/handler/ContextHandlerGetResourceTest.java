@@ -33,14 +33,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.AfterClass;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class ContextHandlerGetResourceTest
 {
+    private static boolean OS_ALIAS_SUPPORTED;
     private static Server server;
     private static ContextHandler context;
     private static File docroot;
@@ -51,8 +54,9 @@ public class ContextHandlerGetResourceTest
     @BeforeClass
     public static void beforeClass()  throws Exception
     {
-        docroot = new File("target/tests/docroot").getCanonicalFile().getAbsoluteFile();
-        FS.ensureDirExists(docroot);
+        File testRoot = MavenTestingUtils.getTargetTestingDir(ContextHandlerGetResourceTest.class.getSimpleName());
+        FS.ensureEmpty(testRoot);
+        docroot = new File(testRoot,"docroot").getCanonicalFile().getAbsoluteFile();
         FS.ensureEmpty(docroot);
         File index = new File(docroot,"index.html");
         index.createNewFile();
@@ -63,8 +67,7 @@ public class ContextHandlerGetResourceTest
         File verylong = new File(sub,"TextFile.Long.txt");
         verylong.createNewFile();
 
-        otherroot = new File("target/tests/otherroot").getCanonicalFile().getAbsoluteFile();
-        FS.ensureDirExists(otherroot);
+        otherroot = new File(testRoot, "otherroot").getCanonicalFile().getAbsoluteFile();
         FS.ensureEmpty(otherroot);
         File other = new File(otherroot,"other.txt");
         other.createNewFile();
@@ -83,6 +86,7 @@ public class ContextHandlerGetResourceTest
             Files.createSymbolicLink(transit.toPath(),otherroot.toPath());
         }
         
+        OS_ALIAS_SUPPORTED = new File(sub, "TEXTFI~1.TXT").exists(); 
         
         server = new Server();
         context =new ContextHandler("/");
@@ -313,6 +317,7 @@ public class ContextHandlerGetResourceTest
     @Test
     public void testAliasedFile() throws Exception
     {
+        Assume.assumeTrue("OS Supports 8.3 Aliased / Alternate References",OS_ALIAS_SUPPORTED);
         final String path="/subdir/TEXTFI~1.TXT";
         
         Resource resource=context.getResource(path);
@@ -325,6 +330,7 @@ public class ContextHandlerGetResourceTest
     @Test
     public void testAliasedFileAllowed() throws Exception
     {
+        Assume.assumeTrue("OS Supports 8.3 Aliased / Alternate References",OS_ALIAS_SUPPORTED);
         try
         {
             allowAliases.set(true);
