@@ -42,17 +42,22 @@ public class HttpChannelState
 
     private final static long DEFAULT_TIMEOUT=30000L;
 
+    /** The dispatched state of the HttpChannel, used to control the overall livecycle
+     */
     public enum State
     {
         IDLE,             // Idle request
         DISPATCHED,       // Request dispatched to filter/servlet
-        ASYNC_WAIT,        // Suspended and parked
-        ASYNC_WOKEN,  // A thread has been dispatch to handle from ASYNCWAIT
-        ASYNC_IO,          // Has been dispatched for async IO
+        ASYNC_WAIT,       // Suspended and parked
+        ASYNC_WOKEN,      // A thread has been dispatch to handle from ASYNCWAIT
+        ASYNC_IO,         // Has been dispatched for async IO
         COMPLETING,       // Request is completable
         COMPLETED         // Request is complete
     }
 
+    /**
+     * The actions to take as the channel moves from state to state.
+     */
     public enum Action
     {
         REQUEST_DISPATCH, // handle a normal request dispatch  
@@ -64,6 +69,11 @@ public class HttpChannelState
         COMPLETE          // Complete the channel
     }
     
+    /**
+     * The state of the servlet async API.  This can lead or follow the 
+     * channel dispatch state and also includes reasons such as expired,
+     * dispatched or completed.
+     */
     public enum Async
     {
         STARTED,
