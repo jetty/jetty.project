@@ -184,8 +184,6 @@ public class HttpChannelState
                 case COMPLETED:
                     return Action.WAIT;
 
-                case ASYNC_WAIT:
-                    LOG.warn("How did I get here?", new Throwable());
                 case ASYNC_WOKEN:
                     if (_asyncRead)
                     {
@@ -219,6 +217,7 @@ public class HttpChannelState
                                 _async=null;
                                 return Action.ASYNC_EXPIRED;
                             case STARTED:
+                                // TODO
                                 if (DEBUG)
                                     LOG.debug("TODO Fix this double dispatch",new IllegalStateException(this
                                             .getStatusString()));
@@ -361,8 +360,16 @@ public class HttpChannelState
                 case ASYNC_IO:
                     dispatch=false;
                     break;
-                default:
+                case ASYNC_WAIT:
+                    _state=State.ASYNC_WOKEN;
                     dispatch=true;
+                    break;
+                case ASYNC_WOKEN:
+                    dispatch=false;
+                    break;
+                default:
+                    LOG.warn("async dispatched when complete {}",this);
+                    dispatch=false;
                     break;
             }
         }

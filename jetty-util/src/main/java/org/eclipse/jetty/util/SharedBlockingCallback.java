@@ -222,7 +222,7 @@ public class SharedBlockingCallback
                 if (_state == IDLE)
                     throw new IllegalStateException("IDLE");
                 if (_state == null)
-                    LOG.warn(new Throwable());
+                    LOG.debug("Blocker not complete",new Throwable());
             }
             finally
             {
