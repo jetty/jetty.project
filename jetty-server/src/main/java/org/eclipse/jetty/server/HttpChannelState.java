@@ -35,21 +35,6 @@ import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
  * Implementation of AsyncContext interface that holds the state of request-response cycle.
- *
- * <table>
- * <tr><th>STATE</th><th colspan=6>ACTION</th></tr>
- * <tr><th></th>                           <th>handling()</th>  <th>startAsync()</th><th>unhandle()</th>  <th>dispatch()</th>   <th>complete()</th>      <th>completed()</th></tr>
- * <tr><th align=right>IDLE:</th>          <td>DISPATCHED</td>  <td></td>            <td></td>            <td></td>             <td>COMPLETECALLED??</td><td></td></tr>
- * <tr><th align=right>DISPATCHED:</th>    <td></td>            <td>ASYNCSTARTED</td><td>COMPLETING</td>  <td></td>             <td></td>                <td></td></tr>
- * <tr><th align=right>ASYNCSTARTED:</th>  <td></td>            <td></td>            <td>ASYNCWAIT</td>   <td>REDISPATCHING</td><td>COMPLETECALLED</td>  <td></td></tr>
- * <tr><th align=right>REDISPATCHING:</th> <td></td>            <td></td>            <td>REDISPATCHED</td><td></td>             <td></td>                <td></td></tr>
- * <tr><th align=right>ASYNCWAIT:</th>     <td></td>            <td></td>            <td></td>            <td>REDISPATCH</td>   <td>COMPLETECALLED</td>  <td></td></tr>
- * <tr><th align=right>REDISPATCH:</th>    <td>REDISPATCHED</td><td></td>            <td></td>            <td></td>             <td></td>                <td></td></tr>
- * <tr><th align=right>REDISPATCHED:</th>  <td></td>            <td>ASYNCSTARTED</td><td>COMPLETING</td>  <td></td>             <td></td>                <td></td></tr>
- * <tr><th align=right>COMPLETECALLED:</th><td>COMPLETING</td>  <td></td>            <td>COMPLETING</td>  <td></td>             <td></td>                <td></td></tr>
- * <tr><th align=right>COMPLETING:</th>    <td>COMPLETING</td>  <td></td>            <td></td>            <td></td>             <td></td>                <td>COMPLETED</td></tr>
- * <tr><th align=right>COMPLETED:</th>     <td></td>            <td></td>            <td></td>            <td></td>             <td></td>                <td></td></tr>
- * </table>
  */
 public class HttpChannelState
 {
@@ -59,12 +44,13 @@ public class HttpChannelState
 
     public enum State
     {
-        IDLE,          // Idle request
-        DISPATCHED,    // Request dispatched to filter/servlet
-        ASYNCWAIT,     // Suspended and parked
-        ASYNCIO,       // Has been dispatched for async IO
-        COMPLETING,    // Request is completable
-        COMPLETED      // Request is complete
+        IDLE,             // Idle request
+        DISPATCHED,       // Request dispatched to filter/servlet
+        ASYNC_WAIT,        // Suspended and parked
+        ASYNC_WOKEN,  // A thread has been dispatch to handle from ASYNCWAIT
+        ASYNC_IO,          // Has been dispatched for async IO
+        COMPLETING,       // Request is completable
+        COMPLETED         // Request is complete
     }
 
     public enum Action
@@ -188,16 +174,18 @@ public class HttpChannelState
                 case COMPLETED:
                     return Action.WAIT;
 
-                case ASYNCWAIT:
+                case ASYNC_WAIT:
+                    LOG.warn("How did I get here?", new Throwable());
+                case ASYNC_WOKEN:
                     if (_asyncRead)
                     {
-                        _state=State.ASYNCIO;
+                        _state=State.ASYNC_IO;
                         _asyncRead=false;
                         return Action.READ_CALLBACK;
                     }
                     if (_asyncWrite)
                     {
-                        _state=State.ASYNCIO;
+                        _state=State.ASYNC_IO;
                         _asyncWrite=false;
                         return Action.WRITE_CALLBACK;
                     }
@@ -293,7 +281,7 @@ public class HttpChannelState
             switch(_state)
             {
                 case DISPATCHED:
-                case ASYNCIO:
+                case ASYNC_IO:
                     break;
                 default:
                     throw new IllegalStateException(this.getStatusString());
@@ -301,7 +289,7 @@ public class HttpChannelState
 
             if (_asyncRead)
             {
-                _state=State.ASYNCIO;
+                _state=State.ASYNC_IO;
                 _asyncRead=false;
                 return Action.READ_CALLBACK;
             }
@@ -309,7 +297,7 @@ public class HttpChannelState
             if (_asyncWrite)
             {
                 _asyncWrite=false;
-                _state=State.ASYNCIO;
+                _state=State.ASYNC_IO;
                 return Action.WRITE_CALLBACK;
             }
 
@@ -333,7 +321,7 @@ public class HttpChannelState
                     case EXPIRING:
                     case STARTED:
                         scheduleTimeout();
-                        _state=State.ASYNCWAIT;
+                        _state=State.ASYNC_WAIT;
                         return Action.WAIT;
                 }
             }
@@ -360,7 +348,7 @@ public class HttpChannelState
             switch(_state)
             {
                 case DISPATCHED:
-                case ASYNCIO:
+                case ASYNC_IO:
                     dispatch=false;
                     break;
                 default:
@@ -411,8 +399,11 @@ public class HttpChannelState
             if (_async==Async.EXPIRING)
             {
                 _async=Async.EXPIRED;
-                if (_state==State.ASYNCWAIT)
+                if (_state==State.ASYNC_WAIT)
+                {
+                    _state=State.ASYNC_WOKEN;
                     dispatch=true;
+                }
             }
         }
 
@@ -423,13 +414,17 @@ public class HttpChannelState
     public void complete()
     {
         // just like resume, except don't set _dispatched=true;
-        boolean handle;
+        boolean handle=false;
         synchronized (this)
         {
             if (_async!=Async.STARTED && _async!=Async.EXPIRING)
                 throw new IllegalStateException(this.getStatusString());
             _async=Async.COMPLETE;
-            handle=_state==State.ASYNCWAIT;
+            if (_state==State.ASYNC_WAIT)
+            {
+                handle=true;
+                _state=State.ASYNC_WOKEN;
+            }
         }
 
         cancelTimeout();
@@ -511,7 +506,7 @@ public class HttpChannelState
             switch(_state)
             {
                 case DISPATCHED:
-                case ASYNCIO:
+                case ASYNC_IO:
                     throw new IllegalStateException(getStatusString());
                 default:
                     break;
@@ -571,7 +566,7 @@ public class HttpChannelState
     {
         synchronized(this)
         {
-            return _state==State.ASYNCWAIT || _state==State.DISPATCHED && _async==Async.STARTED;
+            return _state==State.ASYNC_WAIT || _state==State.DISPATCHED && _async==Async.STARTED;
         }
     }
 
@@ -665,12 +660,16 @@ public class HttpChannelState
 
     public void onReadPossible()
     {
-        boolean handle;
+        boolean handle=false;
 
         synchronized (this)
         {
             _asyncRead=true;
-            handle=_state==State.ASYNCWAIT;
+            if (_state==State.ASYNC_WAIT)
+            {
+                _state=State.ASYNC_WOKEN;
+                handle=true;
+            }
         }
 
         if (handle)
@@ -679,12 +678,16 @@ public class HttpChannelState
     
     public void onWritePossible()
     {
-        boolean handle;
+        boolean handle=false;
 
         synchronized (this)
         {
             _asyncWrite=true;
-            handle=_state==State.ASYNCWAIT;
+            if (_state==State.ASYNC_WAIT)
+            {
+                _state=State.ASYNC_WOKEN;
+                handle=true;
+            }
         }
 
         if (handle)
