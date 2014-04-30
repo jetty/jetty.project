@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.client.masks;
 
+import java.util.Arrays;
+
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 
 public class FixedMasker implements Masker
@@ -32,10 +34,9 @@ public class FixedMasker implements Masker
 
     public FixedMasker(byte[] mask)
     {
-        this.mask = new byte[4];
         // Copy to avoid that external code keeps a reference
         // to the array parameter to modify masking on-the-fly
-        System.arraycopy(mask,0,mask,0,4);
+        this.mask=Arrays.copyOf(mask, 4);
     }
 
     @Override

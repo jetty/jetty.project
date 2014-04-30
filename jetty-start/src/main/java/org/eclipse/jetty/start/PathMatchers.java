@@ -59,7 +59,7 @@ public class PathMatchers
      *            the raw pattern (can contain "glob:" or "regex:" syntax indicator)
      * @return the Path version of the pattern provided.
      */
-    private static Path asPath(String pattern)
+    private static Path asPath(final String pattern)
     {
         String test = pattern;
         if (test.startsWith("glob:"))
@@ -119,43 +119,89 @@ public class PathMatchers
      */
     public static Path getSearchRoot(final String pattern)
     {
-        Path path = asPath(pattern);
-        Path test = path.getRoot();
+        StringBuilder root = new StringBuilder();
 
-        boolean isSyntaxed = pattern.startsWith("glob:") || pattern.startsWith("regex:");
-
-        int len = path.getNameCount();
-        for (int i = 0; i < len; i++)
+        int start = 0;
+        boolean syntaxed = false;
+        if (pattern.startsWith("glob:"))
         {
-            Path part = path.getName(i);
-            if (isGlob(part.toString(),isSyntaxed))
+            start = "glob:".length();
+            syntaxed = true;
+        }
+        else if (pattern.startsWith("regex:"))
+        {
+            start = "regex:".length();
+            syntaxed = true;
+        }
+        int len = pattern.length();
+        int lastSep = 0;
+        for (int i = start; i < len; i++)
+        {
+            int cp = pattern.codePointAt(i);
+            if (cp < 127)
             {
-                // found a glob part, return prior parts now
-                break;
-            }
+                char c = (char)cp;
 
-            // is this the last entry?
-            if (i == (len - 1))
-            {
-                // always return prior entries
-                break;
-            }
+                // unix path case
+                if (c == '/')
+                {
+                    root.append(c);
+                    lastSep = root.length();
+                }
+                else if (c == '\\')
+                {
+                    root.append("\\");
+                    lastSep = root.length();
 
-            if (test == null)
-            {
-                test = part;
+                    // possible escaped sequence.
+                    // only really interested in windows escape sequences "\\"
+                    int count = countChars(pattern,i+1,'\\');
+                    if (count > 0)
+                    {
+                        // skip extra slashes
+                        i += count;
+                    }
+                }
+                else
+                {
+                    if (isGlob(c,syntaxed))
+                    {
+                        break;
+                    }
+                    root.append(c);
+                }
             }
             else
             {
-                test = test.resolve(part);
+                root.appendCodePoint(cp);
             }
         }
 
-        if (test == null)
+        String rootPath = root.substring(0,lastSep);
+        if (rootPath.length() <= 0)
         {
             return EMPTY_PATH;
         }
-        return test;
+
+        return asPath(rootPath);
+    }
+
+    private static int countChars(String pattern, int offset, char c)
+    {
+        int count = 0;
+        int len = pattern.length();
+        for (int i = offset; i < len; i++)
+        {
+            if (pattern.charAt(i) == c)
+            {
+                count++;
+            }
+            else
+            {
+                break;
+            }
+        }
+        return count;
     }
 
     /**
@@ -184,27 +230,22 @@ public class PathMatchers
      *            true if overall pattern is syntaxed with <code>"glob:"</code> or <code>"regex:"</code>
      * @return true if part has glob characters
      */
-    private static boolean isGlob(String part, boolean syntaxed)
+    private static boolean isGlob(char c, boolean syntaxed)
     {
-        int len = part.length();
-        for (int i = 0; i < len; i++)
+        for (char g : GLOB_CHARS)
         {
-            char c = part.charAt(i);
-            for (char g : GLOB_CHARS)
+            if (c == g)
+            {
+                return true;
+            }
+        }
+        if (syntaxed)
+        {
+            for (char g : SYNTAXED_GLOB_CHARS)
             {
                 if (c == g)
                 {
                     return true;
-                }
-            }
-            if (syntaxed)
-            {
-                for (char g : SYNTAXED_GLOB_CHARS)
-                {
-                    if (c == g)
-                    {
-                        return true;
-                    }
                 }
             }
         }

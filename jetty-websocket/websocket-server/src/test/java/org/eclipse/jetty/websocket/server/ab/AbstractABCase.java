@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.server.ab;
 
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
@@ -113,9 +114,7 @@ public abstract class AbstractABCase implements Fuzzed
      */
     protected ByteBuffer copyOf(byte[] payload)
     {
-        byte copy[] = new byte[payload.length];
-        System.arraycopy(payload,0,copy,0,payload.length);
-        return ByteBuffer.wrap(copy);
+        return ByteBuffer.wrap(Arrays.copyOf(payload,payload.length));
     }
     
     /**

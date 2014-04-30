@@ -37,12 +37,14 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Exchanger;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.zip.GZIPOutputStream;
+
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -1047,26 +1049,33 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             }
         });
 
-        final AtomicInteger complete = new AtomicInteger();
+        final Exchanger<Response> ex = new Exchanger<Response>();
         BufferingResponseListener listener = new BufferingResponseListener()
         {
             @Override
             public void onComplete(Result result)
             {
-                complete.incrementAndGet();
+                try
+                {
+                    ex.exchange(result.getResponse());
+                }
+                catch (InterruptedException e)
+                {
+                    e.printStackTrace();
+                }
             }
         };
 
-        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+        
+        client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
-                .onResponseContent(listener)
-                .onComplete(listener)
-                .send();
+                .send(listener);
+        
+        Response response = ex.exchange(null);
 
         Assert.assertEquals(200, response.getStatus());
-        Assert.assertEquals(1, complete.get());
         Assert.assertArrayEquals(content, listener.getContent());
-        Assert.assertArrayEquals(content, response.getContent());
+        
     }
 
     @Test
