@@ -20,6 +20,7 @@ package org.eclipse.jetty.proxy;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.WritePendingException;
 import javax.servlet.AsyncContext;
 import javax.servlet.ReadListener;
 import javax.servlet.ServletInputStream;
@@ -29,6 +30,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.api.ContentProvider;
+import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.DeferredContentProvider;
 import org.eclipse.jetty.util.Callback;
@@ -38,34 +40,52 @@ public class AsyncProxyServlet extends ProxyServlet
     private static final String WRITE_LISTENER_ATTRIBUTE = AsyncProxyServlet.class.getName() + ".writeListener";
 
     @Override
-    protected ContentProvider proxyRequestContent(AsyncContext asyncContext, final int requestId) throws IOException
+    protected ContentProvider proxyRequestContent(Request proxyRequest, HttpServletRequest request) throws IOException
     {
-        ServletInputStream input = asyncContext.getRequest().getInputStream();
+        ServletInputStream input = request.getInputStream();
         DeferredContentProvider provider = new DeferredContentProvider();
-        input.setReadListener(new StreamReader(input, requestId, provider));
+        input.setReadListener(new StreamReader(input, getRequestId(request), provider));
         return provider;
     }
 
     @Override
-    protected void onResponseContent(HttpServletRequest request, HttpServletResponse response, Response proxyResponse, byte[] buffer, int offset, int length, Callback callback) throws IOException
+    protected void onResponseContent(HttpServletRequest request, HttpServletResponse response, Response proxyResponse, byte[] buffer, int offset, int length, Callback callback)
     {
-        StreamWriter writeListener = (StreamWriter)request.getAttribute(WRITE_LISTENER_ATTRIBUTE);
-        if (writeListener == null)
+        try
         {
-            writeListener = new StreamWriter(request.getAsyncContext());
-            request.setAttribute(WRITE_LISTENER_ATTRIBUTE, writeListener);
-            response.getOutputStream().setWriteListener(writeListener);
+            int requestId = getRequestId(request);
+            _log.debug("{} proxying content to downstream: {} bytes", requestId, length);
+            StreamWriter writeListener = (StreamWriter)request.getAttribute(WRITE_LISTENER_ATTRIBUTE);
+            if (writeListener == null)
+            {
+                writeListener = new StreamWriter(request.getAsyncContext(), requestId);
+                request.setAttribute(WRITE_LISTENER_ATTRIBUTE, writeListener);
+
+                // Set the data to write before calling setWriteListener(), because
+                // setWriteListener() may trigger the call to onWritePossible() on
+                // a different thread and we would have a race.
+                writeListener.data(buffer, offset, length, callback);
+
+                // Setting the WriteListener triggers an invocation to onWritePossible().
+                response.getOutputStream().setWriteListener(writeListener);
+            }
+            else
+            {
+                writeListener.data(buffer, offset, length, callback);
+                writeListener.onWritePossible();
+            }
         }
-        _log.debug("{} proxying content to downstream: {} bytes", getRequestId(request), length);
-        if (writeListener.data(buffer, offset, length, callback))
-            writeListener.onWritePossible();
-        else
-            ;// TODO: fail callback
+        catch (Throwable x)
+        {
+            // TODO: who calls asyncContext.complete() in this case ?
+            callback.failed(x);
+        }
     }
 
     private class StreamReader implements ReadListener, Callback
     {
         private final byte[] buffer = new byte[512];
+//        private final byte[] buffer = new byte[getHttpClient().getRequestBufferSize()];
         private final ServletInputStream input;
         private final int requestId;
         private final DeferredContentProvider provider;
@@ -80,14 +100,14 @@ public class AsyncProxyServlet extends ProxyServlet
         @Override
         public void onDataAvailable() throws IOException
         {
-            _log.debug("Asynchronous read start from {}", input);
+            _log.debug("{} asynchronous read start on {}", requestId, input);
 
             // First check for isReady() because it has
             // side effects, and then for isFinished().
             while (input.isReady() && !input.isFinished())
             {
                 int read = input.read(buffer);
-                _log.debug("Asynchronous read {} bytes from {}", read, input);
+                _log.debug("{} asynchronous read {} bytes on {}", requestId, read, input);
                 if (read > 0)
                 {
                     _log.debug("{} proxying content to upstream: {} bytes", requestId, read);
@@ -97,7 +117,7 @@ public class AsyncProxyServlet extends ProxyServlet
                 }
             }
             if (!input.isFinished())
-                _log.debug("Asynchronous read pending from {}", input);
+                _log.debug("{} asynchronous read pending on {}", requestId, input);
         }
 
         @Override
@@ -116,8 +136,15 @@ public class AsyncProxyServlet extends ProxyServlet
         @Override
         public void succeeded()
         {
-            // Notify the container that it may call onDataAvailable() again.
-            input.isReady();
+            try
+            {
+                if (input.isReady())
+                    onDataAvailable();
+            }
+            catch (Throwable x)
+            {
+                failed(x);
+            }
         }
 
         @Override
@@ -131,60 +158,86 @@ public class AsyncProxyServlet extends ProxyServlet
     private class StreamWriter implements WriteListener
     {
         private final AsyncContext asyncContext;
+        private final int requestId;
+        private WriteState state;
         private byte[] buffer;
         private int offset;
         private int length;
-        private volatile Callback callback;
+        private Callback callback;
 
-        private StreamWriter(AsyncContext asyncContext)
+        private StreamWriter(AsyncContext asyncContext, int requestId)
         {
             this.asyncContext = asyncContext;
+            this.requestId = requestId;
+            this.state = WriteState.IDLE;
         }
 
-        private boolean data(byte[] bytes, int offset, int length, Callback callback)
+        private void data(byte[] bytes, int offset, int length, Callback callback)
         {
-            if (this.callback != null)
-                return false;
-
+            if (state != WriteState.IDLE)
+                throw new WritePendingException();
+            this.state = WriteState.READY;
             this.buffer = bytes;
             this.offset = offset;
             this.length = length;
             this.callback = callback;
-            return true;
         }
 
         @Override
         public void onWritePossible() throws IOException
         {
-            if (callback == null)
+            ServletOutputStream output = asyncContext.getResponse().getOutputStream();
+            if (state == WriteState.READY)
             {
-                ServletOutputStream output = asyncContext.getResponse().getOutputStream();
+                // There is data to write.
+                _log.debug("{} asynchronous write start of {} bytes on {}", requestId, length, output);
                 output.write(buffer, offset, length);
+                state = WriteState.PENDING;
                 if (output.isReady())
+                {
+                    _log.debug("{} asynchronous write of {} bytes completed on {}", requestId, length, output);
                     complete();
+                }
+                else
+                {
+                    _log.debug("{} asynchronous write of {} bytes pending on {}", requestId, length, output);
+                }
+            }
+            else if (state == WriteState.PENDING)
+            {
+                // The write blocked but is now complete.
+                _log.debug("{} asynchronous write of {} bytes completing on {}", requestId, length, output);
+                complete();
             }
             else
             {
-                // If we have a pending callback, it means
-                // that the write blocked but is now complete.
-                complete();
+                throw new IllegalStateException();
             }
         }
 
         private void complete()
         {
-            this.buffer = null;
-            this.offset = 0;
-            this.length = 0;
-            Callback callback = this.callback;
-            this.callback = null;
-            callback.succeeded();
+            buffer = null;
+            offset = 0;
+            length = 0;
+            Callback c = callback;
+            callback = null;
+            state = WriteState.IDLE;
+            // Call the callback only after the whole state has been reset,
+            // because the callback may trigger a reentrant call and the
+            // state would be the old one
+            c.succeeded();
         }
 
         @Override
-        public void onError(Throwable t)
+        public void onError(Throwable failure)
         {
             // TODO:
         }
+    }
+
+    private enum WriteState
+    {
+        READY, PENDING, IDLE
     }
 }

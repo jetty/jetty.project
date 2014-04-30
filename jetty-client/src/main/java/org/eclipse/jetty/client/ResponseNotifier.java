@@ -110,6 +110,9 @@ public class ResponseNotifier
 
     public void notifyContent(List<Response.ResponseListener> listeners, Response response, ByteBuffer buffer, Callback callback)
     {
+        // Here we use an IteratingNestedCallback not to avoid the stack overflow, but to
+        // invoke the listeners one after the other. When all of them have invoked the
+        // callback they got passed, the callback passed to this method is finally invoked.
         ContentCallback contentCallback = new ContentCallback(listeners, response, buffer, callback);
         contentCallback.iterate();
     }

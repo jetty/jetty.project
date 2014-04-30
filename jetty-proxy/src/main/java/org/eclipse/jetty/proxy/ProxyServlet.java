@@ -80,7 +80,6 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
  */
 public class ProxyServlet extends HttpServlet
 {
-    protected static final String ASYNC_CONTEXT = ProxyServlet.class.getName() + ".asyncContext";
     private static final Set<String> HOP_HEADERS = new HashSet<>();
     static
     {
@@ -175,14 +174,21 @@ public class ProxyServlet extends HttpServlet
         }
     }
 
+    protected HttpClient getHttpClient()
+    {
+        return _client;
+    }
+
     /**
      * @return a logger instance with a name derived from this servlet's name.
      */
     protected Logger createLogger()
     {
-        String name = getServletConfig().getServletName();
-        name = name.replace('-', '.');
-        return Log.getLogger(name);
+        String servletName = getServletConfig().getServletName();
+        servletName = servletName.replace('-', '.');
+        if (!servletName.startsWith(getClass().getPackage().getName()))
+            servletName = getClass().getName() + "." + servletName;
+        return Log.getLogger(servletName);
     }
 
     public void destroy()
@@ -395,22 +401,21 @@ public class ProxyServlet extends HttpServlet
                 .version(HttpVersion.fromString(request.getProtocol()));
 
         // Copy headers
-        boolean hasContent = false;
+        boolean hasContent = request.getContentLength() > 0 || request.getContentType() != null;
         for (Enumeration<String> headerNames = request.getHeaderNames(); headerNames.hasMoreElements();)
         {
             String headerName = headerNames.nextElement();
             String lowerHeaderName = headerName.toLowerCase(Locale.ENGLISH);
 
-            // Remove hop-by-hop headers
-            if (HOP_HEADERS.contains(lowerHeaderName))
-                continue;
+            if (HttpHeader.TRANSFER_ENCODING.is(headerName))
+                hasContent = true;
 
             if (_hostHeader != null && HttpHeader.HOST.is(headerName))
                 continue;
 
-            if (request.getContentLength() > 0 || request.getContentType() != null ||
-                    HttpHeader.TRANSFER_ENCODING.is(headerName))
-                hasContent = true;
+            // Remove hop-by-hop headers
+            if (HOP_HEADERS.contains(lowerHeaderName))
+                continue;
 
             for (Enumeration<String> headerValues = request.getHeaders(headerName); headerValues.hasMoreElements();)
             {
@@ -431,7 +436,7 @@ public class ProxyServlet extends HttpServlet
         final AsyncContext asyncContext = request.startAsync();
         // We do not timeout the continuation, but the proxy request
         asyncContext.setTimeout(0);
-        request.setAttribute(ASYNC_CONTEXT, asyncContext);
+        proxyRequest.timeout(getTimeout(), TimeUnit.MILLISECONDS);
 
         if (hasContent)
             proxyRequest.content(proxyRequestContent(proxyRequest, request));
@@ -471,7 +476,6 @@ public class ProxyServlet extends HttpServlet
                     proxyRequest.getHeaders().toString().trim());
         }
 
-        proxyRequest.timeout(getTimeout(), TimeUnit.MILLISECONDS);
         proxyRequest.send(new ProxyResponseListener(request, response));
     }
 
@@ -529,15 +533,23 @@ public class ProxyServlet extends HttpServlet
         }
     }
 
-    protected void onResponseContent(HttpServletRequest request, HttpServletResponse response, Response proxyResponse, byte[] buffer, int offset, int length, Callback callback) throws IOException
+    protected void onResponseContent(HttpServletRequest request, HttpServletResponse response, Response proxyResponse, byte[] buffer, int offset, int length, Callback callback)
     {
-        response.getOutputStream().write(buffer, offset, length);
-        _log.debug("{} proxying content to downstream: {} bytes", getRequestId(request), length);
+        try
+        {
+            _log.debug("{} proxying content to downstream: {} bytes", getRequestId(request), length);
+            response.getOutputStream().write(buffer, offset, length);
+            callback.succeeded();
+        }
+        catch (Throwable x)
+        {
+            callback.failed(x);
+        }
     }
 
     protected void onResponseSuccess(HttpServletRequest request, HttpServletResponse response, Response proxyResponse)
     {
-        AsyncContext asyncContext = (AsyncContext)request.getAttribute(ASYNC_CONTEXT);
+        AsyncContext asyncContext = request.getAsyncContext();
         asyncContext.complete();
         _log.debug("{} proxying successful", getRequestId(request));
     }
@@ -552,7 +564,7 @@ public class ProxyServlet extends HttpServlet
             else
                 response.setStatus(HttpServletResponse.SC_BAD_GATEWAY);
         }
-        AsyncContext asyncContext = (AsyncContext)request.getAttribute(ASYNC_CONTEXT);
+        AsyncContext asyncContext = request.getAsyncContext();
         asyncContext.complete();
     }
 
@@ -731,7 +743,7 @@ public class ProxyServlet extends HttpServlet
         }
 
         @Override
-        public void onContent(Response proxyResponse, ByteBuffer content, Callback callback)
+        public void onContent(final Response proxyResponse, ByteBuffer content, final Callback callback)
         {
             byte[] buffer;
             int offset;
@@ -748,14 +760,21 @@ public class ProxyServlet extends HttpServlet
                 offset = 0;
             }
 
-            try
+            onResponseContent(request, response, proxyResponse, buffer, offset, length, new Callback()
             {
-                onResponseContent(request, response, proxyResponse, buffer, offset, length, callback);
-            }
-            catch (IOException x)
-            {
-                proxyResponse.abort(x);
-            }
+                @Override
+                public void succeeded()
+                {
+                    callback.succeeded();
+                }
+
+                @Override
+                public void failed(Throwable x)
+                {
+                    callback.failed(x);
+                    proxyResponse.abort(x);
+                }
+            });
         }
 
         @Override
