@@ -24,10 +24,13 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-public class EmptyHttpServlet extends HttpServlet
+import org.eclipse.jetty.util.IO;
+
+public class EchoHttpServlet extends HttpServlet
 {
     @Override
     protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
+        IO.copy(request.getInputStream(), response.getOutputStream());
     }
 }

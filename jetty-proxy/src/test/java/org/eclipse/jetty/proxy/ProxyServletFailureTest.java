@@ -18,7 +18,13 @@
 
 package org.eclipse.jetty.proxy;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.Socket;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -31,14 +37,21 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpProxy;
+import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.util.BytesContentProvider;
+import org.eclipse.jetty.client.util.DeferredContentProvider;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.TestTracker;
+import org.eclipse.jetty.toolchain.test.http.SimpleHttpParser;
+import org.eclipse.jetty.toolchain.test.http.SimpleHttpResponse;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -86,7 +99,7 @@ public class ProxyServletFailureTest
     {
         QueuedThreadPool executor = new QueuedThreadPool();
         executor.setName("proxy");
-        proxy = new Server();
+        proxy = new Server(executor);
         proxyConnector = new ServerConnector(proxy);
         proxy.addConnector(proxyConnector);
 
@@ -139,8 +152,126 @@ public class ProxyServletFailureTest
         server.stop();
     }
 
+    @Test
+    public void testClientRequestStallsHeadersProxyIdlesTimeout() throws Exception
+    {
+        prepareProxy();
+        int idleTimeout = 2000;
+        proxyConnector.setIdleTimeout(idleTimeout);
+
+        prepareServer(new EchoHttpServlet());
+
+        try (Socket socket = new Socket("localhost", proxyConnector.getLocalPort()))
+        {
+            String serverHostPort = "localhost:" + serverConnector.getLocalPort();
+            String request = "" +
+                    "GET http://" + serverHostPort + " HTTP/1.1\r\n" +
+                    "Host: " + serverHostPort + "\r\n";
+            // Don't sent the \r\n that would signal the end of the headers.
+            OutputStream output = socket.getOutputStream();
+            output.write(request.getBytes("UTF-8"));
+            output.flush();
+
+            // Wait for idle timeout to fire.
+
+            socket.setSoTimeout(2 * idleTimeout);
+            InputStream input = socket.getInputStream();
+            Assert.assertEquals(-1, input.read());
+        }
+    }
+
+    @Test
+    public void testClientRequestStallsContentProxyIdlesTimeout() throws Exception
+    {
+        prepareProxy();
+        int idleTimeout = 2000;
+        proxyConnector.setIdleTimeout(idleTimeout);
+
+        prepareServer(new EchoHttpServlet());
+
+        try (Socket socket = new Socket("localhost", proxyConnector.getLocalPort()))
+        {
+            String serverHostPort = "localhost:" + serverConnector.getLocalPort();
+            String request = "" +
+                    "GET http://" + serverHostPort + " HTTP/1.1\r\n" +
+                    "Host: " + serverHostPort + "\r\n" +
+                    "Content-Length: 1\r\n" +
+                    "\r\n";
+            OutputStream output = socket.getOutputStream();
+            output.write(request.getBytes("UTF-8"));
+            output.flush();
+
+            // Do not send the promised content, wait to idle timeout.
+
+            socket.setSoTimeout(2 * idleTimeout);
+            SimpleHttpParser parser = new SimpleHttpParser();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));
+            SimpleHttpResponse response = parser.readResponse(reader);
+            Assert.assertTrue(Integer.parseInt(response.getCode()) >= 500);
+            String connectionHeader = response.getHeaders().get("connection");
+            Assert.assertNotNull(connectionHeader);
+            Assert.assertTrue(connectionHeader.contains("close"));
+            Assert.assertEquals(-1, reader.read());
+        }
+    }
+
+    @Test
+    public void testProxyRequestStallsContentServerIdlesTimeout() throws Exception
+    {
+        final byte[] content = new byte[]{'C', '0', 'F', 'F', 'E', 'E'};
+        if (proxyServlet instanceof AsyncProxyServlet)
+        {
+            proxyServlet = new AsyncProxyServlet()
+            {
+                @Override
+                protected ContentProvider proxyRequestContent(Request proxyRequest, HttpServletRequest request) throws IOException
+                {
+                    return new DeferredContentProvider()
+                    {
+                        @Override
+                        public boolean offer(ByteBuffer buffer, Callback callback)
+                        {
+                            // Ignore all content to trigger the test condition.
+                            return true;
+                        }
+                    };
+                }
+            };
+        }
+        else
+        {
+            proxyServlet = new ProxyServlet()
+            {
+                @Override
+                protected ContentProvider proxyRequestContent(Request proxyRequest, HttpServletRequest request) throws IOException
+                {
+                    return new BytesContentProvider(content)
+                    {
+                        @Override
+                        public long getLength()
+                        {
+                            // Increase the content length to trigger the test condition.
+                            return content.length + 1;
+                        }
+                    };
+                }
+            };
+        }
+
+        prepareProxy();
+        prepareServer(new EchoHttpServlet());
+        long idleTimeout = 1000;
+        serverConnector.setIdleTimeout(idleTimeout);
+
+        ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
+                .content(new BytesContentProvider(content))
+                .send();
+
+        Assert.assertEquals(500, response.getStatus());
+    }
+
     @Test(expected = TimeoutException.class)
-    public void testClientRequestExpired() throws Exception
+    public void testClientRequestExpires() throws Exception
     {
         prepareProxy();
         final long timeout = 1000;
@@ -241,5 +372,10 @@ public class ProxyServletFailureTest
         {
             ((StdErrLog)Log.getLogger(ServletHandler.class)).setHideStacks(false);
         }
+    }
+
+    private interface Function<T, R>
+    {
+        public R apply(T arg);
     }
 }

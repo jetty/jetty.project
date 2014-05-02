@@ -21,7 +21,6 @@ package org.eclipse.jetty.proxy;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
-import javax.servlet.AsyncContext;
 import javax.servlet.ReadListener;
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
@@ -44,7 +43,7 @@ public class AsyncProxyServlet extends ProxyServlet
     {
         ServletInputStream input = request.getInputStream();
         DeferredContentProvider provider = new DeferredContentProvider();
-        input.setReadListener(new StreamReader(input, getRequestId(request), provider));
+        input.setReadListener(new StreamReader(request, provider));
         return provider;
     }
 
@@ -53,12 +52,11 @@ public class AsyncProxyServlet extends ProxyServlet
     {
         try
         {
-            int requestId = getRequestId(request);
-            _log.debug("{} proxying content to downstream: {} bytes", requestId, length);
+            _log.debug("{} proxying content to downstream: {} bytes", getRequestId(request), length);
             StreamWriter writeListener = (StreamWriter)request.getAttribute(WRITE_LISTENER_ATTRIBUTE);
             if (writeListener == null)
             {
-                writeListener = new StreamWriter(request.getAsyncContext(), requestId);
+                writeListener = new StreamWriter(request, proxyResponse);
                 request.setAttribute(WRITE_LISTENER_ATTRIBUTE, writeListener);
 
                 // Set the data to write before calling setWriteListener(), because
@@ -77,29 +75,28 @@ public class AsyncProxyServlet extends ProxyServlet
         }
         catch (Throwable x)
         {
-            // TODO: who calls asyncContext.complete() in this case ?
             callback.failed(x);
+            onResponseFailure(request, response, proxyResponse, x);
         }
     }
 
     private class StreamReader implements ReadListener, Callback
     {
-        private final byte[] buffer = new byte[512];
-//        private final byte[] buffer = new byte[getHttpClient().getRequestBufferSize()];
-        private final ServletInputStream input;
-        private final int requestId;
+        private final byte[] buffer = new byte[getHttpClient().getRequestBufferSize()];
+        private final HttpServletRequest request;
         private final DeferredContentProvider provider;
 
-        public StreamReader(ServletInputStream input, int requestId, DeferredContentProvider provider)
+        public StreamReader(HttpServletRequest request, DeferredContentProvider provider)
         {
-            this.input = input;
-            this.requestId = requestId;
+            this.request = request;
             this.provider = provider;
         }
 
         @Override
         public void onDataAvailable() throws IOException
         {
+            int requestId = getRequestId(request);
+            ServletInputStream input = request.getInputStream();
             _log.debug("{} asynchronous read start on {}", requestId, input);
 
             // First check for isReady() because it has
@@ -123,7 +120,7 @@ public class AsyncProxyServlet extends ProxyServlet
         @Override
         public void onAllDataRead() throws IOException
         {
-            _log.debug("{} proxying content to upstream completed", requestId);
+            _log.debug("{} proxying content to upstream completed", getRequestId(request));
             provider.close();
         }
 
@@ -138,7 +135,7 @@ public class AsyncProxyServlet extends ProxyServlet
         {
             try
             {
-                if (input.isReady())
+                if (request.getInputStream().isReady())
                     onDataAvailable();
             }
             catch (Throwable x)
@@ -150,25 +147,24 @@ public class AsyncProxyServlet extends ProxyServlet
         @Override
         public void failed(Throwable x)
         {
-            // TODO: send a response error ?
-            // complete the async context since we cannot throw an exception from here.
+            onClientRequestFailure(request, x);
         }
     }
 
     private class StreamWriter implements WriteListener
     {
-        private final AsyncContext asyncContext;
-        private final int requestId;
+        private final HttpServletRequest request;
+        private final Response proxyResponse;
         private WriteState state;
         private byte[] buffer;
         private int offset;
         private int length;
         private Callback callback;
 
-        private StreamWriter(AsyncContext asyncContext, int requestId)
+        private StreamWriter(HttpServletRequest request, Response proxyResponse)
         {
-            this.asyncContext = asyncContext;
-            this.requestId = requestId;
+            this.request = request;
+            this.proxyResponse = proxyResponse;
             this.state = WriteState.IDLE;
         }
 
@@ -186,7 +182,8 @@ public class AsyncProxyServlet extends ProxyServlet
         @Override
         public void onWritePossible() throws IOException
         {
-            ServletOutputStream output = asyncContext.getResponse().getOutputStream();
+            int requestId = getRequestId(request);
+            ServletOutputStream output = request.getAsyncContext().getResponse().getOutputStream();
             if (state == WriteState.READY)
             {
                 // There is data to write.
@@ -224,15 +221,16 @@ public class AsyncProxyServlet extends ProxyServlet
             callback = null;
             state = WriteState.IDLE;
             // Call the callback only after the whole state has been reset,
-            // because the callback may trigger a reentrant call and the
-            // state would be the old one
+            // because the callback may trigger a reentrant call and
+            // the state must already be the new one that we reset here.
             c.succeeded();
         }
 
         @Override
         public void onError(Throwable failure)
         {
-            // TODO:
+            HttpServletResponse response = (HttpServletResponse)request.getAsyncContext().getResponse();
+            onResponseFailure(request, response, proxyResponse, failure);
         }
     }
 

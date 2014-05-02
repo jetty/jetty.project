@@ -48,6 +48,7 @@ import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.InputStreamContentProvider;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HttpCookieStore;
@@ -495,7 +496,22 @@ public class ProxyServlet extends HttpServlet
                 _log.debug("{} proxying content to upstream: {} bytes", getRequestId(request), length);
                 return super.onRead(buffer, offset, length);
             }
+
+            @Override
+            protected void onReadFailure(Throwable failure)
+            {
+                onClientRequestFailure(request, failure);
+            }
         };
+    }
+
+    protected void onClientRequestFailure(HttpServletRequest request, Throwable failure)
+    {
+        AsyncContext asyncContext = request.getAsyncContext();
+        HttpServletResponse response = (HttpServletResponse)asyncContext.getResponse();
+        response.setStatus(500);
+        response.setHeader(HttpHeader.CONNECTION.asString(), HttpHeaderValue.CLOSE.asString());
+        asyncContext.complete();
     }
 
     protected void onRewriteFailed(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -529,7 +545,7 @@ public class ProxyServlet extends HttpServlet
             if (newHeaderValue == null || newHeaderValue.trim().length() == 0)
                 continue;
 
-            response.addHeader(headerName, newHeaderValue);
+            response.setHeader(headerName, newHeaderValue);
         }
     }
 
@@ -563,6 +579,7 @@ public class ProxyServlet extends HttpServlet
                 response.setStatus(HttpServletResponse.SC_GATEWAY_TIMEOUT);
             else
                 response.setStatus(HttpServletResponse.SC_BAD_GATEWAY);
+            response.setHeader(HttpHeader.CONNECTION.asString(), HttpHeaderValue.CLOSE.asString());
         }
         AsyncContext asyncContext = request.getAsyncContext();
         asyncContext.complete();
