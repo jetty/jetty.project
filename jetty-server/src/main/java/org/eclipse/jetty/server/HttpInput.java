@@ -20,7 +20,6 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.util.Objects;
-
 import javax.servlet.ReadListener;
 import javax.servlet.ServletInputStream;
 
@@ -363,7 +362,7 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
     {
         synchronized (lock())
         {
-            if (_onError == null)
+            if (_onError != null)
                 LOG.warn(x);
             else
                 _onError = x;
