@@ -20,10 +20,12 @@ package org.eclipse.jetty.client.http;
 
 import org.eclipse.jetty.client.HttpChannel;
 import org.eclipse.jetty.client.HttpExchange;
+import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
+import org.eclipse.jetty.http.HttpVersion;
 
 public class HttpChannelOverHTTP extends HttpChannel
 {
@@ -77,10 +79,12 @@ public class HttpChannelOverHTTP extends HttpChannel
     public void exchangeTerminated(Result result)
     {
         super.exchangeTerminated(result);
-        HttpFields responseHeaders = result.getResponse().getHeaders();
-        boolean close = result.isFailed() ||
-                responseHeaders.contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString()) ||
-                receiver.isShutdown();
+        Response response = result.getResponse();
+        HttpFields responseHeaders = response.getHeaders();
+        boolean implicitClose = response.getVersion().compareTo(HttpVersion.HTTP_1_1) < 0 &&
+                !responseHeaders.contains(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString());
+        boolean explicitClose = responseHeaders.contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
+        boolean close = result.isFailed() || implicitClose || explicitClose || receiver.isShutdown();
         if (close)
             connection.close();
         else
