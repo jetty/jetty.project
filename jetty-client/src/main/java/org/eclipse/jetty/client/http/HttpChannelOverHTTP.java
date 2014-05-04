@@ -81,10 +81,21 @@ public class HttpChannelOverHTTP extends HttpChannel
         super.exchangeTerminated(result);
         Response response = result.getResponse();
         HttpFields responseHeaders = response.getHeaders();
-        boolean implicitClose = response.getVersion().compareTo(HttpVersion.HTTP_1_1) < 0 &&
-                !responseHeaders.contains(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString());
-        boolean explicitClose = responseHeaders.contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
-        boolean close = result.isFailed() || implicitClose || explicitClose || receiver.isShutdown();
+        boolean close = result.isFailed() || receiver.isShutdown();
+        // Only check HTTP headers if there are no failures.
+        if (!close)
+        {
+            if (response.getVersion().compareTo(HttpVersion.HTTP_1_1) < 0)
+            {
+                // HTTP 1.0 must close the connection unless it has an explicit keep alive.
+                close = !responseHeaders.contains(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString());
+            }
+            else
+            {
+                // HTTP 1.1 or greater closes only if it has an explicit close.
+                close = responseHeaders.contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
+            }
+        }
         if (close)
             connection.close();
         else
