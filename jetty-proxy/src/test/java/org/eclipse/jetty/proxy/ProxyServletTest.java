@@ -593,8 +593,11 @@ public class ProxyServletTest
         });
 
         String proxyTo = "http://localhost:" + serverConnector.getLocalPort();
-        proxyServlet = new ProxyServlet.Transparent(proxyTo, prefix);
-        prepareProxy();
+        proxyServlet = new ProxyServlet.Transparent();
+        Map<String, String> params = new HashMap<>();
+        params.put("proxyTo", proxyTo);
+        params.put("prefix", prefix);
+        prepareProxy(params);
 
         // Make the request to the proxy, it should transparently forward to the server
         ContentResponse response = client.newRequest("localhost", proxyConnector.getLocalPort())
@@ -632,8 +635,11 @@ public class ProxyServletTest
 
         String proxyTo = "http://localhost:" + serverConnector.getLocalPort();
         String prefix = "/proxy";
-        proxyServlet = new ProxyServlet.Transparent(proxyTo, prefix);
-        prepareProxy();
+        proxyServlet = new ProxyServlet.Transparent();
+        Map<String, String> params = new HashMap<>();
+        params.put("proxyTo", proxyTo);
+        params.put("prefix", prefix);
+        prepareProxy(params);
 
         // Make the request to the proxy, it should transparently forward to the server
         ContentResponse response = client.newRequest("localhost", proxyConnector.getLocalPort())

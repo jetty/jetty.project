@@ -117,10 +117,11 @@ public class ClientParserTest
         ClientParser parser = new ClientParser(new ClientParser.Listener.Adapter()
         {
             @Override
-            public void onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
+            public boolean onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
             {
                 Assert.assertEquals(id, request);
                 verifier.addAndGet(2);
+                return false;
             }
 
             @Override
@@ -168,11 +169,12 @@ public class ClientParserTest
         ClientParser parser = new ClientParser(new ClientParser.Listener.Adapter()
         {
             @Override
-            public void onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
+            public boolean onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
             {
                 Assert.assertEquals(id, request);
                 Assert.assertEquals(contentLength, buffer.remaining());
                 verifier.addAndGet(2);
+                return false;
             }
 
             @Override
@@ -221,10 +223,11 @@ public class ClientParserTest
         ClientParser parser = new ClientParser(new ClientParser.Listener.Adapter()
         {
             @Override
-            public void onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
+            public boolean onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
             {
                 Assert.assertEquals(id, request);
                 totalLength.addAndGet(buffer.remaining());
+                return false;
             }
 
             @Override

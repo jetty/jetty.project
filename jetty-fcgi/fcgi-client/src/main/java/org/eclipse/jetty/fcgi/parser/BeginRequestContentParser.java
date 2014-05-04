@@ -37,7 +37,7 @@ public class BeginRequestContentParser extends ContentParser
     }
 
     @Override
-    public boolean parse(ByteBuffer buffer)
+    public Result parse(ByteBuffer buffer)
     {
         while (buffer.hasRemaining())
         {
@@ -78,7 +78,7 @@ public class BeginRequestContentParser extends ContentParser
                         buffer.position(buffer.position() + 5);
                         onStart();
                         reset();
-                        return true;
+                        return Result.COMPLETE;
                     }
                     else
                     {
@@ -94,7 +94,7 @@ public class BeginRequestContentParser extends ContentParser
                     {
                         onStart();
                         reset();
-                        return true;
+                        return Result.COMPLETE;
                     }
                     break;
                 }
@@ -104,7 +104,7 @@ public class BeginRequestContentParser extends ContentParser
                 }
             }
         }
-        return false;
+        return Result.PENDING;
     }
 
     private void onStart()

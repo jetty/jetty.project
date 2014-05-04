@@ -32,6 +32,7 @@ import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.fcgi.client.http.HttpClientTransportOverFCGI;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.proxy.AsyncProxyServlet;
 import org.eclipse.jetty.proxy.ProxyServlet;
 
 /**
@@ -57,7 +58,7 @@ import org.eclipse.jetty.proxy.ProxyServlet;
  *
  * @see TryFilesFilter
  */
-public class FastCGIProxyServlet extends ProxyServlet.Transparent
+public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
 {
     public static final String SCRIPT_ROOT_INIT_PARAM = "scriptRoot";
     public static final String SCRIPT_PATTERN_INIT_PARAM = "scriptPattern";

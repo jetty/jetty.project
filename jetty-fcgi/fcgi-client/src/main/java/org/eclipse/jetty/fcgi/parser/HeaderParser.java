@@ -32,6 +32,12 @@ public class HeaderParser
     private int length;
     private int padding;
 
+    /**
+     * Parses the bytes in the given {@code buffer} as FastCGI header bytes
+     *
+     * @param buffer the bytes to parse
+     * @return whether there were enough bytes for a FastCGI header
+     */
     public boolean parse(ByteBuffer buffer)
     {
         while (buffer.hasRemaining())

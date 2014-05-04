@@ -45,6 +45,7 @@ import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.CompletableCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -60,6 +61,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
     private final boolean multiplexed;
     private final Delegate delegate;
     private final ClientParser parser;
+    private ByteBuffer buffer;
 
     public HttpConnectionOverFCGI(EndPoint endPoint, HttpDestination destination, boolean multiplexed)
     {
@@ -98,48 +100,66 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
     @Override
     public void onFillable()
     {
-        EndPoint endPoint = getEndPoint();
         HttpClient client = destination.getHttpClient();
         ByteBufferPool bufferPool = client.getByteBufferPool();
-        ByteBuffer buffer = bufferPool.acquire(client.getResponseBufferSize(), true);
-        try
+        buffer = bufferPool.acquire(client.getResponseBufferSize(), true);
+        process();
+    }
+
+    private void process()
+    {
+        if (readAndParse())
         {
-            while (true)
+            HttpClient client = destination.getHttpClient();
+            ByteBufferPool bufferPool = client.getByteBufferPool();
+            bufferPool.release(buffer);
+            // Don't linger the buffer around if we are idle.
+            buffer = null;
+        }
+    }
+
+    private boolean readAndParse()
+    {
+        EndPoint endPoint = getEndPoint();
+        ByteBuffer buffer = this.buffer;
+        while (true)
+        {
+            try
             {
+                if (!parse(buffer))
+                    return false;
+
                 int read = endPoint.fill(buffer);
                 if (LOG.isDebugEnabled()) // Avoid boxing of variable 'read'.
                     LOG.debug("Read {} bytes from {}", read, endPoint);
                 if (read > 0)
                 {
-                    parse(buffer);
+                    if (!parse(buffer))
+                        return false;
                 }
                 else if (read == 0)
                 {
                     fillInterested();
-                    break;
+                    return true;
                 }
                 else
                 {
                     shutdown();
-                    break;
+                    return true;
                 }
             }
-        }
-        catch (Exception x)
-        {
-            LOG.debug(x);
-            close(x);
-        }
-        finally
-        {
-            bufferPool.release(buffer);
+            catch (Exception x)
+            {
+                LOG.debug(x);
+                close(x);
+                return false;
+            }
         }
     }
 
-    private void parse(ByteBuffer buffer)
+    private boolean parse(ByteBuffer buffer)
     {
-        while (buffer.hasRemaining())
-            parser.parse(buffer);
+        return !parser.parse(buffer);
     }
 
     private void shutdown()
@@ -313,7 +333,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
         }
 
         @Override
-        public void onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
+        public boolean onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
         {
             switch (stream)
             {
@@ -321,7 +341,25 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
                 {
                     HttpChannelOverFCGI channel = channels.get(request);
                     if (channel != null)
-                        channel.content(buffer);
+                    {
+                        CompletableCallback callback = new CompletableCallback()
+                        {
+                            @Override
+                            public void resume()
+                            {
+                                LOG.debug("Content consumed asynchronously, resuming processing");
+                                process();
+                            }
+
+                            @Override
+                            public void abort(Throwable x)
+                            {
+                                close(x);
+                            }
+                        };
+                        channel.content(buffer, callback);
+                        return callback.tryComplete();
+                    }
                     else
                         noChannel(request);
                     break;
@@ -336,6 +374,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
                     throw new IllegalArgumentException();
                 }
             }
+            return false;
         }
 
         @Override

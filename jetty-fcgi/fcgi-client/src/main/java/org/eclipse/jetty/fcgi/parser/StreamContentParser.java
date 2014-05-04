@@ -41,7 +41,7 @@ public class StreamContentParser extends ContentParser
     }
 
     @Override
-    public boolean parse(ByteBuffer buffer)
+    public Result parse(ByteBuffer buffer)
     {
         while (buffer.hasRemaining())
         {
@@ -59,14 +59,15 @@ public class StreamContentParser extends ContentParser
                     int limit = buffer.limit();
                     buffer.limit(buffer.position() + length);
                     ByteBuffer slice = buffer.slice();
-                    onContent(slice);
                     buffer.position(buffer.limit());
                     buffer.limit(limit);
                     contentLength -= length;
+                    if (onContent(slice))
+                        return Result.ASYNC;
                     if (contentLength > 0)
                         break;
                     state = State.LENGTH;
-                    return true;
+                    return Result.COMPLETE;
                 }
                 default:
                 {
@@ -74,7 +75,7 @@ public class StreamContentParser extends ContentParser
                 }
             }
         }
-        return false;
+        return Result.PENDING;
     }
 
     @Override
@@ -90,15 +91,16 @@ public class StreamContentParser extends ContentParser
         }
     }
 
-    protected void onContent(ByteBuffer buffer)
+    protected boolean onContent(ByteBuffer buffer)
     {
         try
         {
-            listener.onContent(getRequest(), streamType, buffer);
+            return listener.onContent(getRequest(), streamType, buffer);
         }
         catch (Throwable x)
         {
             logger.debug("Exception while invoking listener " + listener, x);
+            return false;
         }
     }
 

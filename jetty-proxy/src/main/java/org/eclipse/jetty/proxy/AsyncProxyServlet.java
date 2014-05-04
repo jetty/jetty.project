@@ -19,9 +19,12 @@
 package org.eclipse.jetty.proxy;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
 import javax.servlet.ReadListener;
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.WriteListener;
@@ -77,6 +80,24 @@ public class AsyncProxyServlet extends ProxyServlet
         {
             callback.failed(x);
             onResponseFailure(request, response, proxyResponse, x);
+        }
+    }
+    
+    public static class Transparent extends AsyncProxyServlet
+    {
+        private final TransparentDelegate delegate = new TransparentDelegate(this);
+
+        @Override
+        public void init(ServletConfig config) throws ServletException
+        {
+            super.init(config);
+            delegate.init(config);
+        }
+
+        @Override
+        protected URI rewriteURI(HttpServletRequest request)
+        {
+            return delegate.rewriteURI(request);
         }
     }
 

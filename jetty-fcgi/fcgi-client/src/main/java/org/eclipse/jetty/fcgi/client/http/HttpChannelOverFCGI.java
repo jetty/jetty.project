@@ -103,11 +103,13 @@ public class HttpChannelOverFCGI extends HttpChannel
         return exchange != null && receiver.responseHeaders(exchange);
     }
 
-    protected boolean content(ByteBuffer buffer)
+    protected boolean content(ByteBuffer buffer, Callback callback)
     {
         HttpExchange exchange = getHttpExchange();
-        // TODO: handle callback properly
-        return exchange != null && receiver.responseContent(exchange, buffer, new Callback.Adapter());
+        if (exchange != null)
+            return receiver.responseContent(exchange, buffer, callback);
+        callback.succeeded();
+        return false;
     }
 
     protected boolean responseSuccess()

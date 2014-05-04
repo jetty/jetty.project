@@ -646,26 +646,35 @@ public class ProxyServlet extends HttpServlet
      */
     public static class Transparent extends ProxyServlet
     {
-        private String _proxyTo;
-        private String _prefix;
+        private final TransparentDelegate delegate = new TransparentDelegate(this);
 
-        public Transparent()
+        @Override
+        public void init(ServletConfig config) throws ServletException
         {
-        }
-
-        public Transparent(String proxyTo, String prefix)
-        {
-            _proxyTo = URI.create(proxyTo).normalize().toString();
-            _prefix = URI.create(prefix).normalize().toString();
+            super.init(config);
+            delegate.init(config);
         }
 
         @Override
-        public void init() throws ServletException
+        protected URI rewriteURI(HttpServletRequest request)
         {
-            super.init();
+            return delegate.rewriteURI(request);
+        }
+    }
 
-            ServletConfig config = getServletConfig();
+    protected static class TransparentDelegate
+    {
+        private final ProxyServlet proxyServlet;
+        private String _proxyTo;
+        private String _prefix;
 
+        protected TransparentDelegate(ProxyServlet proxyServlet)
+        {
+            this.proxyServlet = proxyServlet;
+        }
+
+        protected void init(ServletConfig config) throws ServletException
+        {
             String proxyTo = config.getInitParameter("proxyTo");
             _proxyTo = proxyTo == null ? _proxyTo : proxyTo;
 
@@ -681,13 +690,12 @@ public class ProxyServlet extends HttpServlet
             }
 
             // Adjust prefix value to account for context path
-            String contextPath = getServletContext().getContextPath();
+            String contextPath = config.getServletContext().getContextPath();
             _prefix = _prefix == null ? contextPath : (contextPath + _prefix);
 
-            _log.debug(config.getServletName() + " @ " + _prefix + " to " + _proxyTo);
+            proxyServlet._log.debug(config.getServletName() + " @ " + _prefix + " to " + _proxyTo);
         }
 
-        @Override
         protected URI rewriteURI(HttpServletRequest request)
         {
             String path = request.getRequestURI();
@@ -706,7 +714,7 @@ public class ProxyServlet extends HttpServlet
                 uri.append("?").append(query);
             URI rewrittenURI = URI.create(uri.toString()).normalize();
 
-            if (!validateDestination(rewrittenURI.getHost(), rewrittenURI.getPort()))
+            if (!proxyServlet.validateDestination(rewrittenURI.getHost(), rewrittenURI.getPort()))
                 return null;
 
             return rewrittenURI;

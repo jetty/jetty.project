@@ -45,7 +45,7 @@ public class ParamsContentParser extends ContentParser
     }
 
     @Override
-    public boolean parse(ByteBuffer buffer)
+    public Result parse(ByteBuffer buffer)
     {
         while (buffer.hasRemaining() || state == State.PARAM)
         {
@@ -185,7 +185,7 @@ public class ParamsContentParser extends ContentParser
                     if (length == 0)
                     {
                         reset();
-                        return true;
+                        return Result.COMPLETE;
                     }
                     break;
                 }
@@ -195,7 +195,7 @@ public class ParamsContentParser extends ContentParser
                 }
             }
         }
-        return false;
+        return Result.PENDING;
     }
 
     @Override

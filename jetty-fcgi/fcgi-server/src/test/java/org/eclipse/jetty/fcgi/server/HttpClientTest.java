@@ -30,6 +30,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.GZIPOutputStream;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
@@ -47,6 +48,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
+import org.eclipse.jetty.util.Callback;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -567,7 +569,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 // Promise some content, then flush the headers, then fail to send the content.
                 response.setContentLength(16);
                 response.flushBuffer();
-                throw new NullPointerException();
+                throw new NullPointerException("Explicitly thrown by test");
             }
         });
 
@@ -626,5 +628,76 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         Assert.assertEquals(200, response.getStatus());
         Assert.assertArrayEquals(data, response.getContent());
+    }
+
+    @Test
+    public void testSmallAsyncContent() throws Exception
+    {
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                ServletOutputStream output = response.getOutputStream();
+                output.write(65);
+                output.flush();
+                output.write(66);
+            }
+        });
+
+        final AtomicInteger contentCount = new AtomicInteger();
+        final AtomicReference<Callback> callbackRef = new AtomicReference<>();
+        final AtomicReference<CountDownLatch> contentLatch = new AtomicReference<>(new CountDownLatch(1));
+        final CountDownLatch completeLatch = new CountDownLatch(1);
+        client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .onResponseContentAsync(new Response.AsyncContentListener()
+                {
+                    @Override
+                    public void onContent(Response response, ByteBuffer content, Callback callback)
+                    {
+                        contentCount.incrementAndGet();
+                        callbackRef.set(callback);
+                        contentLatch.get().countDown();
+                    }
+                })
+                .send(new Response.CompleteListener()
+                {
+                    @Override
+                    public void onComplete(Result result)
+                    {
+                        completeLatch.countDown();
+                    }
+                });
+
+        Assert.assertTrue(contentLatch.get().await(5, TimeUnit.SECONDS));
+        Callback callback = callbackRef.get();
+
+        // Wait a while to be sure that the parsing does not proceed.
+        TimeUnit.MILLISECONDS.sleep(1000);
+
+        Assert.assertEquals(1, contentCount.get());
+
+        // Succeed the content callback to proceed with parsing.
+        callbackRef.set(null);
+        contentLatch.set(new CountDownLatch(1));
+        callback.succeeded();
+
+        Assert.assertTrue(contentLatch.get().await(5, TimeUnit.SECONDS));
+        callback = callbackRef.get();
+
+        // Wait a while to be sure that the parsing does not proceed.
+        TimeUnit.MILLISECONDS.sleep(1000);
+
+        Assert.assertEquals(2, contentCount.get());
+        Assert.assertEquals(1, completeLatch.getCount());
+
+        // Succeed the content callback to proceed with parsing.
+        callbackRef.set(null);
+        contentLatch.set(new CountDownLatch(1));
+        callback.succeeded();
+
+        Assert.assertTrue(completeLatch.await(555, TimeUnit.SECONDS));
+        Assert.assertEquals(2, contentCount.get());
     }
 }

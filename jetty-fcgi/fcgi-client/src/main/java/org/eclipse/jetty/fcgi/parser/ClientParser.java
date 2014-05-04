@@ -86,9 +86,9 @@ public class ClientParser extends Parser
         }
 
         @Override
-        public void onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
+        public boolean onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
         {
-            listener.onContent(request, stream, buffer);
+            return listener.onContent(request, stream, buffer);
         }
 
         @Override
