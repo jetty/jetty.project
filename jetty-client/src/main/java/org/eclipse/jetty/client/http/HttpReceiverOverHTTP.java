@@ -20,7 +20,6 @@ package org.eclipse.jetty.client.http;
 
 import java.io.EOFException;
 import java.nio.ByteBuffer;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpExchange;
@@ -34,7 +33,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.CompletableCallback;
 
 public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
 {
@@ -226,27 +225,22 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         if (exchange == null)
             return false;
 
-        final AtomicBoolean completed = new AtomicBoolean();
-        Callback callback = new Callback()
+        CompletableCallback callback = new CompletableCallback()
         {
             @Override
-            public void succeeded()
+            public void resume()
             {
-                if (!completed.compareAndSet(false, true))
-                {
-                    LOG.debug("Content consumed asynchronously, resuming processing");
-                    process();
-                }
+                LOG.debug("Content consumed asynchronously, resuming processing");
+                process();
             }
 
-            @Override
-            public void failed(Throwable x)
+            public void abort(Throwable x)
             {
                 failAndClose(x);
             }
         };
         responseContent(exchange, buffer, callback);
-        return completed.compareAndSet(false, true);
+        return callback.tryComplete();
     }
 
     @Override

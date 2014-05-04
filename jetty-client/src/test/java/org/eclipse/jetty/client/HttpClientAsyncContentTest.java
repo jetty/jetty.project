@@ -19,7 +19,6 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
-import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -86,7 +85,7 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
                     }
                 });
 
-        Assert.assertTrue(contentLatch.get().await(555, TimeUnit.SECONDS));
+        Assert.assertTrue(contentLatch.get().await(5, TimeUnit.SECONDS));
         Callback callback = callbackRef.get();
 
         // Wait a while to be sure that the parsing does not proceed.
@@ -99,7 +98,7 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
         contentLatch.set(new CountDownLatch(1));
         callback.succeeded();
 
-        Assert.assertTrue(contentLatch.get().await(555, TimeUnit.SECONDS));
+        Assert.assertTrue(contentLatch.get().await(5, TimeUnit.SECONDS));
         callback = callbackRef.get();
 
         // Wait a while to be sure that the parsing does not proceed.
@@ -115,13 +114,5 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
 
         Assert.assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
         Assert.assertEquals(2, contentCount.get());
-    }
-
-    public void test() throws Exception
-    {
-        try (Socket socket = new Socket())
-        {
-            System.out.println("socket = " + socket);
-        }
     }
 }
