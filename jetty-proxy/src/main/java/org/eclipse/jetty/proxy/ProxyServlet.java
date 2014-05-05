@@ -48,6 +48,7 @@ import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.InputStreamContentProvider;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.log.Log;
@@ -79,7 +80,6 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
  */
 public class ProxyServlet extends HttpServlet
 {
-    protected static final String ASYNC_CONTEXT = ProxyServlet.class.getName() + ".asyncContext";
     private static final Set<String> HOP_HEADERS = new HashSet<>();
     static
     {
@@ -394,22 +394,21 @@ public class ProxyServlet extends HttpServlet
                 .version(HttpVersion.fromString(request.getProtocol()));
 
         // Copy headers
-        boolean hasContent = false;
+        boolean hasContent = request.getContentLength() > 0 || request.getContentType() != null;
         for (Enumeration<String> headerNames = request.getHeaderNames(); headerNames.hasMoreElements();)
         {
             String headerName = headerNames.nextElement();
             String lowerHeaderName = headerName.toLowerCase(Locale.ENGLISH);
 
-            // Remove hop-by-hop headers
-            if (HOP_HEADERS.contains(lowerHeaderName))
-                continue;
+            if (HttpHeader.TRANSFER_ENCODING.is(headerName))
+                hasContent = true;
 
             if (_hostHeader != null && HttpHeader.HOST.is(headerName))
                 continue;
 
-            if (request.getContentLength() > 0 || request.getContentType() != null ||
-                    HttpHeader.TRANSFER_ENCODING.is(headerName))
-                hasContent = true;
+            // Remove hop-by-hop headers
+            if (HOP_HEADERS.contains(lowerHeaderName))
+                continue;
 
             for (Enumeration<String> headerValues = request.getHeaders(headerName); headerValues.hasMoreElements();)
             {
@@ -430,7 +429,7 @@ public class ProxyServlet extends HttpServlet
         final AsyncContext asyncContext = request.startAsync();
         // We do not timeout the continuation, but the proxy request
         asyncContext.setTimeout(0);
-        request.setAttribute(ASYNC_CONTEXT, asyncContext);
+        proxyRequest.timeout(getTimeout(), TimeUnit.MILLISECONDS);
 
         if (hasContent)
             proxyRequest.content(proxyRequestContent(proxyRequest, request));
@@ -470,11 +469,10 @@ public class ProxyServlet extends HttpServlet
                     proxyRequest.getHeaders().toString().trim());
         }
 
-        proxyRequest.timeout(getTimeout(), TimeUnit.MILLISECONDS);
         proxyRequest.send(new ProxyResponseListener(request, response));
     }
 
-    protected ContentProvider proxyRequestContent(Request proxyRequest, final HttpServletRequest request) throws IOException
+    protected ContentProvider proxyRequestContent(final Request proxyRequest, final HttpServletRequest request) throws IOException
     {
         return new InputStreamContentProvider(request.getInputStream())
         {
@@ -490,7 +488,19 @@ public class ProxyServlet extends HttpServlet
                 _log.debug("{} proxying content to upstream: {} bytes", getRequestId(request), length);
                 return super.onRead(buffer, offset, length);
             }
+
+            @Override
+            protected void onReadFailure(Throwable failure)
+            {
+                onClientRequestFailure(proxyRequest, request, failure);
+            }
         };
+    }
+
+    protected void onClientRequestFailure(Request proxyRequest, HttpServletRequest request, Throwable failure)
+    {
+        _log.debug(getRequestId(request) + " client request failure", failure);
+        proxyRequest.abort(failure);
     }
 
     protected void onRewriteFailed(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -513,6 +523,10 @@ public class ProxyServlet extends HttpServlet
 
     protected void onResponseHeaders(HttpServletRequest request, HttpServletResponse response, Response proxyResponse)
     {
+        // Clear the response headers in case it comes with predefined ones.
+        for (String name : response.getHeaderNames())
+            response.setHeader(name, null);
+
         for (HttpField field : proxyResponse.getHeaders())
         {
             String headerName = field.getName();
@@ -536,9 +550,9 @@ public class ProxyServlet extends HttpServlet
 
     protected void onResponseSuccess(HttpServletRequest request, HttpServletResponse response, Response proxyResponse)
     {
-        AsyncContext asyncContext = (AsyncContext)request.getAttribute(ASYNC_CONTEXT);
-        asyncContext.complete();
         _log.debug("{} proxying successful", getRequestId(request));
+        AsyncContext asyncContext = request.getAsyncContext();
+        asyncContext.complete();
     }
 
     protected void onResponseFailure(HttpServletRequest request, HttpServletResponse response, Response proxyResponse, Throwable failure)
@@ -550,9 +564,10 @@ public class ProxyServlet extends HttpServlet
                 response.setStatus(HttpServletResponse.SC_GATEWAY_TIMEOUT);
             else
                 response.setStatus(HttpServletResponse.SC_BAD_GATEWAY);
+            response.setHeader(HttpHeader.CONNECTION.asString(), HttpHeaderValue.CLOSE.asString());
+            AsyncContext asyncContext = request.getAsyncContext();
+            asyncContext.complete();
         }
-        AsyncContext asyncContext = (AsyncContext)request.getAttribute(ASYNC_CONTEXT);
-        asyncContext.complete();
     }
 
     protected int getRequestId(HttpServletRequest request)
@@ -758,20 +773,12 @@ public class ProxyServlet extends HttpServlet
         }
 
         @Override
-        public void onSuccess(Response proxyResponse)
-        {
-            onResponseSuccess(request, response, proxyResponse);
-        }
-
-        @Override
-        public void onFailure(Response proxyResponse, Throwable failure)
-        {
-            onResponseFailure(request, response, proxyResponse, failure);
-        }
-
-        @Override
         public void onComplete(Result result)
         {
+            if (result.isSucceeded())
+                onResponseSuccess(request, response, result.getResponse());
+            else
+                onResponseFailure(request, response, result.getResponse(), result.getFailure());
             _log.debug("{} proxying complete", getRequestId(request));
         }
     }

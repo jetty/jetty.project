@@ -28,7 +28,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -432,8 +431,7 @@ public class ConnectHandler extends HandlerWrapper
 
     protected class ConnectManager extends SelectorManager
     {
-
-        private ConnectManager(Executor executor, Scheduler scheduler, int selectors)
+        protected ConnectManager(Executor executor, Scheduler scheduler, int selectors)
         {
             super(executor, scheduler, selectors);
         }
@@ -455,10 +453,16 @@ public class ConnectHandler extends HandlerWrapper
         }
 
         @Override
-        protected void connectionFailed(SocketChannel channel, Throwable ex, Object attachment)
+        protected void connectionFailed(SocketChannel channel, final Throwable ex, final Object attachment)
         {
-            ConnectContext connectContext = (ConnectContext)attachment;
-            onConnectFailure(connectContext.request, connectContext.response, connectContext.asyncContext, ex);
+            getExecutor().execute(new Runnable()
+            {
+                public void run()
+                {
+                    ConnectContext connectContext = (ConnectContext)attachment;
+                    onConnectFailure(connectContext.request, connectContext.response, connectContext.asyncContext, ex);
+                }
+            });
         }
     }
 
@@ -518,8 +522,14 @@ public class ConnectHandler extends HandlerWrapper
         public void onOpen()
         {
             super.onOpen();
-            onConnectSuccess(connectContext, this);
-            fillInterested();
+            getExecutor().execute(new Runnable()
+            {
+                public void run()
+                {
+                    onConnectSuccess(connectContext, UpstreamConnection.this);
+                    fillInterested();
+                }
+            });
         }
 
         @Override

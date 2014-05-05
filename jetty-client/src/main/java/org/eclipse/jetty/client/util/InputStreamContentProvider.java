@@ -102,6 +102,16 @@ public class InputStreamContentProvider implements ContentProvider
         return ByteBuffer.wrap(buffer, offset, length);
     }
 
+    /**
+     * Callback method invoked when an exception is thrown while reading
+     * from the stream.
+     *
+     * @param failure the exception thrown while reading from the stream.
+     */
+    protected void onReadFailure(Throwable failure)
+    {
+    }
+
     @Override
     public Iterator<ByteBuffer> iterator()
     {
@@ -166,6 +176,7 @@ public class InputStreamContentProvider implements ContentProvider
                 if (failure == null)
                 {
                     failure = x;
+                    onReadFailure(x);
                     // Signal we have more content to cause a call to
                     // next() which will throw NoSuchElementException.
                     hasNext = Boolean.TRUE;

@@ -20,10 +20,12 @@ package org.eclipse.jetty.client.http;
 
 import org.eclipse.jetty.client.HttpChannel;
 import org.eclipse.jetty.client.HttpExchange;
+import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
+import org.eclipse.jetty.http.HttpVersion;
 
 public class HttpChannelOverHTTP extends HttpChannel
 {
@@ -77,10 +79,23 @@ public class HttpChannelOverHTTP extends HttpChannel
     public void exchangeTerminated(Result result)
     {
         super.exchangeTerminated(result);
-        HttpFields responseHeaders = result.getResponse().getHeaders();
-        boolean close = result.isFailed() ||
-                responseHeaders.contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString()) ||
-                receiver.isShutdown();
+        Response response = result.getResponse();
+        HttpFields responseHeaders = response.getHeaders();
+        boolean close = result.isFailed() || receiver.isShutdown();
+        // Only check HTTP headers if there are no failures.
+        if (!close)
+        {
+            if (response.getVersion().compareTo(HttpVersion.HTTP_1_1) < 0)
+            {
+                // HTTP 1.0 must close the connection unless it has an explicit keep alive.
+                close = !responseHeaders.contains(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString());
+            }
+            else
+            {
+                // HTTP 1.1 or greater closes only if it has an explicit close.
+                close = responseHeaders.contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
+            }
+        }
         if (close)
             connection.close();
         else

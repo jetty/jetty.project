@@ -24,7 +24,6 @@ import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -37,6 +36,7 @@ import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.http.HttpDestinationOverHTTP;
 import org.eclipse.jetty.client.util.ByteBufferContentProvider;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
@@ -485,6 +485,42 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
 
         // Give the connection some time to process the remote close
         TimeUnit.SECONDS.sleep(1);
+
+        Assert.assertEquals(0, idleConnections.size());
+        Assert.assertEquals(0, activeConnections.size());
+    }
+
+    @Test
+    public void testConnectionForHTTP10ResponseIsRemoved() throws Exception
+    {
+        start(new EmptyServerHandler());
+
+        String host = "localhost";
+        int port = connector.getLocalPort();
+        HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
+        ConnectionPool connectionPool = destination.getConnectionPool();
+
+        final BlockingQueue<Connection> idleConnections = connectionPool.getIdleConnections();
+        Assert.assertEquals(0, idleConnections.size());
+
+        final BlockingQueue<Connection> activeConnections = connectionPool.getActiveConnections();
+        Assert.assertEquals(0, activeConnections.size());
+
+        client.setStrictEventOrdering(false);
+        ContentResponse response = client.newRequest(host, port)
+                .scheme(scheme)
+                .onResponseBegin(new Response.BeginListener()
+                {
+                    @Override
+                    public void onBegin(Response response)
+                    {
+                        // Simulate a HTTP 1.0 response has been received.
+                        ((HttpResponse)response).version(HttpVersion.HTTP_1_0);
+                    }
+                })
+                .send();
+
+        Assert.assertEquals(200, response.getStatus());
 
         Assert.assertEquals(0, idleConnections.size());
         Assert.assertEquals(0, activeConnections.size());
