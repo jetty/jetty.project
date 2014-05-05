@@ -78,10 +78,10 @@ public abstract class Resource implements ResourceFactory, Closeable
     /** Construct a resource from a uri.
      * @param uri A URI.
      * @return A Resource object.
-     * @throws IOException Problem accessing URI
+     * @throws MalformedURLException Problem accessing URI
      */
     public static Resource newResource(URI uri)
-        throws IOException
+        throws MalformedURLException
     {
         return newResource(uri.toURL());
     }
@@ -90,10 +90,8 @@ public abstract class Resource implements ResourceFactory, Closeable
     /** Construct a resource from a url.
      * @param url A URL.
      * @return A Resource object.
-     * @throws IOException Problem accessing URL
      */
     public static Resource newResource(URL url)
-        throws IOException
     {
         return newResource(url, __defaultUseCaches);
     }
@@ -142,10 +140,11 @@ public abstract class Resource implements ResourceFactory, Closeable
     /* ------------------------------------------------------------ */
     /** Construct a resource from a string.
      * @param resource A URL or filename.
+     * @throws MalformedURLException Problem accessing URI
      * @return A Resource object.
      */
     public static Resource newResource(String resource)
-        throws MalformedURLException, IOException
+        throws MalformedURLException
     {
         return newResource(resource, __defaultUseCaches);
     }
@@ -155,9 +154,10 @@ public abstract class Resource implements ResourceFactory, Closeable
      * @param resource A URL or filename.
      * @param useCaches controls URLConnection caching
      * @return A Resource object.
+     * @throws MalformedURLException Problem accessing URI
      */
     public static Resource newResource(String resource, boolean useCaches)       
-    throws MalformedURLException, IOException
+        throws MalformedURLException
     {
         URL url=null;
         try
