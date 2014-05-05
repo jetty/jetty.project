@@ -36,6 +36,7 @@ import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -430,30 +431,17 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
             threadPool.setName(name);
             threadPool.setDaemon(daemon);
             executor = threadPool;
-            addBean(executor,true);
+            addManaged(threadPool);
         }
         else
         {
             addBean(executor,false);
         }
 
-        if (connectionManager != null)
-        {
-            return;
-        }
-        try
+        if (connectionManager == null)
         {
             connectionManager = newConnectionManager();
-            addBean(connectionManager);
-            connectionManager.start();
-        }
-        catch (IOException e)
-        {
-            throw e;
-        }
-        catch (Exception e)
-        {
-            throw new IOException(e);
+            addManaged(connectionManager);
         }
     }
 

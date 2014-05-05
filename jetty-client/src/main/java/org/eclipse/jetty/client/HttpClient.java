@@ -201,8 +201,8 @@ public class HttpClient extends ContainerLifeCycle
             scheduler = new ScheduledExecutorScheduler(name + "-scheduler", false);
         addBean(scheduler);
 
-        addBean(transport);
         transport.setHttpClient(this);
+        addBean(transport);
 
         resolver = new SocketAddressResolver(executor, scheduler, getAddressResolutionTimeout());
 

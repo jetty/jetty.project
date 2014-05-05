@@ -110,6 +110,7 @@ public class WSServer
         WebAppContext context = new WebAppContext();
         context.setContextPath(this.contextPath);
         context.setBaseResource(Resource.newResource(this.contextDir));
+        context.setAttribute("org.eclipse.jetty.websocket.jsr356",Boolean.TRUE);
 
         // @formatter:off
         context.setConfigurations(new Configuration[] {
@@ -133,6 +134,7 @@ public class WSServer
     public void deployWebapp(WebAppContext webapp) throws Exception
     {
         contexts.addHandler(webapp);
+        contexts.manage(webapp);
         webapp.start();
         if (LOG.isDebugEnabled())
         {

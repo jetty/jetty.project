@@ -64,7 +64,6 @@ public class BasicEndpointTest
 
             WebAppContext webapp = wsb.createWebAppContext();
             wsb.deployWebapp(webapp);
-            // wsb.dump();
 
             WebSocketClient client = new WebSocketClient(bufferPool);
             try

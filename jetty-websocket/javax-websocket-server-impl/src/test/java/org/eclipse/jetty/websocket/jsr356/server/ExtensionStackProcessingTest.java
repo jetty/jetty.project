@@ -68,10 +68,10 @@ public class ExtensionStackProcessingTest
         ServerEndpointConfig config = ServerEndpointConfig.Builder.create(BasicEchoEndpoint.class, "/").build();
         container.addEndpoint(config);
 
-        server.start();
-
         client = ContainerProvider.getWebSocketContainer();
         server.addBean(client, true);
+        
+        server.start();
     }
 
     @After

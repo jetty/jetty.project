@@ -814,7 +814,6 @@ public class ServletHandler extends ScopedHandler
 
     /* ------------------------------------------------------------ */
     /** Initialize filters and load-on-startup servlets.
-     * Called automatically from start if autoInitializeServlet is true.
      */
     public void initialize()
         throws Exception
