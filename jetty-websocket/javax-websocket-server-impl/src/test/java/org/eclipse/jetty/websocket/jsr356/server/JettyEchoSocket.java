@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
@@ -46,8 +47,8 @@ public class JettyEchoSocket
     private static final Logger LOG = Log.getLogger(JettyEchoSocket.class);
     @SuppressWarnings("unused")
     private Session session;
-    private RemoteEndpoint remote;
-    private Boolean closed = null;
+    private volatile RemoteEndpoint remote;
+    private volatile Boolean closed = null;
     private EventQueue<String> incomingMessages = new EventQueue<>();
 
     public Queue<String> awaitMessages(int expected) throws TimeoutException, InterruptedException
@@ -92,8 +93,14 @@ public class JettyEchoSocket
 
     public void sendMessage(String msg) throws IOException
     {
-        remote.sendStringByFuture(msg);
-        if (remote.getBatchMode() == BatchMode.ON)
-            remote.flush();
+        RemoteEndpoint r = remote;
+        // TODO there is a race with onClose here and no sufficient memory barrier. Taking a local copy
+        // stops the worst of the errors, but is probably not the best solution.
+        if (r==null)   
+            throw new EOFException("Closed="+closed);
+        
+        r.sendStringByFuture(msg);
+        if (r.getBatchMode() == BatchMode.ON)
+            r.flush();
     }
 }
