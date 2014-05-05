@@ -31,6 +31,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.TreeMap;
+
 import javax.servlet.AsyncContext;
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
@@ -68,8 +70,8 @@ public class UpgradeHttpServletRequest implements HttpServletRequest
     private final String remoteUser;
     private final Principal principal;
 
-    private final Map<String, List<String>> headers = new HashMap<>(8);
-    private final Map<String, String[]> parameters = new HashMap<>(2);
+    private final Map<String, List<String>> headers = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    private final Map<String, String[]> parameters = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     private final Map<String, Object> attributes = new HashMap<>(2);
     private final List<Locale> locales = new ArrayList<>(2);
 
