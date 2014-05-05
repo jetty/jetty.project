@@ -130,6 +130,8 @@ public abstract class WebSocketServlet extends HttpServlet
             configure(factory);
 
             factory.init();
+            
+            getServletContext().setAttribute(WebSocketServletFactory.class.getName(),factory);
         }
         catch (Exception x)
         {

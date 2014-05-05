@@ -57,6 +57,9 @@ public class PerMessageDeflateExtensionTest
     @Test
     public void testPerMessageDeflateDefault() throws Exception
     {
+        Assume.assumeTrue("Server has x-webkit-deflate-frame registered",
+                server.getWebSocketServletFactory().getExtensionFactory().isAvailable("permessage-deflate"));
+
         BlockheadClient client = new BlockheadClient(server.getServerUri());
         client.clearExtensions();
         client.addExtensions("permessage-deflate");
@@ -70,8 +73,7 @@ public class PerMessageDeflateExtensionTest
             client.sendStandardRequest();
             HttpResponse resp = client.expectUpgradeResponse();
 
-            // Stop test here if server doesn't have permessage-deflate enabled.
-            Assume.assumeThat("Response",resp.getExtensionsHeader(),containsString("permessage-deflate"));
+            Assert.assertThat("Response",resp.getExtensionsHeader(),containsString("permessage-deflate"));
 
             String msg = "Hello";
 

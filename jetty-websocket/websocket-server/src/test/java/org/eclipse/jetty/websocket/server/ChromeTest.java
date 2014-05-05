@@ -30,6 +30,7 @@ import org.eclipse.jetty.websocket.common.test.HttpResponse;
 import org.eclipse.jetty.websocket.server.examples.MyEchoServlet;
 import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -53,6 +54,8 @@ public class ChromeTest
     @Test
     public void testUpgradeWithWebkitDeflateExtension() throws Exception
     {
+        Assume.assumeTrue("Server has x-webkit-deflate-frame registered",server.getWebSocketServletFactory().getExtensionFactory().isAvailable("x-webkit-deflate-frame"));
+        
         BlockheadClient client = new BlockheadClient(server.getServerUri());
         try
         {
