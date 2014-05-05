@@ -22,6 +22,7 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.ContainerProvider;
 import javax.websocket.Endpoint;
@@ -37,6 +38,7 @@ import javax.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.client.io.WebSocketClientConnection;
 import org.eclipse.jetty.websocket.common.extensions.ExtensionStack;
@@ -45,8 +47,10 @@ import org.eclipse.jetty.websocket.jsr356.JsrExtension;
 import org.eclipse.jetty.websocket.jsr356.JsrSession;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.eclipse.jetty.websocket.jsr356.server.samples.echo.BasicEchoEndpoint;
+import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -54,6 +58,7 @@ public class ExtensionStackProcessingTest
 {
     private Server server;
     private ServerConnector connector;
+    private ExtensionFactory serverExtensionFactory;
     private WebSocketContainer client;
 
     @Before
@@ -65,6 +70,10 @@ public class ExtensionStackProcessingTest
 
         ServletContextHandler context = new ServletContextHandler(server, "/", true, false);
         ServerContainer container = WebSocketServerContainerInitializer.configureContext(context);
+        
+        WebSocketUpgradeFilter filter = (WebSocketUpgradeFilter)context.getAttribute(WebSocketUpgradeFilter.class.getName());
+        serverExtensionFactory = filter.getFactory().getExtensionFactory();
+        
         ServerEndpointConfig config = ServerEndpointConfig.Builder.create(BasicEchoEndpoint.class, "/").build();
         container.addEndpoint(config);
 
@@ -83,6 +92,8 @@ public class ExtensionStackProcessingTest
     @Test
     public void testDeflateFrameExtension() throws Exception
     {
+        Assume.assumeTrue("Server has deflate-frame extension registered",serverExtensionFactory.isAvailable("deflate-frame"));
+        
         ClientEndpointConfig config = ClientEndpointConfig.Builder.create()
                 .extensions(Arrays.<Extension>asList(new JsrExtension("deflate-frame")))
                 .build();
@@ -129,6 +140,8 @@ public class ExtensionStackProcessingTest
     @Test
     public void testPerMessageDeflateExtension() throws Exception
     {
+        Assume.assumeTrue("Server has permessage-deflate extension registered",serverExtensionFactory.isAvailable("permessage-deflate"));
+        
         ClientEndpointConfig config = ClientEndpointConfig.Builder.create()
                 .extensions(Arrays.<Extension>asList(new JsrExtension("permessage-deflate")))
                 .build();

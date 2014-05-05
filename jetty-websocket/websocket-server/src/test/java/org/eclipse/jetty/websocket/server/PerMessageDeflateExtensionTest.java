@@ -30,6 +30,7 @@ import org.eclipse.jetty.websocket.common.test.HttpResponse;
 import org.eclipse.jetty.websocket.server.helper.EchoServlet;
 import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -69,7 +70,8 @@ public class PerMessageDeflateExtensionTest
             client.sendStandardRequest();
             HttpResponse resp = client.expectUpgradeResponse();
 
-            Assert.assertThat("Response",resp.getExtensionsHeader(),containsString("permessage-deflate"));
+            // Stop test here if server doesn't have permessage-deflate enabled.
+            Assume.assumeThat("Response",resp.getExtensionsHeader(),containsString("permessage-deflate"));
 
             String msg = "Hello";
 
