@@ -54,7 +54,8 @@ public class ChromeTest
     @Test
     public void testUpgradeWithWebkitDeflateExtension() throws Exception
     {
-        Assume.assumeTrue("Server has x-webkit-deflate-frame registered",server.getWebSocketServletFactory().getExtensionFactory().isAvailable("x-webkit-deflate-frame"));
+        Assume.assumeTrue("Server has x-webkit-deflate-frame registered",
+                server.getWebSocketServletFactory().getExtensionFactory().isAvailable("x-webkit-deflate-frame"));
         
         BlockheadClient client = new BlockheadClient(server.getServerUri());
         try

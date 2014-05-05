@@ -41,6 +41,7 @@ import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.api.Session;
@@ -50,6 +51,7 @@ import org.eclipse.jetty.websocket.client.io.ConnectionManager;
 import org.eclipse.jetty.websocket.client.io.WebSocketClientSelectorManager;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.OpCode;
+import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
@@ -458,13 +460,16 @@ public class ClientCloseTest
         bad.putShort((short)StatusCode.NORMAL);
         bad.put(msg);
         BufferUtil.flipToFlush(bad,0);
-        serverConn.write(bad);
+        try (StacklessLogging quiet = new StacklessLogging(Parser.class))
+        {
+            serverConn.write(bad);
 
-        // client should have noticed the error
-        clientSocket.assertReceivedError(ProtocolException.class,containsString("Invalid control frame"));
+            // client should have noticed the error
+            clientSocket.assertReceivedError(ProtocolException.class,containsString("Invalid control frame"));
 
-        // client parse invalid frame, notifies server of close (protocol error)
-        confirmServerReceivedCloseFrame(serverConn,StatusCode.PROTOCOL,allOf(containsString("Invalid control frame"),containsString("length")));
+            // client parse invalid frame, notifies server of close (protocol error)
+            confirmServerReceivedCloseFrame(serverConn,StatusCode.PROTOCOL,allOf(containsString("Invalid control frame"),containsString("length")));
+        }
 
         // server disconnects
         serverConn.disconnect();

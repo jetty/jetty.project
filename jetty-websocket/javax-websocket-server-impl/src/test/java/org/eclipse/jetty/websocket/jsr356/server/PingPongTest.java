@@ -60,7 +60,6 @@ public class PingPongTest
 
         WebAppContext webapp = server.createWebAppContext();
         server.deployWebapp(webapp);
-        server.dump();
     }
 
     @BeforeClass

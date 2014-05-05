@@ -581,7 +581,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         }
         catch (CloseException e)
         {
-            LOG.warn(e);
+            LOG.debug(e);
             close(e.getStatusCode(),e.getMessage());
             return -1;
         }
