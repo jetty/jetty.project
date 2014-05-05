@@ -1,4 +1,26 @@
-jetty-9.1.5-SNAPSHOT
+jetty-9.1.5.v20140505 - 05 May 2014
+ + 431459 Jetty WebSocket compression extensions fails to handle big messages
+   properly
+ + 431519 Fixed NetworkTrafficListener
+ + 432145 Pending request is not failed when HttpClient is stopped.
+ + 432270 Slow requests with response content delimited by EOF fail.
+ + 432473 web.xml declaration order of filters not preserved on calls to init()
+ + 432483 make osgi.serviceloader support for
+   javax.servlet.ServletContainerInitializer optional (cherry picked from
+   commit 31043d25708edbea9ef31948093f4eaf2247919b)
+ + 432528 IllegalStateException when using DeferredContentProvider.
+ + 432777 Async Write Loses Data with HTTPS Server.
+ + 432901 ensure a single onError callback only in pending and unready states
+ + 432993 Improve handling of ProxyTo and Prefix parameters in
+   ProxyServlet.Transparent.
+ + 433365 No such servlet:
+   __org.eclipse.jetty.servlet.JspPropertyGroupServlet__ (cherry picked from
+   commit e2ed934978b958d6fccb28a8a5d04768f7c0432d)
+ + 433370 PATCH method does not work with ProxyServlet.
+ + 433483 sync log initialize
+ + 433692 improved buffer resizing
+ + 433916 HttpChannelOverHttp handles HTTP 1.0 connection reuse incorrectly.
+ + 434027 ReadListener.onError() not invoked in case of read failures.
 
 jetty-9.1.4.v20140401 - 01 April 2014
  + 414206 Rewrite rules re-encode requestURI
