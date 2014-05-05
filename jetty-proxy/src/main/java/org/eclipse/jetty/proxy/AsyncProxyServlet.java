@@ -46,7 +46,7 @@ public class AsyncProxyServlet extends ProxyServlet
     {
         ServletInputStream input = request.getInputStream();
         DeferredContentProvider provider = new DeferredContentProvider();
-        input.setReadListener(new StreamReader(request, provider));
+        input.setReadListener(new StreamReader(proxyRequest, request, provider));
         return provider;
     }
 
@@ -104,11 +104,13 @@ public class AsyncProxyServlet extends ProxyServlet
     private class StreamReader implements ReadListener, Callback
     {
         private final byte[] buffer = new byte[getHttpClient().getRequestBufferSize()];
+        private final Request proxyRequest;
         private final HttpServletRequest request;
         private final DeferredContentProvider provider;
 
-        public StreamReader(HttpServletRequest request, DeferredContentProvider provider)
+        public StreamReader(Request proxyRequest, HttpServletRequest request, DeferredContentProvider provider)
         {
+            this.proxyRequest = proxyRequest;
             this.request = request;
             this.provider = provider;
         }
@@ -168,7 +170,7 @@ public class AsyncProxyServlet extends ProxyServlet
         @Override
         public void failed(Throwable x)
         {
-            onClientRequestFailure(request, x);
+            onClientRequestFailure(proxyRequest, request, x);
         }
     }
 
