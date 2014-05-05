@@ -73,7 +73,6 @@ public class ContextHandlerGetResourceTest
         other.createNewFile();
         
         File transit = new File(docroot.getParentFile(),"transit");
-        System.err.println("transit "+transit);
         transit.delete();
         
         if (OS.IS_UNIX)

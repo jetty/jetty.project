@@ -478,6 +478,14 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         {
             getEndPoint().shutdownOutput();
         }
+        
+
+        @Override
+        public boolean messageComplete()
+        {
+            super.messageComplete();
+            return false;
+        }
     }
 
     private class CommitCallback extends IteratingCallback

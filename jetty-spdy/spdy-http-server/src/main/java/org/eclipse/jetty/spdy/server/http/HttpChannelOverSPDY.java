@@ -156,6 +156,13 @@ public class HttpChannelOverSPDY extends HttpChannel<DataInfo>
         if (dispatch)
             dispatch();
     }
+    
+    @Override
+    public boolean messageComplete()
+    {
+        super.messageComplete();
+        return false;
+    }
 
     private boolean performBeginRequest(Fields headers)
     {
