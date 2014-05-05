@@ -62,6 +62,13 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     private volatile ByteBuffer _chunk = null;
 
 
+    /* ------------------------------------------------------------ */
+    /** Get the current connection that this thread is dispatched to.
+     * Note that a thread may be processing a request asynchronously and 
+     * thus not be dispatched to the connection.  
+     * @see Request#getAttribute(String) for a more general way to access the HttpConnection
+     * @return the current HttpConnection or null
+     */
     public static HttpConnection getCurrentConnection()
     {
         return __currentConnection.get();
