@@ -56,7 +56,6 @@ public class OnMessageReturnTest
 
             WebAppContext webapp = wsb.createWebAppContext();
             wsb.deployWebapp(webapp);
-            wsb.dump();
 
             WebSocketClient client = new WebSocketClient(bufferPool);
             try
