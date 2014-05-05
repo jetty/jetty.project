@@ -472,7 +472,7 @@ public class ProxyServlet extends HttpServlet
         proxyRequest.send(new ProxyResponseListener(request, response));
     }
 
-    protected ContentProvider proxyRequestContent(Request proxyRequest, final HttpServletRequest request) throws IOException
+    protected ContentProvider proxyRequestContent(final Request proxyRequest, final HttpServletRequest request) throws IOException
     {
         return new InputStreamContentProvider(request.getInputStream())
         {
@@ -492,18 +492,15 @@ public class ProxyServlet extends HttpServlet
             @Override
             protected void onReadFailure(Throwable failure)
             {
-                onClientRequestFailure(request, failure);
+                onClientRequestFailure(proxyRequest, request, failure);
             }
         };
     }
 
-    protected void onClientRequestFailure(HttpServletRequest request, Throwable failure)
+    protected void onClientRequestFailure(Request proxyRequest, HttpServletRequest request, Throwable failure)
     {
-        AsyncContext asyncContext = request.getAsyncContext();
-        HttpServletResponse response = (HttpServletResponse)asyncContext.getResponse();
-        response.setStatus(500);
-        response.setHeader(HttpHeader.CONNECTION.asString(), HttpHeaderValue.CLOSE.asString());
-        asyncContext.complete();
+        _log.debug(getRequestId(request) + " client request failure", failure);
+        proxyRequest.abort(failure);
     }
 
     protected void onRewriteFailed(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -553,9 +550,9 @@ public class ProxyServlet extends HttpServlet
 
     protected void onResponseSuccess(HttpServletRequest request, HttpServletResponse response, Response proxyResponse)
     {
+        _log.debug("{} proxying successful", getRequestId(request));
         AsyncContext asyncContext = request.getAsyncContext();
         asyncContext.complete();
-        _log.debug("{} proxying successful", getRequestId(request));
     }
 
     protected void onResponseFailure(HttpServletRequest request, HttpServletResponse response, Response proxyResponse, Throwable failure)
@@ -568,9 +565,9 @@ public class ProxyServlet extends HttpServlet
             else
                 response.setStatus(HttpServletResponse.SC_BAD_GATEWAY);
             response.setHeader(HttpHeader.CONNECTION.asString(), HttpHeaderValue.CLOSE.asString());
+            AsyncContext asyncContext = request.getAsyncContext();
+            asyncContext.complete();
         }
-        AsyncContext asyncContext = request.getAsyncContext();
-        asyncContext.complete();
     }
 
     protected int getRequestId(HttpServletRequest request)
@@ -776,20 +773,12 @@ public class ProxyServlet extends HttpServlet
         }
 
         @Override
-        public void onSuccess(Response proxyResponse)
-        {
-            onResponseSuccess(request, response, proxyResponse);
-        }
-
-        @Override
-        public void onFailure(Response proxyResponse, Throwable failure)
-        {
-            onResponseFailure(request, response, proxyResponse, failure);
-        }
-
-        @Override
         public void onComplete(Result result)
         {
+            if (result.isSucceeded())
+                onResponseSuccess(request, response, result.getResponse());
+            else
+                onResponseFailure(request, response, result.getResponse(), result.getFailure());
             _log.debug("{} proxying complete", getRequestId(request));
         }
     }
