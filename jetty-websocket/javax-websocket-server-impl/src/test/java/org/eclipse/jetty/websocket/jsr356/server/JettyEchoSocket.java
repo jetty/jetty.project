@@ -18,11 +18,12 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.log.Log;
@@ -47,8 +48,8 @@ public class JettyEchoSocket
     private static final Logger LOG = Log.getLogger(JettyEchoSocket.class);
     @SuppressWarnings("unused")
     private Session session;
-    private volatile RemoteEndpoint remote;
-    private volatile Boolean closed = null;
+    private Lock remoteLock = new ReentrantLock();
+    private RemoteEndpoint remote;
     private EventQueue<String> incomingMessages = new EventQueue<>();
 
     public Queue<String> awaitMessages(int expected) throws TimeoutException, InterruptedException
@@ -57,17 +58,32 @@ public class JettyEchoSocket
         return incomingMessages;
     }
 
-    public Boolean getClosed()
+    public boolean getClosed()
     {
-        return closed;
+        remoteLock.lock();
+        try
+        {
+            return (remote == null);
+        }
+        finally
+        {
+            remoteLock.unlock();
+        }
     }
 
     @OnWebSocketClose
     public void onClose(int code, String reason)
     {
-        closed = true;
         session = null;
-        remote = null;
+        remoteLock.lock();
+        try
+        {
+            remote = null;
+        }
+        finally
+        {
+            remoteLock.unlock();
+        }
     }
 
     @OnWebSocketError
@@ -86,21 +102,36 @@ public class JettyEchoSocket
     @OnWebSocketConnect
     public void onOpen(Session session)
     {
-        this.closed = false;
         this.session = session;
-        this.remote = session.getRemote();
+        remoteLock.lock();
+        try
+        {
+            this.remote = session.getRemote();
+        }
+        finally
+        {
+            remoteLock.unlock();
+        }
     }
 
     public void sendMessage(String msg) throws IOException
     {
-        RemoteEndpoint r = remote;
-        // TODO there is a race with onClose here and no sufficient memory barrier. Taking a local copy
-        // stops the worst of the errors, but is probably not the best solution.
-        if (r==null)   
-            throw new EOFException("Closed="+closed);
-        
-        r.sendStringByFuture(msg);
-        if (r.getBatchMode() == BatchMode.ON)
-            r.flush();
+        remoteLock.lock();
+        try
+        {
+            RemoteEndpoint r = remote;
+            if (r == null)
+            {
+                return;
+            }
+
+            r.sendStringByFuture(msg);
+            if (r.getBatchMode() == BatchMode.ON)
+                r.flush();
+        }
+        finally
+        {
+            remoteLock.unlock();
+        }
     }
 }
