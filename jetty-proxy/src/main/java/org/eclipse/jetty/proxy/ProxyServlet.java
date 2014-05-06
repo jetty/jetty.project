@@ -672,9 +672,7 @@ public class ProxyServlet extends HttpServlet
 
         protected void init(ServletConfig config) throws ServletException
         {
-            String proxyTo = config.getInitParameter("proxyTo");
-            _proxyTo = proxyTo == null ? _proxyTo : proxyTo;
-
+            _proxyTo = config.getInitParameter("proxyTo");
             if (_proxyTo == null)
                 throw new UnavailableException("Init parameter 'proxyTo' is required.");
 
