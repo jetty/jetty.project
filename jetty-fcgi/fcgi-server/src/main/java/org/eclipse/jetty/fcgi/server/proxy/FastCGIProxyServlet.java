@@ -54,6 +54,8 @@ import org.eclipse.jetty.proxy.ProxyServlet;
  *         <li>the FastCGI SCRIPT_NAME parameter</li>
  *         <li>the FastCGI PATH_INFO parameter</li>
  *     </ul></li>
+ *     <li><code>fastCGI.HTTPS</code>, optional, defaults to false, that specifies whether
+ *     to force the FastCGI <code>HTTPS</code> parameter to the value <code>on</code></li>
  * </ul>
  *
  * @see TryFilesFilter
@@ -62,6 +64,8 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
 {
     public static final String SCRIPT_ROOT_INIT_PARAM = "scriptRoot";
     public static final String SCRIPT_PATTERN_INIT_PARAM = "scriptPattern";
+    public static final String FASTCGI_HTTPS_INIT_PARAM = "fastCGI.HTTPS";
+
     private static final String REMOTE_ADDR_ATTRIBUTE = FastCGIProxyServlet.class.getName() + ".remoteAddr";
     private static final String REMOTE_PORT_ATTRIBUTE = FastCGIProxyServlet.class.getName() + ".remotePort";
     private static final String SERVER_NAME_ATTRIBUTE = FastCGIProxyServlet.class.getName() + ".serverName";
@@ -71,6 +75,7 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
     private static final String REQUEST_URI_ATTRIBUTE = FastCGIProxyServlet.class.getName() + ".requestURI";
 
     private Pattern scriptPattern;
+    private boolean fcgiHTTPS;
 
     @Override
     public void init() throws ServletException
@@ -81,6 +86,8 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
         if (value == null)
             value = "(.+?\\.php)";
         scriptPattern = Pattern.compile(value);
+
+        fcgiHTTPS = Boolean.parseBoolean(getInitParameter(FASTCGI_HTTPS_INIT_PARAM));
     }
 
     @Override
@@ -131,7 +138,7 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
         fastCGIHeaders.put(FCGI.Headers.SERVER_ADDR, (String)proxyRequest.getAttributes().get(SERVER_ADDR_ATTRIBUTE));
         fastCGIHeaders.put(FCGI.Headers.SERVER_PORT, (String)proxyRequest.getAttributes().get(SERVER_PORT_ATTRIBUTE));
 
-        if (HttpScheme.HTTPS.is((String)proxyRequest.getAttributes().get(SCHEME_ATTRIBUTE)))
+        if (fcgiHTTPS || HttpScheme.HTTPS.is((String)proxyRequest.getAttributes().get(SCHEME_ATTRIBUTE)))
             fastCGIHeaders.put(FCGI.Headers.HTTPS, "on");
 
         URI proxyRequestURI = proxyRequest.getURI();
