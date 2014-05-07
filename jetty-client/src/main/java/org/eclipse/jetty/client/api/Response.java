@@ -46,13 +46,6 @@ public interface Response
     Request getRequest();
 
     /**
-     * @return the conversation id
-     * @deprecated do not use this method anymore
-     */
-    @Deprecated
-    long getConversationID();
-
-    /**
      * @return the response listener passed to {@link Request#send(CompleteListener)}
      */
     <T extends ResponseListener> List<T> getListeners(Class<T> listenerClass);

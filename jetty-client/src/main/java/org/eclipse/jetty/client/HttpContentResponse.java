@@ -49,13 +49,6 @@ public class HttpContentResponse implements ContentResponse
     }
 
     @Override
-    @Deprecated
-    public long getConversationID()
-    {
-        return getRequest().getConversationID();
-    }
-
-    @Override
     public <T extends ResponseListener> List<T> getListeners(Class<T> listenerClass)
     {
         return response.getListeners(listenerClass);

@@ -50,13 +50,6 @@ import org.eclipse.jetty.util.Fields;
 public interface Request
 {
     /**
-     * @return the conversation id
-     * @deprecated do not use this method anymore
-     */
-    @Deprecated
-    long getConversationID();
-
-    /**
      * @return the scheme of this request, such as "http" or "https"
      */
     String getScheme();
