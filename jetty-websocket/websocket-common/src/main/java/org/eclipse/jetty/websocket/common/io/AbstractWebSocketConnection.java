@@ -34,7 +34,6 @@ import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
@@ -42,7 +41,6 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.CloseException;
-import org.eclipse.jetty.websocket.api.CloseStatus;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -72,6 +70,8 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         @Override
         protected void onFailure(Throwable x)
         {
+            session.notifyError(x);
+
             if (ioState.wasAbnormalClose())
             {
                 LOG.ignore(x);
@@ -79,34 +79,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             }
 
             LOG.debug("Write flush failure",x);
-
-            // Unable to write? can't notify other side of close, so disconnect.
-            // This is an ABNORMAL closure
-            String reason = "Websocket write failure";
-
-            if (x instanceof EOFException)
-            {
-                reason = "EOF";
-                Throwable cause = x.getCause();
-                if ((cause != null) && (StringUtil.isNotBlank(cause.getMessage())))
-                {
-                    reason = "EOF: " + cause.getMessage();
-                }
-            }
-            else
-            {
-                if (StringUtil.isNotBlank(x.getMessage()))
-                {
-                    reason = x.getMessage();
-                }
-            }
-
-            // Abnormal Close
-            reason = CloseStatus.trimMaxReasonLength(reason);
-            session.notifyError(x);
-            session.notifyClose(StatusCode.ABNORMAL,reason);
-
-            disconnect(); // disconnect endpoint & connection
+            ioState.onWriteFailure(x);
         }
     }
 
@@ -563,7 +536,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                 else if (filled < 0)
                 {
                     LOG.debug("read - EOF Reached (remote: {})",getRemoteAddress());
-                    ioState.onReadEOF();
+                    ioState.onReadFailure(new EOFException("Remote Read EOF"));
                     return -1;
                 }
                 else
