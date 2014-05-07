@@ -31,6 +31,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
@@ -78,6 +79,7 @@ public class ClientCloseTest
         public int closeCode = -1;
         public String closeReason = null;
         public CountDownLatch closeLatch = new CountDownLatch(1);
+        public AtomicInteger closeCount = new AtomicInteger(0);
         public CountDownLatch openLatch = new CountDownLatch(1);
 
         public EventQueue<String> messageQueue = new EventQueue<>();
@@ -95,6 +97,7 @@ public class ClientCloseTest
             long maxTimeout = clientTimeoutMs * 2;
 
             Assert.assertThat("Client Close Event Occurred",closeLatch.await(maxTimeout,TimeUnit.MILLISECONDS),is(true));
+            Assert.assertThat("Client Close Event Count",closeCount.get(),is(1));
             Assert.assertThat("Client Close Event Status Code",closeCode,statusCodeMatcher);
             if (reasonMatcher == null)
             {
@@ -133,6 +136,7 @@ public class ClientCloseTest
         {
             LOG.debug("onWebSocketClose({},{})",statusCode,reason);
             super.onWebSocketClose(statusCode,reason);
+            closeCount.incrementAndGet();
             closeCode = statusCode;
             closeReason = reason;
             closeLatch.countDown();
@@ -427,7 +431,9 @@ public class ClientCloseTest
 
         // client idle timeout triggers close event on client ws-endpoint
         // client close event on ws-endpoint
-        clientSocket.assertReceivedCloseEvent(timeout,is(StatusCode.SHUTDOWN),containsString("Timeout"));
+        clientSocket.assertReceivedCloseEvent(timeout,
+                anyOf(is(StatusCode.SHUTDOWN),is(StatusCode.ABNORMAL)),
+                anyOf(containsString("Timeout"),containsString("Write")));
     }
 
     @Test
