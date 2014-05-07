@@ -99,12 +99,6 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public long getConversationID()
-    {
-        return getConversation().getID();
-    }
-
-    @Override
     public String getScheme()
     {
         return scheme;
