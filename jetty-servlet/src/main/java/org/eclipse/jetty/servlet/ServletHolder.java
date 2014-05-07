@@ -88,7 +88,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     private transient boolean _enabled = true;
     private transient UnavailableException _unavailableEx;
 
-    public static final  String JSP_GENERATED_PACKAGE_NAME = "org.eclipse.jetty.jspPackagePrefix";
+    public static final  String JSP_GENERATED_PACKAGE_NAME = "org.eclipse.jetty.servlet.jspPackagePrefix";
     public static final Map<String,String> NO_MAPPED_ROLES = Collections.emptyMap();
 
     /* ---------------------------------------------------------------- */
@@ -853,7 +853,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     /* ------------------------------------------------------------ */
     private String getJspPackagePrefix ()
     {
-        String jspPackageName = (String)getServletHandler().getServletContext().getAttribute(JSP_GENERATED_PACKAGE_NAME );
+        String jspPackageName = (String)getServletHandler().getServletContext().getInitParameter(JSP_GENERATED_PACKAGE_NAME );
         if (jspPackageName == null)
             jspPackageName = "org.apache.jsp";
         
