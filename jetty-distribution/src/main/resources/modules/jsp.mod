@@ -16,5 +16,5 @@ jsp-impl/${jsp-impl}-jsp
 #               default jetty >= 9.2
 jsp-impl=apache
 
-# To use a non-jdk compiler for JSP compilation when using apache uncomment next line
+# To use a non-jdk compiler for JSP compilation when using glassfish uncomment next line
 # -Dorg.apache.jasper.compiler.disablejsr199=true
