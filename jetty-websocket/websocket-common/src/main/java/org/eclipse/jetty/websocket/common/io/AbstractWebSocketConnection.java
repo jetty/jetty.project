@@ -504,6 +504,9 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         this.ioState.onOpened();
     }
 
+    /**
+     * Event for no activity on connection (read or write)
+     */
     @Override
     protected boolean onReadTimeout()
     {
