@@ -433,7 +433,7 @@ public class ClientCloseTest
         // client close event on ws-endpoint
         clientSocket.assertReceivedCloseEvent(timeout,
                 anyOf(is(StatusCode.SHUTDOWN),is(StatusCode.ABNORMAL)),
-                anyOf(containsString("Timeout"),containsString("Write")));
+                anyOf(containsString("Timeout"),containsString("timeout"),containsString("Write")));
     }
 
     @Test
