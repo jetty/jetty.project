@@ -151,33 +151,32 @@ public class Log
 
     public static void initialized()
     {   
-       
         synchronized (Log.class)
         {
             if (__initialized)
                 return;
             __initialized = true;
-        }
-        
-        final long uptime=ManagementFactory.getRuntimeMXBean().getUptime();
 
-        try
-        {
-            Class<?> log_class = Loader.loadClass(Log.class, __logClass);
-            if (LOG == null || !LOG.getClass().equals(log_class))
+            final long uptime=ManagementFactory.getRuntimeMXBean().getUptime();
+
+            try
             {
-                LOG = (Logger)log_class.newInstance();
-                LOG.debug("Logging to {} via {}", LOG, log_class.getName());
+                Class<?> log_class = Loader.loadClass(Log.class, __logClass);
+                if (LOG == null || !LOG.getClass().equals(log_class))
+                {
+                    LOG = (Logger)log_class.newInstance();
+                    LOG.debug("Logging to {} via {}", LOG, log_class.getName());
+                }
             }
+            catch(Throwable e)
+            {
+                // Unable to load specified Logger implementation, default to standard logging.
+                initStandardLogging(e);
+            }
+
+            if (LOG!=null)
+                LOG.info(String.format("Logging initialized @%dms",uptime));
         }
-        catch(Throwable e)
-        {
-            // Unable to load specified Logger implementation, default to standard logging.
-            initStandardLogging(e);
-        }
-        
-        if (LOG!=null)
-            LOG.info(String.format("Logging initialized @%dms",uptime));
     }
 
     private static void initStandardLogging(Throwable e)

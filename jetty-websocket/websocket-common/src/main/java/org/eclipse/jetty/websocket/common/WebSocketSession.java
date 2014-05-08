@@ -41,6 +41,7 @@ import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
+import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
@@ -90,20 +91,19 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
     @Override
     public void close()
     {
-        this.close(StatusCode.NORMAL, null);
+        this.close(StatusCode.NORMAL,null);
     }
 
     @Override
     public void close(CloseStatus closeStatus)
     {
-        this.close(closeStatus.getCode(), closeStatus.getPhrase());
+        this.close(closeStatus.getCode(),closeStatus.getPhrase());
     }
 
     @Override
     public void close(int statusCode, String reason)
     {
-        connection.close(statusCode, reason);
-        notifyClose(statusCode, reason);
+        connection.close(statusCode,reason);
     }
 
     /**
@@ -115,7 +115,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
         connection.disconnect();
 
         // notify of harsh disconnect
-        notifyClose(StatusCode.NO_CLOSE, "Harsh disconnect");
+        notifyClose(StatusCode.NO_CLOSE,"Harsh disconnect");
     }
 
     public void dispatch(Runnable runnable)
@@ -130,7 +130,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
         out.append(indent).append(" +- incomingHandler : ");
         if (incomingHandler instanceof Dumpable)
         {
-            ((Dumpable)incomingHandler).dump(out, indent + "    ");
+            ((Dumpable)incomingHandler).dump(out,indent + "    ");
         }
         else
         {
@@ -140,7 +140,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
         out.append(indent).append(" +- outgoingHandler : ");
         if (outgoingHandler instanceof Dumpable)
         {
-            ((Dumpable)outgoingHandler).dump(out, indent + "    ");
+            ((Dumpable)outgoingHandler).dump(out,indent + "    ");
         }
         else
         {
@@ -273,7 +273,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
     {
         final int prime = 31;
         int result = 1;
-        result = (prime * result) + ((connection == null) ? 0 : connection.hashCode());
+        result = (prime * result) + ((connection == null)?0:connection.hashCode());
         return result;
     }
 
@@ -328,7 +328,11 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
 
     public void notifyClose(int statusCode, String reason)
     {
-        websocket.onClose(new CloseInfo(statusCode, reason));
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("notifyClose({},{})",statusCode,reason);
+        }
+        websocket.onClose(new CloseInfo(statusCode,reason));
     }
 
     public void notifyError(Throwable cause)
@@ -342,12 +346,13 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
     {
         switch (state)
         {
-            case CLOSING:
+            case CLOSED:
                 // notify session listeners
                 for (SessionListener listener : sessionListeners)
                 {
                     try
                     {
+                        LOG.debug("{}.onSessionClosed()",listener.getClass().getSimpleName());
                         listener.onSessionClosed(this);
                     }
                     catch (Throwable t)
@@ -355,18 +360,10 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
                         LOG.ignore(t);
                     }
                 }
-                break;
-            case CLOSED:
                 IOState ioState = this.connection.getIOState();
-                // The session only cares about abnormal close, as we need to notify
-                // the endpoint of this close scenario.
-                if (ioState.wasAbnormalClose())
-                {
-                    CloseInfo close = ioState.getCloseInfo();
-                    LOG.debug("Detected abnormal close: {}", close);
-                    // notify local endpoint
-                    notifyClose(close.getStatusCode(), close.getReason());
-                }
+                CloseInfo close = ioState.getCloseInfo();
+                // confirmed close of local endpoint
+                notifyClose(close.getStatusCode(),close.getReason());
                 break;
             case OPEN:
                 // notify session listeners
@@ -400,17 +397,32 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
         connection.getIOState().onConnected();
 
         // Connect remote
-        remote = new WebSocketRemoteEndpoint(connection, outgoingHandler, getBatchMode());
+        remote = new WebSocketRemoteEndpoint(connection,outgoingHandler,getBatchMode());
 
-        // Open WebSocket
-        websocket.openSession(this);
-
-        // Open connection
-        connection.getIOState().onOpened();
-
-        if (LOG.isDebugEnabled())
+        try
         {
-            LOG.debug("open -> {}", dump());
+            // Open WebSocket
+            websocket.openSession(this);
+
+            // Open connection
+            connection.getIOState().onOpened();
+
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("open -> {}",dump());
+            }
+        }
+        catch (Throwable t)
+        {
+            // Exception on end-user WS-Endpoint.
+            // Fast-fail & close connection with reason.
+            int statusCode = StatusCode.SERVER_ERROR;
+            if(policy.getBehavior() == WebSocketBehavior.CLIENT)
+            {
+                statusCode = StatusCode.POLICY_VIOLATION;
+            }
+            
+            close(statusCode,t.getMessage());
         }
     }
 
@@ -450,11 +462,11 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
                 List<String> values = entry.getValue();
                 if (values != null)
                 {
-                    this.parameterMap.put(entry.getKey(), values.toArray(new String[values.size()]));
+                    this.parameterMap.put(entry.getKey(),values.toArray(new String[values.size()]));
                 }
                 else
                 {
-                    this.parameterMap.put(entry.getKey(), new String[0]);
+                    this.parameterMap.put(entry.getKey(),new String[0]);
                 }
             }
         }

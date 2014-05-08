@@ -29,7 +29,7 @@ public abstract class Parser
     private State state = State.HEADER;
     private int padding;
 
-    public void parse(ByteBuffer buffer)
+    public boolean parse(ByteBuffer buffer)
     {
         while (true)
         {
@@ -38,7 +38,7 @@ public abstract class Parser
                 case HEADER:
                 {
                     if (!headerParser.parse(buffer))
-                        return;
+                        return false;
                     state = State.CONTENT;
                     break;
                 }
@@ -51,8 +51,11 @@ public abstract class Parser
                     }
                     else
                     {
-                        if (!contentParser.parse(buffer))
-                            return;
+                        ContentParser.Result result = contentParser.parse(buffer);
+                        if (result == ContentParser.Result.PENDING)
+                            return false;
+                        else if (result == ContentParser.Result.ASYNC)
+                            return true;
                     }
                     padding = headerParser.getPaddingLength();
                     state = State.PADDING;
@@ -70,7 +73,7 @@ public abstract class Parser
                     {
                         padding -= buffer.remaining();
                         buffer.position(buffer.limit());
-                        return;
+                        return false;
                     }
                 }
                 default:
@@ -96,9 +99,11 @@ public abstract class Parser
 
         public void onHeaders(int request);
 
-        public void onContent(int request, FCGI.StreamType stream, ByteBuffer buffer);
+        public boolean onContent(int request, FCGI.StreamType stream, ByteBuffer buffer);
 
         public void onEnd(int request);
+
+        public void onFailure(int request, Throwable failure);
 
         public static class Adapter implements Listener
         {
@@ -113,13 +118,20 @@ public abstract class Parser
             }
 
             @Override
-            public void onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
+            public boolean onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
             {
+                return false;
             }
 
             @Override
             public void onEnd(int request)
             {
+            }
+
+            @Override
+            public void onFailure(int request, Throwable failure)
+            {
+
             }
         }
     }

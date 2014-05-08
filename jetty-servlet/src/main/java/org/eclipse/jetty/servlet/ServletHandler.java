@@ -89,6 +89,10 @@ import org.eclipse.jetty.util.log.Logger;
  * Unless run as part of a {@link ServletContextHandler} or derivative, the {@link #initialize()}
  * method must be called manually after start().
  */
+
+/* ------------------------------------------------------------ */
+/**
+ */
 @ManagedObject("Servlet Handler")
 public class ServletHandler extends ScopedHandler
 {
@@ -107,6 +111,7 @@ public class ServletHandler extends ScopedHandler
     private boolean _filterChainsCached=true;
     private int _maxFilterChainsCacheSize=512;
     private boolean _startWithUnavailable=false;
+    private boolean _ensureDefaultServlet=true;
     private IdentityService _identityService;
 
     private ServletHolder[] _servlets=new ServletHolder[0];
@@ -153,7 +158,7 @@ public class ServletHandler extends ScopedHandler
         updateNameMappings();
         updateMappings();        
         
-        if (getServletMapping("/")==null)
+        if (getServletMapping("/")==null && _ensureDefaultServlet)
         {
             LOG.debug("Adding Default404Servlet to {}",this);
             addServletWithMapping(Default404Servlet.class,"/");
@@ -183,6 +188,26 @@ public class ServletHandler extends ScopedHandler
     }
     
     
+    /* ------------------------------------------------------------ */
+    /**
+     * @return true if ServletHandler always has a default servlet, using {@link Default404Servlet} if no other
+     * default servlet is configured.
+     */
+    public boolean isEnsureDefaultServlet()
+    {
+        return _ensureDefaultServlet;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param ensureDefaultServlet true if ServletHandler always has a default servlet, using {@link Default404Servlet} if no other
+     * default servlet is configured.
+     */
+    public void setEnsureDefaultServlet(boolean ensureDefaultServlet)
+    {
+        _ensureDefaultServlet=ensureDefaultServlet;
+    }
+
     /* ----------------------------------------------------------------- */
     @Override
     protected void start(LifeCycle l) throws Exception
@@ -379,8 +404,6 @@ public class ServletHandler extends ScopedHandler
     {
         return _servletMappings;
     }
-
-   
     
     /* ------------------------------------------------------------ */
     /**
@@ -396,9 +419,6 @@ public class ServletHandler extends ScopedHandler
         
         return _servletPathMappings.get(pathSpec);
     }
-    
-
- 
     
     /* ------------------------------------------------------------ */
     /** Get Servlets.
@@ -528,12 +548,7 @@ public class ServletHandler extends ScopedHandler
         try
         {
             if (servlet_holder==null)
-            {
-                if (getHandler()==null)
-                    notFound(request, response);
-                else
-                    nextHandle(target,baseRequest,request,response);
-            }
+                notFound(baseRequest,request, response);
             else
             {
                 // unwrap any tunnelling of base Servlet request/responses
@@ -799,7 +814,6 @@ public class ServletHandler extends ScopedHandler
 
     /* ------------------------------------------------------------ */
     /** Initialize filters and load-on-startup servlets.
-     * Called automatically from start if autoInitializeServlet is true.
      */
     public void initialize()
         throws Exception
@@ -832,7 +846,7 @@ public class ServletHandler extends ScopedHandler
             {
                 try
                 {
-                    if (servlet.getClassName() == null && servlet.getForcedPath() != null)
+                   /* if (servlet.getClassName() == null && servlet.getForcedPath() != null)
                     {
                         ServletHolder forced_holder = _servletPathMap.match(servlet.getForcedPath());
                         if (forced_holder == null || forced_holder.getClassName() == null)
@@ -840,8 +854,9 @@ public class ServletHandler extends ScopedHandler
                             mx.add(new IllegalStateException("No forced path servlet for " + servlet.getForcedPath()));
                             continue;
                         }
+                        System.err.println("ServletHandler setting forced path classname to "+forced_holder.getClassName()+ " for "+servlet.getForcedPath());
                         servlet.setClassName(forced_holder.getClassName());
-                    }
+                    }*/
                     
                     servlet.start();
                     servlet.initialize();
@@ -1511,11 +1526,11 @@ public class ServletHandler extends ScopedHandler
     }
 
     /* ------------------------------------------------------------ */
-    protected void notFound(HttpServletRequest request, HttpServletResponse response) throws IOException
+    protected void notFound(Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        if(LOG.isDebugEnabled())
-            LOG.debug("Not Found "+request.getRequestURI());
-        //Override to send an error back, eg with: response.sendError(HttpServletResponse.SC_NOT_FOUND);
+        LOG.debug("Not Found {}",request.getRequestURI());
+        if (getHandler()!=null)
+            nextHandle(URIUtil.addPaths(request.getServletPath(),request.getPathInfo()),baseRequest,request,response);
     }
 
     /* ------------------------------------------------------------ */
@@ -1615,8 +1630,7 @@ public class ServletHandler extends ScopedHandler
             // pass to next filter
             if (_filterHolder!=null)
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("call filter " + _filterHolder);
+                LOG.debug("call filter {}", _filterHolder);
                 Filter filter= _filterHolder.getFilter();
                 if (_filterHolder.isAsyncSupported())
                     filter.doFilter(request, response, _next);
@@ -1642,20 +1656,15 @@ public class ServletHandler extends ScopedHandler
             }
 
             // Call servlet
-
             HttpServletRequest srequest = (HttpServletRequest)request;
-            if (_servletHolder != null)
+            if (_servletHolder == null)
+                notFound(baseRequest, srequest, (HttpServletResponse)response);
+            else
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("call servlet " + _servletHolder);
                 _servletHolder.handle(baseRequest,request, response);
             }
-            else if (getHandler()==null)
-                notFound(srequest, (HttpServletResponse)response);
-            else
-                nextHandle(URIUtil.addPaths(srequest.getServletPath(),srequest.getPathInfo()),
-                           baseRequest,srequest,(HttpServletResponse)response);
-
         }
 
         @Override
@@ -1724,20 +1733,13 @@ public class ServletHandler extends ScopedHandler
 
             // Call servlet
             HttpServletRequest srequest = (HttpServletRequest)request;
-            if (_servletHolder != null)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("call servlet " + _servletHolder);
-                _servletHolder.handle(_baseRequest,request, response);
-            }
-            else if (getHandler()==null)
-                notFound(srequest, (HttpServletResponse)response);
+            if (_servletHolder == null)
+                notFound((request instanceof Request)?((Request)request):HttpChannel.getCurrentHttpChannel().getRequest(), srequest, (HttpServletResponse)response);
             else
             {
-                Request baseRequest=(request instanceof Request)?((Request)request):HttpChannel.getCurrentHttpChannel().getRequest();
-                nextHandle(URIUtil.addPaths(srequest.getServletPath(),srequest.getPathInfo()),
-                           baseRequest,srequest,(HttpServletResponse)response);
-            }
+                LOG.debug("call servlet {}", _servletHolder);
+                _servletHolder.handle(_baseRequest,request, response);
+            }    
         }
 
         /* ------------------------------------------------------------ */
@@ -1795,6 +1797,7 @@ public class ServletHandler extends ScopedHandler
     /* ------------------------------------------------------------ */
     public static class Default404Servlet extends HttpServlet
     {
+        @Override
         protected void doGet(HttpServletRequest req, HttpServletResponse resp)
                 throws ServletException, IOException
         {

@@ -109,6 +109,7 @@ public class SSLEngineTest
         http.getHttpConfiguration().setRequestHeaderSize(512);
         connector=new ServerConnector(server, sslContextFactory, http);
         connector.setPort(0);
+        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setSendDateHeader(false);
 
         server.addConnector(connector);
     }

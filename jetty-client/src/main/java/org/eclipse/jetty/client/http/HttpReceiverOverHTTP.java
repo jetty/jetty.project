@@ -32,12 +32,13 @@ import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.CompletableCallback;
 
 public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
 {
     private final HttpParser parser = new HttpParser(this);
+    private ByteBuffer buffer;
     private boolean shutdown;
 
     public HttpReceiverOverHTTP(HttpChannelOverHTTP channel)
@@ -58,68 +59,97 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
 
     public void receive()
     {
-        HttpConnectionOverHTTP connection = getHttpConnection();
-        EndPoint endPoint = connection.getEndPoint();
         HttpClient client = getHttpDestination().getHttpClient();
         ByteBufferPool bufferPool = client.getByteBufferPool();
-        ByteBuffer buffer = bufferPool.acquire(client.getResponseBufferSize(), true);
-        try
+        buffer = bufferPool.acquire(client.getResponseBufferSize(), true);
+        process();
+    }
+
+    private void process()
+    {
+        if (readAndParse())
         {
-            while (true)
-            {
-                // Connection may be closed in a parser callback
-                if (connection.isClosed())
-                {
-                    LOG.debug("{} closed", connection);
-                    break;
-                }
-                else
-                {
-                    int read = endPoint.fill(buffer);
-                    if (LOG.isDebugEnabled()) // Avoid boxing of variable 'read'
-                        LOG.debug("Read {} bytes from {}", read, endPoint);
-                    if (read > 0)
-                    {
-                        parse(buffer);
-                    }
-                    else if (read == 0)
-                    {
-                        fillInterested();
-                        break;
-                    }
-                    else
-                    {
-                        shutdown();
-                        break;
-                    }
-                }
-            }
-        }
-        catch (EofException x)
-        {
-            LOG.ignore(x);
-            failAndClose(x);
-        }
-        catch (Exception x)
-        {
-            LOG.debug(x);
-            failAndClose(x);
-        }
-        finally
-        {
+            HttpClient client = getHttpDestination().getHttpClient();
+            ByteBufferPool bufferPool = client.getByteBufferPool();
             bufferPool.release(buffer);
+            // Don't linger the buffer around if we are idle.
+            buffer = null;
         }
     }
 
-    private void parse(ByteBuffer buffer)
+    private boolean readAndParse()
     {
-        while (buffer.hasRemaining())
-            parser.parseNext(buffer);
+        HttpConnectionOverHTTP connection = getHttpConnection();
+        EndPoint endPoint = connection.getEndPoint();
+        ByteBuffer buffer = this.buffer;
+        while (true)
+        {
+            try
+            {
+                // Connection may be closed in a parser callback.
+                if (connection.isClosed())
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("{} closed", connection);
+                    return true;
+                }
+
+                if (!parse(buffer))
+                    return false;
+
+                int read = endPoint.fill(buffer);
+                // Avoid boxing of variable 'read'
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Read {} bytes from {}", read, endPoint);
+
+                if (read > 0)
+                {
+                    if (!parse(buffer))
+                        return false;
+                }
+                else if (read == 0)
+                {
+                    fillInterested();
+                    return true;
+                }
+                else
+                {
+                    shutdown();
+                    return true;
+                }
+            }
+            catch (Throwable x)
+            {
+                LOG.debug(x);
+                failAndClose(x);
+                return true;
+            }
+        }
+    }
+
+    /**
+     * Parses a HTTP response from the given {@code buffer}.
+     *
+     * @param buffer the response bytes
+     * @return true to indicate that the parsing may proceed (for example with another response),
+     * false to indicate that the parsing should be interrupted (and will be resumed by another thread).
+     */
+    private boolean parse(ByteBuffer buffer)
+    {
+        // Must parse even if the buffer is fully consumed, to allow the
+        // parser to advance from asynchronous content to response complete.
+        if (parser.parseNext(buffer))
+        {
+            // If the parser returns true, we need to differentiate two cases:
+            // A) the response is completed, so the parser is in START state;
+            // B) the content is handled asynchronously, so the parser is in CONTENT state.
+            return parser.isStart();
+        }
+        return true;
     }
 
     private void fillInterested()
     {
-        // TODO: do we need to call fillInterested() only if we are not failed (or we have an exchange) ?
         getHttpChannel().getHttpConnection().fillInterested();
     }
 
@@ -195,8 +225,22 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         if (exchange == null)
             return false;
 
-        responseContent(exchange, buffer);
-        return false;
+        CompletableCallback callback = new CompletableCallback()
+        {
+            @Override
+            public void resume()
+            {
+                LOG.debug("Content consumed asynchronously, resuming processing");
+                process();
+            }
+
+            public void abort(Throwable x)
+            {
+                failAndClose(x);
+            }
+        };
+        responseContent(exchange, buffer, callback);
+        return callback.tryComplete();
     }
 
     @Override

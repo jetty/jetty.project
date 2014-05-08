@@ -41,14 +41,16 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.InputStreamContentProvider;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -79,7 +81,6 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
  */
 public class ProxyServlet extends HttpServlet
 {
-    protected static final String ASYNC_CONTEXT = ProxyServlet.class.getName() + ".asyncContext";
     private static final Set<String> HOP_HEADERS = new HashSet<>();
     static
     {
@@ -174,14 +175,21 @@ public class ProxyServlet extends HttpServlet
         }
     }
 
+    protected HttpClient getHttpClient()
+    {
+        return _client;
+    }
+
     /**
      * @return a logger instance with a name derived from this servlet's name.
      */
     protected Logger createLogger()
     {
-        String name = getServletConfig().getServletName();
-        name = name.replace('-', '.');
-        return Log.getLogger(name);
+        String servletName = getServletConfig().getServletName();
+        servletName = servletName.replace('-', '.');
+        if (!servletName.startsWith(getClass().getPackage().getName()))
+            servletName = getClass().getName() + "." + servletName;
+        return Log.getLogger(servletName);
     }
 
     public void destroy()
@@ -390,26 +398,25 @@ public class ProxyServlet extends HttpServlet
         }
 
         final Request proxyRequest = _client.newRequest(rewrittenURI)
-                .method(HttpMethod.fromString(request.getMethod()))
+                .method(request.getMethod())
                 .version(HttpVersion.fromString(request.getProtocol()));
 
         // Copy headers
-        boolean hasContent = false;
+        boolean hasContent = request.getContentLength() > 0 || request.getContentType() != null;
         for (Enumeration<String> headerNames = request.getHeaderNames(); headerNames.hasMoreElements();)
         {
             String headerName = headerNames.nextElement();
             String lowerHeaderName = headerName.toLowerCase(Locale.ENGLISH);
 
-            // Remove hop-by-hop headers
-            if (HOP_HEADERS.contains(lowerHeaderName))
-                continue;
+            if (HttpHeader.TRANSFER_ENCODING.is(headerName))
+                hasContent = true;
 
             if (_hostHeader != null && HttpHeader.HOST.is(headerName))
                 continue;
 
-            if (request.getContentLength() > 0 || request.getContentType() != null ||
-                    HttpHeader.TRANSFER_ENCODING.is(headerName))
-                hasContent = true;
+            // Remove hop-by-hop headers
+            if (HOP_HEADERS.contains(lowerHeaderName))
+                continue;
 
             for (Enumeration<String> headerValues = request.getHeaders(headerName); headerValues.hasMoreElements();)
             {
@@ -427,29 +434,13 @@ public class ProxyServlet extends HttpServlet
         addViaHeader(proxyRequest);
         addXForwardedHeaders(proxyRequest, request);
 
-        if (hasContent)
-        {
-            proxyRequest.content(new InputStreamContentProvider(request.getInputStream())
-            {
-                @Override
-                public long getLength()
-                {
-                    return request.getContentLength();
-                }
-
-                @Override
-                protected ByteBuffer onRead(byte[] buffer, int offset, int length)
-                {
-                    _log.debug("{} proxying content to upstream: {} bytes", requestId, length);
-                    return super.onRead(buffer, offset, length);
-                }
-            });
-        }
-
         final AsyncContext asyncContext = request.startAsync();
         // We do not timeout the continuation, but the proxy request
         asyncContext.setTimeout(0);
-        request.setAttribute(ASYNC_CONTEXT, asyncContext);
+        proxyRequest.timeout(getTimeout(), TimeUnit.MILLISECONDS);
+
+        if (hasContent)
+            proxyRequest.content(proxyRequestContent(proxyRequest, request));
 
         customizeProxyRequest(proxyRequest, request);
 
@@ -486,8 +477,38 @@ public class ProxyServlet extends HttpServlet
                     proxyRequest.getHeaders().toString().trim());
         }
 
-        proxyRequest.timeout(getTimeout(), TimeUnit.MILLISECONDS);
         proxyRequest.send(new ProxyResponseListener(request, response));
+    }
+
+    protected ContentProvider proxyRequestContent(final Request proxyRequest, final HttpServletRequest request) throws IOException
+    {
+        return new InputStreamContentProvider(request.getInputStream())
+        {
+            @Override
+            public long getLength()
+            {
+                return request.getContentLength();
+            }
+
+            @Override
+            protected ByteBuffer onRead(byte[] buffer, int offset, int length)
+            {
+                _log.debug("{} proxying content to upstream: {} bytes", getRequestId(request), length);
+                return super.onRead(buffer, offset, length);
+            }
+
+            @Override
+            protected void onReadFailure(Throwable failure)
+            {
+                onClientRequestFailure(proxyRequest, request, failure);
+            }
+        };
+    }
+
+    protected void onClientRequestFailure(Request proxyRequest, HttpServletRequest request, Throwable failure)
+    {
+        _log.debug(getRequestId(request) + " client request failure", failure);
+        proxyRequest.abort(failure);
     }
 
     protected void onRewriteFailed(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -510,6 +531,10 @@ public class ProxyServlet extends HttpServlet
 
     protected void onResponseHeaders(HttpServletRequest request, HttpServletResponse response, Response proxyResponse)
     {
+        // Clear the response headers in case it comes with predefined ones.
+        for (String name : response.getHeaderNames())
+            response.setHeader(name, null);
+
         for (HttpField field : proxyResponse.getHeaders())
         {
             String headerName = field.getName();
@@ -525,17 +550,25 @@ public class ProxyServlet extends HttpServlet
         }
     }
 
-    protected void onResponseContent(HttpServletRequest request, HttpServletResponse response, Response proxyResponse, byte[] buffer, int offset, int length) throws IOException
+    protected void onResponseContent(HttpServletRequest request, HttpServletResponse response, Response proxyResponse, byte[] buffer, int offset, int length, Callback callback)
     {
-        response.getOutputStream().write(buffer, offset, length);
-        _log.debug("{} proxying content to downstream: {} bytes", getRequestId(request), length);
+        try
+        {
+            _log.debug("{} proxying content to downstream: {} bytes", getRequestId(request), length);
+            response.getOutputStream().write(buffer, offset, length);
+            callback.succeeded();
+        }
+        catch (Throwable x)
+        {
+            callback.failed(x);
+        }
     }
 
     protected void onResponseSuccess(HttpServletRequest request, HttpServletResponse response, Response proxyResponse)
     {
-        AsyncContext asyncContext = (AsyncContext)request.getAttribute(ASYNC_CONTEXT);
-        asyncContext.complete();
         _log.debug("{} proxying successful", getRequestId(request));
+        AsyncContext asyncContext = request.getAsyncContext();
+        asyncContext.complete();
     }
 
     protected void onResponseFailure(HttpServletRequest request, HttpServletResponse response, Response proxyResponse, Throwable failure)
@@ -547,9 +580,10 @@ public class ProxyServlet extends HttpServlet
                 response.setStatus(HttpServletResponse.SC_GATEWAY_TIMEOUT);
             else
                 response.setStatus(HttpServletResponse.SC_BAD_GATEWAY);
+            response.setHeader(HttpHeader.CONNECTION.asString(), HttpHeaderValue.CLOSE.asString());
+            AsyncContext asyncContext = request.getAsyncContext();
+            asyncContext.complete();
         }
-        AsyncContext asyncContext = (AsyncContext)request.getAttribute(ASYNC_CONTEXT);
-        asyncContext.complete();
     }
 
     protected int getRequestId(HttpServletRequest request)
@@ -597,59 +631,66 @@ public class ProxyServlet extends HttpServlet
     }
 
     /**
-     * Transparent Proxy.
-     * <p/>
-     * This convenience extension to ProxyServlet configures the servlet as a transparent proxy.
-     * The servlet is configured with init parameters:
+     * This convenience extension to {@link ProxyServlet} configures the servlet as a transparent proxy.
+     * This servlet is configured with the following init parameters:
      * <ul>
-     * <li>proxyTo - a URI like http://host:80/context to which the request is proxied.
-     * <li>prefix - a URI prefix that is striped from the start of the forwarded URI.
+     * <li>proxyTo - a mandatory URI like http://host:80/context to which the request is proxied.</li>
+     * <li>prefix - an optional URI prefix that is stripped from the start of the forwarded URI.</li>
      * </ul>
-     * For example, if a request is received at /foo/bar and the 'proxyTo' parameter is "http://host:80/context"
+     * <p/>
+     * For example, if a request is received at "/foo/bar", the 'proxyTo' parameter is "http://host:80/context"
      * and the 'prefix' parameter is "/foo", then the request would be proxied to "http://host:80/context/bar".
      */
     public static class Transparent extends ProxyServlet
     {
+        private final TransparentDelegate delegate = new TransparentDelegate(this);
+
+        @Override
+        public void init(ServletConfig config) throws ServletException
+        {
+            super.init(config);
+            delegate.init(config);
+        }
+
+        @Override
+        protected URI rewriteURI(HttpServletRequest request)
+        {
+            return delegate.rewriteURI(request);
+        }
+    }
+
+    protected static class TransparentDelegate
+    {
+        private final ProxyServlet proxyServlet;
         private String _proxyTo;
         private String _prefix;
 
-        public Transparent()
+        protected TransparentDelegate(ProxyServlet proxyServlet)
         {
+            this.proxyServlet = proxyServlet;
         }
 
-        public Transparent(String proxyTo, String prefix)
+        protected void init(ServletConfig config) throws ServletException
         {
-            _proxyTo = URI.create(proxyTo).normalize().toString();
-            _prefix = URI.create(prefix).normalize().toString();
-        }
-
-        @Override
-        public void init() throws ServletException
-        {
-            super.init();
-
-            ServletConfig config = getServletConfig();
-
-            String prefix = config.getInitParameter("prefix");
-            _prefix = prefix == null ? _prefix : prefix;
-
-            // Adjust prefix value to account for context path
-            String contextPath = getServletContext().getContextPath();
-            _prefix = _prefix == null ? contextPath : (contextPath + _prefix);
-
-            String proxyTo = config.getInitParameter("proxyTo");
-            _proxyTo = proxyTo == null ? _proxyTo : proxyTo;
-
+            _proxyTo = config.getInitParameter("proxyTo");
             if (_proxyTo == null)
                 throw new UnavailableException("Init parameter 'proxyTo' is required.");
 
-            if (!_prefix.startsWith("/"))
-                throw new UnavailableException("Init parameter 'prefix' parameter must start with a '/'.");
+            String prefix = config.getInitParameter("prefix");
+            if (prefix != null)
+            {
+                if (!prefix.startsWith("/"))
+                    throw new UnavailableException("Init parameter 'prefix' must start with a '/'.");
+                _prefix = prefix;
+            }
 
-            _log.debug(config.getServletName() + " @ " + _prefix + " to " + _proxyTo);
+            // Adjust prefix value to account for context path
+            String contextPath = config.getServletContext().getContextPath();
+            _prefix = _prefix == null ? contextPath : (contextPath + _prefix);
+
+            proxyServlet._log.debug(config.getServletName() + " @ " + _prefix + " to " + _proxyTo);
         }
 
-        @Override
         protected URI rewriteURI(HttpServletRequest request)
         {
             String path = request.getRequestURI();
@@ -668,7 +709,7 @@ public class ProxyServlet extends HttpServlet
                 uri.append("?").append(query);
             URI rewrittenURI = URI.create(uri.toString()).normalize();
 
-            if (!validateDestination(rewrittenURI.getHost(), rewrittenURI.getPort()))
+            if (!proxyServlet.validateDestination(rewrittenURI.getHost(), rewrittenURI.getPort()))
                 return null;
 
             return rewrittenURI;
@@ -726,7 +767,7 @@ public class ProxyServlet extends HttpServlet
         }
 
         @Override
-        public void onContent(Response proxyResponse, ByteBuffer content)
+        public void onContent(final Response proxyResponse, ByteBuffer content, final Callback callback)
         {
             byte[] buffer;
             int offset;
@@ -743,31 +784,30 @@ public class ProxyServlet extends HttpServlet
                 offset = 0;
             }
 
-            try
+            onResponseContent(request, response, proxyResponse, buffer, offset, length, new Callback()
             {
-                onResponseContent(request, response, proxyResponse, buffer, offset, length);
-            }
-            catch (IOException x)
-            {
-                proxyResponse.abort(x);
-            }
-        }
+                @Override
+                public void succeeded()
+                {
+                    callback.succeeded();
+                }
 
-        @Override
-        public void onSuccess(Response proxyResponse)
-        {
-            onResponseSuccess(request, response, proxyResponse);
-        }
-
-        @Override
-        public void onFailure(Response proxyResponse, Throwable failure)
-        {
-            onResponseFailure(request, response, proxyResponse, failure);
+                @Override
+                public void failed(Throwable x)
+                {
+                    callback.failed(x);
+                    proxyResponse.abort(x);
+                }
+            });
         }
 
         @Override
         public void onComplete(Result result)
         {
+            if (result.isSucceeded())
+                onResponseSuccess(request, response, result.getResponse());
+            else
+                onResponseFailure(request, response, result.getResponse(), result.getFailure());
             _log.debug("{} proxying complete", getRequestId(request));
         }
     }

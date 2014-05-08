@@ -191,6 +191,12 @@
       <version>${project.version}</version>
       <scope>provided</scope>
     </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-quickstart</artifactId>
+      <version>${project.version}</version>
+      <scope>provided</scope>
+    </dependency>
     <!-- dependencies that jetty-all needs (some optional) -->
     <dependency>
       <groupId>javax.websocket</groupId>

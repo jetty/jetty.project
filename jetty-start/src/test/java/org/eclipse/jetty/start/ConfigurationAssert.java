@@ -25,6 +25,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -52,7 +53,7 @@ public class ConfigurationAssert
     {
         File testResourcesDir = MavenTestingUtils.getTestResourcesDir();
         File file = MavenTestingUtils.getTestResourceFile(filename);
-        TextFile textFile = new TextFile(file);
+        TextFile textFile = new TextFile(file.toPath());
 
         // Validate XMLs (order is important)
         List<String> expectedXmls = new ArrayList<>();
@@ -64,7 +65,7 @@ public class ConfigurationAssert
             }
         }
         List<String> actualXmls = new ArrayList<>();
-        for (File xml : args.getXmlFiles())
+        for (Path xml : args.getXmlFiles())
         {
             actualXmls.add(shorten(baseHome,xml,testResourcesDir));
         }
@@ -82,7 +83,7 @@ public class ConfigurationAssert
         List<String> actualLibs = new ArrayList<>();
         for (File path : args.getClasspath())
         {
-            actualLibs.add(shorten(baseHome,path,testResourcesDir));
+            actualLibs.add(shorten(baseHome,path.toPath(),testResourcesDir));
         }
         assertContainsUnordered("Libs",expectedLibs,actualLibs);
 
@@ -99,7 +100,8 @@ public class ConfigurationAssert
         for (Prop prop : args.getProperties())
         {
             String name = prop.key;
-            if ("jetty.home".equals(name) || "jetty.base".equals(name) || prop.origin.equals(Props.ORIGIN_SYSPROP))
+            if ("jetty.home".equals(name) || "jetty.base".equals(name) ||
+                "user.dir".equals(name) || prop.origin.equals(Props.ORIGIN_SYSPROP))
             {
                 // strip these out from assertion, to make assertions easier.
                 continue;
@@ -147,7 +149,7 @@ public class ConfigurationAssert
         assertContainsUnordered("Files/Dirs",expectedFiles,actualFiles);
     }
 
-    private static String shorten(BaseHome baseHome, File path, File testResourcesDir)
+    private static String shorten(BaseHome baseHome, Path path, File testResourcesDir)
     {
         String value = baseHome.toShortForm(path);
         if (value.startsWith(testResourcesDir.getAbsolutePath()))
@@ -206,7 +208,7 @@ public class ConfigurationAssert
         }
     }
 
-    private static void assertOrdered(String msg, List<String> expectedList, List<String> actualList)
+    public static void assertOrdered(String msg, List<String> expectedList, List<String> actualList)
     {
         // same size?
         boolean mismatch = expectedList.size() != actualList.size();

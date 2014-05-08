@@ -1214,20 +1214,17 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             _protectedTargets = null;
             return;
         }
-
-        _protectedTargets = new String[targets.length];
-        System.arraycopy(targets, 0, _protectedTargets, 0, targets.length);
+        
+        _protectedTargets = Arrays.copyOf(targets, targets.length);
     }
 
     /* ------------------------------------------------------------ */
-    public String[] getProtectedTargets ()
+    public String[] getProtectedTargets()
     {
         if (_protectedTargets == null)
             return null;
 
-        String[] tmp = new String[_protectedTargets.length];
-        System.arraycopy(_protectedTargets, 0, tmp, 0, _protectedTargets.length);
-        return tmp;
+        return Arrays.copyOf(_protectedTargets, _protectedTargets.length);
     }
 
 
@@ -1384,8 +1381,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
     /* ------------------------------------------------------------ */
     /**
-     * @param base
-     *            The resourceBase to set.
+     * Set the base resource for this context.
+     * @param base The resource used as the base for all static content of this context.
+     * @see #setResourceBase(String)
      */
     public void setBaseResource(Resource base)
     {
@@ -1393,9 +1391,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @param resourceBase
-     *            The base resource as a string.
+    /** 
+     * Set the base resource for this context.
+     * @param resourceBase A string representing the base resource for the context. Any string accepted 
+     * by {@link Resource#newResource(String)} may be passed and the call is equivalent to 
+     * <code>setBaseResource(newResource(resourceBase));</code>
      */
     public void setResourceBase(String resourceBase)
     {

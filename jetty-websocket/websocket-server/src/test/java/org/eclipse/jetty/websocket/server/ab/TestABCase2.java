@@ -50,17 +50,12 @@ public class TestABCase2 extends AbstractABCase
 
         WebSocketFrame expect = new PongFrame();
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
@@ -89,17 +84,12 @@ public class TestABCase2 extends AbstractABCase
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
@@ -128,18 +118,13 @@ public class TestABCase2 extends AbstractABCase
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.SLOW);
             fuzzer.setSlowSendSegmentSize(5);
             fuzzer.send(send);
             fuzzer.expect(expect);
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
@@ -159,17 +144,12 @@ public class TestABCase2 extends AbstractABCase
         expect.add(new PongFrame().setPayload(copyOf(payload)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
@@ -179,8 +159,7 @@ public class TestABCase2 extends AbstractABCase
     @Test
     public void testCase2_3() throws Exception
     {
-        byte payload[] = new byte[]
-        { 0x00, (byte)0xFF, (byte)0xFE, (byte)0xFD, (byte)0xFC, (byte)0xFB, 0x00, (byte)0xFF };
+        byte payload[] = new byte[] { 0x00, (byte)0xFF, (byte)0xFE, (byte)0xFD, (byte)0xFC, (byte)0xFB, 0x00, (byte)0xFF };
 
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new PingFrame().setPayload(payload));
@@ -190,17 +169,12 @@ public class TestABCase2 extends AbstractABCase
         expect.add(new PongFrame().setPayload(copyOf(payload)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
@@ -221,17 +195,12 @@ public class TestABCase2 extends AbstractABCase
         expect.add(new PongFrame().setPayload(copyOf(payload)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
@@ -241,32 +210,26 @@ public class TestABCase2 extends AbstractABCase
     @Test
     public void testCase2_5() throws Exception
     {
-        try(StacklessLogging scope = new StacklessLogging(Parser.class))
+        try (StacklessLogging scope = new StacklessLogging(Parser.class))
         {
             byte payload[] = new byte[126]; // intentionally too big
             Arrays.fill(payload,(byte)'5');
             ByteBuffer buf = ByteBuffer.wrap(payload);
-    
+
             List<WebSocketFrame> send = new ArrayList<>();
             // trick websocket frame into making extra large payload for ping
             send.add(new BadFrame(OpCode.PING).setPayload(buf));
             send.add(new CloseInfo(StatusCode.NORMAL,"Test 2.5").asFrame());
-    
+
             List<WebSocketFrame> expect = new ArrayList<>();
             expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
-    
-            Fuzzer fuzzer = new Fuzzer(this);
-            try
+
+            try (Fuzzer fuzzer = new Fuzzer(this))
             {
                 fuzzer.connect();
                 fuzzer.setSendMode(Fuzzer.SendMode.BULK);
                 fuzzer.send(send);
                 fuzzer.expect(expect);
-                fuzzer.expectServerDisconnect(Fuzzer.DisconnectMode.CLEAN);
-            }
-            finally
-            {
-                fuzzer.close();
             }
         }
     }
@@ -288,18 +251,13 @@ public class TestABCase2 extends AbstractABCase
         expect.add(new PongFrame().setPayload(copyOf(payload)));
         expect.add(new CloseInfo(StatusCode.NORMAL,"Test 2.6").asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.SLOW);
             fuzzer.setSlowSendSegmentSize(1);
             fuzzer.send(send);
             fuzzer.expect(expect);
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
@@ -316,17 +274,12 @@ public class TestABCase2 extends AbstractABCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
@@ -343,17 +296,12 @@ public class TestABCase2 extends AbstractABCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
@@ -372,17 +320,12 @@ public class TestABCase2 extends AbstractABCase
         expect.add(new PongFrame().setPayload("our ping")); // our pong
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 }

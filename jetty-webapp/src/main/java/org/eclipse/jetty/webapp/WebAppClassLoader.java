@@ -242,7 +242,11 @@ public class WebAppClassLoader extends URLClassLoader
                 else if (resource.isDirectory())
                     addURL(resource.getURL());
                 else
-                    throw new IllegalArgumentException("!file: "+resource);
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Check file exists and is not nested jar: "+resource);
+                    throw new IllegalArgumentException("File not resolvable or incompatible with URLClassloader: "+resource);
+                }
             }
         }
     }

@@ -20,7 +20,6 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.util.Objects;
-
 import javax.servlet.ReadListener;
 import javax.servlet.ServletInputStream;
 
@@ -288,6 +287,14 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
         }
     }
 
+    public boolean isAsync()
+    {
+        synchronized (lock())
+        {
+            return _contentState==ASYNC;
+        }
+    }
+    
     /**
      * @return whether an EOF has been detected, even though there may be content to consume.
      */
@@ -355,7 +362,7 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
     {
         synchronized (lock())
         {
-            if (_onError == null)
+            if (_onError != null)
                 LOG.warn(x);
             else
                 _onError = x;
@@ -436,6 +443,7 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
             input.blockForContent();
         }
 
+        @Override
         public String toString()
         {
             return "STREAM";
@@ -471,6 +479,7 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
             return true;
         }
 
+        @Override
         public String toString()
         {
             return "EARLY_EOF";
@@ -485,6 +494,7 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
             return true;
         }
 
+        @Override
         public String toString()
         {
             return "EOF";

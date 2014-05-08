@@ -36,6 +36,7 @@ import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -115,6 +116,12 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
         this.policy = WebSocketPolicy.newClientPolicy();
         this.bufferPool = bufferPool;
         this.extensionRegistry = new WebSocketExtensionFactory(policy,bufferPool);
+        
+        // Bug #431459 - unregistering compression extensions till they are more stable
+        this.extensionRegistry.unregister("deflate-frame");
+        this.extensionRegistry.unregister("permessage-deflate");
+        this.extensionRegistry.unregister("x-webkit-deflate-frame");
+        
         this.masker = new RandomMasker();
         this.eventDriverFactory = new EventDriverFactory(policy);
         this.sessionFactory = new WebSocketSessionFactory(this);
@@ -430,30 +437,17 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
             threadPool.setName(name);
             threadPool.setDaemon(daemon);
             executor = threadPool;
-            addBean(executor,true);
+            addManaged(threadPool);
         }
         else
         {
             addBean(executor,false);
         }
 
-        if (connectionManager != null)
-        {
-            return;
-        }
-        try
+        if (connectionManager == null)
         {
             connectionManager = newConnectionManager();
-            addBean(connectionManager);
-            connectionManager.start();
-        }
-        catch (IOException e)
-        {
-            throw e;
-        }
-        catch (Exception e)
-        {
-            throw new IOException(e);
+            addManaged(connectionManager);
         }
     }
 

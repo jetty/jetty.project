@@ -38,8 +38,11 @@ import org.eclipse.jetty.util.log.Logger;
  * <p>
  * When a {@link LifeCycle} bean is added without a managed state being specified the state is determined heuristically:
  * <ul>
- *   <li>If when added, a bean is already started, then it is assumed to be an unmanaged bean.
- *   <li>If when added, a bean is not started, then it is added in Auto state.
+ *   <li>If the added bean is running, it will be added as an unmanaged bean.
+ *   <li>If the added bean is !running and the container is !running, it will be added as an AUTO bean (see below).
+ *   <li>If the added bean is !running and the container is starting, it will be added as an managed bean and will be started (this handles the frequent case of 
+ *   new beans added during calls to doStart).
+ *   <li>If the added bean is !running and the container is started, it will be added as an unmanaged bean.
  * </ul>
  * When the container is started, then all contained managed beans will also be started.  Any contained Auto beans 
  * will be check for their status and if already started will be switched unmanaged beans, else they will be 
@@ -64,13 +67,17 @@ import org.eclipse.jetty.util.log.Logger;
  *   +? referenced AUTO object that could become MANAGED or UNMANAGED.
  * </pre>
  */
+
+/* ------------------------------------------------------------ */
+/**
+ */
 @ManagedObject("Implementation of Container and LifeCycle")
 public class ContainerLifeCycle extends AbstractLifeCycle implements Container, Destroyable, Dumpable
 {
     private static final Logger LOG = Log.getLogger(ContainerLifeCycle.class);
     private final List<Bean> _beans = new CopyOnWriteArrayList<>();
     private final List<Container.Listener> _listeners = new CopyOnWriteArrayList<>();
-    private boolean _started = false;
+    private boolean _doStarted = false;
 
 
     public ContainerLifeCycle()
@@ -84,7 +91,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
     protected void doStart() throws Exception
     {
         // indicate that we are started, so that addBean will start other beans added.
-        _started = true;
+        _doStarted = true;
 
         // start our managed and auto beans
         for (Bean b : _beans)
@@ -142,7 +149,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
     @Override
     protected void doStop() throws Exception
     {
-        _started = false;
+        _doStarted = false;
         super.doStop();
         List<Bean> reverse = new ArrayList<>(_beans);
         Collections.reverse(reverse);
@@ -267,7 +274,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
                 case MANAGED:
                     manage(new_bean);
 
-                    if (_started)
+                    if (isStarting() && _doStarted)
                     {
                         LifeCycle l = (LifeCycle)o;
                         if (!l.isRunning())
@@ -279,16 +286,20 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
                     if (o instanceof LifeCycle)
                     {
                         LifeCycle l = (LifeCycle)o;
-                        if (_started)
+                        if (isStarting())
                         {
                             if (l.isRunning())
                                 unmanage(new_bean);
-                            else
+                            else if (_doStarted)
                             {
                                 manage(new_bean);
                                 start(l);
                             }
+                            else
+                                new_bean._managed=Managed.AUTO;      
                         }
+                        else if (isStarted())
+                            unmanage(new_bean);
                         else
                             new_bean._managed=Managed.AUTO;
                     }
@@ -315,6 +326,31 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
     }
 
     
+    /* ------------------------------------------------------------ */
+    /** Add a managed lifecycle.
+     * <p>This is a conveniance method that uses addBean(lifecycle,true)
+     * and then ensures that the added bean is started iff this container
+     * is running.  Exception from nested calls to start are caught and 
+     * wrapped as RuntimeExceptions
+     * @param lifecycle
+     */
+    public void addManaged(LifeCycle lifecycle)
+    {
+        addBean(lifecycle,true);
+        try
+        {
+            if (isRunning() && !lifecycle.isRunning())
+                start(lifecycle);
+        }
+        catch (RuntimeException | Error e)
+        {
+            throw e;
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
 
     @Override
     public void addEventListener(Container.Listener listener)

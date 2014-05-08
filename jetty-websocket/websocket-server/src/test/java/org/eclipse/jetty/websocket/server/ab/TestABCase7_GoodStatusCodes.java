@@ -93,18 +93,13 @@ public class TestABCase7_GoodStatusCodes extends AbstractABCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseFrame().setPayload(clone(payload)));
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
             fuzzer.expectNoMoreFrames();
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 
@@ -125,18 +120,13 @@ public class TestABCase7_GoodStatusCodes extends AbstractABCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseFrame().setPayload(clone(payload)));
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
+        try(Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
             fuzzer.expect(expect);
             fuzzer.expectNoMoreFrames();
-        }
-        finally
-        {
-            fuzzer.close();
         }
     }
 }

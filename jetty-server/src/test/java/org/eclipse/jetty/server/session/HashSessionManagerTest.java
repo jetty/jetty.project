@@ -23,6 +23,7 @@ import java.io.File;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.After;
@@ -94,6 +95,7 @@ public class HashSessionManagerTest
     public void testHashSession() throws Exception
     {
         File testDir = MavenTestingUtils.getTargetTestingDir("saved");
+        IO.delete(testDir);
         testDir.mkdirs();
         
         Server server = new Server();
@@ -109,9 +111,11 @@ public class HashSessionManagerTest
         AbstractSessionIdManager idManager = new HashSessionIdManager();
         idManager.setWorkerName("foo");
         manager.setSessionIdManager(idManager);
+        server.setSessionIdManager(idManager);
         
-        idManager.start();
+        server.start();
         manager.start();
+        
         
         HashedSession session = (HashedSession)manager.newHttpSession(new Request(null, null));
         String sessionId = session.getId();
@@ -120,14 +124,12 @@ public class HashSessionManagerTest
         session.setAttribute("two", new Integer(2));    
         
         //stop will persist sessions
-        idManager.stop();
         manager.setMaxInactiveInterval(30); //change max inactive interval for *new* sessions
         manager.stop();
         
         Assert.assertTrue("File should exist!", new File(testDir, session.getId()).exists());
         
         //start will restore sessions
-        idManager.start();
         manager.start();
         
         HashedSession restoredSession = (HashedSession)manager.getSession(sessionId);
@@ -138,5 +140,7 @@ public class HashSessionManagerTest
         
         Assert.assertEquals(1, ((Integer)o).intValue());
         Assert.assertEquals(5, restoredSession.getMaxInactiveInterval());     
+        
+        server.stop();
     }
 }

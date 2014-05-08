@@ -69,7 +69,7 @@ public class HttpClientTransportOverFCGI extends AbstractHttpClientTransport
     public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
     {
         HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
-        HttpConnectionOverFCGI connection = new HttpConnectionOverFCGI(endPoint, destination);
+        HttpConnectionOverFCGI connection = new HttpConnectionOverFCGI(endPoint, destination, isMultiplexed());
         LOG.debug("Created {}", connection);
         @SuppressWarnings("unchecked")
         Promise<Connection> promise = (Promise<Connection>)context.get(HTTP_CONNECTION_PROMISE_CONTEXT_KEY);

@@ -21,6 +21,7 @@ package org.eclipse.jetty.spdy.parser;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.zip.ZipException;
 
 import org.eclipse.jetty.spdy.CompressionDictionary;
@@ -114,16 +115,14 @@ public abstract class HeadersBlockParser
             int needed = length - accumulated;
             if (remaining < needed)
             {
-                byte[] local = new byte[accumulated + remaining];
-                System.arraycopy(data, 0, local, 0, accumulated);
+                byte[] local = Arrays.copyOf(data,accumulated + remaining);
                 buffer.get(local, accumulated, remaining);
                 data = local;
                 return false;
             }
             else
             {
-                byte[] local = new byte[length];
-                System.arraycopy(data, 0, local, 0, accumulated);
+                byte[] local = Arrays.copyOf(data,length);
                 buffer.get(local, accumulated, needed);
                 data = local;
                 return true;
@@ -199,8 +198,7 @@ public abstract class HeadersBlockParser
                         else
                         {
                             // Last pass needed to decompress, merge decompressed bytes
-                            byte[] result = new byte[decompressed.length + count];
-                            System.arraycopy(decompressed, 0, result, 0, decompressed.length);
+                            byte[] result = Arrays.copyOf(decompressed,decompressed.length+count);
                             System.arraycopy(buffer, 0, result, decompressed.length, count);
                             return ByteBuffer.wrap(result);
                         }
@@ -214,8 +212,7 @@ public abstract class HeadersBlockParser
                         }
                         else
                         {
-                            byte[] result = new byte[decompressed.length + buffer.length];
-                            System.arraycopy(decompressed, 0, result, 0, decompressed.length);
+                            byte[] result = Arrays.copyOf(decompressed,decompressed.length+buffer.length);
                             System.arraycopy(buffer, 0, result, decompressed.length, buffer.length);
                             decompressed = result;
                         }

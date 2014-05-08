@@ -111,16 +111,17 @@ public class ClientParserTest
         ByteBufferPool byteBufferPool = new MappedByteBufferPool();
         ServerGenerator generator = new ServerGenerator(byteBufferPool);
         Generator.Result result1 = generator.generateResponseHeaders(id, 200, "OK", fields, null);
-        Generator.Result result2 = generator.generateResponseContent(id, null, true, null);
+        Generator.Result result2 = generator.generateResponseContent(id, null, true, false, null);
 
         final AtomicInteger verifier = new AtomicInteger();
         ClientParser parser = new ClientParser(new ClientParser.Listener.Adapter()
         {
             @Override
-            public void onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
+            public boolean onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
             {
                 Assert.assertEquals(id, request);
                 verifier.addAndGet(2);
+                return false;
             }
 
             @Override
@@ -162,17 +163,18 @@ public class ClientParserTest
         ByteBufferPool byteBufferPool = new MappedByteBufferPool();
         ServerGenerator generator = new ServerGenerator(byteBufferPool);
         Generator.Result result1 = generator.generateResponseHeaders(id, code, "OK", fields, null);
-        Generator.Result result2 = generator.generateResponseContent(id, content, true, null);
+        Generator.Result result2 = generator.generateResponseContent(id, content, true, false, null);
 
         final AtomicInteger verifier = new AtomicInteger();
         ClientParser parser = new ClientParser(new ClientParser.Listener.Adapter()
         {
             @Override
-            public void onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
+            public boolean onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
             {
                 Assert.assertEquals(id, request);
                 Assert.assertEquals(contentLength, buffer.remaining());
                 verifier.addAndGet(2);
+                return false;
             }
 
             @Override
@@ -214,17 +216,18 @@ public class ClientParserTest
         ByteBufferPool byteBufferPool = new MappedByteBufferPool();
         ServerGenerator generator = new ServerGenerator(byteBufferPool);
         Generator.Result result1 = generator.generateResponseHeaders(id, code, "OK", fields, null);
-        Generator.Result result2 = generator.generateResponseContent(id, content, true, null);
+        Generator.Result result2 = generator.generateResponseContent(id, content, true, false, null);
 
         final AtomicInteger totalLength = new AtomicInteger();
         final AtomicBoolean verifier = new AtomicBoolean();
         ClientParser parser = new ClientParser(new ClientParser.Listener.Adapter()
         {
             @Override
-            public void onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
+            public boolean onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
             {
                 Assert.assertEquals(id, request);
                 totalLength.addAndGet(buffer.remaining());
+                return false;
             }
 
             @Override

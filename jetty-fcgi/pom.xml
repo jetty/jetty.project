@@ -14,10 +14,7 @@
 
     <modules>
         <module>fcgi-client</module>
-        <!--<module>fcgi-http-client-transport</module>-->
         <module>fcgi-server</module>
-        <!--<module>fcgi-proxy</module>-->
-        <!--<module>fcgi-distribution</module>-->
     </modules>
 
     <dependencies>

@@ -93,7 +93,6 @@ public class SlowClientWithPipelinedRequestTest
                     throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
-                System.err.println("target = " + target);
                 if ("/content".equals(target))
                 {
                     // We simulate what the DefaultServlet does, bypassing the blocking

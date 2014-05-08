@@ -36,18 +36,18 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
-import org.ops4j.pax.exam.junit.Configuration;
-import org.ops4j.pax.exam.junit.JUnit4TestRunner;
+import org.ops4j.pax.exam.Configuration;
+import org.ops4j.pax.exam.junit.PaxExam;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 
 /**
  * SPDY setup.
  */
-@RunWith(JUnit4TestRunner.class)
+@RunWith(PaxExam.class)
 public class TestJettyOSGiBootSpdy
 {
-    private static final boolean LOGGING_ENABLED = false;
+    private static final String LOG_LEVEL = "WARN";
     
     private static final String JETTY_SPDY_PORT = "jetty.spdy.port";
 
@@ -60,31 +60,14 @@ public class TestJettyOSGiBootSpdy
     public Option[] config()
     {
         ArrayList<Option> options = new ArrayList<Option>();
-
-        TestOSGiUtil.addMoreOSGiContainers(options);
-
-      
         options.addAll(TestJettyOSGiBootWithJsp.configureJettyHomeAndPort("jetty-spdy.xml"));
         options.addAll(TestJettyOSGiBootCore.coreJettyDependencies());
         options.addAll(spdyJettyDependencies());
         options.add(CoreOptions.junitBundles());
         options.addAll(TestJettyOSGiBootCore.httpServiceJetty());
-        
-        String logLevel = "WARN";
-        
-        // Enable Logging
-        if (LOGGING_ENABLED)
-            logLevel = "INFO";
-        
-
-        options.addAll(Arrays.asList(options(
-                                             // install log service using pax runners profile abstraction (there
-                                             // are more profiles, like DS)
-                                             // logProfile(),
-                                             // this is how you set the default log level when using pax logging
-                                             // (logProfile)
-                                             systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(logLevel),
-                                             systemProperty("org.eclipse.jetty.LEVEL").value(logLevel))));
+        options.addAll(Arrays.asList(options(systemProperty("pax.exam.logging").value("none"))));
+        options.addAll(Arrays.asList(options(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL))));
+        options.addAll(Arrays.asList(options(systemProperty("org.eclipse.jetty.LEVEL").value(LOG_LEVEL))));
         return options.toArray(new Option[options.size()]);
     }
 
@@ -101,7 +84,7 @@ public class TestJettyOSGiBootSpdy
 
         res.add(CoreOptions.vmOptions("-Xbootclasspath/p:" + alpnBoot));
 
-        res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("jetty-osgi-alpn").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("jetty-osgi-alpn").versionAsInProject().noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-server").versionAsInProject().start());
 
         res.add(mavenBundle().groupId("org.eclipse.jetty.spdy").artifactId("spdy-client").versionAsInProject().noStart());
@@ -112,7 +95,6 @@ public class TestJettyOSGiBootSpdy
         return res;
     }
 
-    @Ignore
     @Test
     public void checkALPNBootOnBootstrapClasspath() throws Exception
     {
@@ -121,13 +103,11 @@ public class TestJettyOSGiBootSpdy
         Assert.assertNull(alpn.getClassLoader());
     }
 
+    @Ignore
     @Test
     public void assertAllBundlesActiveOrResolved()
     {
-        Bundle b = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.spdy.client");
-        TestOSGiUtil.diagnoseNonActiveOrNonResolvedBundle(b);
-        b = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.osgi.boot");
-        TestOSGiUtil.diagnoseNonActiveOrNonResolvedBundle(b);
+        TestOSGiUtil.debugBundles(bundleContext);
         TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
     }
 

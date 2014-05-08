@@ -50,6 +50,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 
 public class HttpRequest implements Request
@@ -449,12 +450,34 @@ public class HttpRequest implements Request
     @Override
     public Request onResponseContent(final Response.ContentListener listener)
     {
-        this.responseListeners.add(new Response.ContentListener()
+        this.responseListeners.add(new Response.AsyncContentListener()
         {
             @Override
-            public void onContent(Response response, ByteBuffer content)
+            public void onContent(Response response, ByteBuffer content, Callback callback)
             {
-                listener.onContent(response, content);
+                try
+                {
+                    listener.onContent(response, content);
+                    callback.succeeded();
+                }
+                catch (Exception x)
+                {
+                    callback.failed(x);
+                }
+            }
+        });
+        return this;
+    }
+
+    @Override
+    public Request onResponseContentAsync(final Response.AsyncContentListener listener)
+    {
+        this.responseListeners.add(new Response.AsyncContentListener()
+        {
+            @Override
+            public void onContent(Response response, ByteBuffer content, Callback callback)
+            {
+                listener.onContent(response, content, callback);
             }
         });
         return this;

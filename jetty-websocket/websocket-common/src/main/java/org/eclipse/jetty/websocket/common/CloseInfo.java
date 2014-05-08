@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.common;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
 import org.eclipse.jetty.util.Utf8StringBuilder;
@@ -65,7 +66,8 @@ public class CloseInfo
             statusCode |= (data.get() & 0xFF) << 8;
             statusCode |= (data.get() & 0xFF);
 
-            if(validate) {
+            if (validate)
+            {
                 if ((statusCode < StatusCode.NORMAL) || (statusCode == StatusCode.UNDEFINED) || (statusCode == StatusCode.NO_CLOSE)
                         || (statusCode == StatusCode.NO_CODE) || ((statusCode > 1011) && (statusCode <= 2999)) || (statusCode >= 5000))
                 {
@@ -120,7 +122,7 @@ public class CloseInfo
 
     public CloseInfo(int statusCode)
     {
-        this(statusCode, null);
+        this(statusCode,null);
     }
 
     public CloseInfo(int statusCode, String reason)
@@ -144,8 +146,9 @@ public class CloseInfo
             utf = StringUtil.getUtf8Bytes(reason);
             len += utf.length;
         }
-        
-        ByteBuffer buf = ByteBuffer.allocate(len);
+
+        ByteBuffer buf = BufferUtil.allocate(len);
+        BufferUtil.flipToFill(buf);
         buf.put((byte)((statusCode >>> 8) & 0xFF));
         buf.put((byte)((statusCode >>> 0) & 0xFF));
 
@@ -153,7 +156,7 @@ public class CloseInfo
         {
             buf.put(utf,0,utf.length);
         }
-        buf.flip();
+        BufferUtil.flipToFlush(buf,0);
 
         return buf;
     }
@@ -162,7 +165,14 @@ public class CloseInfo
     {
         CloseFrame frame = new CloseFrame();
         frame.setFin(true);
-        frame.setPayload(asByteBuffer());
+        if ((statusCode >= 1000) && (statusCode != StatusCode.NO_CLOSE) && (statusCode != StatusCode.NO_CODE))
+        {
+            if (statusCode == StatusCode.FAILED_TLS_HANDSHAKE)
+            {
+                throw new ProtocolException("Close Frame with status code " + statusCode + " not allowed (per RFC6455)");
+            }
+            frame.setPayload(asByteBuffer());
+        }
         return frame;
     }
 
@@ -180,10 +190,10 @@ public class CloseInfo
     {
         return !((statusCode == StatusCode.NORMAL) || (statusCode == StatusCode.NO_CODE));
     }
-    
+
     public boolean isAbnormal()
     {
-        return (statusCode == StatusCode.ABNORMAL);
+        return (statusCode != StatusCode.NORMAL);
     }
 
     @Override

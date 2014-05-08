@@ -37,12 +37,13 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
-import org.ops4j.pax.exam.junit.Configuration;
-import org.ops4j.pax.exam.junit.JUnit4TestRunner;
+import org.ops4j.pax.exam.Configuration;
+import org.ops4j.pax.exam.junit.PaxExam;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
@@ -55,12 +56,11 @@ import org.osgi.framework.ServiceReference;
  * Tests the ServiceContextProvider.
  * 
  */
-@RunWith(JUnit4TestRunner.class)
+@RunWith(PaxExam.class)
 public class TestJettyOSGiBootContextAsService
 {
-    private static final boolean LOGGING_ENABLED = false;
+    private static final String LOG_LEVEL = "WARN";
 
-    private static final boolean REMOTE_DEBUGGING = false;
 
     @Inject
     BundleContext bundleContext = null;
@@ -69,7 +69,6 @@ public class TestJettyOSGiBootContextAsService
     public static Option[] configure()
     {
         ArrayList<Option> options = new ArrayList<Option>();
-        TestOSGiUtil.addMoreOSGiContainers(options);
         options.add(CoreOptions.junitBundles());
         options.addAll(configureJettyHomeAndPort("jetty-selector.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*"));
@@ -79,22 +78,10 @@ public class TestJettyOSGiBootContextAsService
         // to pick up and deploy
         options.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("test-jetty-osgi-context").versionAsInProject().start());
 
-        String logLevel = "WARN";
-        // Enable Logging
-        if (LOGGING_ENABLED)
-            logLevel = "INFO";
+        options.addAll(Arrays.asList(options(systemProperty("pax.exam.logging").value("none"))));
+        options.addAll(Arrays.asList(options(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL))));
+        options.addAll(Arrays.asList(options(systemProperty("org.eclipse.jetty.LEVEL").value(LOG_LEVEL))));
         
-
-        options.addAll(Arrays.asList(options(
-                                             // install log service using pax runners profile abstraction (there
-                                             // are more profiles, like DS)
-                                             // logProfile(),
-                                             // this is how you set the default log level when using pax logging
-                                             // (logProfile)
-                                             systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(logLevel),
-                                             systemProperty("org.eclipse.jetty.LEVEL").value(logLevel))));
-
-
         return options.toArray(new Option[options.size()]);
     }
 
@@ -117,6 +104,7 @@ public class TestJettyOSGiBootContextAsService
         return options;
     }
 
+    @Ignore
     @Test
     public void assertAllBundlesActiveOrResolved()
     {
@@ -148,14 +136,6 @@ public class TestJettyOSGiBootContextAsService
         ServiceReference[] refs = bundleContext.getServiceReferences(ContextHandler.class.getName(), null);
         assertNotNull(refs);
         assertEquals(1, refs.length);
-        //uncomment for debugging
-       /*  
-       String[] keys = refs[0].getPropertyKeys();
-        if (keys != null)
-        {
-            for (String k : keys)
-                System.err.println("service property: " + k + ", " + refs[0].getProperty(k));
-        }*/
         ContextHandler ch = (ContextHandler) bundleContext.getService(refs[0]);
         assertEquals("/acme", ch.getContextPath());
 

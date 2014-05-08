@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 import org.eclipse.jetty.http.HttpTokens.EndOfContent;
 import org.eclipse.jetty.util.BufferUtil;
@@ -916,10 +917,8 @@ public class HttpGenerator
             line[versionLength+6+reason.length()]=HttpTokens.LINE_FEED;
 
             __preprepared[i] = new PreparedResponse();
-            __preprepared[i]._reason=new byte[line.length-versionLength-7] ;
-            System.arraycopy(line,versionLength+5,__preprepared[i]._reason,0,line.length-versionLength-7);
-            __preprepared[i]._schemeCode=new byte[versionLength+5];
-            System.arraycopy(line,0,__preprepared[i]._schemeCode,0,versionLength+5);
+            __preprepared[i]._schemeCode = Arrays.copyOfRange(line, 0,versionLength+5);
+            __preprepared[i]._reason = Arrays.copyOfRange(line, versionLength+5, line.length-2);
             __preprepared[i]._responseLine=line;
         }
     }
@@ -1091,8 +1090,7 @@ public class HttpGenerator
         {
             super(header,value);
             int cbl=header.getBytesColonSpace().length;
-            _bytes=new byte[cbl+value.length()+2];
-            System.arraycopy(header.getBytesColonSpace(),0,_bytes,0,cbl);
+            _bytes=Arrays.copyOf(header.getBytesColonSpace(), cbl+value.length()+2);
             System.arraycopy(value.getBytes(StandardCharsets.ISO_8859_1),0,_bytes,cbl,value.length());
             _bytes[_bytes.length-2]=(byte)'\r';
             _bytes[_bytes.length-1]=(byte)'\n';

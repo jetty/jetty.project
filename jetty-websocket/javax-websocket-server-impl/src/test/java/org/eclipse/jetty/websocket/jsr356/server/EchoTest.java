@@ -223,7 +223,6 @@ public class EchoTest
 
         WebAppContext webapp = server.createWebAppContext();
         server.deployWebapp(webapp);
-        server.dump();
     }
 
     @BeforeClass

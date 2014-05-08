@@ -54,6 +54,7 @@ import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
+import org.eclipse.jetty.websocket.api.extensions.Frame.Type;
 import org.eclipse.jetty.websocket.common.AcceptHash;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.Generator;
@@ -124,7 +125,6 @@ public class BlockheadServer
         {
             write(new CloseFrame());
             flush();
-            disconnect();
         }
 
         public void close(int statusCode) throws IOException
@@ -132,7 +132,6 @@ public class BlockheadServer
             CloseInfo close = new CloseInfo(statusCode);
             write(close.asFrame());
             flush();
-            disconnect();
         }
 
         public void disconnect()
@@ -229,6 +228,19 @@ public class BlockheadServer
                 CloseInfo close = new CloseInfo(frame);
                 LOG.debug("Close frame: {}",close);
             }
+
+            Type type = frame.getType();
+            if (echoing.get() && (type.isData() || type.isContinuation()))
+            {
+                try
+                {
+                    write(WebSocketFrame.copy(frame));
+                }
+                catch (IOException e)
+                {
+                    LOG.warn(e);
+                }
+            }
         }
 
         @Override
@@ -317,9 +329,18 @@ public class BlockheadServer
             return len;
         }
 
+        /**
+         * @deprecated use {@link #readFrames(int, int, TimeUnit)} for correct parameter order
+         */
+        @Deprecated
         public IncomingFramesCapture readFrames(int expectedCount, TimeUnit timeoutUnit, int timeoutDuration) throws IOException, TimeoutException
         {
-            LOG.debug("Read: waiting for {} frame(s) from server",expectedCount);
+            return readFrames(expectedCount,timeoutDuration,timeoutUnit);
+        }
+
+        public IncomingFramesCapture readFrames(int expectedCount, int timeoutDuration, TimeUnit timeoutUnit) throws IOException, TimeoutException
+        {
+            LOG.debug("Read: waiting for {} frame(s) from client",expectedCount);
             int startCount = incomingFrames.size();
 
             ByteBuffer buf = bufferPool.acquire(BUFFER_SIZE,false);
@@ -562,12 +583,21 @@ public class BlockheadServer
         public void write(Frame frame) throws IOException
         {
             LOG.debug("write(Frame->{}) to {}",frame,outgoing);
-            outgoing.outgoingFrame(frame,null, BatchMode.OFF);
+            outgoing.outgoingFrame(frame,null,BatchMode.OFF);
         }
 
         public void write(int b) throws IOException
         {
             getOutputStream().write(b);
+        }
+
+        public void write(ByteBuffer buf) throws IOException
+        {
+            byte arr[] = BufferUtil.toArray(buf);
+            if ((arr != null) && (arr.length > 0))
+            {
+                getOutputStream().write(arr);
+            }
         }
     }
 

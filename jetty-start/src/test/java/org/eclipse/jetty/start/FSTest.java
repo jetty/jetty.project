@@ -31,21 +31,21 @@ public class FSTest
     public void testCanReadDirectory()
     {
         File targetDir = MavenTestingUtils.getTargetDir();
-        Assert.assertTrue("Can read dir: " + targetDir,FS.canReadDirectory(targetDir));
+        Assert.assertTrue("Can read dir: " + targetDir,FS.canReadDirectory(targetDir.toPath()));
     }
 
     @Test
     public void testCanReadDirectory_NotDir()
     {
         File bogusFile = MavenTestingUtils.getTestResourceFile("bogus.xml");
-        Assert.assertFalse("Can read dir: " + bogusFile,FS.canReadDirectory(bogusFile));
+        Assert.assertFalse("Can read dir: " + bogusFile,FS.canReadDirectory(bogusFile.toPath()));
     }
 
     @Test
     public void testCanReadFile()
     {
         File pom = MavenTestingUtils.getProjectFile("pom.xml");
-        Assert.assertTrue("Can read file: " + pom,FS.canReadFile(pom));
+        Assert.assertTrue("Can read file: " + pom,FS.canReadFile(pom.toPath()));
     }
     
     /**

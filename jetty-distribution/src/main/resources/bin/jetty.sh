@@ -105,8 +105,14 @@ findDirectory()
 
 running()
 {
-  local PID=$(cat "$1" 2>/dev/null) || return 1
-  kill -0 "$PID" 2>/dev/null
+  if [ -f "$1" ]
+  then
+    local PID=$(cat "$1" 2>/dev/null) || return 1
+    kill -0 "$PID" 2>/dev/null
+    return
+  fi
+  rm -f "$1"
+  return 1
 }
 
 started()
@@ -408,16 +414,10 @@ case "$ACTION" in
 
     else
 
-      if [ -f "$JETTY_PID" ]
+      if running $JETTY_PID
       then
-        if running $JETTY_PID
-        then
-          echo "Already Running!"
-          exit 1
-        else
-          # dead pid file - remove
-          rm -f "$JETTY_PID"
-        fi
+        echo "Already Running $(cat $JETTY_PID)!"
+        exit 1
       fi
 
       if [ "$JETTY_USER" ] 
@@ -519,16 +519,10 @@ case "$ACTION" in
   run|demo)
     echo "Running Jetty: "
 
-    if [ -f "$JETTY_PID" ]
+    if running "$JETTY_PID"
     then
-      if running "$JETTY_PID"
-      then
-        echo "Already Running!"
-        exit 1
-      else
-        # dead pid file - remove
-        rm -f "$JETTY_PID"
-      fi
+      echo Already Running $(cat "$JETTY_PID")!
+      exit 1
     fi
 
     exec "${RUN_CMD[@]}"
@@ -550,7 +544,7 @@ case "$ACTION" in
     echo "RUN_CMD        =  ${RUN_CMD[*]}"
     echo
     
-    if [ -f "$JETTY_PID" ]
+    if running "$JETTY_PID"
     then
       echo "Jetty running pid=$(< "$JETTY_PID")"
       exit 0

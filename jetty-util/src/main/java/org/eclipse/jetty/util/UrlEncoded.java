@@ -294,7 +294,7 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
                     switch ((char)(0xff&b))
                     {
                         case '&':
-                            value = buffer.length()==0?"":buffer.toString();
+                            value = buffer.toReplacedString();
                             buffer.reset();
                             if (key != null)
                             {
@@ -314,7 +314,7 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
                                 buffer.append(b);
                                 break;
                             }
-                            key = buffer.toString();
+                            key = buffer.toReplacedString();
                             buffer.reset();
                             break;
 
@@ -376,7 +376,7 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
             
             if (key != null)
             {
-                value = buffer.length()==0?"":buffer.toReplacedString();
+                value = buffer.toReplacedString();
                 buffer.reset();
                 map.add(key,value);
             }
@@ -510,7 +510,7 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
                     switch ((char) b)
                     {
                         case '&':
-                            value = buffer.length()==0?"":buffer.toString();
+                            value = buffer.toReplacedString();
                             buffer.reset();
                             if (key != null)
                             {
@@ -532,7 +532,7 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
                                 buffer.append((byte)b);
                                 break;
                             }
-                            key = buffer.toString();
+                            key = buffer.toReplacedString(); 
                             buffer.reset();
                             break;
 
@@ -542,17 +542,26 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
 
                         case '%':
                             int code0=in.read();
+                            boolean decoded=false;
                             if ('u'==code0)
                             {
-                                int code1=in.read();
-                                if (code1>=0)
+                                code0=in.read(); // XXX: we have to read the next byte, otherwise code0 is always 'u'
+                                if (code0>=0)
                                 {
-                                    int code2=in.read();
-                                    if (code2>=0)
+                                    int code1=in.read();
+                                    if (code1>=0)
                                     {
-                                        int code3=in.read();
-                                        if (code3>=0)
-                                            buffer.getStringBuilder().append(Character.toChars((convertHexDigit(code0)<<12)+(convertHexDigit(code1)<<8)+(convertHexDigit(code2)<<4)+convertHexDigit(code3)));
+                                        int code2=in.read();
+                                        if (code2>=0)
+                                        {
+                                            int code3=in.read();
+                                            if (code3>=0)
+                                            {
+                                                buffer.getStringBuilder().append(Character.toChars
+                                                    ((convertHexDigit(code0)<<12)+(convertHexDigit(code1)<<8)+(convertHexDigit(code2)<<4)+convertHexDigit(code3)));
+                                                decoded=true;
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -560,8 +569,15 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
                             {
                                 int code1=in.read();
                                 if (code1>=0)
+                                {
                                     buffer.append((byte)((convertHexDigit(code0)<<4)+convertHexDigit(code1)));
+                                    decoded=true;
+                                }
                             }
+                            
+                            if (!decoded)
+                                buffer.getStringBuilder().append(Utf8Appendable.REPLACEMENT);
+
                             break;
                           
                         default:
@@ -586,13 +602,13 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
             
             if (key != null)
             {
-                value = buffer.length()==0?"":buffer.toString();
+                value = buffer.toReplacedString();
                 buffer.reset();
                 map.add(key,value);
             }
             else if (buffer.length()>0)
             {
-                map.add(buffer.toString(), "");
+                map.add(buffer.toReplacedString(), "");
             }
         }
     }

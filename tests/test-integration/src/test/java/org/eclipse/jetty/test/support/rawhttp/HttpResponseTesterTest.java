@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.test.support.rawhttp;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertThat;
-
 import java.io.IOException;
 import java.util.List;
 
@@ -30,6 +26,10 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.junit.Assert.assertThat;
 
 public class HttpResponseTesterTest
 {
@@ -85,7 +85,8 @@ public class HttpResponseTesterTest
         rawResponse.append("\n");
         rawResponse.append("Host=Default\n");
         rawResponse.append("Resource=R1\n");
-        
+        rawResponse.append("\n");
+
         rawResponse.append("HTTP/1.1 200 OK\n");
         rawResponse.append("Date: Mon, 08 Jun 2009 23:05:26 GMT\n");
         rawResponse.append("Content-Type: text/plain\n");
@@ -96,9 +97,7 @@ public class HttpResponseTesterTest
         rawResponse.append("\n");
         rawResponse.append("Host=Default\n");
         rawResponse.append("Resource=R2\n");
-        rawResponse.append("\n");
-        
-       
+
         List<HttpTester.Response> responses = HttpTesting.readResponses(rawResponse.toString());
 
         Assert.assertNotNull("Responses should not be null",responses);

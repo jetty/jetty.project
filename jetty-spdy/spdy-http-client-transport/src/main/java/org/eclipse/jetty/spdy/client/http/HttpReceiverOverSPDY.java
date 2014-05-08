@@ -123,7 +123,8 @@ public class HttpReceiverOverSPDY extends HttpReceiver implements StreamFrameLis
         {
             int length = dataInfo.length();
             // TODO: avoid data copy here
-            boolean process = responseContent(exchange, dataInfo.asByteBuffer(false));
+            // TODO: handle callback properly
+            boolean process = responseContent(exchange, dataInfo.asByteBuffer(false), new Callback.Adapter());
             dataInfo.consume(length);
 
             if (process)

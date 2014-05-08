@@ -68,6 +68,7 @@ public class HttpServerTestFixture
     protected void startServer(ServerConnector connector) throws Exception
     {
         _connector = connector;
+        _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setSendDateHeader(false);
         _server.addConnector(_connector);
         _server.setHandler(new HandlerWrapper());
         _server.start();

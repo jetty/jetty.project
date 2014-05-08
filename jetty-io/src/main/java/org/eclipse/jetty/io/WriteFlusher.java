@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.WritePendingException;
+import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.Set;
@@ -253,10 +254,14 @@ abstract public class WriteFlusher
             return _buffers;
         }
 
-        protected void fail(Throwable cause)
+        protected boolean fail(Throwable cause)
         {
             if (_callback!=null)
+            {
                 _callback.failed(cause);
+                return true;
+            }
+            return false;
         }
 
         protected void complete()
@@ -297,10 +302,7 @@ abstract public class WriteFlusher
             if (consumed == length)
                 return EMPTY_BUFFERS;
 
-            int newLength = length - consumed;
-            ByteBuffer[] result = new ByteBuffer[newLength];
-            System.arraycopy(buffers, consumed, result, 0, newLength);
-            return result;
+            return Arrays.copyOfRange(buffers,consumed,length);
         }
     }
 
@@ -430,7 +432,12 @@ abstract public class WriteFlusher
         }
     }
 
-    public void onFail(Throwable cause)
+    /* ------------------------------------------------------------ */
+    /** Notify the flusher of a failure
+     * @param cause The cause of the failure
+     * @return true if the flusher passed the failure to a {@link Callback} instance
+     */
+    public boolean onFail(Throwable cause)
     {
         // Keep trying to handle the failure until we get to IDLE or FAILED state
         while(true)
@@ -442,7 +449,7 @@ abstract public class WriteFlusher
                 case FAILED:
                     if (DEBUG)
                         LOG.debug("ignored: {} {}", this, cause);
-                    return;
+                    return false;
 
                 case PENDING:
                     if (DEBUG)
@@ -450,10 +457,7 @@ abstract public class WriteFlusher
 
                     PendingState pending = (PendingState)current;
                     if (updateState(pending,__IDLE))
-                    {
-                        pending.fail(cause);
-                        return;
-                    }
+                        return pending.fail(cause);
                     break;
 
                 default:
@@ -461,7 +465,7 @@ abstract public class WriteFlusher
                         LOG.debug("failed: {} {}", this, cause);
 
                     if (updateState(current,new FailedState(cause)))
-                        return;
+                        return false;
                     break;
             }
         }

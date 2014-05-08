@@ -215,6 +215,10 @@ public abstract class HttpDestination implements Destination, Closeable, Dumpabl
         LOG.debug("Closed {}", this);
     }
 
+    public void release(Connection connection)
+    {
+    }
+
     public void close(Connection connection)
     {
     }

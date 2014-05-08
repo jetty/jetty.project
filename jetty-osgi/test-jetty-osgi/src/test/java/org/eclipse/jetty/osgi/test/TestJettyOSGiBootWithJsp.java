@@ -38,25 +38,21 @@ import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.ops4j.pax.exam.Configuration;
 import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
-import org.ops4j.pax.exam.junit.Configuration;
-import org.ops4j.pax.exam.junit.JUnit4TestRunner;
-import org.osgi.framework.Bundle;
+import org.ops4j.pax.exam.junit.PaxExam;
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.ServiceReference;
 
 /**
  * Pax-Exam to make sure the jetty-osgi-boot can be started along with the
  * httpservice web-bundle. Then make sure we can deploy an OSGi service on the
  * top of this.
  */
-@RunWith(JUnit4TestRunner.class)
+@RunWith(PaxExam.class)
 public class TestJettyOSGiBootWithJsp
 {
-    private static final boolean LOGGING_ENABLED = false;
-
-    private static final boolean REMOTE_DEBUGGING = false;
+    private static final String LOG_LEVEL = "WARN";
 
     @Inject
     BundleContext bundleContext = null;
@@ -66,9 +62,6 @@ public class TestJettyOSGiBootWithJsp
     {
 
         ArrayList<Option> options = new ArrayList<Option>();
-
-        TestOSGiUtil.addMoreOSGiContainers(options);
-
         options.add(CoreOptions.junitBundles());
         options.addAll(configureJettyHomeAndPort("jetty-selector.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*", "javax.activation.*"));
@@ -77,39 +70,11 @@ public class TestJettyOSGiBootWithJsp
                                                "com.sun.org.apache.xpath.internal.jaxp", "com.sun.org.apache.xpath.internal.objects"));
      
         options.addAll(TestJettyOSGiBootCore.coreJettyDependencies());
+        options.addAll(Arrays.asList(options(systemProperty("pax.exam.logging").value("none"))));
+        options.addAll(Arrays.asList(options(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL))));
+        options.addAll(Arrays.asList(options(systemProperty("org.eclipse.jetty.LEVEL").value(LOG_LEVEL))));
 
-        String logLevel = "WARN";
-        
-        // Enable Logging
-        if (LOGGING_ENABLED)
-            logLevel = "INFO";
- 
-            options.addAll(Arrays.asList(options(
-                                                 // install log service using pax runners profile abstraction (there
-                                                 // are more profiles, like DS)
-                                                 // logProfile(),
-                                                 // this is how you set the default log level when using pax logging
-                                                 // (logProfile)
-                                                 systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(logLevel),
-                                                 systemProperty("org.eclipse.jetty.annotations.LEVEL").value(logLevel))));
-     
         options.addAll(jspDependencies());
-
-        // Remote JDWP Debugging, this won't work with the forked container.
-        // if(REMOTE_DEBUGGING) {
-        // options.addAll(Arrays.asList(options(
-        // // this just adds all what you write here to java vm argumenents of
-        // the (new) osgi process.
-        // PaxRunnerOptions.vmOption(
-        // "-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5006" )
-        // )));
-        // }
-
-        // bug at the moment: this would make the httpservice catch all
-        // requests and prevent the webapp at the root context to catch any of
-        // them.
-        // options.addAll(TestJettyOSGiBootCore.httpServiceJetty());
-
         return options.toArray(new Option[options.size()]);
     }
 
@@ -157,7 +122,7 @@ public class TestJettyOSGiBootWithJsp
         return res;
     }
 
-
+    @Ignore
     @Test
     public void assertAllBundlesActiveOrResolved()
     {

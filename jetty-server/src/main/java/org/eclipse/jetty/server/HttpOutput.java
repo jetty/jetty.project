@@ -24,7 +24,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritePendingException;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.ServletRequest;
@@ -75,7 +74,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     write completed    -          -          -          ASYNC         READY->owp    -
     
     */
-    enum OutputState { OPEN, ASYNC, READY, PENDING, UNREADY, CLOSED }
+    enum OutputState { OPEN, ASYNC, READY, PENDING, UNREADY, ERROR, CLOSED }
     private final AtomicReference<OutputState> _state=new AtomicReference<>(OutputState.OPEN);
 
     public HttpOutput(HttpChannel<?> channel)
@@ -147,7 +146,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     break loop;
                     
                 case UNREADY:
-                    throw new WritePendingException(); // TODO ?
+                    if (_state.compareAndSet(state,OutputState.ERROR))
+                        _writeListener.onError(_onError==null?new EofException("Async close"):_onError);
+                    continue;
                     
                 default:
                     if (_state.compareAndSet(state,OutputState.CLOSED))
@@ -180,7 +181,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     break loop;
                     
                 case UNREADY:
-                    throw new WritePendingException(); // TODO ?
+                    if (_state.compareAndSet(state,OutputState.ERROR))
+                        _writeListener.onError(_onError==null?new EofException("Async closed"):_onError);
+                    continue;
                     
                 default:
                     if (_state.compareAndSet(state,OutputState.CLOSED))
@@ -239,6 +242,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 case UNREADY:
                     throw new WritePendingException();
 
+                case ERROR:
+                    throw new EofException(_onError);
+                    
                 case CLOSED:
                     return;
             }
@@ -299,6 +305,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 case UNREADY:
                     throw new WritePendingException();
 
+                case ERROR:
+                    throw new EofException(_onError);
+                    
                 case CLOSED:
                     throw new EofException("Closed");
             }
@@ -397,6 +406,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 case UNREADY:
                     throw new WritePendingException();
 
+                case ERROR:
+                    throw new EofException(_onError);
+                    
                 case CLOSED:
                     throw new EofException("Closed");
             }
@@ -477,6 +489,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 case UNREADY:
                     throw new WritePendingException();
 
+                case ERROR:
+                    throw new EofException(_onError);
+                    
                 case CLOSED:
                     throw new EofException("Closed");
             }
@@ -616,6 +631,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     if (!_state.compareAndSet(OutputState.OPEN, OutputState.PENDING))
                         continue;
                     break;
+                case ERROR:
+                    throw new EofException(_onError);
                 case CLOSED:
                     throw new EofException("Closed");
                 default:
@@ -707,6 +724,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     return false;
                 case UNREADY:
                     return false;
+
+                case ERROR:
+                    return true;
                     
                 case CLOSED:
                     return true;
@@ -717,45 +737,55 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     @Override
     public void run()
     {
-        if(_onError!=null)
+        loop: while (true)
         {
-            Throwable th=_onError;
-            _onError=null;
-            _writeListener.onError(new IOException(th));
-            close();
-        }
-        
-        switch(_state.get())
-        {
-            case READY:
-                try
+            OutputState state = _state.get();
+
+            if(_onError!=null)
+            {
+                switch(state)
                 {
-                    _writeListener.onWritePossible();
+                    case CLOSED:
+                    case ERROR:
+                        _onError=null;
+                        break loop;
+
+                    default:
+                        if (_state.compareAndSet(state, OutputState.ERROR))
+                        {
+                            Throwable th=_onError;
+                            _onError=null;
+                            LOG.debug("onError",th);
+                            _writeListener.onError(th);
+                            close();
+
+                            break loop;
+                        }
+
                 }
-                catch (Throwable e)
-                {
-                    _writeListener.onError(e);
-                    close();
-                }
-                break;
-                
-            case CLOSED:
-                try
-                {
-                    new Throwable().printStackTrace();
+                continue loop;
+            }
+
+            switch(_state.get())
+            {
+                case READY:
+                case CLOSED:
                     // even though a write is not possible, because a close has 
                     // occurred, we need to call onWritePossible to tell async
                     // producer that the last write completed.
-                    _writeListener.onWritePossible();
-                }
-                catch (Throwable e)
-                {
-                    _writeListener.onError(e);
-                }
-                break;
-                
-            default:
-                    
+                    try
+                    {
+                        _writeListener.onWritePossible();
+                        break loop;
+                    }
+                    catch (Throwable e)
+                    {
+                        _onError=e;
+                    }
+                    break;
+                default:
+
+            }
         }
     }
     
@@ -770,37 +800,29 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         @Override
         protected void completed()
         {
-            try
+            while(true)
             {
-                while(true)
+                OutputState last=_state.get();
+                switch(last)
                 {
-                    HttpOutput.OutputState last=_state.get();
-                    switch(last)
-                    {
-                        case PENDING:
-                            if (!_state.compareAndSet(HttpOutput.OutputState.PENDING, HttpOutput.OutputState.ASYNC))
-                                continue;
-                            break;
+                    case PENDING:
+                        if (!_state.compareAndSet(OutputState.PENDING, OutputState.ASYNC))
+                            continue;
+                        break;
 
-                        case UNREADY:
-                            if (!_state.compareAndSet(HttpOutput.OutputState.UNREADY, HttpOutput.OutputState.READY))
-                                continue;
-                            _channel.getState().onWritePossible();
-                            break;
+                    case UNREADY:
+                        if (!_state.compareAndSet(OutputState.UNREADY, OutputState.READY))
+                            continue;
+                        _channel.getState().onWritePossible();
+                        break;
 
-                        case CLOSED:
-                            break;
+                    case CLOSED:
+                        break;
 
-                        default:
-                            throw new IllegalStateException();
-                    }
-                    break;
+                    default:
+                        throw new IllegalStateException();
                 }
-            }
-            catch (Exception e)
-            {
-                _onError=e;
-                _channel.getState().onWritePossible();
+                break;
             }
         }
 
@@ -885,7 +907,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             // Can we just aggregate the remainder?
             if (!_complete && _len<BufferUtil.space(_aggregate) && _len<_commitSize)
             {
+                int position = BufferUtil.flipToFill(_aggregate);
                 BufferUtil.put(_buffer,_aggregate);
+                BufferUtil.flipToFlush(_aggregate, position);
                 return Action.SUCCEEDED;
             }
             

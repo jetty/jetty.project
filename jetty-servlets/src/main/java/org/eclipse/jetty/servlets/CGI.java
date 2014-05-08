@@ -47,32 +47,33 @@ import org.eclipse.jetty.util.log.Logger;
 //-----------------------------------------------------------------------------
 /**
  * CGI Servlet.
- * <p/>
- * The cgi bin directory can be set with the "cgibinResourceBase" init parameter or it will default to the resource base of the context. If the
- * "cgibinResourceBaseIsRelative" init parameter is set the resource base is relative to the webapp. For example "WEB-INF/cgi" would work.
- * <br/>
- * Not that this only works for extracted war files as "jar cf" will not reserve the execute permissions on the cgi files.
- * <p/>
- * The "commandPrefix" init parameter may be used to set a prefix to all commands passed to exec. This can be used on systems that need assistance to execute a
- * particular file type. For example on windows this can be set to "perl" so that perl scripts are executed.
- * <p/>
- * The "Path" init param is passed to the exec environment as PATH. Note: Must be run unpacked somewhere in the filesystem.
- * <p/>
- * Any initParameter that starts with ENV_ is used to set an environment variable with the name stripped of the leading ENV_ and using the init parameter value.
+ * <p>
+ * 
+ * The following init parameters are used to configure this servlet:
+ * <dl>
+ * <dt>cgibinResourceBase</dt><dd>Path to the cgi bin directory if set or it will default to the resource base of the context.</dd>
+ * <dt>resourceBase</dt><dd>An alias for cgibinResourceBase.</dd>
+ * <dt>cgibinResourceBaseIsRelative</dt><dd>If true then cgibinResourceBase is relative to the webapp (eg "WEB-INF/cgi")</dd>
+ * <dt>commandPrefix</dt><dd>may be used to set a prefix to all commands passed to exec. This can be used on systems that need assistance to execute a
+ * particular file type. For example on windows this can be set to "perl" so that perl scripts are executed.</dd>
+ * <dt>Path</dt><dd>passed to the exec environment as PATH.</dd>
+ * <dt>ENV_*</dt><dd>used to set an arbitrary environment variable with the name stripped of the leading ENV_ and using the init parameter value</dd>
+ * <dt>useFullPath</dt><dd>If true, the full URI path within the context is used for the exec command, otherwise a search is done for a partial URL that matches an exec Command</dd>
+ * </dl>
+ * 
  */
 public class CGI extends HttpServlet
 {
-    /**
-     *
-     */
-    private static final long serialVersionUID = -6182088932884791073L;
+    private static final long serialVersionUID = -6182088932884791074L;
 
     private static final Logger LOG = Log.getLogger(CGI.class);
 
     private boolean _ok;
     private File _docRoot;
+    private boolean _cgiBinProvided;
     private String _path;
     private String _cmdPrefix;
+    private boolean _useFullPath;
     private EnvList _env;
     private boolean _ignoreExitState;
     private boolean _relative;
@@ -83,16 +84,22 @@ public class CGI extends HttpServlet
     {
         _env = new EnvList();
         _cmdPrefix = getInitParameter("commandPrefix");
+        _useFullPath = Boolean.parseBoolean(getInitParameter("useFullPath"));
         _relative = Boolean.parseBoolean(getInitParameter("cgibinResourceBaseIsRelative"));
 
         String tmp = getInitParameter("cgibinResourceBase");
-        if (tmp == null)
+        if (tmp != null)
+            _cgiBinProvided = true;
+        else
         {
             tmp = getInitParameter("resourceBase");
-            if (tmp == null)
+            if (tmp != null)
+                _cgiBinProvided = true;
+            else
                 tmp = getServletContext().getRealPath("/");
         }
-        else if (_relative)
+
+        if (_relative && _cgiBinProvided)
         {
             tmp = getServletContext().getRealPath(tmp);
         }
@@ -137,10 +144,10 @@ public class CGI extends HttpServlet
             _env.set("PATH",_path);
 
         _ignoreExitState = "true".equalsIgnoreCase(getInitParameter("ignoreExitState"));
-        Enumeration e = getInitParameterNames();
+        Enumeration<String> e = getInitParameterNames();
         while (e.hasMoreElements())
         {
-            String n = (String)e.nextElement();
+            String n = e.nextElement();
             if (n != null && n.startsWith("ENV_"))
                 _env.set(n.substring(4),getInitParameter(n));
         }
@@ -166,7 +173,6 @@ public class CGI extends HttpServlet
             return;
         }
 
-        String pathInContext = (_relative?"":StringUtil.nonNull(req.getServletPath())) + StringUtil.nonNull(req.getPathInfo());
         if (LOG.isDebugEnabled())
         {
             LOG.debug("CGI: ContextPath : " + req.getContextPath());
@@ -180,63 +186,69 @@ public class CGI extends HttpServlet
         // pathInContext may actually comprises scriptName/pathInfo...We will
         // walk backwards up it until we find the script - the rest must
         // be the pathInfo;
+        String pathInContext = (_relative ? "" : StringUtil.nonNull(req.getServletPath())) + StringUtil.nonNull(req.getPathInfo());
+        File execCmd = new File(_docRoot, pathInContext);
+        String pathInfo = pathInContext;
 
-        String both = pathInContext;
-        String first = both;
-        String last = "";
-
-        File exe = new File(_docRoot,first);
-
-        while ((first.endsWith("/") || !exe.exists()) && first.length() >= 0)
+        if(!_useFullPath)
         {
-            int index = first.lastIndexOf('/');
+            String path = pathInContext;
+            String info = "";
 
-            first = first.substring(0,index);
-            last = both.substring(index,both.length());
-            exe = new File(_docRoot,first);
-        }
-
-        if (first.length() == 0 || !exe.exists() || exe.isDirectory() || !exe.getCanonicalPath().equals(exe.getAbsolutePath()))
-        {
-            res.sendError(404);
-        }
-        else
-        {
-            if (LOG.isDebugEnabled())
+            // Search docroot for a matching execCmd
+            while (path.endsWith("/") && path.length() >= 0)
             {
-                LOG.debug("CGI: script is " + exe);
-                LOG.debug("CGI: pathInfo is " + last);
+                if(!execCmd.exists())
+                    break;
+    
+                int index = path.lastIndexOf('/');
+    
+                path = path.substring(0,index);
+                info = pathInContext.substring(index,pathInContext.length());
+                execCmd = new File(_docRoot,path);
             }
-            exec(exe,last,req,res);
+    
+            if (path.length() == 0 || !execCmd.exists() || execCmd.isDirectory() || !execCmd.getCanonicalPath().equals(execCmd.getAbsolutePath()))
+            {
+                res.sendError(404);
+            }
+            
+            pathInfo = info;
         }
+        exec(execCmd,pathInfo,req,res);
     }
 
-    /* ------------------------------------------------------------ */
+    /** executes the CGI process
     /*
-     * @param root @param path @param req @param res @exception IOException
+     * @param command the command to execute, this command is prefixed by
+     *  the context parameter "commandPrefix".
+     * @param pathInfo The PATH_INFO to process,
+     *  see http://docs.oracle.com/javaee/6/api/javax/servlet/http/HttpServletRequest.html#getPathInfo%28%29. Cannot be null
+     * @param req
+     * @param res
+     * @exception IOException
      */
     private void exec(File command, String pathInfo, HttpServletRequest req, HttpServletResponse res) throws IOException
     {
-        String path = command.getAbsolutePath();
-        File dir = command.getParentFile();
-        String scriptName = req.getRequestURI().substring(0,req.getRequestURI().length() - pathInfo.length());
-        String scriptPath = getServletContext().getRealPath(scriptName);
-        String pathTranslated = req.getPathTranslated();
+        assert req != null;
+        assert res != null;
+        assert pathInfo != null;
+        assert command != null;
 
-        int len = req.getContentLength();
-        if (len < 0)
-            len = 0;
-        if ((pathTranslated == null) || (pathTranslated.length() == 0))
-            pathTranslated = path;
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("CGI: script is " + command);
+            LOG.debug("CGI: pathInfo is " + pathInfo);
+        }
 
         String bodyFormEncoded = null;
         if ((HttpMethod.POST.equals(req.getMethod()) || HttpMethod.PUT.equals(req.getMethod())) && "application/x-www-form-urlencoded".equals(req.getContentType()))
         {
             MultiMap<String> parameterMap = new MultiMap<String>();
-            Enumeration names = req.getParameterNames();
+            Enumeration<String> names = req.getParameterNames();
             while (names.hasMoreElements())
             {
-                String parameterName = (String)names.nextElement();
+                String parameterName = names.nextElement();
                 parameterMap.addValues(parameterName, req.getParameterValues(parameterName));
             }
             bodyFormEncoded = UrlEncoded.encode(parameterMap, Charset.forName(req.getCharacterEncoding()), true);
@@ -247,24 +259,33 @@ public class CGI extends HttpServlet
         // look at :
         // http://Web.Golux.Com/coar/cgi/draft-coar-cgi-v11-03-clean.html#6.1.1
         env.set("AUTH_TYPE", req.getAuthType());
+
+        int contentLen = req.getContentLength();
+        if (contentLen < 0)
+            contentLen = 0;
         if (bodyFormEncoded != null)
         {
             env.set("CONTENT_LENGTH", Integer.toString(bodyFormEncoded.length()));
         }
         else
         {
-            env.set("CONTENT_LENGTH", Integer.toString(len));
+            env.set("CONTENT_LENGTH", Integer.toString(contentLen));
         }
         env.set("CONTENT_TYPE", req.getContentType());
         env.set("GATEWAY_INTERFACE", "CGI/1.1");
-        if ((pathInfo != null) && (pathInfo.length() > 0))
+        if (pathInfo.length() > 0)
         {
             env.set("PATH_INFO", pathInfo);
         }
+
+        String pathTranslated = req.getPathTranslated();
+        if ((pathTranslated == null) || (pathTranslated.length() == 0))
+            pathTranslated = pathInfo;
         env.set("PATH_TRANSLATED", pathTranslated);
         env.set("QUERY_STRING", req.getQueryString());
         env.set("REMOTE_ADDR", req.getRemoteAddr());
         env.set("REMOTE_HOST", req.getRemoteHost());
+
         // The identity information reported about the connection by a
         // RFC 1413 [11] request to the remote agent, if
         // available. Servers MAY choose not to support this feature, or
@@ -272,17 +293,33 @@ public class CGI extends HttpServlet
         // "REMOTE_IDENT" => "NYI"
         env.set("REMOTE_USER", req.getRemoteUser());
         env.set("REQUEST_METHOD", req.getMethod());
-        env.set("SCRIPT_NAME", scriptName);
+
+        String scriptPath;
+        String scriptName;
+        // use docRoot for scriptPath, too
+        if(_cgiBinProvided) 
+        {
+            scriptPath = command.getAbsolutePath();
+            scriptName = scriptPath.substring(_docRoot.getAbsolutePath().length());
+        } 
+        else 
+        {
+            String requestURI = req.getRequestURI();
+            scriptName = requestURI.substring(0,requestURI.length() - pathInfo.length());
+            scriptPath = getServletContext().getRealPath(scriptName);
+        }
         env.set("SCRIPT_FILENAME", scriptPath);
+        env.set("SCRIPT_NAME", scriptName);
+
         env.set("SERVER_NAME", req.getServerName());
         env.set("SERVER_PORT", Integer.toString(req.getServerPort()));
         env.set("SERVER_PROTOCOL", req.getProtocol());
         env.set("SERVER_SOFTWARE", getServletContext().getServerInfo());
 
-        Enumeration enm = req.getHeaderNames();
+        Enumeration<String> enm = req.getHeaderNames();
         while (enm.hasMoreElements())
         {
-            String name = (String)enm.nextElement();
+            String name = enm.nextElement();
             String value = req.getHeader(name);
             env.set("HTTP_" + name.toUpperCase(Locale.ENGLISH).replace('-','_'),value);
         }
@@ -293,29 +330,30 @@ public class CGI extends HttpServlet
         // "SERVER_URL" => "NYI - http://us0245",
         // "TZ" => System.getProperty("user.timezone"),
 
-        // are we meant to decode args here ? or does the script get them
-        // via PATH_INFO ? if we are, they should be decoded and passed
+        // are we meant to decode args here? or does the script get them
+        // via PATH_INFO? if we are, they should be decoded and passed
         // into exec here...
-        String execCmd = path;
-        if ((execCmd.charAt(0) != '"') && (execCmd.indexOf(" ") >= 0))
+        String absolutePath = command.getAbsolutePath();
+        String execCmd = absolutePath;
+
+        // escape the execCommand
+        if (execCmd.length() > 0 && execCmd.charAt(0) != '"' && execCmd.indexOf(" ") >= 0)
             execCmd = "\"" + execCmd + "\"";
+
         if (_cmdPrefix != null)
             execCmd = _cmdPrefix + " " + execCmd;
 
+        assert execCmd != null;
         LOG.debug("Environment: " + env.getExportString());
         LOG.debug("Command: " + execCmd);
 
-        final Process p;
-        if (dir == null)
-            p = Runtime.getRuntime().exec(execCmd, env.getEnvArray());
-        else
-            p = Runtime.getRuntime().exec(execCmd, env.getEnvArray(), dir);
+        final Process p = Runtime.getRuntime().exec(execCmd, env.getEnvArray(), _docRoot);
 
         // hook processes input to browser's output (async)
         if (bodyFormEncoded != null)
             writeProcessInput(p, bodyFormEncoded);
-        else if (len > 0)
-            writeProcessInput(p, req.getInputStream(), len);
+        else if (contentLen > 0)
+            writeProcessInput(p, req.getInputStream(), contentLen);
 
         // hook processes output to browser's input (sync)
         // if browser closes stream, we should detect it and kill process...
@@ -336,9 +374,9 @@ public class CGI extends HttpServlet
                     {
                         LOG.warn(e);
                     }
-                }     
+                }
             });
-            
+
             // read any headers off the top of our input stream
             // NOTE: Multiline header items not supported!
             String line = null;
@@ -383,7 +421,7 @@ public class CGI extends HttpServlet
                 int exitValue = p.exitValue();
                 if (0 != exitValue)
                 {
-                    LOG.warn("Non-zero exit status (" + exitValue + ") from CGI program: " + path);
+                    LOG.warn("Non-zero exit status (" + exitValue + ") from CGI program: " + absolutePath);
                     if (!res.isCommitted())
                         res.sendError(500,"Failed to exec CGI");
                 }
@@ -393,7 +431,7 @@ public class CGI extends HttpServlet
         {
             // browser has probably closed its input stream - we
             // terminate and clean up...
-            LOG.debug("CGI: Client closed connection!");
+            LOG.debug("CGI: Client closed connection!", e);
         }
         catch (InterruptedException ie)
         {
@@ -422,6 +460,7 @@ public class CGI extends HttpServlet
     {
         new Thread(new Runnable()
         {
+            @Override
             public void run()
             {
                 try
@@ -445,6 +484,7 @@ public class CGI extends HttpServlet
 
         new Thread(new Runnable()
         {
+            @Override
             public void run()
             {
                 try

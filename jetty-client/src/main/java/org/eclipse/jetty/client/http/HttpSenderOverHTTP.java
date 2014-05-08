@@ -114,7 +114,7 @@ public class HttpSenderOverHTTP extends HttpSender
                 }
             }
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             LOG.debug(x);
             callback.failed(x);

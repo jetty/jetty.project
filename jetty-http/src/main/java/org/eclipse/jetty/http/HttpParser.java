@@ -58,7 +58,7 @@ import org.eclipse.jetty.util.log.Logger;
  * For performance, the parse is heavily dependent on the 
  * {@link Trie#getBest(ByteBuffer, int, int)} method to look ahead in a
  * single pass for both the structure ( : and CRLF ) and semantic (which
- * header and value) of a header.  Specifically the static {@link HttpField#CACHE}
+ * header and value) of a header.  Specifically the static {@link HttpHeader#CACHE}
  * is used to lookup common combinations of headers and values 
  * (eg. "Connection: close"), or just header names (eg. "Connection:" ).
  * For headers who's value is not known statically (eg. Host, COOKIE) then a
@@ -186,7 +186,7 @@ public class HttpParser
             
             for (String charset : new String[]{"UTF-8","ISO-8859-1"})
             {
-                CACHE.put(field=new HttpGenerator.CachedHttpField(HttpHeader.CONTENT_TYPE,type+";charset="+charset));
+                CACHE.put(new HttpGenerator.CachedHttpField(HttpHeader.CONTENT_TYPE,type+";charset="+charset));
                 CACHE.put(new HttpGenerator.CachedHttpField(HttpHeader.CONTENT_TYPE,type+"; charset="+charset));
             }
         }
@@ -813,7 +813,7 @@ public class HttpParser
                 {
                     if (_valueString.endsWith(HttpHeaderValue.CHUNKED.toString()))
                         _endOfContent=EndOfContent.CHUNKED_CONTENT;
-                    else if (_valueString.indexOf(HttpHeaderValue.CHUNKED.toString()) >= 0)
+                    else if (_valueString.contains(HttpHeaderValue.CHUNKED.toString()))
                     {
                         throw new BadMessage(HttpStatus.BAD_REQUEST_400,"Bad chunking");
                     }
@@ -872,7 +872,7 @@ public class HttpParser
               
             case CONNECTION:
                 // Don't cache if not persistent
-                if (_valueString!=null && _valueString.indexOf("close")>=0)
+                if (_valueString!=null && _valueString.contains("close"))
                 {
                     _closed=true;
                     _connectionFields=null;
@@ -1223,8 +1223,6 @@ public class HttpParser
             LOG.debug("parseNext s={} {}",_state,BufferUtil.toDetailString(buffer));
         try
         {
-            boolean handle=false;
-            
             // Start a request/response
             if (_state==State.START)
             {
@@ -1233,28 +1231,39 @@ public class HttpParser
                 _methodString=null;
                 _endOfContent=EndOfContent.UNKNOWN_CONTENT;
                 _header=null;
-                handle=quickStart(buffer);
+                if (quickStart(buffer))
+                    return true;
             }
             
             // Request/response line
-            if (!handle && _state.ordinal()>= State.START.ordinal() && _state.ordinal()<State.HEADER.ordinal())
-                handle=parseLine(buffer);
+            if (_state.ordinal()>= State.START.ordinal() && _state.ordinal()<State.HEADER.ordinal())
+            {
+                if (parseLine(buffer))
+                    return true;
+            }
 
             // parse headers
-            if (!handle && _state.ordinal()>= State.HEADER.ordinal() && _state.ordinal()<State.CONTENT.ordinal())
-                handle=parseHeaders(buffer);
+            if (_state.ordinal()>= State.HEADER.ordinal() && _state.ordinal()<State.CONTENT.ordinal())
+            {
+                if (parseHeaders(buffer))
+                    return true;
+            }
             
             // parse content
-            if (!handle && _state.ordinal()>= State.CONTENT.ordinal() && _state.ordinal()<State.END.ordinal())
+            if (_state.ordinal()>= State.CONTENT.ordinal() && _state.ordinal()<State.END.ordinal())
             {
                 // Handle HEAD response
                 if (_responseStatus>0 && _headResponse)
                 {
                     setState(State.END);
-                    handle=_handler.messageComplete();
+                    if (_handler.messageComplete())
+                        return true;
                 }
                 else
-                    handle=parseContent(buffer);
+                {
+                    if (parseContent(buffer))
+                        return true;
+                }
             }
             
             // handle end states
@@ -1288,8 +1297,8 @@ public class HttpParser
                         break;
                         
                     case START:
-                        _handler.earlyEOF();
                         setState(State.CLOSED);
+                        _handler.earlyEOF();
                         break;
                         
                     case END:
@@ -1297,29 +1306,28 @@ public class HttpParser
                         break;
                         
                     case EOF_CONTENT:
-                        handle=_handler.messageComplete()||handle;
                         setState(State.CLOSED);
-                        break;
+                        return _handler.messageComplete();
 
                     case  CONTENT:
                     case  CHUNKED_CONTENT:
                     case  CHUNK_SIZE:
                     case  CHUNK_PARAMS:
                     case  CHUNK:
-                        _handler.earlyEOF();
                         setState(State.CLOSED);
+                        _handler.earlyEOF();
                         break;
 
                     default:
                         if (DEBUG)
                             LOG.debug("{} EOF in {}",this,_state);
-                        _handler.badMessage(400,null);
                         setState(State.CLOSED);
+                        _handler.badMessage(400,null);
                         break;
                 }
             }
             
-            return handle;
+            return false;
         }
         catch(BadMessage e)
         {
@@ -1357,24 +1365,36 @@ public class HttpParser
 
     protected boolean parseContent(ByteBuffer buffer)
     {
+        int remaining=buffer.remaining();
+        if (remaining==0 && _state==State.CONTENT)
+        {
+            long content=_contentLength - _contentPosition;
+            if (content == 0)
+            {
+                setState(State.END);
+                if (_handler.messageComplete())
+                    return true;
+            }
+        }
+        
         // Handle _content
         byte ch;
-        while (_state.ordinal() < State.END.ordinal() && buffer.hasRemaining())
+        while (_state.ordinal() < State.END.ordinal() && remaining>0)
         {
             switch (_state)
             {
                 case EOF_CONTENT:
                     _contentChunk=buffer.asReadOnlyBuffer();
-                    _contentPosition += _contentChunk.remaining();
-                    buffer.position(buffer.position()+_contentChunk.remaining());
+                    _contentPosition += remaining;
+                    buffer.position(buffer.position()+remaining);
                     if (_handler.content(_contentChunk))
                         return true;
                     break;
 
                 case CONTENT:
                 {
-                    long remaining=_contentLength - _contentPosition;
-                    if (remaining == 0)
+                    long content=_contentLength - _contentPosition;
+                    if (content == 0)
                     {
                         setState(State.END);
                         if (_handler.messageComplete())
@@ -1385,25 +1405,25 @@ public class HttpParser
                         _contentChunk=buffer.asReadOnlyBuffer();
 
                         // limit content by expected size
-                        if (_contentChunk.remaining() > remaining)
+                        if (remaining > content)
                         {
                             // We can cast remaining to an int as we know that it is smaller than
                             // or equal to length which is already an int.
-                            _contentChunk.limit(_contentChunk.position()+(int)remaining);
+                            _contentChunk.limit(_contentChunk.position()+(int)content);
                         }
 
                         _contentPosition += _contentChunk.remaining();
                         buffer.position(buffer.position()+_contentChunk.remaining());
 
-                        boolean handle=_handler.content(_contentChunk);
+                        if (_handler.content(_contentChunk))
+                            return true;
+
                         if(_contentPosition == _contentLength)
                         {
                             setState(State.END);
                             if (_handler.messageComplete())
                                 return true;
                         }
-                        if (handle)
-                            return true;
                     }
                     break;
                 }
@@ -1463,8 +1483,8 @@ public class HttpParser
 
                 case CHUNK:
                 {
-                    int remaining=_chunkLength - _chunkPosition;
-                    if (remaining == 0)
+                    int chunk=_chunkLength - _chunkPosition;
+                    if (chunk == 0)
                     {
                         setState(State.CHUNKED_CONTENT);
                     }
@@ -1472,13 +1492,13 @@ public class HttpParser
                     {
                         _contentChunk=buffer.asReadOnlyBuffer();
 
-                        if (_contentChunk.remaining() > remaining)
-                            _contentChunk.limit(_contentChunk.position()+remaining);
-                        remaining=_contentChunk.remaining();
+                        if (remaining > chunk)
+                            _contentChunk.limit(_contentChunk.position()+chunk);
+                        chunk=_contentChunk.remaining();
 
-                        _contentPosition += remaining;
-                        _chunkPosition += remaining;
-                        buffer.position(buffer.position()+remaining);
+                        _contentPosition += chunk;
+                        _chunkPosition += chunk;
+                        buffer.position(buffer.position()+chunk);
                         if (_handler.content(_contentChunk))
                             return true;
                     }
@@ -1493,7 +1513,10 @@ public class HttpParser
 
                 default: 
                     break;
+                    
             }
+            
+            remaining=buffer.remaining();
         }
         return false;
     }

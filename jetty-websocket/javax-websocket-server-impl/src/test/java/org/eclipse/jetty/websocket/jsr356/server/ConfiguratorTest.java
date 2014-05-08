@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.websocket.Extension;
 import javax.websocket.HandshakeResponse;
@@ -37,6 +38,7 @@ import javax.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.util.QuoteUtil;
@@ -44,7 +46,6 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadClient;
 import org.eclipse.jetty.websocket.common.test.HttpResponse;
-import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -130,6 +131,38 @@ public class ConfiguratorTest
         }
     }
 
+    public static class ProtocolsConfigurator extends ServerEndpointConfig.Configurator
+    {
+        public static AtomicReference<String> seenProtocols = new AtomicReference<>();
+        
+        @Override
+        public void modifyHandshake(ServerEndpointConfig sec, HandshakeRequest request, HandshakeResponse response)
+        {
+            super.modifyHandshake(sec,request,response);
+        }
+        
+        @Override
+        public String getNegotiatedSubprotocol(List<String> supported, List<String> requested)
+        {
+            LOG.warn(new Throwable());
+            String seen = QuoteUtil.join(requested,",");
+            seenProtocols.compareAndSet(null,seen);
+            return super.getNegotiatedSubprotocol(supported,requested);
+        }
+    }
+
+    @ServerEndpoint(value = "/protocols", configurator = ProtocolsConfigurator.class)
+    public static class ProtocolsSocket
+    {
+        @OnMessage
+        public String onMessage(Session session, String msg)
+        {
+            StringBuilder response = new StringBuilder();
+            response.append("Requested Protocols: [").append(ProtocolsConfigurator.seenProtocols.get()).append("]");
+            return response.toString();
+        }
+    }
+
     private static Server server;
     private static URI baseServerUri;
 
@@ -149,6 +182,7 @@ public class ConfiguratorTest
         container.addEndpoint(CaptureHeadersSocket.class);
         container.addEndpoint(EmptySocket.class);
         container.addEndpoint(NoExtensionsSocket.class);
+        container.addEndpoint(ProtocolsSocket.class);
 
         server.start();
         String host = connector.getHost();
@@ -210,9 +244,101 @@ public class ConfiguratorTest
             client.expectUpgradeResponse();
 
             client.write(new TextFrame().setPayload("X-Dummy"));
-            IncomingFramesCapture capture = client.readFrames(1,TimeUnit.SECONDS,1);
-            WebSocketFrame frame = capture.getFrames().poll();
+            EventQueue<WebSocketFrame> frames = client.readFrames(1,1,TimeUnit.SECONDS);
+            WebSocketFrame frame = frames.poll();
             Assert.assertThat("Frame Response", frame.getPayloadAsUTF8(), is("Request Header [X-Dummy]: \"Bogus\""));
+        }
+    }
+    
+    /**
+     * Test of Sec-WebSocket-Protocol, as seen in RFC-6455, 1 protocol
+     */
+    @Test
+    public void testProtocol_Single() throws Exception
+    {
+        URI uri = baseServerUri.resolve("/protocols");
+        ProtocolsConfigurator.seenProtocols.set(null);
+
+        try (BlockheadClient client = new BlockheadClient(uri))
+        {
+            client.addHeader("Sec-WebSocket-Protocol: echo\r\n");
+            client.connect();
+            client.sendStandardRequest();
+            client.expectUpgradeResponse();
+
+            client.write(new TextFrame().setPayload("getProtocols"));
+            EventQueue<WebSocketFrame> frames = client.readFrames(1,1,TimeUnit.SECONDS);
+            WebSocketFrame frame = frames.poll();
+            Assert.assertThat("Frame Response", frame.getPayloadAsUTF8(), is("Requested Protocols: [\"echo\"]"));
+        }
+    }
+    
+    /**
+     * Test of Sec-WebSocket-Protocol, as seen in RFC-6455, 3 protocols
+     */
+    @Test
+    public void testProtocol_Triple() throws Exception
+    {
+        URI uri = baseServerUri.resolve("/protocols");
+        ProtocolsConfigurator.seenProtocols.set(null);
+
+        try (BlockheadClient client = new BlockheadClient(uri))
+        {
+            client.addHeader("Sec-WebSocket-Protocol: echo, chat, status\r\n");
+            client.connect();
+            client.sendStandardRequest();
+            client.expectUpgradeResponse();
+
+            client.write(new TextFrame().setPayload("getProtocols"));
+            EventQueue<WebSocketFrame> frames = client.readFrames(1,1,TimeUnit.SECONDS);
+            WebSocketFrame frame = frames.poll();
+            Assert.assertThat("Frame Response", frame.getPayloadAsUTF8(), is("Requested Protocols: [\"echo\",\"chat\",\"status\"]"));
+        }
+    }
+    
+    /**
+     * Test of Sec-WebSocket-Protocol, using all lowercase header
+     */
+    @Test
+    public void testProtocol_LowercaseHeader() throws Exception
+    {
+        URI uri = baseServerUri.resolve("/protocols");
+        ProtocolsConfigurator.seenProtocols.set(null);
+
+        try (BlockheadClient client = new BlockheadClient(uri))
+        {
+            client.addHeader("sec-websocket-protocol: echo, chat, status\r\n");
+            client.connect();
+            client.sendStandardRequest();
+            client.expectUpgradeResponse();
+
+            client.write(new TextFrame().setPayload("getProtocols"));
+            EventQueue<WebSocketFrame> frames = client.readFrames(1,1,TimeUnit.SECONDS);
+            WebSocketFrame frame = frames.poll();
+            Assert.assertThat("Frame Response", frame.getPayloadAsUTF8(), is("Requested Protocols: [\"echo\",\"chat\",\"status\"]"));
+        }
+    }
+    
+    /**
+     * Test of Sec-WebSocket-Protocol, using non-spec case header
+     */
+    @Test
+    public void testProtocol_AltHeaderCase() throws Exception
+    {
+        URI uri = baseServerUri.resolve("/protocols");
+        ProtocolsConfigurator.seenProtocols.set(null);
+
+        try (BlockheadClient client = new BlockheadClient(uri))
+        {
+            client.addHeader("Sec-Websocket-Protocol: echo, chat, status\r\n");
+            client.connect();
+            client.sendStandardRequest();
+            client.expectUpgradeResponse();
+
+            client.write(new TextFrame().setPayload("getProtocols"));
+            EventQueue<WebSocketFrame> frames = client.readFrames(1,1,TimeUnit.SECONDS);
+            WebSocketFrame frame = frames.poll();
+            Assert.assertThat("Frame Response", frame.getPayloadAsUTF8(), is("Requested Protocols: [\"echo\",\"chat\",\"status\"]"));
         }
     }
 }

@@ -73,6 +73,11 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
     private static final Logger LOG = Log.getLogger(HttpChannel.class);
     private static final ThreadLocal<HttpChannel<?>> __currentChannel = new ThreadLocal<>();
 
+    /* ------------------------------------------------------------ */
+    /** Get the current channel that this thread is dispatched to.
+     * @see Request#getAttribute(String) for a more general way to access the HttpChannel
+     * @return the current HttpChannel or null
+     */
     public static HttpChannel<?> getCurrentHttpChannel()
     {
         return __currentChannel.get();

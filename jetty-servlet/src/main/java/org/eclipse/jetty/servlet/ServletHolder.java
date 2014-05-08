@@ -19,6 +19,7 @@
 package org.eclipse.jetty.servlet;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -86,6 +87,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     private transient long _unavailable;
     private transient boolean _enabled = true;
     private transient UnavailableException _unavailableEx;
+
+    public static final  String JSP_GENERATED_PACKAGE_NAME = "org.eclipse.jetty.servlet.jspPackagePrefix";
     public static final Map<String,String> NO_MAPPED_ROLES = Collections.emptyMap();
 
     /* ---------------------------------------------------------------- */
@@ -277,8 +280,6 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     public void doStart()
         throws Exception
     {
-
-        
         _unavailable=0;
         if (!_enabled)
             return;
@@ -287,8 +288,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         if (_forcedPath != null)
         {
             // Look for a precompiled JSP Servlet
-            String precompiled="org.apache.jsp"+_forcedPath.replace('.','_').replace('/','.');
-            
+            String precompiled=getClassNameForJsp(_forcedPath);
+            LOG.debug("Checking for precompiled servlet {} for jsp {}", precompiled, _forcedPath);
             ServletHolder jsp=getServletHandler().getServlet(precompiled);
             if (jsp!=null)
             {
@@ -297,13 +298,25 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                 setClassName(jsp.getClassName());
             }
             else
-            {
-                // Look for normal JSP servlet
-                jsp=getServletHandler().getServlet("jsp");
-                if (jsp!=null)
+            { 
+                if (getClassName() == null)
                 {
-                    LOG.debug("JSP file {} for {} mapped to Servlet {}",_forcedPath, getName(),jsp.getClassName());
-                    setClassName(jsp.getClassName());
+                    // Look for normal JSP servlet
+                    jsp=getServletHandler().getServlet("jsp");
+                    if (jsp!=null)
+                    {
+                        LOG.debug("JSP file {} for {} mapped to Servlet {}",_forcedPath, getName(),jsp.getClassName());
+                        setClassName(jsp.getClassName());
+                        //copy jsp init params that don't exist for this servlet
+                        for (Map.Entry<String, String> entry:jsp.getInitParameters().entrySet())
+                        {
+                            if (!_initParams.containsKey(entry.getKey()))
+                                setInitParameter(entry.getKey(), entry.getValue());
+                        }
+                        //jsp specific: set up the jsp-file on the JspServlet so it can precompile iff load-on-startup is >=0
+                        if (_initOnStartup)
+                            setInitParameter("jspFile", _forcedPath);
+                    }                       
                 }
             }
         }
@@ -783,6 +796,78 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         if (classname == null)
             return false;
         return ("org.apache.jasper.servlet.JspServlet".equals(classname));
+    }
+    
+    
+    /* ------------------------------------------------------------ */
+    private String getNameOfJspClass (String jsp)
+    {
+        if (jsp == null)
+            return "";
+        
+        int i = jsp.lastIndexOf('/') + 1;
+        jsp = jsp.substring(i);
+        try
+        {
+            Class jspUtil = Loader.loadClass(Holder.class, "org.apache.jasper.compiler.JspUtil");
+            Method makeJavaIdentifier = jspUtil.getMethod("makeJavaIdentifier", String.class);
+            return (String)makeJavaIdentifier.invoke(null, jsp);
+        }
+        catch (Exception e)
+        {
+            String tmp = jsp.replace('.','_');
+            LOG.warn("Unable to make identifier for jsp "+jsp +" trying "+tmp+" instead");
+            if (LOG.isDebugEnabled())
+                LOG.warn(e);
+            return tmp;
+        }
+    }
+    
+    
+    /* ------------------------------------------------------------ */
+    private String getPackageOfJspClass (String jsp)
+    {
+        if (jsp == null)
+            return "";
+        
+        int i = jsp.lastIndexOf('/');
+        if (i <= 0)
+            return "";
+        try
+        {
+            Class jspUtil = Loader.loadClass(Holder.class, "org.apache.jasper.compiler.JspUtil");
+            Method makeJavaPackage = jspUtil.getMethod("makeJavaPackage", String.class);
+            return (String)makeJavaPackage.invoke(null, jsp.substring(0,i));
+        } 
+        catch (Exception e)
+        {
+            String tmp = jsp.substring(1).replace('/','.');
+            LOG.warn("Unable to make package for jsp "+jsp +" trying "+tmp+" instead");
+            if (LOG.isDebugEnabled())
+                LOG.warn(e);
+            return tmp;
+        }
+    }
+    
+    
+    /* ------------------------------------------------------------ */
+    private String getJspPackagePrefix ()
+    {
+        String jspPackageName = (String)getServletHandler().getServletContext().getInitParameter(JSP_GENERATED_PACKAGE_NAME );
+        if (jspPackageName == null)
+            jspPackageName = "org.apache.jsp";
+        
+        return jspPackageName;
+    }
+    
+    
+    /* ------------------------------------------------------------ */
+    private String getClassNameForJsp (String jsp)
+    {
+        if (jsp == null)
+            return null; 
+        
+        return getJspPackagePrefix() + "." +getPackageOfJspClass(jsp) + "." + getNameOfJspClass(jsp);
     }
 
 

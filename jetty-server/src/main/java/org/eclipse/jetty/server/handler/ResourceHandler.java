@@ -248,15 +248,7 @@ public class ResourceHandler extends HandlerWrapper
     	{
     	    if(_defaultStylesheet == null)
     	    {
-    	        try
-    	        {
-    	            _defaultStylesheet =  Resource.newResource(this.getClass().getResource("/jetty-dir.css"));
-    	        }
-    	        catch(IOException e)
-    	        {
-    	            LOG.warn(e.toString());
-    	            LOG.debug(e);
-    	        }
+    	        _defaultStylesheet =  Resource.newResource(this.getClass().getResource("/jetty-dir.css"));
     	    }
     	    return _defaultStylesheet;
     	}
@@ -279,9 +271,9 @@ public class ResourceHandler extends HandlerWrapper
         }
     	catch(Exception e)
     	{
-    		LOG.warn(e.toString());
-            LOG.debug(e);
-            throw new IllegalArgumentException(stylesheet);
+    	    LOG.warn(e.toString());
+    	    LOG.debug(e);
+    	    throw new IllegalArgumentException(stylesheet);
     	}
     }
 

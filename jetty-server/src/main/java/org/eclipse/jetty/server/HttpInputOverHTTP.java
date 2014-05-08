@@ -86,38 +86,11 @@ public class HttpInputOverHTTP extends HttpInput<ByteBuffer> implements Callback
 
         // No - then we are going to need to parse some more content
         _content=null;
-        ByteBuffer requestBuffer = _httpConnection.getRequestBuffer();
-
-        while (!_httpConnection.getParser().isComplete())
-        {
-            // Can the parser progress (even with an empty buffer)
-            _httpConnection.getParser().parseNext(requestBuffer==null?BufferUtil.EMPTY_BUFFER:requestBuffer);
-
-            // If we got some content, that will do for now!
-            if (BufferUtil.hasContent(_content))
-                return _content;
-
-            // No, we can we try reading some content?
-            if (BufferUtil.isEmpty(requestBuffer) && _httpConnection.getEndPoint().isInputShutdown())
-            {
-                _httpConnection.getParser().atEOF();
-                continue;
-            }
-
-            // OK lets read some data
-            int filled=_httpConnection.getEndPoint().fill(requestBuffer);
-            if (LOG.isDebugEnabled()) // Avoid boxing of variable 'filled'
-                LOG.debug("{} filled {}",this,filled);
-            if (filled<=0)
-            {
-                if (filled<0)
-                {
-                    _httpConnection.getParser().atEOF();
-                    continue;
-                }
-                return null;
-            }
-        }
+        _httpConnection.parseContent();
+        
+        // If we have some content available, return it
+        if (BufferUtil.hasContent(_content))
+            return _content;
 
         return null;
 

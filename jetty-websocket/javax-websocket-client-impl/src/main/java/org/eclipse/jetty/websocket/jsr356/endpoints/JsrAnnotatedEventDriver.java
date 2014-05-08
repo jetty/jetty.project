@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.nio.ByteBuffer;
 import java.util.Map;
+
 import javax.websocket.CloseReason;
 import javax.websocket.DecodeException;
 
@@ -31,7 +32,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.message.MessageInputStream;
 import org.eclipse.jetty.websocket.common.message.MessageReader;
 import org.eclipse.jetty.websocket.common.message.SimpleBinaryMessage;
@@ -44,7 +44,7 @@ import org.eclipse.jetty.websocket.jsr356.messages.TextPartialOnMessage;
 /**
  * Base implementation for JSR-356 Annotated event drivers.
  */
-public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver implements EventDriver
+public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver
 {
     private static final Logger LOG = Log.getLogger(JsrAnnotatedEventDriver.class);
     private final JsrEvents<?, ?> events;

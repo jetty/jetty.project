@@ -35,7 +35,7 @@ public class EndRequestContentParser extends ContentParser
     }
 
     @Override
-    public boolean parse(ByteBuffer buffer)
+    public Result parse(ByteBuffer buffer)
     {
         while (buffer.hasRemaining())
         {
@@ -76,7 +76,7 @@ public class EndRequestContentParser extends ContentParser
                         buffer.position(buffer.position() + 3);
                         onEnd();
                         reset();
-                        return true;
+                        return Result.COMPLETE;
                     }
                     else
                     {
@@ -92,7 +92,7 @@ public class EndRequestContentParser extends ContentParser
                     {
                         onEnd();
                         reset();
-                        return true;
+                        return Result.COMPLETE;
                     }
                     break;
                 }
@@ -102,13 +102,17 @@ public class EndRequestContentParser extends ContentParser
                 }
             }
         }
-        return false;
+        return Result.PENDING;
     }
 
     private void onEnd()
     {
-        // TODO: if protocol != 0, invoke an error callback
-        listener.onEnd(getRequest());
+        if (application != 0)
+            listener.onFailure(getRequest(), new Exception("FastCGI application returned code " + application));
+        else if (protocol != 0)
+            listener.onFailure(getRequest(), new Exception("FastCGI server returned code " + protocol));
+        else
+            listener.onEnd(getRequest());
     }
 
     private void reset()

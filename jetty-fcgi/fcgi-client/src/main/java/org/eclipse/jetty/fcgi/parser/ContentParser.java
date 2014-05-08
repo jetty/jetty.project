@@ -29,7 +29,7 @@ public abstract class ContentParser
         this.headerParser = headerParser;
     }
 
-    public abstract boolean parse(ByteBuffer buffer);
+    public abstract Result parse(ByteBuffer buffer);
 
     public void noContent()
     {
@@ -44,5 +44,10 @@ public abstract class ContentParser
     protected int getContentLength()
     {
         return headerParser.getContentLength();
+    }
+
+    public enum Result
+    {
+        PENDING, ASYNC, COMPLETE
     }
 }

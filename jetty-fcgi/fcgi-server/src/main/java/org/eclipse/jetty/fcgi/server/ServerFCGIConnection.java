@@ -151,7 +151,7 @@ public class ServerFCGIConnection extends AbstractConnection
         }
 
         @Override
-        public void onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
+        public boolean onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
         {
             HttpChannelOverFCGI channel = channels.get(request);
             if (LOG.isDebugEnabled())
@@ -161,6 +161,7 @@ public class ServerFCGIConnection extends AbstractConnection
                 if (channel.content(buffer))
                     channel.dispatch();
             }
+            return false;
         }
 
         @Override
@@ -173,6 +174,18 @@ public class ServerFCGIConnection extends AbstractConnection
             {
                 if (channel.messageComplete())
                     channel.dispatch();
+            }
+        }
+
+        @Override
+        public void onFailure(int request, Throwable failure)
+        {
+            HttpChannelOverFCGI channel = channels.remove(request);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Request {} failure on {}: {}", request, channel, failure);
+            if (channel != null)
+            {
+                channel.badMessage(400, failure.toString());
             }
         }
     }

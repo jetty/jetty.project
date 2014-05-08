@@ -19,10 +19,11 @@
 package org.eclipse.jetty.start;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -36,40 +37,37 @@ import java.util.regex.Pattern;
  */
 public class TextFile implements Iterable<String>
 {
-    private final File file;
+    private final Path file;
     private final List<String> lines = new ArrayList<>();
 
-    public TextFile(File file) throws FileNotFoundException, IOException
+    public TextFile(Path file) throws FileNotFoundException, IOException
     {
         this.file = file;
         init();
         
         if (!FS.canReadFile(file))
         {
-            StartLog.debug("Skipping read of missing file: %s",file.getAbsolutePath());
+            StartLog.debug("Skipping read of missing file: %s",file.toAbsolutePath());
             return;
         }
 
-        try (FileReader reader = new FileReader(file))
+        try (BufferedReader buf = Files.newBufferedReader(file,StandardCharsets.UTF_8))
         {
-            try (BufferedReader buf = new BufferedReader(reader))
+            String line;
+            while ((line = buf.readLine()) != null)
             {
-                String line;
-                while ((line = buf.readLine()) != null)
+                if (line.length() == 0)
                 {
-                    if (line.length() == 0)
-                    {
-                        continue;
-                    }
-
-                    if (line.charAt(0) == '#')
-                    {
-                        continue;
-                    }
-
-                    // TODO - bad form calling derived method from base class constructor
-                    process(line.trim());
+                    continue;
                 }
+
+                if (line.charAt(0) == '#')
+                {
+                    continue;
+                }
+
+                // TODO - bad form calling derived method from base class constructor
+                process(line.trim());
             }
         }
     }
@@ -84,7 +82,7 @@ public class TextFile implements Iterable<String>
         lines.add(line);
     }
 
-    public File getFile()
+    public Path getFile()
     {
         return file;
     }

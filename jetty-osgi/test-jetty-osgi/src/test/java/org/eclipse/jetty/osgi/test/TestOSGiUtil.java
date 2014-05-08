@@ -33,7 +33,6 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
-import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -45,22 +44,6 @@ import org.osgi.service.http.HttpService;
  */
 public class TestOSGiUtil
 {
-
-    /**
-     * Note: this will run many more tests. TODO: find a better way to control
-     * this and use non-deprecated methods.
-     * 
-     * @param opti
-     */
-    protected static void addMoreOSGiContainers(List<Option> options)
-    {
-        //Uncomment to run more containers - these have been commented out
-        //to improve speed of builds.
-        //options.add(CoreOptions.equinox().version("3.6.1"));
-        //options.add(CoreOptions.equinox().version("3.7.0"));
-       // options.add(CoreOptions.felix().version("3.2.2"));
-        options.add(CoreOptions.felix().version("4.0.2")); 
-    }
 
     protected static Bundle getBundle(BundleContext bundleContext, String symbolicName)
     {
@@ -146,7 +129,7 @@ public class TestOSGiUtil
         for (Bundle b : bundleContext.getBundles())
         {
             bundlesIndexedBySymbolicName.put(b.getSymbolicName(), b);
-            System.err.println("    " + b.getSymbolicName() + " " + b.getState());
+            System.err.println("    " + b.getSymbolicName() + " " + b.getLocation() + " " + b.getVersion()+ " " + b.getState());
         }
     }
    

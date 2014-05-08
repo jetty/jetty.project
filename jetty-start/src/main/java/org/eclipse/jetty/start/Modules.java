@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.start;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -380,7 +379,7 @@ public class Modules implements Iterable<Module>
         {
             if (!modules.containsKey(name))
             {
-                File file = basehome.getFile("modules/" + name + ".mod");
+                Path file = basehome.getPath("modules/" + name + ".mod");
                 if (FS.canReadFile(file))
                 {
                     Module parent = registerModule(basehome,args,file);
@@ -395,7 +394,7 @@ public class Modules implements Iterable<Module>
     {
         for (Path path : basehome.getPaths("modules/*.mod"))
         {
-            registerModule(basehome,args,path.toFile());
+            registerModule(basehome,args,path);
         }
 
         // load missing post-expanded dependent modules
@@ -420,7 +419,7 @@ public class Modules implements Iterable<Module>
 
             for (String missingParent : missingParents)
             {
-                File file = basehome.getFile("modules/" + missingParent + ".mod");
+                Path file = basehome.getPath("modules/" + missingParent + ".mod");
                 if (FS.canReadFile(file))
                 {
                     Module module = registerModule(basehome,args,file);
@@ -435,7 +434,7 @@ public class Modules implements Iterable<Module>
         }
     }
 
-    private Module registerModule(BaseHome basehome, StartArgs args, File file) throws FileNotFoundException, IOException
+    private Module registerModule(BaseHome basehome, StartArgs args, Path file) throws FileNotFoundException, IOException
     {
         if (!FS.canReadFile(file))
         {

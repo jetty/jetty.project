@@ -140,8 +140,11 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
 
     protected abstract void send(C connection, HttpExchange exchange);
 
-    public void release(C connection)
+    @Override
+    public void release(Connection c)
     {
+        @SuppressWarnings("unchecked")
+        C connection = (C)c;
         LOG.debug("{} released", connection);
         HttpClient client = getHttpClient();
         if (client.isRunning())

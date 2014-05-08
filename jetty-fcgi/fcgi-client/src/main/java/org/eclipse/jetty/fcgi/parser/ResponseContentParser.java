@@ -52,7 +52,7 @@ public class ResponseContentParser extends StreamContentParser
     }
 
     @Override
-    protected void onContent(ByteBuffer buffer)
+    protected boolean onContent(ByteBuffer buffer)
     {
         int request = getRequest();
         ResponseParser parser = parsers.get(request);
@@ -61,7 +61,7 @@ public class ResponseContentParser extends StreamContentParser
             parser = new ResponseParser(listener, request);
             parsers.put(request, parser);
         }
-        parser.parse(buffer);
+        return parser.parse(buffer);
     }
 
     @Override
@@ -87,7 +87,7 @@ public class ResponseContentParser extends StreamContentParser
             this.httpParser = new FCGIHttpParser(this);
         }
 
-        public void parse(ByteBuffer buffer)
+        public boolean parse(ByteBuffer buffer)
         {
             LOG.debug("Response {} {} content {} {}", request, FCGI.StreamType.STD_OUT, state, buffer);
 
@@ -117,7 +117,8 @@ public class ResponseContentParser extends StreamContentParser
                     }
                     case RAW_CONTENT:
                     {
-                        notifyContent(buffer);
+                        if (notifyContent(buffer))
+                            return true;
                         remaining = 0;
                         break;
                     }
@@ -133,6 +134,7 @@ public class ResponseContentParser extends StreamContentParser
                     }
                 }
             }
+            return false;
         }
 
         @Override
@@ -253,15 +255,16 @@ public class ResponseContentParser extends StreamContentParser
             return false;
         }
 
-        private void notifyContent(ByteBuffer buffer)
+        private boolean notifyContent(ByteBuffer buffer)
         {
             try
             {
-                listener.onContent(request, FCGI.StreamType.STD_OUT, buffer);
+                return listener.onContent(request, FCGI.StreamType.STD_OUT, buffer);
             }
             catch (Throwable x)
             {
                 logger.debug("Exception while invoking listener " + listener, x);
+                return false;
             }
         }
 

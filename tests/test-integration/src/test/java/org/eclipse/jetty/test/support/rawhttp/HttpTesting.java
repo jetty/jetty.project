@@ -117,22 +117,6 @@ public class HttpTesting
 
     }
 
-
-
-    public static List<HttpTester.Response> readResponses(ByteBuffer buffer) throws IOException
-    {
-        List<HttpTester.Response> list = new ArrayList<>();
-
-        while(BufferUtil.hasContent(buffer))
-        {
-            HttpTester.Response response = HttpTester.parseResponse(buffer);
-            if (response == null)
-                break;
-            list.add(HttpTester.parseResponse(buffer));
-        }
-        return list;
-    }
-    
     public static List<HttpTester.Response> readResponses(String string) throws IOException
     {
         List<HttpTester.Response> list = new ArrayList<>();

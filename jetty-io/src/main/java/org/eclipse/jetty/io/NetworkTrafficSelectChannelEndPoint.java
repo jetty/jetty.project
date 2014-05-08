@@ -19,11 +19,13 @@
 package org.eclipse.jetty.io;
 
 import java.io.IOException;
+import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.List;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -57,9 +59,11 @@ public class NetworkTrafficSelectChannelEndPoint extends SelectChannelEndPoint
             if (b.hasRemaining())
             {
                 int position = b.position();
+                ByteBuffer view=b.slice();
                 flushed&=super.flush(b);
                 int l=b.position()-position;
-                notifyOutgoing(b, position, l);
+                view.limit(view.position()+l);
+                notifyOutgoing(view);
                 if (!flushed)
                     break;
             }
@@ -67,9 +71,12 @@ public class NetworkTrafficSelectChannelEndPoint extends SelectChannelEndPoint
         return flushed;
     }
 
+    
 
-    public void notifyOpened()
+    @Override
+    public void onOpen()
     {
+        super.onOpen();
         if (listeners != null && !listeners.isEmpty())
         {
             for (NetworkTrafficListener listener : listeners)
@@ -85,6 +92,27 @@ public class NetworkTrafficSelectChannelEndPoint extends SelectChannelEndPoint
             }
         }
     }
+
+    @Override
+    public void onClose()
+    {
+        super.onClose();
+        if (listeners != null && !listeners.isEmpty())
+        {
+            for (NetworkTrafficListener listener : listeners)
+            {
+                try
+                {
+                    listener.closed(getSocket());
+                }
+                catch (Exception x)
+                {
+                    LOG.warn(x);
+                }
+            }
+        }
+    }
+
 
     public void notifyIncoming(ByteBuffer buffer, int read)
     {
@@ -105,18 +133,16 @@ public class NetworkTrafficSelectChannelEndPoint extends SelectChannelEndPoint
         }
     }
 
-    public void notifyOutgoing(ByteBuffer buffer, int position, int written)
+    public void notifyOutgoing(ByteBuffer view)
     {
-        if (listeners != null && !listeners.isEmpty() && written > 0)
+        if (listeners != null && !listeners.isEmpty() && view.hasRemaining())
         {
+            Socket socket=getSocket();
             for (NetworkTrafficListener listener : listeners)
             {
                 try
                 {
-                    ByteBuffer view = buffer.slice();
-                    view.position(position);
-                    view.limit(position + written);
-                    listener.outgoing(getSocket(), view);
+                    listener.outgoing(socket, view);   
                 }
                 catch (Exception x)
                 {
@@ -126,21 +152,4 @@ public class NetworkTrafficSelectChannelEndPoint extends SelectChannelEndPoint
         }
     }
 
-    public void notifyClosed()
-    {
-        if (listeners != null && !listeners.isEmpty())
-        {
-            for (NetworkTrafficListener listener : listeners)
-            {
-                try
-                {
-                    listener.closed(getSocket());
-                }
-                catch (Exception x)
-                {
-                    LOG.warn(x);
-                }
-            }
-        }
-    }
 }

@@ -18,11 +18,14 @@
 
 package org.eclipse.jetty.client.util;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
+import java.util.Arrays;
 import java.util.Locale;
 
 import org.eclipse.jetty.client.api.Response;
@@ -30,6 +33,7 @@ import org.eclipse.jetty.client.api.Response.Listener;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.util.BufferUtil;
 
 /**
  * <p>Implementation of {@link Listener} that buffers the content up to a maximum length
@@ -40,7 +44,7 @@ import org.eclipse.jetty.http.HttpHeader;
 public abstract class BufferingResponseListener extends Listener.Adapter
 {
     private final int maxLength;
-    private volatile byte[] buffer = new byte[0];
+    private volatile ByteBuffer buffer;
     private volatile String encoding;
 
     /**
@@ -58,53 +62,57 @@ public abstract class BufferingResponseListener extends Listener.Adapter
      */
     public BufferingResponseListener(int maxLength)
     {
-        this.maxLength = maxLength;
+        this.maxLength=maxLength;
     }
 
     @Override
     public void onHeaders(Response response)
     {
+        super.onHeaders(response);
+        
         HttpFields headers = response.getHeaders();
         long length = headers.getLongField(HttpHeader.CONTENT_LENGTH.asString());
         if (length > maxLength)
         {
             response.abort(new IllegalArgumentException("Buffering capacity exceeded"));
+            return;
         }
-        else
+        
+        buffer=BufferUtil.allocate((length > 0)?(int)length:1024);
+        
+        String contentType = headers.get(HttpHeader.CONTENT_TYPE);
+        if (contentType != null)
         {
-            String contentType = headers.get(HttpHeader.CONTENT_TYPE);
-            if (contentType != null)
+            String charset = "charset=";
+            int index = contentType.toLowerCase(Locale.ENGLISH).indexOf(charset);
+            if (index > 0)
             {
-                String charset = "charset=";
-                int index = contentType.toLowerCase(Locale.ENGLISH).indexOf(charset);
+                String encoding = contentType.substring(index + charset.length());
+                // Sometimes charsets arrive with an ending semicolon
+                index = encoding.indexOf(';');
                 if (index > 0)
-                {
-                    String encoding = contentType.substring(index + charset.length());
-                    // Sometimes charsets arrive with an ending semicolon
-                    index = encoding.indexOf(';');
-                    if (index > 0)
-                        encoding = encoding.substring(0, index);
-                    this.encoding = encoding;
-                }
+                    encoding = encoding.substring(0, index);
+                this.encoding = encoding;
             }
         }
     }
 
     @Override
     public void onContent(Response response, ByteBuffer content)
-    {
-        long newLength = buffer.length + content.remaining();
-        if (newLength > maxLength)
+    {        
+        int length = content.remaining();
+        if (length>BufferUtil.space(buffer))
         {
-            response.abort(new IllegalArgumentException("Buffering capacity exceeded"));
+            int requiredCapacity = buffer==null?0:buffer.capacity()+length;
+            if (requiredCapacity>maxLength)
+                response.abort(new IllegalArgumentException("Buffering capacity exceeded"));
+            
+            int newCapacity = Math.min(Integer.highestOneBit(requiredCapacity) << 1, maxLength);
+            buffer = BufferUtil.ensureCapacity(buffer,newCapacity);
         }
-        else
-        {
-            byte[] newBuffer = new byte[(int)newLength];
-            System.arraycopy(buffer, 0, newBuffer, 0, buffer.length);
-            content.get(newBuffer, buffer.length, content.remaining());
-            buffer = newBuffer;
-        }
+
+        BufferUtil.append(buffer, content);
+        
     }
 
     @Override
@@ -121,7 +129,9 @@ public abstract class BufferingResponseListener extends Listener.Adapter
      */
     public byte[] getContent()
     {
-        return buffer;
+        if (buffer==null)
+            return new byte[0];
+        return BufferUtil.toArray(buffer);
     }
 
     /**
@@ -144,14 +154,9 @@ public abstract class BufferingResponseListener extends Listener.Adapter
      */
     public String getContentAsString(String encoding)
     {
-        try
-        {
-            return new String(getContent(), encoding);
-        }
-        catch (UnsupportedEncodingException x)
-        {
-            throw new UnsupportedCharsetException(encoding);
-        }
+        if (buffer==null)
+            return null;
+        return BufferUtil.toString(buffer, Charset.forName(encoding));
     }
 
     /**
@@ -161,6 +166,19 @@ public abstract class BufferingResponseListener extends Listener.Adapter
      */
     public String getContentAsString(Charset encoding)
     {
-        return new String(getContent(), encoding);
+        if (buffer==null)
+            return null;
+        return BufferUtil.toString(buffer, encoding);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @return Content as InputStream
+     */
+    public InputStream getContentAsInputStream()
+    {
+        if (buffer==null)
+            return new ByteArrayInputStream(new byte[]{});
+        return new ByteArrayInputStream(buffer.array(), buffer.arrayOffset(), buffer.remaining());
     }
 }

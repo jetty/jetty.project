@@ -34,6 +34,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 
 public class SimpleServletServer
 {
@@ -146,5 +147,18 @@ public class SimpleServletServer
         {
             e.printStackTrace(System.err);
         }
+    }
+
+    public WebSocketServletFactory getWebSocketServletFactory()
+    {
+        // Try filter approach first
+        WebSocketUpgradeFilter filter = (WebSocketUpgradeFilter)this.servlet.getServletContext().getAttribute(WebSocketUpgradeFilter.class.getName());
+        if (filter != null)
+        {
+            return filter.getFactory();
+        }
+
+        // Try servlet next
+        return (WebSocketServletFactory)this.servlet.getServletContext().getAttribute(WebSocketServletFactory.class.getName());
     }
 }
