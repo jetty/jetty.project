@@ -137,7 +137,7 @@ public class Main
 
     private BaseHome baseHome;
 
-    Main() throws IOException
+    public Main() throws IOException
     {
     }
 
