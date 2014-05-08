@@ -34,7 +34,7 @@ import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class ExtraStartTest
+public class IncludeJettyDirTest
 {
     private static class MainResult
     {
@@ -97,7 +97,7 @@ public class ExtraStartTest
         TestEnv.makeFile(base,"start.ini", //
                 "jetty.host=127.0.0.1");
 
-        // Simple command line - no reference to extra-start-dirs
+        // Simple command line - no reference to include-jetty-dirs
         MainResult result = runMain(base,home);
 
         List<String> expectedSearchOrder = new ArrayList<>();
@@ -127,10 +127,10 @@ public class ExtraStartTest
         TestEnv.makeFile(base,"start.ini", //
                 "jetty.host=127.0.0.1");
 
-        // Simple command line reference to extra-start-dir
+        // Simple command line reference to include-jetty-dir
         MainResult result = runMain(base,home,
         // direct reference via path
-                "--extra-start-dir=" + common.getAbsolutePath());
+                "--include-jetty-dir=" + common.getAbsolutePath());
 
         List<String> expectedSearchOrder = new ArrayList<>();
         expectedSearchOrder.add("${jetty.base}");
@@ -161,12 +161,12 @@ public class ExtraStartTest
         TestEnv.makeFile(base,"start.ini", //
                 "jetty.host=127.0.0.1");
 
-        // Simple command line reference to extra-start-dir via property (also on command line)
+        // Simple command line reference to include-jetty-dir via property (also on command line)
         MainResult result = runMain(base,home,
         // property
                 "my.common=" + common.getAbsolutePath(),
                 // reference via property
-                "--extra-start-dir=${my.common}");
+                "--include-jetty-dir=${my.common}");
 
         List<String> expectedSearchOrder = new ArrayList<>();
         expectedSearchOrder.add("${jetty.base}");
@@ -203,12 +203,12 @@ public class ExtraStartTest
 
         String dirRef = "${my.opt}" + File.separator + "common";
 
-        // Simple command line reference to extra-start-dir via property (also on command line)
+        // Simple command line reference to include-jetty-dir via property (also on command line)
         MainResult result = runMain(base,home,
         // property to 'opt' dir
                 "my.opt=" + opt.getAbsolutePath(),
                 // reference via property prefix
-                "--extra-start-dir=" + dirRef);
+                "--include-jetty-dir=" + dirRef);
 
         List<String> expectedSearchOrder = new ArrayList<>();
         expectedSearchOrder.add("${jetty.base}");
@@ -245,14 +245,14 @@ public class ExtraStartTest
 
         String dirRef = "${my.opt}" + File.separator + "${my.dir}";
 
-        // Simple command line reference to extra-start-dir via property (also on command line)
+        // Simple command line reference to include-jetty-dir via property (also on command line)
         MainResult result = runMain(base,home,
         // property to 'opt' dir
                 "my.opt=" + opt.getAbsolutePath(),
                 // property to commmon dir name
                 "my.dir=common",
                 // reference via property prefix
-                "--extra-start-dir=" + dirRef);
+                "--include-jetty-dir=" + dirRef);
 
         List<String> expectedSearchOrder = new ArrayList<>();
         expectedSearchOrder.add("${jetty.base}");
@@ -282,7 +282,7 @@ public class ExtraStartTest
         FS.ensureEmpty(base);
         TestEnv.makeFile(base,"start.ini", //
                 "jetty.host=127.0.0.1",//
-                "--extra-start-dir=" + common.getAbsolutePath());
+                "--include-jetty-dir=" + common.getAbsolutePath());
 
         MainResult result = runMain(base,home);
 
@@ -318,8 +318,8 @@ public class ExtraStartTest
         FS.ensureEmpty(base);
         TestEnv.makeFile(base,"start.ini", //
                 "jetty.host=127.0.0.1",//
-                "--extra-start-dir=" + common.getAbsolutePath(), //
-                "--extra-start-dir=" + corp.getAbsolutePath());
+                "--include-jetty-dir=" + common.getAbsolutePath(), //
+                "--include-jetty-dir=" + corp.getAbsolutePath());
 
         MainResult result = runMain(base,home);
 
@@ -351,7 +351,7 @@ public class ExtraStartTest
         File common = testdir.getFile("common");
         FS.ensureEmpty(common);
         TestEnv.makeFile(common,"start.ini", //
-                "--extra-start-dir=" + corp.getAbsolutePath(), //
+                "--include-jetty-dir=" + corp.getAbsolutePath(), //
                 "jetty.port=8080");
 
         // Create base
@@ -359,7 +359,7 @@ public class ExtraStartTest
         FS.ensureEmpty(base);
         TestEnv.makeFile(base,"start.ini", //
                 "jetty.host=127.0.0.1",//
-                "--extra-start-dir=" + common.getAbsolutePath());
+                "--include-jetty-dir=" + common.getAbsolutePath());
 
         MainResult result = runMain(base,home);
 
@@ -393,7 +393,7 @@ public class ExtraStartTest
         FS.ensureEmpty(common);
         TestEnv.makeFile(common,"start.ini", //
                 "my.corp=" + corp.getAbsolutePath(), //
-                "--extra-start-dir=${my.corp}", //
+                "--include-jetty-dir=${my.corp}", //
                 "jetty.port=8080");
 
         // Create base
@@ -402,7 +402,7 @@ public class ExtraStartTest
         TestEnv.makeFile(base,"start.ini", //
                 "jetty.host=127.0.0.1",//
                 "my.common=" + common.getAbsolutePath(), //
-                "--extra-start-dir=${my.common}");
+                "--include-jetty-dir=${my.common}");
 
         MainResult result = runMain(base,home);
 
@@ -442,7 +442,7 @@ public class ExtraStartTest
         File common = testdir.getFile("common");
         FS.ensureEmpty(common);
         TestEnv.makeFile(common,"start.ini", //
-                "--extra-start-dir=" + corp.getAbsolutePath(), //
+                "--include-jetty-dir=" + corp.getAbsolutePath(), //
                 "jetty.port=8080");
 
         // Create base
@@ -450,11 +450,11 @@ public class ExtraStartTest
         FS.ensureEmpty(base);
         TestEnv.makeFile(base,"start.ini", //
                 "jetty.host=127.0.0.1",//
-                "--extra-start-dir=" + common.getAbsolutePath());
+                "--include-jetty-dir=" + common.getAbsolutePath());
 
         MainResult result = runMain(base,home,
-        // command line provided extra-start-dir ref
-                "--extra-start-dir=" + devops.getAbsolutePath());
+        // command line provided include-jetty-dir ref
+                "--include-jetty-dir=" + devops.getAbsolutePath());
 
         List<String> expectedSearchOrder = new ArrayList<>();
         expectedSearchOrder.add("${jetty.base}");
@@ -486,7 +486,7 @@ public class ExtraStartTest
         File common = testdir.getFile("common");
         FS.ensureEmpty(common);
         TestEnv.makeFile(common,"start.ini", //
-                "--extra-start-dir=" + corp.getAbsolutePath(), //
+                "--include-jetty-dir=" + corp.getAbsolutePath(), //
                 "jetty.port=8080");
 
         // Create base
@@ -494,7 +494,7 @@ public class ExtraStartTest
         FS.ensureEmpty(base);
         TestEnv.makeFile(base,"start.ini", //
                 "jetty.host=127.0.0.1",//
-                "--extra-start-dir=" + common.getAbsolutePath());
+                "--include-jetty-dir=" + common.getAbsolutePath());
 
         MainResult result = runMain(base,home,
         // command line property should override all others
@@ -530,21 +530,21 @@ public class ExtraStartTest
         // standard property
                 "jetty.port=9090",
                 // INTENTIONAL BAD Reference (duplicate)
-                "--extra-start-dir=" + common.getAbsolutePath());
+                "--include-jetty-dir=" + common.getAbsolutePath());
 
         // Populate common
         TestEnv.makeFile(common,"start.ini",
         // standard property
                 "jetty.port=8080",
                 // reference to corp
-                "--extra-start-dir=" + corp.getAbsolutePath());
+                "--include-jetty-dir=" + corp.getAbsolutePath());
 
         // Create base
         File base = testdir.getFile("base");
         FS.ensureEmpty(base);
         TestEnv.makeFile(base,"start.ini", //
                 "jetty.host=127.0.0.1",//
-                "--extra-start-dir=" + common.getAbsolutePath());
+                "--include-jetty-dir=" + common.getAbsolutePath());
 
         try
         {

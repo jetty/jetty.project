@@ -41,7 +41,7 @@ import org.eclipse.jetty.start.StartLog;
 /**
  * A Directory based {@link ConfigSource}.
  * <p>
- * Such as <code>${jetty.base}</code> or and <code>--extra-start-dir=[path]</code> sources.
+ * Such as <code>${jetty.base}</code> or and <code>--include-jetty-dir=[path]</code> sources.
  */
 public class DirConfigSource implements ConfigSource
 {

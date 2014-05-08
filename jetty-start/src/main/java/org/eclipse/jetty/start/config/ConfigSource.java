@@ -43,8 +43,8 @@ public interface ConfigSource
      * <pre>
      *           -1 = the command line
      *            0 = the ${jetty.base} source
-     *       [1..n] = extra-start-dir entries from command line
-     *     [n+1..n] = extra-start-dir entries from start.ini (or start.d/*.ini) 
+     *       [1..n] = include-jetty-dir entries from command line
+     *     [n+1..n] = include-jetty-dir entries from start.ini (or start.d/*.ini) 
      *      9999999 = the ${jetty.home} source
      * </pre>
      * 

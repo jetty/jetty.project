@@ -651,7 +651,7 @@ public class StartArgs
             return;
         }
 
-        if (arg.startsWith("--extra-start-dir="))
+        if (arg.startsWith("--include-jetty-dir="))
         {
             // valid, but handled in ConfigSources instead
             return;

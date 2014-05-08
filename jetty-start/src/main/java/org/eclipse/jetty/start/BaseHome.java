@@ -222,7 +222,7 @@ public class BaseHome
      * <ol>
      * <li>If provided path is an absolute reference., and exists, return that reference</li>
      * <li>If exists relative to <code>${jetty.base}</code>, return that reference</li>
-     * <li>If exists relative to and <code>extra-start-dir</code> locations, return that reference</li>
+     * <li>If exists relative to and <code>include-jetty-dir</code> locations, return that reference</li>
      * <li>If exists relative to <code>${jetty.home}</code>, return that reference</li>
      * <li>Return standard {@link Path} reference obtained from {@link java.nio.file.FileSystem#getPath(String, String...)} (no exists check performed)</li>
      * </ol>

@@ -62,9 +62,9 @@ public class TestUseCases
     }
     
     @Test
-    public void testWithExtraStartDir_Logging() throws Exception
+    public void testWithIncludeJettyDir_Logging() throws Exception
     {
-        assertUseCase("home","base.with.extra.start.dirs","assert-extra-start-dir-logging.txt");
+        assertUseCase("home","base.with.include.jetty.dirs","assert-include-jetty-dir-logging.txt");
     }
 
     @Test
