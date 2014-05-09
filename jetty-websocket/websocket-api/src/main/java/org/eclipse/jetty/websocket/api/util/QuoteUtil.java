@@ -345,8 +345,16 @@ public class QuoteUtil
      */
     public static void quoteIfNeeded(StringBuilder buf, String str, String delim)
     {
+        if (str == null)
+        {
+            return;
+        }
         // check for delimiters in input string
         int len = str.length();
+        if (len == 0)
+        {
+            return;
+        }
         int ch;
         for (int i = 0; i < len; i++)
         {
