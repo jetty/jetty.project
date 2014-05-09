@@ -40,7 +40,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncListener;
 import javax.servlet.DispatcherType;
@@ -177,7 +176,6 @@ public class Request implements HttpServletRequest
     private boolean _requestedSessionIdFromCookie = false;
     private volatile Attributes _attributes;
     private Authentication _authentication;
-    private MultiMap<String> _baseParameters;
     private String _characterEncoding;
     private ContextHandler.Context _context;
     private String _contextPath;
@@ -186,6 +184,8 @@ public class Request implements HttpServletRequest
     private int _inputState = __NONE;
     private HttpMethod _httpMethod;
     private String _httpMethodString;
+    private MultiMap<String> _queryParameters;
+    private MultiMap<String> _contentParameters;
     private MultiMap<String> _parameters;
     private String _pathInfo;
     private int _port;
@@ -237,148 +237,43 @@ public class Request implements HttpServletRequest
             throw new IllegalArgumentException(listener.getClass().toString());
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * Extract Parameters from query string and/or form _content.
-     */
     public void extractParameters()
     {
-        if (_baseParameters == null)
-            _baseParameters = new MultiMap<>();
-
         if (_paramsExtracted)
-        {
-            if (_parameters == null)
-                _parameters = _baseParameters;
             return;
-        }
 
         _paramsExtracted = true;
 
-        try
+        // Extract query string parameters; these may be replaced by a forward()
+        // and may have already been extracted by mergeQueryParameters().
+        if (_queryParameters == null)
+            _queryParameters = extractQueryParameters();
+
+        // Extract content parameters; these cannot be replaced by a forward()
+        // once extracted and may have already been extracted by getParts() or
+        // by a processing happening after a form-based authentication.
+        if (_contentParameters == null)
+            _contentParameters = extractContentParameters();
+
+        _parameters = restoreParameters();
+    }
+
+    private MultiMap<String> extractQueryParameters()
+    {
+        MultiMap<String> result = new MultiMap<>();
+        if (_uri != null && _uri.hasQuery())
         {
-            // Handle query string
-            if (_uri != null && _uri.hasQuery())
+            if (_queryEncoding == null)
             {
-                if (_queryEncoding == null)
-                    _uri.decodeQueryTo(_baseParameters);
-                else
-                {
-                    try
-                    {
-                        _uri.decodeQueryTo(_baseParameters,_queryEncoding);
-                    }
-                    catch (UnsupportedEncodingException e)
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.warn(e);
-                        else
-                            LOG.warn(e.toString());
-                    }
-                }
+                _uri.decodeQueryTo(result);
             }
-
-            // handle any _content.
-            String encoding = getCharacterEncoding();
-            String content_type = getContentType();
-            if (content_type != null && content_type.length() > 0)
-            {
-                content_type = HttpFields.valueParameters(content_type,null);
-
-                if (MimeTypes.Type.FORM_ENCODED.is(content_type) && _inputState == __NONE &&
-                    (HttpMethod.POST.is(getMethod()) || HttpMethod.PUT.is(getMethod())))
-                {
-                    int content_length = getContentLength();
-                    if (content_length != 0)
-                    {
-                        try
-                        {
-                            int maxFormContentSize = -1;
-                            int maxFormKeys = -1;
-
-                            if (_context != null)
-                            {
-                                maxFormContentSize = _context.getContextHandler().getMaxFormContentSize();
-                                maxFormKeys = _context.getContextHandler().getMaxFormKeys();
-                            }
-                            
-                            if (maxFormContentSize < 0)
-                            {
-                                Object obj = _channel.getServer().getAttribute("org.eclipse.jetty.server.Request.maxFormContentSize");
-                                if (obj == null)
-                                    maxFormContentSize = 200000;
-                                else if (obj instanceof Number)
-                                {                      
-                                    Number size = (Number)obj;
-                                    maxFormContentSize = size.intValue();
-                                }
-                                else if (obj instanceof String)
-                                {
-                                    maxFormContentSize = Integer.valueOf((String)obj);
-                                }
-                            }
-                            
-                            if (maxFormKeys < 0)
-                            {
-                                Object obj = _channel.getServer().getAttribute("org.eclipse.jetty.server.Request.maxFormKeys");
-                                if (obj == null)
-                                    maxFormKeys = 1000;
-                                else if (obj instanceof Number)
-                                {
-                                    Number keys = (Number)obj;
-                                    maxFormKeys = keys.intValue();
-                                }
-                                else if (obj instanceof String)
-                                {
-                                    maxFormKeys = Integer.valueOf((String)obj);
-                                }
-                            }
-
-                            if (content_length > maxFormContentSize && maxFormContentSize > 0)
-                            {
-                                throw new IllegalStateException("Form too large " + content_length + ">" + maxFormContentSize);
-                            }
-                            InputStream in = getInputStream();
-                            if (_input.isAsync())
-                                throw new IllegalStateException("Cannot extract parameters with async IO");
-
-                            // Add form params to query params
-                            UrlEncoded.decodeTo(in,_baseParameters,encoding,content_length < 0?maxFormContentSize:-1,maxFormKeys);
-                        }
-                        catch (IOException e)
-                        {
-                            if (LOG.isDebugEnabled())
-                                LOG.warn(e);
-                            else
-                                LOG.warn(e.toString());
-                        }
-                    }
-                }
-              
-            }
-
-            if (_parameters == null)
-                _parameters = _baseParameters;
-            else if (_parameters != _baseParameters)
-            {
-                // Merge parameters (needed if parameters extracted after a forward).
-                _parameters.addAllValues(_baseParameters);
-            }
-
-            if (content_type != null && content_type.length()>0 && content_type.startsWith("multipart/form-data") && getAttribute(__MULTIPART_CONFIG_ELEMENT)!=null)
+            else
             {
                 try
                 {
-                    getParts();
+                    _uri.decodeQueryTo(result, _queryEncoding);
                 }
-                catch (IOException e)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.warn(e);
-                    else
-                        LOG.warn(e.toString());
-                }
-                catch (ServletException e)
+                catch (UnsupportedEncodingException e)
                 {
                     if (LOG.isDebugEnabled())
                         LOG.warn(e);
@@ -387,11 +282,114 @@ public class Request implements HttpServletRequest
                 }
             }
         }
-        finally
+        return result;
+    }
+
+    private MultiMap<String> extractContentParameters()
+    {
+        MultiMap<String> result = new MultiMap<>();
+
+        String contentType = getContentType();
+        if (contentType != null && !contentType.isEmpty())
         {
-            // ensure params always set (even if empty) after extraction
-            if (_parameters == null)
-                _parameters = _baseParameters;
+            contentType = HttpFields.valueParameters(contentType, null);
+            int contentLength = getContentLength();
+            if (contentLength != 0)
+            {
+                if (MimeTypes.Type.FORM_ENCODED.is(contentType) && _inputState == __NONE &&
+                        (HttpMethod.POST.is(getMethod()) || HttpMethod.PUT.is(getMethod())))
+                {
+                    extractFormParameters(result);
+                }
+                else if (contentType.startsWith("multipart/form-data") &&
+                        getAttribute(__MULTIPART_CONFIG_ELEMENT) != null &&
+                        _multiPartInputStream == null)
+                {
+                    extractMultipartParameters(result);
+                }
+            }
+        }
+
+        return result;
+    }
+
+    public void extractFormParameters(MultiMap<String> params)
+    {
+        try
+        {
+            int maxFormContentSize = -1;
+            int maxFormKeys = -1;
+
+            if (_context != null)
+            {
+                maxFormContentSize = _context.getContextHandler().getMaxFormContentSize();
+                maxFormKeys = _context.getContextHandler().getMaxFormKeys();
+            }
+
+            if (maxFormContentSize < 0)
+            {
+                Object obj = _channel.getServer().getAttribute("org.eclipse.jetty.server.Request.maxFormContentSize");
+                if (obj == null)
+                    maxFormContentSize = 200000;
+                else if (obj instanceof Number)
+                {
+                    Number size = (Number)obj;
+                    maxFormContentSize = size.intValue();
+                }
+                else if (obj instanceof String)
+                {
+                    maxFormContentSize = Integer.valueOf((String)obj);
+                }
+            }
+
+            if (maxFormKeys < 0)
+            {
+                Object obj = _channel.getServer().getAttribute("org.eclipse.jetty.server.Request.maxFormKeys");
+                if (obj == null)
+                    maxFormKeys = 1000;
+                else if (obj instanceof Number)
+                {
+                    Number keys = (Number)obj;
+                    maxFormKeys = keys.intValue();
+                }
+                else if (obj instanceof String)
+                {
+                    maxFormKeys = Integer.valueOf((String)obj);
+                }
+            }
+
+            int contentLength = getContentLength();
+            if (contentLength > maxFormContentSize && maxFormContentSize > 0)
+            {
+                throw new IllegalStateException("Form too large: " + contentLength + " > " + maxFormContentSize);
+            }
+            InputStream in = getInputStream();
+            if (_input.isAsync())
+                throw new IllegalStateException("Cannot extract parameters with async IO");
+
+            UrlEncoded.decodeTo(in,params,getCharacterEncoding(),contentLength<0?maxFormContentSize:-1,maxFormKeys);
+        }
+        catch (IOException e)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.warn(e);
+            else
+                LOG.warn(e.toString());
+        }
+    }
+
+    private void extractMultipartParameters(MultiMap<String> result)
+    {
+        try
+        {
+            getParts(result);
+        }
+        catch (IOException | ServletException e)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.warn(e);
+            else
+                LOG.warn(e.toString());
         }
     }
 
@@ -827,6 +825,8 @@ public class Request implements HttpServletRequest
     {
         if (!_paramsExtracted)
             extractParameters();
+        if (_parameters == null)
+            _parameters = restoreParameters();
         return _parameters.getValue(name,0);
     }
 
@@ -839,7 +839,8 @@ public class Request implements HttpServletRequest
     {
         if (!_paramsExtracted)
             extractParameters();
-
+        if (_parameters == null)
+            _parameters = restoreParameters();
         return Collections.unmodifiableMap(_parameters.toStringArrayMap());
     }
 
@@ -852,16 +853,9 @@ public class Request implements HttpServletRequest
     {
         if (!_paramsExtracted)
             extractParameters();
+        if (_parameters == null)
+            _parameters = restoreParameters();
         return Collections.enumeration(_parameters.keySet());
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @return Returns the parameters.
-     */
-    public MultiMap<String> getParameters()
-    {
-        return _parameters;
     }
 
     /* ------------------------------------------------------------ */
@@ -873,10 +867,42 @@ public class Request implements HttpServletRequest
     {
         if (!_paramsExtracted)
             extractParameters();
+        if (_parameters == null)
+            _parameters = restoreParameters();
         List<String> vals = _parameters.getValues(name);
         if (vals == null)
             return null;
         return vals.toArray(new String[vals.size()]);
+    }
+
+    private MultiMap<String> restoreParameters()
+    {
+        MultiMap<String> result = new MultiMap<>();
+        if (_queryParameters == null)
+            _queryParameters = extractQueryParameters();
+        result.addAllValues(_queryParameters);
+        result.addAllValues(_contentParameters);
+        return result;
+    }
+
+    public MultiMap<String> getQueryParameters()
+    {
+        return _queryParameters;
+    }
+
+    public void setQueryParameters(MultiMap<String> queryParameters)
+    {
+        _queryParameters = queryParameters;
+    }
+
+    public void setContentParameters(MultiMap<String> contentParameters)
+    {
+        _contentParameters = contentParameters;
+    }
+
+    public void resetParameters()
+    {
+        _parameters = null;
     }
 
     /* ------------------------------------------------------------ */
@@ -1620,8 +1646,8 @@ public class Request implements HttpServletRequest
         _servletPath = null;
         _timeStamp = 0;
         _uri = null;
-        if (_baseParameters != null)
-            _baseParameters.clear();
+        _queryParameters = null;
+        _contentParameters = null;
         _parameters = null;
         _paramsExtracted = false;
         _inputState = __NONE;
@@ -1860,18 +1886,6 @@ public class Request implements HttpServletRequest
 
     /* ------------------------------------------------------------ */
     /**
-     * @param parameters
-     *            The parameters to set.
-     */
-    public void setParameters(MultiMap<String> parameters)
-    {
-        _parameters = (parameters == null)?_baseParameters:parameters;
-        if (_paramsExtracted && _parameters == null)
-            throw new IllegalStateException();
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
      * @param pathInfo
      *            The pathInfo to set.
      */
@@ -2103,10 +2117,14 @@ public class Request implements HttpServletRequest
     {
         if (getContentType() == null || !getContentType().startsWith("multipart/form-data"))
             throw new ServletException("Content-Type != multipart/form-data");
+        return getParts(null);
+    }
 
+    private Collection<Part> getParts(MultiMap<String> params) throws IOException, ServletException
+    {
         if (_multiPartInputStream == null)
             _multiPartInputStream = (MultiPartInputStreamParser)getAttribute(__MULTIPART_INPUT_STREAM);
-        
+
         if (_multiPartInputStream == null)
         {
             MultipartConfigElement config = (MultipartConfigElement)getAttribute(__MULTIPART_CONFIG_ELEMENT);
@@ -2127,20 +2145,20 @@ public class Request implements HttpServletRequest
                 MultiPartInputStreamParser.MultiPart mp = (MultiPartInputStreamParser.MultiPart)p;
                 if (mp.getContentDispositionFilename() == null)
                 {
-                    //Servlet Spec 3.0 pg 23, parts without filenames must be put into init params
+                    // Servlet Spec 3.0 pg 23, parts without filename must be put into params.
                     String charset = null;
                     if (mp.getContentType() != null)
                         charset = MimeTypes.getCharsetFromContentType(mp.getContentType());
 
-                    //get the bytes regardless of being in memory or in temp file
                     try (InputStream is = mp.getInputStream())
                     {
                         if (os == null)
                             os = new ByteArrayOutputStream();
                         IO.copy(is, os);
                         String content=new String(os.toByteArray(),charset==null?StandardCharsets.UTF_8:Charset.forName(charset));
-                        getParameter(""); //cause params to be evaluated
-                        getParameters().add(mp.getName(), content);
+                        if (_contentParameters == null)
+                            _contentParameters = params == null ? new MultiMap<String>() : params;
+                        _contentParameters.add(mp.getName(), content);
                     }
                     os.reset();
                 }
@@ -2175,72 +2193,57 @@ public class Request implements HttpServletRequest
         _authentication=Authentication.UNAUTHENTICATED;
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * Merge in a new query string. The query string is merged with the existing parameters and {@link #setParameters(MultiMap)} and
-     * {@link #setQueryString(String)} are called with the result. The merge is according to the rules of the servlet dispatch forward method.
-     *
-     * @param query
-     *            The query string to merge into the request.
-     */
-    public void mergeQueryString(String query)
+    public void mergeQueryParameters(String newQuery, boolean updateQueryString)
     {
-        // extract parameters from dispatch query
-        MultiMap<String> parameters = new MultiMap<>();
-        UrlEncoded.decodeTo(query,parameters, UrlEncoded.ENCODING,-1); //have to assume ENCODING because we can't know otherwise
+        MultiMap<String> newQueryParams = new MultiMap<>();
+        // Have to assume ENCODING because we can't know otherwise.
+        UrlEncoded.decodeTo(newQuery, newQueryParams, UrlEncoded.ENCODING, -1);
 
-        boolean merge_old_query = false;
-
-        // Have we evaluated parameters
-        if (!_paramsExtracted)
-            extractParameters();
-
-        // Are there any existing parameters?
-        if (_parameters != null && _parameters.size() > 0)
+        MultiMap<String> oldQueryParams = _queryParameters;
+        if (oldQueryParams == null && _queryString != null)
         {
-            // Merge parameters; new parameters of the same name take precedence.
-            merge_old_query = parameters.addAllValues(_parameters);
+            oldQueryParams = new MultiMap<>();
+            UrlEncoded.decodeTo(_queryString, oldQueryParams, getQueryEncoding(), -1);
         }
 
-        if (_queryString != null && _queryString.length() > 0)
+        MultiMap<String> mergedQueryParams = new MultiMap<>(newQueryParams);
+        boolean hasParamsInCommon = false;
+        if (oldQueryParams != null)
         {
-            if (merge_old_query)
+            // Parameters in the newQuery replace parameters of the oldQuery.
+            MultiMap<String> copy = new MultiMap<>(oldQueryParams);
+            hasParamsInCommon = copy.keySet().removeAll(newQueryParams.keySet());
+            mergedQueryParams.addAllValues(copy);
+        }
+
+        setQueryParameters(mergedQueryParams);
+        resetParameters();
+
+        if (updateQueryString)
+        {
+            // Build the new merged query string.
+            StringBuilder mergedQuery = new StringBuilder(newQuery);
+            if (hasParamsInCommon)
             {
-                StringBuilder overridden_query_string = new StringBuilder();
-                MultiMap<String> overridden_old_query = new MultiMap<>();
-                UrlEncoded.decodeTo(_queryString,overridden_old_query,getQueryEncoding(),-1);//decode using any queryencoding set for the request
-                
-                
-                MultiMap<String> overridden_new_query = new MultiMap<>();
-                UrlEncoded.decodeTo(query,overridden_new_query,UrlEncoded.ENCODING,-1); //have to assume ENCODING as we cannot know otherwise
-
-                for(String name: overridden_old_query.keySet())
+                for (Map.Entry<String, List<String>> entry : mergedQueryParams.entrySet())
                 {
-                    if (!overridden_new_query.containsKey(name))
-                    {
-                        List<String> values = overridden_old_query.get(name);
-                        for(String v: values)
-                        {
-                            overridden_query_string.append("&").append(name).append("=").append(v);
-                        }
-                    }
+                    if (newQueryParams.containsKey(entry.getKey()))
+                        continue;
+                    for (String value : entry.getValue())
+                        mergedQuery.append("&").append(entry.getKey()).append("=").append(value);
                 }
-
-                query = query + overridden_query_string;
             }
             else
             {
-                query = query + "&" + _queryString;
+                if (_queryString != null)
+                    mergedQuery.append("&").append(_queryString);
             }
-        }
 
-        setParameters(parameters);
-        setQueryString(query);
+            setQueryString(mergedQuery.toString());
+        }
     }
 
-
-   
-    /** 
+    /**
      * @see javax.servlet.http.HttpServletRequest#upgrade(java.lang.Class)
      */
     @Override

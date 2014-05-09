@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -502,7 +501,7 @@ public class Server extends HandlerWrapper implements Attributes
             baseRequest.setRequestURI(null);
             baseRequest.setPathInfo(baseRequest.getRequestURI());
             if (uri.getQuery()!=null)
-                baseRequest.mergeQueryString(uri.getQuery()); //we have to assume dispatch path and query are UTF8
+                baseRequest.mergeQueryParameters(uri.getQuery(), true); //we have to assume dispatch path and query are UTF8
         }
 
         final String target=baseRequest.getPathInfo();
