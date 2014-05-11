@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpContent;
 import org.eclipse.jetty.client.HttpExchange;
+import org.eclipse.jetty.client.HttpRequestException;
 import org.eclipse.jetty.client.HttpSender;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Request;
@@ -105,6 +106,12 @@ public class HttpSenderOverHTTP extends HttpSender
                             toWrite[toWrite.length - 1] = contentBuffer;
                         EndPoint endPoint = getHttpChannel().getHttpConnection().getEndPoint();
                         endPoint.write(new ByteBufferRecyclerCallback(callback, bufferPool, toRecycle), toWrite);
+                        return;
+                    }
+                    case DONE:
+                    {
+                        // The headers have already been generated, perhaps by a concurrent abort.
+                        callback.failed(new HttpRequestException("Could not generate headers", request));
                         return;
                     }
                     default:
