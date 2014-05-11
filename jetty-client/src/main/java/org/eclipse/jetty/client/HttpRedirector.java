@@ -271,7 +271,7 @@ public class HttpRedirector
         }
     }
 
-    private Request redirect(final Request request, Response response, Response.CompleteListener listener, URI location, String method)
+    private Request redirect(Request request, Response response, Response.CompleteListener listener, URI location, String method)
     {
         HttpRequest httpRequest = (HttpRequest)request;
         HttpConversation conversation = httpRequest.getConversation();
@@ -281,9 +281,20 @@ public class HttpRedirector
         if (redirects < client.getMaxRedirects())
         {
             ++redirects;
-            if (conversation != null)
-                conversation.setAttribute(ATTRIBUTE, redirects);
+            conversation.setAttribute(ATTRIBUTE, redirects);
+            return sendRedirect(httpRequest, response, listener, location, method);
+        }
+        else
+        {
+            fail(request, response, new HttpResponseException("Max redirects exceeded " + redirects, response));
+            return null;
+        }
+    }
 
+    private Request sendRedirect(final HttpRequest httpRequest, Response response, Response.CompleteListener listener, URI location, String method)
+    {
+        try
+        {
             Request redirect = client.copyRequest(httpRequest, location);
 
             // Use given method
@@ -294,7 +305,7 @@ public class HttpRedirector
                 @Override
                 public void onBegin(Request redirect)
                 {
-                    Throwable cause = request.getAbortCause();
+                    Throwable cause = httpRequest.getAbortCause();
                     if (cause != null)
                         redirect.abort(cause);
                 }
@@ -303,9 +314,9 @@ public class HttpRedirector
             redirect.send(listener);
             return redirect;
         }
-        else
+        catch (Throwable x)
         {
-            fail(request, response, new HttpResponseException("Max redirects exceeded " + redirects, response));
+            fail(httpRequest, response, x);
             return null;
         }
     }

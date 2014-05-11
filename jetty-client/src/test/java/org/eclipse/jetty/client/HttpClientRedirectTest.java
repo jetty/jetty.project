@@ -26,7 +26,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -242,6 +241,38 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.getStatus());
         Assert.assertFalse(response.getHeaders().containsKey(HttpHeader.LOCATION.asString()));
+    }
+
+    @Test
+    public void testRedirectWithWrongScheme() throws Exception
+    {
+        dispose();
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                response.setStatus(303);
+                response.setHeader("Location", "ssh://localhost/path");
+            }
+        });
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .path("/path")
+                .timeout(5, TimeUnit.SECONDS)
+                .send(new Response.CompleteListener()
+                {
+                    @Override
+                    public void onComplete(Result result)
+                    {
+                        Assert.assertTrue(result.isFailed());
+                        latch.countDown();
+                    }
+                });
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
