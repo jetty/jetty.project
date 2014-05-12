@@ -2209,14 +2209,12 @@ public class Request implements HttpServletRequest
             UrlEncoded.decodeTo(_queryString, oldQueryParams, getQueryEncoding(), -1);
         }
 
-        MultiMap<String> mergedQueryParams = new MultiMap<>(newQueryParams);
-        boolean hasParamsInCommon = false;
+        MultiMap<String> mergedQueryParams = newQueryParams;
         if (oldQueryParams != null)
         {
-            // Parameters in the newQuery replace parameters of the oldQuery.
-            MultiMap<String> copy = new MultiMap<>(oldQueryParams);
-            hasParamsInCommon = copy.keySet().removeAll(newQueryParams.keySet());
-            mergedQueryParams.addAllValues(copy);
+            // Parameters values are accumulated.
+            mergedQueryParams = new MultiMap<>(newQueryParams);
+            mergedQueryParams.addAllValues(oldQueryParams);
         }
 
         setQueryParameters(mergedQueryParams);
@@ -2224,22 +2222,15 @@ public class Request implements HttpServletRequest
 
         if (updateQueryString)
         {
-            // Build the new merged query string.
+            // Build the new merged query string, parameters in the
+            // new query string hide parameters in the old query string.
             StringBuilder mergedQuery = new StringBuilder(newQuery);
-            if (hasParamsInCommon)
+            for (Map.Entry<String, List<String>> entry : mergedQueryParams.entrySet())
             {
-                for (Map.Entry<String, List<String>> entry : mergedQueryParams.entrySet())
-                {
-                    if (newQueryParams.containsKey(entry.getKey()))
-                        continue;
-                    for (String value : entry.getValue())
-                        mergedQuery.append("&").append(entry.getKey()).append("=").append(value);
-                }
-            }
-            else
-            {
-                if (_queryString != null)
-                    mergedQuery.append("&").append(_queryString);
+                if (newQueryParams.containsKey(entry.getKey()))
+                    continue;
+                for (String value : entry.getValue())
+                    mergedQuery.append("&").append(entry.getKey()).append("=").append(value);
             }
 
             setQueryString(mergedQuery.toString());

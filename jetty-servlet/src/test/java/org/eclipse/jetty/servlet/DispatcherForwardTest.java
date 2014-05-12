@@ -265,7 +265,7 @@ public class DispatcherForwardTest
     {
         // 1. request /one?a=1 + content a=2
         // 1. forward /two?a=3
-        // 2. assert query => a=3 + params => a=3,2
+        // 2. assert query => a=3 + params => a=3,2,1
         // 1. assert query => a=1 + params => a=1,2
 
         final String query1 = "a=1";
@@ -295,8 +295,8 @@ public class DispatcherForwardTest
                 checkThat(query2, Matchers.equalTo(req.getQueryString()));
                 String[] values = req.getParameterValues("a");
                 checkThat(values, Matchers.notNullValue());
-                checkThat(2, Matchers.equalTo(values.length));
-                checkThat(values, Matchers.arrayContainingInAnyOrder("3", "2"));
+                checkThat(3, Matchers.equalTo(values.length));
+                checkThat(values, Matchers.arrayContainingInAnyOrder("3", "2", "1"));
             }
         };
 
