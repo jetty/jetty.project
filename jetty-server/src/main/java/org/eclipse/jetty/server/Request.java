@@ -1396,6 +1396,9 @@ public class Request implements HttpServletRequest
 
         if (!create)
             return null;
+        
+        if (getResponse().isCommitted())
+            throw new IllegalStateException("Response is committed");
 
         if (_sessionManager == null)
             throw new IllegalStateException("No SessionManager");
