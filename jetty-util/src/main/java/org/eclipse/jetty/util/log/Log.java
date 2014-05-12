@@ -92,52 +92,18 @@ public class Log
                  * configuration of the Log class in situations where access to the System.properties are
                  * either too late or just impossible.
                  */
-                URL testProps = Loader.getResource(Log.class,"jetty-logging.properties");
-                if (testProps != null)
-                {
-                    InputStream in = null;
-                    try
-                    {
-                        in = testProps.openStream();
-                        __props.load(in);
-                    }
-                    catch (IOException e)
-                    {
-                        System.err.println("Unable to load " + testProps);
-                        e.printStackTrace(System.err);
-                    }
-                    finally
-                    {
-                        safeCloseInputStream(in);
-                    }
-                }
-                
-                /* Next see if an OS specific jetty-logging.properties object exists in the classpath.
+                loadProperties("jetty-logging.properties",__props);
+
+                /*
+                 * Next see if an OS specific jetty-logging.properties object exists in the classpath. 
                  * This really for setting up test specific logging behavior based on OS.
                  */
                 String osName = System.getProperty("os.name");
-                if (StringUtil.isNotBlank(osName))
+                // NOTE: cannot use jetty-util's StringUtil as that initializes logging itself.
+                if (osName != null && osName.length() > 0)
                 {
                     osName = osName.toLowerCase(Locale.ENGLISH).replace(' ','-');
-                    testProps = Loader.getResource(Log.class,"jetty-logging-" + osName + ".properties");
-                    if (testProps != null)
-                    {
-                        InputStream in = null;
-                        try
-                        {
-                            in = testProps.openStream();
-                            __props.load(in);
-                        }
-                        catch (IOException e)
-                        {
-                            System.err.println("Unable to load " + testProps);
-                            e.printStackTrace(System.err);
-                        }
-                        finally
-                        {
-                            safeCloseInputStream(in);
-                        }
-                    }
+                    loadProperties("jetty-logging-" + osName + ".properties",__props);
                 }
 
                 /* Now load the System.properties as-is into the __props, these values will override
@@ -149,9 +115,11 @@ public class Log
                 {
                     String key = systemKeyEnum.nextElement();
                     String val = System.getProperty(key);
-                    //protect against application code insertion of non-String values (returned as null)
+                    // protect against application code insertion of non-String values (returned as null)
                     if (val != null)
+                    {
                         __props.setProperty(key,val);
+                    }
                 }
 
                 /* Now use the configuration properties to configure the Log statics
@@ -162,17 +130,30 @@ public class Log
             }
         });
     }
-
-    private static void safeCloseInputStream(InputStream in)
+    
+    private static void loadProperties(String resourceName, Properties props)
     {
-        try
+        URL testProps = Loader.getResource(Log.class,resourceName);
+        if (testProps != null)
         {
-            if (in != null)
-                in.close();
-        }
-        catch (IOException e)
-        {
-            LOG.ignore(e);
+            try (InputStream in = testProps.openStream())
+            {
+                Properties p = new Properties();
+                p.load(in);
+                for (Object key : p.keySet())
+                {
+                    Object value = p.get(key);
+                    if (value != null)
+                    {
+                        props.put(key,value);
+                    }
+                }
+            }
+            catch (IOException e)
+            {
+                System.err.println("[WARN] Error loading logging config: " + testProps);
+                e.printStackTrace(System.err);
+            }
         }
     }
 
@@ -214,7 +195,7 @@ public class Log
         Class<?> log_class;
         if(e != null && __ignored)
         {
-            e.printStackTrace();
+            e.printStackTrace(System.err);
         }
 
         if (LOG == null)
