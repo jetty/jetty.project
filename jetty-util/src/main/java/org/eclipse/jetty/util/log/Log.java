@@ -27,12 +27,14 @@ import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 
 /**
@@ -107,6 +109,34 @@ public class Log
                     finally
                     {
                         safeCloseInputStream(in);
+                    }
+                }
+                
+                /* Next see if an OS specific jetty-logging.properties object exists in the classpath.
+                 * This really for setting up test specific logging behavior based on OS.
+                 */
+                String osName = System.getProperty("os.name");
+                if (StringUtil.isNotBlank(osName))
+                {
+                    osName = osName.toLowerCase(Locale.ENGLISH).replace(' ','-');
+                    testProps = Loader.getResource(Log.class,"jetty-logging-" + osName + ".properties");
+                    if (testProps != null)
+                    {
+                        InputStream in = null;
+                        try
+                        {
+                            in = testProps.openStream();
+                            __props.load(in);
+                        }
+                        catch (IOException e)
+                        {
+                            System.err.println("Unable to load " + testProps);
+                            e.printStackTrace(System.err);
+                        }
+                        finally
+                        {
+                            safeCloseInputStream(in);
+                        }
                     }
                 }
 
