@@ -1,0 +1,28 @@
+<HTML>
+  <HEAD>
+    <TITLE>Test Dispatch WebApp</TITLE>
+    <META http-equiv="Pragma" content="no-cache">
+    <META http-equiv="Cache-Control" content="no-cache,no-store">
+    <link rel="stylesheet" type="text/css" href="stylesheet.css"/>
+  </HEAD>
+<BODY >
+  <A HREF="http://www.eclipse.org/jetty"><IMG SRC="images/jetty_banner.gif"></A>
+  
+<h1>Request Dispatching Tests</h1>
+<p><ul>
+<li><a href="forward/info?depth=0&p0=A">forward/info?depth=0&p0=A</a></li>
+<li><a href="include/info?depth=0&p0=A">include/info?depth=0&p0=A</a></li>
+<li><a href="forward/forward/info?depth=0&p0=A">forward/forward/info?depth=0&p0=A</a></li>
+<li><a href="forward/include/info?depth=0&p0=A">forward/include/info?depth=0&p0=A</a></li>
+<li><a href="include/forward/info?depth=0&p0=A">include/forward/info?depth=0&p0=A</a></li>
+<li><a href="include/include/info?depth=0&p0=A">include/include/info?depth=0&p0=A</a></li>
+</ul>
+</p>
+
+<center>
+  <hr/>
+  <a href="http://www.eclipse.org/jetty"><img style="border:0" src="images/small_powered_by.gif"/></a>
+</center>
+
+</BODY>
+</HTML>
