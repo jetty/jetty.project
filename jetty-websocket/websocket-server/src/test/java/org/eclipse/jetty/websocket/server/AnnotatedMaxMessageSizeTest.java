@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.EventQueue;
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.common.CloseInfo;
@@ -42,10 +43,14 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class AnnotatedMaxMessageSizeTest
 {
+    @Rule
+    public TestTracker tracker = new TestTracker();
+    
     private static Server server;
     private static ServerConnector connector;
     private static URI serverUri;
@@ -122,7 +127,8 @@ public class AnnotatedMaxMessageSizeTest
             client.expectUpgradeResponse();
 
             // Generate text frame
-            byte buf[] = new byte[90*1024]; // buffer bigger than maxMessageSize
+            int size = 120 * 1024;
+            byte buf[] = new byte[size]; // buffer bigger than maxMessageSize
             Arrays.fill(buf,(byte)'x');
             client.write(new TextFrame().setPayload(ByteBuffer.wrap(buf)));
 
