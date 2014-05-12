@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Locale;
-
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
@@ -360,7 +359,7 @@ public class FormAuthenticator extends LoginAuthenticator
                                 {
                                     LOG.debug("auth rePOST {}->{}",authentication,j_uri);
                                     Request base_request = HttpChannel.getCurrentHttpChannel().getRequest();
-                                    base_request.setParameters(j_post);
+                                    base_request.setContentParameters(j_post);
                                 }
                                 session.removeAttribute(__J_URI);
                                 session.removeAttribute(__J_METHOD);
@@ -395,8 +394,9 @@ public class FormAuthenticator extends LoginAuthenticator
                     if (MimeTypes.Type.FORM_ENCODED.is(req.getContentType()) && HttpMethod.POST.is(request.getMethod()))
                     {
                         Request base_request = (req instanceof Request)?(Request)req:HttpChannel.getCurrentHttpChannel().getRequest();
-                        base_request.extractParameters();
-                        session.setAttribute(__J_POST, new MultiMap<String>(base_request.getParameters()));
+                        MultiMap<String> formParameters = new MultiMap<>();
+                        base_request.extractFormParameters(formParameters);
+                        session.setAttribute(__J_POST, formParameters);
                     }
                 }
             }
