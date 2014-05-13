@@ -195,6 +195,11 @@ public class FS
         return filename.toLowerCase(Locale.ENGLISH).endsWith(".xml");
     }
     
+    public static boolean isPropertyFile(String filename)
+    {
+        return filename.toLowerCase(Locale.ENGLISH).endsWith(".properties");
+    }
+    
     public static String toRelativePath(File baseDir, File path)
     {
         return baseDir.toURI().relativize(path.toURI()).toASCIIString();
