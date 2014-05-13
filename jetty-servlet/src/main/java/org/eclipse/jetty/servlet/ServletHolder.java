@@ -720,7 +720,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         {
             if (!isStarted())
                 throw new UnavailableException("Servlet not initialized", -1);
-            if (_unavailable!=0 || !_initOnStartup)
+            if (_unavailable!=0 || (!_initOnStartup && servlet==null))
                 servlet=getServlet();
             if (servlet==null)
                 throw new UnavailableException("Could not instantiate "+_class);
