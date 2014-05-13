@@ -152,7 +152,7 @@ public class BlockheadServer
             }
         }
 
-        public void echoMessage(int expectedFrames, TimeUnit timeoutUnit, int timeoutDuration) throws IOException, TimeoutException
+        public void echoMessage(int expectedFrames, int timeoutDuration, TimeUnit timeoutUnit) throws IOException, TimeoutException
         {
             LOG.debug("Echo Frames [expecting {}]",expectedFrames);
             IncomingFramesCapture cap = readFrames(expectedFrames,timeoutDuration,timeoutUnit);

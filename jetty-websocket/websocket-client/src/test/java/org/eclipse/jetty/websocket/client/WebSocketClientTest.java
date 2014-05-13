@@ -124,7 +124,7 @@ public class WebSocketClientTest
             remote.sendStringByFuture("Hello World!");
             if (remote.getBatchMode() == BatchMode.ON)
                 remote.flush();
-            srvSock.echoMessage(1,TimeUnit.MILLISECONDS,500);
+            srvSock.echoMessage(1,500,TimeUnit.MILLISECONDS);
             // wait for response from server
             cliSock.waitForMessage(500,TimeUnit.MILLISECONDS);
 
@@ -320,13 +320,13 @@ public class WebSocketClientTest
             String msg = StringUtil.toUTF8String(buf,0,buf.length);
 
             wsocket.getSession().getRemote().sendStringByFuture(msg);
-            ssocket.echoMessage(1,TimeUnit.MILLISECONDS,500);
+            ssocket.echoMessage(1,2,TimeUnit.SECONDS);
             // wait for response from server
-            wsocket.waitForMessage(500,TimeUnit.MILLISECONDS);
+            wsocket.waitForMessage(1,TimeUnit.SECONDS);
 
             wsocket.assertMessage(msg);
 
-            Assert.assertTrue(wsocket.dataLatch.await(1000,TimeUnit.SECONDS));
+            Assert.assertTrue(wsocket.dataLatch.await(2,TimeUnit.SECONDS));
         }
         finally
         {
