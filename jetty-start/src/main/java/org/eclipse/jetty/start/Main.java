@@ -593,6 +593,9 @@ public class Main
         // ------------------------------------------------------------
         // 6) Resolve Extra XMLs
         args.resolveExtraXmls(baseHome);
+        
+        // 9) Resolve Property Files
+        args.resolvePropertyFiles(baseHome);
 
         return args;
     }

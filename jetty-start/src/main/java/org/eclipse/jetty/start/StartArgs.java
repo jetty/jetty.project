@@ -88,6 +88,12 @@ public class StartArgs
     /** List of all xml references found directly on command line or start.ini */
     private List<String> xmlRefs = new ArrayList<>();
 
+    /** List of all property references found directly on command line or start.ini */
+    private List<String> propertyFileRefs = new ArrayList<>();
+    
+    /** List of all property files */
+    private List<Path> propertyFiles = new ArrayList<>();
+
     private Props properties = new Props();
     private Set<String> systemPropertyKeys = new HashSet<>();
     private List<String> rawLibs = new ArrayList<>();
@@ -147,6 +153,19 @@ public class StartArgs
         if (!xmls.contains(xmlfile))
         {
             xmls.add(xmlfile);
+        }
+    }
+    
+    private void addUniquePropertyFile(String propertyFileRef, Path propertyFile) throws IOException
+    {
+        if (!FS.canReadFile(propertyFile))
+        {
+            throw new IOException("Cannot read file: " + propertyFileRef);
+        }
+        propertyFile = FS.toRealPath(propertyFile);
+        if (!propertyFiles.contains(propertyFile))
+        {
+            propertyFiles.add(propertyFile);
         }
     }
 
@@ -506,6 +525,11 @@ public class StartArgs
         {
             cmd.addRawArg(xml.toAbsolutePath().toString());
         }
+        
+        for (Path propertyFile : propertyFiles)
+        {
+            cmd.addRawArg(propertyFile.toAbsolutePath().toString());
+        }
 
         return cmd;
     }
@@ -844,6 +868,16 @@ public class StartArgs
             }
             return;
         }
+        
+        if (FS.isPropertyFile(arg))
+        {
+            // only add non-duplicates
+            if (!propertyFileRefs.contains(arg))
+            {
+            	propertyFileRefs.add(arg);
+            }
+        	return;
+        }
 
         // Anything else is unrecognized
         throw new UsageException(ERR_BAD_ARG,"Unrecognized argument: \"%s\" in %s",arg,source);
@@ -861,6 +895,21 @@ public class StartArgs
                 xmlfile = baseHome.getPath("etc/" + xmlRef);
             }
             addUniqueXmlFile(xmlRef,xmlfile);
+        }
+    }
+    
+    public void resolvePropertyFiles(BaseHome baseHome) throws IOException
+    {
+        // Find and Expand property files
+        for (String propertyFileRef : propertyFileRefs)
+        {
+            // Straight Reference
+            Path propertyFile = baseHome.getPath(propertyFileRef);
+            if (!FS.exists(propertyFile))
+            {
+            	propertyFile = baseHome.getPath("etc/" + propertyFileRef);
+            }
+            addUniquePropertyFile(propertyFileRef,propertyFile);
         }
     }
 
