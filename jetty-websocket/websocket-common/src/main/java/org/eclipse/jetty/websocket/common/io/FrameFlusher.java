@@ -29,6 +29,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -46,10 +47,16 @@ public class FrameFlusher
 {
     private class Flusher extends IteratingCallback
     {
-        private final List<FrameEntry> entries = new ArrayList<>(maxGather);
-        private final List<ByteBuffer> buffers = new ArrayList<>((maxGather * 2) + 1);
+        private final List<FrameEntry> entries;
+        private final List<ByteBuffer> buffers;
         private ByteBuffer aggregate;
         private BatchMode batchMode;
+
+        public Flusher(int maxGather)
+        {
+            entries = new ArrayList<>(maxGather);
+            buffers = new ArrayList<>((maxGather * 2) + 1);
+        }
 
         private Action batch()
         {
@@ -289,7 +296,7 @@ public class FrameFlusher
     private final int maxGather;
     private final Object lock = new Object();
     private final ArrayQueue<FrameEntry> queue = new ArrayQueue<>(16,16,lock);
-    private final Flusher flusher = new Flusher();
+    private final Flusher flusher;
     private final AtomicBoolean closed = new AtomicBoolean();
     private volatile Throwable failure;
 
@@ -300,6 +307,7 @@ public class FrameFlusher
         this.bufferSize = bufferSize;
         this.generator = Objects.requireNonNull(generator);
         this.maxGather = maxGather;
+        this.flusher = new Flusher(maxGather);
     }
 
     public void close()
