@@ -978,7 +978,28 @@ public class HttpClient extends ContainerLifeCycle
         @Override
         public Iterator<ContentDecoder.Factory> iterator()
         {
-            return set.iterator();
+            final Iterator<ContentDecoder.Factory> iterator = set.iterator();
+            return new Iterator<ContentDecoder.Factory>()
+            {
+                @Override
+                public boolean hasNext()
+                {
+                    return iterator.hasNext();
+                }
+
+                @Override
+                public ContentDecoder.Factory next()
+                {
+                    return iterator.next();
+                }
+
+                @Override
+                public void remove()
+                {
+                    iterator.remove();
+                    invalidate();
+                }
+            };
         }
 
         @Override
@@ -993,7 +1014,7 @@ public class HttpClient extends ContainerLifeCycle
             return set.toArray(a);
         }
 
-        protected void invalidate()
+        private void invalidate()
         {
             if (set.isEmpty())
             {
