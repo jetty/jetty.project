@@ -109,7 +109,15 @@ public class BrowserSocket
     @OnWebSocketMessage
     public void onTextMessage(String message)
     {
-        LOG.info("onTextMessage({})",message);
+        if (message.length() > 300)
+        {
+            int len = message.length();
+            LOG.info("onTextMessage({} ... {}) size:{}",message.substring(0,15),message.substring(len - 15,len).replaceAll("[\r\n]*",""),len);
+        }
+        else
+        {
+            LOG.info("onTextMessage({})",message);
+        }
 
         int idx = message.indexOf(':');
         if (idx > 0)

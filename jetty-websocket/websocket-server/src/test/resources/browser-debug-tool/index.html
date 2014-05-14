@@ -17,6 +17,10 @@
       <input id="hello" class="button" type="submit" name="hello" value="hello" disabled="disabled"/>
       <input id="there" class="button" type="submit" name="there" value="there" disabled="disabled"/>
       <input id="json" class="button" type="submit" name="json" value="json" disabled="disabled"/>
+      <input id="send10k" class="button" type="submit" name="send10k" value="send10k" disabled="disabled"/>
+      <input id="send100k" class="button" type="submit" name="send100k" value="send100k" disabled="disabled"/>
+      <input id="send1000k" class="button" type="submit" name="send1000k" value="send1000k" disabled="disabled"/>
+      <input id="send10m" class="button" type="submit" name="send10m" value="send10m" disabled="disabled"/>
     </div>
     <script type="text/javascript">
     $("connect").onclick = function(event) { wstool.connect(); return false; }
@@ -32,6 +36,21 @@
             + " 12 Sep 2013 19:42:30 GMT\"},{\"channel\":\"/chat/demo\",\"data\":{\"user\":\"ch\",\"membership\":\"join\",\"chat\":\"ch"
             + " has joined\"},\"id\":\"4\",\"clientId\":\"81dwnxwbgs0h0bq8968b0a0gyl\",\"timestamp\":\"Thu,"
             + " 12 Sep 2013 19:42:30 GMT\"}]"); return false; }
+    $("send10k").onclick =   function(event) {wstool.write(randomString(  10*1024)); return false;}
+    $("send100k").onclick =  function(event) {wstool.write(randomString( 100*1024)); return false;}
+    $("send1000k").onclick = function(event) {wstool.write(randomString(1000*1024)); return false;}
+    $("send10m").onclick =   function(event) {wstool.write(randomString(  10*1024*1024)); return false;}
+    
+    function randomString(len, charSet) {
+        charSet = charSet || 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789{}	":;<>,.()[]';
+        var randomString = '';
+        var charLen = charSet.length;
+        for (var i = 0; i < len; i++) {
+        	var randomPoz = Math.floor(Math.random() * charLen);
+        	randomString += charSet.substring(randomPoz,randomPoz+1);
+        }
+        return randomString;
+    }
     </script>
   </body>
 </html>
