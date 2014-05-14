@@ -146,7 +146,11 @@ public abstract class MultiplexHttpDestination<C extends Connection> extends Htt
         {
             ConnectState current = connect.get();
             if (connect.compareAndSet(current, ConnectState.DISCONNECTED))
+            {
+                if (getHttpClient().isRemoveIdleDestinations())
+                    getHttpClient().removeDestination(this);
                 break;
+            }
         }
     }
 

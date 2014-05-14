@@ -133,6 +133,7 @@ public class HttpClient extends ContainerLifeCycle
     private volatile boolean dispatchIO = true;
     private volatile boolean strictEventOrdering = false;
     private volatile HttpField encodingField;
+    private volatile boolean removeIdleDestinations = false;
 
     /**
      * Creates a {@link HttpClient} instance that can perform requests to non-TLS destinations only
@@ -462,6 +463,11 @@ public class HttpClient extends ContainerLifeCycle
 
         }
         return destination;
+    }
+
+    protected boolean removeDestination(HttpDestination destination)
+    {
+        return destinations.remove(destination.getOrigin()) != null;
     }
 
     /**
@@ -861,6 +867,32 @@ public class HttpClient extends ContainerLifeCycle
     public void setStrictEventOrdering(boolean strictEventOrdering)
     {
         this.strictEventOrdering = strictEventOrdering;
+    }
+
+    /**
+     * @return whether destinations that have no connections should be removed
+     * @see #setRemoveIdleDestinations(boolean)
+     */
+    public boolean isRemoveIdleDestinations()
+    {
+        return removeIdleDestinations;
+    }
+
+    /**
+     * Whether destinations that have no connections (nor active nor idle) should be removed.
+     * <p />
+     * Applications typically make request to a limited number of destinations so keeping
+     * destinations around is not a problem for the memory or the GC.
+     * However, for applications that hit millions of different destinations (e.g. a spider
+     * bot) it would be useful to be able to remove the old destinations that won't be visited
+     * anymore and leave space for new destinations.
+     *
+     * @param removeIdleDestinations whether destinations that have no connections should be removed
+     * @see org.eclipse.jetty.client.ConnectionPool
+     */
+    public void setRemoveIdleDestinations(boolean removeIdleDestinations)
+    {
+        this.removeIdleDestinations = removeIdleDestinations;
     }
 
     /**
