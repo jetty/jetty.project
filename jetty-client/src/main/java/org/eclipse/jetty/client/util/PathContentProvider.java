@@ -40,7 +40,7 @@ import org.eclipse.jetty.util.log.Logger;
  * It is possible to specify, at the constructor, a buffer size used to read content from the
  * stream, by default 4096 bytes.
  */
-public class PathContentProvider implements ContentProvider
+public class PathContentProvider extends AbstractTypedContentProvider
 {
     private static final Logger LOG = Log.getLogger(PathContentProvider.class);
 
@@ -55,6 +55,17 @@ public class PathContentProvider implements ContentProvider
 
     public PathContentProvider(Path filePath, int bufferSize) throws IOException
     {
+        this("application/octet-stream", filePath, bufferSize);
+    }
+
+    public PathContentProvider(String contentType, Path filePath) throws IOException
+    {
+        this(contentType, filePath, 4096);
+    }
+
+    public PathContentProvider(String contentType, Path filePath, int bufferSize) throws IOException
+    {
+        super(contentType);
         if (!Files.isRegularFile(filePath))
             throw new NoSuchFileException(filePath.toString());
         if (!Files.isReadable(filePath))

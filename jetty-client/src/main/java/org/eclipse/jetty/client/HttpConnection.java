@@ -110,6 +110,15 @@ public abstract class HttpConnection implements Connection
         // Add content headers
         if (content != null)
         {
+            if (content instanceof ContentProvider.Typed)
+            {
+                if (!headers.containsKey(HttpHeader.CONTENT_TYPE.asString()))
+                {
+                    String contentType = ((ContentProvider.Typed)content).getContentType();
+                    if (contentType != null)
+                        headers.put(HttpHeader.CONTENT_TYPE, contentType);
+                }
+            }
             long contentLength = content.getLength();
             if (contentLength >= 0)
             {

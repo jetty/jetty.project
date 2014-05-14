@@ -549,9 +549,7 @@ public class HttpRequest implements Request
     @Override
     public Request file(Path file, String contentType) throws IOException
     {
-        if (contentType != null)
-            header(HttpHeader.CONTENT_TYPE, contentType);
-        return content(new PathContentProvider(file));
+        return content(new PathContentProvider(contentType, file));
     }
 
     @Override
