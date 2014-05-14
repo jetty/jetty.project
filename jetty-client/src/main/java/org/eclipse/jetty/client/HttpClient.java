@@ -49,12 +49,14 @@ import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.client.util.FormContentProvider;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.SocketAddressResolver;
@@ -323,6 +325,30 @@ public class HttpClient extends ContainerLifeCycle
     public ContentResponse GET(URI uri) throws InterruptedException, ExecutionException, TimeoutException
     {
         return newRequest(uri).send();
+    }
+
+    /**
+     * Performs a POST request to the specified URI with the given form parameters.
+     *
+     * @param uri the URI to POST
+     * @param fields the fields composing the form name/value pairs
+     * @return the {@link ContentResponse} for the request
+     */
+    public ContentResponse FORM(String uri, Fields fields) throws InterruptedException, ExecutionException, TimeoutException
+    {
+        return FORM(URI.create(uri), fields);
+    }
+
+    /**
+     * Performs a POST request to the specified URI with the given form parameters.
+     *
+     * @param uri the URI to POST
+     * @param fields the fields composing the form name/value pairs
+     * @return the {@link ContentResponse} for the request
+     */
+    public ContentResponse FORM(URI uri, Fields fields) throws InterruptedException, ExecutionException, TimeoutException
+    {
+        return POST(uri).content(new FormContentProvider(fields)).send();
     }
 
     /**
