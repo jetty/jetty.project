@@ -118,7 +118,7 @@ public class HttpRedirector
             {
                 resultRef.set(new Result(result.getRequest(),
                         result.getRequestFailure(),
-                        new HttpContentResponse(result.getResponse(), getContent(), getEncoding()),
+                        new HttpContentResponse(result.getResponse(), getContent(), getMediaType(), getEncoding()),
                         result.getResponseFailure()));
                 latch.countDown();
             }

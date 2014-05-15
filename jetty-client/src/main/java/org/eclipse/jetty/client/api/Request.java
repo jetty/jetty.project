@@ -236,7 +236,7 @@ public interface Request
     Request agent(String agent);
 
     /**
-     * @param accepts the content types that are acceptable in the response, such as
+     * @param accepts the media types that are acceptable in the response, such as
      *                "text/plain;q=0.5" or "text/html" (corresponds to the {@code Accept} header)
      * @return this request object
      */
