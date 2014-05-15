@@ -58,7 +58,7 @@ public class FormContentProvider extends StringContentProvider
             {
                 if (builder.length() > 0)
                     builder.append("&");
-                builder.append(field.getName()).append("=").append(encode(value, charset));
+                builder.append(encode(field.getName(), charset)).append("=").append(encode(value, charset));
             }
         }
         return builder.toString();

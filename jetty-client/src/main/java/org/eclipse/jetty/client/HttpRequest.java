@@ -212,7 +212,7 @@ public class HttpRequest implements Request
         {
             // If we have an existing query string, preserve it and append the new parameter.
             if (query != null)
-                query += "&" + name + "=" + urlEncode(value);
+                query += "&" + urlEncode(name) + "=" + urlEncode(value);
             else
                 query = buildQuery();
             uri = null;
@@ -648,7 +648,7 @@ public class HttpRequest implements Request
     private String buildQuery()
     {
         StringBuilder result = new StringBuilder();
-        for (Iterator<Fields.Field> iterator = params.iterator(); iterator.hasNext();)
+        for (Iterator<Fields.Field> iterator = params.iterator(); iterator.hasNext(); )
         {
             Fields.Field field = iterator.next();
             List<String> values = field.getValues();
@@ -690,7 +690,7 @@ public class HttpRequest implements Request
                 String[] parts = nameValue.split("=");
                 if (parts.length > 0)
                 {
-                    String name = parts[0];
+                    String name = urlDecode(parts[0]);
                     if (name.trim().length() == 0)
                         continue;
                     param(name, parts.length < 2 ? "" : urlDecode(parts[1]), true);
