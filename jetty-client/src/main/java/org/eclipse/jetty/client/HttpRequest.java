@@ -59,8 +59,6 @@ public class HttpRequest implements Request
 {
     private final HttpFields headers = new HttpFields();
     private final Fields params = new Fields(true);
-    private final Map<String, Object> attributes = new HashMap<>();
-    private final List<RequestListener> requestListeners = new ArrayList<>();
     private final List<Response.ResponseListener> responseListeners = new ArrayList<>();
     private final AtomicReference<Throwable> aborted = new AtomicReference<>();
     private final HttpClient client;
@@ -78,6 +76,8 @@ public class HttpRequest implements Request
     private ContentProvider content;
     private boolean followRedirects;
     private List<HttpCookie> cookies;
+    private Map<String, Object> attributes;
+    private List<RequestListener> requestListeners;
 
     protected HttpRequest(HttpClient client, HttpConversation conversation, URI uri)
     {
@@ -280,6 +280,8 @@ public class HttpRequest implements Request
     @Override
     public Request attribute(String name, Object value)
     {
+        if (attributes == null)
+            attributes = new HashMap<>(4);
         attributes.put(name, value);
         return this;
     }
@@ -287,7 +289,7 @@ public class HttpRequest implements Request
     @Override
     public Map<String, Object> getAttributes()
     {
-        return attributes;
+        return attributes != null ? attributes : Collections.<String, Object>emptyMap();
     }
 
     @Override
@@ -302,8 +304,8 @@ public class HttpRequest implements Request
     {
         // This method is invoked often in a request/response conversation,
         // so we avoid allocation if there is no need to filter.
-        if (type == null)
-            return (List<T>)requestListeners;
+        if (type == null || requestListeners == null)
+            return requestListeners != null ? (List<T>)requestListeners : Collections.<T>emptyList();
 
         ArrayList<T> result = new ArrayList<>();
         for (RequestListener listener : requestListeners)
@@ -315,14 +317,13 @@ public class HttpRequest implements Request
     @Override
     public Request listener(Request.Listener listener)
     {
-        this.requestListeners.add(listener);
-        return this;
+        return requestListener(listener);
     }
 
     @Override
     public Request onRequestQueued(final QueuedListener listener)
     {
-        this.requestListeners.add(new QueuedListener()
+        return requestListener(new QueuedListener()
         {
             @Override
             public void onQueued(Request request)
@@ -330,13 +331,12 @@ public class HttpRequest implements Request
                 listener.onQueued(request);
             }
         });
-        return this;
     }
 
     @Override
     public Request onRequestBegin(final BeginListener listener)
     {
-        this.requestListeners.add(new BeginListener()
+        return requestListener(new BeginListener()
         {
             @Override
             public void onBegin(Request request)
@@ -344,13 +344,12 @@ public class HttpRequest implements Request
                 listener.onBegin(request);
             }
         });
-        return this;
     }
 
     @Override
     public Request onRequestHeaders(final HeadersListener listener)
     {
-        this.requestListeners.add(new HeadersListener()
+        return requestListener(new HeadersListener()
         {
             @Override
             public void onHeaders(Request request)
@@ -358,13 +357,12 @@ public class HttpRequest implements Request
                 listener.onHeaders(request);
             }
         });
-        return this;
     }
 
     @Override
     public Request onRequestCommit(final CommitListener listener)
     {
-        this.requestListeners.add(new CommitListener()
+        return requestListener(new CommitListener()
         {
             @Override
             public void onCommit(Request request)
@@ -372,13 +370,12 @@ public class HttpRequest implements Request
                 listener.onCommit(request);
             }
         });
-        return this;
     }
 
     @Override
     public Request onRequestContent(final ContentListener listener)
     {
-        this.requestListeners.add(new ContentListener()
+        return requestListener(new ContentListener()
         {
             @Override
             public void onContent(Request request, ByteBuffer content)
@@ -386,13 +383,12 @@ public class HttpRequest implements Request
                 listener.onContent(request, content);
             }
         });
-        return this;
     }
 
     @Override
     public Request onRequestSuccess(final SuccessListener listener)
     {
-        this.requestListeners.add(new SuccessListener()
+        return requestListener(new SuccessListener()
         {
             @Override
             public void onSuccess(Request request)
@@ -400,13 +396,12 @@ public class HttpRequest implements Request
                 listener.onSuccess(request);
             }
         });
-        return this;
     }
 
     @Override
     public Request onRequestFailure(final FailureListener listener)
     {
-        this.requestListeners.add(new FailureListener()
+        return requestListener(new FailureListener()
         {
             @Override
             public void onFailure(Request request, Throwable failure)
@@ -414,6 +409,13 @@ public class HttpRequest implements Request
                 listener.onFailure(request, failure);
             }
         });
+    }
+
+    private Request requestListener(RequestListener listener)
+    {
+        if (requestListeners == null)
+            requestListeners = new ArrayList<>();
+        requestListeners.add(listener);
         return this;
     }
 
