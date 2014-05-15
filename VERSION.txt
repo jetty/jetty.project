@@ -1,3 +1,5 @@
+jetty-9.2.0-SNAPSHOT
+
 jetty-9.2.0.RC0 - 15 May 2014
  + 419972 Support sending forms (application/x-www-form-urlencoded).
  + 420368 Default content types for ContentProviders.
