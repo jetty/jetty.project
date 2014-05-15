@@ -35,6 +35,18 @@ public class DeflateFrameExtension extends CompressExtension
     {
         return "deflate-frame";
     }
+    
+    @Override
+    int getRsvUseMode()
+    {
+        return RSV_USE_ALWAYS;
+    }
+    
+    @Override
+    int getTailDropMode()
+    {
+        return TAIL_DROP_ALWAYS;
+    }
 
     @Override
     public void incomingFrame(Frame frame)

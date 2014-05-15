@@ -331,7 +331,7 @@
   <!-- ==================================================================== -->
   <!-- Default MIME mappings                                                -->
   <!-- The default MIME mappings are provided by the mime.properties        -->
-  <!-- resource in the org.eclipse.jetty.server.jar file.  Additional or modified  -->
+  <!-- resource in the jetty-http.jar file.  Additional or modified         -->
   <!-- mappings may be specified here                                       -->
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  -->
   <!-- UNCOMMENT TO ACTIVATE

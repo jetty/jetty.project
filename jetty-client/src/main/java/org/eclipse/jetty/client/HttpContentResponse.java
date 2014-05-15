@@ -33,12 +33,14 @@ public class HttpContentResponse implements ContentResponse
 {
     private final Response response;
     private final byte[] content;
+    private final String mediaType;
     private final String encoding;
 
-    public HttpContentResponse(Response response, byte[] content, String encoding)
+    public HttpContentResponse(Response response, byte[] content, String mediaType, String encoding)
     {
         this.response = response;
         this.content = content;
+        this.mediaType = mediaType;
         this.encoding = encoding;
     }
 
@@ -46,13 +48,6 @@ public class HttpContentResponse implements ContentResponse
     public Request getRequest()
     {
         return response.getRequest();
-    }
-
-    @Override
-    @Deprecated
-    public long getConversationID()
-    {
-        return getRequest().getConversationID();
     }
 
     @Override
@@ -89,6 +84,18 @@ public class HttpContentResponse implements ContentResponse
     public boolean abort(Throwable cause)
     {
         return response.abort(cause);
+    }
+
+    @Override
+    public String getMediaType()
+    {
+        return mediaType;
+    }
+
+    @Override
+    public String getEncoding()
+    {
+        return encoding;
     }
 
     @Override

@@ -23,6 +23,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.common.extensions.compress.PerMessageDeflateExtension;
 import org.eclipse.jetty.websocket.server.WebSocketHandler;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
@@ -83,21 +84,15 @@ public class BrowserDebugTool implements WebSocketCreator
 
         String ua = req.getHeader("User-Agent");
         String rexts = req.getHeader("Sec-WebSocket-Extensions");
-        
-        LOG.debug("User-Agent: {}", ua);
-        LOG.debug("Sec-WebSocket-Extensions (Request) : {}", rexts);
+
+        LOG.debug("User-Agent: {}",ua);
+        LOG.debug("Sec-WebSocket-Extensions (Request) : {}",rexts);
         return new BrowserSocket(ua,rexts);
     }
 
-    public void start() throws Exception
+    public int getPort()
     {
-        server.start();
-        LOG.info("Server available on port {}", getPort());
-    }
-
-    public void stop() throws Exception
-    {
-        server.stop();
+        return connector.getLocalPort();
     }
 
     public void prepare(int port)
@@ -116,6 +111,7 @@ public class BrowserDebugTool implements WebSocketCreator
 
                 // factory.getExtensionFactory().unregister("deflate-frame");
                 // factory.getExtensionFactory().unregister("permessage-deflate");
+                factory.getExtensionFactory().register("permessage-deflate",PerMessageDeflateExtension.class);
                 // factory.getExtensionFactory().unregister("x-webkit-deflate-frame");
 
                 // Setup the desired Socket to use for all incoming upgrade requests
@@ -123,6 +119,9 @@ public class BrowserDebugTool implements WebSocketCreator
 
                 // Set the timeout
                 factory.getPolicy().setIdleTimeout(30000);
+
+                // Set top end message size
+                factory.getPolicy().setMaxTextMessageSize(15 * 1024 * 1024);
             }
         };
 
@@ -138,8 +137,14 @@ public class BrowserDebugTool implements WebSocketCreator
         LOG.info("{} setup on port {}",this.getClass().getName(),port);
     }
 
-    public int getPort()
+    public void start() throws Exception
     {
-        return connector.getLocalPort();
+        server.start();
+        LOG.info("Server available on port {}",getPort());
+    }
+
+    public void stop() throws Exception
+    {
+        server.stop();
     }
 }

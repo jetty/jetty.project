@@ -27,9 +27,12 @@ import org.eclipse.jetty.client.EmptyServerHandler;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
@@ -225,5 +228,35 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
 
         Assert.assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(successLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testDestinationIsRemoved() throws Exception
+    {
+        String host = "localhost";
+        int port = connector.getLocalPort();
+        Destination destinationBefore = client.getDestination(scheme, host, port);
+
+        ContentResponse response = client.newRequest(host, port)
+                .scheme(scheme)
+                .header(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString())
+                .send();
+
+        Assert.assertEquals(200, response.getStatus());
+
+        Destination destinationAfter = client.getDestination(scheme, host, port);
+        Assert.assertSame(destinationBefore, destinationAfter);
+
+        client.setRemoveIdleDestinations(true);
+
+        response = client.newRequest(host, port)
+                .scheme(scheme)
+                .header(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString())
+                .send();
+
+        Assert.assertEquals(200, response.getStatus());
+
+        destinationAfter = client.getDestination(scheme, host, port);
+        Assert.assertNotSame(destinationBefore, destinationAfter);
     }
 }

@@ -88,13 +88,6 @@ public class HttpResponse implements Response
     }
 
     @Override
-    @Deprecated
-    public long getConversationID()
-    {
-        return request.getConversationID();
-    }
-
-    @Override
     public <T extends ResponseListener> List<T> getListeners(Class<T> type)
     {
         ArrayList<T> result = new ArrayList<>();

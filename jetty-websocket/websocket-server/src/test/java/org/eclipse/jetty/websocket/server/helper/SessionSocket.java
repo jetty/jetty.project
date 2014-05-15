@@ -81,7 +81,7 @@ public class SessionSocket
                     delim = true;
                 }
                 valueStr.append(']');
-                System.err.println("valueStr = " + valueStr);
+                LOG.debug("valueStr = {}", valueStr);
                 sendString(valueStr.toString());
                 return;
             }

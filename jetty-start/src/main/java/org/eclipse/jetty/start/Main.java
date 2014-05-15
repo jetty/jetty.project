@@ -137,7 +137,7 @@ public class Main
 
     private BaseHome baseHome;
 
-    Main() throws IOException
+    public Main() throws IOException
     {
     }
 
@@ -593,6 +593,9 @@ public class Main
         // ------------------------------------------------------------
         // 6) Resolve Extra XMLs
         args.resolveExtraXmls(baseHome);
+        
+        // 9) Resolve Property Files
+        args.resolvePropertyFiles(baseHome);
 
         return args;
     }

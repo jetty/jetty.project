@@ -49,12 +49,14 @@ import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.client.util.FormContentProvider;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.SocketAddressResolver;
@@ -133,6 +135,7 @@ public class HttpClient extends ContainerLifeCycle
     private volatile boolean dispatchIO = true;
     private volatile boolean strictEventOrdering = false;
     private volatile HttpField encodingField;
+    private volatile boolean removeIdleDestinations = false;
 
     /**
      * Creates a {@link HttpClient} instance that can perform requests to non-TLS destinations only
@@ -325,6 +328,30 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Performs a POST request to the specified URI with the given form parameters.
+     *
+     * @param uri the URI to POST
+     * @param fields the fields composing the form name/value pairs
+     * @return the {@link ContentResponse} for the request
+     */
+    public ContentResponse FORM(String uri, Fields fields) throws InterruptedException, ExecutionException, TimeoutException
+    {
+        return FORM(URI.create(uri), fields);
+    }
+
+    /**
+     * Performs a POST request to the specified URI with the given form parameters.
+     *
+     * @param uri the URI to POST
+     * @param fields the fields composing the form name/value pairs
+     * @return the {@link ContentResponse} for the request
+     */
+    public ContentResponse FORM(URI uri, Fields fields) throws InterruptedException, ExecutionException, TimeoutException
+    {
+        return POST(uri).content(new FormContentProvider(fields)).send();
+    }
+
+    /**
      * Creates a POST request to the specified URI.
      *
      * @param uri the URI to POST to
@@ -462,6 +489,11 @@ public class HttpClient extends ContainerLifeCycle
 
         }
         return destination;
+    }
+
+    protected boolean removeDestination(HttpDestination destination)
+    {
+        return destinations.remove(destination.getOrigin()) != null;
     }
 
     /**
@@ -825,6 +857,7 @@ public class HttpClient extends ContainerLifeCycle
 
     /**
      * @return whether request events must be strictly ordered
+     * @see #setStrictEventOrdering(boolean)
      */
     public boolean isStrictEventOrdering()
     {
@@ -832,30 +865,60 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * Whether request events must be strictly ordered.
+     * Whether request/response events must be strictly ordered with respect to connection usage.
      * <p />
-     * {@link org.eclipse.jetty.client.api.Response.CompleteListener}s may send a second request.
-     * If the second request is for the same destination, there is an inherent race
-     * condition for the use of the connection: the first request may still be associated with the
-     * connection, so the second request cannot use that connection and is forced to open another one.
+     * From the point of view of connection usage, the connection can be reused just before the
+     * "complete" event notified to {@link org.eclipse.jetty.client.api.Response.CompleteListener}s
+     * (but after the "success" event).
      * <p />
-     * From the point of view of connection usage, the connection is reusable just before the "complete"
-     * event, so it would be possible to reuse that connection from {@link org.eclipse.jetty.client.api.Response.CompleteListener}s;
-     * but in this case the second request's events will fire before the "complete" events of the first
-     * request.
+     * When a request/response exchange is completing, the destination may have another request
+     * queued to be sent to the server.
+     * If the connection for that destination is reused for the second request before the "complete"
+     * event of the first exchange, it may happen that the "begin" event of the second request
+     * happens before the "complete" event of the first exchange.
      * <p />
-     * This setting enforces strict event ordering so that a "begin" event of a second request can never
-     * fire before the "complete" event of a first request, but at the expense of an increased usage
-     * of connections.
+     * Enforcing strict ordering of events so that a "begin" event of a request can never happen
+     * before the "complete" event of the previous exchange comes with the cost of increased
+     * connection usage.
+     * In case of HTTP redirects and strict event ordering, for example, the redirect request will
+     * be forced to open a new connection because it is typically sent from the complete listener
+     * when the connection cannot yet be reused.
+     * When strict event ordering is not enforced, the redirect request will reuse the already
+     * open connection making the system more efficient.
      * <p />
-     * When not enforced, a "begin" event of a second request may happen before the "complete" event of
-     * a first request and allow for better usage of connections.
+     * The default value for this property is {@code false}.
      *
-     * @param strictEventOrdering whether request events must be strictly ordered
+     * @param strictEventOrdering whether request/response events must be strictly ordered
      */
     public void setStrictEventOrdering(boolean strictEventOrdering)
     {
         this.strictEventOrdering = strictEventOrdering;
+    }
+
+    /**
+     * @return whether destinations that have no connections should be removed
+     * @see #setRemoveIdleDestinations(boolean)
+     */
+    public boolean isRemoveIdleDestinations()
+    {
+        return removeIdleDestinations;
+    }
+
+    /**
+     * Whether destinations that have no connections (nor active nor idle) should be removed.
+     * <p />
+     * Applications typically make request to a limited number of destinations so keeping
+     * destinations around is not a problem for the memory or the GC.
+     * However, for applications that hit millions of different destinations (e.g. a spider
+     * bot) it would be useful to be able to remove the old destinations that won't be visited
+     * anymore and leave space for new destinations.
+     *
+     * @param removeIdleDestinations whether destinations that have no connections should be removed
+     * @see org.eclipse.jetty.client.ConnectionPool
+     */
+    public void setRemoveIdleDestinations(boolean removeIdleDestinations)
+    {
+        this.removeIdleDestinations = removeIdleDestinations;
     }
 
     /**
@@ -973,7 +1036,28 @@ public class HttpClient extends ContainerLifeCycle
         @Override
         public Iterator<ContentDecoder.Factory> iterator()
         {
-            return set.iterator();
+            final Iterator<ContentDecoder.Factory> iterator = set.iterator();
+            return new Iterator<ContentDecoder.Factory>()
+            {
+                @Override
+                public boolean hasNext()
+                {
+                    return iterator.hasNext();
+                }
+
+                @Override
+                public ContentDecoder.Factory next()
+                {
+                    return iterator.next();
+                }
+
+                @Override
+                public void remove()
+                {
+                    iterator.remove();
+                    invalidate();
+                }
+            };
         }
 
         @Override
@@ -988,7 +1072,7 @@ public class HttpClient extends ContainerLifeCycle
             return set.toArray(a);
         }
 
-        protected void invalidate()
+        private void invalidate()
         {
             if (set.isEmpty())
             {

@@ -110,11 +110,11 @@ public class WebSocketPolicy
         }
     }
 
-    private void assertPositive(String name, long size)
+    private void assertGreaterThan(String name, long size, long minSize)
     {
-        if (size < 1)
+        if (size < minSize)
         {
-            throw new IllegalArgumentException(String.format("%s [%d] must be a postive value larger than 0",name,size));
+            throw new IllegalArgumentException(String.format("%s [%d] must be a greater than or equal to " + minSize,name,size));
         }
     }
 
@@ -260,7 +260,7 @@ public class WebSocketPolicy
      */
     public void setIdleTimeout(long ms)
     {
-        assertPositive("IdleTimeout",ms);
+        assertGreaterThan("IdleTimeout",ms,0);
         this.idleTimeout = ms;
     }
 
@@ -272,7 +272,7 @@ public class WebSocketPolicy
      */
     public void setInputBufferSize(int size)
     {
-        assertPositive("InputBufferSize",size);
+        assertGreaterThan("InputBufferSize",size,1);
         assertLessThan("InputBufferSize",size,"MaxTextMessageBufferSize",maxTextMessageBufferSize);
         assertLessThan("InputBufferSize",size,"MaxBinaryMessageBufferSize",maxBinaryMessageBufferSize);
 
@@ -289,7 +289,7 @@ public class WebSocketPolicy
      */
     public void setMaxBinaryMessageBufferSize(int size)
     {
-        assertPositive("MaxBinaryMessageBufferSize",size);
+        assertGreaterThan("MaxBinaryMessageBufferSize",size,1);
 
         this.maxBinaryMessageBufferSize = size;
     }
@@ -304,7 +304,7 @@ public class WebSocketPolicy
      */
     public void setMaxBinaryMessageSize(int size)
     {
-        assertPositive("MaxBinaryMessageSize",size);
+        assertGreaterThan("MaxBinaryMessageSize",size,1);
 
         this.maxBinaryMessageSize = size;
     }
@@ -319,7 +319,7 @@ public class WebSocketPolicy
      */
     public void setMaxTextMessageBufferSize(int size)
     {
-        assertPositive("MaxTextMessageBufferSize",size);
+        assertGreaterThan("MaxTextMessageBufferSize",size,1);
 
         this.maxTextMessageBufferSize = size;
     }
@@ -334,7 +334,7 @@ public class WebSocketPolicy
      */
     public void setMaxTextMessageSize(int size)
     {
-        assertPositive("MaxTextMessageSize",size);
+        assertGreaterThan("MaxTextMessageSize",size,1);
 
         this.maxTextMessageSize = size;
     }

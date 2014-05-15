@@ -51,7 +51,7 @@ public class ConfigSources implements Iterable<ConfigSource>
 
     private LinkedList<ConfigSource> sources = new LinkedList<>();
     private Props props = new Props();
-    private AtomicInteger xtraSourceWeight = new AtomicInteger(1);
+    private AtomicInteger sourceWeight = new AtomicInteger(1);
 
     public void add(ConfigSource source) throws IOException
     {
@@ -66,15 +66,15 @@ public class ConfigSources implements Iterable<ConfigSource>
 
         updateProps();
 
-        // look for --extra-start-dir entries
+        // look for --include-jetty-dir entries
         for (String arg : source.getArgs())
         {
-            if (arg.startsWith("--extra-start-dir"))
+            if (arg.startsWith("--include-jetty-dir"))
             {
                 String ref = getValue(arg);
                 String dirName = props.expand(ref);
                 Path dir = FS.toPath(dirName);
-                DirConfigSource dirsource = new DirConfigSource(ref,dir,xtraSourceWeight.incrementAndGet(),true);
+                DirConfigSource dirsource = new DirConfigSource(ref,dir,sourceWeight.incrementAndGet(),true);
                 add(dirsource);
             }
         }

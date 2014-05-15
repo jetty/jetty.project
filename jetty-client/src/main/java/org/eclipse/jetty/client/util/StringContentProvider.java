@@ -43,6 +43,11 @@ public class StringContentProvider extends BytesContentProvider
 
     public StringContentProvider(String content, Charset charset)
     {
-        super(content.getBytes(charset));
+        this("text/plain;charset=" + charset.name(), content, charset);
+    }
+
+    public StringContentProvider(String contentType, String content, Charset charset)
+    {
+        super(contentType, content.getBytes(charset));
     }
 }

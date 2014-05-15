@@ -192,6 +192,11 @@ public class ConnectionPool implements Closeable, Dumpable
         return idleConnections.contains(connection);
     }
 
+    public boolean isEmpty()
+    {
+        return connectionCount.get() == 0;
+    }
+
     public void close()
     {
         for (Connection connection : idleConnections)

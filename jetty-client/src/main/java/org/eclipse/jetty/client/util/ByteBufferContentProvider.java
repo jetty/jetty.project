@@ -31,13 +31,19 @@ import org.eclipse.jetty.client.api.ContentProvider;
  * and each invocation of the {@link #iterator()} method returns a {@link ByteBuffer#slice() slice}
  * of the original {@link ByteBuffer}.
  */
-public class ByteBufferContentProvider implements ContentProvider
+public class ByteBufferContentProvider extends AbstractTypedContentProvider
 {
     private final ByteBuffer[] buffers;
     private final int length;
 
     public ByteBufferContentProvider(ByteBuffer... buffers)
     {
+        this("application/octet-stream", buffers);
+    }
+
+    public ByteBufferContentProvider(String contentType, ByteBuffer... buffers)
+    {
+        super(contentType);
         this.buffers = buffers;
         int length = 0;
         for (ByteBuffer buffer : buffers)

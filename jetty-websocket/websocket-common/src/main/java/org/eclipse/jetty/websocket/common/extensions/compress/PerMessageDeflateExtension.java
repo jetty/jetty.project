@@ -102,13 +102,25 @@ public class PerMessageDeflateExtension extends CompressExtension
         }
         super.nextOutgoingFrame(frame, callback, batchMode);
     }
+    
+    @Override
+    int getRsvUseMode()
+    {
+        return RSV_USE_ONLY_FIRST;
+    }
+    
+    @Override
+    int getTailDropMode()
+    {
+        return TAIL_DROP_FIN_ONLY;
+    }
 
     @Override
     public void setConfig(final ExtensionConfig config)
     {
         configRequested = new ExtensionConfig(config);
         configNegotiated = new ExtensionConfig(config.getName());
-
+        
         for (String key : config.getParameterKeys())
         {
             key = key.trim();

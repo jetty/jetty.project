@@ -739,7 +739,7 @@ public class ProxyServletTest
             protected void onResponseSuccess(HttpServletRequest request, HttpServletResponse response, Response proxyResponse)
             {
                 byte[] content = temp.remove(request.getRequestURI()).toByteArray();
-                ContentResponse cached = new HttpContentResponse(proxyResponse, content, null);
+                ContentResponse cached = new HttpContentResponse(proxyResponse, content, null, null);
                 cache.put(request.getRequestURI(), cached);
                 super.onResponseSuccess(request, response, proxyResponse);
             }

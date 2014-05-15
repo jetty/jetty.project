@@ -152,10 +152,10 @@ public class BlockheadServer
             }
         }
 
-        public void echoMessage(int expectedFrames, TimeUnit timeoutUnit, int timeoutDuration) throws IOException, TimeoutException
+        public void echoMessage(int expectedFrames, int timeoutDuration, TimeUnit timeoutUnit) throws IOException, TimeoutException
         {
             LOG.debug("Echo Frames [expecting {}]",expectedFrames);
-            IncomingFramesCapture cap = readFrames(expectedFrames,timeoutUnit,timeoutDuration);
+            IncomingFramesCapture cap = readFrames(expectedFrames,timeoutDuration,timeoutUnit);
             // now echo them back.
             for (Frame frame : cap.getFrames())
             {
@@ -327,15 +327,6 @@ public class BlockheadServer
                 len++;
             }
             return len;
-        }
-
-        /**
-         * @deprecated use {@link #readFrames(int, int, TimeUnit)} for correct parameter order
-         */
-        @Deprecated
-        public IncomingFramesCapture readFrames(int expectedCount, TimeUnit timeoutUnit, int timeoutDuration) throws IOException, TimeoutException
-        {
-            return readFrames(expectedCount,timeoutDuration,timeoutUnit);
         }
 
         public IncomingFramesCapture readFrames(int expectedCount, int timeoutDuration, TimeUnit timeoutUnit) throws IOException, TimeoutException

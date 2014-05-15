@@ -88,7 +88,7 @@ public class SessionTest
             remote.sendStringByFuture("Hello World!");
             if (remote.getBatchMode() == BatchMode.ON)
                 remote.flush();
-            srvSock.echoMessage(1,TimeUnit.MILLISECONDS,500);
+            srvSock.echoMessage(1,500,TimeUnit.MILLISECONDS);
             // wait for response from server
             cliSock.waitForMessage(500,TimeUnit.MILLISECONDS);
             

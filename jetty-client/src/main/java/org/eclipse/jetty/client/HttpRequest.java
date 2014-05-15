@@ -20,6 +20,7 @@ package org.eclipse.jetty.client;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.HttpCookie;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
@@ -27,6 +28,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.UnsupportedCharsetException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -57,8 +59,6 @@ public class HttpRequest implements Request
 {
     private final HttpFields headers = new HttpFields();
     private final Fields params = new Fields(true);
-    private final Map<String, Object> attributes = new HashMap<>();
-    private final List<RequestListener> requestListeners = new ArrayList<>();
     private final List<Response.ResponseListener> responseListeners = new ArrayList<>();
     private final AtomicReference<Throwable> aborted = new AtomicReference<>();
     private final HttpClient client;
@@ -75,6 +75,9 @@ public class HttpRequest implements Request
     private long timeout;
     private ContentProvider content;
     private boolean followRedirects;
+    private List<HttpCookie> cookies;
+    private Map<String, Object> attributes;
+    private List<RequestListener> requestListeners;
 
     protected HttpRequest(HttpClient client, HttpConversation conversation, URI uri)
     {
@@ -96,12 +99,6 @@ public class HttpRequest implements Request
     protected HttpConversation getConversation()
     {
         return conversation;
-    }
-
-    @Override
-    public long getConversationID()
-    {
-        return getConversation().getID();
     }
 
     @Override
@@ -218,7 +215,7 @@ public class HttpRequest implements Request
         {
             // If we have an existing query string, preserve it and append the new parameter.
             if (query != null)
-                query += "&" + name + "=" + urlEncode(value);
+                query += "&" + urlEncode(name) + "=" + urlEncode(value);
             else
                 query = buildQuery();
             uri = null;
@@ -246,6 +243,21 @@ public class HttpRequest implements Request
     }
 
     @Override
+    public Request accept(String... accepts)
+    {
+        StringBuilder result = new StringBuilder();
+        for (String accept : accepts)
+        {
+            if (result.length() > 0)
+                result.append(", ");
+            result.append(accept);
+        }
+        if (result.length() > 0)
+            headers.put(HttpHeader.ACCEPT, result.toString());
+        return this;
+    }
+
+    @Override
     public Request header(String name, String value)
     {
         if (value == null)
@@ -266,8 +278,25 @@ public class HttpRequest implements Request
     }
 
     @Override
+    public List<HttpCookie> getCookies()
+    {
+        return cookies != null ? cookies : Collections.<HttpCookie>emptyList();
+    }
+
+    @Override
+    public Request cookie(HttpCookie cookie)
+    {
+        if (cookies == null)
+            cookies = new ArrayList<>();
+        cookies.add(cookie);
+        return this;
+    }
+
+    @Override
     public Request attribute(String name, Object value)
     {
+        if (attributes == null)
+            attributes = new HashMap<>(4);
         attributes.put(name, value);
         return this;
     }
@@ -275,7 +304,7 @@ public class HttpRequest implements Request
     @Override
     public Map<String, Object> getAttributes()
     {
-        return attributes;
+        return attributes != null ? attributes : Collections.<String, Object>emptyMap();
     }
 
     @Override
@@ -290,8 +319,8 @@ public class HttpRequest implements Request
     {
         // This method is invoked often in a request/response conversation,
         // so we avoid allocation if there is no need to filter.
-        if (type == null)
-            return (List<T>)requestListeners;
+        if (type == null || requestListeners == null)
+            return requestListeners != null ? (List<T>)requestListeners : Collections.<T>emptyList();
 
         ArrayList<T> result = new ArrayList<>();
         for (RequestListener listener : requestListeners)
@@ -303,14 +332,13 @@ public class HttpRequest implements Request
     @Override
     public Request listener(Request.Listener listener)
     {
-        this.requestListeners.add(listener);
-        return this;
+        return requestListener(listener);
     }
 
     @Override
     public Request onRequestQueued(final QueuedListener listener)
     {
-        this.requestListeners.add(new QueuedListener()
+        return requestListener(new QueuedListener()
         {
             @Override
             public void onQueued(Request request)
@@ -318,13 +346,12 @@ public class HttpRequest implements Request
                 listener.onQueued(request);
             }
         });
-        return this;
     }
 
     @Override
     public Request onRequestBegin(final BeginListener listener)
     {
-        this.requestListeners.add(new BeginListener()
+        return requestListener(new BeginListener()
         {
             @Override
             public void onBegin(Request request)
@@ -332,13 +359,12 @@ public class HttpRequest implements Request
                 listener.onBegin(request);
             }
         });
-        return this;
     }
 
     @Override
     public Request onRequestHeaders(final HeadersListener listener)
     {
-        this.requestListeners.add(new HeadersListener()
+        return requestListener(new HeadersListener()
         {
             @Override
             public void onHeaders(Request request)
@@ -346,13 +372,12 @@ public class HttpRequest implements Request
                 listener.onHeaders(request);
             }
         });
-        return this;
     }
 
     @Override
     public Request onRequestCommit(final CommitListener listener)
     {
-        this.requestListeners.add(new CommitListener()
+        return requestListener(new CommitListener()
         {
             @Override
             public void onCommit(Request request)
@@ -360,13 +385,12 @@ public class HttpRequest implements Request
                 listener.onCommit(request);
             }
         });
-        return this;
     }
 
     @Override
     public Request onRequestContent(final ContentListener listener)
     {
-        this.requestListeners.add(new ContentListener()
+        return requestListener(new ContentListener()
         {
             @Override
             public void onContent(Request request, ByteBuffer content)
@@ -374,13 +398,12 @@ public class HttpRequest implements Request
                 listener.onContent(request, content);
             }
         });
-        return this;
     }
 
     @Override
     public Request onRequestSuccess(final SuccessListener listener)
     {
-        this.requestListeners.add(new SuccessListener()
+        return requestListener(new SuccessListener()
         {
             @Override
             public void onSuccess(Request request)
@@ -388,13 +411,12 @@ public class HttpRequest implements Request
                 listener.onSuccess(request);
             }
         });
-        return this;
     }
 
     @Override
     public Request onRequestFailure(final FailureListener listener)
     {
-        this.requestListeners.add(new FailureListener()
+        return requestListener(new FailureListener()
         {
             @Override
             public void onFailure(Request request, Throwable failure)
@@ -402,6 +424,13 @@ public class HttpRequest implements Request
                 listener.onFailure(request, failure);
             }
         });
+    }
+
+    private Request requestListener(RequestListener listener)
+    {
+        if (requestListeners == null)
+            requestListeners = new ArrayList<>();
+        requestListeners.add(listener);
         return this;
     }
 
@@ -555,9 +584,7 @@ public class HttpRequest implements Request
     @Override
     public Request file(Path file, String contentType) throws IOException
     {
-        if (contentType != null)
-            header(HttpHeader.CONTENT_TYPE, contentType);
-        return content(new PathContentProvider(file));
+        return content(new PathContentProvider(contentType, file));
     }
 
     @Override
@@ -656,7 +683,7 @@ public class HttpRequest implements Request
     private String buildQuery()
     {
         StringBuilder result = new StringBuilder();
-        for (Iterator<Fields.Field> iterator = params.iterator(); iterator.hasNext();)
+        for (Iterator<Fields.Field> iterator = params.iterator(); iterator.hasNext(); )
         {
             Fields.Field field = iterator.next();
             List<String> values = field.getValues();
@@ -698,7 +725,7 @@ public class HttpRequest implements Request
                 String[] parts = nameValue.split("=");
                 if (parts.length > 0)
                 {
-                    String name = parts[0];
+                    String name = urlDecode(parts[0]);
                     if (name.trim().length() == 0)
                         continue;
                     param(name, parts.length < 2 ? "" : urlDecode(parts[1]), true);

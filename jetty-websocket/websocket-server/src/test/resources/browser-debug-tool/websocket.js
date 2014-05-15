@@ -59,12 +59,20 @@ var wstool = {
     },
 
     infoc : function(message) {
-        wstool._out("client", "[c] " + message);
+        if(message.length > 300) {
+            wstool._out("client", "[c] [big message: " + message.length + " characters]");
+        } else {
+            wstool._out("client", "[c] " + message);
+        }
     },
     
     infos : function(message) {
         this._scount++;
-        wstool._out("server", "[s" + this._scount + "] " + message);
+        if(message.length > 300) {
+            wstool._out("server", "[s" + this._scount + "] [big message: " + message.length + " characters]");
+        } else {
+            wstool._out("server", "[s" + this._scount + "] " + message);
+        }
     },
 
     setState : function(enabled) {
@@ -77,6 +85,10 @@ var wstool = {
         $('hello').disabled = !enabled;
         $('there').disabled = !enabled;
         $('json').disabled = !enabled;
+        $('send10k').disabled = !enabled;
+        $('send100k').disabled = !enabled;
+        $('send1000k').disabled = !enabled;
+        $('send10m').disabled = !enabled;
     },
     
     _onopen : function() {

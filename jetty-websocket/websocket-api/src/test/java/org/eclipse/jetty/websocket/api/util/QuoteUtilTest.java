@@ -18,7 +18,8 @@
 
 package org.eclipse.jetty.websocket.api.util;
 
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -135,5 +136,21 @@ public class QuoteUtilTest
     {
         Iterator<String> iter = QuoteUtil.splitAt("Key = Value","=");
         assertSplitAt(iter,"Key","Value");
+    }
+    
+    @Test
+    public void testQuoteIfNeeded()
+    {
+        StringBuilder buf = new StringBuilder();
+        QuoteUtil.quoteIfNeeded(buf, "key",",");
+        assertThat("key",buf.toString(),is("key"));
+    }
+    
+    @Test
+    public void testQuoteIfNeeded_null()
+    {
+        StringBuilder buf = new StringBuilder();
+        QuoteUtil.quoteIfNeeded(buf, null,";=");
+        assertThat("<null>",buf.toString(),is(""));
     }
 }

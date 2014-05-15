@@ -19,6 +19,7 @@
 package org.eclipse.jetty.client.api;
 
 import java.io.IOException;
+import java.net.HttpCookie;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.ByteBuffer;
@@ -49,13 +50,6 @@ import org.eclipse.jetty.util.Fields;
  */
 public interface Request
 {
-    /**
-     * @return the conversation id
-     * @deprecated do not use this method anymore
-     */
-    @Deprecated
-    long getConversationID();
-
     /**
      * @return the scheme of this request, such as "http" or "https"
      */
@@ -171,6 +165,17 @@ public interface Request
     Request header(HttpHeader header, String value);
 
     /**
+     * @return the cookies associated with this request
+     */
+    List<HttpCookie> getCookies();
+
+    /**
+     * @param cookie a cookie for this request
+     * @return this request object
+     */
+    Request cookie(HttpCookie cookie);
+
+    /**
      * @param name the name of the attribute
      * @param value the value of the attribute
      * @return this request object
@@ -225,10 +230,17 @@ public interface Request
     String getAgent();
 
     /**
-     * @param agent the user agent for this request
+     * @param agent the user agent for this request (corresponds to the {@code User-Agent} header)
      * @return this request object
      */
     Request agent(String agent);
+
+    /**
+     * @param accepts the media types that are acceptable in the response, such as
+     *                "text/plain;q=0.5" or "text/html" (corresponds to the {@code Accept} header)
+     * @return this request object
+     */
+    Request accept(String... accepts);
 
     /**
      * @return the idle timeout for this request, in milliseconds

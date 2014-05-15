@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
@@ -34,13 +33,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.MultiMap;
-import org.eclipse.jetty.util.UrlEncoded;
 
-/* ------------------------------------------------------------ */
-/** Servlet RequestDispatcher.
- *
- *
- */
 public class Dispatcher implements RequestDispatcher
 {
     /** Dispatch include attribute names */
@@ -49,71 +42,41 @@ public class Dispatcher implements RequestDispatcher
     /** Dispatch include attribute names */
     public final static String __FORWARD_PREFIX="javax.servlet.forward.";
 
-    /** JSP attributes */
-    public final static String __JSP_FILE="org.apache.catalina.jsp_file";
-
-    /* ------------------------------------------------------------ */
     private final ContextHandler _contextHandler;
     private final String _uri;
     private final String _path;
-    private final String _dQuery;
+    private final String _query;
     private final String _named;
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @param contextHandler
-     * @param uri
-     * @param pathInContext
-     * @param query
-     */
     public Dispatcher(ContextHandler contextHandler, String uri, String pathInContext, String query)
     {
         _contextHandler=contextHandler;
         _uri=uri;
         _path=pathInContext;
-        _dQuery=query;
+        _query=query;
         _named=null;
     }
 
-
-    /* ------------------------------------------------------------ */
-    /** Constructor.
-     * @param contextHandler
-     * @param name
-     */
-    public Dispatcher(ContextHandler contextHandler,String name)
-        throws IllegalStateException
+    public Dispatcher(ContextHandler contextHandler, String name) throws IllegalStateException
     {
         _contextHandler=contextHandler;
         _named=name;
         _uri=null;
         _path=null;
-        _dQuery=null;
+        _query=null;
     }
 
-    /* ------------------------------------------------------------ */
-    /*
-     * @see javax.servlet.RequestDispatcher#forward(javax.servlet.ServletRequest, javax.servlet.ServletResponse)
-     */
     @Override
     public void forward(ServletRequest request, ServletResponse response) throws ServletException, IOException
     {
         forward(request, response, DispatcherType.FORWARD);
     }
 
-    /* ------------------------------------------------------------ */
-    /*
-     * @see javax.servlet.RequestDispatcher#forward(javax.servlet.ServletRequest, javax.servlet.ServletResponse)
-     */
     public void error(ServletRequest request, ServletResponse response) throws ServletException, IOException
     {
         forward(request, response, DispatcherType.ERROR);
     }
 
-    /* ------------------------------------------------------------ */
-    /*
-     * @see javax.servlet.RequestDispatcher#include(javax.servlet.ServletRequest, javax.servlet.ServletResponse)
-     */
     @Override
     public void include(ServletRequest request, ServletResponse response) throws ServletException, IOException
     {
@@ -126,69 +89,47 @@ public class Dispatcher implements RequestDispatcher
 
         final DispatcherType old_type = baseRequest.getDispatcherType();
         final Attributes old_attr=baseRequest.getAttributes();
-        MultiMap<String> old_params=baseRequest.getParameters();
+        final MultiMap<String> old_query_params=baseRequest.getQueryParameters();
         try
         {
             baseRequest.setDispatcherType(DispatcherType.INCLUDE);
             baseRequest.getResponse().include();
             if (_named!=null)
+            {
                 _contextHandler.handle(_named,baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
+            }
             else
             {
-                String query=_dQuery;
-
-                if (query!=null)
-                {
-                    // force parameter extraction
-                    if (old_params==null)
-                    {
-                        baseRequest.extractParameters();
-                        old_params=baseRequest.getParameters();
-                    }
-
-                    MultiMap<String> parameters=new MultiMap<>();
-                    UrlEncoded.decodeTo(query,parameters,baseRequest.getCharacterEncoding(),-1);
-
-                    if(old_params != null) {
-                        // Merge parameters.
-                        parameters.addAllValues(old_params);
-                    }
-                    baseRequest.setParameters(parameters);
-                }
-
                 IncludeAttributes attr = new IncludeAttributes(old_attr);
 
                 attr._requestURI=_uri;
                 attr._contextPath=_contextHandler.getContextPath();
                 attr._servletPath=null; // set by ServletHandler
                 attr._pathInfo=_path;
-                attr._query=query;
+                attr._query=_query;
 
+                if (_query!=null)
+                    baseRequest.mergeQueryParameters(_query, false);
                 baseRequest.setAttributes(attr);
 
-                _contextHandler.handle(_path,baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
+                _contextHandler.handle(_path, baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
             }
         }
         finally
         {
             baseRequest.setAttributes(old_attr);
             baseRequest.getResponse().included();
-            baseRequest.setParameters(old_params);
+            baseRequest.setQueryParameters(old_query_params);
+            baseRequest.resetParameters();
             baseRequest.setDispatcherType(old_type);
         }
     }
 
-
-    /* ------------------------------------------------------------ */
-    /*
-     * @see javax.servlet.RequestDispatcher#forward(javax.servlet.ServletRequest, javax.servlet.ServletResponse)
-     */
     protected void forward(ServletRequest request, ServletResponse response, DispatcherType dispatch) throws ServletException, IOException
     {
         Request baseRequest=(request instanceof Request)?((Request)request):HttpChannel.getCurrentHttpChannel().getRequest();
         Response base_response=baseRequest.getResponse();
         base_response.resetForForward();
-
 
         if (!(request instanceof HttpServletRequest))
             request = new ServletRequestHttpWrapper(request);
@@ -201,9 +142,9 @@ public class Dispatcher implements RequestDispatcher
         final String old_servlet_path=baseRequest.getServletPath();
         final String old_path_info=baseRequest.getPathInfo();
         final String old_query=baseRequest.getQueryString();
+        final MultiMap<String> old_query_params=baseRequest.getQueryParameters();
         final Attributes old_attr=baseRequest.getAttributes();
         final DispatcherType old_type=baseRequest.getDispatcherType();
-        MultiMap<String> old_params=baseRequest.getParameters();
 
         try
         {
@@ -211,24 +152,11 @@ public class Dispatcher implements RequestDispatcher
             baseRequest.setDispatcherType(dispatch);
 
             if (_named!=null)
-                _contextHandler.handle(_named,baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
+            {
+                _contextHandler.handle(_named, baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
+            }
             else
             {
-
-                // process any query string from the dispatch URL
-                String query=_dQuery;
-                if (query!=null)
-                {
-                    // force parameter extraction
-                    if (old_params==null)
-                    {
-                        baseRequest.extractParameters();
-                        old_params=baseRequest.getParameters();
-                    }
-
-                    baseRequest.mergeQueryString(query);
-                }
-
                 ForwardAttributes attr = new ForwardAttributes(old_attr);
 
                 //If we have already been forwarded previously, then keep using the established
@@ -256,9 +184,11 @@ public class Dispatcher implements RequestDispatcher
                 baseRequest.setContextPath(_contextHandler.getContextPath());
                 baseRequest.setServletPath(null);
                 baseRequest.setPathInfo(_uri);
+                if (_query!=null)
+                    baseRequest.mergeQueryParameters(_query, true);
                 baseRequest.setAttributes(attr);
 
-                _contextHandler.handle(_path,baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
+                _contextHandler.handle(_path, baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
 
                 if (!baseRequest.getHttpChannelState().isAsync())
                     commitResponse(response,baseRequest);
@@ -271,15 +201,14 @@ public class Dispatcher implements RequestDispatcher
             baseRequest.setContextPath(old_context_path);
             baseRequest.setServletPath(old_servlet_path);
             baseRequest.setPathInfo(old_path_info);
-            baseRequest.setAttributes(old_attr);
-            baseRequest.setParameters(old_params);
             baseRequest.setQueryString(old_query);
+            baseRequest.setQueryParameters(old_query_params);
+            baseRequest.resetParameters();
+            baseRequest.setAttributes(old_attr);
             baseRequest.setDispatcherType(old_type);
         }
     }
 
-
-    /* ------------------------------------------------------------ */
     private void commitResponse(ServletResponse response, Request baseRequest) throws IOException
     {
         if (baseRequest.getResponse().isWriting())
@@ -306,10 +235,6 @@ public class Dispatcher implements RequestDispatcher
         }
     }
 
-
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
     private class ForwardAttributes implements Attributes
     {
         final Attributes _attr;
@@ -349,7 +274,6 @@ public class Dispatcher implements RequestDispatcher
             return _attr.getAttribute(key);
         }
 
-        /* ------------------------------------------------------------ */
         @Override
         public Enumeration<String> getAttributeNames()
         {
@@ -381,7 +305,6 @@ public class Dispatcher implements RequestDispatcher
             return Collections.enumeration(set);
         }
 
-        /* ------------------------------------------------------------ */
         @Override
         public void setAttribute(String key, Object value)
         {
@@ -409,21 +332,18 @@ public class Dispatcher implements RequestDispatcher
                 _attr.setAttribute(key,value);
         }
 
-        /* ------------------------------------------------------------ */
         @Override
         public String toString()
         {
             return "FORWARD+"+_attr.toString();
         }
 
-        /* ------------------------------------------------------------ */
         @Override
         public void clearAttributes()
         {
             throw new IllegalStateException();
         }
 
-        /* ------------------------------------------------------------ */
         @Override
         public void removeAttribute(String name)
         {
@@ -431,7 +351,6 @@ public class Dispatcher implements RequestDispatcher
         }
     }
 
-    /* ------------------------------------------------------------ */
     private class IncludeAttributes implements Attributes
     {
         final Attributes _attr;
@@ -447,9 +366,6 @@ public class Dispatcher implements RequestDispatcher
             _attr=attributes;
         }
 
-        /* ------------------------------------------------------------ */
-        /* ------------------------------------------------------------ */
-        /* ------------------------------------------------------------ */
         @Override
         public Object getAttribute(String key)
         {
@@ -468,7 +384,6 @@ public class Dispatcher implements RequestDispatcher
             return _attr.getAttribute(key);
         }
 
-        /* ------------------------------------------------------------ */
         @Override
         public Enumeration<String> getAttributeNames()
         {
@@ -499,7 +414,6 @@ public class Dispatcher implements RequestDispatcher
             return Collections.enumeration(set);
         }
 
-        /* ------------------------------------------------------------ */
         @Override
         public void setAttribute(String key, Object value)
         {
@@ -521,21 +435,18 @@ public class Dispatcher implements RequestDispatcher
                 _attr.setAttribute(key,value);
         }
 
-        /* ------------------------------------------------------------ */
         @Override
         public String toString()
         {
             return "INCLUDE+"+_attr.toString();
         }
 
-        /* ------------------------------------------------------------ */
         @Override
         public void clearAttributes()
         {
             throw new IllegalStateException();
         }
 
-        /* ------------------------------------------------------------ */
         @Override
         public void removeAttribute(String name)
         {

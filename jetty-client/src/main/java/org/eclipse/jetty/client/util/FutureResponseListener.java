@@ -70,7 +70,7 @@ public class FutureResponseListener extends BufferingResponseListener implements
     @Override
     public void onComplete(Result result)
     {
-        response = new HttpContentResponse(result.getResponse(), getContent(), getEncoding());
+        response = new HttpContentResponse(result.getResponse(), getContent(), getMediaType(), getEncoding());
         failure = result.getFailure();
         latch.countDown();
     }
