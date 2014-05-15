@@ -19,6 +19,7 @@
 package org.eclipse.jetty.client.api;
 
 import java.io.IOException;
+import java.net.HttpCookie;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.ByteBuffer;
@@ -162,6 +163,17 @@ public interface Request
      * @return this request object
      */
     Request header(HttpHeader header, String value);
+
+    /**
+     * @return the cookies associated with this request
+     */
+    List<HttpCookie> getCookies();
+
+    /**
+     * @param cookie a cookie for this request
+     * @return this request object
+     */
+    Request cookie(HttpCookie cookie);
 
     /**
      * @param name the name of the attribute

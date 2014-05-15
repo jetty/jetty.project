@@ -20,6 +20,7 @@ package org.eclipse.jetty.client;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.HttpCookie;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
@@ -27,6 +28,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.UnsupportedCharsetException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -75,6 +77,7 @@ public class HttpRequest implements Request
     private long timeout;
     private ContentProvider content;
     private boolean followRedirects;
+    private List<HttpCookie> cookies;
 
     protected HttpRequest(HttpClient client, HttpConversation conversation, URI uri)
     {
@@ -256,6 +259,21 @@ public class HttpRequest implements Request
             headers.remove(header);
         else
             headers.add(header, value);
+        return this;
+    }
+
+    @Override
+    public List<HttpCookie> getCookies()
+    {
+        return cookies != null ? cookies : Collections.<HttpCookie>emptyList();
+    }
+
+    @Override
+    public Request cookie(HttpCookie cookie)
+    {
+        if (cookies == null)
+            cookies = new ArrayList<>();
+        cookies.add(cookie);
         return this;
     }
 

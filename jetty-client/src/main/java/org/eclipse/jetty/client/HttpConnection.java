@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.client;
 
+import java.net.CookieStore;
 import java.net.HttpCookie;
 import java.net.URI;
 import java.util.ArrayList;
@@ -133,19 +134,14 @@ public abstract class HttpConnection implements Connection
         }
 
         // Cookies
-        List<HttpCookie> cookies = getHttpClient().getCookieStore().get(request.getURI());
-        StringBuilder cookieString = null;
-        for (int i = 0; i < cookies.size(); ++i)
+        CookieStore cookieStore = getHttpClient().getCookieStore();
+        if (cookieStore != null)
         {
-            if (cookieString == null)
-                cookieString = new StringBuilder();
-            if (i > 0)
-                cookieString.append("; ");
-            HttpCookie cookie = cookies.get(i);
-            cookieString.append(cookie.getName()).append("=").append(cookie.getValue());
+            StringBuilder cookies = convertCookies(cookieStore.get(request.getURI()), null);
+            cookies = convertCookies(request.getCookies(), cookies);
+            if (cookies != null)
+                request.header(HttpHeader.COOKIE.asString(), cookies.toString());
         }
-        if (cookieString != null)
-            request.header(HttpHeader.COOKIE.asString(), cookieString.toString());
 
         // Authorization
         URI authenticationURI = proxy != null ? proxy.getURI() : request.getURI();
@@ -155,6 +151,20 @@ public abstract class HttpConnection implements Connection
             if (authnResult != null)
                 authnResult.apply(request);
         }
+    }
+
+    private StringBuilder convertCookies(List<HttpCookie> cookies, StringBuilder builder)
+    {
+        for (int i = 0; i < cookies.size(); ++i)
+        {
+            if (builder == null)
+                builder = new StringBuilder();
+            if (builder.length() > 0)
+                builder.append("; ");
+            HttpCookie cookie = cookies.get(i);
+            builder.append(cookie.getName()).append("=").append(cookie.getValue());
+        }
+        return builder;
     }
 
     @Override
