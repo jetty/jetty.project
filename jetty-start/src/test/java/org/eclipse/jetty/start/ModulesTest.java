@@ -82,7 +82,7 @@ public class ModulesTest
 
         String expected[] = { "jmx", "client", "stats", "spdy", "deploy", "debug", "security", "npn", "ext", "websocket", "rewrite", "ipaccess", "xinetd",
                 "proxy", "webapp", "jndi", "lowresources", "https", "plus", "requestlog", "jsp", "monitor", "xml", "servlet", "jaas", "http", "base", "server",
-                "annotations" };
+                "annotations", "resources", "loggging" };
 
         Assert.assertThat("Module count: " + moduleNames,moduleNames.size(),is(expected.length));
     }

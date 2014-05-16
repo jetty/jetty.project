@@ -62,6 +62,12 @@ public class TestUseCases
     }
     
     @Test
+    public void testWithLogging() throws Exception
+    {
+        assertUseCase("home","base.logging","assert-logging.txt");
+    }
+
+    @Test
     public void testWithIncludeJettyDir_Logging() throws Exception
     {
         assertUseCase("home","base.with.include.jetty.dirs","assert-include-jetty-dir-logging.txt");

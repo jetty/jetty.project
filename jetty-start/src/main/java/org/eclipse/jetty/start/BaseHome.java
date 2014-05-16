@@ -287,6 +287,7 @@ public class BaseHome
             PathFinder finder = new PathFinder();
             finder.setFileMatcher(matcher);
             finder.setBase(dir);
+            finder.setIncludeDirsInResults(true);
             Files.walkFileTree(dir,SEARCH_VISIT_OPTIONS,searchDepth,finder);
             hits.addAll(finder.getHits());
             Collections.sort(hits,new NaturalSort.Paths());

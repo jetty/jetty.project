@@ -73,9 +73,18 @@ public class PathMatchers
         return new File(test).toPath();
     }
 
-    public static PathMatcher getMatcher(String pattern)
+    public static PathMatcher getMatcher(final String rawpattern)
     {
         FileSystem fs = FileSystems.getDefault();
+        
+        String pattern = rawpattern;
+        
+        // Strip trailing slash (if present)
+        int lastchar = pattern.charAt(pattern.length() - 1);
+        if (lastchar == '/' || lastchar == '\\')
+        {
+            pattern = pattern.substring(0,pattern.length() - 1);
+        }
 
         // If using FileSystem.getPathMatcher() with "glob:" or "regex:"
         // use FileSystem default pattern behavior
