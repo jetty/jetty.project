@@ -18,11 +18,16 @@
 
 package org.eclipse.jetty.websocket.server.browser;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.common.extensions.FrameDebugExtension;
 import org.eclipse.jetty.websocket.common.extensions.compress.PerMessageDeflateExtension;
 import org.eclipse.jetty.websocket.server.WebSocketHandler;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
@@ -85,8 +90,27 @@ public class BrowserDebugTool implements WebSocketCreator
         String ua = req.getHeader("User-Agent");
         String rexts = req.getHeader("Sec-WebSocket-Extensions");
 
+        // manually negotiate extensions
+        List<ExtensionConfig> negotiated = new ArrayList<>();
+        // adding frame debug
+        negotiated.add(new ExtensionConfig("@frame-debug; output-dir=target"));
+        for (ExtensionConfig config : req.getExtensions())
+        {
+            if (config.getName().equals("permessage-deflate"))
+            {
+                // what we are interested in here
+                negotiated.add(config);
+                continue;
+            }
+            // skip all others
+        }
+
+        resp.setExtensions(negotiated);
+
         LOG.debug("User-Agent: {}",ua);
         LOG.debug("Sec-WebSocket-Extensions (Request) : {}",rexts);
+
+        req.getExtensions();
         return new BrowserSocket(ua,rexts);
     }
 
@@ -113,6 +137,9 @@ public class BrowserDebugTool implements WebSocketCreator
                 // factory.getExtensionFactory().unregister("permessage-deflate");
                 factory.getExtensionFactory().register("permessage-deflate",PerMessageDeflateExtension.class);
                 // factory.getExtensionFactory().unregister("x-webkit-deflate-frame");
+
+                // Registering Frame Debug
+                factory.getExtensionFactory().register("@frame-debug",FrameDebugExtension.class);
 
                 // Setup the desired Socket to use for all incoming upgrade requests
                 factory.setCreator(BrowserDebugTool.this);

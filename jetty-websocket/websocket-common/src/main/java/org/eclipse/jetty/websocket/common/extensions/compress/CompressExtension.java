@@ -246,6 +246,7 @@ public abstract class CompressExtension extends AbstractExtension
 
     private class Flusher extends IteratingCallback implements WriteCallback
     {
+        private static final int INPUT_BUFSIZE = 32 * 1024;
         private FrameEntry current;
         private ByteBuffer payload;
         private boolean finished = true;
@@ -288,7 +289,7 @@ public abstract class CompressExtension extends AbstractExtension
             Frame frame = entry.frame;
             ByteBuffer data = frame.getPayload();
             int remaining = data.remaining();
-            int inputLength = Math.min(remaining, 32 * 1024);
+            int inputLength = Math.min(remaining, INPUT_BUFSIZE);
             LOG.debug("Compressing {}: {} bytes in {} bytes chunk", entry, remaining, inputLength);
 
             // Avoid to copy the bytes if the ByteBuffer
