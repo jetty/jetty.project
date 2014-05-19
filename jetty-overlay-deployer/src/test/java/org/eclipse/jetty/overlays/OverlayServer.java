@@ -51,7 +51,6 @@ public class OverlayServer
                     org.eclipse.jetty.plus.webapp.EnvConfiguration.class.getCanonicalName(),
                     org.eclipse.jetty.plus.webapp.PlusConfiguration.class.getCanonicalName(),
                     org.eclipse.jetty.webapp.JettyWebXmlConfiguration.class.getCanonicalName(),
-                    org.eclipse.jetty.webapp.TagLibConfiguration.class.getCanonicalName()
                 }
         );
         

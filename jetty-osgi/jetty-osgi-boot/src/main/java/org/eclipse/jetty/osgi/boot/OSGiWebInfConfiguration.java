@@ -63,7 +63,7 @@ public class OSGiWebInfConfiguration extends WebInfConfiguration
      *  </ol>
      *  
      *  We also allow individual bundles to specify particular bundles that might include TLDs via the Require-Tlds
-     *  MANIFEST.MF header. This is processed in the TagLibOSGiConfiguration class.
+     *  MANIFEST.MF header. 
      *  
      * @see org.eclipse.jetty.webapp.WebInfConfiguration#preConfigure(org.eclipse.jetty.webapp.WebAppContext)
      */
